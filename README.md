@@ -1,2 +1,2 @@
 # gomuks
-A Go terminal matrix client.
+A terminal Matrix client written in Go.
