@@ -20,94 +20,84 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/gdamore/tcell"
+	"github.com/matrix-org/gomatrix"
 	"github.com/rivo/tview"
 )
 
-var matrix = new(MatrixContainer)
-var config = new(Config)
-var debug = new(DebugPane)
+type Gomuks interface {
+	Debug() DebugPrinter
+	Matrix() *gomatrix.Client
+	MatrixContainer() *MatrixContainer
+	App() *tview.Application
+	UI() *GomuksUI
+	Config() *Config
+}
 
-func main() {
+type gomuks struct {
+	app    *tview.Application
+	ui     *GomuksUI
+	matrix *MatrixContainer
+	debug  *DebugPane
+	config *Config
+}
+
+func NewGomuks(debug bool) *gomuks {
 	configDir := filepath.Join(os.Getenv("HOME"), ".config/gomuks")
-	os.MkdirAll(configDir, 0700)
-	config.Load(configDir)
-
-	views := tview.NewPages()
-	InitUI(views)
-
-	main := debug.Wrap(views)
-
-	if len(config.MXID) > 0 {
-		config.LoadSession(config.MXID)
+	gmx := &gomuks{
+		app: tview.NewApplication(),
 	}
-	matrix.Init(config)
+	gmx.debug = NewDebugPane(gmx)
+	gmx.config = NewConfig(gmx, configDir)
+	gmx.ui = NewGomuksUI(gmx)
+	gmx.matrix = NewMatrixContainer(gmx)
+	gmx.ui.matrix = gmx.matrix
 
-	if err := tview.NewApplication().SetRoot(main, true).Run(); err != nil {
+	gmx.config.Load()
+	if len(gmx.config.MXID) > 0 {
+		gmx.config.LoadSession(gmx.config.MXID)
+	}
+
+	gmx.matrix.InitClient()
+
+	main := gmx.ui.InitViews()
+	if debug {
+		main = gmx.debug.Wrap(main)
+	}
+	gmx.app.SetRoot(main, true)
+
+	return gmx
+}
+
+func (gmx *gomuks) Start() {
+	if err := gmx.app.Run(); err != nil {
 		panic(err)
 	}
 }
 
-func InitUI(views *tview.Pages) {
-	views.AddPage("login", InitLoginUI(), true, true)
+func (gmx *gomuks) Debug() DebugPrinter {
+	return gmx.debug
 }
 
-func Center(width, height int, p tview.Primitive) tview.Primitive {
-	return tview.NewFlex().
-		AddItem(tview.NewBox(), 0, 1, false).
-		AddItem(tview.NewFlex().
-		SetDirection(tview.FlexRow).
-		AddItem(tview.NewBox(), 0, 1, false).
-		AddItem(p, height, 1, true).
-		AddItem(tview.NewBox(), 0, 1, false), width, 1, true).
-		AddItem(tview.NewBox(), 0, 1, false)
+func (gmx *gomuks) Matrix() *gomatrix.Client {
+	return gmx.matrix.client
 }
 
-type FormTextView struct {
-	*tview.TextView
+func (gmx *gomuks) MatrixContainer() *MatrixContainer {
+	return gmx.matrix
 }
 
-func (ftv *FormTextView) GetLabel() string {
-	return ""
+func (gmx *gomuks) App() *tview.Application {
+	return gmx.app
 }
 
-func (ftv *FormTextView) SetFormAttributes(label string, labelColor, bgColor, fieldTextColor, fieldBgColor tcell.Color) tview.FormItem {
-	return ftv
+func (gmx *gomuks) Config() *Config {
+	return gmx.config
 }
 
-func (ftv *FormTextView) GetFieldWidth() int {
-	_, _, w, _ := ftv.TextView.GetRect()
-	return w
+func (gmx *gomuks) UI() *GomuksUI {
+	return gmx.ui
 }
 
-func (ftv *FormTextView) SetFinishedFunc(handler func(key tcell.Key)) tview.FormItem {
-	ftv.SetDoneFunc(handler)
-	return ftv
-}
-
-func login(form *tview.Form) func() {
-	return func() {
-		hs := form.GetFormItem(0).(*tview.InputField).GetText()
-		mxid := form.GetFormItem(1).(*tview.InputField).GetText()
-		password := form.GetFormItem(2).(*tview.InputField).GetText()
-		debug.Printf("%s %s %s", hs, mxid, password)
-		config.HS = hs
-		debug.Print(matrix.Init(config))
-		debug.Print(matrix.Login(mxid, password))
-	}
-}
-
-func InitLoginUI() tview.Primitive {
-	form := tview.NewForm().SetButtonsAlign(tview.AlignCenter)
-	hs := config.HS
-	if len(hs) == 0 {
-		hs = "https://matrix.org"
-	}
-	form.
-		AddInputField("Homeserver", hs, 30, nil, nil).
-		AddInputField("Username", config.MXID, 30, nil, nil).
-		AddPasswordField("Password", "", 30, '*', nil).
-		AddButton("Log in", login(form))
-	form.SetBorder(true).SetTitle("Log in to Matrix")
-	return Center(45, 13, form)
+func main() {
+	NewGomuks(true).Start()
 }

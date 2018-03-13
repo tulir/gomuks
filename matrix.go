@@ -23,25 +23,34 @@ import (
 )
 
 type MatrixContainer struct {
-	lient   *gomatrix.Client
+	client  *gomatrix.Client
+	gmx     Gomuks
+	ui      *GomuksUI
+	debug   DebugPrinter
 	config  *Config
 	running bool
 	stop    chan bool
 }
 
-func (c *MatrixContainer) Initialized() bool {
-	return c.lient != nil
-}
-
-func (c *MatrixContainer) Init(config *Config) error {
-	c.config = config
-
-	if c.lient != nil {
-		c.lient.StopSync()
+func NewMatrixContainer(gmx Gomuks) *MatrixContainer {
+	c := &MatrixContainer{
+		config: gmx.Config(),
+		debug:  gmx.Debug(),
+		ui:     gmx.UI(),
+		gmx:    gmx,
 	}
 
+	return c
+}
+
+func (c *MatrixContainer) InitClient() error {
 	if len(c.config.HS) == 0 {
 		return fmt.Errorf("no homeserver in config")
+	}
+
+	if c.client != nil {
+		c.Stop()
+		c.client = nil
 	}
 
 	var mxid, accessToken string
@@ -51,7 +60,7 @@ func (c *MatrixContainer) Init(config *Config) error {
 	}
 
 	var err error
-	c.lient, err = gomatrix.NewClient(c.config.HS, mxid, accessToken)
+	c.client, err = gomatrix.NewClient(c.config.HS, mxid, accessToken)
 	if err != nil {
 		return err
 	}
@@ -64,8 +73,12 @@ func (c *MatrixContainer) Init(config *Config) error {
 	return nil
 }
 
+func (c *MatrixContainer) Initialized() bool {
+	return c.client != nil
+}
+
 func (c *MatrixContainer) Login(user, password string) error {
-	resp, err := c.lient.Login(&gomatrix.ReqLogin{
+	resp, err := c.client.Login(&gomatrix.ReqLogin{
 		Type:     "m.login.password",
 		User:     user,
 		Password: password,
@@ -73,7 +86,7 @@ func (c *MatrixContainer) Login(user, password string) error {
 	if err != nil {
 		return err
 	}
-	c.lient.SetCredentials(resp.UserID, resp.AccessToken)
+	c.client.SetCredentials(resp.UserID, resp.AccessToken)
 	c.config.MXID = resp.UserID
 	c.config.Save()
 
@@ -88,31 +101,50 @@ func (c *MatrixContainer) Login(user, password string) error {
 
 func (c *MatrixContainer) Stop() {
 	c.stop <- true
-	c.lient.StopSync()
+	c.client.StopSync()
+}
+
+func (c *MatrixContainer) UpdateRoomList() {
+	rooms, err := c.client.JoinedRooms()
+	if err != nil {
+		c.debug.Print(err)
+	}
+
+	c.ui.SetRoomList(rooms.JoinedRooms)
 }
 
 func (c *MatrixContainer) Start() {
-	debug.Print("Starting sync...")
+	c.debug.Print("Starting sync...")
 	c.running = true
-	c.lient.Store = c.config.Session
+	c.ui.SetView(ViewMain)
+	c.client.Store = c.config.Session
 
-	syncer := c.lient.Syncer.(*gomatrix.DefaultSyncer)
+	c.UpdateRoomList()
+
+	syncer := c.client.Syncer.(*gomatrix.DefaultSyncer)
 	syncer.OnEventType("m.room.message", c.HandleMessage)
 
 	for {
 		select {
 		case <-c.stop:
-			debug.Print("Stopping sync...")
+			c.debug.Print("Stopping sync...")
 			c.running = false
 			return
 		default:
-			if err := c.lient.Sync(); err != nil {
-				debug.Print("Sync() errored", err)
+			if err := c.client.Sync(); err != nil {
+				c.debug.Print("Sync() errored", err)
+			} else {
+				c.debug.Print("Sync() returned without error")
 			}
 		}
 	}
 }
 
 func (c *MatrixContainer) HandleMessage(evt *gomatrix.Event) {
-	debug.Print("Message received")
+	message, _ := evt.Content["body"].(string)
+	c.ui.Append(evt.RoomID, evt.Sender, message)
+}
+
+func (c *MatrixContainer) SendMessage(roomID, message string) {
+	c.client.SendText(roomID, message)
 }

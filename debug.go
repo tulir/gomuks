@@ -22,35 +22,54 @@ import (
 	"github.com/rivo/tview"
 )
 
+const DebugPaneHeight = 40
+
+type DebugPrinter interface {
+	Printf(text string, args ...interface{})
+	Print(text ...interface{})
+}
+
 type DebugPane struct {
-	text string
 	pane *tview.TextView
 	num  int
+	gmx  Gomuks
+}
+
+func NewDebugPane(gmx Gomuks) *DebugPane {
+	pane := tview.NewTextView()
+	pane.
+		SetScrollable(true).
+		SetWrap(true)
+	pane.SetChangedFunc(func() {
+		gmx.App().Draw()
+	})
+	pane.SetBorder(true).SetTitle("Debug output")
+	fmt.Fprintln(pane, "[0] Debug pane initialized")
+
+	return &DebugPane{
+		pane: pane,
+		num:  0,
+		gmx:  gmx,
+	}
 }
 
 func (db *DebugPane) Printf(text string, args ...interface{}) {
-	db.num++
-	db.Write(fmt.Sprintf("[%d] %s\n", db.num, fmt.Sprintf(text, args...)))
+	db.Write(fmt.Sprintf(text, args...))
 }
 
 func (db *DebugPane) Print(text ...interface{}) {
-	db.num++
-	db.Write(fmt.Sprintf("[%d] %s", db.num, fmt.Sprintln(text...)))
+	db.Write(fmt.Sprint(text...))
 }
 
 func (db *DebugPane) Write(text string) {
 	if db.pane != nil {
-		db.text += text
-		db.pane.SetText(db.text)
+		db.num++
+		fmt.Fprintf(db.pane, "[%d] %s\n", db.num, text)
 	}
 }
 
-func (db *DebugPane) Wrap(main *tview.Pages) tview.Primitive {
-	db.pane = tview.NewTextView()
-	db.pane.SetBorder(true).SetTitle("Debug output")
-	db.text += "[0] Debug pane initialized\n"
-	db.pane.SetText(db.text)
-	return tview.NewGrid().SetRows(0, 20).SetColumns(0).
+func (db *DebugPane) Wrap(main tview.Primitive) tview.Primitive {
+	return tview.NewGrid().SetRows(0, DebugPaneHeight).SetColumns(0).
 		AddItem(main, 0, 0, 1, 1, 1, 1, true).
 		AddItem(db.pane, 1, 0, 1, 1, 1, 1, false)
 }

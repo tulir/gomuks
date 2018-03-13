@@ -29,14 +29,23 @@ type Config struct {
 	MXID string `yaml:"mxid"`
 	HS   string `yaml:"homeserver"`
 
-	dir     string   `yaml:"-"`
-	Session *Session `yaml:"-"`
+	dir     string       `yaml:"-"`
+	gmx     Gomuks       `yaml:"-"`
+	debug   DebugPrinter `yaml:"-"`
+	Session *Session     `yaml:"-"`
 }
 
-func (config *Config) Load(dir string) {
-	config.dir = dir
-	os.MkdirAll(dir, 0700)
-	configPath := filepath.Join(dir, "config.yaml")
+func NewConfig(gmx Gomuks, dir string) *Config {
+	return &Config{
+		gmx:   gmx,
+		debug: gmx.Debug(),
+		dir:   dir,
+	}
+}
+
+func (config *Config) Load() {
+	os.MkdirAll(config.dir, 0700)
+	configPath := filepath.Join(config.dir, "config.yaml")
 	data, err := ioutil.ReadFile(configPath)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -55,16 +64,17 @@ func (config *Config) Load(dir string) {
 }
 
 func (config *Config) Save() {
+	os.MkdirAll(config.dir, 0700)
 	data, err := yaml.Marshal(&config)
 	if err != nil {
-		debug.Print("Failed to marshal config")
+		config.debug.Print("Failed to marshal config")
 		panic(err)
 	}
 
 	path := filepath.Join(config.dir, "config.yaml")
 	err = ioutil.WriteFile(path, data, 0600)
 	if err != nil {
-		debug.Print("Failed to write config to", path)
+		config.debug.Print("Failed to write config to", path)
 		panic(err)
 	}
 }

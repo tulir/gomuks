@@ -31,6 +31,8 @@ type Session struct {
 	NextBatch   string
 	FilterID    string
 	Rooms       map[string]*gomatrix.Room
+
+	debug DebugPrinter `json:"-"`
 }
 
 func (config *Config) LoadSession(mxid string) {
@@ -43,19 +45,20 @@ func (config *Config) NewSession(mxid string) *Session {
 		MXID:  mxid,
 		path:  filepath.Join(config.dir, mxid+".session"),
 		Rooms: make(map[string]*gomatrix.Room),
+		debug: config.debug,
 	}
 }
 
 func (s *Session) Load() {
 	data, err := ioutil.ReadFile(s.path)
 	if err != nil {
-		debug.Print("Failed to read session from", s.path)
+		s.debug.Print("Failed to read session from", s.path)
 		panic(err)
 	}
 
 	err = json.Unmarshal(data, s)
 	if err != nil {
-		debug.Print("Failed to parse session at", s.path)
+		s.debug.Print("Failed to parse session at", s.path)
 		panic(err)
 	}
 }
@@ -63,13 +66,13 @@ func (s *Session) Load() {
 func (s *Session) Save() {
 	data, err := json.Marshal(s)
 	if err != nil {
-		debug.Print("Failed to marshal session of", s.MXID)
+		s.debug.Print("Failed to marshal session of", s.MXID)
 		panic(err)
 	}
 
 	err = ioutil.WriteFile(s.path, data, 0600)
 	if err != nil {
-		debug.Print("Failed to write session to", s.path)
+		s.debug.Print("Failed to write session to", s.path)
 		panic(err)
 	}
 }
