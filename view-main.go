@@ -21,30 +21,17 @@ import (
 	"strings"
 
 	"github.com/gdamore/tcell"
-	"github.com/rivo/tview"
+	"maunium.net/go/tview"
 )
 
 type RoomView struct {
-	*tview.Grid
-
-	sender, message *tview.TextView
+	*tview.TextView
 }
 
 func NewRoomView() *RoomView {
 	view := &RoomView{
-		tview.NewGrid(),
-		tview.NewTextView(),
 		tview.NewTextView(),
 	}
-	view.SetColumns(30, 0).SetRows(0)
-
-	view.sender.SetTextAlign(tview.AlignRight)
-	view.sender.SetScrollable(true)
-	view.message.SetScrollable(true)
-
-	view.AddItem(view.sender, 0, 0, 1, 1, 1, 1, false)
-	view.AddItem(view.message, 0, 1, 1, 1, 1, 1, false)
-
 	return view
 }
 
@@ -53,11 +40,11 @@ func (ui *GomuksUI) MakeMainUI() tview.Primitive {
 
 	ui.mainViewRoomList = tview.NewList().ShowSecondaryText(false)
 	ui.mainViewRoomList.SetBorderPadding(1, 1, 1, 1)
-	ui.mainView.AddItem(ui.mainViewRoomList, 0, 0, 2, 1, 2, 1, false)
+	ui.mainView.AddItem(ui.mainViewRoomList, 0, 0, 2, 1, 2, 2, false)
 
 	ui.mainViewRoomView = tview.NewPages()
 	ui.mainViewRoomView.SetChangedFunc(ui.Render)
-	ui.mainView.AddItem(ui.mainViewRoomView, 0, 1, 1, 1, 1, 1, false)
+	ui.mainView.AddItem(ui.mainViewRoomView, 0, 1, 1, 1, 2, 2, false)
 
 	ui.mainViewInput = tview.NewInputField()
 	ui.mainViewInput.SetDoneFunc(func(key tcell.Key) {
@@ -76,7 +63,7 @@ func (ui *GomuksUI) MakeMainUI() tview.Primitive {
 			ui.mainViewInput.SetText("")
 		}
 	})
-	ui.mainView.AddItem(ui.mainViewInput, 1, 1, 1, 1, 1, 1, true)
+	ui.mainView.AddItem(ui.mainViewInput, 1, 1, 1, 1, 2, 2, true)
 
 	ui.debug.Print(ui.mainViewInput.SetInputCapture(ui.MainUIKeyHandler))
 
@@ -104,7 +91,7 @@ func (ui *GomuksUI) HandleCommand(room, command string, args []string) {
 }
 
 func (ui *GomuksUI) MainUIKeyHandler(key *tcell.EventKey) *tcell.EventKey {
-	ui.debug.Print(key)
+	ui.debug.Print("Main UI keypress:", key.Key(), key.Modifiers())
 	if key.Modifiers() == tcell.ModCtrl {
 		if key.Key() == tcell.KeyDown {
 			ui.SwitchRoom(ui.currentRoomIndex + 1)
@@ -112,10 +99,11 @@ func (ui *GomuksUI) MainUIKeyHandler(key *tcell.EventKey) *tcell.EventKey {
 		} else if key.Key() == tcell.KeyUp {
 			ui.SwitchRoom(ui.currentRoomIndex - 1)
 			ui.mainViewRoomList.SetCurrentItem(ui.currentRoomIndex)
+		} else {
+			return key
 		}
 	} else if key.Key() == tcell.KeyPgUp || key.Key() == tcell.KeyPgDn {
-		ui.mainViewRooms[ui.currentRoom()].sender.InputHandler()(key, nil)
-		ui.mainViewRooms[ui.currentRoom()].message.InputHandler()(key, nil)
+		ui.mainViewRooms[ui.currentRoom()].InputHandler()(key, nil)
 	} else {
 		return key
 	}
@@ -157,8 +145,7 @@ func (ui *GomuksUI) SwitchRoom(roomIndex int) {
 func (ui *GomuksUI) Append(room, sender, message string) {
 	roomView, ok := ui.mainViewRooms[room]
 	if ok {
-		fmt.Fprintf(roomView.sender, sender)
-		fmt.Fprintf(roomView.message, sender)
+		fmt.Fprintf(roomView, "<%s> %s\n", sender, message)
 		ui.Render()
 	}
 }

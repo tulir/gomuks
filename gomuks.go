@@ -21,7 +21,7 @@ import (
 	"path/filepath"
 
 	"github.com/matrix-org/gomatrix"
-	"github.com/rivo/tview"
+	"maunium.net/go/tview"
 )
 
 type Gomuks interface {

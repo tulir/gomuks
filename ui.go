@@ -17,7 +17,7 @@
 package main
 
 import (
-	"github.com/rivo/tview"
+	"maunium.net/go/tview"
 )
 
 // Allowed views in GomuksUI

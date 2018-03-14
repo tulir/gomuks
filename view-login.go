@@ -17,7 +17,7 @@
 package main
 
 import (
-	"github.com/rivo/tview"
+	"maunium.net/go/tview"
 )
 
 func (ui *GomuksUI) MakeLoginUI() tview.Primitive {
@@ -26,6 +26,11 @@ func (ui *GomuksUI) MakeLoginUI() tview.Primitive {
 	if len(hs) == 0 {
 		hs = "https://matrix.org"
 	}
+//	homeserver := tview.NewInputField().SetLabel("Homeserver").SetText(hs).SetFieldWidth(30)
+//	username := tview.NewInputField().SetLabel("Username").SetText(ui.config.MXID).SetFieldWidth(30)
+//	password := tview.NewInputField().SetLabel("Password").SetMaskCharacter('*').SetFieldWidth(30)
+//	form.AddFormItem(homeserver).AddFormItem(username).AddFormItem(password)
+
 	form.
 		AddInputField("Homeserver", hs, 30, nil, nil).
 		AddInputField("Username", ui.config.MXID, 30, nil, nil).

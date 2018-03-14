@@ -18,7 +18,7 @@ package main
 
 import (
 	"github.com/gdamore/tcell"
-	"github.com/rivo/tview"
+	"maunium.net/go/tview"
 )
 
 func Center(width, height int, p tview.Primitive) tview.Primitive {

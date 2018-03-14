@@ -19,7 +19,7 @@ package main
 import (
 	"fmt"
 
-	"github.com/rivo/tview"
+	"maunium.net/go/tview"
 )
 
 const DebugPaneHeight = 40
@@ -54,17 +54,17 @@ func NewDebugPane(gmx Gomuks) *DebugPane {
 }
 
 func (db *DebugPane) Printf(text string, args ...interface{}) {
-	db.Write(fmt.Sprintf(text, args...))
+	db.Write(fmt.Sprintf(text, args...) + "\n")
 }
 
 func (db *DebugPane) Print(text ...interface{}) {
-	db.Write(fmt.Sprint(text...))
+	db.Write(fmt.Sprintln(text...))
 }
 
 func (db *DebugPane) Write(text string) {
 	if db.pane != nil {
 		db.num++
-		fmt.Fprintf(db.pane, "[%d] %s\n", db.num, text)
+		fmt.Fprintf(db.pane, "[%d] %s", db.num, text)
 	}
 }
 
