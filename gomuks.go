@@ -31,6 +31,9 @@ type Gomuks interface {
 	App() *tview.Application
 	UI() *GomuksUI
 	Config() *Config
+
+	Start()
+	Stop()
 }
 
 type gomuks struct {
@@ -66,6 +69,14 @@ func NewGomuks(debug bool) *gomuks {
 	gmx.app.SetRoot(main, true)
 
 	return gmx
+}
+
+func (gmx *gomuks) Stop() {
+	gmx.matrix.Stop()
+	gmx.app.Stop()
+	if gmx.config.Session != nil {
+		gmx.config.Session.Save()
+	}
 }
 
 func (gmx *gomuks) Start() {

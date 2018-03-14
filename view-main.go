@@ -21,32 +21,47 @@ import (
 	"strings"
 
 	"github.com/gdamore/tcell"
+	"github.com/matrix-org/gomatrix"
 	"maunium.net/go/tview"
 )
 
 type RoomView struct {
-	*tview.TextView
+	*tview.Grid
+	content     *tview.TextView
+	status      *tview.TextView
+	name, topic string
 }
 
-func NewRoomView() *RoomView {
+func NewRoomView(name, topic string) *RoomView {
 	view := &RoomView{
+		tview.NewGrid(),
 		tview.NewTextView(),
+		tview.NewTextView(),
+		name, topic,
 	}
+	view.content.SetTitle(topic).SetBorder(true)
+	view.status.SetText("Waiting for status data...")
+	view.SetColumns(0).SetRows(0, 1)
+	view.AddItem(view.content, 0, 0, 1, 1, 0, 0, false)
+	view.AddItem(view.status, 1, 0, 1, 1, 0, 0, false)
 	return view
 }
 
 func (ui *GomuksUI) MakeMainUI() tview.Primitive {
-	ui.mainView = tview.NewGrid().SetColumns(40, 0).SetRows(0, 2)
+	ui.mainView = tview.NewGrid().SetColumns(30, 0).SetRows(0, 1)
 
 	ui.mainViewRoomList = tview.NewList().ShowSecondaryText(false)
-	ui.mainViewRoomList.SetBorderPadding(1, 1, 1, 1)
-	ui.mainView.AddItem(ui.mainViewRoomList, 0, 0, 2, 1, 2, 2, false)
+	ui.mainViewRoomList.SetBorder(true).SetTitle("Rooms")
+	ui.mainView.AddItem(ui.mainViewRoomList, 0, 0, 2, 1, 0, 0, false)
 
 	ui.mainViewRoomView = tview.NewPages()
 	ui.mainViewRoomView.SetChangedFunc(ui.Render)
-	ui.mainView.AddItem(ui.mainViewRoomView, 0, 1, 1, 1, 2, 2, false)
+	ui.mainView.AddItem(ui.mainViewRoomView, 0, 1, 1, 1, 0, 0, false)
 
 	ui.mainViewInput = tview.NewInputField()
+	ui.mainViewInput.SetChangedFunc(func(_ string) {
+		ui.matrix.SendTyping(ui.currentRoom())
+	})
 	ui.mainViewInput.SetDoneFunc(func(key tcell.Key) {
 		if key == tcell.KeyEnter {
 			room, text := ui.currentRoom(), ui.mainViewInput.GetText()
@@ -63,7 +78,7 @@ func (ui *GomuksUI) MakeMainUI() tview.Primitive {
 			ui.mainViewInput.SetText("")
 		}
 	})
-	ui.mainView.AddItem(ui.mainViewInput, 1, 1, 1, 1, 2, 2, true)
+	ui.mainView.AddItem(ui.mainViewInput, 1, 1, 1, 1, 0, 0, true)
 
 	ui.debug.Print(ui.mainViewInput.SetInputCapture(ui.MainUIKeyHandler))
 
@@ -73,14 +88,20 @@ func (ui *GomuksUI) MakeMainUI() tview.Primitive {
 }
 
 func (ui *GomuksUI) HandleCommand(room, command string, args []string) {
+	ui.debug.Print("Handling command", command, args)
 	switch command {
-	case "quit":
-		ui.matrix.Stop()
-		ui.app.Stop()
-	case "part":
-	case "leave":
+	case "/quit":
+		ui.gmx.Stop()
+	case "/clearcache":
+		ui.config.Session.Rooms = make(map[string]*gomatrix.Room)
+		ui.config.Session.NextBatch = ""
+		ui.config.Session.FilterID = ""
+		ui.config.Session.Save()
+		ui.gmx.Stop()
+	case "/part":
+	case "/leave":
 		ui.matrix.client.LeaveRoom(room)
-	case "join":
+	case "/join":
 		if len(args) == 0 {
 			ui.Append(room, "*", "Usage: /join <room>")
 		}
@@ -91,7 +112,6 @@ func (ui *GomuksUI) HandleCommand(room, command string, args []string) {
 }
 
 func (ui *GomuksUI) MainUIKeyHandler(key *tcell.EventKey) *tcell.EventKey {
-	ui.debug.Print("Main UI keypress:", key.Key(), key.Modifiers())
 	if key.Modifiers() == tcell.ModCtrl {
 		if key.Key() == tcell.KeyDown {
 			ui.SwitchRoom(ui.currentRoomIndex + 1)
@@ -115,11 +135,32 @@ func (ui *GomuksUI) SetRoomList(rooms []string) {
 	ui.mainViewRoomList.Clear()
 	for index, room := range rooms {
 		localRoomIndex := index
-		ui.mainViewRoomList.AddItem(room, "", 0, func() {
+
+		ui.matrix.UpdateRoomInfo(room)
+		roomStore := ui.matrix.config.Session.LoadRoom(room)
+
+		name := room
+		topic := ""
+		if roomStore != nil {
+			nameEvt := roomStore.GetStateEvent("m.room.title", "")
+			if nameEvt != nil {
+				name, _ = nameEvt.Content["title"].(string)
+			} else {
+				nameEvt = roomStore.GetStateEvent("m.room.canonical_alias", "")
+				if nameEvt != nil {
+					name, _ = nameEvt.Content["alias"].(string)
+				}
+			}
+			topicEvt := roomStore.GetStateEvent("m.room.topic", "")
+			if topicEvt != nil {
+				topic, _ = topicEvt.Content["topic"].(string)
+			}
+		}
+		ui.mainViewRoomList.AddItem(name, "", 0, func() {
 			ui.SwitchRoom(localRoomIndex)
 		})
 		if !ui.mainViewRoomView.HasPage(room) {
-			roomView := NewRoomView()
+			roomView := NewRoomView(name, topic)
 			ui.mainViewRooms[room] = roomView
 			ui.mainViewRoomView.AddPage(room, roomView, true, false)
 		}
@@ -142,10 +183,17 @@ func (ui *GomuksUI) SwitchRoom(roomIndex int) {
 	ui.mainViewRoomView.SwitchToPage(ui.roomList[ui.currentRoomIndex])
 }
 
+func (ui *GomuksUI) SetTyping(room string, users []string) {
+	roomView, ok := ui.mainViewRooms[room]
+	if ok {
+		roomView.status.SetText("Typing: " + strings.Join(users, ", "))
+	}
+}
+
 func (ui *GomuksUI) Append(room, sender, message string) {
 	roomView, ok := ui.mainViewRooms[room]
 	if ok {
-		fmt.Fprintf(roomView, "<%s> %s\n", sender, message)
+		fmt.Fprintf(roomView.content, "<%s> %s\n", sender, message)
 		ui.Render()
 	}
 }

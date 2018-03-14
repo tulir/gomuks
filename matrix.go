@@ -18,6 +18,7 @@ package main
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/matrix-org/gomatrix"
 )
@@ -30,6 +31,8 @@ type MatrixContainer struct {
 	config  *Config
 	running bool
 	stop    chan bool
+
+	typing int64
 }
 
 func NewMatrixContainer(gmx Gomuks) *MatrixContainer {
@@ -123,6 +126,7 @@ func (c *MatrixContainer) Start() {
 
 	syncer := c.client.Syncer.(*gomatrix.DefaultSyncer)
 	syncer.OnEventType("m.room.message", c.HandleMessage)
+	syncer.OnEventType("m.typing", c.HandleTyping)
 
 	for {
 		select {
@@ -145,6 +149,57 @@ func (c *MatrixContainer) HandleMessage(evt *gomatrix.Event) {
 	c.ui.Append(evt.RoomID, evt.Sender, message)
 }
 
+func (c *MatrixContainer) HandleTyping(evt *gomatrix.Event) {
+	users := evt.Content["user_ids"].([]string)
+	c.debug.Print(users, "are typing")
+	c.ui.SetTyping(evt.RoomID, users)
+}
+
 func (c *MatrixContainer) SendMessage(roomID, message string) {
+	c.client.UserTyping(roomID, false, 0)
 	c.client.SendText(roomID, message)
+}
+
+func (c *MatrixContainer) SendTyping(roomID string) {
+	time := time.Now().Unix()
+	if c.typing > time {
+		return
+	}
+
+	c.client.UserTyping(roomID, true, 5000)
+	c.typing = time + 5000
+}
+
+func (c *MatrixContainer) GetStateEvent(roomID, eventType, stateKey string) *gomatrix.Event {
+	content := make(map[string]interface{})
+	c.client.StateEvent(roomID, eventType, stateKey, &content)
+	if len(content) == 0 {
+		return nil
+	}
+	return &gomatrix.Event{
+		StateKey: &stateKey,
+		Sender: "",
+		Type: eventType,
+		Timestamp: 0,
+		ID: "",
+		RoomID: roomID,
+		Content: content,
+	}
+}
+
+func (c *MatrixContainer) GetAndUpdateStateEvent(room *gomatrix.Room, eventType, stateKey string) {
+	if room == nil {
+		return
+	}
+	event := c.GetStateEvent(room.ID, eventType, stateKey)
+	if event != nil {
+		room.UpdateState(event)
+	}
+}
+
+func (c *MatrixContainer) UpdateRoomInfo(roomID string) {
+	room := c.client.Store.LoadRoom(roomID)
+	c.GetAndUpdateStateEvent(room, "m.room.name", "")
+	c.GetAndUpdateStateEvent(room, "m.room.canonical_alias", "")
+	c.GetAndUpdateStateEvent(room, "m.room.topic", "")
 }

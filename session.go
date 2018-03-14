@@ -86,7 +86,12 @@ func (s *Session) LoadNextBatch(_ string) string {
 }
 
 func (s *Session) LoadRoom(mxid string) *gomatrix.Room {
-	return s.Rooms[mxid]
+	room, ok := s.Rooms[mxid]
+	if !ok || room == nil {
+		room := gomatrix.NewRoom(mxid)
+		s.SaveRoom(room)
+	}
+	return room
 }
 
 func (s *Session) SaveFilterID(_, filterID string) {
