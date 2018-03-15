@@ -73,9 +73,12 @@ func NewGomuks(debug bool) *gomuks {
 }
 
 func (gmx *gomuks) Stop() {
+	gmx.debug.Print("Disconnecting from Matrix...")
 	gmx.matrix.Stop()
+	gmx.debug.Print("Cleaning up UI...")
 	gmx.app.Stop()
 	if gmx.config.Session != nil {
+		gmx.debug.Print("Saving session...")
 		gmx.config.Session.Save()
 	}
 }

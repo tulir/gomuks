@@ -35,12 +35,13 @@ type GomuksUI struct {
 	config *Config
 	views  *tview.Pages
 
-	mainView         *MainView
+	mainView  *MainView
+	loginView *tview.Form
 }
 
 func init() {
 	tview.Styles.PrimitiveBackgroundColor = tcell.ColorDefault
-	tview.Styles.ContrastBackgroundColor = tcell.ColorDefault
+	tview.Styles.ContrastBackgroundColor = tcell.ColorDarkGreen
 }
 
 func NewGomuksUI(gmx Gomuks) (ui *GomuksUI) {
@@ -65,9 +66,8 @@ func (ui *GomuksUI) SetView(name string) {
 }
 
 func (ui *GomuksUI) InitViews() tview.Primitive {
-	ui.mainView = ui.NewMainView()
-	ui.views.AddPage(ViewLogin, ui.MakeLoginUI(), true, true)
-	ui.views.AddPage(ViewMain, ui.mainView, true, false)
+	ui.views.AddPage(ViewLogin, ui.NewLoginView(), true, true)
+	ui.views.AddPage(ViewMain, ui.NewMainView(), true, false)
 	return ui.views
 }
 

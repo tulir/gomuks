@@ -45,8 +45,8 @@ func (view *MainView) addItem(p tview.Primitive, x, y, w, h int) {
 	view.Grid.AddItem(p, x, y, w, h, 0, 0, false)
 }
 
-func (ui *GomuksUI) NewMainView() *MainView {
-	mainUI := &MainView{
+func (ui *GomuksUI) NewMainView() tview.Primitive {
+	mainView := &MainView{
 		Grid:     tview.NewGrid(),
 		roomList: tview.NewList(),
 		roomView: tview.NewPages(),
@@ -60,27 +60,34 @@ func (ui *GomuksUI) NewMainView() *MainView {
 		parent: ui,
 	}
 
-	mainUI.SetColumns(30, 1, 0).SetRows(0, 1)
+	mainView.SetColumns(30, 1, 0).SetRows(0, 1)
 
-	mainUI.roomList.
+	mainView.roomList.
 		ShowSecondaryText(false).
 		SetBorderPadding(0, 0, 1, 0)
 
-	mainUI.input.
-		SetDoneFunc(mainUI.InputDone).
-		SetChangedFunc(mainUI.InputChanged).
-		SetInputCapture(mainUI.InputCapture)
+	mainView.input.
+		SetDoneFunc(mainView.InputDone).
+		SetChangedFunc(mainView.InputChanged).
+		SetFieldBackgroundColor(tcell.ColorDefault).
+		SetInputCapture(mainView.InputCapture)
 
-	mainUI.addItem(mainUI.roomList, 0, 0, 2, 1)
-	mainUI.addItem(NewBorder(), 0, 1, 2, 1)
-	mainUI.addItem(mainUI.roomView, 0, 2, 1, 1)
-	mainUI.AddItem(mainUI.input, 1, 2, 1, 1, 0, 0, true)
+	mainView.addItem(mainView.roomList, 0, 0, 2, 1)
+	mainView.addItem(NewBorder(), 0, 1, 2, 1)
+	mainView.addItem(mainView.roomView, 0, 2, 1, 1)
+	mainView.AddItem(mainView.input, 1, 2, 1, 1, 0, 0, true)
 
-	return mainUI
+	ui.mainView = mainView
+
+	return mainView
 }
 
 func (view *MainView) InputChanged(text string) {
-	view.matrix.SendTyping(view.CurrentRoomID(), len(text) > 0)
+	if len(text) == 0 {
+		view.matrix.SendTyping(view.CurrentRoomID(), false)
+	} else if text[0] != '/' {
+		view.matrix.SendTyping(view.CurrentRoomID(), true)
+	}
 }
 
 func (view *MainView) InputDone(key tcell.Key) {

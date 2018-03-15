@@ -20,35 +20,31 @@ import (
 	"maunium.net/go/tview"
 )
 
-func (ui *GomuksUI) MakeLoginUI() tview.Primitive {
-	form := tview.NewForm().SetButtonsAlign(tview.AlignCenter)
+func (ui *GomuksUI) NewLoginView() tview.Primitive {
 	hs := ui.config.HS
 	if len(hs) == 0 {
 		hs = "https://matrix.org"
 	}
-//	homeserver := tview.NewInputField().SetLabel("Homeserver").SetText(hs).SetFieldWidth(30)
-//	username := tview.NewInputField().SetLabel("Username").SetText(ui.config.MXID).SetFieldWidth(30)
-//	password := tview.NewInputField().SetLabel("Password").SetMaskCharacter('*').SetFieldWidth(30)
-//	form.AddFormItem(homeserver).AddFormItem(username).AddFormItem(password)
 
-	form.
+	ui.loginView = tview.NewForm()
+	ui.loginView.
 		AddInputField("Homeserver", hs, 30, nil, nil).
 		AddInputField("Username", ui.config.MXID, 30, nil, nil).
 		AddPasswordField("Password", "", 30, '*', nil).
-		AddButton("Log in", ui.login(form))
-	form.SetBorder(true).SetTitle("Log in to Matrix")
-	return Center(45, 13, form)
+		AddButton("Log in", ui.login).
+		AddButton("Quit", ui.gmx.Stop).
+		SetButtonsAlign(tview.AlignCenter).
+		SetBorder(true).SetTitle("Log in to Matrix")
+	return Center(45, 11, ui.loginView)
 }
 
-func (ui *GomuksUI) login(form *tview.Form) func() {
-	return func() {
-		hs := form.GetFormItem(0).(*tview.InputField).GetText()
-		mxid := form.GetFormItem(1).(*tview.InputField).GetText()
-		password := form.GetFormItem(2).(*tview.InputField).GetText()
+func (ui *GomuksUI) login() {
+	hs := ui.loginView.GetFormItem(0).(*tview.InputField).GetText()
+	mxid := ui.loginView.GetFormItem(1).(*tview.InputField).GetText()
+	password := ui.loginView.GetFormItem(2).(*tview.InputField).GetText()
 
-		ui.debug.Printf("Logging into %s as %s...", hs, mxid)
-		ui.config.HS = hs
-		ui.debug.Print(ui.matrix.InitClient())
-		ui.debug.Print(ui.matrix.Login(mxid, password))
-	}
+	ui.debug.Printf("Logging into %s as %s...", hs, mxid)
+	ui.config.HS = hs
+	ui.debug.Print("Connect result:", ui.matrix.InitClient())
+	ui.debug.Print("Login result:", ui.matrix.Login(mxid, password))
 }

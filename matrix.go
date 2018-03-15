@@ -103,8 +103,10 @@ func (c *MatrixContainer) Login(user, password string) error {
 }
 
 func (c *MatrixContainer) Stop() {
-	c.stop <- true
-	c.client.StopSync()
+	if c.running {
+		c.stop <- true
+		c.client.StopSync()
+	}
 }
 
 func (c *MatrixContainer) UpdateRoomList() {
