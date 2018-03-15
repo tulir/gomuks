@@ -21,7 +21,7 @@ import (
 	"io/ioutil"
 	"path/filepath"
 
-	"github.com/matrix-org/gomatrix"
+	"maunium.net/go/gomatrix"
 )
 
 type Session struct {

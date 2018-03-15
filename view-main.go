@@ -21,7 +21,7 @@ import (
 	"strings"
 
 	"github.com/gdamore/tcell"
-	"github.com/matrix-org/gomatrix"
+	"maunium.net/go/gomatrix"
 	"maunium.net/go/tview"
 )
 
