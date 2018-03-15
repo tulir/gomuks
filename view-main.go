@@ -17,79 +17,12 @@
 package main
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/gdamore/tcell"
 	"maunium.net/go/gomatrix"
 	"maunium.net/go/tview"
 )
-
-type RoomView struct {
-	*tview.Box
-
-	topic    *tview.TextView
-	content  *tview.TextView
-	status   *tview.TextView
-	userlist *tview.TextView
-	name     string
-}
-
-func NewRoomView(name, topic string) *RoomView {
-	view := &RoomView{
-		Box: tview.NewBox(),
-		topic:    tview.NewTextView(),
-		content:  tview.NewTextView(),
-		status:   tview.NewTextView(),
-		userlist: tview.NewTextView(),
-		name:     name,
-	}
-	view.topic.SetText(topic).SetBackgroundColor(tcell.ColorDarkGreen)
-	view.status.SetBackgroundColor(tcell.ColorDimGray)
-	view.userlist.SetText("@tulir:maunium.net\n@tulir_test:maunium.net")
-	return view
-}
-
-func (view *RoomView) Draw(screen tcell.Screen) {
-	x, y, width, height := view.GetRect()
-	view.topic.SetRect(x, y, width, 1)
-	view.content.SetRect(x, y+1, width-30, height-2)
-	view.status.SetRect(x, y+height-1, width,1)
-	view.userlist.SetRect(x+width-29, y+1, 29, height - 2)
-
-	view.topic.Draw(screen)
-	view.content.Draw(screen)
-	view.status.Draw(screen)
-
-	borderX := x+width-30
-	background := tcell.StyleDefault.Background(view.GetBackgroundColor()).Foreground(view.GetBorderColor())
-	for borderY := y + 1; borderY < y + height - 1; borderY++ {
-		screen.SetContent(borderX, borderY, tview.GraphicsVertBar, nil, background)
-	}
-	view.userlist.Draw(screen)
-}
-
-type Border struct {
-	*tview.Box
-}
-
-func NewBorder() *Border {
-	return &Border{tview.NewBox()}
-}
-
-func (border *Border) Draw(screen tcell.Screen) {
-	background := tcell.StyleDefault.Background(border.GetBackgroundColor()).Foreground(border.GetBorderColor())
-	x, y, width, height := border.GetRect()
-	if width == 1 {
-		for borderY := y; borderY < y + height; borderY++ {
-			screen.SetContent(x, borderY, tview.GraphicsVertBar, nil, background)
-		}
-	} else if height == 1 {
-		for borderX := x; borderX < x + width; borderX++ {
-			screen.SetContent(borderX, y, tview.GraphicsHoriBar, nil, background)
-		}
-	}
-}
 
 func (ui *GomuksUI) MakeMainUI() tview.Primitive {
 	ui.mainView = tview.NewGrid()
@@ -106,8 +39,8 @@ func (ui *GomuksUI) MakeMainUI() tview.Primitive {
 	ui.mainView.AddItem(ui.mainViewRoomView, 0, 2, 1, 1, 0, 0, false)
 
 	ui.mainViewInput = tview.NewInputField()
-	ui.mainViewInput.SetChangedFunc(func(_ string) {
-		ui.matrix.SendTyping(ui.currentRoom())
+	ui.mainViewInput.SetChangedFunc(func(text string) {
+		ui.matrix.SendTyping(ui.currentRoom(), len(text) > 0)
 	})
 	ui.mainViewInput.SetDoneFunc(func(key tcell.Key) {
 		if key == tcell.KeyEnter {
@@ -183,32 +116,24 @@ func (ui *GomuksUI) SetRoomList(rooms []string) {
 	for index, room := range rooms {
 		localRoomIndex := index
 
-		ui.matrix.UpdateRoomInfo(room)
+		ui.matrix.UpdateState(room)
 		roomStore := ui.matrix.config.Session.LoadRoom(room)
 
 		name := room
 		topic := ""
+		var users []string
 		if roomStore != nil {
-			nameEvt := roomStore.GetStateEvent("m.room.title", "")
-			if nameEvt != nil {
-				name, _ = nameEvt.Content["title"].(string)
-			} else {
-				nameEvt = roomStore.GetStateEvent("m.room.canonical_alias", "")
-				if nameEvt != nil {
-					name, _ = nameEvt.Content["alias"].(string)
-				}
-			}
-			topicEvt := roomStore.GetStateEvent("m.room.topic", "")
-			if topicEvt != nil {
-				topic, _ = topicEvt.Content["topic"].(string)
-				topic = strings.Replace(topic, "\n", " ", -1)
-			}
+			name = roomStore.GetTitle()
+			topic = roomStore.GetTopic()
+			users = roomStore.GetMembers()
 		}
+
 		ui.mainViewRoomList.AddItem(name, "", 0, func() {
 			ui.SwitchRoom(localRoomIndex)
 		})
 		if !ui.mainViewRoomView.HasPage(room) {
-			roomView := NewRoomView(name, topic)
+			roomView := NewRoomView(topic)
+			roomView.SetUsers(users)
 			ui.mainViewRooms[room] = roomView
 			ui.mainViewRoomView.AddPage(room, roomView, true, false)
 		}
@@ -234,11 +159,7 @@ func (ui *GomuksUI) SwitchRoom(roomIndex int) {
 func (ui *GomuksUI) SetTyping(room string, users ...string) {
 	roomView, ok := ui.mainViewRooms[room]
 	if ok {
-		if len(users) > 0 {
-			roomView.status.SetText("Typing: " + strings.Join(users, ", "))
-		} else {
-			roomView.status.SetText("")
-		}
+		roomView.SetTyping(users)
 		ui.Render()
 	}
 }
@@ -246,7 +167,7 @@ func (ui *GomuksUI) SetTyping(room string, users ...string) {
 func (ui *GomuksUI) Append(room, sender, message string) {
 	roomView, ok := ui.mainViewRooms[room]
 	if ok {
-		fmt.Fprintf(roomView.content, "<%s> %s\n", sender, message)
+		roomView.AddMessage(sender, message)
 		ui.Render()
 	}
 }

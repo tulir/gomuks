@@ -162,50 +162,44 @@ func (c *MatrixContainer) HandleTyping(evt *gomatrix.Event) {
 }
 
 func (c *MatrixContainer) SendMessage(roomID, message string) {
-	c.client.UserTyping(roomID, false, 0)
+	c.SendTyping(roomID, false)
 	c.client.SendText(roomID, message)
 }
 
-func (c *MatrixContainer) SendTyping(roomID string) {
+func (c *MatrixContainer) SendTyping(roomID string, typing bool) {
 	time := time.Now().Unix()
-	if c.typing > time {
+	if c.typing > time && typing {
 		return
 	}
 
-	c.client.UserTyping(roomID, true, 5000)
-	c.typing = time + 5000
+	if typing {
+		c.client.UserTyping(roomID, true, 5000)
+		c.typing = time + 5
+	} else {
+		c.client.UserTyping(roomID, false, 0)
+		c.typing = 0
+	}
 }
 
-func (c *MatrixContainer) GetStateEvent(roomID, eventType, stateKey string) *gomatrix.Event {
-	content := make(map[string]interface{})
-	c.client.StateEvent(roomID, eventType, stateKey, &content)
-	if len(content) == 0 {
+func (c *MatrixContainer) GetState(roomID string) []*gomatrix.Event {
+	content := make([]*gomatrix.Event, 0)
+	err := c.client.StateEvent(roomID, "", "", &content)
+	if err != nil {
+		c.debug.Print(err)
 		return nil
 	}
-	return &gomatrix.Event{
-		StateKey: &stateKey,
-		Sender: "",
-		Type: eventType,
-		Timestamp: 0,
-		ID: "",
-		RoomID: roomID,
-		Content: content,
-	}
+	return content
 }
 
-func (c *MatrixContainer) GetAndUpdateStateEvent(room *gomatrix.Room, eventType, stateKey string) {
+func (c *MatrixContainer) UpdateState(roomID string) {
+	room := c.client.Store.LoadRoom(roomID)
 	if room == nil {
 		return
 	}
-	event := c.GetStateEvent(room.ID, eventType, stateKey)
-	if event != nil {
-		room.UpdateState(event)
+	events := c.GetState(room.ID)
+	if events != nil {
+		for _, event := range events {
+			room.UpdateState(event)
+		}
 	}
-}
-
-func (c *MatrixContainer) UpdateRoomInfo(roomID string) {
-	room := c.client.Store.LoadRoom(roomID)
-	c.GetAndUpdateStateEvent(room, "m.room.name", "")
-	c.GetAndUpdateStateEvent(room, "m.room.canonical_alias", "")
-	c.GetAndUpdateStateEvent(room, "m.room.topic", "")
 }
