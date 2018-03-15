@@ -24,100 +24,150 @@ import (
 	"maunium.net/go/tview"
 )
 
-func (ui *GomuksUI) MakeMainUI() tview.Primitive {
-	ui.mainView = tview.NewGrid()
-	ui.mainView.SetColumns(30, 1, 0).SetRows(0, 1)
+type MainView struct {
+	*tview.Grid
 
-	ui.mainViewRoomList = tview.NewList().ShowSecondaryText(false)
-	ui.mainViewRoomList.SetBorderPadding(0, 0, 1, 0)
-	ui.mainView.AddItem(ui.mainViewRoomList, 0, 0, 2, 1, 0, 0, false)
+	roomList         *tview.List
+	roomView         *tview.Pages
+	rooms            map[string]*RoomView
+	input            *tview.InputField
+	currentRoomIndex int
+	roomIDs          []string
 
-	ui.mainView.AddItem(NewBorder(), 0, 1, 2, 1, 0, 0, false)
-
-	ui.mainViewRoomView = tview.NewPages()
-	ui.mainViewRoomView.SetChangedFunc(ui.Render)
-	ui.mainView.AddItem(ui.mainViewRoomView, 0, 2, 1, 1, 0, 0, false)
-
-	ui.mainViewInput = tview.NewInputField()
-	ui.mainViewInput.SetChangedFunc(func(text string) {
-		ui.matrix.SendTyping(ui.currentRoom(), len(text) > 0)
-	})
-	ui.mainViewInput.SetDoneFunc(func(key tcell.Key) {
-		if key == tcell.KeyEnter {
-			room, text := ui.currentRoom(), ui.mainViewInput.GetText()
-			if len(text) == 0 {
-				return
-			} else if text[0] == '/' {
-				args := strings.SplitN(text, " ", 2)
-				command := strings.ToLower(args[0])
-				args = args[1:]
-				ui.HandleCommand(room, command, args)
-			} else {
-				ui.matrix.SendMessage(room, text)
-			}
-			ui.mainViewInput.SetText("")
-		}
-	})
-	ui.mainView.AddItem(ui.mainViewInput, 1, 2, 1, 1, 0, 0, true)
-
-	ui.debug.Print(ui.mainViewInput.SetInputCapture(ui.MainUIKeyHandler))
-
-	ui.mainViewRooms = make(map[string]*RoomView)
-
-	return ui.mainView
+	matrix *MatrixContainer
+	debug  DebugPrinter
+	gmx    Gomuks
+	config *Config
+	parent *GomuksUI
 }
 
-func (ui *GomuksUI) HandleCommand(room, command string, args []string) {
-	ui.debug.Print("Handling command", command, args)
-	switch command {
-	case "/quit":
-		ui.gmx.Stop()
-	case "/clearcache":
-		ui.config.Session.Rooms = make(map[string]*gomatrix.Room)
-		ui.config.Session.NextBatch = ""
-		ui.config.Session.FilterID = ""
-		ui.config.Session.Save()
-		ui.gmx.Stop()
-	case "/part":
-	case "/leave":
-		ui.matrix.client.LeaveRoom(room)
-	case "/join":
-		if len(args) == 0 {
-			ui.Append(room, "*", "Usage: /join <room>")
+func (view *MainView) addItem(p tview.Primitive, x, y, w, h int) {
+	view.Grid.AddItem(p, x, y, w, h, 0, 0, false)
+}
+
+func (ui *GomuksUI) NewMainView() *MainView {
+	mainUI := &MainView{
+		Grid:     tview.NewGrid(),
+		roomList: tview.NewList(),
+		roomView: tview.NewPages(),
+		rooms:    make(map[string]*RoomView),
+		input:    tview.NewInputField(),
+
+		matrix: ui.matrix,
+		debug:  ui.debug,
+		gmx:    ui.gmx,
+		config: ui.config,
+		parent: ui,
+	}
+
+	mainUI.SetColumns(30, 1, 0).SetRows(0, 1)
+
+	mainUI.roomList.
+		ShowSecondaryText(false).
+		SetBorderPadding(0, 0, 1, 0)
+
+	mainUI.input.
+		SetDoneFunc(mainUI.InputDone).
+		SetChangedFunc(mainUI.InputChanged).
+		SetInputCapture(mainUI.InputCapture)
+
+	mainUI.addItem(mainUI.roomList, 0, 0, 2, 1)
+	mainUI.addItem(NewBorder(), 0, 1, 2, 1)
+	mainUI.addItem(mainUI.roomView, 0, 2, 1, 1)
+	mainUI.AddItem(mainUI.input, 1, 2, 1, 1, 0, 0, true)
+
+	return mainUI
+}
+
+func (view *MainView) InputChanged(text string) {
+	view.matrix.SendTyping(view.CurrentRoomID(), len(text) > 0)
+}
+
+func (view *MainView) InputDone(key tcell.Key) {
+	if key == tcell.KeyEnter {
+		room, text := view.CurrentRoomID(), view.input.GetText()
+		if len(text) == 0 {
+			return
+		} else if text[0] == '/' {
+			args := strings.SplitN(text, " ", 2)
+			command := strings.ToLower(args[0])
+			args = args[1:]
+			view.HandleCommand(room, command, args)
+		} else {
+			view.matrix.SendMessage(room, text)
 		}
-		mxid := args[0]
-		server := mxid[strings.Index(mxid, ":")+1:]
-		ui.matrix.client.JoinRoom(mxid, server, nil)
+		view.input.SetText("")
 	}
 }
 
-func (ui *GomuksUI) MainUIKeyHandler(key *tcell.EventKey) *tcell.EventKey {
+func (view *MainView) HandleCommand(room, command string, args []string) {
+	view.debug.Print("Handling command", command, args)
+	switch command {
+	case "/quit":
+		view.gmx.Stop()
+	case "/clearcache":
+		view.config.Session.Rooms = make(map[string]*gomatrix.Room)
+		view.config.Session.NextBatch = ""
+		view.config.Session.FilterID = ""
+		view.config.Session.Save()
+		view.gmx.Stop()
+	case "/part":
+	case "/leave":
+		view.matrix.client.LeaveRoom(room)
+	case "/join":
+		if len(args) == 0 {
+			view.Append(room, "*", "Usage: /join <room>")
+			break
+		}
+		mxid := args[0]
+		server := mxid[strings.Index(mxid, ":")+1:]
+		view.matrix.client.JoinRoom(mxid, server, nil)
+	}
+}
+
+func (view *MainView) InputCapture(key *tcell.EventKey) *tcell.EventKey {
 	if key.Modifiers() == tcell.ModCtrl {
 		if key.Key() == tcell.KeyDown {
-			ui.SwitchRoom(ui.currentRoomIndex + 1)
-			ui.mainViewRoomList.SetCurrentItem(ui.currentRoomIndex)
+			view.SwitchRoom(view.currentRoomIndex + 1)
+			view.roomList.SetCurrentItem(view.currentRoomIndex)
 		} else if key.Key() == tcell.KeyUp {
-			ui.SwitchRoom(ui.currentRoomIndex - 1)
-			ui.mainViewRoomList.SetCurrentItem(ui.currentRoomIndex)
+			view.SwitchRoom(view.currentRoomIndex - 1)
+			view.roomList.SetCurrentItem(view.currentRoomIndex)
 		} else {
 			return key
 		}
 	} else if key.Key() == tcell.KeyPgUp || key.Key() == tcell.KeyPgDn {
-		ui.mainViewRooms[ui.currentRoom()].InputHandler()(key, nil)
+		view.rooms[view.CurrentRoomID()].InputHandler()(key, nil)
 	} else {
 		return key
 	}
 	return nil
 }
 
-func (ui *GomuksUI) SetRoomList(rooms []string) {
-	ui.roomList = rooms
-	ui.mainViewRoomList.Clear()
+func (view *MainView) CurrentRoomID() string {
+	if len(view.roomIDs) == 0 {
+		return ""
+	}
+	return view.roomIDs[view.currentRoomIndex]
+}
+
+func (view *MainView) SwitchRoom(roomIndex int) {
+	if roomIndex < 0 {
+		roomIndex = len(view.roomIDs) - 1
+	}
+	view.currentRoomIndex = roomIndex % len(view.roomIDs)
+	view.roomView.SwitchToPage(view.CurrentRoomID())
+	view.parent.Render()
+}
+
+func (view *MainView) SetRoomList(rooms []string) {
+	view.roomIDs = rooms
+	view.roomList.Clear()
 	for index, room := range rooms {
 		localRoomIndex := index
 
-		ui.matrix.UpdateState(room)
-		roomStore := ui.matrix.config.Session.LoadRoom(room)
+		view.matrix.UpdateState(room)
+		roomStore := view.matrix.config.Session.LoadRoom(room)
 
 		name := room
 		topic := ""
@@ -128,46 +178,31 @@ func (ui *GomuksUI) SetRoomList(rooms []string) {
 			users = roomStore.GetMembers()
 		}
 
-		ui.mainViewRoomList.AddItem(name, "", 0, func() {
-			ui.SwitchRoom(localRoomIndex)
+		view.roomList.AddItem(name, "", 0, func() {
+			view.SwitchRoom(localRoomIndex)
 		})
-		if !ui.mainViewRoomView.HasPage(room) {
+		if !view.roomView.HasPage(room) {
 			roomView := NewRoomView(topic)
 			roomView.SetUsers(users)
-			ui.mainViewRooms[room] = roomView
-			ui.mainViewRoomView.AddPage(room, roomView, true, false)
+			view.rooms[room] = roomView
+			view.roomView.AddPage(room, roomView, true, false)
 		}
 	}
-	ui.SwitchRoom(0)
+	view.SwitchRoom(0)
 }
 
-func (ui *GomuksUI) currentRoom() string {
-	if len(ui.roomList) == 0 {
-		return ""
-	}
-	return ui.roomList[ui.currentRoomIndex]
-}
-
-func (ui *GomuksUI) SwitchRoom(roomIndex int) {
-	if roomIndex < 0 {
-		roomIndex = len(ui.roomList) - 1
-	}
-	ui.currentRoomIndex = roomIndex % len(ui.roomList)
-	ui.mainViewRoomView.SwitchToPage(ui.currentRoom())
-}
-
-func (ui *GomuksUI) SetTyping(room string, users ...string) {
-	roomView, ok := ui.mainViewRooms[room]
+func (view *MainView) SetTyping(room string, users []string) {
+	roomView, ok := view.rooms[room]
 	if ok {
 		roomView.SetTyping(users)
-		ui.Render()
+		view.parent.Render()
 	}
 }
 
-func (ui *GomuksUI) Append(room, sender, message string) {
-	roomView, ok := ui.mainViewRooms[room]
+func (view *MainView) Append(room, sender, message string) {
+	roomView, ok := view.rooms[room]
 	if ok {
 		roomView.AddMessage(sender, message)
-		ui.Render()
+		view.parent.Render()
 	}
 }

@@ -113,7 +113,7 @@ func (c *MatrixContainer) UpdateRoomList() {
 		c.debug.Print(err)
 	}
 
-	c.ui.SetRoomList(rooms.JoinedRooms)
+	c.ui.MainView().SetRoomList(rooms.JoinedRooms)
 }
 
 func (c *MatrixContainer) Start() {
@@ -147,7 +147,7 @@ func (c *MatrixContainer) Start() {
 
 func (c *MatrixContainer) HandleMessage(evt *gomatrix.Event) {
 	message, _ := evt.Content["body"].(string)
-	c.ui.Append(evt.RoomID, evt.Sender, message)
+	c.ui.MainView().Append(evt.RoomID, evt.Sender, message)
 }
 
 func (c *MatrixContainer) HandleTyping(evt *gomatrix.Event) {
@@ -158,7 +158,7 @@ func (c *MatrixContainer) HandleTyping(evt *gomatrix.Event) {
 	for i, user := range users {
 		strUsers[i] = user.(string)
 	}
-	c.ui.SetTyping(evt.RoomID, strUsers...)
+	c.ui.MainView().SetTyping(evt.RoomID, strUsers)
 }
 
 func (c *MatrixContainer) SendMessage(roomID, message string) {

@@ -35,13 +35,7 @@ type GomuksUI struct {
 	config *Config
 	views  *tview.Pages
 
-	mainView         *tview.Grid
-	mainViewRoomList *tview.List
-	mainViewRoomView *tview.Pages
-	mainViewInput    *tview.InputField
-	mainViewRooms    map[string]*RoomView
-	currentRoomIndex int
-	roomList         []string
+	mainView         *MainView
 }
 
 func init() {
@@ -71,7 +65,12 @@ func (ui *GomuksUI) SetView(name string) {
 }
 
 func (ui *GomuksUI) InitViews() tview.Primitive {
+	ui.mainView = ui.NewMainView()
 	ui.views.AddPage(ViewLogin, ui.MakeLoginUI(), true, true)
-	ui.views.AddPage(ViewMain, ui.MakeMainUI(), true, false)
+	ui.views.AddPage(ViewMain, ui.mainView, true, false)
 	return ui.views
+}
+
+func (ui *GomuksUI) MainView() *MainView {
+	return ui.mainView
 }
