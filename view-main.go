@@ -18,6 +18,7 @@ package main
 
 import (
 	"strings"
+	"time"
 
 	"github.com/gdamore/tcell"
 	"maunium.net/go/gomatrix"
@@ -123,7 +124,7 @@ func (view *MainView) HandleCommand(room, command string, args []string) {
 		view.matrix.client.LeaveRoom(room)
 	case "/join":
 		if len(args) == 0 {
-			view.Append(room, "*", "Usage: /join <room>")
+			view.AddMessage(room, "*", "Usage: /join <room>", time.Now())
 			break
 		}
 		mxid := args[0]
@@ -206,10 +207,10 @@ func (view *MainView) SetTyping(room string, users []string) {
 	}
 }
 
-func (view *MainView) Append(room, sender, message string) {
+func (view *MainView) AddMessage(room, sender, message string, timestamp time.Time) {
 	roomView, ok := view.rooms[room]
 	if ok {
-		roomView.AddMessage(sender, message)
+		roomView.AddMessage(sender, message, timestamp)
 		view.parent.Render()
 	}
 }

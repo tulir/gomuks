@@ -22,6 +22,7 @@ import (
 	"regexp"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/gdamore/tcell"
 	"maunium.net/go/tview"
@@ -60,6 +61,7 @@ func NewRoomView(topic string) *RoomView {
 		SetText(strings.Replace(topic, "\n", " ", -1)).
 		SetBackgroundColor(tcell.ColorDarkGreen)
 	view.status.SetBackgroundColor(tcell.ColorDimGray)
+	view.userList.SetDynamicColors(true)
 	view.content.SetDynamicColors(true)
 	return view
 }
@@ -108,15 +110,20 @@ func escapeColor(s string) string {
 	return colorPattern.ReplaceAllString(s, "[$1[]")
 }
 
-func (view *RoomView) AddMessage(sender, message string) {
-	fmt.Fprintf(view.content, "%s: %s\n",
-		color(sender), escapeColor(message))
+func (view *RoomView) AddMessage(sender, message string, timestamp time.Time) {
+	fmt.Fprintf(view.content, "[%s] %s: %s\n",
+		timestamp.Format("15:04:05"), color(sender), escapeColor(message))
 }
 
 func (view *RoomView) SetUsers(users []string) {
 	view.users = sort.StringSlice(users)
 	view.users.Sort()
-	view.userList.SetText(strings.Join(view.users, "\n"))
+	var buf strings.Builder
+	for _, user := range view.users {
+		buf.WriteString(color(user))
+		buf.WriteRune('\n')
+	}
+	view.userList.SetText(buf.String())
 }
 
 func (view *RoomView) RemoveUser(user string) {
