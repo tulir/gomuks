@@ -18,6 +18,8 @@ package main
 
 import (
 	"fmt"
+	"hash/fnv"
+	"regexp"
 	"sort"
 	"strings"
 
@@ -31,8 +33,19 @@ type RoomView struct {
 	topic    *tview.TextView
 	content  *tview.TextView
 	status   *tview.TextView
-	userlist *tview.TextView
+	userList *tview.TextView
 	users    sort.StringSlice
+}
+
+var colorNames []string
+
+func init() {
+	colorNames = make([]string, len(tcell.ColorNames))
+	i := 0
+	for name, _ := range tcell.ColorNames {
+		colorNames[i] = name
+		i++
+	}
 }
 
 func NewRoomView(topic string) *RoomView {
@@ -41,12 +54,13 @@ func NewRoomView(topic string) *RoomView {
 		topic:    tview.NewTextView(),
 		content:  tview.NewTextView(),
 		status:   tview.NewTextView(),
-		userlist: tview.NewTextView(),
+		userList: tview.NewTextView(),
 	}
 	view.topic.
 		SetText(strings.Replace(topic, "\n", " ", -1)).
 		SetBackgroundColor(tcell.ColorDarkGreen)
 	view.status.SetBackgroundColor(tcell.ColorDimGray)
+	view.content.SetDynamicColors(true)
 	return view
 }
 
@@ -55,7 +69,7 @@ func (view *RoomView) Draw(screen tcell.Screen) {
 	view.topic.SetRect(x, y, width, 1)
 	view.content.SetRect(x, y+1, width-30, height-2)
 	view.status.SetRect(x, y+height-1, width, 1)
-	view.userlist.SetRect(x+width-29, y+1, 29, height-2)
+	view.userList.SetRect(x+width-29, y+1, 29, height-2)
 
 	view.topic.Draw(screen)
 	view.content.Draw(screen)
@@ -66,7 +80,7 @@ func (view *RoomView) Draw(screen tcell.Screen) {
 	for borderY := y + 1; borderY < y+height-1; borderY++ {
 		screen.SetContent(borderX, borderY, tview.GraphicsVertBar, nil, background)
 	}
-	view.userlist.Draw(screen)
+	view.userList.Draw(screen)
 }
 
 func (view *RoomView) SetTyping(users []string) {
@@ -81,21 +95,35 @@ func (view *RoomView) SetTyping(users []string) {
 	}
 }
 
+var colorPattern = regexp.MustCompile(`\[([a-zA-Z]+|#[0-9a-zA-Z]{6})\]`)
+
+func color(s string) string {
+	h := fnv.New32a()
+	h.Write([]byte(s))
+	color := colorNames[int(h.Sum32()) % len(colorNames)]
+	return fmt.Sprintf("[%s]%s[white]", color, s)
+}
+
+func escapeColor(s string) string {
+	return colorPattern.ReplaceAllString(s, "[$1[]")
+}
+
 func (view *RoomView) AddMessage(sender, message string) {
-	fmt.Fprintf(view.content, "<%s> %s\n", sender, message)
+	fmt.Fprintf(view.content, "%s: %s\n",
+		color(sender), escapeColor(message))
 }
 
 func (view *RoomView) SetUsers(users []string) {
 	view.users = sort.StringSlice(users)
 	view.users.Sort()
-	view.userlist.SetText(strings.Join(view.users, "\n"))
+	view.userList.SetText(strings.Join(view.users, "\n"))
 }
 
 func (view *RoomView) RemoveUser(user string) {
 	i := view.users.Search(user)
 	if i >= 0 {
 		view.users = append(view.users[:i], view.users[i+1:]...)
-		view.userlist.SetText(strings.Join(view.users, "\n"))
+		view.userList.SetText(strings.Join(view.users, "\n"))
 	}
 }
 

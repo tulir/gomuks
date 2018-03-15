@@ -29,7 +29,7 @@ func (ui *GomuksUI) MakeMainUI() tview.Primitive {
 	ui.mainView.SetColumns(30, 1, 0).SetRows(0, 1)
 
 	ui.mainViewRoomList = tview.NewList().ShowSecondaryText(false)
-	ui.mainViewRoomList.SetBorderPadding(0, 0, 0, 1)
+	ui.mainViewRoomList.SetBorderPadding(0, 0, 1, 0)
 	ui.mainView.AddItem(ui.mainViewRoomList, 0, 0, 2, 1, 0, 0, false)
 
 	ui.mainView.AddItem(NewBorder(), 0, 1, 2, 1, 0, 0, false)
