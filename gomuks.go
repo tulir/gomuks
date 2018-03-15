@@ -34,6 +34,7 @@ type Gomuks interface {
 
 	Start()
 	Stop()
+	Recover()
 }
 
 type gomuks struct {
@@ -76,6 +77,15 @@ func (gmx *gomuks) Stop() {
 	gmx.app.Stop()
 	if gmx.config.Session != nil {
 		gmx.config.Session.Save()
+	}
+}
+
+func (gmx *gomuks) Recover() {
+	if p := recover(); p != nil {
+		if gmx.App().GetScreen() != nil {
+			gmx.App().GetScreen().Fini()
+		}
+		panic(p)
 	}
 }
 

@@ -117,6 +117,7 @@ func (c *MatrixContainer) UpdateRoomList() {
 }
 
 func (c *MatrixContainer) Start() {
+	defer c.gmx.Recover()
 	c.debug.Print("Starting sync...")
 	c.running = true
 	c.ui.SetView(ViewMain)
@@ -150,9 +151,14 @@ func (c *MatrixContainer) HandleMessage(evt *gomatrix.Event) {
 }
 
 func (c *MatrixContainer) HandleTyping(evt *gomatrix.Event) {
-	users := evt.Content["user_ids"].([]string)
+	users := evt.Content["user_ids"].([]interface{})
 	c.debug.Print(users, "are typing")
-	c.ui.SetTyping(evt.RoomID, users)
+
+	strUsers := make([]string, len(users))
+	for i, user := range users {
+		strUsers[i] = user.(string)
+	}
+	c.ui.SetTyping(evt.RoomID, strUsers...)
 }
 
 func (c *MatrixContainer) SendMessage(roomID, message string) {

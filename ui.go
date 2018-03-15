@@ -17,6 +17,7 @@
 package main
 
 import (
+	"github.com/gdamore/tcell"
 	"maunium.net/go/tview"
 )
 
@@ -34,13 +35,18 @@ type GomuksUI struct {
 	config *Config
 	views  *tview.Pages
 
-	mainView *tview.Grid
+	mainView         *tview.Grid
 	mainViewRoomList *tview.List
 	mainViewRoomView *tview.Pages
-	mainViewInput *tview.InputField
-	mainViewRooms map[string]*RoomView
+	mainViewInput    *tview.InputField
+	mainViewRooms    map[string]*RoomView
 	currentRoomIndex int
-	roomList []string
+	roomList         []string
+}
+
+func init() {
+	tview.Styles.PrimitiveBackgroundColor = tcell.ColorDefault
+	tview.Styles.ContrastBackgroundColor = tcell.ColorDefault
 }
 
 func NewGomuksUI(gmx Gomuks) (ui *GomuksUI) {

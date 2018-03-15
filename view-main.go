@@ -26,37 +26,84 @@ import (
 )
 
 type RoomView struct {
-	*tview.Grid
-	content     *tview.TextView
-	status      *tview.TextView
-	name, topic string
+	*tview.Box
+
+	topic    *tview.TextView
+	content  *tview.TextView
+	status   *tview.TextView
+	userlist *tview.TextView
+	name     string
 }
 
 func NewRoomView(name, topic string) *RoomView {
 	view := &RoomView{
-		tview.NewGrid(),
-		tview.NewTextView(),
-		tview.NewTextView(),
-		name, topic,
+		Box: tview.NewBox(),
+		topic:    tview.NewTextView(),
+		content:  tview.NewTextView(),
+		status:   tview.NewTextView(),
+		userlist: tview.NewTextView(),
+		name:     name,
 	}
-	view.content.SetTitle(topic).SetBorder(true)
-	view.status.SetText("Waiting for status data...")
-	view.SetColumns(0).SetRows(0, 1)
-	view.AddItem(view.content, 0, 0, 1, 1, 0, 0, false)
-	view.AddItem(view.status, 1, 0, 1, 1, 0, 0, false)
+	view.topic.SetText(topic).SetBackgroundColor(tcell.ColorDarkGreen)
+	view.status.SetBackgroundColor(tcell.ColorDimGray)
+	view.userlist.SetText("@tulir:maunium.net\n@tulir_test:maunium.net")
 	return view
 }
 
+func (view *RoomView) Draw(screen tcell.Screen) {
+	x, y, width, height := view.GetRect()
+	view.topic.SetRect(x, y, width, 1)
+	view.content.SetRect(x, y+1, width-30, height-2)
+	view.status.SetRect(x, y+height-1, width,1)
+	view.userlist.SetRect(x+width-29, y+1, 29, height - 2)
+
+	view.topic.Draw(screen)
+	view.content.Draw(screen)
+	view.status.Draw(screen)
+
+	borderX := x+width-30
+	background := tcell.StyleDefault.Background(view.GetBackgroundColor()).Foreground(view.GetBorderColor())
+	for borderY := y + 1; borderY < y + height - 1; borderY++ {
+		screen.SetContent(borderX, borderY, tview.GraphicsVertBar, nil, background)
+	}
+	view.userlist.Draw(screen)
+}
+
+type Border struct {
+	*tview.Box
+}
+
+func NewBorder() *Border {
+	return &Border{tview.NewBox()}
+}
+
+func (border *Border) Draw(screen tcell.Screen) {
+	background := tcell.StyleDefault.Background(border.GetBackgroundColor()).Foreground(border.GetBorderColor())
+	x, y, width, height := border.GetRect()
+	if width == 1 {
+		for borderY := y; borderY < y + height; borderY++ {
+			screen.SetContent(x, borderY, tview.GraphicsVertBar, nil, background)
+		}
+	} else if height == 1 {
+		for borderX := x; borderX < x + width; borderX++ {
+			screen.SetContent(borderX, y, tview.GraphicsHoriBar, nil, background)
+		}
+	}
+}
+
 func (ui *GomuksUI) MakeMainUI() tview.Primitive {
-	ui.mainView = tview.NewGrid().SetColumns(30, 0).SetRows(0, 1)
+	ui.mainView = tview.NewGrid()
+	ui.mainView.SetColumns(30, 1, 0).SetRows(0, 1)
 
 	ui.mainViewRoomList = tview.NewList().ShowSecondaryText(false)
-	ui.mainViewRoomList.SetBorder(true).SetTitle("Rooms")
+	ui.mainViewRoomList.SetBorderPadding(0, 0, 0, 1)
 	ui.mainView.AddItem(ui.mainViewRoomList, 0, 0, 2, 1, 0, 0, false)
+
+	ui.mainView.AddItem(NewBorder(), 0, 1, 2, 1, 0, 0, false)
 
 	ui.mainViewRoomView = tview.NewPages()
 	ui.mainViewRoomView.SetChangedFunc(ui.Render)
-	ui.mainView.AddItem(ui.mainViewRoomView, 0, 1, 1, 1, 0, 0, false)
+	ui.mainView.AddItem(ui.mainViewRoomView, 0, 2, 1, 1, 0, 0, false)
 
 	ui.mainViewInput = tview.NewInputField()
 	ui.mainViewInput.SetChangedFunc(func(_ string) {
@@ -78,7 +125,7 @@ func (ui *GomuksUI) MakeMainUI() tview.Primitive {
 			ui.mainViewInput.SetText("")
 		}
 	})
-	ui.mainView.AddItem(ui.mainViewInput, 1, 1, 1, 1, 0, 0, true)
+	ui.mainView.AddItem(ui.mainViewInput, 1, 2, 1, 1, 0, 0, true)
 
 	ui.debug.Print(ui.mainViewInput.SetInputCapture(ui.MainUIKeyHandler))
 
@@ -154,6 +201,7 @@ func (ui *GomuksUI) SetRoomList(rooms []string) {
 			topicEvt := roomStore.GetStateEvent("m.room.topic", "")
 			if topicEvt != nil {
 				topic, _ = topicEvt.Content["topic"].(string)
+				topic = strings.Replace(topic, "\n", " ", -1)
 			}
 		}
 		ui.mainViewRoomList.AddItem(name, "", 0, func() {
@@ -180,13 +228,18 @@ func (ui *GomuksUI) SwitchRoom(roomIndex int) {
 		roomIndex = len(ui.roomList) - 1
 	}
 	ui.currentRoomIndex = roomIndex % len(ui.roomList)
-	ui.mainViewRoomView.SwitchToPage(ui.roomList[ui.currentRoomIndex])
+	ui.mainViewRoomView.SwitchToPage(ui.currentRoom())
 }
 
-func (ui *GomuksUI) SetTyping(room string, users []string) {
+func (ui *GomuksUI) SetTyping(room string, users ...string) {
 	roomView, ok := ui.mainViewRooms[room]
 	if ok {
-		roomView.status.SetText("Typing: " + strings.Join(users, ", "))
+		if len(users) > 0 {
+			roomView.status.SetText("Typing: " + strings.Join(users, ", "))
+		} else {
+			roomView.status.SetText("")
+		}
+		ui.Render()
 	}
 }
 
