@@ -15,3 +15,15 @@ For now, you'll have to compile from source:
 0. Install [Go](https://golang.org/)
 1. Run `go get -u maunium.net/go/gomuks`
 2. gomuks should now be in `$GOPATH/bin/gomuks`
+
+## Usage
+
+Switch between rooms with ctrl + up/down arrow.
+
+Scroll chat with page up/down
+
+### Commands
+* `/quit` - Close gomuks
+* `/clearcache` - Clear room state cache and close gomuks
+* `/leave` - Leave the current room
+* `/join <room>` - Join the room with the given room ID or alias
