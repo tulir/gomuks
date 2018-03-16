@@ -1,4 +1,6 @@
 # gomuks
+![Preview](https://img.mau.lu/6sgqm.png)
+
 A terminal Matrix client written in Go using [gomatrix](https://github.com/matrix-org/gomatrix) and [tview](https://github.com/rivo/tview).
 
 Very basic usage is possible, but many of the features you'd expect from a
