@@ -126,28 +126,34 @@ func (view *MainView) HandleCommand(room, command string, args []string) {
 		view.matrix.client.LeaveRoom(room)
 	case "/join":
 		if len(args) == 0 {
-			view.AddMessage(room, "*", "Usage: /join <room>", time.Now())
+			view.AddMessage(room,  "Usage: /join <room>")
 			break
 		}
 		view.debug.Print(view.matrix.JoinRoom(args[0]))
 	default:
-		view.AddMessage(room, "*", "Unknown command.", time.Now())
+		view.AddMessage(room, "Unknown command.")
 	}
 }
 
 func (view *MainView) InputCapture(key *tcell.EventKey) *tcell.EventKey {
+	k := key.Key()
 	if key.Modifiers() == tcell.ModCtrl {
-		if key.Key() == tcell.KeyDown {
+		if k == tcell.KeyDown {
 			view.SwitchRoom(view.currentRoomIndex + 1)
 			view.roomList.SetCurrentItem(view.currentRoomIndex)
-		} else if key.Key() == tcell.KeyUp {
+		} else if k == tcell.KeyUp {
 			view.SwitchRoom(view.currentRoomIndex - 1)
 			view.roomList.SetCurrentItem(view.currentRoomIndex)
 		} else {
 			return key
 		}
-	} else if key.Key() == tcell.KeyPgUp || key.Key() == tcell.KeyPgDn {
-		view.rooms[view.CurrentRoomID()].InputHandler()(key, nil)
+	} else if k == tcell.KeyPgUp || k == tcell.KeyPgDn {
+		msgView := view.rooms[view.CurrentRoomID()].MessageView()
+		if k == tcell.KeyPgUp {
+			msgView.PageUp()
+		} else {
+			msgView.PageDown()
+		}
 	} else {
 		return key
 	}
@@ -178,7 +184,7 @@ func (view *MainView) addRoom(index int, room string) {
 		view.SwitchRoom(index)
 	})
 	if !view.roomView.HasPage(room) {
-		roomView := NewRoomView(roomStore)
+		roomView := NewRoomView(view.debug, roomStore)
 		view.rooms[room] = roomView
 		view.roomView.AddPage(room, roomView, true, false)
 		roomView.UpdateUserList()
@@ -231,10 +237,18 @@ func (view *MainView) SetTyping(room string, users []string) {
 	}
 }
 
-func (view *MainView) AddMessage(room, sender, message string, timestamp time.Time) {
+func (view *MainView) AddMessage(room, message string) {
+	view.AddRealMessage(room, "", "*", message, time.Now())
+}
+
+func (view *MainView) AddRealMessage(room, id, sender, message string, timestamp time.Time) {
 	roomView, ok := view.rooms[room]
 	if ok {
-		roomView.AddMessage(sender, message, timestamp)
+		member := roomView.room.GetMember(sender)
+		if member != nil {
+			sender = member.DisplayName
+		}
+		roomView.content.AddMessage(id, sender, message, timestamp)
 		view.parent.Render()
 	}
 }

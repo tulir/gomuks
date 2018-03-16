@@ -19,9 +19,8 @@ package main
 import (
 	"fmt"
 	"hash/fnv"
-	"regexp"
+	"sort"
 	"strings"
-	"time"
 
 	"github.com/gdamore/tcell"
 	"maunium.net/go/gomatrix"
@@ -32,10 +31,12 @@ type RoomView struct {
 	*tview.Box
 
 	topic    *tview.TextView
-	content  *tview.TextView
+	content  *MessageView
 	status   *tview.TextView
 	userList *tview.TextView
 	room     *gomatrix.Room
+
+	debug DebugPrinter
 }
 
 var colorNames []string
@@ -47,27 +48,30 @@ func init() {
 		colorNames[i] = name
 		i++
 	}
+	sort.Sort(sort.StringSlice(colorNames))
 }
 
-func NewRoomView(room *gomatrix.Room) *RoomView {
+func NewRoomView(debug DebugPrinter, room *gomatrix.Room) *RoomView {
 	view := &RoomView{
 		Box:      tview.NewBox(),
 		topic:    tview.NewTextView(),
-		content:  tview.NewTextView(),
+		content:  NewMessageView(debug),
 		status:   tview.NewTextView(),
 		userList: tview.NewTextView(),
 		room:     room,
+		debug:    debug,
 	}
 	view.topic.
 		SetText(strings.Replace(room.GetTopic(), "\n", " ", -1)).
 		SetBackgroundColor(tcell.ColorDarkGreen)
 	view.status.SetBackgroundColor(tcell.ColorDimGray)
 	view.userList.SetDynamicColors(true)
-	view.content.SetDynamicColors(true)
 	return view
 }
 
 func (view *RoomView) Draw(screen tcell.Screen) {
+	view.Box.Draw(screen)
+
 	x, y, width, height := view.GetRect()
 	view.topic.SetRect(x, y, width, 1)
 	view.content.SetRect(x, y+1, width-30, height-2)
@@ -104,26 +108,24 @@ func (view *RoomView) SetTyping(users []string) {
 	}
 }
 
-var colorPattern = regexp.MustCompile(`\[([a-zA-Z]+|#[0-9a-zA-Z]{6})\]`)
+func (view *RoomView) MessageView() *MessageView {
+	return view.content
+}
 
-func color(s string) string {
+func getColorName(s string) string {
 	h := fnv.New32a()
 	h.Write([]byte(s))
-	color := colorNames[int(h.Sum32())%len(colorNames)]
-	return fmt.Sprintf("[%s]%s[white]", color, s)
+	return colorNames[int(h.Sum32())%len(colorNames)]
 }
 
-func escapeColor(s string) string {
-	return colorPattern.ReplaceAllString(s, "[$1[]")
+func getColor(s string) tcell.Color {
+	h := fnv.New32a()
+	h.Write([]byte(s))
+	return tcell.ColorNames[colorNames[int(h.Sum32())%len(colorNames)]]
 }
 
-func (view *RoomView) AddMessage(sender, message string, timestamp time.Time) {
-	member := view.room.GetMember(sender)
-	if member != nil {
-		sender = member.DisplayName
-	}
-	fmt.Fprintf(view.content, "[%s] %s: %s\n",
-		timestamp.Format("15:04:05"), color(sender), escapeColor(message))
+func color(s string) string {
+	return fmt.Sprintf("[%s]%s[white]", getColorName(s), s)
 }
 
 func (view *RoomView) UpdateUserList() {

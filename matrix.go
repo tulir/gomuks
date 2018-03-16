@@ -160,7 +160,7 @@ func (c *MatrixContainer) HandleMessage(evt *gomatrix.Event) {
 		timestamp = time.Unix(timestampInt64/1000, timestampInt64%1000*1000)
 	}
 
-	c.ui.MainView().AddMessage(evt.RoomID, evt.Sender, message, timestamp)
+	c.ui.MainView().AddRealMessage(evt.RoomID, evt.ID, evt.Sender, message, timestamp)
 }
 
 func (c *MatrixContainer) HandleMembership(evt *gomatrix.Event) {
