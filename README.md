@@ -6,6 +6,10 @@ A terminal Matrix client written in Go using [gomatrix](https://github.com/matri
 Very basic usage is possible, but many of the features you'd expect from a
 Matrix client (like chat history) haven't been implemented.
 
+## Discussion
+
+Matrix room: [#gomuks:maunium.net](https://matrix.to/#/#gomuks:maunium.net)
+
 ## Installation
 Once the client becomes actually usable, I'll start making GitHub releases with
 precompiled executables and maybe even some Linux packages.
