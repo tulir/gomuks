@@ -19,6 +19,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 
 	"maunium.net/go/gomatrix"
@@ -130,6 +131,7 @@ func (c *MatrixContainer) Start() {
 
 	syncer := c.client.Syncer.(*gomatrix.DefaultSyncer)
 	syncer.OnEventType("m.room.message", c.HandleMessage)
+	syncer.OnEventType("m.room.member", c.HandleMembership)
 	syncer.OnEventType("m.typing", c.HandleTyping)
 
 	for {
@@ -155,15 +157,32 @@ func (c *MatrixContainer) HandleMessage(evt *gomatrix.Event) {
 	timestampInt64, _ := timestampNumber.Int64()
 	timestamp := time.Now()
 	if timestampInt64 != 0 {
-		timestamp = time.Unix(timestampInt64 / 1000, timestampInt64 % 1000 * 1000)
+		timestamp = time.Unix(timestampInt64/1000, timestampInt64%1000*1000)
 	}
 
 	c.ui.MainView().AddMessage(evt.RoomID, evt.Sender, message, timestamp)
 }
 
+func (c *MatrixContainer) HandleMembership(evt *gomatrix.Event) {
+	if evt.StateKey != nil && *evt.StateKey == c.config.Session.MXID {
+		membership, _ := evt.Content["membership"].(string)
+		prevMembership := "leave"
+		if evt.Unsigned.PrevContent != nil {
+			prevMembership, _ = evt.Unsigned.PrevContent["membership"].(string)
+		}
+		if membership == prevMembership {
+			return
+		}
+		if membership == "join" {
+			c.ui.MainView().AddRoom(evt.RoomID)
+		} else if membership == "leave" {
+			c.ui.MainView().RemoveRoom(evt.RoomID)
+		}
+	}
+}
+
 func (c *MatrixContainer) HandleTyping(evt *gomatrix.Event) {
 	users := evt.Content["user_ids"].([]interface{})
-	c.debug.Print(users, "are typing")
 
 	strUsers := make([]string, len(users))
 	for i, user := range users {
@@ -173,11 +192,13 @@ func (c *MatrixContainer) HandleTyping(evt *gomatrix.Event) {
 }
 
 func (c *MatrixContainer) SendMessage(roomID, message string) {
+	c.gmx.Recover()
 	c.SendTyping(roomID, false)
 	c.client.SendText(roomID, message)
 }
 
 func (c *MatrixContainer) SendTyping(roomID string, typing bool) {
+	c.gmx.Recover()
 	time := time.Now().Unix()
 	if c.typing > time && typing {
 		return
@@ -192,7 +213,26 @@ func (c *MatrixContainer) SendTyping(roomID string, typing bool) {
 	}
 }
 
-func (c *MatrixContainer) GetState(roomID string) []*gomatrix.Event {
+func (c *MatrixContainer) JoinRoom(roomID string) error {
+	if len(roomID) == 0 {
+		return fmt.Errorf("invalid room ID")
+	}
+
+	server := ""
+	if roomID[0] == '!' {
+		server = roomID[strings.Index(roomID, ":")+1:]
+	}
+
+	resp, err := c.client.JoinRoom(roomID, server, nil)
+	if err != nil {
+		return err
+	}
+
+	c.ui.MainView().AddRoom(resp.RoomID)
+	return nil
+}
+
+func (c *MatrixContainer) getState(roomID string) []*gomatrix.Event {
 	content := make([]*gomatrix.Event, 0)
 	err := c.client.StateEvent(roomID, "", "", &content)
 	if err != nil {
@@ -202,15 +242,15 @@ func (c *MatrixContainer) GetState(roomID string) []*gomatrix.Event {
 	return content
 }
 
-func (c *MatrixContainer) UpdateState(roomID string) {
+func (c *MatrixContainer) GetRoom(roomID string) *gomatrix.Room {
 	room := c.client.Store.LoadRoom(roomID)
-	if room == nil {
-		return
-	}
-	events := c.GetState(room.ID)
-	if events != nil {
-		for _, event := range events {
-			room.UpdateState(event)
+	if len(room.State) == 0 {
+		events := c.getState(room.ID)
+		if events != nil {
+			for _, event := range events {
+				room.UpdateState(event)
+			}
 		}
 	}
+	return room
 }

@@ -85,9 +85,9 @@ func (ui *GomuksUI) NewMainView() tview.Primitive {
 
 func (view *MainView) InputChanged(text string) {
 	if len(text) == 0 {
-		view.matrix.SendTyping(view.CurrentRoomID(), false)
+		go view.matrix.SendTyping(view.CurrentRoomID(), false)
 	} else if text[0] != '/' {
-		view.matrix.SendTyping(view.CurrentRoomID(), true)
+		go view.matrix.SendTyping(view.CurrentRoomID(), true)
 	}
 }
 
@@ -100,15 +100,16 @@ func (view *MainView) InputDone(key tcell.Key) {
 			args := strings.SplitN(text, " ", 2)
 			command := strings.ToLower(args[0])
 			args = args[1:]
-			view.HandleCommand(room, command, args)
+			go view.HandleCommand(room, command, args)
 		} else {
-			view.matrix.SendMessage(room, text)
+			go view.matrix.SendMessage(room, text)
 		}
 		view.input.SetText("")
 	}
 }
 
 func (view *MainView) HandleCommand(room, command string, args []string) {
+	view.gmx.Recover()
 	view.debug.Print("Handling command", command, args)
 	switch command {
 	case "/quit":
@@ -120,6 +121,7 @@ func (view *MainView) HandleCommand(room, command string, args []string) {
 		view.config.Session.Save()
 		view.gmx.Stop()
 	case "/part":
+		fallthrough
 	case "/leave":
 		view.matrix.client.LeaveRoom(room)
 	case "/join":
@@ -127,9 +129,9 @@ func (view *MainView) HandleCommand(room, command string, args []string) {
 			view.AddMessage(room, "*", "Usage: /join <room>", time.Now())
 			break
 		}
-		mxid := args[0]
-		server := mxid[strings.Index(mxid, ":")+1:]
-		view.matrix.client.JoinRoom(mxid, server, nil)
+		view.debug.Print(view.matrix.JoinRoom(args[0]))
+	default:
+		view.AddMessage(room, "*", "Unknown command.", time.Now())
 	}
 }
 
@@ -165,36 +167,58 @@ func (view *MainView) SwitchRoom(roomIndex int) {
 	}
 	view.currentRoomIndex = roomIndex % len(view.roomIDs)
 	view.roomView.SwitchToPage(view.CurrentRoomID())
+	view.roomList.SetCurrentItem(roomIndex)
 	view.parent.Render()
+}
+
+func (view *MainView) addRoom(index int, room string) {
+	roomStore := view.matrix.GetRoom(room)
+
+	view.roomList.AddItem(roomStore.GetTitle(), "", 0, func() {
+		view.SwitchRoom(index)
+	})
+	if !view.roomView.HasPage(room) {
+		roomView := NewRoomView(roomStore)
+		view.rooms[room] = roomView
+		view.roomView.AddPage(room, roomView, true, false)
+		roomView.UpdateUserList()
+	}
+}
+
+func (view *MainView) HasRoom(room string) bool {
+	for _, existingRoom := range view.roomIDs {
+		if existingRoom == room {
+			return true
+		}
+	}
+	return false
+}
+
+func (view *MainView) AddRoom(room string) {
+	if view.HasRoom(room) {
+		return
+	}
+	view.roomIDs = append(view.roomIDs, room)
+	view.addRoom(len(view.roomIDs) - 1, room)
+}
+
+func (view *MainView) RemoveRoom(room string) {
+	if !view.HasRoom(room) {
+		return
+	}
+	view.roomList.RemoveItem(view.currentRoomIndex)
+	if view.CurrentRoomID() == room {
+		view.SwitchRoom(view.currentRoomIndex - 1)
+	}
+	view.roomView.RemovePage(room)
 }
 
 func (view *MainView) SetRoomList(rooms []string) {
 	view.roomIDs = rooms
 	view.roomList.Clear()
+	view.roomView.Clear()
 	for index, room := range rooms {
-		localRoomIndex := index
-
-		view.matrix.UpdateState(room)
-		roomStore := view.matrix.config.Session.LoadRoom(room)
-
-		name := room
-		topic := ""
-		var users []string
-		if roomStore != nil {
-			name = roomStore.GetTitle()
-			topic = roomStore.GetTopic()
-			users = roomStore.GetMembers()
-		}
-
-		view.roomList.AddItem(name, "", 0, func() {
-			view.SwitchRoom(localRoomIndex)
-		})
-		if !view.roomView.HasPage(room) {
-			roomView := NewRoomView(topic)
-			roomView.SetUsers(users)
-			view.rooms[room] = roomView
-			view.roomView.AddPage(room, roomView, true, false)
-		}
+		view.addRoom(index, room)
 	}
 	view.SwitchRoom(0)
 }

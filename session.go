@@ -88,7 +88,7 @@ func (s *Session) LoadNextBatch(_ string) string {
 func (s *Session) LoadRoom(mxid string) *gomatrix.Room {
 	room, ok := s.Rooms[mxid]
 	if !ok || room == nil {
-		room := gomatrix.NewRoom(mxid)
+		room = gomatrix.NewRoom(mxid)
 		s.SaveRoom(room)
 	}
 	return room

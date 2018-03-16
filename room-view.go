@@ -20,11 +20,11 @@ import (
 	"fmt"
 	"hash/fnv"
 	"regexp"
-	"sort"
 	"strings"
 	"time"
 
 	"github.com/gdamore/tcell"
+	"maunium.net/go/gomatrix"
 	"maunium.net/go/tview"
 )
 
@@ -35,7 +35,7 @@ type RoomView struct {
 	content  *tview.TextView
 	status   *tview.TextView
 	userList *tview.TextView
-	users    sort.StringSlice
+	room     *gomatrix.Room
 }
 
 var colorNames []string
@@ -49,16 +49,17 @@ func init() {
 	}
 }
 
-func NewRoomView(topic string) *RoomView {
+func NewRoomView(room *gomatrix.Room) *RoomView {
 	view := &RoomView{
 		Box:      tview.NewBox(),
 		topic:    tview.NewTextView(),
 		content:  tview.NewTextView(),
 		status:   tview.NewTextView(),
 		userList: tview.NewTextView(),
+		room:     room,
 	}
 	view.topic.
-		SetText(strings.Replace(topic, "\n", " ", -1)).
+		SetText(strings.Replace(room.GetTopic(), "\n", " ", -1)).
 		SetBackgroundColor(tcell.ColorDarkGreen)
 	view.status.SetBackgroundColor(tcell.ColorDimGray)
 	view.userList.SetDynamicColors(true)
@@ -86,6 +87,12 @@ func (view *RoomView) Draw(screen tcell.Screen) {
 }
 
 func (view *RoomView) SetTyping(users []string) {
+	for index, user := range users {
+		member := view.room.GetMember(user)
+		if member != nil {
+			users[index] = member.DisplayName
+		}
+	}
 	if len(users) == 0 {
 		view.status.SetText("")
 	} else if len(users) < 2 {
@@ -102,7 +109,7 @@ var colorPattern = regexp.MustCompile(`\[([a-zA-Z]+|#[0-9a-zA-Z]{6})\]`)
 func color(s string) string {
 	h := fnv.New32a()
 	h.Write([]byte(s))
-	color := colorNames[int(h.Sum32()) % len(colorNames)]
+	color := colorNames[int(h.Sum32())%len(colorNames)]
 	return fmt.Sprintf("[%s]%s[white]", color, s)
 }
 
@@ -111,29 +118,21 @@ func escapeColor(s string) string {
 }
 
 func (view *RoomView) AddMessage(sender, message string, timestamp time.Time) {
+	member := view.room.GetMember(sender)
+	if member != nil {
+		sender = member.DisplayName
+	}
 	fmt.Fprintf(view.content, "[%s] %s: %s\n",
 		timestamp.Format("15:04:05"), color(sender), escapeColor(message))
 }
 
-func (view *RoomView) SetUsers(users []string) {
-	view.users = sort.StringSlice(users)
-	view.users.Sort()
+func (view *RoomView) UpdateUserList() {
 	var buf strings.Builder
-	for _, user := range view.users {
-		buf.WriteString(color(user))
-		buf.WriteRune('\n')
+	for _, user := range view.room.GetMembers() {
+		if user.Membership == "join" {
+			buf.WriteString(color(user.DisplayName))
+			buf.WriteRune('\n')
+		}
 	}
 	view.userList.SetText(buf.String())
-}
-
-func (view *RoomView) RemoveUser(user string) {
-	i := view.users.Search(user)
-	if i >= 0 {
-		view.users = append(view.users[:i], view.users[i+1:]...)
-		view.userList.SetText(strings.Join(view.users, "\n"))
-	}
-}
-
-func (view *RoomView) AddUser(user string) {
-	view.SetUsers(append(view.users, user))
 }
