@@ -17,10 +17,13 @@
 package main
 
 import (
+	"fmt"
 	"strings"
 	"time"
+	"unicode"
 
 	"github.com/gdamore/tcell"
+	"github.com/mattn/go-runewidth"
 	"maunium.net/go/gomatrix"
 	"maunium.net/go/tview"
 )
@@ -96,11 +99,43 @@ func (view *MainView) InputChanged(text string) {
 	}
 }
 
-func (view *MainView) InputTabComplete(text string, cursorOffset int) {
+func findWordToTabComplete(text string) string {
+	output := ""
+	runes := []rune(text)
+	for i := len(runes) - 1; i >= 0; i-- {
+		if unicode.IsSpace(runes[i]) {
+			break
+		}
+		output = string(runes[i]) + output
+	}
+	return output
+}
+
+func (view *RoomView) AutocompleteUser(existingText string) (completions []string) {
+	for _, user := range view.room.GetMembers() {
+		if strings.HasPrefix(user.DisplayName, existingText) {
+			completions = append(completions, user.DisplayName)
+		} else if strings.HasPrefix(user.UserID, existingText) {
+			completions = append(completions, user.UserID)
+		}
+	}
+	return
+}
+
+func (view *MainView) InputTabComplete(text string, cursorOffset int) string {
 	roomView, _ := view.rooms[view.CurrentRoomID()]
 	if roomView != nil {
-		// text[0:cursorOffset]
+		str := runewidth.Truncate(text, cursorOffset, "")
+		word := findWordToTabComplete(str)
+		userCompletions := roomView.AutocompleteUser(word)
+		if len(userCompletions) == 1 {
+			text = str[0:len(str)-len(word)] + userCompletions[0] + text[len(str):]
+		} else if len(userCompletions) > 1 && len(userCompletions) < 6 {
+			roomView.status.Clear()
+			fmt.Fprintf(roomView.status, "Completions: %s", strings.Join(userCompletions, ", "))
+		}
 	}
+	return text
 }
 
 func (view *MainView) InputDone(key tcell.Key) {

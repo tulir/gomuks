@@ -79,7 +79,7 @@ type AdvancedInputField struct {
 	done func(tcell.Key)
 
 	// An optional function which is called when the user presses tab.
-	tabComplete func(text string, cursorOffset int)
+	tabComplete func(text string, cursorOffset int) string
 }
 
 // NewAdvancedInputField returns a new input field.
@@ -205,7 +205,7 @@ func (field *AdvancedInputField) SetDoneFunc(handler func(key tcell.Key)) *Advan
 	return field
 }
 
-func (field *AdvancedInputField) SetTabCompleteFunc(handler func(text string, cursorOffset int)) *AdvancedInputField {
+func (field *AdvancedInputField) SetTabCompleteFunc(handler func(text string, cursorOffset int) string) *AdvancedInputField {
 	field.tabComplete = handler
 	return field
 }
@@ -429,7 +429,12 @@ func (field *AdvancedInputField) InputHandler() func(event *tcell.EventKey, setF
 			}
 		case tcell.KeyTab: // Tab-completion
 			if field.tabComplete != nil {
-				field.tabComplete(field.text, field.cursorOffset)
+				oldWidth := runewidth.StringWidth(field.text)
+				field.text = field.tabComplete(field.text, field.cursorOffset)
+				newWidth := runewidth.StringWidth(field.text)
+				if oldWidth != newWidth {
+					field.cursorOffset += newWidth - oldWidth
+				}
 			}
 		case tcell.KeyEnter, tcell.KeyEscape: // We're done.
 			if field.done != nil {
