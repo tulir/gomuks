@@ -18,6 +18,7 @@ package main
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 	"time"
 	"unicode"
@@ -252,11 +253,17 @@ func (view *MainView) RemoveRoom(room string) {
 	if !view.HasRoom(room) {
 		return
 	}
-	view.roomList.RemoveItem(view.currentRoomIndex)
+	removeIndex := 0
 	if view.CurrentRoomID() == room {
+		removeIndex = view.currentRoomIndex
 		view.SwitchRoom(view.currentRoomIndex - 1)
+	} else {
+		removeIndex = sort.StringSlice(view.roomIDs).Search(room)
 	}
+	view.roomList.RemoveItem(removeIndex)
+	view.roomIDs = append(view.roomIDs[:removeIndex], view.roomIDs[removeIndex+1:]...)
 	view.roomView.RemovePage(room)
+	view.Render()
 }
 
 func (view *MainView) SetRoomList(rooms []string) {
