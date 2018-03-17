@@ -71,6 +71,8 @@ func (ui *GomuksUI) NewMainView() tview.Primitive {
 		SetDoneFunc(mainView.InputDone).
 		SetChangedFunc(mainView.InputChanged).
 		SetFieldBackgroundColor(tcell.ColorDefault).
+		SetPlaceholder("Send a message...").
+		SetPlaceholderExtColor(tcell.ColorGray).
 		SetInputCapture(mainView.InputCapture)
 
 	mainView.addItem(mainView.roomList, 0, 0, 2, 1)
