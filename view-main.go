@@ -31,7 +31,7 @@ type MainView struct {
 	roomList         *tview.List
 	roomView         *tview.Pages
 	rooms            map[string]*RoomView
-	input            *tview.InputField
+	input            *AdvancedInputField
 	currentRoomIndex int
 	roomIDs          []string
 
@@ -52,7 +52,7 @@ func (ui *GomuksUI) NewMainView() tview.Primitive {
 		roomList: tview.NewList(),
 		roomView: tview.NewPages(),
 		rooms:    make(map[string]*RoomView),
-		input:    tview.NewInputField(),
+		input:    NewAdvancedInputField(),
 
 		matrix: ui.matrix,
 		debug:  ui.debug,
