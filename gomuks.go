@@ -45,12 +45,15 @@ type gomuks struct {
 	config *Config
 }
 
+var gdebug DebugPrinter
+
 func NewGomuks(debug bool) *gomuks {
 	configDir := filepath.Join(os.Getenv("HOME"), ".config/gomuks")
 	gmx := &gomuks{
 		app: tview.NewApplication(),
 	}
 	gmx.debug = NewDebugPane(gmx)
+	gdebug = gmx.debug
 	gmx.config = NewConfig(gmx, configDir)
 	gmx.ui = NewGomuksUI(gmx)
 	gmx.matrix = NewMatrixContainer(gmx)

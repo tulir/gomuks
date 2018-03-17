@@ -65,11 +65,14 @@ func (ui *GomuksUI) NewMainView() tview.Primitive {
 
 	mainView.roomList.
 		ShowSecondaryText(false).
+		SetSelectedBackgroundColor(tcell.ColorDarkGreen).
+		SetSelectedTextColor(tcell.ColorWhite).
 		SetBorderPadding(0, 0, 1, 0)
 
 	mainView.input.
 		SetDoneFunc(mainView.InputDone).
 		SetChangedFunc(mainView.InputChanged).
+		SetTabCompleteFunc(mainView.InputTabComplete).
 		SetFieldBackgroundColor(tcell.ColorDefault).
 		SetPlaceholder("Send a message...").
 		SetPlaceholderExtColor(tcell.ColorGray).
@@ -90,6 +93,13 @@ func (view *MainView) InputChanged(text string) {
 		go view.matrix.SendTyping(view.CurrentRoomID(), false)
 	} else if text[0] != '/' {
 		go view.matrix.SendTyping(view.CurrentRoomID(), true)
+	}
+}
+
+func (view *MainView) InputTabComplete(text string, cursorOffset int) {
+	roomView, _ := view.rooms[view.CurrentRoomID()]
+	if roomView != nil {
+		// text[0:cursorOffset]
 	}
 }
 
@@ -128,7 +138,7 @@ func (view *MainView) HandleCommand(room, command string, args []string) {
 		view.matrix.client.LeaveRoom(room)
 	case "/join":
 		if len(args) == 0 {
-			view.AddMessage(room,  "Usage: /join <room>")
+			view.AddMessage(room, "Usage: /join <room>")
 			break
 		}
 		view.debug.Print(view.matrix.JoinRoom(args[0]))
@@ -207,7 +217,7 @@ func (view *MainView) AddRoom(room string) {
 		return
 	}
 	view.roomIDs = append(view.roomIDs, room)
-	view.addRoom(len(view.roomIDs) - 1, room)
+	view.addRoom(len(view.roomIDs)-1, room)
 }
 
 func (view *MainView) RemoveRoom(room string) {
