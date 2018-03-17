@@ -111,15 +111,8 @@ func findWordToTabComplete(text string) string {
 	return output
 }
 
-func (view *RoomView) AutocompleteUser(existingText string) (completions []string) {
-	for _, user := range view.room.GetMembers() {
-		if strings.HasPrefix(user.DisplayName, existingText) {
-			completions = append(completions, user.DisplayName)
-		} else if strings.HasPrefix(user.UserID, existingText) {
-			completions = append(completions, user.UserID)
-		}
-	}
-	return
+func (view *MainView) GetRoom(id string) *RoomView {
+	return view.rooms[id]
 }
 
 func (view *MainView) InputTabComplete(text string, cursorOffset int) string {
@@ -231,7 +224,7 @@ func (view *MainView) addRoom(index int, room string) {
 		view.SwitchRoom(index)
 	})
 	if !view.roomView.HasPage(room) {
-		roomView := NewRoomView(view.debug, roomStore)
+		roomView := NewRoomView(view, roomStore)
 		view.rooms[room] = roomView
 		view.roomView.AddPage(room, roomView, true, false)
 		roomView.UpdateUserList()
@@ -285,17 +278,13 @@ func (view *MainView) SetTyping(room string, users []string) {
 }
 
 func (view *MainView) AddMessage(room, message string) {
-	view.AddRealMessage(room, "", "*", message, time.Now())
-}
-
-func (view *MainView) AddRealMessage(room, id, sender, message string, timestamp time.Time) {
 	roomView, ok := view.rooms[room]
 	if ok {
-		member := roomView.room.GetMember(sender)
-		if member != nil {
-			sender = member.DisplayName
-		}
-		roomView.content.AddMessage(id, sender, message, timestamp)
+		roomView.content.AddMessage("", "*", message, time.Now())
 		view.parent.Render()
 	}
+}
+
+func (view *MainView) Render() {
+	view.parent.Render()
 }

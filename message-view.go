@@ -93,11 +93,9 @@ type MessageView struct {
 	totalHeight         int
 
 	messages []*Message
-
-	debug DebugPrinter
 }
 
-func NewMessageView(debug DebugPrinter) *MessageView {
+func NewMessageView() *MessageView {
 	return &MessageView{
 		Box:             tview.NewBox(),
 		MaxSenderWidth:  20,
@@ -113,8 +111,6 @@ func NewMessageView(debug DebugPrinter) *MessageView {
 		firstDisplayMessage: -1,
 		lastDisplayMessage:  -1,
 		totalHeight:         -1,
-
-		debug: debug,
 	}
 }
 
@@ -207,6 +203,24 @@ func (view *MessageView) writeLine(screen tcell.Screen, line string, x, y int, c
 	}
 }
 
+func (view *MessageView) writeLineRight(screen tcell.Screen, line string, x, y, maxWidth int, color tcell.Color) {
+	offsetX := maxWidth - runewidth.StringWidth(line)
+	if offsetX < 0 {
+		offsetX = 0
+	}
+	for _, ch := range line {
+		chWidth := runewidth.RuneWidth(ch)
+		if chWidth == 0 {
+			continue
+		}
+
+		for localOffset := 0; localOffset < chWidth; localOffset++ {
+			screen.SetContent(x+offsetX+localOffset, y, ch, nil, tcell.StyleDefault.Foreground(color))
+		}
+		offsetX += chWidth
+	}
+}
+
 const (
 	TimestampSenderGap = 1
 	SenderSeparatorGap = 1
@@ -246,7 +260,9 @@ func (view *MessageView) Draw(screen tcell.Screen) {
 		}
 		view.writeLine(screen, message.Timestamp, x, senderAtLine, tcell.ColorDefault)
 		if message.RenderSender || i == view.lastDisplayMessage {
-			view.writeLine(screen, message.Sender, x+usernameOffsetX, senderAtLine, message.senderColor)
+			view.writeLineRight(screen, message.Sender,
+				x+usernameOffsetX, senderAtLine,
+				view.widestSender, message.senderColor)
 		}
 
 		for num, line := range message.buffer {

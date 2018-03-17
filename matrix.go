@@ -121,18 +121,19 @@ func (c *MatrixContainer) UpdateRoomList() {
 
 func (c *MatrixContainer) Start() {
 	defer c.gmx.Recover()
-	c.debug.Print("Starting sync...")
-	c.running = true
-	c.ui.SetView(ViewMain)
 	c.client.Store = c.config.Session
 
-	c.UpdateRoomList()
-
-	syncer := c.client.Syncer.(*gomatrix.DefaultSyncer)
+	syncer := gomatrix.NewDefaultSyncer(c.config.Session.MXID, c.config.Session)
 	syncer.OnEventType("m.room.message", c.HandleMessage)
 	syncer.OnEventType("m.room.member", c.HandleMembership)
 	syncer.OnEventType("m.typing", c.HandleTyping)
+	c.client.Syncer = syncer
 
+	c.UpdateRoomList()
+
+	c.debug.Print("Starting sync...")
+	c.running = true
+	c.ui.SetView(ViewMain)
 	for {
 		select {
 		case <-c.stop:
@@ -152,17 +153,23 @@ func (c *MatrixContainer) Start() {
 func (c *MatrixContainer) HandleMessage(evt *gomatrix.Event) {
 	message, _ := evt.Content["body"].(string)
 
-	timestamp := time.Now()
-	if evt.Timestamp != 0 {
-		timestamp = time.Unix(evt.Timestamp/1000, evt.Timestamp%1000*1000)
+	room := c.ui.MainView().GetRoom(evt.RoomID)
+	if room != nil {
+		room.AddMessage(evt.ID, evt.Sender, message, unixToTime(evt.Timestamp))
 	}
+}
 
-	c.ui.MainView().AddRealMessage(evt.RoomID, evt.ID, evt.Sender, message, timestamp)
+func unixToTime(unix int64) time.Time {
+	timestamp := time.Now()
+	if unix != 0 {
+		timestamp = time.Unix(unix/1000, unix%1000*1000)
+	}
+	return timestamp
 }
 
 func (c *MatrixContainer) HandleMembership(evt *gomatrix.Event) {
+	membership, _ := evt.Content["membership"].(string)
 	if evt.StateKey != nil && *evt.StateKey == c.config.Session.MXID {
-		membership, _ := evt.Content["membership"].(string)
 		prevMembership := "leave"
 		if evt.Unsigned.PrevContent != nil {
 			prevMembership, _ = evt.Unsigned.PrevContent["membership"].(string)
@@ -175,6 +182,34 @@ func (c *MatrixContainer) HandleMembership(evt *gomatrix.Event) {
 		} else if membership == "leave" {
 			c.ui.MainView().RemoveRoom(evt.RoomID)
 		}
+		return
+	}
+	room := c.ui.MainView().GetRoom(evt.RoomID)
+
+	// TODO this shouldn't be necessary
+	room.room.UpdateState(evt)
+
+	if room != nil {
+		var message, sender string
+		if membership == "invite" {
+			sender = "---"
+			message = fmt.Sprintf("%s invited %s.", evt.Sender, *evt.StateKey)
+		} else if membership == "join" {
+			sender = "-->"
+			message = fmt.Sprintf("%s joined the room.", *evt.StateKey)
+		} else if membership == "leave" {
+			sender = "<--"
+			if evt.Sender != *evt.StateKey {
+				reason, _ := evt.Content["reason"].(string)
+				message = fmt.Sprintf("%s kicked %s: %s", evt.Sender, *evt.StateKey, reason)
+			} else {
+				message = fmt.Sprintf("%s left the room.", *evt.StateKey)
+			}
+		} else {
+			return
+		}
+		room.UpdateUserList()
+		room.AddMessage(evt.ID, sender, message, unixToTime(evt.Timestamp))
 	}
 }
 
@@ -240,8 +275,8 @@ func (c *MatrixContainer) getState(roomID string) []*gomatrix.Event {
 }
 
 func (c *MatrixContainer) GetRoom(roomID string) *gomatrix.Room {
-	room := c.client.Store.LoadRoom(roomID)
-	if len(room.State) == 0 {
+	room := c.config.Session.LoadRoom(roomID)
+	if room != nil && len(room.State) == 0 {
 		events := c.getState(room.ID)
 		if events != nil {
 			for _, event := range events {
