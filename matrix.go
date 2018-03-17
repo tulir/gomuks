@@ -17,7 +17,6 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -153,11 +152,9 @@ func (c *MatrixContainer) Start() {
 func (c *MatrixContainer) HandleMessage(evt *gomatrix.Event) {
 	message, _ := evt.Content["body"].(string)
 
-	timestampNumber, _ := evt.Content["origin_server_ts"].(json.Number)
-	timestampInt64, _ := timestampNumber.Int64()
 	timestamp := time.Now()
-	if timestampInt64 != 0 {
-		timestamp = time.Unix(timestampInt64/1000, timestampInt64%1000*1000)
+	if evt.Timestamp != 0 {
+		timestamp = time.Unix(evt.Timestamp/1000, evt.Timestamp%1000*1000)
 	}
 
 	c.ui.MainView().AddRealMessage(evt.RoomID, evt.ID, evt.Sender, message, timestamp)
