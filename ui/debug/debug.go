@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-package main
+package debug
 
 import (
 	"fmt"
@@ -22,54 +22,62 @@ import (
 	"maunium.net/go/tview"
 )
 
-const DebugPaneHeight = 35
-
-type DebugPrinter interface {
+type Printer interface {
 	Printf(text string, args ...interface{})
 	Print(text ...interface{})
 }
 
-type DebugPane struct {
-	pane *tview.TextView
+type Pane struct {
+	*tview.TextView
+	Height int
 	num  int
-	gmx  Gomuks
 }
 
-func NewDebugPane(gmx Gomuks) *DebugPane {
+var Default Printer
+
+func NewPane() *Pane {
 	pane := tview.NewTextView()
 	pane.
 		SetScrollable(true).
-		SetWrap(true)
-	pane.SetChangedFunc(func() {
-		gmx.App().Draw()
-	})
-	pane.SetBorder(true).SetTitle("Debug output")
+		SetWrap(true).
+		SetBorder(true).
+		SetTitle("Debug output")
 	fmt.Fprintln(pane, "[0] Debug pane initialized")
 
-	return &DebugPane{
-		pane: pane,
+	return &Pane{
+		TextView: pane,
+		Height: 35,
 		num:  0,
-		gmx:  gmx,
 	}
 }
 
-func (db *DebugPane) Printf(text string, args ...interface{}) {
-	db.Write(fmt.Sprintf(text, args...) + "\n")
+func (db *Pane) Printf(text string, args ...interface{}) {
+	db.WriteString(fmt.Sprintf(text, args...) + "\n")
 }
 
-func (db *DebugPane) Print(text ...interface{}) {
-	db.Write(fmt.Sprintln(text...))
+func (db *Pane) Print(text ...interface{}) {
+	db.WriteString(fmt.Sprintln(text...))
 }
 
-func (db *DebugPane) Write(text string) {
-	if db.pane != nil {
-		db.num++
-		fmt.Fprintf(db.pane, "[%d] %s", db.num, text)
-	}
+func (db *Pane) WriteString(text string) {
+	db.num++
+	fmt.Fprintf(db, "[%d] %s", db.num, text)
 }
 
-func (db *DebugPane) Wrap(main tview.Primitive) tview.Primitive {
-	return tview.NewGrid().SetRows(0, DebugPaneHeight).SetColumns(0).
+func (db *Pane) Wrap(main tview.Primitive) tview.Primitive {
+	return tview.NewGrid().SetRows(0, db.Height).SetColumns(0).
 		AddItem(main, 0, 0, 1, 1, 1, 1, true).
-		AddItem(db.pane, 1, 0, 1, 1, 1, 1, false)
+		AddItem(db, 1, 0, 1, 1, 1, 1, false)
+}
+
+func Printf(text string, args ...interface{}) {
+	if Default != nil {
+		Default.Printf(text, args...)
+	}
+}
+
+func Print(text ...interface{}) {
+	if Default != nil {
+		Default.Print(text...)
+	}
 }

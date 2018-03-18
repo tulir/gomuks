@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-package main
+package config
 
 import (
 	"fmt"
@@ -23,22 +23,19 @@ import (
 	"path/filepath"
 
 	"gopkg.in/yaml.v2"
+	"maunium.net/go/gomuks/ui/debug"
 )
 
 type Config struct {
 	MXID string `yaml:"mxid"`
 	HS   string `yaml:"homeserver"`
 
-	dir     string       `yaml:"-"`
-	gmx     Gomuks       `yaml:"-"`
-	debug   DebugPrinter `yaml:"-"`
-	Session *Session     `yaml:"-"`
+	dir     string        `yaml:"-"`
+	Session *Session      `yaml:"-"`
 }
 
-func NewConfig(gmx Gomuks, dir string) *Config {
+func NewConfig(dir string) *Config {
 	return &Config{
-		gmx:   gmx,
-		debug: gmx.Debug(),
 		dir:   dir,
 	}
 }
@@ -67,14 +64,14 @@ func (config *Config) Save() {
 	os.MkdirAll(config.dir, 0700)
 	data, err := yaml.Marshal(&config)
 	if err != nil {
-		config.debug.Print("Failed to marshal config")
+		debug.Print("Failed to marshal config")
 		panic(err)
 	}
 
 	path := filepath.Join(config.dir, "config.yaml")
 	err = ioutil.WriteFile(path, data, 0600)
 	if err != nil {
-		config.debug.Print("Failed to write config to", path)
+		debug.Print("Failed to write config to", path)
 		panic(err)
 	}
 }

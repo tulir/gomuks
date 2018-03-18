@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-package main
+package room
 
 import (
 	"maunium.net/go/gomatrix"
@@ -25,7 +25,7 @@ type Room struct {
 	*gomatrix.Room
 
 	PrevBatch   string
-	memberCache map[string]*RoomMember
+	memberCache map[string]*Member
 	nameCache   string
 	topicCache  string
 }
@@ -107,38 +107,8 @@ func (room *Room) GetTitle() string {
 	return room.nameCache
 }
 
-type RoomMember struct {
-	UserID      string `json:"-"`
-	Membership  string `json:"membership"`
-	DisplayName string `json:"displayname"`
-	AvatarURL   string `json:"avatar_url"`
-}
-
-func eventToRoomMember(userID string, event *gomatrix.Event) *RoomMember {
-	if event == nil {
-		return &RoomMember{
-			UserID:     userID,
-			Membership: "leave",
-		}
-	}
-	membership, _ := event.Content["membership"].(string)
-	avatarURL, _ := event.Content["avatar_url"].(string)
-
-	displayName, _ := event.Content["displayname"].(string)
-	if len(displayName) == 0 {
-		displayName = userID
-	}
-
-	return &RoomMember{
-		UserID:      userID,
-		Membership:  membership,
-		DisplayName: displayName,
-		AvatarURL:   avatarURL,
-	}
-}
-
-func (room *Room) createMemberCache() map[string]*RoomMember {
-	cache := make(map[string]*RoomMember)
+func (room *Room) createMemberCache() map[string]*Member {
+	cache := make(map[string]*Member)
 	events := room.GetStateEvents("m.room.member")
 	if events != nil {
 		for userID, event := range events {
@@ -152,14 +122,14 @@ func (room *Room) createMemberCache() map[string]*RoomMember {
 	return cache
 }
 
-func (room *Room) GetMembers() map[string]*RoomMember {
+func (room *Room) GetMembers() map[string]*Member {
 	if len(room.memberCache) == 0 {
 		room.createMemberCache()
 	}
 	return room.memberCache
 }
 
-func (room *Room) GetMember(userID string) *RoomMember {
+func (room *Room) GetMember(userID string) *Member {
 	if len(room.memberCache) == 0 {
 		room.createMemberCache()
 	}

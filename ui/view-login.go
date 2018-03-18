@@ -14,14 +14,16 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-package main
+package ui
 
 import (
+	"maunium.net/go/gomuks/ui/debug"
+	"maunium.net/go/gomuks/ui/widget"
 	"maunium.net/go/tview"
 )
 
 func (ui *GomuksUI) NewLoginView() tview.Primitive {
-	hs := ui.config.HS
+	hs := ui.gmx.Config().HS
 	if len(hs) == 0 {
 		hs = "https://matrix.org"
 	}
@@ -29,13 +31,13 @@ func (ui *GomuksUI) NewLoginView() tview.Primitive {
 	ui.loginView = tview.NewForm()
 	ui.loginView.
 		AddInputField("Homeserver", hs, 30, nil, nil).
-		AddInputField("Username", ui.config.MXID, 30, nil, nil).
+		AddInputField("Username", ui.gmx.Config().MXID, 30, nil, nil).
 		AddPasswordField("Password", "", 30, '*', nil).
 		AddButton("Log in", ui.login).
 		AddButton("Quit", ui.gmx.Stop).
 		SetButtonsAlign(tview.AlignCenter).
 		SetBorder(true).SetTitle("Log in to Matrix")
-	return Center(45, 11, ui.loginView)
+	return widget.Center(45, 11, ui.loginView)
 }
 
 func (ui *GomuksUI) login() {
@@ -43,8 +45,9 @@ func (ui *GomuksUI) login() {
 	mxid := ui.loginView.GetFormItem(1).(*tview.InputField).GetText()
 	password := ui.loginView.GetFormItem(2).(*tview.InputField).GetText()
 
-	ui.debug.Printf("Logging into %s as %s...", hs, mxid)
-	ui.config.HS = hs
-	ui.debug.Print("Connect result:", ui.matrix.InitClient())
-	ui.debug.Print("Login result:", ui.matrix.Login(mxid, password))
+	debug.Printf("Logging into %s as %s...", hs, mxid)
+	ui.gmx.Config().HS = hs
+	mx := ui.gmx.MatrixContainer()
+	debug.Print("Connect result:", mx.InitClient())
+	debug.Print("Login result:", mx.Login(mxid, password))
 }

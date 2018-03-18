@@ -1,4 +1,4 @@
-package main
+package matrix
 
 import (
 	"encoding/json"
@@ -7,20 +7,21 @@ import (
 	"time"
 
 	"maunium.net/go/gomatrix"
+	"maunium.net/go/gomuks/config"
 )
 
 // GomuksSyncer is the default syncing implementation. You can either write your own syncer, or selectively
 // replace parts of this default syncer (e.g. the ProcessResponse method). The default syncer uses the observer
 // pattern to notify callers about incoming events. See GomuksSyncer.OnEventType for more information.
 type GomuksSyncer struct {
-	Session *Session
+	Session   *config.Session
 	listeners map[string][]gomatrix.OnEventListener // event type to listeners array
 }
 
 // NewGomuksSyncer returns an instantiated GomuksSyncer
-func NewGomuksSyncer(session *Session) *GomuksSyncer {
+func NewGomuksSyncer(session *config.Session) *GomuksSyncer {
 	return &GomuksSyncer{
-		Session:    session,
+		Session:   session,
 		listeners: make(map[string][]gomatrix.OnEventListener),
 	}
 }
@@ -38,22 +39,22 @@ func (s *GomuksSyncer) ProcessResponse(res *gomatrix.RespSync, since string) (er
 	}()
 
 	for _, event := range res.Presence.Events {
-		s.notifyListeners(&event)
+		s.notifyListeners(event)
 	}
 	for roomID, roomData := range res.Rooms.Join {
 		room := s.Session.GetRoom(roomID)
 		for _, event := range roomData.State.Events {
 			event.RoomID = roomID
-			room.UpdateState(&event)
-			s.notifyListeners(&event)
+			room.UpdateState(event)
+			s.notifyListeners(event)
 		}
 		for _, event := range roomData.Timeline.Events {
 			event.RoomID = roomID
-			s.notifyListeners(&event)
+			s.notifyListeners(event)
 		}
 		for _, event := range roomData.Ephemeral.Events {
 			event.RoomID = roomID
-			s.notifyListeners(&event)
+			s.notifyListeners(event)
 		}
 
 		if len(room.PrevBatch) == 0 {
@@ -64,8 +65,8 @@ func (s *GomuksSyncer) ProcessResponse(res *gomatrix.RespSync, since string) (er
 		room := s.Session.GetRoom(roomID)
 		for _, event := range roomData.State.Events {
 			event.RoomID = roomID
-			room.UpdateState(&event)
-			s.notifyListeners(&event)
+			room.UpdateState(event)
+			s.notifyListeners(event)
 		}
 	}
 	for roomID, roomData := range res.Rooms.Leave {
@@ -73,8 +74,8 @@ func (s *GomuksSyncer) ProcessResponse(res *gomatrix.RespSync, since string) (er
 		for _, event := range roomData.Timeline.Events {
 			if event.StateKey != nil {
 				event.RoomID = roomID
-				room.UpdateState(&event)
-				s.notifyListeners(&event)
+				room.UpdateState(event)
+				s.notifyListeners(event)
 			}
 		}
 

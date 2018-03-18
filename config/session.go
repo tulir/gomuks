@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-package main
+package config
 
 import (
 	"encoding/json"
@@ -22,6 +22,8 @@ import (
 	"path/filepath"
 
 	"maunium.net/go/gomatrix"
+	rooms "maunium.net/go/gomuks/matrix/room"
+	"maunium.net/go/gomuks/ui/debug"
 )
 
 type Session struct {
@@ -30,9 +32,7 @@ type Session struct {
 	AccessToken string
 	NextBatch   string
 	FilterID    string
-	Rooms       map[string]*Room
-
-	debug DebugPrinter `json:"-"`
+	Rooms       map[string]*rooms.Room
 }
 
 func (config *Config) LoadSession(mxid string) {
@@ -44,13 +44,12 @@ func (config *Config) NewSession(mxid string) *Session {
 	return &Session{
 		MXID:  mxid,
 		path:  filepath.Join(config.dir, mxid+".session"),
-		Rooms: make(map[string]*Room),
-		debug: config.debug,
+		Rooms: make(map[string]*rooms.Room),
 	}
 }
 
 func (s *Session) Clear() {
-	s.Rooms = make(map[string]*Room)
+	s.Rooms = make(map[string]*rooms.Room)
 	s.NextBatch = ""
 	s.FilterID = ""
 	s.Save()
@@ -59,13 +58,13 @@ func (s *Session) Clear() {
 func (s *Session) Load() {
 	data, err := ioutil.ReadFile(s.path)
 	if err != nil {
-		s.debug.Print("Failed to read session from", s.path)
+		debug.Print("Failed to read session from", s.path)
 		panic(err)
 	}
 
 	err = json.Unmarshal(data, s)
 	if err != nil {
-		s.debug.Print("Failed to parse session at", s.path)
+		debug.Print("Failed to parse session at", s.path)
 		panic(err)
 	}
 }
@@ -73,13 +72,13 @@ func (s *Session) Load() {
 func (s *Session) Save() {
 	data, err := json.Marshal(s)
 	if err != nil {
-		s.debug.Print("Failed to marshal session of", s.MXID)
+		debug.Print("Failed to marshal session of", s.MXID)
 		panic(err)
 	}
 
 	err = ioutil.WriteFile(s.path, data, 0600)
 	if err != nil {
-		s.debug.Print("Failed to write session to", s.path)
+		debug.Print("Failed to write session to", s.path)
 		panic(err)
 	}
 }
@@ -92,16 +91,16 @@ func (s *Session) LoadNextBatch(_ string) string {
 	return s.NextBatch
 }
 
-func (s *Session) GetRoom(mxid string) *Room {
+func (s *Session) GetRoom(mxid string) *rooms.Room {
 	room, _ := s.Rooms[mxid]
 	if room == nil {
-		room = NewRoom(mxid)
+		room = rooms.NewRoom(mxid)
 		s.Rooms[room.ID] = room
 	}
 	return room
 }
 
-func (s *Session) PutRoom(room *Room) {
+func (s *Session) PutRoom(room *rooms.Room) {
 	s.Rooms[room.ID] = room
 	s.Save()
 }

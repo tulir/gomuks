@@ -14,78 +14,18 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-package main
+package widget
 
 import (
 	"fmt"
-	"regexp"
 	"strings"
 	"time"
 
 	"github.com/gdamore/tcell"
 	"github.com/mattn/go-runewidth"
+	"maunium.net/go/gomuks/ui/types"
 	"maunium.net/go/tview"
 )
-
-type Message struct {
-	ID        string
-	Sender    string
-	Text      string
-	Timestamp string
-	Date      string
-
-	buffer      []string
-	senderColor tcell.Color
-}
-
-func NewMessage(id, sender, text, timestamp, date string, senderColor tcell.Color) *Message {
-	return &Message{
-		ID:          id,
-		Sender:      sender,
-		Text:        text,
-		Timestamp:   timestamp,
-		Date:        date,
-		senderColor: senderColor,
-	}
-}
-
-var (
-	boundaryPattern = regexp.MustCompile("([[:punct:]]\\s*|\\s+)")
-	spacePattern    = regexp.MustCompile(`\s+`)
-)
-
-func (message *Message) calculateBuffer(width int) {
-	if width < 1 {
-		return
-	}
-	message.buffer = []string{}
-	forcedLinebreaks := strings.Split(message.Text, "\n")
-	newlines := 0
-	for _, str := range forcedLinebreaks {
-		if len(str) == 0 && newlines < 1 {
-			message.buffer = append(message.buffer, "")
-			newlines++
-		} else {
-			newlines = 0
-		}
-		// From tview/textview.go#reindexBuffer()
-		for len(str) > 0 {
-			extract := runewidth.Truncate(str, width, "")
-			if len(extract) < len(str) {
-				if spaces := spacePattern.FindStringIndex(str[len(extract):]); spaces != nil && spaces[0] == 0 {
-					extract = str[:len(extract)+spaces[1]]
-				}
-
-				matches := boundaryPattern.FindAllStringIndex(extract, -1)
-				if len(matches) > 0 {
-					extract = extract[:matches[len(matches)-1][1]]
-				}
-			}
-			message.buffer = append(message.buffer, extract)
-			str = str[len(extract):]
-		}
-	}
-}
 
 type MessageView struct {
 	*tview.Box
@@ -106,7 +46,7 @@ type MessageView struct {
 	totalHeight         int
 
 	messageIDs map[string]bool
-	messages   []*Message
+	messages   []*types.Message
 }
 
 func NewMessageView() *MessageView {
@@ -119,7 +59,7 @@ func NewMessageView() *MessageView {
 		Separator:       '|',
 		ScrollOffset:    0,
 
-		messages:   make([]*Message, 0),
+		messages:   make([]*types.Message, 0),
 		messageIDs: make(map[string]bool),
 
 		widestSender:        5,
@@ -132,11 +72,11 @@ func NewMessageView() *MessageView {
 	}
 }
 
-func (view *MessageView) NewMessage(id, sender, text string, timestamp time.Time) *Message {
-	return NewMessage(id, sender, text,
+func (view *MessageView) NewMessage(id, sender, text string, timestamp time.Time) *types.Message {
+	return types.NewMessage(id, sender, text,
 		timestamp.Format(view.TimestampFormat),
 		timestamp.Format(view.DateFormat),
-		getColor(sender))
+		GetHashColor(sender))
 }
 
 func (view *MessageView) recalculateBuffers() {
@@ -144,7 +84,7 @@ func (view *MessageView) recalculateBuffers() {
 	width -= view.TimestampWidth + TimestampSenderGap + view.widestSender + SenderMessageGap
 	if width != view.prevWidth {
 		for _, message := range view.messages {
-			message.calculateBuffer(width)
+			message.CalculateBuffer(width)
 		}
 		view.prevWidth = width
 	}
@@ -164,7 +104,7 @@ const (
 	PrependMessage
 )
 
-func (view *MessageView) AddMessage(message *Message, direction int) {
+func (view *MessageView) AddMessage(message *types.Message, direction int) {
 	_, messageExists := view.messageIDs[message.ID]
 	if messageExists {
 		return
@@ -174,15 +114,15 @@ func (view *MessageView) AddMessage(message *Message, direction int) {
 
 	_, _, width, _ := view.GetInnerRect()
 	width -= view.TimestampWidth + TimestampSenderGap + view.widestSender + SenderMessageGap
-	message.calculateBuffer(width)
+	message.CalculateBuffer(width)
 
 	if direction == AppendMessage {
 		if view.ScrollOffset > 0 {
-			view.ScrollOffset += len(message.buffer)
+			view.ScrollOffset += len(message.Buffer)
 		}
 		view.messages = append(view.messages, message)
 	} else if direction == PrependMessage {
-		view.messages = append([]*Message{message}, view.messages...)
+		view.messages = append([]*types.Message{message}, view.messages...)
 	}
 
 	view.messageIDs[message.ID] = true
@@ -199,7 +139,7 @@ func (view *MessageView) recalculateHeight() {
 		for i := len(view.messages) - 1; i >= 0; i-- {
 			prevTotalHeight := view.totalHeight
 			message := view.messages[i]
-			view.totalHeight += len(message.buffer)
+			view.totalHeight += len(message.Buffer)
 			if message.Date != prevDate {
 				if len(prevDate) != 0 {
 					view.totalHeight++
@@ -268,6 +208,9 @@ func (view *MessageView) writeLineRight(screen tcell.Screen, line string, x, y, 
 			screen.SetContent(x+offsetX+localOffset, y, ch, nil, tcell.StyleDefault.Foreground(color))
 		}
 		offsetX += chWidth
+		if offsetX > maxWidth {
+			break
+		}
 	}
 }
 
@@ -302,7 +245,7 @@ func (view *MessageView) Draw(screen tcell.Screen) {
 	prevSenderLine := -1
 	for i := view.firstDisplayMessage; i >= view.lastDisplayMessage; i-- {
 		message := view.messages[i]
-		messageHeight := len(message.buffer)
+		messageHeight := len(message.Buffer)
 
 		// Show message when the date changes.
 		if message.Date != prevDate {
@@ -325,7 +268,7 @@ func (view *MessageView) Draw(screen tcell.Screen) {
 		view.writeLine(screen, message.Timestamp, x, senderAtLine, tcell.ColorDefault)
 		view.writeLineRight(screen, message.Sender,
 			x+usernameOffsetX, senderAtLine,
-			view.widestSender, message.senderColor)
+			view.widestSender, message.SenderColor)
 
 		if message.Sender == prevSender {
 			// Sender is same as previous. We're looping from bottom to top, and we want the
@@ -333,12 +276,12 @@ func (view *MessageView) Draw(screen tcell.Screen) {
 			// below.
 			view.writeLineRight(screen, strings.Repeat(" ", view.widestSender),
 				x+usernameOffsetX, prevSenderLine,
-				view.widestSender, message.senderColor)
+				view.widestSender, message.SenderColor)
 		}
 		prevSender = message.Sender
 		prevSenderLine = senderAtLine
 
-		for num, line := range message.buffer {
+		for num, line := range message.Buffer {
 			offsetY := height - messageHeight - writeOffset + num
 			// Only render message if it's within the message view.
 			if offsetY >= 0 {

@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-package main
+package ui
 
 import (
 	"fmt"
@@ -26,6 +26,11 @@ import (
 	"github.com/gdamore/tcell"
 	"github.com/mattn/go-runewidth"
 	"maunium.net/go/gomatrix"
+	"maunium.net/go/gomuks/config"
+	"maunium.net/go/gomuks/interface"
+	"maunium.net/go/gomuks/ui/debug"
+	"maunium.net/go/gomuks/ui/types"
+	"maunium.net/go/gomuks/ui/widget"
 	"maunium.net/go/tview"
 )
 
@@ -34,15 +39,14 @@ type MainView struct {
 
 	roomList         *tview.List
 	roomView         *tview.Pages
-	rooms            map[string]*RoomView
-	input            *AdvancedInputField
+	rooms            map[string]*widget.RoomView
+	input            *widget.AdvancedInputField
 	currentRoomIndex int
 	roomIDs          []string
 
-	matrix *MatrixContainer
-	debug  DebugPrinter
-	gmx    Gomuks
-	config *Config
+	matrix ifc.MatrixContainer
+	gmx    ifc.Gomuks
+	config *config.Config
 	parent *GomuksUI
 }
 
@@ -55,13 +59,12 @@ func (ui *GomuksUI) NewMainView() tview.Primitive {
 		Grid:     tview.NewGrid(),
 		roomList: tview.NewList(),
 		roomView: tview.NewPages(),
-		rooms:    make(map[string]*RoomView),
-		input:    NewAdvancedInputField(),
+		rooms:    make(map[string]*widget.RoomView),
+		input:    widget.NewAdvancedInputField(),
 
-		matrix: ui.matrix,
-		debug:  ui.debug,
+		matrix: ui.gmx.MatrixContainer(),
 		gmx:    ui.gmx,
-		config: ui.config,
+		config: ui.gmx.Config(),
 		parent: ui,
 	}
 
@@ -83,7 +86,7 @@ func (ui *GomuksUI) NewMainView() tview.Primitive {
 		SetInputCapture(mainView.InputCapture)
 
 	mainView.addItem(mainView.roomList, 0, 0, 2, 1)
-	mainView.addItem(NewBorder(), 0, 1, 2, 1)
+	mainView.addItem(widget.NewBorder(), 0, 1, 2, 1)
 	mainView.addItem(mainView.roomView, 0, 2, 1, 1)
 	mainView.AddItem(mainView.input, 1, 2, 1, 1, 0, 0, true)
 
@@ -121,8 +124,7 @@ func (view *MainView) InputTabComplete(text string, cursorOffset int) string {
 		if len(userCompletions) == 1 {
 			text = str[0:len(str)-len(word)] + userCompletions[0] + text[len(str):]
 		} else if len(userCompletions) > 1 && len(userCompletions) < 6 {
-			roomView.status.Clear()
-			fmt.Fprintf(roomView.status, "Completions: %s", strings.Join(userCompletions, ", "))
+			roomView.SetStatus(fmt.Sprintf("Completions: %s", strings.Join(userCompletions, ", ")))
 		}
 	}
 	return text
@@ -147,7 +149,7 @@ func (view *MainView) InputDone(key tcell.Key) {
 
 func (view *MainView) HandleCommand(room, command string, args []string) {
 	view.gmx.Recover()
-	view.debug.Print("Handling command", command, args)
+	debug.Print("Handling command", command, args)
 	switch command {
 	case "/quit":
 		view.gmx.Stop()
@@ -157,13 +159,13 @@ func (view *MainView) HandleCommand(room, command string, args []string) {
 	case "/part":
 		fallthrough
 	case "/leave":
-		view.matrix.client.LeaveRoom(room)
+		debug.Print(view.matrix.LeaveRoom(room))
 	case "/join":
 		if len(args) == 0 {
 			view.AddServiceMessage(room, "Usage: /join <room>")
 			break
 		}
-		view.debug.Print(view.matrix.JoinRoom(args[0]))
+		debug.Print(view.matrix.JoinRoom(args[0]))
 	default:
 		view.AddServiceMessage(room, "Unknown command.")
 	}
@@ -218,7 +220,7 @@ func (view *MainView) addRoom(index int, room string) {
 		view.SwitchRoom(index)
 	})
 	if !view.roomView.HasPage(room) {
-		roomView := NewRoomView(view, roomStore)
+		roomView := widget.NewRoomView(view, roomStore)
 		view.rooms[room] = roomView
 		view.roomView.AddPage(room, roomView, true, false)
 		roomView.UpdateUserList()
@@ -226,7 +228,7 @@ func (view *MainView) addRoom(index int, room string) {
 	}
 }
 
-func (view *MainView) GetRoom(id string) *RoomView {
+func (view *MainView) GetRoom(id string) *widget.RoomView {
 	return view.rooms[id]
 }
 
@@ -265,11 +267,11 @@ func (view *MainView) RemoveRoom(room string) {
 	view.Render()
 }
 
-func (view *MainView) SetRoomList(rooms []string) {
+func (view *MainView) SetRooms(rooms []string) {
 	view.roomIDs = rooms
 	view.roomList.Clear()
 	view.roomView.Clear()
-	view.rooms = make(map[string]*RoomView)
+	view.rooms = make(map[string]*widget.RoomView)
 	for index, room := range rooms {
 		view.addRoom(index, room)
 	}
@@ -289,7 +291,7 @@ func (view *MainView) AddServiceMessage(room, message string) {
 	if ok {
 		messageView := roomView.MessageView()
 		message := messageView.NewMessage("", "*", message, time.Now())
-		messageView.AddMessage(message, AppendMessage)
+		messageView.AddMessage(message, widget.AppendMessage)
 		view.parent.Render()
 	}
 }
@@ -300,29 +302,29 @@ func (view *MainView) Render() {
 
 func (view *MainView) GetHistory(room string) {
 	roomView := view.rooms[room]
-	history, _, err := view.matrix.GetHistory(roomView.room.ID, view.config.Session.NextBatch, 50)
+	history, _, err := view.matrix.GetHistory(roomView.Room.ID, view.config.Session.NextBatch, 50)
 	if err != nil {
-		view.debug.Print("Failed to fetch history for", roomView.room.ID, err)
+		debug.Print("Failed to fetch history for", roomView.Room.ID, err)
 		return
 	}
 	for _, evt := range history {
-		var room *RoomView
-		var message *Message
+		var room *widget.RoomView
+		var message *types.Message
 		if evt.Type == "m.room.message" {
 			room, message = view.ProcessMessageEvent(&evt)
 		} else if evt.Type == "m.room.member" {
 			room, message = view.ProcessMembershipEvent(&evt, false)
 		}
 		if room != nil && message != nil {
-			room.AddMessage(message, PrependMessage)
+			room.AddMessage(message, widget.PrependMessage)
 		}
 	}
 }
 
-func (view *MainView) ProcessMessageEvent(evt *gomatrix.Event) (room *RoomView, message *Message) {
+func (view *MainView) ProcessMessageEvent(evt *gomatrix.Event) (room *widget.RoomView, message *types.Message) {
 	room = view.GetRoom(evt.RoomID)
 	if room != nil {
-		text := evt.Content["body"].(string)
+		text, _ := evt.Content["body"].(string)
 		message = room.NewMessage(evt.ID, evt.Sender, text, unixToTime(evt.Timestamp))
 	}
 	return
@@ -344,7 +346,7 @@ func (view *MainView) processOwnMembershipChange(evt *gomatrix.Event) {
 	}
 }
 
-func (view *MainView) ProcessMembershipEvent(evt *gomatrix.Event, new bool) (room *RoomView, message *Message) {
+func (view *MainView) ProcessMembershipEvent(evt *gomatrix.Event, new bool) (room *widget.RoomView, message *types.Message) {
 	if new && evt.StateKey != nil && *evt.StateKey == view.config.Session.MXID {
 		view.processOwnMembershipChange(evt)
 	}

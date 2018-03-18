@@ -21,43 +21,37 @@ import (
 	"path/filepath"
 
 	"maunium.net/go/gomatrix"
+	"maunium.net/go/gomuks/config"
+	"maunium.net/go/gomuks/interface"
+	"maunium.net/go/gomuks/matrix"
+	"maunium.net/go/gomuks/ui"
+	"maunium.net/go/gomuks/ui/debug"
 	"maunium.net/go/tview"
 )
 
-type Gomuks interface {
-	Debug() DebugPrinter
-	Matrix() *gomatrix.Client
-	MatrixContainer() *MatrixContainer
-	App() *tview.Application
-	UI() *GomuksUI
-	Config() *Config
-
-	Start()
-	Stop()
-	Recover()
-}
-
 type gomuks struct {
 	app    *tview.Application
-	ui     *GomuksUI
-	matrix *MatrixContainer
-	debug  *DebugPane
-	config *Config
+	ui     *ui.GomuksUI
+	matrix *matrix.Container
+	debug  *debug.Pane
+	config *config.Config
 }
 
-var gdebug DebugPrinter
-
-func NewGomuks(debug bool) *gomuks {
+func NewGomuks(enableDebug bool) *gomuks {
 	configDir := filepath.Join(os.Getenv("HOME"), ".config/gomuks")
 	gmx := &gomuks{
 		app: tview.NewApplication(),
 	}
-	gmx.debug = NewDebugPane(gmx)
-	gdebug = gmx.debug
-	gmx.config = NewConfig(gmx, configDir)
-	gmx.ui = NewGomuksUI(gmx)
-	gmx.matrix = NewMatrixContainer(gmx)
-	gmx.ui.matrix = gmx.matrix
+
+	gmx.debug = debug.NewPane()
+	gmx.debug.SetChangedFunc(func() {
+		gmx.ui.Render()
+	})
+	debug.Default = gmx.debug
+
+	gmx.config = config.NewConfig(configDir)
+	gmx.ui = ui.NewGomuksUI(gmx)
+	gmx.matrix = matrix.NewMatrixContainer(gmx)
 
 	gmx.config.Load()
 	if len(gmx.config.MXID) > 0 {
@@ -67,7 +61,7 @@ func NewGomuks(debug bool) *gomuks {
 	gmx.matrix.InitClient()
 
 	main := gmx.ui.InitViews()
-	if debug {
+	if enableDebug {
 		main = gmx.debug.Wrap(main)
 	}
 	gmx.app.SetRoot(main, true)
@@ -101,15 +95,11 @@ func (gmx *gomuks) Start() {
 	}
 }
 
-func (gmx *gomuks) Debug() DebugPrinter {
-	return gmx.debug
-}
-
 func (gmx *gomuks) Matrix() *gomatrix.Client {
-	return gmx.matrix.client
+	return gmx.matrix.Client()
 }
 
-func (gmx *gomuks) MatrixContainer() *MatrixContainer {
+func (gmx *gomuks) MatrixContainer() ifc.MatrixContainer {
 	return gmx.matrix
 }
 
@@ -117,11 +107,11 @@ func (gmx *gomuks) App() *tview.Application {
 	return gmx.app
 }
 
-func (gmx *gomuks) Config() *Config {
+func (gmx *gomuks) Config() *config.Config {
 	return gmx.config
 }
 
-func (gmx *gomuks) UI() *GomuksUI {
+func (gmx *gomuks) UI() ifc.GomuksUI {
 	return gmx.ui
 }
 

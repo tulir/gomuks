@@ -14,31 +14,38 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-package main
+package room
 
 import (
-	"github.com/gdamore/tcell"
-	"maunium.net/go/tview"
+	"maunium.net/go/gomatrix"
 )
 
-type Border struct {
-	*tview.Box
+type Member struct {
+	UserID      string `json:"-"`
+	Membership  string `json:"membership"`
+	DisplayName string `json:"displayname"`
+	AvatarURL   string `json:"avatar_url"`
 }
 
-func NewBorder() *Border {
-	return &Border{tview.NewBox()}
-}
+func eventToRoomMember(userID string, event *gomatrix.Event) *Member {
+	if event == nil {
+		return &Member{
+			UserID:     userID,
+			Membership: "leave",
+		}
+	}
+	membership, _ := event.Content["membership"].(string)
+	avatarURL, _ := event.Content["avatar_url"].(string)
 
-func (border *Border) Draw(screen tcell.Screen) {
-	background := tcell.StyleDefault.Background(border.GetBackgroundColor()).Foreground(border.GetBorderColor())
-	x, y, width, height := border.GetRect()
-	if width == 1 {
-		for borderY := y; borderY < y+height; borderY++ {
-			screen.SetContent(x, borderY, tview.GraphicsVertBar, nil, background)
-		}
-	} else if height == 1 {
-		for borderX := x; borderX < x+width; borderX++ {
-			screen.SetContent(borderX, y, tview.GraphicsHoriBar, nil, background)
-		}
+	displayName, _ := event.Content["displayname"].(string)
+	if len(displayName) == 0 {
+		displayName = userID
+	}
+
+	return &Member{
+		UserID:      userID,
+		Membership:  membership,
+		DisplayName: displayName,
+		AvatarURL:   avatarURL,
 	}
 }

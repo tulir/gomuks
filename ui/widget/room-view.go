@@ -14,18 +14,22 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-package main
+package widget
 
 import (
 	"fmt"
-	"hash/fnv"
-	"sort"
 	"strings"
 	"time"
 
 	"github.com/gdamore/tcell"
+	rooms "maunium.net/go/gomuks/matrix/room"
+	"maunium.net/go/gomuks/ui/types"
 	"maunium.net/go/tview"
 )
+
+type Renderable interface {
+	Render()
+}
 
 type RoomView struct {
 	*tview.Box
@@ -34,31 +38,19 @@ type RoomView struct {
 	content  *MessageView
 	status   *tview.TextView
 	userList *tview.TextView
-	room     *Room
+	Room     *rooms.Room
 
-	parent *MainView
+	parent Renderable
 }
 
-var colorNames []string
-
-func init() {
-	colorNames = make([]string, len(tcell.ColorNames))
-	i := 0
-	for name, _ := range tcell.ColorNames {
-		colorNames[i] = name
-		i++
-	}
-	sort.Sort(sort.StringSlice(colorNames))
-}
-
-func NewRoomView(parent *MainView, room *Room) *RoomView {
+func NewRoomView(parent Renderable, room *rooms.Room) *RoomView {
 	view := &RoomView{
 		Box:      tview.NewBox(),
 		topic:    tview.NewTextView(),
 		content:  NewMessageView(),
 		status:   tview.NewTextView(),
 		userList: tview.NewTextView(),
-		room:     room,
+		Room:     room,
 		parent:   parent,
 	}
 	view.topic.
@@ -90,9 +82,13 @@ func (view *RoomView) Draw(screen tcell.Screen) {
 	view.userList.Draw(screen)
 }
 
+func (view *RoomView) SetStatus(status string) {
+	view.status.SetText(status)
+}
+
 func (view *RoomView) SetTyping(users []string) {
 	for index, user := range users {
-		member := view.room.GetMember(user)
+		member := view.Room.GetMember(user)
 		if member != nil {
 			users[index] = member.DisplayName
 		}
@@ -109,7 +105,7 @@ func (view *RoomView) SetTyping(users []string) {
 }
 
 func (view *RoomView) AutocompleteUser(existingText string) (completions []string) {
-	for _, user := range view.room.GetMembers() {
+	for _, user := range view.Room.GetMembers() {
 		if strings.HasPrefix(user.DisplayName, existingText) {
 			completions = append(completions, user.DisplayName)
 		} else if strings.HasPrefix(user.UserID, existingText) {
@@ -123,38 +119,15 @@ func (view *RoomView) MessageView() *MessageView {
 	return view.content
 }
 
-func getColorName(s string) string {
-	switch s {
-	case "-->":
-		return "green"
-	case "<--":
-		return "red"
-	case "---":
-		return "yellow"
-	default:
-		h := fnv.New32a()
-		h.Write([]byte(s))
-		return colorNames[int(h.Sum32())%len(colorNames)]
-	}
-}
-
-func getColor(s string) tcell.Color {
-	return tcell.ColorNames[getColorName(s)]
-}
-
-func color(s string) string {
-	return fmt.Sprintf("[%s]%s[white]", getColorName(s), s)
-}
-
 func (view *RoomView) UpdateUserList() {
 	var joined strings.Builder
 	var invited strings.Builder
-	for _, user := range view.room.GetMembers() {
+	for _, user := range view.Room.GetMembers() {
 		if user.Membership == "join" {
-			joined.WriteString(color(user.DisplayName))
+			joined.WriteString(AddHashColor(user.DisplayName))
 			joined.WriteRune('\n')
 		} else if user.Membership == "invite" {
-			invited.WriteString(color(user.DisplayName))
+			invited.WriteString(AddHashColor(user.DisplayName))
 			invited.WriteRune('\n')
 		}
 	}
@@ -165,15 +138,15 @@ func (view *RoomView) UpdateUserList() {
 	}
 }
 
-func (view *RoomView) NewMessage(id, sender, text string, timestamp time.Time) *Message {
-	member := view.room.GetMember(sender)
+func (view *RoomView) NewMessage(id, sender, text string, timestamp time.Time) *types.Message {
+	member := view.Room.GetMember(sender)
 	if member != nil {
 		sender = member.DisplayName
 	}
 	return view.content.NewMessage(id, sender, text, timestamp)
 }
 
-func (view *RoomView) AddMessage(message *Message, direction int) {
+func (view *RoomView) AddMessage(message *types.Message, direction int) {
 	view.content.AddMessage(message, direction)
 	view.parent.Render()
 }

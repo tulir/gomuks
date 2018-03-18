@@ -14,25 +14,17 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-package main
+package ui
 
 import (
 	"github.com/gdamore/tcell"
+	"maunium.net/go/gomuks/interface"
 	"maunium.net/go/tview"
 )
 
-// Allowed views in GomuksUI
-const (
-	ViewLogin = "login"
-	ViewMain  = "main"
-)
-
 type GomuksUI struct {
-	gmx    Gomuks
+	gmx    ifc.Gomuks
 	app    *tview.Application
-	matrix *MatrixContainer
-	debug  DebugPrinter
-	config *Config
 	views  *tview.Pages
 
 	mainView  *MainView
@@ -44,13 +36,10 @@ func init() {
 	tview.Styles.ContrastBackgroundColor = tcell.ColorDarkGreen
 }
 
-func NewGomuksUI(gmx Gomuks) (ui *GomuksUI) {
+func NewGomuksUI(gmx ifc.Gomuks) (ui *GomuksUI) {
 	ui = &GomuksUI{
 		gmx:    gmx,
 		app:    gmx.App(),
-		matrix: gmx.MatrixContainer(),
-		debug:  gmx.Debug(),
-		config: gmx.Config(),
 		views:  tview.NewPages(),
 	}
 	ui.views.SetChangedFunc(ui.Render)
@@ -61,16 +50,16 @@ func (ui *GomuksUI) Render() {
 	ui.app.Draw()
 }
 
-func (ui *GomuksUI) SetView(name string) {
-	ui.views.SwitchToPage(name)
+func (ui *GomuksUI) SetView(name ifc.View) {
+	ui.views.SwitchToPage(string(name))
 }
 
 func (ui *GomuksUI) InitViews() tview.Primitive {
-	ui.views.AddPage(ViewLogin, ui.NewLoginView(), true, true)
-	ui.views.AddPage(ViewMain, ui.NewMainView(), true, false)
+	ui.views.AddPage(string(ifc.ViewLogin), ui.NewLoginView(), true, true)
+	ui.views.AddPage(string(ifc.ViewMain), ui.NewMainView(), true, false)
 	return ui.views
 }
 
-func (ui *GomuksUI) MainView() *MainView {
+func (ui *GomuksUI) MainView() ifc.MainView {
 	return ui.mainView
 }

@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-package main
+package matrix
 
 import (
 	"fmt"
@@ -22,24 +22,27 @@ import (
 	"time"
 
 	"maunium.net/go/gomatrix"
+	"maunium.net/go/gomuks/config"
+	"maunium.net/go/gomuks/interface"
+	rooms "maunium.net/go/gomuks/matrix/room"
+	"maunium.net/go/gomuks/ui/debug"
+	"maunium.net/go/gomuks/ui/widget"
 )
 
-type MatrixContainer struct {
+type Container struct {
 	client  *gomatrix.Client
-	gmx     Gomuks
-	ui      *GomuksUI
-	debug   DebugPrinter
-	config  *Config
+	gmx     ifc.Gomuks
+	ui      ifc.GomuksUI
+	config  *config.Config
 	running bool
 	stop    chan bool
 
 	typing int64
 }
 
-func NewMatrixContainer(gmx Gomuks) *MatrixContainer {
-	c := &MatrixContainer{
+func NewMatrixContainer(gmx ifc.Gomuks) *Container {
+	c := &Container{
 		config: gmx.Config(),
-		debug:  gmx.Debug(),
 		ui:     gmx.UI(),
 		gmx:    gmx,
 	}
@@ -47,7 +50,7 @@ func NewMatrixContainer(gmx Gomuks) *MatrixContainer {
 	return c
 }
 
-func (c *MatrixContainer) InitClient() error {
+func (c *Container) InitClient() error {
 	if len(c.config.HS) == 0 {
 		return fmt.Errorf("no homeserver in config")
 	}
@@ -77,11 +80,11 @@ func (c *MatrixContainer) InitClient() error {
 	return nil
 }
 
-func (c *MatrixContainer) Initialized() bool {
+func (c *Container) Initialized() bool {
 	return c.client != nil
 }
 
-func (c *MatrixContainer) Login(user, password string) error {
+func (c *Container) Login(user, password string) error {
 	resp, err := c.client.Login(&gomatrix.ReqLogin{
 		Type:     "m.login.password",
 		User:     user,
@@ -103,24 +106,28 @@ func (c *MatrixContainer) Login(user, password string) error {
 	return nil
 }
 
-func (c *MatrixContainer) Stop() {
+func (c *Container) Stop() {
 	if c.running {
 		c.stop <- true
 		c.client.StopSync()
 	}
 }
 
-func (c *MatrixContainer) UpdateRoomList() {
-	rooms, err := c.client.JoinedRooms()
+func (c *Container) Client() *gomatrix.Client {
+	return c.client
+}
+
+func (c *Container) UpdateRoomList() {
+	resp, err := c.client.JoinedRooms()
 	if err != nil {
-		c.debug.Print("Error fetching room list:", err)
+		debug.Print("Error fetching room list:", err)
 		return
 	}
 
-	c.ui.MainView().SetRoomList(rooms.JoinedRooms)
+	c.ui.MainView().SetRooms(resp.JoinedRooms)
 }
 
-func (c *MatrixContainer) OnLogin() {
+func (c *Container) OnLogin() {
 	c.client.Store = c.config.Session
 
 	syncer := NewGomuksSyncer(c.config.Session)
@@ -132,38 +139,38 @@ func (c *MatrixContainer) OnLogin() {
 	c.UpdateRoomList()
 }
 
-func (c *MatrixContainer) Start() {
+func (c *Container) Start() {
 	defer c.gmx.Recover()
 
+	c.ui.SetView(ifc.ViewMain)
 	c.OnLogin()
 
-	c.debug.Print("Starting sync...")
+	debug.Print("Starting sync...")
 	c.running = true
-	c.ui.SetView(ViewMain)
 	for {
 		select {
 		case <-c.stop:
-			c.debug.Print("Stopping sync...")
+			debug.Print("Stopping sync...")
 			c.running = false
 			return
 		default:
 			if err := c.client.Sync(); err != nil {
-				c.debug.Print("Sync() errored", err)
+				debug.Print("Sync() errored", err)
 			} else {
-				c.debug.Print("Sync() returned without error")
+				debug.Print("Sync() returned without error")
 			}
 		}
 	}
 }
 
-func (c *MatrixContainer) HandleMessage(evt *gomatrix.Event) {
+func (c *Container) HandleMessage(evt *gomatrix.Event) {
 	room, message := c.ui.MainView().ProcessMessageEvent(evt)
 	if room != nil {
-		room.AddMessage(message, AppendMessage)
+		room.AddMessage(message, widget.AppendMessage)
 	}
 }
 
-func (c *MatrixContainer) HandleMembership(evt *gomatrix.Event) {
+func (c *Container) HandleMembership(evt *gomatrix.Event) {
 	const Hour = 1 * 60 * 60 * 1000
 	if evt.Unsigned.Age > Hour {
 		return
@@ -172,15 +179,15 @@ func (c *MatrixContainer) HandleMembership(evt *gomatrix.Event) {
 	room, message := c.ui.MainView().ProcessMembershipEvent(evt, true)
 	if room != nil {
 		// TODO this shouldn't be necessary
-		room.room.UpdateState(evt)
+		room.Room.UpdateState(evt)
 		// TODO This should probably also be in a different place
 		room.UpdateUserList()
 
-		room.AddMessage(message, AppendMessage)
+		room.AddMessage(message, widget.AppendMessage)
 	}
 }
 
-func (c *MatrixContainer) HandleTyping(evt *gomatrix.Event) {
+func (c *Container) HandleTyping(evt *gomatrix.Event) {
 	users := evt.Content["user_ids"].([]interface{})
 
 	strUsers := make([]string, len(users))
@@ -190,29 +197,29 @@ func (c *MatrixContainer) HandleTyping(evt *gomatrix.Event) {
 	c.ui.MainView().SetTyping(evt.RoomID, strUsers)
 }
 
-func (c *MatrixContainer) SendMessage(roomID, message string) {
+func (c *Container) SendMessage(roomID, message string) {
 	c.gmx.Recover()
 	c.SendTyping(roomID, false)
 	c.client.SendText(roomID, message)
 }
 
-func (c *MatrixContainer) SendTyping(roomID string, typing bool) {
+func (c *Container) SendTyping(roomID string, typing bool) {
 	c.gmx.Recover()
-	time := time.Now().Unix()
-	if c.typing > time && typing {
+	ts := time.Now().Unix()
+	if c.typing > ts && typing {
 		return
 	}
 
 	if typing {
 		c.client.UserTyping(roomID, true, 5000)
-		c.typing = time + 5
+		c.typing = ts + 5
 	} else {
 		c.client.UserTyping(roomID, false, 0)
 		c.typing = 0
 	}
 }
 
-func (c *MatrixContainer) JoinRoom(roomID string) error {
+func (c *Container) JoinRoom(roomID string) error {
 	if len(roomID) == 0 {
 		return fmt.Errorf("invalid room ID")
 	}
@@ -222,26 +229,40 @@ func (c *MatrixContainer) JoinRoom(roomID string) error {
 		server = roomID[strings.Index(roomID, ":")+1:]
 	}
 
-	resp, err := c.client.JoinRoom(roomID, server, nil)
+	_, err := c.client.JoinRoom(roomID, server, nil)
 	if err != nil {
 		return err
 	}
 
-	c.ui.MainView().AddRoom(resp.RoomID)
+	// TODO probably safe to remove
+	// c.ui.MainView().AddRoom(resp.RoomID)
 	return nil
 }
 
-func (c *MatrixContainer) getState(roomID string) []*gomatrix.Event {
+func (c *Container) LeaveRoom(roomID string) error {
+	if len(roomID) == 0 {
+		return fmt.Errorf("invalid room ID")
+	}
+
+	_, err := c.client.LeaveRoom(roomID)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (c *Container) getState(roomID string) []*gomatrix.Event {
 	content := make([]*gomatrix.Event, 0)
 	err := c.client.StateEvent(roomID, "", "", &content)
 	if err != nil {
-		c.debug.Print("Error getting state of", roomID, err)
+		debug.Print("Error getting state of", roomID, err)
 		return nil
 	}
 	return content
 }
 
-func (c *MatrixContainer) GetHistory(roomID, prevBatch string, limit int) ([]gomatrix.Event, string, error) {
+func (c *Container) GetHistory(roomID, prevBatch string, limit int) ([]gomatrix.Event, string, error) {
 	resp, err := c.client.Messages(roomID, prevBatch, "", 'b', limit)
 	if err != nil {
 		return nil, "", err
@@ -249,7 +270,7 @@ func (c *MatrixContainer) GetHistory(roomID, prevBatch string, limit int) ([]gom
 	return resp.Chunk, resp.End, nil
 }
 
-func (c *MatrixContainer) GetRoom(roomID string) *Room {
+func (c *Container) GetRoom(roomID string) *rooms.Room {
 	room := c.config.Session.GetRoom(roomID)
 	if room != nil && len(room.State) == 0 {
 		events := c.getState(room.ID)

@@ -14,10 +14,9 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-package main
+package widget
 
 import (
-	"github.com/gdamore/tcell"
 	"maunium.net/go/tview"
 )
 
@@ -30,26 +29,4 @@ func Center(width, height int, p tview.Primitive) tview.Primitive {
 		AddItem(p, height, 1, true).
 		AddItem(tview.NewBox(), 0, 1, false), width, 1, true).
 		AddItem(tview.NewBox(), 0, 1, false)
-}
-
-type FormTextView struct {
-	*tview.TextView
-}
-
-func (ftv *FormTextView) GetLabel() string {
-	return ""
-}
-
-func (ftv *FormTextView) SetFormAttributes(label string, labelColor, bgColor, fieldTextColor, fieldBgColor tcell.Color) tview.FormItem {
-	return ftv
-}
-
-func (ftv *FormTextView) GetFieldWidth() int {
-	_, _, w, _ := ftv.TextView.GetRect()
-	return w
-}
-
-func (ftv *FormTextView) SetFinishedFunc(handler func(key tcell.Key)) tview.FormItem {
-	ftv.SetDoneFunc(handler)
-	return ftv
 }
