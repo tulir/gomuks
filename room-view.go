@@ -24,7 +24,6 @@ import (
 	"time"
 
 	"github.com/gdamore/tcell"
-	"maunium.net/go/gomatrix"
 	"maunium.net/go/tview"
 )
 
@@ -35,7 +34,7 @@ type RoomView struct {
 	content  *MessageView
 	status   *tview.TextView
 	userList *tview.TextView
-	room     *gomatrix.Room
+	room     *Room
 
 	parent *MainView
 }
@@ -52,7 +51,7 @@ func init() {
 	sort.Sort(sort.StringSlice(colorNames))
 }
 
-func NewRoomView(parent *MainView, room *gomatrix.Room) *RoomView {
+func NewRoomView(parent *MainView, room *Room) *RoomView {
 	view := &RoomView{
 		Box:      tview.NewBox(),
 		topic:    tview.NewTextView(),
@@ -166,11 +165,15 @@ func (view *RoomView) UpdateUserList() {
 	}
 }
 
-func (view *RoomView) AddMessage(id, sender, message string, timestamp time.Time) {
+func (view *RoomView) NewMessage(id, sender, text string, timestamp time.Time) *Message {
 	member := view.room.GetMember(sender)
 	if member != nil {
 		sender = member.DisplayName
 	}
-	view.content.AddMessage(id, sender, message, timestamp)
+	return view.content.NewMessage(id, sender, text, timestamp)
+}
+
+func (view *RoomView) AddMessage(message *Message, direction int) {
+	view.content.AddMessage(message, direction)
 	view.parent.Render()
 }

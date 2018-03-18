@@ -113,23 +113,29 @@ func (c *MatrixContainer) Stop() {
 func (c *MatrixContainer) UpdateRoomList() {
 	rooms, err := c.client.JoinedRooms()
 	if err != nil {
-		c.debug.Print(err)
+		c.debug.Print("Error fetching room list:", err)
+		return
 	}
 
 	c.ui.MainView().SetRoomList(rooms.JoinedRooms)
 }
 
-func (c *MatrixContainer) Start() {
-	defer c.gmx.Recover()
+func (c *MatrixContainer) OnLogin() {
 	c.client.Store = c.config.Session
 
-	syncer := gomatrix.NewDefaultSyncer(c.config.Session.MXID, c.config.Session)
+	syncer := NewGomuksSyncer(c.config.Session)
 	syncer.OnEventType("m.room.message", c.HandleMessage)
 	syncer.OnEventType("m.room.member", c.HandleMembership)
 	syncer.OnEventType("m.typing", c.HandleTyping)
 	c.client.Syncer = syncer
 
 	c.UpdateRoomList()
+}
+
+func (c *MatrixContainer) Start() {
+	defer c.gmx.Recover()
+
+	c.OnLogin()
 
 	c.debug.Print("Starting sync...")
 	c.running = true
@@ -151,65 +157,26 @@ func (c *MatrixContainer) Start() {
 }
 
 func (c *MatrixContainer) HandleMessage(evt *gomatrix.Event) {
-	message, _ := evt.Content["body"].(string)
-
-	room := c.ui.MainView().GetRoom(evt.RoomID)
+	room, message := c.ui.MainView().ProcessMessageEvent(evt)
 	if room != nil {
-		room.AddMessage(evt.ID, evt.Sender, message, unixToTime(evt.Timestamp))
+		room.AddMessage(message, AppendMessage)
 	}
-}
-
-func unixToTime(unix int64) time.Time {
-	timestamp := time.Now()
-	if unix != 0 {
-		timestamp = time.Unix(unix/1000, unix%1000*1000)
-	}
-	return timestamp
 }
 
 func (c *MatrixContainer) HandleMembership(evt *gomatrix.Event) {
-	membership, _ := evt.Content["membership"].(string)
-	if evt.StateKey != nil && *evt.StateKey == c.config.Session.MXID {
-		prevMembership := "leave"
-		if evt.Unsigned.PrevContent != nil {
-			prevMembership, _ = evt.Unsigned.PrevContent["membership"].(string)
-		}
-		if membership == prevMembership {
-			return
-		}
-		if membership == "join" {
-			c.ui.MainView().AddRoom(evt.RoomID)
-		} else if membership == "leave" {
-			c.ui.MainView().RemoveRoom(evt.RoomID)
-		}
+	const Hour = 1 * 60 * 60 * 1000
+	if evt.Unsigned.Age > Hour {
 		return
 	}
-	room := c.ui.MainView().GetRoom(evt.RoomID)
 
-	// TODO this shouldn't be necessary
-	room.room.UpdateState(evt)
-
+	room, message := c.ui.MainView().ProcessMembershipEvent(evt, true)
 	if room != nil {
-		var message, sender string
-		if membership == "invite" {
-			sender = "---"
-			message = fmt.Sprintf("%s invited %s.", evt.Sender, *evt.StateKey)
-		} else if membership == "join" {
-			sender = "-->"
-			message = fmt.Sprintf("%s joined the room.", *evt.StateKey)
-		} else if membership == "leave" {
-			sender = "<--"
-			if evt.Sender != *evt.StateKey {
-				reason, _ := evt.Content["reason"].(string)
-				message = fmt.Sprintf("%s kicked %s: %s", evt.Sender, *evt.StateKey, reason)
-			} else {
-				message = fmt.Sprintf("%s left the room.", *evt.StateKey)
-			}
-		} else {
-			return
-		}
+		// TODO this shouldn't be necessary
+		room.room.UpdateState(evt)
+		// TODO This should probably also be in a different place
 		room.UpdateUserList()
-		room.AddMessage(evt.ID, sender, message, unixToTime(evt.Timestamp))
+
+		room.AddMessage(message, AppendMessage)
 	}
 }
 
@@ -268,14 +235,22 @@ func (c *MatrixContainer) getState(roomID string) []*gomatrix.Event {
 	content := make([]*gomatrix.Event, 0)
 	err := c.client.StateEvent(roomID, "", "", &content)
 	if err != nil {
-		c.debug.Print(err)
+		c.debug.Print("Error getting state of", roomID, err)
 		return nil
 	}
 	return content
 }
 
-func (c *MatrixContainer) GetRoom(roomID string) *gomatrix.Room {
-	room := c.config.Session.LoadRoom(roomID)
+func (c *MatrixContainer) GetHistory(roomID, prevBatch string, limit int) ([]gomatrix.Event, string, error) {
+	resp, err := c.client.Messages(roomID, prevBatch, "", 'b', limit)
+	if err != nil {
+		return nil, "", err
+	}
+	return resp.Chunk, resp.End, nil
+}
+
+func (c *MatrixContainer) GetRoom(roomID string) *Room {
+	room := c.config.Session.GetRoom(roomID)
 	if room != nil && len(room.State) == 0 {
 		events := c.getState(room.ID)
 		if events != nil {

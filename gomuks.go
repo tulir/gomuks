@@ -126,5 +126,6 @@ func (gmx *gomuks) UI() *GomuksUI {
 }
 
 func main() {
-	NewGomuks(true).Start()
+	debug := os.Getenv("DEBUG")
+	NewGomuks(len(debug) > 0).Start()
 }

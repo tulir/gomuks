@@ -22,7 +22,7 @@ import (
 	"maunium.net/go/tview"
 )
 
-const DebugPaneHeight = 40
+const DebugPaneHeight = 35
 
 type DebugPrinter interface {
 	Printf(text string, args ...interface{})

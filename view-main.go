@@ -112,10 +112,6 @@ func findWordToTabComplete(text string) string {
 	return output
 }
 
-func (view *MainView) GetRoom(id string) *RoomView {
-	return view.rooms[id]
-}
-
 func (view *MainView) InputTabComplete(text string, cursorOffset int) string {
 	roomView, _ := view.rooms[view.CurrentRoomID()]
 	if roomView != nil {
@@ -156,10 +152,7 @@ func (view *MainView) HandleCommand(room, command string, args []string) {
 	case "/quit":
 		view.gmx.Stop()
 	case "/clearcache":
-		view.config.Session.Rooms = make(map[string]*gomatrix.Room)
-		view.config.Session.NextBatch = ""
-		view.config.Session.FilterID = ""
-		view.config.Session.Save()
+		view.config.Session.Clear()
 		view.gmx.Stop()
 	case "/part":
 		fallthrough
@@ -167,12 +160,12 @@ func (view *MainView) HandleCommand(room, command string, args []string) {
 		view.matrix.client.LeaveRoom(room)
 	case "/join":
 		if len(args) == 0 {
-			view.AddMessage(room, "Usage: /join <room>")
+			view.AddServiceMessage(room, "Usage: /join <room>")
 			break
 		}
 		view.debug.Print(view.matrix.JoinRoom(args[0]))
 	default:
-		view.AddMessage(room, "Unknown command.")
+		view.AddServiceMessage(room, "Unknown command.")
 	}
 }
 
@@ -229,7 +222,12 @@ func (view *MainView) addRoom(index int, room string) {
 		view.rooms[room] = roomView
 		view.roomView.AddPage(room, roomView, true, false)
 		roomView.UpdateUserList()
+		view.GetHistory(room)
 	}
+}
+
+func (view *MainView) GetRoom(id string) *RoomView {
+	return view.rooms[id]
 }
 
 func (view *MainView) HasRoom(room string) bool {
@@ -263,6 +261,7 @@ func (view *MainView) RemoveRoom(room string) {
 	view.roomList.RemoveItem(removeIndex)
 	view.roomIDs = append(view.roomIDs[:removeIndex], view.roomIDs[removeIndex+1:]...)
 	view.roomView.RemovePage(room)
+	delete(view.rooms, room)
 	view.Render()
 }
 
@@ -270,6 +269,7 @@ func (view *MainView) SetRoomList(rooms []string) {
 	view.roomIDs = rooms
 	view.roomList.Clear()
 	view.roomView.Clear()
+	view.rooms = make(map[string]*RoomView)
 	for index, room := range rooms {
 		view.addRoom(index, room)
 	}
@@ -284,14 +284,102 @@ func (view *MainView) SetTyping(room string, users []string) {
 	}
 }
 
-func (view *MainView) AddMessage(room, message string) {
+func (view *MainView) AddServiceMessage(room, message string) {
 	roomView, ok := view.rooms[room]
 	if ok {
-		roomView.content.AddMessage("", "*", message, time.Now())
+		messageView := roomView.MessageView()
+		message := messageView.NewMessage("", "*", message, time.Now())
+		messageView.AddMessage(message, AppendMessage)
 		view.parent.Render()
 	}
 }
 
 func (view *MainView) Render() {
 	view.parent.Render()
+}
+
+func (view *MainView) GetHistory(room string) {
+	roomView := view.rooms[room]
+	history, _, err := view.matrix.GetHistory(roomView.room.ID, view.config.Session.NextBatch, 50)
+	if err != nil {
+		view.debug.Print("Failed to fetch history for", roomView.room.ID, err)
+		return
+	}
+	for _, evt := range history {
+		var room *RoomView
+		var message *Message
+		if evt.Type == "m.room.message" {
+			room, message = view.ProcessMessageEvent(&evt)
+		} else if evt.Type == "m.room.member" {
+			room, message = view.ProcessMembershipEvent(&evt, false)
+		}
+		if room != nil && message != nil {
+			room.AddMessage(message, PrependMessage)
+		}
+	}
+}
+
+func (view *MainView) ProcessMessageEvent(evt *gomatrix.Event) (room *RoomView, message *Message) {
+	room = view.GetRoom(evt.RoomID)
+	if room != nil {
+		text := evt.Content["body"].(string)
+		message = room.NewMessage(evt.ID, evt.Sender, text, unixToTime(evt.Timestamp))
+	}
+	return
+}
+
+func (view *MainView) processOwnMembershipChange(evt *gomatrix.Event) {
+	membership, _ := evt.Content["membership"].(string)
+	prevMembership := "leave"
+	if evt.Unsigned.PrevContent != nil {
+		prevMembership, _ = evt.Unsigned.PrevContent["membership"].(string)
+	}
+	if membership == prevMembership {
+		return
+	}
+	if membership == "join" {
+		view.AddRoom(evt.RoomID)
+	} else if membership == "leave" {
+		view.RemoveRoom(evt.RoomID)
+	}
+}
+
+func (view *MainView) ProcessMembershipEvent(evt *gomatrix.Event, new bool) (room *RoomView, message *Message) {
+	if new && evt.StateKey != nil && *evt.StateKey == view.config.Session.MXID {
+		view.processOwnMembershipChange(evt)
+	}
+
+	room = view.GetRoom(evt.RoomID)
+	if room != nil {
+		membership, _ := evt.Content["membership"].(string)
+		var sender, text string
+		if membership == "invite" {
+			sender = "---"
+			text = fmt.Sprintf("%s invited %s.", evt.Sender, *evt.StateKey)
+		} else if membership == "join" {
+			sender = "-->"
+			text = fmt.Sprintf("%s joined the room.", *evt.StateKey)
+		} else if membership == "leave" {
+			sender = "<--"
+			if evt.Sender != *evt.StateKey {
+				reason, _ := evt.Content["reason"].(string)
+				text = fmt.Sprintf("%s kicked %s: %s", evt.Sender, *evt.StateKey, reason)
+			} else {
+				text = fmt.Sprintf("%s left the room.", *evt.StateKey)
+			}
+		} else {
+			room = nil
+			return
+		}
+		message = room.NewMessage(evt.ID, sender, text, unixToTime(evt.Timestamp))
+	}
+	return
+}
+
+func unixToTime(unix int64) time.Time {
+	timestamp := time.Now()
+	if unix != 0 {
+		timestamp = time.Unix(unix/1000, unix%1000*1000)
+	}
+	return timestamp
 }

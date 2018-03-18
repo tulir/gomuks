@@ -30,7 +30,7 @@ type Session struct {
 	AccessToken string
 	NextBatch   string
 	FilterID    string
-	Rooms       map[string]*gomatrix.Room
+	Rooms       map[string]*Room
 
 	debug DebugPrinter `json:"-"`
 }
@@ -44,9 +44,16 @@ func (config *Config) NewSession(mxid string) *Session {
 	return &Session{
 		MXID:  mxid,
 		path:  filepath.Join(config.dir, mxid+".session"),
-		Rooms: make(map[string]*gomatrix.Room),
+		Rooms: make(map[string]*Room),
 		debug: config.debug,
 	}
+}
+
+func (s *Session) Clear() {
+	s.Rooms = make(map[string]*Room)
+	s.NextBatch = ""
+	s.FilterID = ""
+	s.Save()
 }
 
 func (s *Session) Load() {
@@ -85,13 +92,18 @@ func (s *Session) LoadNextBatch(_ string) string {
 	return s.NextBatch
 }
 
-func (s *Session) LoadRoom(mxid string) *gomatrix.Room {
+func (s *Session) GetRoom(mxid string) *Room {
 	room, _ := s.Rooms[mxid]
 	if room == nil {
-		room = gomatrix.NewRoom(mxid)
-		s.SaveRoom(room)
+		room = NewRoom(mxid)
+		s.Rooms[room.ID] = room
 	}
 	return room
+}
+
+func (s *Session) PutRoom(room *Room) {
+	s.Rooms[room.ID] = room
+	s.Save()
 }
 
 func (s *Session) SaveFilterID(_, filterID string) {
@@ -104,7 +116,11 @@ func (s *Session) SaveNextBatch(_, nextBatch string) {
 	s.Save()
 }
 
+func (s *Session) LoadRoom(mxid string) *gomatrix.Room {
+	return s.GetRoom(mxid).Room
+}
+
 func (s *Session) SaveRoom(room *gomatrix.Room) {
-	s.Rooms[room.ID] = room
+	s.GetRoom(room.ID).Room = room
 	s.Save()
 }
