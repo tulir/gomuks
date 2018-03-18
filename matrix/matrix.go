@@ -198,13 +198,13 @@ func (c *Container) HandleTyping(evt *gomatrix.Event) {
 }
 
 func (c *Container) SendMessage(roomID, message string) {
-	c.gmx.Recover()
+	defer c.gmx.Recover()
 	c.SendTyping(roomID, false)
 	c.client.SendText(roomID, message)
 }
 
 func (c *Container) SendTyping(roomID string, typing bool) {
-	c.gmx.Recover()
+	defer c.gmx.Recover()
 	ts := time.Now().Unix()
 	if c.typing > ts && typing {
 		return

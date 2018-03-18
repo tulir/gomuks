@@ -17,8 +17,10 @@
 package main
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
+	"time"
 
 	"maunium.net/go/gomatrix"
 	"maunium.net/go/gomuks/config"
@@ -29,17 +31,18 @@ import (
 	"maunium.net/go/tview"
 )
 
-type gomuks struct {
-	app    *tview.Application
-	ui     *ui.GomuksUI
-	matrix *matrix.Container
-	debug  *debug.Pane
-	config *config.Config
+type Gomuks struct {
+	app       *tview.Application
+	ui        *ui.GomuksUI
+	matrix    *matrix.Container
+	debug     *debug.Pane
+	debugMode bool
+	config    *config.Config
 }
 
-func NewGomuks(enableDebug bool) *gomuks {
+func NewGomuks(enableDebug bool) *Gomuks {
 	configDir := filepath.Join(os.Getenv("HOME"), ".config/gomuks")
-	gmx := &gomuks{
+	gmx := &Gomuks{
 		app: tview.NewApplication(),
 	}
 
@@ -63,13 +66,14 @@ func NewGomuks(enableDebug bool) *gomuks {
 	main := gmx.ui.InitViews()
 	if enableDebug {
 		main = gmx.debug.Wrap(main)
+		gmx.debugMode = true
 	}
 	gmx.app.SetRoot(main, true)
 
 	return gmx
 }
 
-func (gmx *gomuks) Stop() {
+func (gmx *Gomuks) Stop() {
 	gmx.debug.Print("Disconnecting from Matrix...")
 	gmx.matrix.Stop()
 	gmx.debug.Print("Cleaning up UI...")
@@ -78,44 +82,54 @@ func (gmx *gomuks) Stop() {
 		gmx.debug.Print("Saving session...")
 		gmx.config.Session.Save()
 	}
+	os.Exit(0)
 }
 
-func (gmx *gomuks) Recover() {
+func (gmx *Gomuks) Recover() {
 	if p := recover(); p != nil {
 		if gmx.App().GetScreen() != nil {
 			gmx.App().GetScreen().Fini()
 		}
-		panic(p)
+		if gmx.debugMode {
+			panic(p)
+		} else {
+			debug.PrettyPanic()
+		}
 	}
 }
 
-func (gmx *gomuks) Start() {
+func (gmx *Gomuks) Start() {
 	if err := gmx.app.Run(); err != nil {
 		panic(err)
 	}
 }
 
-func (gmx *gomuks) Matrix() *gomatrix.Client {
+func (gmx *Gomuks) Matrix() *gomatrix.Client {
 	return gmx.matrix.Client()
 }
 
-func (gmx *gomuks) MatrixContainer() ifc.MatrixContainer {
+func (gmx *Gomuks) MatrixContainer() ifc.MatrixContainer {
 	return gmx.matrix
 }
 
-func (gmx *gomuks) App() *tview.Application {
+func (gmx *Gomuks) App() *tview.Application {
 	return gmx.app
 }
 
-func (gmx *gomuks) Config() *config.Config {
+func (gmx *Gomuks) Config() *config.Config {
 	return gmx.config
 }
 
-func (gmx *gomuks) UI() ifc.GomuksUI {
+func (gmx *Gomuks) UI() ifc.GomuksUI {
 	return gmx.ui
 }
 
 func main() {
-	debug := os.Getenv("DEBUG")
-	NewGomuks(len(debug) > 0).Start()
+	enableDebug := len(os.Getenv("DEBUG")) > 0
+	NewGomuks(enableDebug).Start()
+
+	// We use os.Exit() everywhere, so exiting by returning from Start() shouldn't happen.
+	time.Sleep(5 * time.Second)
+	fmt.Println("Unexpected exit by return from Gomuks#Start().")
+	os.Exit(2)
 }

@@ -18,6 +18,11 @@ package debug
 
 import (
 	"fmt"
+	"io/ioutil"
+	"os"
+	"time"
+
+	"runtime/debug"
 
 	"maunium.net/go/tview"
 )
@@ -30,7 +35,7 @@ type Printer interface {
 type Pane struct {
 	*tview.TextView
 	Height int
-	num  int
+	num    int
 }
 
 var Default Printer
@@ -46,8 +51,8 @@ func NewPane() *Pane {
 
 	return &Pane{
 		TextView: pane,
-		Height: 35,
-		num:  0,
+		Height:   35,
+		num:      0,
 	}
 }
 
@@ -80,4 +85,42 @@ func Print(text ...interface{}) {
 	if Default != nil {
 		Default.Print(text...)
 	}
+}
+
+const Oops = ` __________
+< Oh noes! >
+ ‾‾‾\‾‾‾‾‾‾
+     \   ^__^
+      \  (XX)\_______
+         (__)\       )\/\
+          U  ||----W |
+             ||     ||`
+
+func PrettyPanic() {
+	fmt.Println(Oops)
+	fmt.Println("")
+	fmt.Println("A fatal error has occurred.")
+	fmt.Println("")
+	traceFile := fmt.Sprintf("/tmp/gomuks-panic-%s.txt", time.Now().Format("2006-01-02--15-04-05"))
+	data := debug.Stack()
+	err := ioutil.WriteFile(traceFile, data, 0644)
+	if err != nil {
+		fmt.Println("Saving the stack trace to", traceFile, "failed:")
+		fmt.Println("--------------------------------------------------------------------------------")
+		fmt.Println(err)
+		fmt.Println("--------------------------------------------------------------------------------")
+		fmt.Println("")
+		fmt.Println("You can file an issue at https://github.com/tulir/gomuks/issues.")
+		fmt.Println("Please provide the file save error (above) and the stack trace of the original error (below) when filing an issue.")
+		fmt.Println("")
+		fmt.Println("--------------------------------------------------------------------------------")
+		debug.PrintStack()
+		fmt.Println("--------------------------------------------------------------------------------")
+	} else {
+		fmt.Println("The stack trace has been saved to", traceFile)
+		fmt.Println("")
+		fmt.Println("You can file an issue at https://github.com/tulir/gomuks/issues.")
+		fmt.Println("Please provide the contents of that file when filing an issue.")
+	}
+	os.Exit(1)
 }

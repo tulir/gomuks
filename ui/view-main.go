@@ -148,7 +148,7 @@ func (view *MainView) InputDone(key tcell.Key) {
 }
 
 func (view *MainView) HandleCommand(room, command string, args []string) {
-	view.gmx.Recover()
+	defer view.gmx.Recover()
 	debug.Print("Handling command", command, args)
 	switch command {
 	case "/quit":
@@ -156,6 +156,8 @@ func (view *MainView) HandleCommand(room, command string, args []string) {
 	case "/clearcache":
 		view.config.Session.Clear()
 		view.gmx.Stop()
+	case "/panic":
+		panic("This is a test panic.")
 	case "/part":
 		fallthrough
 	case "/leave":
