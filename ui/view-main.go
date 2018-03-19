@@ -209,6 +209,9 @@ func (view *MainView) SwitchRoom(roomIndex int) {
 	if roomIndex < 0 {
 		roomIndex = len(view.roomIDs) - 1
 	}
+	if len(view.roomIDs) == 0 {
+		return
+	}
 	view.currentRoomIndex = roomIndex % len(view.roomIDs)
 	view.roomView.SwitchToPage(view.CurrentRoomID())
 	view.roomList.SetCurrentItem(roomIndex)
