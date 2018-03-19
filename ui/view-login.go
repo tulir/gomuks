@@ -28,11 +28,13 @@ func (ui *GomuksUI) NewLoginView() tview.Primitive {
 		hs = "https://matrix.org"
 	}
 
+	homeserver := widget.NewAdvancedInputField().SetLabel("Homeserver").SetText(hs).SetFieldWidth(30)
+	username := widget.NewAdvancedInputField().SetLabel("Username").SetText(ui.gmx.Config().MXID).SetFieldWidth(30)
+	password := widget.NewAdvancedInputField().SetLabel("Password").SetMaskCharacter('*').SetFieldWidth(30)
+
 	ui.loginView = tview.NewForm()
 	ui.loginView.
-		AddInputField("Homeserver", hs, 30, nil, nil).
-		AddInputField("Username", ui.gmx.Config().MXID, 30, nil, nil).
-		AddPasswordField("Password", "", 30, '*', nil).
+		AddFormItem(homeserver).AddFormItem(username).AddFormItem(password).
 		AddButton("Log in", ui.login).
 		AddButton("Quit", ui.gmx.Stop).
 		SetButtonsAlign(tview.AlignCenter).
@@ -41,9 +43,9 @@ func (ui *GomuksUI) NewLoginView() tview.Primitive {
 }
 
 func (ui *GomuksUI) login() {
-	hs := ui.loginView.GetFormItem(0).(*tview.InputField).GetText()
-	mxid := ui.loginView.GetFormItem(1).(*tview.InputField).GetText()
-	password := ui.loginView.GetFormItem(2).(*tview.InputField).GetText()
+	hs := ui.loginView.GetFormItem(0).(*widget.AdvancedInputField).GetText()
+	mxid := ui.loginView.GetFormItem(1).(*widget.AdvancedInputField).GetText()
+	password := ui.loginView.GetFormItem(2).(*widget.AdvancedInputField).GetText()
 
 	debug.Printf("Logging into %s as %s...", hs, mxid)
 	ui.gmx.Config().HS = hs

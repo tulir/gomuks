@@ -99,6 +99,7 @@ func (gmx *Gomuks) Recover() {
 }
 
 func (gmx *Gomuks) Start() {
+	defer gmx.Recover()
 	if err := gmx.app.Run(); err != nil {
 		panic(err)
 	}

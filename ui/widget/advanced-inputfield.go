@@ -75,7 +75,7 @@ type AdvancedInputField struct {
 	changed func(text string)
 
 	// An optional function which is called when the user indicated that they
-	// are done entering text. The key which was pressed is provided (enter or escape).
+	// are done entering text. The key which was pressed is provided (enter, tab, backtab or escape).
 	done func(tcell.Key)
 
 	// An optional function which is called when the user presses tab.
@@ -200,6 +200,8 @@ func (field *AdvancedInputField) SetChangedFunc(handler func(text string)) *Adva
 //
 //   - KeyEnter: Done entering text.
 //   - KeyEscape: Abort text input.
+//   - KeyTab: Tab
+//   - KeyBacktab: Shift + Tab
 func (field *AdvancedInputField) SetDoneFunc(handler func(key tcell.Key)) *AdvancedInputField {
 	field.done = handler
 	return field
@@ -435,8 +437,10 @@ func (field *AdvancedInputField) InputHandler() func(event *tcell.EventKey, setF
 				if oldWidth != newWidth {
 					field.cursorOffset += newWidth - oldWidth
 				}
+				break
 			}
-		case tcell.KeyEnter, tcell.KeyEscape: // We're done.
+			fallthrough
+		case tcell.KeyEnter, tcell.KeyEscape, tcell.KeyBacktab: // We're done.
 			if field.done != nil {
 				field.done(key)
 			}
