@@ -25,7 +25,9 @@ import (
 	"maunium.net/go/gomuks/config"
 	"maunium.net/go/gomuks/interface"
 	rooms "maunium.net/go/gomuks/matrix/room"
+	"maunium.net/go/gomuks/notification"
 	"maunium.net/go/gomuks/ui/debug"
+	"maunium.net/go/gomuks/ui/types"
 	"maunium.net/go/gomuks/ui/widget"
 )
 
@@ -117,6 +119,14 @@ func (c *Container) Client() *gomatrix.Client {
 	return c.client
 }
 
+func (c *Container) UpdatePushRules() {
+	resp, err := c.client.PushRules()
+	if err != nil {
+		debug.Print("Failed to fetch push rules:", err)
+	}
+	c.config.Session.PushRules = resp
+}
+
 func (c *Container) UpdateRoomList() {
 	resp, err := c.client.JoinedRooms()
 	if err != nil {
@@ -147,6 +157,7 @@ func (c *Container) OnLogin() {
 	c.client.Syncer = syncer
 
 	c.UpdateRoomList()
+	c.UpdatePushRules()
 }
 
 func (c *Container) Start() {
@@ -177,9 +188,14 @@ func (c *Container) Start() {
 	}
 }
 
+func (c *Container) NotifyMessage(room *rooms.Room, message *types.Message) {
+	notification.Send(room.GetTitle(), message.Text, false)
+}
+
 func (c *Container) HandleMessage(evt *gomatrix.Event) {
 	room, message := c.ui.MainView().ProcessMessageEvent(evt)
 	if room != nil {
+		c.NotifyMessage(room.Room, message)
 		room.AddMessage(message, widget.AppendMessage)
 		c.ui.Render()
 	}

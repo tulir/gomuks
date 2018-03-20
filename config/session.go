@@ -33,6 +33,7 @@ type Session struct {
 	NextBatch   string
 	FilterID    string
 	Rooms       map[string]*rooms.Room
+	PushRules *gomatrix.PushRuleset
 }
 
 func (config *Config) LoadSession(mxid string) error {
