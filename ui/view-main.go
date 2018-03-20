@@ -122,7 +122,12 @@ func (view *MainView) InputTabComplete(text string, cursorOffset int) string {
 		word := findWordToTabComplete(str)
 		userCompletions := roomView.AutocompleteUser(word)
 		if len(userCompletions) == 1 {
-			text = str[0:len(str)-len(word)] + userCompletions[0] + text[len(str):]
+			startIndex := len(str)-len(word)
+			completion := userCompletions[0]
+			if startIndex == 0 {
+				completion = completion + ": "
+			}
+			text = str[0:startIndex] + completion + text[len(str):]
 		} else if len(userCompletions) > 1 && len(userCompletions) < 6 {
 			roomView.SetStatus(fmt.Sprintf("Completions: %s", strings.Join(userCompletions, ", ")))
 		}

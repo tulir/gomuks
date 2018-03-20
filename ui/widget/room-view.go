@@ -102,8 +102,12 @@ func (view *RoomView) SetTyping(users []string) {
 }
 
 func (view *RoomView) AutocompleteUser(existingText string) (completions []string) {
+	textWithoutPrefix := existingText
+	if strings.HasPrefix(existingText, "@") {
+		textWithoutPrefix = existingText[1:]
+	}
 	for _, user := range view.Room.GetMembers() {
-		if strings.HasPrefix(user.DisplayName, existingText) {
+		if strings.HasPrefix(user.DisplayName, textWithoutPrefix) {
 			completions = append(completions, user.DisplayName)
 		} else if strings.HasPrefix(user.UserID, existingText) {
 			completions = append(completions, user.UserID)
