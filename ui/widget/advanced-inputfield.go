@@ -68,6 +68,8 @@ type AdvancedInputField struct {
 	// disables masking.
 	maskCharacter rune
 
+	vimBindings bool
+
 	// An optional function which may reject the last character that was entered.
 	accept func(text string, ch rune) bool
 
@@ -403,32 +405,46 @@ func (field *AdvancedInputField) InputHandler() func(event *tcell.EventKey, setF
 				break
 			}
 			leftPart := SubstringBefore(field.text, field.cursorOffset)
-			rightPart := field.text[len(leftPart):]
-			rightPartRunes := []rune(rightPart)
-			rightPartRunes = rightPartRunes[1:]
-			rightPart = string(rightPartRunes)
+			// Take everything after the left part minus the first character.
+			rightPart := string([]rune(field.text[len(leftPart):])[1:])
+
 			field.text = leftPart + rightPart
-		case tcell.KeyBackspace, tcell.KeyBackspace2: // Delete last character.
+		case tcell.KeyCtrlU:
+			if !field.vimBindings {
+				break
+			}
+			field.text = ""
+			field.cursorOffset = 0
+		case tcell.KeyCtrlW:
+			if !field.vimBindings {
+				break
+			}
+			fallthrough
+		case tcell.KeyBackspace: // Delete last word
+			leftPart := SubstringBefore(field.text, field.cursorOffset)
+			rightPart := field.text[len(leftPart):]
+			replacement := lastWord.ReplaceAllString(leftPart, "")
+			field.text = replacement + rightPart
+
+			field.cursorOffset -= runewidth.StringWidth(leftPart) - runewidth.StringWidth(replacement)
+		case tcell.KeyBackspace2: // Delete last character
 			if field.cursorOffset == 0 {
 				break
 			}
-			if key == tcell.KeyBackspace { // Ctrl+backspace
-				leftPart := SubstringBefore(field.text, field.cursorOffset)
-				rightPart := field.text[len(leftPart):]
-				replacement := lastWord.ReplaceAllString(leftPart, "")
-				field.text = replacement + rightPart
+			leftPart := SubstringBefore(field.text, field.cursorOffset)
+			rightPart := field.text[len(leftPart):]
 
-				field.cursorOffset -= runewidth.StringWidth(leftPart) - runewidth.StringWidth(replacement)
-			} else { // Just backspace
-				leftPart := SubstringBefore(field.text, field.cursorOffset)
-				rightPart := field.text[len(leftPart):]
-				leftPartRunes := []rune(leftPart)
-				leftPartRunes = leftPartRunes[0 : len(leftPartRunes)-1]
-				leftPart = string(leftPartRunes)
-				removedChar := field.text[len(leftPart) : len(field.text)-len(rightPart)]
-				field.text = leftPart + rightPart
-				field.cursorOffset -= runewidth.StringWidth(removedChar)
-			}
+			// Take everything before the right part minus the last character.
+			leftPartRunes := []rune(leftPart)
+			leftPartRunes = leftPartRunes[0 : len(leftPartRunes)-1]
+			leftPart = string(leftPartRunes)
+
+			// Figure out what character was removed to correctly decrease cursorOffset.
+			removedChar := field.text[len(leftPart) : len(field.text)-len(rightPart)]
+
+			field.text = leftPart + rightPart
+
+			field.cursorOffset -= runewidth.StringWidth(removedChar)
 		case tcell.KeyTab: // Tab-completion
 			if field.tabComplete != nil {
 				oldWidth := runewidth.StringWidth(field.text)
