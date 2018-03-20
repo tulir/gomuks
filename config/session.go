@@ -96,7 +96,7 @@ func (s *Session) LoadNextBatch(_ string) string {
 func (s *Session) GetRoom(mxid string) *rooms.Room {
 	room, _ := s.Rooms[mxid]
 	if room == nil {
-		room = rooms.NewRoom(mxid)
+		room = rooms.NewRoom(mxid, s.MXID)
 		s.Rooms[room.ID] = room
 	}
 	return room
