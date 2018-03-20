@@ -74,7 +74,7 @@ func (c *Container) InitClient() error {
 
 	c.stop = make(chan bool, 1)
 
-	if c.config.Session != nil {
+	if c.config.Session != nil && len(c.config.Session.AccessToken) > 0 {
 		go c.Start()
 	}
 	return nil
@@ -120,11 +120,21 @@ func (c *Container) Client() *gomatrix.Client {
 func (c *Container) UpdateRoomList() {
 	resp, err := c.client.JoinedRooms()
 	if err != nil {
+		respErr, _ := err.(gomatrix.HTTPError).WrappedError.(gomatrix.RespError)
+		if respErr.ErrCode == "M_UNKNOWN_TOKEN" {
+			c.OnLogout()
+			return
+		}
 		debug.Print("Error fetching room list:", err)
 		return
 	}
 
 	c.ui.MainView().SetRooms(resp.JoinedRooms)
+}
+
+func (c *Container) OnLogout() {
+	c.Stop()
+	c.ui.SetView(ifc.ViewLogin)
 }
 
 func (c *Container) OnLogin() {
@@ -144,6 +154,10 @@ func (c *Container) Start() {
 
 	c.ui.SetView(ifc.ViewMain)
 	c.OnLogin()
+
+	if c.client == nil {
+		return
+	}
 
 	debug.Print("Starting sync...")
 	c.running = true
@@ -167,6 +181,7 @@ func (c *Container) HandleMessage(evt *gomatrix.Event) {
 	room, message := c.ui.MainView().ProcessMessageEvent(evt)
 	if room != nil {
 		room.AddMessage(message, widget.AppendMessage)
+		c.ui.Render()
 	}
 }
 
@@ -184,6 +199,7 @@ func (c *Container) HandleMembership(evt *gomatrix.Event) {
 		room.UpdateUserList()
 
 		room.AddMessage(message, widget.AppendMessage)
+		c.ui.Render()
 	}
 }
 

@@ -3,8 +3,7 @@
 
 A terminal Matrix client written in Go using [gomatrix](https://github.com/matrix-org/gomatrix) and [tview](https://github.com/rivo/tview).
 
-Basic usage is possible, but many of the features you'd expect from a Matrix
-client (like proper chat history) haven't been implemented.
+Basic usage is possible, but expect bugs and missing features.
 
 ## Discussion
 

@@ -175,7 +175,7 @@ func (view *MainView) HandleCommand(room, command string, args []string) {
 
 func (view *MainView) InputCapture(key *tcell.EventKey) *tcell.EventKey {
 	k := key.Key()
-	if key.Modifiers() == tcell.ModCtrl {
+	if key.Modifiers() == tcell.ModCtrl || key.Modifiers() == tcell.ModAlt {
 		if k == tcell.KeyDown {
 			view.SwitchRoom(view.currentRoomIndex + 1)
 			view.roomList.SetCurrentItem(view.currentRoomIndex)
@@ -185,13 +185,18 @@ func (view *MainView) InputCapture(key *tcell.EventKey) *tcell.EventKey {
 		} else {
 			return key
 		}
-	} else if k == tcell.KeyPgUp || k == tcell.KeyPgDn {
+	} else if k == tcell.KeyPgUp || k == tcell.KeyPgDn || k == tcell.KeyUp || k == tcell.KeyDown {
 		msgView := view.rooms[view.CurrentRoomID()].MessageView()
-		if k == tcell.KeyPgUp {
-			msgView.PageUp()
+		if k == tcell.KeyPgUp || k == tcell.KeyUp {
+			if msgView.IsAtTop() {
+				go view.LoadMoreHistory(view.CurrentRoomID())
+			} else {
+				msgView.MoveUp(k == tcell.KeyPgUp)
+			}
 		} else {
-			msgView.PageDown()
+			msgView.MoveDown(k == tcell.KeyPgDn)
 		}
+		view.parent.Render()
 	} else {
 		return key
 	}
@@ -225,11 +230,11 @@ func (view *MainView) addRoom(index int, room string) {
 		view.SwitchRoom(index)
 	})
 	if !view.roomView.HasPage(room) {
-		roomView := widget.NewRoomView(view, roomStore)
+		roomView := widget.NewRoomView(roomStore)
 		view.rooms[room] = roomView
 		view.roomView.AddPage(room, roomView, true, false)
 		roomView.UpdateUserList()
-		view.GetHistory(room)
+		go view.LoadInitialHistory(room)
 	}
 }
 
@@ -269,7 +274,7 @@ func (view *MainView) RemoveRoom(room string) {
 	view.roomIDs = append(view.roomIDs[:removeIndex], view.roomIDs[removeIndex+1:]...)
 	view.roomView.RemovePage(room)
 	delete(view.rooms, room)
-	view.Render()
+	view.parent.Render()
 }
 
 func (view *MainView) SetRooms(rooms []string) {
@@ -294,24 +299,52 @@ func (view *MainView) SetTyping(room string, users []string) {
 func (view *MainView) AddServiceMessage(room, message string) {
 	roomView, ok := view.rooms[room]
 	if ok {
-		messageView := roomView.MessageView()
-		message := messageView.NewMessage("", "*", message, time.Now())
-		messageView.AddMessage(message, widget.AppendMessage)
+		message := roomView.NewMessage("", "*", message, time.Now())
+		roomView.AddMessage(message, widget.AppendMessage)
 		view.parent.Render()
 	}
 }
 
-func (view *MainView) Render() {
-	view.parent.Render()
+func (view *MainView) LoadMoreHistory(room string) {
+	view.UpdateLogs(room, false)
 }
 
-func (view *MainView) GetHistory(room string) {
+func (view *MainView) LoadInitialHistory(room string) {
+	view.UpdateLogs(room, true)
+}
+
+func (view *MainView) UpdateLogs(room string, initial bool) {
+	defer view.gmx.Recover()
 	roomView := view.rooms[room]
-	history, _, err := view.matrix.GetHistory(roomView.Room.ID, view.config.Session.NextBatch, 50)
+
+	batch := roomView.Room.PrevBatch
+	lockTime := time.Now().Unix() + 1
+
+	roomView.FetchHistoryLock.Lock()
+	roomView.MessageView().LoadingMessages = true
+	defer func() {
+		roomView.FetchHistoryLock.Unlock()
+		roomView.MessageView().LoadingMessages = false
+	}()
+
+	// There's no clean way to try to lock a mutex, so we just check if we still
+	// want to continue after we get the lock. This function should always be ran
+	// in a goroutine, so the blocking doesn't matter.
+	if time.Now().Unix() >= lockTime || batch != roomView.Room.PrevBatch {
+		return
+	}
+
+	if initial {
+		batch = view.config.Session.NextBatch
+	}
+	debug.Print("Loading history for", room, "starting from", batch, "(initial:", initial, ")")
+	history, prevBatch, err := view.matrix.GetHistory(roomView.Room.ID, batch, 50)
 	if err != nil {
+		view.AddServiceMessage(room, "Failed to fetch history")
 		debug.Print("Failed to fetch history for", roomView.Room.ID, err)
 		return
 	}
+	roomView.Room.PrevBatch = prevBatch
 	for _, evt := range history {
 		var room *widget.RoomView
 		var message *types.Message
@@ -324,6 +357,7 @@ func (view *MainView) GetHistory(room string) {
 			room.AddMessage(message, widget.PrependMessage)
 		}
 	}
+	view.parent.Render()
 }
 
 func (view *MainView) ProcessMessageEvent(evt *gomatrix.Event) (room *widget.RoomView, message *types.Message) {

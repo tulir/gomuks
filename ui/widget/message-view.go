@@ -18,7 +18,6 @@ package widget
 
 import (
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/gdamore/tcell"
@@ -36,17 +35,17 @@ type MessageView struct {
 	TimestampFormat string
 	TimestampWidth  int
 	Separator       rune
+	LoadingMessages bool
 
-	widestSender        int
-	prevWidth           int
-	prevHeight          int
-	prevScrollOffset    int
-	firstDisplayMessage int
-	lastDisplayMessage  int
-	totalHeight         int
+	widestSender int
+	prevWidth    int
+	prevHeight   int
 
 	messageIDs map[string]bool
 	messages   []*types.Message
+
+	metaBuffer []*types.Message
+	textBuffer []string
 }
 
 func NewMessageView() *MessageView {
@@ -61,14 +60,12 @@ func NewMessageView() *MessageView {
 
 		messages:   make([]*types.Message, 0),
 		messageIDs: make(map[string]bool),
+		textBuffer: make([]string, 0),
+		metaBuffer: make([]*types.Message, 0),
 
-		widestSender:        5,
-		prevWidth:           -1,
-		prevHeight:          -1,
-		prevScrollOffset:    -1,
-		firstDisplayMessage: -1,
-		lastDisplayMessage:  -1,
-		totalHeight:         -1,
+		widestSender: 5,
+		prevWidth:    -1,
+		prevHeight:   -1,
 	}
 }
 
@@ -77,17 +74,6 @@ func (view *MessageView) NewMessage(id, sender, text string, timestamp time.Time
 		timestamp.Format(view.TimestampFormat),
 		timestamp.Format(view.DateFormat),
 		GetHashColor(sender))
-}
-
-func (view *MessageView) recalculateBuffers() {
-	_, _, width, _ := view.GetInnerRect()
-	width -= view.TimestampWidth + TimestampSenderGap + view.widestSender + SenderMessageGap
-	if width != view.prevWidth {
-		for _, message := range view.messages {
-			message.CalculateBuffer(width)
-		}
-		view.prevWidth = width
-	}
 }
 
 func (view *MessageView) updateWidestSender(sender string) {
@@ -100,7 +86,7 @@ func (view *MessageView) updateWidestSender(sender string) {
 }
 
 const (
-	AppendMessage  int = iota
+	AppendMessage  = iota
 	PrependMessage
 )
 
@@ -126,53 +112,87 @@ func (view *MessageView) AddMessage(message *types.Message, direction int) {
 	}
 
 	view.messageIDs[message.ID] = true
-	view.recalculateHeight()
+	view.appendBuffer(message)
 }
 
-func (view *MessageView) recalculateHeight() {
-	_, _, width, height := view.GetInnerRect()
-	if height != view.prevHeight || width != view.prevWidth || view.ScrollOffset != view.prevScrollOffset {
-		view.firstDisplayMessage = -1
-		view.lastDisplayMessage = -1
-		view.totalHeight = 0
-		prevDate := ""
-		for i := len(view.messages) - 1; i >= 0; i-- {
-			prevTotalHeight := view.totalHeight
-			message := view.messages[i]
-			view.totalHeight += len(message.Buffer)
-			if message.Date != prevDate {
-				if len(prevDate) != 0 {
-					view.totalHeight++
-				}
-				prevDate = message.Date
-			}
-
-			if view.totalHeight < view.ScrollOffset {
-				continue
-			} else if view.firstDisplayMessage == -1 {
-				view.lastDisplayMessage = i
-				view.firstDisplayMessage = i
-			}
-
-			if prevTotalHeight < height+view.ScrollOffset {
-				view.lastDisplayMessage = i
-			}
+func (view *MessageView) recalculateMessageBuffers() {
+	_, _, width, _ := view.GetInnerRect()
+	width -= view.TimestampWidth + TimestampSenderGap + view.widestSender + SenderMessageGap
+	if width != view.prevWidth {
+		for _, message := range view.messages {
+			message.CalculateBuffer(width)
 		}
-		view.prevScrollOffset = view.ScrollOffset
+		view.prevWidth = width
 	}
 }
 
-func (view *MessageView) PageUp() {
-	_, _, _, height := view.GetInnerRect()
-	view.ScrollOffset += height / 2
-	if view.ScrollOffset > view.totalHeight-height {
-		view.ScrollOffset = view.totalHeight - height + 5
+func (view *MessageView) appendBuffer(message *types.Message) {
+	if len(view.metaBuffer) > 0 {
+		prevMeta := view.metaBuffer[len(view.metaBuffer)-1]
+		if prevMeta != nil && prevMeta.Date != message.Date {
+			view.textBuffer = append(view.textBuffer, fmt.Sprintf("Date changed to %s", message.Date))
+			view.metaBuffer = append(view.metaBuffer, nil)
+		}
+	}
+
+	view.textBuffer = append(view.textBuffer, message.Buffer...)
+	for range message.Buffer {
+		view.metaBuffer = append(view.metaBuffer, message)
 	}
 }
 
-func (view *MessageView) PageDown() {
+func (view *MessageView) recalculateBuffer() {
+	_, _, width, height := view.GetInnerRect()
+	view.textBuffer = make([]string, 0)
+	view.metaBuffer = make([]*types.Message, 0)
+
+	if height != view.prevHeight || width != view.prevWidth {
+		for _, message := range view.messages {
+			view.appendBuffer(message)
+		}
+		view.prevHeight = height
+	}
+}
+
+const PaddingAtTop = 5
+
+func (view *MessageView) MoveUp(page bool) {
 	_, _, _, height := view.GetInnerRect()
-	view.ScrollOffset -= height / 2
+
+	totalHeight := len(view.textBuffer)
+	if view.ScrollOffset >= totalHeight-height {
+		// If the user is at the top and presses page up again, add a bit of blank space.
+		if page {
+			view.ScrollOffset = totalHeight - height + PaddingAtTop
+		} else if view.ScrollOffset < totalHeight-height+PaddingAtTop {
+			view.ScrollOffset++
+		}
+		return
+	}
+
+	if page {
+		view.ScrollOffset += height / 2
+	} else {
+		view.ScrollOffset++
+	}
+	if view.ScrollOffset > totalHeight-height {
+		view.ScrollOffset = totalHeight - height
+	}
+}
+
+func (view *MessageView) IsAtTop() bool {
+	_, _, _, height := view.GetInnerRect()
+	totalHeight := len(view.textBuffer)
+	return view.ScrollOffset >= totalHeight-height+PaddingAtTop
+}
+
+func (view *MessageView) MoveDown(page bool) {
+	_, _, _, height := view.GetInnerRect()
+	if page {
+		view.ScrollOffset -= height / 2
+	} else {
+		view.ScrollOffset--
+	}
 	if view.ScrollOffset < 0 {
 		view.ScrollOffset = 0
 	}
@@ -224,10 +244,10 @@ func (view *MessageView) Draw(screen tcell.Screen) {
 	view.Box.Draw(screen)
 
 	x, y, _, height := view.GetInnerRect()
-	view.recalculateBuffers()
-	view.recalculateHeight()
+	view.recalculateMessageBuffers()
+	view.recalculateBuffer()
 
-	if view.firstDisplayMessage == -1 || view.lastDisplayMessage == -1 {
+	if len(view.textBuffer) == 0 {
 		view.writeLine(screen, "It's quite empty in here.", x, y+height, tcell.ColorDefault)
 		return
 	}
@@ -239,55 +259,37 @@ func (view *MessageView) Draw(screen tcell.Screen) {
 		screen.SetContent(separatorX, separatorY, view.Separator, nil, tcell.StyleDefault)
 	}
 
-	writeOffset := 0
-	prevDate := ""
-	prevSender := ""
-	prevSenderLine := -1
-	for i := view.firstDisplayMessage; i >= view.lastDisplayMessage; i-- {
-		message := view.messages[i]
-		messageHeight := len(message.Buffer)
-
-		// Show message when the date changes.
-		if message.Date != prevDate {
-			if len(prevDate) > 0 {
-				writeOffset++
-				view.writeLine(
-					screen, fmt.Sprintf("Date changed to %s", prevDate),
-					x+messageOffsetX, y+height-writeOffset, tcell.ColorGreen)
+	var prevMeta *types.Message
+	var prevSender string
+	indexOffset := len(view.textBuffer) - view.ScrollOffset - height
+	if indexOffset <= -PaddingAtTop {
+		message := "Scroll up to load more messages."
+		if view.LoadingMessages {
+			message = "Loading more messages..."
+		}
+		view.writeLine(screen, message, x+messageOffsetX, y, tcell.ColorGreen)
+	}
+	for line := 0; line < height; line++ {
+		index := indexOffset + line
+		if index < 0 {
+			continue
+		} else if index > len(view.textBuffer) {
+			break
+		}
+		text, meta := view.textBuffer[index], view.metaBuffer[index]
+		if meta != prevMeta {
+			if meta != nil {
+				view.writeLine(screen, meta.Timestamp, x, y+line, tcell.ColorDefault)
+				if meta.Sender != prevSender {
+					view.writeLineRight(
+						screen, meta.Sender,
+						x+usernameOffsetX, y+line,
+						view.widestSender, meta.SenderColor)
+					prevSender = meta.Sender
+				}
 			}
-			prevDate = message.Date
+			prevMeta = meta
 		}
-
-		senderAtLine := y + height - writeOffset - messageHeight
-		// The message may be only partially on screen, so we need to make sure the sender
-		// is on screen even when the message is not shown completely.
-		if senderAtLine < y {
-			senderAtLine = y
-		}
-
-		view.writeLine(screen, message.Timestamp, x, senderAtLine, tcell.ColorDefault)
-		view.writeLineRight(screen, message.Sender,
-			x+usernameOffsetX, senderAtLine,
-			view.widestSender, message.SenderColor)
-
-		if message.Sender == prevSender {
-			// Sender is same as previous. We're looping from bottom to top, and we want the
-			// sender name only on the topmost message, so clear out the duplicate sender name
-			// below.
-			view.writeLineRight(screen, strings.Repeat(" ", view.widestSender),
-				x+usernameOffsetX, prevSenderLine,
-				view.widestSender, message.SenderColor)
-		}
-		prevSender = message.Sender
-		prevSenderLine = senderAtLine
-
-		for num, line := range message.Buffer {
-			offsetY := height - messageHeight - writeOffset + num
-			// Only render message if it's within the message view.
-			if offsetY >= 0 {
-				view.writeLine(screen, line, x+messageOffsetX, y+offsetY, tcell.ColorDefault)
-			}
-		}
-		writeOffset += messageHeight
+		view.writeLine(screen, text, x+messageOffsetX, y+line, tcell.ColorDefault)
 	}
 }

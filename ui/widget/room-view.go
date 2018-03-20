@@ -19,6 +19,7 @@ package widget
 import (
 	"fmt"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/gdamore/tcell"
@@ -26,10 +27,6 @@ import (
 	"maunium.net/go/gomuks/ui/types"
 	"maunium.net/go/tview"
 )
-
-type Renderable interface {
-	Render()
-}
 
 type RoomView struct {
 	*tview.Box
@@ -40,18 +37,18 @@ type RoomView struct {
 	userList *tview.TextView
 	Room     *rooms.Room
 
-	parent Renderable
+	FetchHistoryLock *sync.Mutex
 }
 
-func NewRoomView(parent Renderable, room *rooms.Room) *RoomView {
+func NewRoomView(room *rooms.Room) *RoomView {
 	view := &RoomView{
-		Box:      tview.NewBox(),
-		topic:    tview.NewTextView(),
-		content:  NewMessageView(),
-		status:   tview.NewTextView(),
-		userList: tview.NewTextView(),
-		Room:     room,
-		parent:   parent,
+		Box:              tview.NewBox(),
+		topic:            tview.NewTextView(),
+		content:          NewMessageView(),
+		status:           tview.NewTextView(),
+		userList:         tview.NewTextView(),
+		FetchHistoryLock: &sync.Mutex{},
+		Room:             room,
 	}
 	view.topic.
 		SetText(strings.Replace(room.GetTopic(), "\n", " ", -1)).
@@ -148,5 +145,4 @@ func (view *RoomView) NewMessage(id, sender, text string, timestamp time.Time) *
 
 func (view *RoomView) AddMessage(message *types.Message, direction int) {
 	view.content.AddMessage(message, direction)
-	view.parent.Render()
 }

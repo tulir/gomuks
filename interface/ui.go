@@ -48,7 +48,6 @@ type MainView interface {
 
 	SetTyping(roomID string, users []string)
 	AddServiceMessage(roomID string, message string)
-	GetHistory(room string)
 	ProcessMessageEvent(evt *gomatrix.Event) (*widget.RoomView, *types.Message)
 	ProcessMembershipEvent(evt *gomatrix.Event, new bool) (*widget.RoomView, *types.Message)
 }
