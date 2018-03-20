@@ -189,7 +189,12 @@ func (c *Container) Start() {
 }
 
 func (c *Container) NotifyMessage(room *rooms.Room, message *types.Message) {
-	notification.Send(room.GetTitle(), message.Text, false)
+	sender := fmt.Sprintf("%s (%s)", message.Sender, room.GetTitle())
+	if room.GetTitle() == message.Sender {
+		// 1:1 room, title is same as display name of other user.
+		sender = message.Sender
+	}
+	notification.Send(sender, message.Text, false)
 }
 
 func (c *Container) HandleMessage(evt *gomatrix.Event) {
