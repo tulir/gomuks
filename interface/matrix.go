@@ -28,10 +28,7 @@ type MatrixContainer interface {
 	Login(user, password string) error
 	Start()
 	Stop()
-	// HandleMessage(evt *gomatrix.Event)
-	// HandleMembership(evt *gomatrix.Event)
-	// HandleTyping(evt *gomatrix.Event)
-	SendMessage(roomID, message string)
+	SendMessage(roomID, message string) (string, error)
 	SendTyping(roomID string, typing bool)
 	JoinRoom(roomID string) error
 	LeaveRoom(roomID string) error

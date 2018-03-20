@@ -147,6 +147,6 @@ func (view *RoomView) NewMessage(id, sender, text string, timestamp time.Time) *
 	return view.content.NewMessage(id, sender, text, timestamp)
 }
 
-func (view *RoomView) AddMessage(message *types.Message, direction int) {
+func (view *RoomView) AddMessage(message *types.Message, direction MessageDirection) {
 	view.content.AddMessage(message, direction)
 }

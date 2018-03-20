@@ -25,24 +25,26 @@ import (
 )
 
 type Message struct {
-	ID        string
-	Sender    string
-	Text      string
-	Timestamp string
-	Date      string
-
-	Buffer      []string
-	SenderColor tcell.Color
+	BasicMeta
+	ID              string
+	Text            string
+	Buffer          []string
+	prevBufferWidth int
 }
 
 func NewMessage(id, sender, text, timestamp, date string, senderColor tcell.Color) *Message {
 	return &Message{
-		ID:          id,
-		Sender:      sender,
-		Text:        text,
-		Timestamp:   timestamp,
-		Date:        date,
-		SenderColor: senderColor,
+		BasicMeta: BasicMeta{
+			Sender:         sender,
+			Timestamp:      timestamp,
+			Date:           date,
+			SenderColor:    senderColor,
+			TextColor:      tcell.ColorDefault,
+			TimestampColor: tcell.ColorDefault,
+		},
+		Text:            text,
+		ID:              id,
+		prevBufferWidth: 0,
 	}
 }
 
@@ -50,6 +52,13 @@ var (
 	boundaryPattern = regexp.MustCompile("([[:punct:]]\\s*|\\s+)")
 	spacePattern    = regexp.MustCompile(`\s+`)
 )
+
+func (message *Message) CopyTo(to *Message) {
+	to.BasicMeta = message.BasicMeta
+	to.ID = message.ID
+	to.Text = message.Text
+	to.RecalculateBuffer()
+}
 
 func (message *Message) CalculateBuffer(width int) {
 	if width < 1 {
@@ -82,28 +91,9 @@ func (message *Message) CalculateBuffer(width int) {
 			str = str[len(extract):]
 		}
 	}
+	message.prevBufferWidth = width
 }
 
-func (message *Message) GetSender() string {
-	return message.Sender
-}
-
-func (message *Message) GetSenderColor() tcell.Color {
-	return message.SenderColor
-}
-
-func (message *Message) GetTimestamp() string {
-	return message.Timestamp
-}
-
-func (message *Message) GetDate() string {
-	return message.Date
-}
-
-func (message *Message) GetTextColor() tcell.Color {
-	return tcell.ColorDefault
-}
-
-func (message *Message) GetTimestampColor() tcell.Color {
-	return tcell.ColorDefault
+func (message *Message) RecalculateBuffer() {
+	message.CalculateBuffer(message.prevBufferWidth)
 }

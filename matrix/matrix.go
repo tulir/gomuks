@@ -213,10 +213,14 @@ func (c *Container) HandleTyping(evt *gomatrix.Event) {
 	c.ui.MainView().SetTyping(evt.RoomID, strUsers)
 }
 
-func (c *Container) SendMessage(roomID, message string) {
+func (c *Container) SendMessage(roomID, text string) (string, error) {
 	defer c.gmx.Recover()
 	c.SendTyping(roomID, false)
-	c.client.SendText(roomID, message)
+	resp, err := c.client.SendText(roomID, text)
+	if err != nil {
+		return "", err
+	}
+	return resp.EventID, nil
 }
 
 func (c *Container) SendTyping(roomID string, typing bool) {
@@ -250,8 +254,6 @@ func (c *Container) JoinRoom(roomID string) error {
 		return err
 	}
 
-	// TODO probably safe to remove
-	// c.ui.MainView().AddRoom(resp.RoomID)
 	return nil
 }
 

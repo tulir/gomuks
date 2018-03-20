@@ -42,7 +42,7 @@ type MessageView struct {
 	prevHeight   int
 	prevMsgCount int
 
-	messageIDs map[string]bool
+	messageIDs map[string]*types.Message
 	messages   []*types.Message
 
 	textBuffer []string
@@ -60,7 +60,7 @@ func NewMessageView() *MessageView {
 		ScrollOffset:    0,
 
 		messages:   make([]*types.Message, 0),
-		messageIDs: make(map[string]bool),
+		messageIDs: make(map[string]*types.Message),
 		textBuffer: make([]string, 0),
 		metaBuffer: make([]types.MessageMeta, 0),
 
@@ -87,15 +87,25 @@ func (view *MessageView) updateWidestSender(sender string) {
 	}
 }
 
+type MessageDirection int
+
 const (
-	AppendMessage  = iota
+	AppendMessage  MessageDirection = iota
 	PrependMessage
+	IgnoreMessage
 )
 
-func (view *MessageView) AddMessage(message *types.Message, direction int) {
-	_, messageExists := view.messageIDs[message.ID]
+func (view *MessageView) UpdateMessageID(message *types.Message, newID string) {
+	delete(view.messageIDs, message.ID)
+	message.ID = newID
+	view.messageIDs[message.ID] = message
+}
+
+func (view *MessageView) AddMessage(message *types.Message, direction MessageDirection) {
+	msg, messageExists := view.messageIDs[message.ID]
 	if messageExists {
-		return
+		message.CopyTo(msg)
+		direction = IgnoreMessage
 	}
 
 	view.updateWidestSender(message.Sender)
@@ -114,7 +124,7 @@ func (view *MessageView) AddMessage(message *types.Message, direction int) {
 		view.messages = append([]*types.Message{message}, view.messages...)
 	}
 
-	view.messageIDs[message.ID] = true
+	view.messageIDs[message.ID] = message
 }
 
 func (view *MessageView) appendBuffer(message *types.Message) {

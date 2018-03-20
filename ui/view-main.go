@@ -19,6 +19,7 @@ package ui
 import (
 	"fmt"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 	"unicode"
@@ -122,7 +123,7 @@ func (view *MainView) InputTabComplete(text string, cursorOffset int) string {
 		word := findWordToTabComplete(str)
 		userCompletions := roomView.AutocompleteUser(word)
 		if len(userCompletions) == 1 {
-			startIndex := len(str)-len(word)
+			startIndex := len(str) - len(word)
 			completion := userCompletions[0]
 			if startIndex == 0 {
 				completion = completion + ": "
@@ -136,20 +137,46 @@ func (view *MainView) InputTabComplete(text string, cursorOffset int) string {
 }
 
 func (view *MainView) InputDone(key tcell.Key) {
-	if key == tcell.KeyEnter {
-		room, text := view.CurrentRoomID(), view.input.GetText()
-		if len(text) == 0 {
-			return
-		} else if text[0] == '/' {
-			args := strings.SplitN(text, " ", 2)
-			command := strings.ToLower(args[0])
-			args = args[1:]
-			go view.HandleCommand(room, command, args)
-		} else {
-			go view.matrix.SendMessage(room, text)
-		}
-		view.input.SetText("")
+	if key != tcell.KeyEnter {
+		return
 	}
+	room, text := view.CurrentRoomID(), view.input.GetText()
+	if len(text) == 0 {
+		return
+	} else if text[0] == '/' {
+		args := strings.SplitN(text, " ", 2)
+		command := strings.ToLower(args[0])
+		args = args[1:]
+		go view.HandleCommand(room, command, args)
+	} else {
+		view.SendMessage(room, text)
+	}
+	view.input.SetText("")
+}
+
+func (view *MainView) SendMessage(room, text string) {
+	now := time.Now()
+	roomView := view.GetRoom(room)
+	tempMessage := roomView.NewMessage(
+		strconv.FormatInt(now.UnixNano(), 10),
+		"Sending...", text, now)
+	tempMessage.TimestampColor = tcell.ColorGray
+	tempMessage.TextColor = tcell.ColorGray
+	tempMessage.SenderColor = tcell.ColorGray
+	roomView.AddMessage(tempMessage, widget.AppendMessage)
+	go func() {
+		defer view.gmx.Recover()
+		eventID, err := view.matrix.SendMessage(room, text)
+		if err != nil {
+			tempMessage.TextColor = tcell.ColorRed
+			tempMessage.TimestampColor = tcell.ColorRed
+			tempMessage.SenderColor = tcell.ColorRed
+			tempMessage.Sender = "Error"
+			roomView.SetStatus(fmt.Sprintf("Failed to send message: %s", err))
+		} else {
+			roomView.MessageView().UpdateMessageID(tempMessage, eventID)
+		}
+	}()
 }
 
 func (view *MainView) HandleCommand(room, command string, args []string) {
@@ -418,6 +445,7 @@ func (view *MainView) ProcessMembershipEvent(evt *gomatrix.Event, new bool) (roo
 			return
 		}
 		message = room.NewMessage(evt.ID, sender, text, unixToTime(evt.Timestamp))
+		message.TextColor = tcell.ColorGreen
 	}
 	return
 }
