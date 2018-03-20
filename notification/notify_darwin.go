@@ -16,7 +16,11 @@
 
 package notification
 
-import "os/exec"
+import (
+	"os/exec"
+	"fmt"
+	"strings"
+)
 
 var TerminalNotifierAvailable = false
 
@@ -40,7 +44,7 @@ func Send(title, text string, critical bool) error {
 	}
 	title = strings.Replace(title, `"`, `\"`, -1)
 	text = strings.Replace(text, `"`, `\"`, -1)
-	notification := fmt.Sprintf("display notification \"%s\" with title \"%s\" subtitle \"%s\"", text, o.AppName, title)
+	notification := fmt.Sprintf("display notification \"%s\" with title \"gomuks\" subtitle \"%s\"", text, title)
 	return exec.Command("osascript", "-e", notification).Run()
 }
 
