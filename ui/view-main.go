@@ -338,14 +338,14 @@ func (view *MainView) AddServiceMessage(room, message string) {
 }
 
 func (view *MainView) LoadMoreHistory(room string) {
-	view.UpdateLogs(room, false)
+	view.LoadHistory(room, false)
 }
 
 func (view *MainView) LoadInitialHistory(room string) {
-	view.UpdateLogs(room, true)
+	view.LoadHistory(room, true)
 }
 
-func (view *MainView) UpdateLogs(room string, initial bool) {
+func (view *MainView) LoadHistory(room string, initial bool) {
 	defer view.gmx.Recover()
 	roomView := view.rooms[room]
 
