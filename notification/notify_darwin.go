@@ -17,8 +17,8 @@
 package notification
 
 import (
-	"os/exec"
 	"fmt"
+	"os/exec"
 	"strings"
 )
 
@@ -37,9 +37,9 @@ func Send(title, text string, critical bool) error {
 		if critical {
 			args = append(args, "-timeout", "30")
 		}
-//		if len(iconPath) > 0 {
-//			args = append(args, "-appIcon", iconPath)
-//		}
+// 		if len(iconPath) > 0 {
+// 			args = append(args, "-appIcon", iconPath)
+// 		}
 		return exec.Command("terminal-notifier", args...).Run()
 	}
 	title = strings.Replace(title, `"`, `\"`, -1)
@@ -47,4 +47,3 @@ func Send(title, text string, critical bool) error {
 	notification := fmt.Sprintf("display notification \"%s\" with title \"gomuks\" subtitle \"%s\"", text, title)
 	return exec.Command("osascript", "-e", notification).Run()
 }
-

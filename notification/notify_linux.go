@@ -23,9 +23,9 @@ func Send(title, text string, critical bool) error {
 	if critical {
 		args = append(args, "-p", "critical")
 	}
-//	if iconPath {
-//		args = append(args, "-i", iconPath)
-//	}
+// 	if iconPath {
+// 		args = append(args, "-i", iconPath)
+// 	}
 	args = append(args, title, text)
 	return exec.Command("notify-send", args...).Run()
 }

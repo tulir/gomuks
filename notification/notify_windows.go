@@ -20,12 +20,12 @@ import "gopkg.in/toast.v1"
 
 func Send(title, text string, critical bool) error {
 	notification := toast.Notification{
-		AppID: "gomuks",
-		Title: title,
-		Message: message,
-		Audio: toast.IM,
+		AppID:    "gomuks",
+		Title:    title,
+		Message:  message,
+		Audio:    toast.IM,
 		Duration: toast.Short,
-//		Icon: ...,
+// 		Icon: ...,
 	}
 	if critical {
 		notification.Duration = toast.Long

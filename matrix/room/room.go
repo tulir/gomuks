@@ -27,7 +27,7 @@ type Room struct {
 	*gomatrix.Room
 
 	PrevBatch        string
-	Owner string
+	Owner            string
 	memberCache      map[string]*Member
 	firstMemberCache string
 	nameCache        string
@@ -204,7 +204,7 @@ func (room *Room) GetMember(userID string) *Member {
 // NewRoom creates a new Room with the given ID
 func NewRoom(roomID, owner string) *Room {
 	return &Room{
-		Room: gomatrix.NewRoom(roomID),
+		Room:  gomatrix.NewRoom(roomID),
 		Owner: owner,
 	}
 }

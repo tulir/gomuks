@@ -23,9 +23,9 @@ import (
 )
 
 type GomuksUI struct {
-	gmx    ifc.Gomuks
-	app    *tview.Application
-	views  *tview.Pages
+	gmx   ifc.Gomuks
+	app   *tview.Application
+	views *tview.Pages
 
 	mainView  *MainView
 	loginView *tview.Form
@@ -38,9 +38,9 @@ func init() {
 
 func NewGomuksUI(gmx ifc.Gomuks) (ui *GomuksUI) {
 	ui = &GomuksUI{
-		gmx:    gmx,
-		app:    gmx.App(),
-		views:  tview.NewPages(),
+		gmx:   gmx,
+		app:   gmx.App(),
+		views: tview.NewPages(),
 	}
 	ui.views.SetChangedFunc(ui.Render)
 	return

@@ -322,10 +322,6 @@ func (field *AdvancedInputField) setCursor(screen tcell.Screen) {
 		y++
 		rightLimit -= 2
 	}
-	fieldWidth := runewidth.StringWidth(field.text)
-	if field.fieldWidth > 0 && fieldWidth > field.fieldWidth-1 {
-		fieldWidth = field.fieldWidth - 1
-	}
 	x = x + tview.StringWidth(field.label) + field.cursorOffset - field.viewOffset
 	if x >= rightLimit {
 		x = rightLimit - 1
@@ -344,122 +340,163 @@ func SubstringBefore(s string, w int) string {
 	return runewidth.Truncate(s, w, "")
 }
 
+func (field *AdvancedInputField) TypeRune(ch rune) {
+	leftPart := SubstringBefore(field.text, field.cursorOffset)
+	newText := leftPart + string(ch) + field.text[len(leftPart):]
+	if field.accept != nil {
+		if !field.accept(newText, ch) {
+			return
+		}
+	}
+	field.text = newText
+	field.cursorOffset += runewidth.RuneWidth(ch)
+}
+
+func (field *AdvancedInputField) PasteClipboard() {
+	clip, _ := clipboard.ReadAll("clipboard")
+	leftPart := SubstringBefore(field.text, field.cursorOffset)
+	field.text = leftPart + clip + field.text[len(leftPart):]
+	field.cursorOffset += runewidth.StringWidth(clip)
+}
+
+func (field *AdvancedInputField) MoveCursorLeft(moveWord bool) {
+	before := SubstringBefore(field.text, field.cursorOffset)
+	if moveWord {
+		found := lastWord.FindString(before)
+		field.cursorOffset -= runewidth.StringWidth(found)
+	} else if len(before) > 0 {
+		beforeRunes := []rune(before)
+		char := beforeRunes[len(beforeRunes)-1]
+		field.cursorOffset -= runewidth.RuneWidth(char)
+	}
+}
+
+func (field *AdvancedInputField) MoveCursorRight(moveWord bool) {
+	before := SubstringBefore(field.text, field.cursorOffset)
+	after := field.text[len(before):]
+	if moveWord {
+		found := firstWord.FindString(after)
+		field.cursorOffset += runewidth.StringWidth(found)
+	} else if len(after) > 0 {
+		char := []rune(after)[0]
+		field.cursorOffset += runewidth.RuneWidth(char)
+	}
+}
+
+func (field *AdvancedInputField) RemoveNextCharacter() {
+	if field.cursorOffset >= runewidth.StringWidth(field.text) {
+		return
+	}
+	leftPart := SubstringBefore(field.text, field.cursorOffset)
+	// Take everything after the left part minus the first character.
+	rightPart := string([]rune(field.text[len(leftPart):])[1:])
+
+	field.text = leftPart + rightPart
+}
+
+func (field *AdvancedInputField) Clear() {
+	field.text = ""
+	field.cursorOffset = 0
+}
+
+func (field *AdvancedInputField) RemovePreviousWord() {
+	leftPart := SubstringBefore(field.text, field.cursorOffset)
+	rightPart := field.text[len(leftPart):]
+	replacement := lastWord.ReplaceAllString(leftPart, "")
+	field.text = replacement + rightPart
+
+	field.cursorOffset -= runewidth.StringWidth(leftPart) - runewidth.StringWidth(replacement)
+}
+
+func (field *AdvancedInputField) RemovePreviousCharacter() {
+	if field.cursorOffset == 0 {
+		return
+	}
+	leftPart := SubstringBefore(field.text, field.cursorOffset)
+	rightPart := field.text[len(leftPart):]
+
+	// Take everything before the right part minus the last character.
+	leftPartRunes := []rune(leftPart)
+	leftPartRunes = leftPartRunes[0 : len(leftPartRunes)-1]
+	leftPart = string(leftPartRunes)
+
+	// Figure out what character was removed to correctly decrease cursorOffset.
+	removedChar := field.text[len(leftPart) : len(field.text)-len(rightPart)]
+
+	field.text = leftPart + rightPart
+
+	field.cursorOffset -= runewidth.StringWidth(removedChar)
+}
+
+func (field *AdvancedInputField) TriggerTabComplete() bool {
+	if field.tabComplete != nil {
+		oldWidth := runewidth.StringWidth(field.text)
+		field.text = field.tabComplete(field.text, field.cursorOffset)
+		newWidth := runewidth.StringWidth(field.text)
+		if oldWidth != newWidth {
+			field.cursorOffset += newWidth - oldWidth
+		}
+		return true
+	}
+	return false
+}
+
+func (field *AdvancedInputField) handleInputChanges(originalText string) {
+	// Trigger changed events.
+	if field.text != originalText && field.changed != nil {
+		field.changed(field.text)
+	}
+
+	// Make sure cursor offset is valid
+	if field.cursorOffset < 0 {
+		field.cursorOffset = 0
+	}
+	width := runewidth.StringWidth(field.text)
+	if field.cursorOffset > width {
+		field.cursorOffset = width
+	}
+}
+
 // InputHandler returns the handler for this primitive.
 func (field *AdvancedInputField) InputHandler() func(event *tcell.EventKey, setFocus func(p tview.Primitive)) {
-	return field.WrapInputHandler(func(event *tcell.EventKey, setFocus func(p tview.Primitive)) {
-		currentText := field.text
-		defer func() {
-			// Trigger changed events.
-			if field.text != currentText && field.changed != nil {
-				field.changed(field.text)
-			}
-			// Make sure cursor offset is valid
-			if field.cursorOffset < 0 {
-				field.cursorOffset = 0
-			}
-			width := runewidth.StringWidth(field.text)
-			if field.cursorOffset > width {
-				field.cursorOffset = width
-			}
-		}()
+	return field.WrapInputHandler(field.inputHandler)
+}
 
-		// Process key event.
-		switch key := event.Key(); key {
-		case tcell.KeyRune: // Regular character.
-			leftPart := SubstringBefore(field.text, field.cursorOffset)
-			newText := leftPart + string(event.Rune()) + field.text[len(leftPart):]
-			if field.accept != nil {
-				if !field.accept(newText, event.Rune()) {
-					break
-				}
-			}
-			field.text = newText
-			field.cursorOffset += runewidth.RuneWidth(event.Rune())
-		case tcell.KeyCtrlV:
-			clip, _ := clipboard.ReadAll("clipboard")
-			leftPart := SubstringBefore(field.text, field.cursorOffset)
-			field.text = leftPart + clip + field.text[len(leftPart):]
-			field.cursorOffset += runewidth.StringWidth(clip)
-		case tcell.KeyLeft: // Move cursor left.
-			before := SubstringBefore(field.text, field.cursorOffset)
-			if event.Modifiers() == tcell.ModCtrl {
-				found := lastWord.FindString(before)
-				field.cursorOffset -= runewidth.StringWidth(found)
-			} else if len(before) > 0 {
-				beforeRunes := []rune(before)
-				char := beforeRunes[len(beforeRunes)-1]
-				field.cursorOffset -= runewidth.RuneWidth(char)
-			}
-		case tcell.KeyRight: // Move cursor right.
-			before := SubstringBefore(field.text, field.cursorOffset)
-			after := field.text[len(before):]
-			if event.Modifiers() == tcell.ModCtrl {
-				found := firstWord.FindString(after)
-				field.cursorOffset += runewidth.StringWidth(found)
-			} else if len(after) > 0 {
-				char := []rune(after)[0]
-				field.cursorOffset += runewidth.RuneWidth(char)
-			}
-		case tcell.KeyDelete: // Delete next character.
-			if field.cursorOffset >= runewidth.StringWidth(field.text) {
-				break
-			}
-			leftPart := SubstringBefore(field.text, field.cursorOffset)
-			// Take everything after the left part minus the first character.
-			rightPart := string([]rune(field.text[len(leftPart):])[1:])
+func (field *AdvancedInputField) inputHandler(event *tcell.EventKey, setFocus func(p tview.Primitive)) {
+	defer field.handleInputChanges(field.text)
 
-			field.text = leftPart + rightPart
-		case tcell.KeyCtrlU:
-			if !field.vimBindings {
-				break
-			}
-			field.text = ""
-			field.cursorOffset = 0
-		case tcell.KeyCtrlW:
-			if !field.vimBindings {
-				break
-			}
-			fallthrough
-		case tcell.KeyBackspace: // Delete last word
-			leftPart := SubstringBefore(field.text, field.cursorOffset)
-			rightPart := field.text[len(leftPart):]
-			replacement := lastWord.ReplaceAllString(leftPart, "")
-			field.text = replacement + rightPart
-
-			field.cursorOffset -= runewidth.StringWidth(leftPart) - runewidth.StringWidth(replacement)
-		case tcell.KeyBackspace2: // Delete last character
-			if field.cursorOffset == 0 {
-				break
-			}
-			leftPart := SubstringBefore(field.text, field.cursorOffset)
-			rightPart := field.text[len(leftPart):]
-
-			// Take everything before the right part minus the last character.
-			leftPartRunes := []rune(leftPart)
-			leftPartRunes = leftPartRunes[0 : len(leftPartRunes)-1]
-			leftPart = string(leftPartRunes)
-
-			// Figure out what character was removed to correctly decrease cursorOffset.
-			removedChar := field.text[len(leftPart) : len(field.text)-len(rightPart)]
-
-			field.text = leftPart + rightPart
-
-			field.cursorOffset -= runewidth.StringWidth(removedChar)
-		case tcell.KeyTab: // Tab-completion
-			if field.tabComplete != nil {
-				oldWidth := runewidth.StringWidth(field.text)
-				field.text = field.tabComplete(field.text, field.cursorOffset)
-				newWidth := runewidth.StringWidth(field.text)
-				if oldWidth != newWidth {
-					field.cursorOffset += newWidth - oldWidth
-				}
-				break
-			}
-			fallthrough
-		case tcell.KeyEnter, tcell.KeyEscape, tcell.KeyBacktab: // We're done.
-			if field.done != nil {
-				field.done(key)
-			}
+	// Process key event.
+	switch key := event.Key(); key {
+	case tcell.KeyRune:
+		field.TypeRune(event.Rune())
+	case tcell.KeyCtrlV:
+		field.PasteClipboard()
+	case tcell.KeyLeft:
+		field.MoveCursorLeft(event.Modifiers() == tcell.ModCtrl)
+	case tcell.KeyRight:
+		field.MoveCursorRight(event.Modifiers() == tcell.ModCtrl)
+	case tcell.KeyDelete:
+		field.RemoveNextCharacter()
+	case tcell.KeyCtrlU:
+		if field.vimBindings {
+			field.Clear()
 		}
-	})
+	case tcell.KeyCtrlW:
+		if field.vimBindings {
+			field.RemovePreviousWord()
+		}
+	case tcell.KeyBackspace:
+		field.RemovePreviousWord()
+	case tcell.KeyBackspace2:
+		field.RemovePreviousCharacter()
+	case tcell.KeyTab:
+		if field.TriggerTabComplete() {
+			break
+		}
+		fallthrough
+	case tcell.KeyEnter, tcell.KeyEscape, tcell.KeyBacktab:
+		if field.done != nil {
+			field.done(key)
+		}
+	}
 }
