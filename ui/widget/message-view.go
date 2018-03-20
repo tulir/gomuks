@@ -40,6 +40,7 @@ type MessageView struct {
 	widestSender int
 	prevWidth    int
 	prevHeight   int
+	prevMsgCount int
 
 	messageIDs map[string]bool
 	messages   []*types.Message
@@ -66,6 +67,7 @@ func NewMessageView() *MessageView {
 		widestSender: 5,
 		prevWidth:    -1,
 		prevHeight:   -1,
+		prevMsgCount: -1,
 	}
 }
 
@@ -107,23 +109,12 @@ func (view *MessageView) AddMessage(message *types.Message, direction int) {
 			view.ScrollOffset += len(message.Buffer)
 		}
 		view.messages = append(view.messages, message)
+		view.appendBuffer(message)
 	} else if direction == PrependMessage {
 		view.messages = append([]*types.Message{message}, view.messages...)
 	}
 
 	view.messageIDs[message.ID] = true
-	view.appendBuffer(message)
-}
-
-func (view *MessageView) recalculateMessageBuffers() {
-	_, _, width, _ := view.GetInnerRect()
-	width -= view.TimestampWidth + TimestampSenderGap + view.widestSender + SenderMessageGap
-	if width != view.prevWidth {
-		for _, message := range view.messages {
-			message.CalculateBuffer(width)
-		}
-		view.prevWidth = width
-	}
 }
 
 func (view *MessageView) appendBuffer(message *types.Message) {
@@ -139,18 +130,26 @@ func (view *MessageView) appendBuffer(message *types.Message) {
 	for range message.Buffer {
 		view.metaBuffer = append(view.metaBuffer, message)
 	}
+	view.prevMsgCount++
 }
 
-func (view *MessageView) recalculateBuffer() {
+func (view *MessageView) recalculateBuffers() {
 	_, _, width, height := view.GetInnerRect()
-	view.textBuffer = make([]string, 0)
-	view.metaBuffer = make([]types.MessageMeta, 0)
 
-	if height != view.prevHeight || width != view.prevWidth {
+	width -= view.TimestampWidth + TimestampSenderGap + view.widestSender + SenderMessageGap
+	recalculateMessageBuffers := width != view.prevWidth
+	if height != view.prevHeight || recalculateMessageBuffers || len(view.messages) != view.prevMsgCount {
+		view.textBuffer = []string{}
+		view.metaBuffer = []types.MessageMeta{}
+		view.prevMsgCount = 0
 		for _, message := range view.messages {
+			if recalculateMessageBuffers {
+				message.CalculateBuffer(width)
+			}
 			view.appendBuffer(message)
 		}
 		view.prevHeight = height
+		view.prevWidth = width
 	}
 }
 
@@ -244,8 +243,7 @@ func (view *MessageView) Draw(screen tcell.Screen) {
 	view.Box.Draw(screen)
 
 	x, y, _, height := view.GetInnerRect()
-	view.recalculateMessageBuffers()
-	view.recalculateBuffer()
+	view.recalculateBuffers()
 
 	if len(view.textBuffer) == 0 {
 		view.writeLine(screen, "It's quite empty in here.", x, y+height, tcell.ColorDefault)
