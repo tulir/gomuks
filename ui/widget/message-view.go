@@ -44,8 +44,8 @@ type MessageView struct {
 	messageIDs map[string]bool
 	messages   []*types.Message
 
-	metaBuffer []*types.Message
 	textBuffer []string
+	metaBuffer []types.MessageMeta
 }
 
 func NewMessageView() *MessageView {
@@ -61,7 +61,7 @@ func NewMessageView() *MessageView {
 		messages:   make([]*types.Message, 0),
 		messageIDs: make(map[string]bool),
 		textBuffer: make([]string, 0),
-		metaBuffer: make([]*types.Message, 0),
+		metaBuffer: make([]types.MessageMeta, 0),
 
 		widestSender: 5,
 		prevWidth:    -1,
@@ -129,9 +129,9 @@ func (view *MessageView) recalculateMessageBuffers() {
 func (view *MessageView) appendBuffer(message *types.Message) {
 	if len(view.metaBuffer) > 0 {
 		prevMeta := view.metaBuffer[len(view.metaBuffer)-1]
-		if prevMeta != nil && prevMeta.Date != message.Date {
+		if prevMeta != nil && prevMeta.GetDate() != message.Date {
 			view.textBuffer = append(view.textBuffer, fmt.Sprintf("Date changed to %s", message.Date))
-			view.metaBuffer = append(view.metaBuffer, nil)
+			view.metaBuffer = append(view.metaBuffer, &types.BasicMeta{TextColor: tcell.ColorGreen})
 		}
 	}
 
@@ -144,7 +144,7 @@ func (view *MessageView) appendBuffer(message *types.Message) {
 func (view *MessageView) recalculateBuffer() {
 	_, _, width, height := view.GetInnerRect()
 	view.textBuffer = make([]string, 0)
-	view.metaBuffer = make([]*types.Message, 0)
+	view.metaBuffer = make([]types.MessageMeta, 0)
 
 	if height != view.prevHeight || width != view.prevWidth {
 		for _, message := range view.messages {
@@ -259,8 +259,7 @@ func (view *MessageView) Draw(screen tcell.Screen) {
 		screen.SetContent(separatorX, separatorY, view.Separator, nil, tcell.StyleDefault)
 	}
 
-	var prevMeta *types.Message
-	var prevSender string
+	var prevMeta types.MessageMeta
 	indexOffset := len(view.textBuffer) - view.ScrollOffset - height
 	if indexOffset <= -PaddingAtTop {
 		message := "Scroll up to load more messages."
@@ -278,18 +277,17 @@ func (view *MessageView) Draw(screen tcell.Screen) {
 		}
 		text, meta := view.textBuffer[index], view.metaBuffer[index]
 		if meta != prevMeta {
-			if meta != nil {
-				view.writeLine(screen, meta.Timestamp, x, y+line, tcell.ColorDefault)
-				if meta.Sender != prevSender {
-					view.writeLineRight(
-						screen, meta.Sender,
-						x+usernameOffsetX, y+line,
-						view.widestSender, meta.SenderColor)
-					prevSender = meta.Sender
-				}
+			if len(meta.GetTimestamp()) > 0 {
+				view.writeLine(screen, meta.GetTimestamp(), x, y+line, meta.GetTimestampColor())
+			}
+			if len(meta.GetSender()) > 0 && (prevMeta == nil || meta.GetSender() != prevMeta.GetSender()) {
+				view.writeLineRight(
+					screen, meta.GetSender(),
+					x+usernameOffsetX, y+line,
+					view.widestSender, meta.GetSenderColor())
 			}
 			prevMeta = meta
 		}
-		view.writeLine(screen, text, x+messageOffsetX, y+line, tcell.ColorDefault)
+		view.writeLine(screen, text, x+messageOffsetX, y+line, meta.GetTextColor())
 	}
 }

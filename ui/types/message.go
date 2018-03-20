@@ -83,3 +83,27 @@ func (message *Message) CalculateBuffer(width int) {
 		}
 	}
 }
+
+func (message *Message) GetSender() string {
+	return message.Sender
+}
+
+func (message *Message) GetSenderColor() tcell.Color {
+	return message.SenderColor
+}
+
+func (message *Message) GetTimestamp() string {
+	return message.Timestamp
+}
+
+func (message *Message) GetDate() string {
+	return message.Date
+}
+
+func (message *Message) GetTextColor() tcell.Color {
+	return tcell.ColorDefault
+}
+
+func (message *Message) GetTimestampColor() tcell.Color {
+	return tcell.ColorDefault
+}
