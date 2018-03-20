@@ -6,7 +6,6 @@ A terminal Matrix client written in Go using [gomatrix](https://github.com/matri
 Basic usage is possible, but expect bugs and missing features.
 
 ## Discussion
-
 Matrix room: [#gomuks:maunium.net](https://matrix.to/#/#gomuks:maunium.net)
 
 ## Installation
@@ -20,13 +19,13 @@ For now, you'll have to compile from source:
 2. gomuks should now be in `$GOPATH/bin/gomuks`
 
 ## Usage
+Switch between rooms with ctrl + up/down arrow (alt+arrows works too).
 
-Switch between rooms with ctrl + up/down arrow.
-
-Scroll chat with page up/down
+Scroll chat with page up/down (half of height per click) or up/down arrow (1 row per click)
 
 ### Commands
 * `/quit` - Close gomuks
 * `/clearcache` - Clear room state cache and close gomuks
 * `/leave` - Leave the current room
 * `/join <room>` - Join the room with the given room ID or alias
+* `/panic` - Trigger a test panic
