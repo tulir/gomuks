@@ -30,13 +30,13 @@ type Config struct {
 	MXID string `yaml:"mxid"`
 	HS   string `yaml:"homeserver"`
 
-	dir     string        `yaml:"-"`
-	Session *Session      `yaml:"-"`
+	dir     string   `yaml:"-"`
+	Session *Session `yaml:"-"`
 }
 
 func NewConfig(dir string) *Config {
 	return &Config{
-		dir:   dir,
+		dir: dir,
 	}
 }
 

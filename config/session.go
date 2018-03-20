@@ -35,9 +35,9 @@ type Session struct {
 	Rooms       map[string]*rooms.Room
 }
 
-func (config *Config) LoadSession(mxid string) {
+func (config *Config) LoadSession(mxid string) error {
 	config.Session = config.NewSession(mxid)
-	config.Session.Load()
+	return config.Session.Load()
 }
 
 func (config *Config) NewSession(mxid string) *Session {
@@ -55,32 +55,34 @@ func (s *Session) Clear() {
 	s.Save()
 }
 
-func (s *Session) Load() {
+func (s *Session) Load() error {
 	data, err := ioutil.ReadFile(s.path)
 	if err != nil {
-		debug.Print("Failed to read session from", s.path)
-		panic(err)
+		debug.Print("Failed to read session from", s.path, err)
+		return err
 	}
 
 	err = json.Unmarshal(data, s)
 	if err != nil {
-		debug.Print("Failed to parse session at", s.path)
-		panic(err)
+		debug.Print("Failed to parse session at", s.path, err)
+		return err
 	}
+	return nil
 }
 
-func (s *Session) Save() {
+func (s *Session) Save() error {
 	data, err := json.Marshal(s)
 	if err != nil {
-		debug.Print("Failed to marshal session of", s.MXID)
-		panic(err)
+		debug.Print("Failed to marshal session of", s.MXID, err)
+		return err
 	}
 
 	err = ioutil.WriteFile(s.path, data, 0600)
 	if err != nil {
-		debug.Print("Failed to write session to", s.path)
-		panic(err)
+		debug.Print("Failed to write session to", s.path, err)
+		return err
 	}
+	return nil
 }
 
 func (s *Session) LoadFilterID(_ string) string {
