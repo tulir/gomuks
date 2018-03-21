@@ -418,7 +418,7 @@ func (view *MainView) processOwnMembershipChange(evt *gomatrix.Event) {
 }
 
 func (view *MainView) ProcessMembershipEvent(evt *gomatrix.Event, new bool) (room *widget.RoomView, message *types.Message) {
-	if new && evt.StateKey != nil && *evt.StateKey == view.config.Session.MXID {
+	if new && evt.StateKey != nil && *evt.StateKey == view.config.Session.UserID {
 		view.processOwnMembershipChange(evt)
 	}
 

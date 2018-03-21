@@ -54,11 +54,11 @@ func NewGomuks(enableDebug bool) *Gomuks {
 
 	gmx.config = config.NewConfig(configDir)
 	gmx.ui = ui.NewGomuksUI(gmx)
-	gmx.matrix = matrix.NewMatrixContainer(gmx)
+	gmx.matrix = matrix.NewContainer(gmx)
 
 	gmx.config.Load()
-	if len(gmx.config.MXID) > 0 {
-		gmx.config.LoadSession(gmx.config.MXID)
+	if len(gmx.config.UserID) > 0 {
+		gmx.config.LoadSession(gmx.config.UserID)
 	}
 
 	gmx.matrix.InitClient()

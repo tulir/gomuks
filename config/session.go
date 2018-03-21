@@ -22,19 +22,19 @@ import (
 	"path/filepath"
 
 	"maunium.net/go/gomatrix"
-	"maunium.net/go/gomuks/matrix/ext"
+	"maunium.net/go/gomuks/matrix/pushrules"
 	rooms "maunium.net/go/gomuks/matrix/room"
 	"maunium.net/go/gomuks/ui/debug"
 )
 
 type Session struct {
-	MXID        string `json:"-"`
+	UserID      string `json:"-"`
 	path        string `json:"-"`
 	AccessToken string
 	NextBatch   string
 	FilterID    string
 	Rooms       map[string]*rooms.Room
-	PushRules   *gomx_ext.PushRuleset
+	PushRules   *pushrules.PushRuleset
 }
 
 func (config *Config) LoadSession(mxid string) error {
@@ -44,9 +44,9 @@ func (config *Config) LoadSession(mxid string) error {
 
 func (config *Config) NewSession(mxid string) *Session {
 	return &Session{
-		MXID:  mxid,
-		path:  filepath.Join(config.dir, mxid+".session"),
-		Rooms: make(map[string]*rooms.Room),
+		UserID: mxid,
+		path:   filepath.Join(config.dir, mxid+".session"),
+		Rooms:  make(map[string]*rooms.Room),
 	}
 }
 
@@ -76,7 +76,7 @@ func (s *Session) Load() error {
 func (s *Session) Save() error {
 	data, err := json.Marshal(s)
 	if err != nil {
-		debug.Print("Failed to marshal session of", s.MXID, err)
+		debug.Print("Failed to marshal session of", s.UserID, err)
 		return err
 	}
 
@@ -99,7 +99,7 @@ func (s *Session) LoadNextBatch(_ string) string {
 func (s *Session) GetRoom(mxid string) *rooms.Room {
 	room, _ := s.Rooms[mxid]
 	if room == nil {
-		room = rooms.NewRoom(mxid, s.MXID)
+		room = rooms.NewRoom(mxid, s.UserID)
 		s.Rooms[room.ID] = room
 	}
 	return room

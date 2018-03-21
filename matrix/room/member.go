@@ -20,18 +20,34 @@ import (
 	"maunium.net/go/gomatrix"
 )
 
+type Membership string
+
+// The allowed membership states as specified in spec section 10.5.5.
+const (
+	MembershipJoin   Membership = "join"
+	MembershipLeave  Membership = "leave"
+	MembershipInvite Membership = "invite"
+	MembershipKnock  Membership = "knock"
+)
+
+// Member represents a member in a room.
 type Member struct {
-	UserID      string `json:"-"`
-	Membership  string `json:"membership"`
-	DisplayName string `json:"displayname"`
-	AvatarURL   string `json:"avatar_url"`
+	// The MXID of the member.
+	UserID string `json:"-"`
+	// The membership status. Defaults to leave.
+	Membership  Membership `json:"membership"`
+	// The display name of the user. Defaults to the user ID.
+	DisplayName string     `json:"displayname"`
+	// The avatar URL of the user. Defaults to an empty string.
+	AvatarURL   string     `json:"avatar_url"`
 }
 
+// eventToRoomMember converts a m.room.member state event into a Member object.
 func eventToRoomMember(userID string, event *gomatrix.Event) *Member {
 	if event == nil {
 		return &Member{
 			UserID:     userID,
-			Membership: "leave",
+			Membership: MembershipLeave,
 		}
 	}
 	membership, _ := event.Content["membership"].(string)
@@ -44,7 +60,7 @@ func eventToRoomMember(userID string, event *gomatrix.Event) *Member {
 
 	return &Member{
 		UserID:      userID,
-		Membership:  membership,
+		Membership:  Membership(membership),
 		DisplayName: displayName,
 		AvatarURL:   avatarURL,
 	}

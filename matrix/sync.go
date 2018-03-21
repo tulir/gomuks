@@ -1,3 +1,21 @@
+// gomuks - A terminal Matrix client written in Go.
+// Copyright (C) 2018 Tulir Asokan
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+// Based on https://github.com/matrix-org/gomatrix/blob/master/sync.go
+
 package matrix
 
 import (
@@ -26,15 +44,16 @@ func NewGomuksSyncer(session *config.Session) *GomuksSyncer {
 	}
 }
 
+// ProcessResponse processes a Matrix sync response.
 func (s *GomuksSyncer) ProcessResponse(res *gomatrix.RespSync, since string) (err error) {
-	if !s.shouldProcessResponse(res, since) {
+	if len(since) == 0 {
 		return
 	}
 	// gdebug.Print("Processing sync response", since, res)
 
 	defer func() {
 		if r := recover(); r != nil {
-			err = fmt.Errorf("ProcessResponse panicked! userID=%s since=%s panic=%s\n%s", s.Session.MXID, since, r, debug.Stack())
+			err = fmt.Errorf("ProcessResponse panicked! userID=%s since=%s panic=%s\n%s", s.Session.UserID, since, r, debug.Stack())
 		}
 	}()
 
@@ -97,15 +116,6 @@ func (s *GomuksSyncer) OnEventType(eventType string, callback gomatrix.OnEventLi
 		s.listeners[eventType] = []gomatrix.OnEventListener{}
 	}
 	s.listeners[eventType] = append(s.listeners[eventType], callback)
-}
-
-// shouldProcessResponse returns true if the response should be processed. May modify the response to remove
-// stuff that shouldn't be processed.
-func (s *GomuksSyncer) shouldProcessResponse(resp *gomatrix.RespSync, since string) bool {
-	if since == "" {
-		return false
-	}
-	return true
 }
 
 func (s *GomuksSyncer) notifyListeners(event *gomatrix.Event) {

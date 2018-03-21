@@ -27,8 +27,8 @@ import (
 )
 
 type Config struct {
-	MXID string `yaml:"mxid"`
-	HS   string `yaml:"homeserver"`
+	UserID string `yaml:"mxid"`
+	HS     string `yaml:"homeserver"`
 
 	dir     string   `yaml:"-"`
 	Session *Session `yaml:"-"`

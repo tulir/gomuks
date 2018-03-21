@@ -25,13 +25,16 @@ import (
 	"maunium.net/go/gomatrix"
 	"maunium.net/go/gomuks/config"
 	"maunium.net/go/gomuks/interface"
-	"maunium.net/go/gomuks/matrix/ext"
+	"maunium.net/go/gomuks/matrix/pushrules"
 	"maunium.net/go/gomuks/matrix/room"
 	"maunium.net/go/gomuks/notification"
 	"maunium.net/go/gomuks/ui/debug"
 	"maunium.net/go/gomuks/ui/widget"
 )
 
+// Container is a wrapper for a gomatrix Client and some other stuff.
+//
+// It is used for all Matrix calls from the UI and Matrix event handlers.
 type Container struct {
 	client  *gomatrix.Client
 	gmx     ifc.Gomuks
@@ -43,7 +46,8 @@ type Container struct {
 	typing int64
 }
 
-func NewMatrixContainer(gmx ifc.Gomuks) *Container {
+// NewContainer creates a new Container for the given Gomuks instance.
+func NewContainer(gmx ifc.Gomuks) *Container {
 	c := &Container{
 		config: gmx.Config(),
 		ui:     gmx.UI(),
@@ -53,6 +57,7 @@ func NewMatrixContainer(gmx ifc.Gomuks) *Container {
 	return c
 }
 
+// InitClient initializes the gomatrix client and connects to the homeserver specified in the config.
 func (c *Container) InitClient() error {
 	if len(c.config.HS) == 0 {
 		return fmt.Errorf("no homeserver in config")
@@ -66,7 +71,7 @@ func (c *Container) InitClient() error {
 	var mxid, accessToken string
 	if c.config.Session != nil {
 		accessToken = c.config.Session.AccessToken
-		mxid = c.config.MXID
+		mxid = c.config.UserID
 	}
 
 	var err error
@@ -77,16 +82,18 @@ func (c *Container) InitClient() error {
 
 	c.stop = make(chan bool, 1)
 
-	if c.config.Session != nil && len(c.config.Session.AccessToken) > 0 {
+	if c.config.Session != nil && len(accessToken) > 0 {
 		go c.Start()
 	}
 	return nil
 }
 
+// Initialized returns whether or not the gomatrix client is initialized (see InitClient())
 func (c *Container) Initialized() bool {
 	return c.client != nil
 }
 
+// Login sends a password login request with the given username and password.
 func (c *Container) Login(user, password string) error {
 	resp, err := c.client.Login(&gomatrix.ReqLogin{
 		Type:     "m.login.password",
@@ -97,7 +104,7 @@ func (c *Container) Login(user, password string) error {
 		return err
 	}
 	c.client.SetCredentials(resp.UserID, resp.AccessToken)
-	c.config.MXID = resp.UserID
+	c.config.UserID = resp.UserID
 	c.config.Save()
 
 	c.config.Session = c.config.NewSession(resp.UserID)
@@ -109,6 +116,7 @@ func (c *Container) Login(user, password string) error {
 	return nil
 }
 
+// Stop stops the Matrix syncer.
 func (c *Container) Stop() {
 	if c.running {
 		c.stop <- true
@@ -116,26 +124,30 @@ func (c *Container) Stop() {
 	}
 }
 
+// Client returns the underlying gomatrix client object.
 func (c *Container) Client() *gomatrix.Client {
 	return c.client
 }
 
+// UpdatePushRules fetches the push notification rules from the server and stores them in the current Session object.
 func (c *Container) UpdatePushRules() {
 	debug.Print("Updating push rules...")
-	resp, err := gomx_ext.GetPushRules(c.client)
+	resp, err := pushrules.GetPushRules(c.client)
 	if err != nil {
 		debug.Print("Failed to fetch push rules:", err)
 	}
 	c.config.Session.PushRules = resp
 }
 
-func (c *Container) PushRules() *gomx_ext.PushRuleset {
+// PushRules returns the push notification rules. If no push rules are cached, UpdatePushRules() will be called first.
+func (c *Container) PushRules() *pushrules.PushRuleset {
 	if c.config.Session.PushRules == nil {
 		c.UpdatePushRules()
 	}
 	return c.config.Session.PushRules
 }
 
+// UpdateRoomList fetches the list of rooms the user has joined and sends them to the UI.
 func (c *Container) UpdateRoomList() {
 	resp, err := c.client.JoinedRooms()
 	if err != nil {
@@ -151,11 +163,13 @@ func (c *Container) UpdateRoomList() {
 	c.ui.MainView().SetRooms(resp.JoinedRooms)
 }
 
+// OnLogout stops the syncer and moves the UI back to the login view.
 func (c *Container) OnLogout() {
 	c.Stop()
 	c.ui.SetView(ifc.ViewLogin)
 }
 
+// OnLogin initializes the syncer and updates the room list.
 func (c *Container) OnLogin() {
 	c.client.Store = c.config.Session
 
@@ -169,6 +183,7 @@ func (c *Container) OnLogin() {
 	c.UpdateRoomList()
 }
 
+// Start moves the UI to the main view, calls OnLogin() and runs the syncer forever until stopped with Stop()
 func (c *Container) Start() {
 	defer c.gmx.Recover()
 
@@ -197,6 +212,7 @@ func (c *Container) Start() {
 	}
 }
 
+// NotifyMessage sends a desktop notification of the message with the given details.
 func (c *Container) NotifyMessage(room *rooms.Room, sender, text string, critical bool) {
 	if room.GetTitle() != sender {
 		sender = fmt.Sprintf("%s (%s)", sender, room.GetTitle())
@@ -204,11 +220,12 @@ func (c *Container) NotifyMessage(room *rooms.Room, sender, text string, critica
 	notification.Send(sender, text, critical)
 }
 
+// HandleMessage is the event handler for the m.room.message timeline event.
 func (c *Container) HandleMessage(evt *gomatrix.Event) {
 	room, message := c.ui.MainView().ProcessMessageEvent(evt)
 	if room != nil {
 		pushRules := c.PushRules().GetActions(room.Room, evt).Should()
-		if (pushRules.Notify || !pushRules.NotifySpecified) && evt.Sender != c.config.Session.MXID {
+		if (pushRules.Notify || !pushRules.NotifySpecified) && evt.Sender != c.config.Session.UserID {
 			c.NotifyMessage(room.Room, message.Sender, message.Text, pushRules.Highlight)
 		}
 		if pushRules.Highlight {
@@ -222,15 +239,17 @@ func (c *Container) HandleMessage(evt *gomatrix.Event) {
 	}
 }
 
+// HandlePushRules is the event handler for the m.push_rules account data event.
 func (c *Container) HandlePushRules(evt *gomatrix.Event) {
 	debug.Print("Received updated push rules")
 	var err error
-	c.config.Session.PushRules, err = gomx_ext.EventToPushRules(evt)
+	c.config.Session.PushRules, err = pushrules.EventToPushRules(evt)
 	if err != nil {
 		debug.Print("Failed to convert event to push rules:", err)
 	}
 }
 
+// HandleMembership is the event handler for the m.room.membership state event.
 func (c *Container) HandleMembership(evt *gomatrix.Event) {
 	const Hour = 1 * 60 * 60 * 1000
 	if evt.Unsigned.Age > Hour {
@@ -249,6 +268,7 @@ func (c *Container) HandleMembership(evt *gomatrix.Event) {
 	}
 }
 
+// HandleTyping is the event handler for the m.typing event.
 func (c *Container) HandleTyping(evt *gomatrix.Event) {
 	users := evt.Content["user_ids"].([]interface{})
 
@@ -259,6 +279,7 @@ func (c *Container) HandleTyping(evt *gomatrix.Event) {
 	c.ui.MainView().SetTyping(evt.RoomID, strUsers)
 }
 
+// SendMessage sends a message with the given text to the given room.
 func (c *Container) SendMessage(roomID, text string) (string, error) {
 	defer c.gmx.Recover()
 	c.SendTyping(roomID, false)
@@ -269,6 +290,7 @@ func (c *Container) SendMessage(roomID, text string) (string, error) {
 	return resp.EventID, nil
 }
 
+// SendTyping sets whether or not the user is typing in the given room.
 func (c *Container) SendTyping(roomID string, typing bool) {
 	defer c.gmx.Recover()
 	ts := time.Now().Unix()
@@ -277,14 +299,15 @@ func (c *Container) SendTyping(roomID string, typing bool) {
 	}
 
 	if typing {
-		c.client.UserTyping(roomID, true, 5000)
-		c.typing = ts + 5
+		c.client.UserTyping(roomID, true, 20000)
+		c.typing = ts + 15
 	} else {
 		c.client.UserTyping(roomID, false, 0)
 		c.typing = 0
 	}
 }
 
+// JoinRoom makes the current user try to join the given room.
 func (c *Container) JoinRoom(roomID string) error {
 	if len(roomID) == 0 {
 		return fmt.Errorf("invalid room ID")
@@ -303,6 +326,7 @@ func (c *Container) JoinRoom(roomID string) error {
 	return nil
 }
 
+// LeaveRoom makes the current user leave the given room.
 func (c *Container) LeaveRoom(roomID string) error {
 	if len(roomID) == 0 {
 		return fmt.Errorf("invalid room ID")
@@ -316,6 +340,7 @@ func (c *Container) LeaveRoom(roomID string) error {
 	return nil
 }
 
+// getState requests the state of the given room.
 func (c *Container) getState(roomID string) []*gomatrix.Event {
 	content := make([]*gomatrix.Event, 0)
 	err := c.client.StateEvent(roomID, "", "", &content)
@@ -326,6 +351,7 @@ func (c *Container) getState(roomID string) []*gomatrix.Event {
 	return content
 }
 
+// GetHistory fetches room history.
 func (c *Container) GetHistory(roomID, prevBatch string, limit int) ([]gomatrix.Event, string, error) {
 	resp, err := c.client.Messages(roomID, prevBatch, "", 'b', limit)
 	if err != nil {
@@ -334,6 +360,9 @@ func (c *Container) GetHistory(roomID, prevBatch string, limit int) ([]gomatrix.
 	return resp.Chunk, resp.End, nil
 }
 
+// GetRoom gets the room instance stored in the session.
+//
+// If the room doesn't have any state events stored, its state will be updated.
 func (c *Container) GetRoom(roomID string) *rooms.Room {
 	room := c.config.Session.GetRoom(roomID)
 	if room != nil && len(room.State) == 0 {

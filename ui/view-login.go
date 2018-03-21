@@ -29,7 +29,7 @@ func (ui *GomuksUI) NewLoginView() tview.Primitive {
 	}
 
 	homeserver := widget.NewAdvancedInputField().SetLabel("Homeserver").SetText(hs).SetFieldWidth(30)
-	username := widget.NewAdvancedInputField().SetLabel("Username").SetText(ui.gmx.Config().MXID).SetFieldWidth(30)
+	username := widget.NewAdvancedInputField().SetLabel("Username").SetText(ui.gmx.Config().UserID).SetFieldWidth(30)
 	password := widget.NewAdvancedInputField().SetLabel("Password").SetMaskCharacter('*').SetFieldWidth(30)
 
 	ui.loginView = tview.NewForm()

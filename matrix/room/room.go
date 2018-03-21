@@ -26,11 +26,18 @@ import (
 type Room struct {
 	*gomatrix.Room
 
+	// The first batch of events that has been fetched for this room.
+	// Used for fetching additional history.
 	PrevBatch        string
-	Owner            string
+	// The MXID of the user whose session this room was created for.
+	SessionUserID    string
+	// MXID -> Member cache calculated from membership events.
 	memberCache      map[string]*Member
+	// The first non-SessionUserID member in the room. Calculated at the same time as memberCache.
 	firstMemberCache string
+	// The name of the room. Calculated from the state event name, canonical_alias or alias or the member cache.
 	nameCache        string
+	// The topic of the room. Directly fetched from the m.room.topic state event.
 	topicCache       string
 }
 
@@ -135,7 +142,7 @@ func (room *Room) updateNameFromMembers() {
 }
 
 // updateNameCache updates the room display name based on the room state in the order
-// specified in section 11.2.2.5 of r0.3.0 of the Client-Server API specification.
+// specified in spec section 11.2.2.5.
 func (room *Room) updateNameCache() {
 	if len(room.nameCache) == 0 {
 		room.updateNameFromNameEvent()
@@ -167,7 +174,7 @@ func (room *Room) createMemberCache() map[string]*Member {
 	room.firstMemberCache = ""
 	if events != nil {
 		for userID, event := range events {
-			if len(room.firstMemberCache) == 0 && userID != room.Owner {
+			if len(room.firstMemberCache) == 0 && userID != room.SessionUserID {
 				room.firstMemberCache = userID
 			}
 			member := eventToRoomMember(userID, event)
@@ -204,7 +211,7 @@ func (room *Room) GetMember(userID string) *Member {
 // NewRoom creates a new Room with the given ID
 func NewRoom(roomID, owner string) *Room {
 	return &Room{
-		Room:  gomatrix.NewRoom(roomID),
-		Owner: owner,
+		Room:          gomatrix.NewRoom(roomID),
+		SessionUserID: owner,
 	}
 }
