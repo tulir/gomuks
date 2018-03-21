@@ -52,6 +52,7 @@ func (config *Config) NewSession(mxid string) *Session {
 
 func (s *Session) Clear() {
 	s.Rooms = make(map[string]*rooms.Room)
+	s.PushRules = nil
 	s.NextBatch = ""
 	s.FilterID = ""
 	s.Save()

@@ -121,6 +121,7 @@ func (c *Container) Client() *gomatrix.Client {
 }
 
 func (c *Container) UpdatePushRules() {
+	debug.Print("Updating push rules...")
 	resp, err := gomx_ext.GetPushRules(c.client)
 	if err != nil {
 		debug.Print("Failed to fetch push rules:", err)
@@ -162,10 +163,10 @@ func (c *Container) OnLogin() {
 	syncer.OnEventType("m.room.message", c.HandleMessage)
 	syncer.OnEventType("m.room.member", c.HandleMembership)
 	syncer.OnEventType("m.typing", c.HandleTyping)
+	syncer.OnEventType("m.push_rules", c.HandlePushRules)
 	c.client.Syncer = syncer
 
 	c.UpdateRoomList()
-	c.UpdatePushRules()
 }
 
 func (c *Container) Start() {
@@ -218,6 +219,15 @@ func (c *Container) HandleMessage(evt *gomatrix.Event) {
 		}
 		room.AddMessage(message, widget.AppendMessage)
 		c.ui.Render()
+	}
+}
+
+func (c *Container) HandlePushRules(evt *gomatrix.Event) {
+	debug.Print("Received updated push rules")
+	var err error
+	c.config.Session.PushRules, err = gomx_ext.EventToPushRules(evt)
+	if err != nil {
+		debug.Print("Failed to convert event to push rules:", err)
 	}
 }
 

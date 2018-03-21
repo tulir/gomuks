@@ -41,6 +41,9 @@ func (s *GomuksSyncer) ProcessResponse(res *gomatrix.RespSync, since string) (er
 	for _, event := range res.Presence.Events {
 		s.notifyListeners(event)
 	}
+	for _, event := range res.AccountData.Events {
+		s.notifyListeners(event)
+	}
 	for roomID, roomData := range res.Rooms.Join {
 		room := s.Session.GetRoom(roomID)
 		for _, event := range roomData.State.Events {

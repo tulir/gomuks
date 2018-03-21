@@ -26,6 +26,22 @@ func GetScopedPushRules(client *gomatrix.Client, scope string) (resp *PushRulese
 	return
 }
 
+func EventToPushRules(event *gomatrix.Event) (*PushRuleset, error) {
+	content, _ := event.Content["global"]
+	raw, err := json.Marshal(content)
+	if err != nil {
+		return nil, err
+	}
+
+	ruleset := &PushRuleset{}
+	err = json.Unmarshal(raw, ruleset)
+	if err != nil {
+		return nil, err
+	}
+
+	return ruleset, nil
+}
+
 type PushRuleset struct {
 	Override  PushRuleArray
 	Content   PushRuleArray
