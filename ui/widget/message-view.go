@@ -22,6 +22,7 @@ import (
 
 	"github.com/gdamore/tcell"
 	"github.com/mattn/go-runewidth"
+	"maunium.net/go/gomuks/ui/debug"
 	"maunium.net/go/gomuks/ui/types"
 	"maunium.net/go/tview"
 )
@@ -276,11 +277,15 @@ func (view *MessageView) Draw(screen tcell.Screen) {
 		}
 		view.writeLine(screen, message, x+messageOffsetX, y, tcell.ColorGreen)
 	}
+	if len(view.textBuffer) != len(view.metaBuffer) {
+		debug.ExtPrintf("Unexpected text/meta buffer length mismatch: %d != %d.", len(view.textBuffer), len(view.metaBuffer))
+		return
+	}
 	for line := 0; line < height; line++ {
 		index := indexOffset + line
 		if index < 0 {
 			continue
-		} else if index > len(view.textBuffer) {
+		} else if index >= len(view.textBuffer) {
 			break
 		}
 		text, meta := view.textBuffer[index], view.metaBuffer[index]
