@@ -21,6 +21,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/gdamore/tcell"
 	"maunium.net/go/gomatrix"
 	"maunium.net/go/gomuks/config"
 	"maunium.net/go/gomuks/interface"
@@ -28,7 +29,6 @@ import (
 	"maunium.net/go/gomuks/matrix/room"
 	"maunium.net/go/gomuks/notification"
 	"maunium.net/go/gomuks/ui/debug"
-	"maunium.net/go/gomuks/ui/types"
 	"maunium.net/go/gomuks/ui/widget"
 )
 
@@ -196,33 +196,26 @@ func (c *Container) Start() {
 	}
 }
 
-func (c *Container) NotifyMessage(room *rooms.Room, message *types.Message) {
-	sender := fmt.Sprintf("%s (%s)", message.Sender, room.GetTitle())
-	if room.GetTitle() == message.Sender {
-		// 1:1 room, title is same as display name of other user.
-		sender = message.Sender
+func (c *Container) NotifyMessage(room *rooms.Room, sender, text string, critical bool) {
+	if room.GetTitle() != sender {
+		sender = fmt.Sprintf("%s (%s)", sender, room.GetTitle())
 	}
-	notification.Send(sender, message.Text, false)
+	notification.Send(sender, text, critical)
 }
 
 func (c *Container) HandleMessage(evt *gomatrix.Event) {
 	room, message := c.ui.MainView().ProcessMessageEvent(evt)
 	if room != nil {
-		match := c.PushRules().GetActions(room.Room, evt)
-
-		var buf strings.Builder
-		buf.WriteRune('[')
-		for i, rule := range match {
-			fmt.Fprintf(&buf, "{%s, %s, %s}", rule.Action, rule.Tweak, rule.Value)
-			if i < len(match)-1 {
-				buf.WriteRune(',')
-				buf.WriteRune(' ')
-			}
+		pushRules := c.PushRules().GetActions(room.Room, evt).Should()
+		if (pushRules.Notify || !pushRules.NotifySpecified) && evt.Sender != c.config.Session.MXID {
+			c.NotifyMessage(room.Room, message.Sender, message.Text, pushRules.Highlight)
 		}
-		buf.WriteRune(']')
-		debug.Print(buf.String())
-
-		c.NotifyMessage(room.Room, message)
+		if pushRules.Highlight {
+			message.TextColor = tcell.ColorYellow
+		}
+		if pushRules.PlaySound {
+			// TODO play sound
+		}
 		room.AddMessage(message, widget.AppendMessage)
 		c.ui.Render()
 	}

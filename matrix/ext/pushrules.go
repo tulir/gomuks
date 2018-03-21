@@ -12,9 +12,15 @@ import (
 	"maunium.net/go/gomuks/matrix/room"
 )
 
-// GetPushRules returns the push notification rules for the given scope.
-func GetPushRules(client *gomatrix.Client) (resp *PushRuleset, err error) {
-	u, _ := url.Parse(client.BuildURL("pushrules", "global"))
+// GetPushRules returns the push notification rules for the global scope.
+func GetPushRules(client *gomatrix.Client) (*PushRuleset, error) {
+	return GetScopedPushRules(client, "global")
+}
+
+// GetScopedPushRules returns the push notification rules for the given scope.
+func GetScopedPushRules(client *gomatrix.Client, scope string) (resp *PushRuleset, err error) {
+	u, _ := url.Parse(client.BuildURL("pushrules", scope))
+	// client.BuildURL returns the URL without a trailing slash, but the pushrules endpoint requires the slash.
 	u.Path += "/"
 	_, err = client.MakeRequest("GET", u.String(), nil, &resp)
 	return
@@ -62,7 +68,9 @@ func (rs *PushRuleset) MarshalJSON() ([]byte, error) {
 	return json.Marshal(&data)
 }
 
-func (rs *PushRuleset) GetActions(room *rooms.Room, event *gomatrix.Event) (match []*PushAction) {
+var DefaultPushActions = make(PushActionArray, 0)
+
+func (rs *PushRuleset) GetActions(room *rooms.Room, event *gomatrix.Event) (match PushActionArray) {
 	if match = rs.Override.GetActions(room, event); match != nil {
 		return
 	}
@@ -78,7 +86,7 @@ func (rs *PushRuleset) GetActions(room *rooms.Room, event *gomatrix.Event) (matc
 	if match = rs.Underride.GetActions(room, event); match != nil {
 		return
 	}
-	return
+	return DefaultPushActions
 }
 
 type PushRuleArray []*PushRule
@@ -90,7 +98,7 @@ func (rules PushRuleArray) setType(typ PushRuleType) PushRuleArray {
 	return rules
 }
 
-func (rules PushRuleArray) GetActions(room *rooms.Room, event *gomatrix.Event) []*PushAction {
+func (rules PushRuleArray) GetActions(room *rooms.Room, event *gomatrix.Event) PushActionArray {
 	for _, rule := range rules {
 		if !rule.Match(room, event) {
 			continue
@@ -117,7 +125,7 @@ func (rules PushRuleArray) setTypeAndMap(typ PushRuleType) PushRuleMap {
 	return data
 }
 
-func (ruleMap PushRuleMap) GetActions(room *rooms.Room, event *gomatrix.Event) []*PushAction {
+func (ruleMap PushRuleMap) GetActions(room *rooms.Room, event *gomatrix.Event) PushActionArray {
 	var rule *PushRule
 	var found bool
 	switch ruleMap.Type {
@@ -160,7 +168,7 @@ type PushRule struct {
 	// For other types of rules, this doesn't affect anything.
 	RuleID string `json:"rule_id"`
 	// The actions this rule should trigger when matched.
-	Actions []*PushAction `json:"actions"`
+	Actions PushActionArray `json:"actions"`
 	// Whether this is a default rule, or has been set explicitly.
 	Default bool `json:"default"`
 	// Whether or not this push rule is enabled.
@@ -224,10 +232,48 @@ const (
 	TweakHighlight PushActionTweak = "highlight"
 )
 
+type PushActionArray []*PushAction
+
+type PushActionArrayShould struct {
+	NotifySpecified bool
+	Notify          bool
+	Highlight       bool
+
+	PlaySound bool
+	SoundName string
+}
+
+func (actions PushActionArray) Should() (should PushActionArrayShould) {
+	for _, action := range actions {
+		switch action.Action {
+		case ActionNotify, ActionCoalesce:
+			should.Notify = true
+			should.NotifySpecified = true
+		case ActionDontNotify:
+			should.Notify = false
+			should.NotifySpecified = true
+		case ActionSetTweak:
+			switch action.Tweak {
+			case TweakHighlight:
+				var ok bool
+				should.Highlight, ok = action.Value.(bool)
+				if !ok {
+					// Highlight value not specified, so assume true since the tweak is set.
+					should.Highlight = true
+				}
+			case TweakSound:
+				should.SoundName = action.Value.(string)
+				should.PlaySound = len(should.SoundName) > 0
+			}
+		}
+	}
+	return
+}
+
 type PushAction struct {
 	Action PushActionType
 	Tweak  PushActionTweak
-	Value  string
+	Value  interface{}
 }
 
 func (action *PushAction) UnmarshalJSON(raw []byte) error {
@@ -246,7 +292,7 @@ func (action *PushAction) UnmarshalJSON(raw []byte) error {
 		if ok {
 			action.Action = ActionSetTweak
 			action.Tweak = PushActionTweak(tweak)
-			action.Value, _ = val["value"].(string)
+			action.Value, _ = val["value"]
 		}
 	}
 	return nil
@@ -291,7 +337,7 @@ func (cond *PushCondition) Match(room *rooms.Room, event *gomatrix.Event) bool {
 	case KindRoomMemberCount:
 		return cond.matchMemberCount(room, event)
 	default:
-		return true
+		return false
 	}
 }
 
@@ -341,7 +387,7 @@ func (cond *PushCondition) matchDisplayName(room *rooms.Room, event *gomatrix.Ev
 func (cond *PushCondition) matchMemberCount(room *rooms.Room, event *gomatrix.Event) bool {
 	groupGroups := MemberCountFilterRegex.FindAllStringSubmatch(cond.Is, -1)
 	if len(groupGroups) != 1 {
-		return true
+		return false
 	}
 
 	operator := "=="
@@ -349,7 +395,7 @@ func (cond *PushCondition) matchMemberCount(room *rooms.Room, event *gomatrix.Ev
 
 	group := groupGroups[0]
 	if len(group) == 0 {
-		return true
+		return false
 	} else if len(group) == 1 {
 		wantedMemberCount, _ = strconv.Atoi(group[0])
 	} else {
