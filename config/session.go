@@ -22,6 +22,7 @@ import (
 	"path/filepath"
 
 	"maunium.net/go/gomatrix"
+	"maunium.net/go/gomuks/matrix/ext"
 	rooms "maunium.net/go/gomuks/matrix/room"
 	"maunium.net/go/gomuks/ui/debug"
 )
@@ -33,7 +34,7 @@ type Session struct {
 	NextBatch   string
 	FilterID    string
 	Rooms       map[string]*rooms.Room
-	PushRules   *gomatrix.PushRuleset
+	PushRules   *gomx_ext.PushRuleset
 }
 
 func (config *Config) LoadSession(mxid string) error {

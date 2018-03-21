@@ -65,6 +65,7 @@ func NewGomuks(enableDebug bool) *Gomuks {
 
 	main := gmx.ui.InitViews()
 	if enableDebug {
+		debug.EnableExternal()
 		main = gmx.debug.Wrap(main)
 		gmx.debugMode = true
 	}

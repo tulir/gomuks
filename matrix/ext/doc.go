@@ -14,24 +14,5 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-package ifc
-
-import (
-	"maunium.net/go/gomatrix"
-	"maunium.net/go/gomuks/matrix/room"
-)
-
-type MatrixContainer interface {
-	Client() *gomatrix.Client
-	InitClient() error
-	Initialized() bool
-	Login(user, password string) error
-	Start()
-	Stop()
-	SendMessage(roomID, message string) (string, error)
-	SendTyping(roomID string, typing bool)
-	JoinRoom(roomID string) error
-	LeaveRoom(roomID string) error
-	GetHistory(roomID, prevBatch string, limit int) ([]gomatrix.Event, string, error)
-	GetRoom(roomID string) *rooms.Room
-}
+// Package gomx_ext contains extensions to the gomatrix package.
+package gomx_ext

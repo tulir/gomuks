@@ -14,38 +14,32 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-package rooms
+package debug
 
 import (
-	"maunium.net/go/gomatrix"
+	"fmt"
+	"io"
+	"os"
 )
 
-type Member struct {
-	UserID      string `json:"-"`
-	Membership  string `json:"membership"`
-	DisplayName string `json:"displayname"`
-	AvatarURL   string `json:"avatar_url"`
+var writer io.Writer
+
+func EnableExternal() {
+	var err error
+	writer, err = os.OpenFile("/tmp/gomuks-debug.log", os.O_WRONLY|os.O_APPEND, 0644)
+	if err != nil {
+		writer = nil
+	}
 }
 
-func eventToRoomMember(userID string, event *gomatrix.Event) *Member {
-	if event == nil {
-		return &Member{
-			UserID:     userID,
-			Membership: "leave",
-		}
+func ExtPrintf(text string, args ...interface{}) {
+	if writer != nil {
+		fmt.Fprintf(writer, text + "\n", args...)
 	}
-	membership, _ := event.Content["membership"].(string)
-	avatarURL, _ := event.Content["avatar_url"].(string)
+}
 
-	displayName, _ := event.Content["displayname"].(string)
-	if len(displayName) == 0 {
-		displayName = userID
-	}
-
-	return &Member{
-		UserID:      userID,
-		Membership:  membership,
-		DisplayName: displayName,
-		AvatarURL:   avatarURL,
+func ExtPrint(text ...interface{}) {
+	if writer != nil {
+		fmt.Fprintln(writer, text...)
 	}
 }

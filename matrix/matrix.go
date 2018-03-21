@@ -24,7 +24,8 @@ import (
 	"maunium.net/go/gomatrix"
 	"maunium.net/go/gomuks/config"
 	"maunium.net/go/gomuks/interface"
-	rooms "maunium.net/go/gomuks/matrix/room"
+	"maunium.net/go/gomuks/matrix/ext"
+	"maunium.net/go/gomuks/matrix/room"
 	"maunium.net/go/gomuks/notification"
 	"maunium.net/go/gomuks/ui/debug"
 	"maunium.net/go/gomuks/ui/types"
@@ -120,11 +121,18 @@ func (c *Container) Client() *gomatrix.Client {
 }
 
 func (c *Container) UpdatePushRules() {
-	resp, err := c.client.PushRules()
+	resp, err := gomx_ext.GetPushRules(c.client)
 	if err != nil {
 		debug.Print("Failed to fetch push rules:", err)
 	}
 	c.config.Session.PushRules = resp
+}
+
+func (c *Container) PushRules() *gomx_ext.PushRuleset {
+	if c.config.Session.PushRules == nil {
+		c.UpdatePushRules()
+	}
+	return c.config.Session.PushRules
 }
 
 func (c *Container) UpdateRoomList() {
@@ -200,6 +208,20 @@ func (c *Container) NotifyMessage(room *rooms.Room, message *types.Message) {
 func (c *Container) HandleMessage(evt *gomatrix.Event) {
 	room, message := c.ui.MainView().ProcessMessageEvent(evt)
 	if room != nil {
+		match := c.PushRules().GetActions(room.Room, evt)
+
+		var buf strings.Builder
+		buf.WriteRune('[')
+		for i, rule := range match {
+			fmt.Fprintf(&buf, "{%s, %s, %s}", rule.Action, rule.Tweak, rule.Value)
+			if i < len(match)-1 {
+				buf.WriteRune(',')
+				buf.WriteRune(' ')
+			}
+		}
+		buf.WriteRune(']')
+		debug.Print(buf.String())
+
 		c.NotifyMessage(room.Room, message)
 		room.AddMessage(message, widget.AppendMessage)
 		c.ui.Render()
