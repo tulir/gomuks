@@ -23,7 +23,7 @@ import (
 
 	"maunium.net/go/gomatrix"
 	"maunium.net/go/gomuks/matrix/pushrules"
-	rooms "maunium.net/go/gomuks/matrix/room"
+	"maunium.net/go/gomuks/matrix/room"
 	"maunium.net/go/gomuks/ui/debug"
 )
 
@@ -45,7 +45,7 @@ func (config *Config) LoadSession(mxid string) error {
 func (config *Config) NewSession(mxid string) *Session {
 	return &Session{
 		UserID: mxid,
-		path:   filepath.Join(config.dir, mxid+".session"),
+		path:   filepath.Join(config.Dir, mxid+".session"),
 		Rooms:  make(map[string]*rooms.Room),
 	}
 }
@@ -61,13 +61,13 @@ func (s *Session) Clear() {
 func (s *Session) Load() error {
 	data, err := ioutil.ReadFile(s.path)
 	if err != nil {
-		debug.Print("Failed to read session from", s.path, err)
+		debug.Printf("Failed to read session from %s: %v", s.path, err)
 		return err
 	}
 
 	err = json.Unmarshal(data, s)
 	if err != nil {
-		debug.Print("Failed to parse session at", s.path, err)
+		debug.Printf("Failed to parse session at %s: %v", s.path, err)
 		return err
 	}
 	return nil
@@ -76,13 +76,13 @@ func (s *Session) Load() error {
 func (s *Session) Save() error {
 	data, err := json.Marshal(s)
 	if err != nil {
-		debug.Print("Failed to marshal session of", s.UserID, err)
+		debug.Printf("Failed to marshal session of %s: %v", s.UserID, err)
 		return err
 	}
 
 	err = ioutil.WriteFile(s.path, data, 0600)
 	if err != nil {
-		debug.Print("Failed to write session to", s.path, err)
+		debug.Printf("Failed to write session of %s to %s: %v", s.UserID, s.path, err)
 		return err
 	}
 	return nil

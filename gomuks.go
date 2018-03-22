@@ -38,12 +38,14 @@ type Gomuks struct {
 	debug     *debug.Pane
 	debugMode bool
 	config    *config.Config
+	stop      chan bool
 }
 
 func NewGomuks(enableDebug bool) *Gomuks {
 	configDir := filepath.Join(os.Getenv("HOME"), ".config/gomuks")
 	gmx := &Gomuks{
-		app: tview.NewApplication(),
+		app:  tview.NewApplication(),
+		stop: make(chan bool, 1),
 	}
 
 	gmx.debug = debug.NewPane()
@@ -79,11 +81,33 @@ func (gmx *Gomuks) Stop() {
 	gmx.matrix.Stop()
 	gmx.debug.Print("Cleaning up UI...")
 	gmx.app.Stop()
+	gmx.stop <- true
+	gmx.Save()
+	os.Exit(0)
+}
+
+func (gmx *Gomuks) Save() {
 	if gmx.config.Session != nil {
 		gmx.debug.Print("Saving session...")
 		gmx.config.Session.Save()
 	}
-	os.Exit(0)
+	gmx.debug.Print("Saving history...")
+	gmx.ui.MainView().SaveAllHistory()
+}
+
+func (gmx *Gomuks) StartAutosave() {
+	defer gmx.Recover()
+	ticker := time.NewTicker(time.Minute)
+	for {
+		select {
+		case <-ticker.C:
+			gmx.Save()
+		case val := <-gmx.stop:
+			if val {
+				return
+			}
+		}
+	}
 }
 
 func (gmx *Gomuks) Recover() {
@@ -101,6 +125,7 @@ func (gmx *Gomuks) Recover() {
 
 func (gmx *Gomuks) Start() {
 	defer gmx.Recover()
+	go gmx.StartAutosave()
 	if err := gmx.app.Run(); err != nil {
 		panic(err)
 	}

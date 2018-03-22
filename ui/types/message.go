@@ -28,7 +28,7 @@ type Message struct {
 	BasicMeta
 	ID              string
 	Text            string
-	Buffer          []string
+	buffer          []string
 	prevBufferWidth int
 }
 
@@ -64,12 +64,12 @@ func (message *Message) CalculateBuffer(width int) {
 	if width < 2 {
 		return
 	}
-	message.Buffer = []string{}
+	message.buffer = []string{}
 	forcedLinebreaks := strings.Split(message.Text, "\n")
 	newlines := 0
 	for _, str := range forcedLinebreaks {
 		if len(str) == 0 && newlines < 1 {
-			message.Buffer = append(message.Buffer, "")
+			message.buffer = append(message.buffer, "")
 			newlines++
 		} else {
 			newlines = 0
@@ -87,7 +87,7 @@ func (message *Message) CalculateBuffer(width int) {
 					extract = extract[:matches[len(matches)-1][1]]
 				}
 			}
-			message.Buffer = append(message.Buffer, extract)
+			message.buffer = append(message.buffer, extract)
 			str = str[len(extract):]
 		}
 	}
@@ -96,4 +96,12 @@ func (message *Message) CalculateBuffer(width int) {
 
 func (message *Message) RecalculateBuffer() {
 	message.CalculateBuffer(message.prevBufferWidth)
+}
+
+func (message *Message) Buffer() []string {
+	return message.buffer
+}
+
+func (message *Message) Height() int {
+	return len(message.buffer)
 }

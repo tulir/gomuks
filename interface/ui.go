@@ -44,6 +44,7 @@ type MainView interface {
 	AddRoom(roomID string)
 	RemoveRoom(roomID string)
 	SetRooms(roomIDs []string)
+	SaveAllHistory()
 
 	SetTyping(roomID string, users []string)
 	AddServiceMessage(roomID string, message string)

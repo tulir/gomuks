@@ -18,6 +18,7 @@ package widget
 
 import (
 	"fmt"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -65,6 +66,18 @@ func NewRoomView(room *rooms.Room) *RoomView {
 	view.userList.SetDynamicColors(true)
 
 	return view
+}
+
+func (view *RoomView) logPath(dir string) string {
+	return filepath.Join(dir, fmt.Sprintf("%s.gmxlog", view.Room.ID))
+}
+
+func (view *RoomView) SaveHistory(dir string) error {
+	return view.MessageView().SaveHistory(view.logPath(dir))
+}
+
+func (view *RoomView) LoadHistory(dir string) (int, error) {
+	return view.MessageView().LoadHistory(view.logPath(dir))
 }
 
 func (view *RoomView) SetTabCompleteFunc(fn func(room *RoomView, text string, cursorOffset int) string) *RoomView {

@@ -17,7 +17,9 @@
 package widget
 
 import (
+	"encoding/gob"
 	"fmt"
+	"os"
 	"time"
 
 	"github.com/gdamore/tcell"
@@ -79,6 +81,45 @@ func (view *MessageView) NewMessage(id, sender, text string, timestamp time.Time
 		GetHashColor(sender))
 }
 
+func (view *MessageView) SaveHistory(path string) error {
+	file, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE, 0600)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	enc := gob.NewEncoder(file)
+	err = enc.Encode(view.messages)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (view *MessageView) LoadHistory(path string) (int, error) {
+	file, err := os.OpenFile(path, os.O_RDONLY, 0600)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return 0, nil
+		}
+		return -1, err
+	}
+	defer file.Close()
+
+	dec := gob.NewDecoder(file)
+	err = dec.Decode(&view.messages)
+	if err != nil {
+		return -1, err
+	}
+
+	for _, message := range view.messages {
+		view.updateWidestSender(message.Sender)
+	}
+
+	return len(view.messages), nil
+}
+
 func (view *MessageView) updateWidestSender(sender string) {
 	if len(sender) > view.widestSender {
 		view.widestSender = len(sender)
@@ -103,8 +144,12 @@ func (view *MessageView) UpdateMessageID(message *types.Message, newID string) {
 }
 
 func (view *MessageView) AddMessage(message *types.Message, direction MessageDirection) {
+	if message == nil {
+		return
+	}
+
 	msg, messageExists := view.messageIDs[message.ID]
-	if messageExists {
+	if msg != nil && messageExists {
 		message.CopyTo(msg)
 		direction = IgnoreMessage
 	}
@@ -117,7 +162,7 @@ func (view *MessageView) AddMessage(message *types.Message, direction MessageDir
 
 	if direction == AppendMessage {
 		if view.ScrollOffset > 0 {
-			view.ScrollOffset += len(message.Buffer)
+			view.ScrollOffset += message.Height()
 		}
 		view.messages = append(view.messages, message)
 		view.appendBuffer(message)
@@ -137,8 +182,8 @@ func (view *MessageView) appendBuffer(message *types.Message) {
 		}
 	}
 
-	view.textBuffer = append(view.textBuffer, message.Buffer...)
-	for range message.Buffer {
+	view.textBuffer = append(view.textBuffer, message.Buffer()...)
+	for range message.Buffer() {
 		view.metaBuffer = append(view.metaBuffer, message)
 	}
 	view.prevMsgCount++

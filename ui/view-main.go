@@ -162,7 +162,7 @@ func (view *MainView) HandleCommand(room, command string, args []string) {
 	case "/quit":
 		view.gmx.Stop()
 	case "/clearcache":
-		view.config.Session.Clear()
+		view.config.Clear()
 		view.gmx.Stop()
 	case "/panic":
 		panic("This is a test panic.")
@@ -239,6 +239,15 @@ func (view *MainView) Focus(delegate func(p tview.Primitive)) {
 	}
 }
 
+func (view *MainView) SaveAllHistory() {
+	for _, room := range view.rooms {
+		err := room.SaveHistory(view.config.HistoryDir)
+		if err != nil {
+			debug.Printf("Failed to save history of %s: %v", room.Room.GetTitle(), err)
+		}
+	}
+}
+
 func (view *MainView) addRoom(index int, room string) {
 	roomStore := view.matrix.GetRoom(room)
 
@@ -254,7 +263,13 @@ func (view *MainView) addRoom(index int, room string) {
 		view.rooms[room] = roomView
 		view.roomView.AddPage(room, roomView, true, false)
 		roomView.UpdateUserList()
-		go view.LoadInitialHistory(room)
+
+		count, err := roomView.LoadHistory(view.config.HistoryDir)
+		if err != nil {
+			debug.Printf("Failed to load history of %s: %v", roomView.Room.GetTitle(), err)
+		} else if count <= 0 {
+			go view.LoadInitialHistory(room)
+		}
 	}
 }
 
@@ -377,6 +392,11 @@ func (view *MainView) LoadHistory(room string, initial bool) {
 			room.AddMessage(message, widget.PrependMessage)
 		}
 	}
+	err = roomView.SaveHistory(view.config.HistoryDir)
+	if err != nil {
+		debug.Printf("%Failed to save history of %s: %v", roomView.Room.GetTitle(), err)
+	}
+	view.config.Session.Save()
 	view.parent.Render()
 }
 

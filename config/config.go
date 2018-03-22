@@ -30,19 +30,29 @@ type Config struct {
 	UserID string `yaml:"mxid"`
 	HS     string `yaml:"homeserver"`
 
-	dir     string   `yaml:"-"`
-	Session *Session `yaml:"-"`
+	Dir        string   `yaml:"-"`
+	HistoryDir string   `yaml:"history_dir"`
+	Session    *Session `yaml:"-"`
 }
 
 func NewConfig(dir string) *Config {
 	return &Config{
-		dir: dir,
+		Dir:        dir,
+		HistoryDir: filepath.Join(dir, "history"),
 	}
 }
 
+func (config *Config) Clear() {
+	if config.Session != nil {
+		config.Session.Clear()
+	}
+	os.RemoveAll(config.HistoryDir)
+}
+
 func (config *Config) Load() {
-	os.MkdirAll(config.dir, 0700)
-	configPath := filepath.Join(config.dir, "config.yaml")
+	os.MkdirAll(config.Dir, 0700)
+	os.MkdirAll(config.HistoryDir, 0700)
+	configPath := filepath.Join(config.Dir, "config.yaml")
 	data, err := ioutil.ReadFile(configPath)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -61,14 +71,14 @@ func (config *Config) Load() {
 }
 
 func (config *Config) Save() {
-	os.MkdirAll(config.dir, 0700)
+	os.MkdirAll(config.Dir, 0700)
 	data, err := yaml.Marshal(&config)
 	if err != nil {
 		debug.Print("Failed to marshal config")
 		panic(err)
 	}
 
-	path := filepath.Join(config.dir, "config.yaml")
+	path := filepath.Join(config.Dir, "config.yaml")
 	err = ioutil.WriteFile(path, data, 0600)
 	if err != nil {
 		debug.Print("Failed to write config to", path)
