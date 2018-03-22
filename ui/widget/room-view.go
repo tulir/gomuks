@@ -114,17 +114,50 @@ func (view *RoomView) Focus(delegate func(p tview.Primitive)) {
 	delegate(view.input)
 }
 
+// Constants defining the size of the room view grid.
+const (
+	UserListBorderWidth   = 1
+	UserListWidth         = 20
+	StaticHorizontalSpace = UserListBorderWidth + UserListWidth
+
+	TopicBarHeight      = 1
+	StatusBarHeight     = 1
+	InputBarHeight      = 1
+	StaticVerticalSpace = TopicBarHeight + StatusBarHeight + InputBarHeight
+)
+
 func (view *RoomView) Draw(screen tcell.Screen) {
+	x, y, width, height := view.GetInnerRect()
+	if width <= 0 || height <= 0 {
+		return
+	}
+
+	// Calculate actual grid based on view rectangle and constants defined above.
+	var (
+		contentHeight = height - StaticVerticalSpace
+		contentWidth  = width - StaticHorizontalSpace
+
+		userListBorderColumn = x + contentWidth
+		userListColumn       = userListBorderColumn + UserListBorderWidth
+
+		topicRow   = y
+		contentRow = topicRow + TopicBarHeight
+		statusRow  = contentRow + contentHeight
+		inputRow   = statusRow + StatusBarHeight
+	)
+
+	// Update the rectangles of all the children.
+	view.topic.SetRect(x, topicRow, width, TopicBarHeight)
+	view.content.SetRect(x, contentRow, contentWidth, contentHeight)
+	view.status.SetRect(x, statusRow, width, StatusBarHeight)
+	if userListColumn > x {
+		view.userList.SetRect(userListColumn, contentRow, UserListWidth, contentHeight)
+		view.ulBorder.SetRect(userListBorderColumn, contentRow, UserListBorderWidth, contentHeight)
+	}
+	view.input.SetRect(x, inputRow, width, InputBarHeight)
+
+	// Draw everything
 	view.Box.Draw(screen)
-
-	x, y, width, height := view.GetRect()
-	view.topic.SetRect(x, y, width, 1)
-	view.content.SetRect(x, y+1, width-30, height-3)
-	view.status.SetRect(x, y+height-2, width, 1)
-	view.userList.SetRect(x+width-29, y+1, 29, height-3)
-	view.ulBorder.SetRect(x+width-30, y+1, 1, height-3)
-	view.input.SetRect(x, y+height-1, width, 1)
-
 	view.topic.Draw(screen)
 	view.content.Draw(screen)
 	view.status.Draw(screen)

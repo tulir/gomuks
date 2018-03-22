@@ -61,7 +61,7 @@ func (message *Message) CopyTo(to *Message) {
 }
 
 func (message *Message) CalculateBuffer(width int) {
-	if width < 1 {
+	if width < 2 {
 		return
 	}
 	message.Buffer = []string{}

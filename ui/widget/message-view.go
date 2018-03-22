@@ -53,7 +53,7 @@ type MessageView struct {
 func NewMessageView() *MessageView {
 	return &MessageView{
 		Box:             tview.NewBox(),
-		MaxSenderWidth:  20,
+		MaxSenderWidth:  15,
 		DateFormat:      "January _2, 2006",
 		TimestampFormat: "15:04:05",
 		TimestampWidth:  8,

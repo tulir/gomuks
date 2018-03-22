@@ -70,7 +70,7 @@ func (ui *GomuksUI) NewMainView() tview.Primitive {
 		SetBorderPadding(0, 0, 1, 0)
 
 	mainView.SetDirection(tview.FlexColumn)
-	mainView.AddItem(mainView.roomList, 30, 0, false)
+	mainView.AddItem(mainView.roomList, 25, 0, false)
 	mainView.AddItem(widget.NewBorder(), 1, 0, false)
 	mainView.AddItem(mainView.roomView, 0, 1, true)
 
