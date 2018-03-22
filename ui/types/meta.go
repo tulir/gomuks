@@ -20,9 +20,11 @@ import (
 	"github.com/gdamore/tcell"
 )
 
+// MessageMeta is an interface to get the metadata of a message.
+//
+// See BasicMeta for a simple implementation and documentation of methods.
 type MessageMeta interface {
 	GetSender() string
-	GetDisplaySender() string
 	GetSenderColor() tcell.Color
 	GetTextColor() tcell.Color
 	GetTimestampColor() tcell.Color
@@ -30,35 +32,40 @@ type MessageMeta interface {
 	GetDate() string
 }
 
+// BasicMeta is a simple variable store implementation of MessageMeta.
 type BasicMeta struct {
 	Sender, Timestamp, Date                string
 	SenderColor, TextColor, TimestampColor tcell.Color
 }
 
-func (meta *BasicMeta) GetDisplaySender() string {
-	return meta.Sender
-}
-
+// GetSender gets the string that should be displayed as the sender of this message.
 func (meta *BasicMeta) GetSender() string {
 	return meta.Sender
 }
 
+// GetSenderColor returns the color the name of the sender should be shown in.
 func (meta *BasicMeta) GetSenderColor() tcell.Color {
 	return meta.SenderColor
 }
 
+// GetTimestamp returns the formatted time when the message was sent.
 func (meta *BasicMeta) GetTimestamp() string {
 	return meta.Timestamp
 }
 
+// GetDate returns the formatted date when the message was sent.
 func (meta *BasicMeta) GetDate() string {
 	return meta.Date
 }
 
+// GetTextColor returns the color the actual content of the message should be shown in.
 func (meta *BasicMeta) GetTextColor() tcell.Color {
 	return meta.TextColor
 }
 
+// GetTimestampColor returns the color the timestamp should be shown in.
+//
+// This usually does not apply to the date, as it is rendered separately from the message.
 func (meta *BasicMeta) GetTimestampColor() tcell.Color {
 	return meta.TimestampColor
 }

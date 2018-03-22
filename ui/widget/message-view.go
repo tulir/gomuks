@@ -315,7 +315,6 @@ func (view *MessageView) Draw(screen tcell.Screen) {
 		screen.SetContent(separatorX, separatorY, view.Separator, nil, tcell.StyleDefault)
 	}
 
-	var prevMeta types.MessageMeta
 	indexOffset := len(view.textBuffer) - view.ScrollOffset - height
 	if indexOffset <= -PaddingAtTop {
 		message := "Scroll up to load more messages."
@@ -324,10 +323,13 @@ func (view *MessageView) Draw(screen tcell.Screen) {
 		}
 		view.writeLine(screen, message, x+messageOffsetX, y, tcell.ColorGreen)
 	}
+
 	if len(view.textBuffer) != len(view.metaBuffer) {
 		debug.ExtPrintf("Unexpected text/meta buffer length mismatch: %d != %d.", len(view.textBuffer), len(view.metaBuffer))
 		return
 	}
+
+	var prevMeta types.MessageMeta
 	for line := 0; line < height; line++ {
 		index := indexOffset + line
 		if index < 0 {
@@ -342,7 +344,7 @@ func (view *MessageView) Draw(screen tcell.Screen) {
 			}
 			if prevMeta == nil || meta.GetSender() != prevMeta.GetSender() {
 				view.writeLineRight(
-					screen, meta.GetDisplaySender(),
+					screen, meta.GetSender(),
 					x+usernameOffsetX, y+line,
 					view.widestSender, meta.GetSenderColor())
 			}
