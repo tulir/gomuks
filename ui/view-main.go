@@ -19,7 +19,6 @@ package ui
 import (
 	"fmt"
 	"sort"
-	"strconv"
 	"strings"
 	"time"
 	"unicode"
@@ -123,42 +122,40 @@ func (view *MainView) InputSubmit(roomView *widget.RoomView, text string) {
 		args := strings.SplitN(text, " ", 2)
 		command := strings.ToLower(args[0])
 		args = args[1:]
-		go view.HandleCommand(roomView.Room.ID, command, args)
+		go view.HandleCommand(roomView, command, args)
 	} else {
-		view.SendMessage(roomView.Room.ID, text)
+		view.SendMessage(roomView, text)
 	}
 	roomView.SetInputText("")
 }
 
-func (view *MainView) SendMessage(room, text string) {
-	now := time.Now()
-	roomView := view.GetRoom(room)
-	tempMessage := roomView.NewMessage(
-		strconv.FormatInt(now.UnixNano(), 10),
-		"Sending...", text, now)
-	tempMessage.TimestampColor = tcell.ColorGray
-	tempMessage.TextColor = tcell.ColorGray
-	tempMessage.SenderColor = tcell.ColorGray
-	roomView.AddMessage(tempMessage, widget.AppendMessage)
-	go func() {
-		defer view.gmx.Recover()
-		eventID, err := view.matrix.SendMessage(room, text)
-		if err != nil {
-			tempMessage.TextColor = tcell.ColorRed
-			tempMessage.TimestampColor = tcell.ColorRed
-			tempMessage.SenderColor = tcell.ColorRed
-			tempMessage.Sender = "Error"
-			roomView.SetStatus(fmt.Sprintf("Failed to send message: %s", err))
-		} else {
-			roomView.MessageView().UpdateMessageID(tempMessage, eventID)
-		}
-	}()
+func (view *MainView) SendMessage(roomView *widget.RoomView, text string) {
+	tempMessage := roomView.NewTempMessage("m.text", text)
+	go view.sendTempMessage(roomView, tempMessage)
 }
 
-func (view *MainView) HandleCommand(room, command string, args []string) {
+func (view *MainView) sendTempMessage(roomView *widget.RoomView, tempMessage *types.Message) {
+	defer view.gmx.Recover()
+	eventID, err := view.matrix.SendMessage(roomView.Room.ID, tempMessage.Type, tempMessage.Text)
+	if err != nil {
+		tempMessage.TextColor = tcell.ColorRed
+		tempMessage.TimestampColor = tcell.ColorRed
+		tempMessage.SenderColor = tcell.ColorRed
+		tempMessage.Sender = "Error"
+		roomView.SetStatus(fmt.Sprintf("Failed to send message: %s", err))
+	} else {
+		roomView.MessageView().UpdateMessageID(tempMessage, eventID)
+	}
+}
+
+func (view *MainView) HandleCommand(roomView *widget.RoomView, command string, args []string) {
 	defer view.gmx.Recover()
 	debug.Print("Handling command", command, args)
 	switch command {
+	case "/me":
+		tempMessage := roomView.NewTempMessage("m.emote", strings.Join(args, " "))
+		go view.sendTempMessage(roomView, tempMessage)
+		view.parent.Render()
 	case "/quit":
 		view.gmx.Stop()
 	case "/clearcache":
@@ -169,15 +166,15 @@ func (view *MainView) HandleCommand(room, command string, args []string) {
 	case "/part":
 		fallthrough
 	case "/leave":
-		debug.Print(view.matrix.LeaveRoom(room))
+		debug.Print("Leave room result:", view.matrix.LeaveRoom(roomView.Room.ID))
 	case "/join":
 		if len(args) == 0 {
-			view.AddServiceMessage(room, "Usage: /join <room>")
+			view.AddServiceMessage(roomView, "Usage: /join <room>")
 			break
 		}
-		debug.Print(view.matrix.JoinRoom(args[0]))
+		debug.Print("Join room result:", view.matrix.JoinRoom(args[0]))
 	default:
-		view.AddServiceMessage(room, "Unknown command.")
+		view.AddServiceMessage(roomView, "Unknown command.")
 	}
 }
 
@@ -331,13 +328,12 @@ func (view *MainView) SetTyping(room string, users []string) {
 	}
 }
 
-func (view *MainView) AddServiceMessage(room, message string) {
-	roomView, ok := view.rooms[room]
-	if ok {
-		message := roomView.NewMessage("", "*", message, time.Now())
-		roomView.AddMessage(message, widget.AppendMessage)
-		view.parent.Render()
-	}
+func (view *MainView) AddServiceMessage(roomView *widget.RoomView, text string) {
+	message := roomView.NewMessage("", "*", "gomuks.service", text, time.Now())
+	message.TextColor = tcell.ColorGray
+	message.SenderColor = tcell.ColorGray
+	roomView.AddMessage(message, widget.AppendMessage)
+	view.parent.Render()
 }
 
 func (view *MainView) LoadMoreHistory(room string) {
@@ -375,7 +371,7 @@ func (view *MainView) LoadHistory(room string, initial bool) {
 	debug.Print("Loading history for", room, "starting from", batch, "(initial:", initial, ")")
 	history, prevBatch, err := view.matrix.GetHistory(roomView.Room.ID, batch, 50)
 	if err != nil {
-		view.AddServiceMessage(room, "Failed to fetch history")
+		view.AddServiceMessage(roomView, "Failed to fetch history")
 		debug.Print("Failed to fetch history for", roomView.Room.ID, err)
 		return
 	}
@@ -404,7 +400,8 @@ func (view *MainView) ProcessMessageEvent(evt *gomatrix.Event) (room *widget.Roo
 	room = view.GetRoom(evt.RoomID)
 	if room != nil {
 		text, _ := evt.Content["body"].(string)
-		message = room.NewMessage(evt.ID, evt.Sender, text, unixToTime(evt.Timestamp))
+		msgtype, _ := evt.Content["msgtype"].(string)
+		message = room.NewMessage(evt.ID, evt.Sender, msgtype, text, unixToTime(evt.Timestamp))
 	}
 	return
 }
@@ -452,7 +449,7 @@ func (view *MainView) ProcessMembershipEvent(evt *gomatrix.Event, new bool) (roo
 			room = nil
 			return
 		}
-		message = room.NewMessage(evt.ID, sender, text, unixToTime(evt.Timestamp))
+		message = room.NewMessage(evt.ID, sender, "m.room.member", text, unixToTime(evt.Timestamp))
 		message.TextColor = tcell.ColorGreen
 	}
 	return

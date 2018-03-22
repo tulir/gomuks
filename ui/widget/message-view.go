@@ -74,8 +74,8 @@ func NewMessageView() *MessageView {
 	}
 }
 
-func (view *MessageView) NewMessage(id, sender, text string, timestamp time.Time) *types.Message {
-	return types.NewMessage(id, sender, text,
+func (view *MessageView) NewMessage(id, sender, msgtype, text string, timestamp time.Time) *types.Message {
+	return types.NewMessage(id, sender, msgtype, text,
 		timestamp.Format(view.TimestampFormat),
 		timestamp.Format(view.DateFormat),
 		GetHashColor(sender))
@@ -151,6 +151,8 @@ func (view *MessageView) AddMessage(message *types.Message, direction MessageDir
 	msg, messageExists := view.messageIDs[message.ID]
 	if msg != nil && messageExists {
 		message.CopyTo(msg)
+		message = msg
+		message.SetIsSending(false)
 		direction = IgnoreMessage
 	}
 
@@ -338,9 +340,9 @@ func (view *MessageView) Draw(screen tcell.Screen) {
 			if len(meta.GetTimestamp()) > 0 {
 				view.writeLine(screen, meta.GetTimestamp(), x, y+line, meta.GetTimestampColor())
 			}
-			if len(meta.GetSender()) > 0 && (prevMeta == nil || meta.GetSender() != prevMeta.GetSender()) {
+			if prevMeta == nil || meta.GetSender() != prevMeta.GetSender() {
 				view.writeLineRight(
-					screen, meta.GetSender(),
+					screen, meta.GetDisplaySender(),
 					x+usernameOffsetX, y+line,
 					view.widestSender, meta.GetSenderColor())
 			}

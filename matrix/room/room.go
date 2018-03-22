@@ -225,6 +225,11 @@ func (room *Room) GetMember(userID string) *Member {
 	return member
 }
 
+// GetSessionOwner returns the Member instance of the user whose session this room was created for.
+func (room *Room) GetSessionOwner() *Member {
+	return room.GetMember(room.SessionUserID)
+}
+
 // NewRoom creates a new Room with the given ID
 func NewRoom(roomID, owner string) *Room {
 	return &Room{

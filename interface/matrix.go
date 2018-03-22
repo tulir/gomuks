@@ -28,7 +28,7 @@ type MatrixContainer interface {
 	Login(user, password string) error
 	Start()
 	Stop()
-	SendMessage(roomID, message string) (string, error)
+	SendMessage(roomID, msgtype, message string) (string, error)
 	SendTyping(roomID string, typing bool)
 	JoinRoom(roomID string) error
 	LeaveRoom(roomID string) error

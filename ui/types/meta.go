@@ -22,6 +22,7 @@ import (
 
 type MessageMeta interface {
 	GetSender() string
+	GetDisplaySender() string
 	GetSenderColor() tcell.Color
 	GetTextColor() tcell.Color
 	GetTimestampColor() tcell.Color
@@ -32,6 +33,10 @@ type MessageMeta interface {
 type BasicMeta struct {
 	Sender, Timestamp, Date                string
 	SenderColor, TextColor, TimestampColor tcell.Color
+}
+
+func (meta *BasicMeta) GetDisplaySender() string {
+	return meta.Sender
 }
 
 func (meta *BasicMeta) GetSender() string {

@@ -17,6 +17,7 @@
 package types
 
 import (
+	"fmt"
 	"regexp"
 	"strings"
 
@@ -26,13 +27,15 @@ import (
 
 type Message struct {
 	BasicMeta
+	Type            string
 	ID              string
 	Text            string
+	sending         bool
 	buffer          []string
 	prevBufferWidth int
 }
 
-func NewMessage(id, sender, text, timestamp, date string, senderColor tcell.Color) *Message {
+func NewMessage(id, sender, msgtype, text, timestamp, date string, senderColor tcell.Color) *Message {
 	return &Message{
 		BasicMeta: BasicMeta{
 			Sender:         sender,
@@ -42,9 +45,11 @@ func NewMessage(id, sender, text, timestamp, date string, senderColor tcell.Colo
 			TextColor:      tcell.ColorDefault,
 			TimestampColor: tcell.ColorDefault,
 		},
+		Type:            msgtype,
 		Text:            text,
 		ID:              id,
 		prevBufferWidth: 0,
+		sending:         false,
 	}
 }
 
@@ -65,7 +70,11 @@ func (message *Message) CalculateBuffer(width int) {
 		return
 	}
 	message.buffer = []string{}
-	forcedLinebreaks := strings.Split(message.Text, "\n")
+	text := message.Text
+	if message.Type == "m.emote" {
+		text = fmt.Sprintf("* %s %s", message.Sender, message.Text)
+	}
+	forcedLinebreaks := strings.Split(text, "\n")
 	newlines := 0
 	for _, str := range forcedLinebreaks {
 		if len(str) == 0 && newlines < 1 {
@@ -92,6 +101,22 @@ func (message *Message) CalculateBuffer(width int) {
 		}
 	}
 	message.prevBufferWidth = width
+}
+
+func (message *Message) GetDisplaySender() string {
+	if message.sending {
+		return "Sending..."
+	}
+	switch message.Type {
+	case "m.emote":
+		return ""
+	default:
+		return message.Sender
+	}
+}
+
+func (message *Message) SetIsSending(sending bool) {
+	message.sending = sending
 }
 
 func (message *Message) RecalculateBuffer() {

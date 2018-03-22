@@ -280,10 +280,11 @@ func (c *Container) HandleTyping(evt *gomatrix.Event) {
 }
 
 // SendMessage sends a message with the given text to the given room.
-func (c *Container) SendMessage(roomID, text string) (string, error) {
+func (c *Container) SendMessage(roomID, msgtype, text string) (string, error) {
 	defer c.gmx.Recover()
 	c.SendTyping(roomID, false)
-	resp, err := c.client.SendText(roomID, text)
+	resp, err := c.client.SendMessageEvent(roomID, "m.room.message",
+		gomatrix.TextMessage{MsgType: msgtype, Body: text})
 	if err != nil {
 		return "", err
 	}

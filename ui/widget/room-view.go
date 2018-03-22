@@ -19,6 +19,7 @@ package widget
 import (
 	"fmt"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -239,12 +240,25 @@ func (view *RoomView) UpdateUserList() {
 	}
 }
 
-func (view *RoomView) NewMessage(id, sender, text string, timestamp time.Time) *types.Message {
+func (view *RoomView) NewMessage(id, sender, msgtype, text string, timestamp time.Time) *types.Message {
 	member := view.Room.GetMember(sender)
 	if member != nil {
 		sender = member.DisplayName
 	}
-	return view.content.NewMessage(id, sender, text, timestamp)
+	return view.content.NewMessage(id, sender, msgtype, text, timestamp)
+}
+
+func (view *RoomView) NewTempMessage(msgtype, text string) *types.Message {
+	now := time.Now()
+	id := strconv.FormatInt(now.UnixNano(), 10)
+	sender := view.Room.GetSessionOwner().DisplayName
+	message := view.NewMessage(id, sender, msgtype, text, now)
+	message.SetIsSending(true)
+	message.TimestampColor = tcell.ColorGray
+	message.TextColor = tcell.ColorGray
+	message.SenderColor = tcell.ColorGray
+	view.AddMessage(message, AppendMessage)
+	return message
 }
 
 func (view *RoomView) AddMessage(message *types.Message, direction MessageDirection) {
