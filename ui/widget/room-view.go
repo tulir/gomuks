@@ -23,7 +23,7 @@ import (
 	"time"
 
 	"github.com/gdamore/tcell"
-	rooms "maunium.net/go/gomuks/matrix/room"
+	"maunium.net/go/gomuks/matrix/room"
 	"maunium.net/go/gomuks/ui/types"
 	"maunium.net/go/tview"
 )
@@ -35,6 +35,7 @@ type RoomView struct {
 	content  *MessageView
 	status   *tview.TextView
 	userList *tview.TextView
+	input    *AdvancedInputField
 	Room     *rooms.Room
 
 	FetchHistoryLock *sync.Mutex
@@ -47,15 +48,72 @@ func NewRoomView(room *rooms.Room) *RoomView {
 		content:          NewMessageView(),
 		status:           tview.NewTextView(),
 		userList:         tview.NewTextView(),
+		input:            NewAdvancedInputField(),
 		FetchHistoryLock: &sync.Mutex{},
 		Room:             room,
 	}
+
+	view.input.
+		SetFieldBackgroundColor(tcell.ColorDefault).
+		SetPlaceholder("Send a message...").
+		SetPlaceholderExtColor(tcell.ColorGray)
+
 	view.topic.
 		SetText(strings.Replace(room.GetTopic(), "\n", " ", -1)).
 		SetBackgroundColor(tcell.ColorDarkGreen)
+
 	view.status.SetBackgroundColor(tcell.ColorDimGray)
+
 	view.userList.SetDynamicColors(true)
+
 	return view
+}
+
+func (view *RoomView) SetTabCompleteFunc(fn func(room *RoomView, text string, cursorOffset int) string) *RoomView {
+	view.input.SetTabCompleteFunc(func(text string, cursorOffset int) string {
+		return fn(view, text, cursorOffset)
+	})
+	return view
+}
+
+func (view *RoomView) SetInputCapture(fn func(room *RoomView, event *tcell.EventKey) *tcell.EventKey) *RoomView {
+	view.input.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+		return fn(view, event)
+	})
+	return view
+}
+
+func (view *RoomView) SetInputSubmitFunc(fn func(room *RoomView, text string)) *RoomView {
+	view.input.SetDoneFunc(func(key tcell.Key) {
+		if key == tcell.KeyEnter {
+			fn(view, view.input.GetText())
+		}
+	})
+	return view
+}
+
+func (view *RoomView) SetInputChangedFunc(fn func(room *RoomView, text string)) *RoomView {
+	view.input.SetChangedFunc(func(text string) {
+		fn(view, text)
+	})
+	return view
+}
+
+func (view *RoomView) SetInputText(newText string) *RoomView {
+	view.input.SetText(newText)
+	return view
+}
+
+func (view *RoomView) GetInputText() string {
+	return view.input.GetText()
+}
+
+func (view *RoomView) GetInputField() *AdvancedInputField {
+	return view.input
+}
+
+func (view *RoomView) Focus(delegate func(p tview.Primitive)) {
+	delegate(view.input)
 }
 
 func (view *RoomView) Draw(screen tcell.Screen) {
@@ -63,17 +121,19 @@ func (view *RoomView) Draw(screen tcell.Screen) {
 
 	x, y, width, height := view.GetRect()
 	view.topic.SetRect(x, y, width, 1)
-	view.content.SetRect(x, y+1, width-30, height-2)
-	view.status.SetRect(x, y+height-1, width, 1)
-	view.userList.SetRect(x+width-29, y+1, 29, height-2)
+	view.content.SetRect(x, y+1, width-30, height-3)
+	view.status.SetRect(x, y+height-2, width, 1)
+	view.userList.SetRect(x+width-29, y+1, 29, height-3)
+	view.input.SetRect(x, y+height-1, width, 1)
 
 	view.topic.Draw(screen)
 	view.content.Draw(screen)
 	view.status.Draw(screen)
+	view.input.Draw(screen)
 
 	borderX := x + width - 30
 	background := tcell.StyleDefault.Background(view.GetBackgroundColor()).Foreground(view.GetBorderColor())
-	for borderY := y + 1; borderY < y+height-1; borderY++ {
+	for borderY := y + 1; borderY < y+height-2; borderY++ {
 		screen.SetContent(borderX, borderY, tview.GraphicsVertBar, nil, background)
 	}
 	view.userList.Draw(screen)

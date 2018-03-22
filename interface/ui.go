@@ -39,7 +39,6 @@ type GomuksUI interface {
 }
 
 type MainView interface {
-	InputTabComplete(text string, cursorOffset int) string
 	GetRoom(roomID string) *widget.RoomView
 	HasRoom(roomID string) bool
 	AddRoom(roomID string)

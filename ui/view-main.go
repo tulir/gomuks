@@ -41,7 +41,6 @@ type MainView struct {
 	roomList         *tview.List
 	roomView         *tview.Pages
 	rooms            map[string]*widget.RoomView
-	input            *widget.AdvancedInputField
 	currentRoomIndex int
 	roomIDs          []string
 
@@ -52,7 +51,7 @@ type MainView struct {
 }
 
 func (view *MainView) addItem(p tview.Primitive, x, y, w, h int) {
-	view.Grid.AddItem(p, x, y, w, h, 0, 0, false)
+	view.Grid.AddItem(p, y, x, w, h, 0, 0, false)
 }
 
 func (ui *GomuksUI) NewMainView() tview.Primitive {
@@ -61,7 +60,6 @@ func (ui *GomuksUI) NewMainView() tview.Primitive {
 		roomList: tview.NewList(),
 		roomView: tview.NewPages(),
 		rooms:    make(map[string]*widget.RoomView),
-		input:    widget.NewAdvancedInputField(),
 
 		matrix: ui.gmx.MatrixContainer(),
 		gmx:    ui.gmx,
@@ -69,7 +67,7 @@ func (ui *GomuksUI) NewMainView() tview.Primitive {
 		parent: ui,
 	}
 
-	mainView.SetColumns(30, 1, 0).SetRows(0, 1)
+	mainView.SetColumns(30, 1, 0).SetRows(0)
 
 	mainView.roomList.
 		ShowSecondaryText(false).
@@ -77,30 +75,20 @@ func (ui *GomuksUI) NewMainView() tview.Primitive {
 		SetSelectedTextColor(tcell.ColorWhite).
 		SetBorderPadding(0, 0, 1, 0)
 
-	mainView.input.
-		SetDoneFunc(mainView.InputDone).
-		SetChangedFunc(mainView.InputChanged).
-		SetTabCompleteFunc(mainView.InputTabComplete).
-		SetFieldBackgroundColor(tcell.ColorDefault).
-		SetPlaceholder("Send a message...").
-		SetPlaceholderExtColor(tcell.ColorGray).
-		SetInputCapture(mainView.InputCapture)
-
-	mainView.addItem(mainView.roomList, 0, 0, 2, 1)
-	mainView.addItem(widget.NewBorder(), 0, 1, 2, 1)
-	mainView.addItem(mainView.roomView, 0, 2, 1, 1)
-	mainView.AddItem(mainView.input, 1, 2, 1, 1, 0, 0, true)
+	mainView.addItem(mainView.roomList, 0, 0, 1, 1)
+	mainView.addItem(widget.NewBorder(), 1, 0, 1, 1)
+	mainView.addItem(mainView.roomView, 2, 0, 1, 1)
 
 	ui.mainView = mainView
 
 	return mainView
 }
 
-func (view *MainView) InputChanged(text string) {
+func (view *MainView) InputChanged(roomView *widget.RoomView, text string) {
 	if len(text) == 0 {
-		go view.matrix.SendTyping(view.CurrentRoomID(), false)
+		go view.matrix.SendTyping(roomView.Room.ID, false)
 	} else if text[0] != '/' {
-		go view.matrix.SendTyping(view.CurrentRoomID(), true)
+		go view.matrix.SendTyping(roomView.Room.ID, true)
 	}
 }
 
@@ -116,42 +104,35 @@ func findWordToTabComplete(text string) string {
 	return output
 }
 
-func (view *MainView) InputTabComplete(text string, cursorOffset int) string {
-	roomView, _ := view.rooms[view.CurrentRoomID()]
-	if roomView != nil {
-		str := runewidth.Truncate(text, cursorOffset, "")
-		word := findWordToTabComplete(str)
-		userCompletions := roomView.AutocompleteUser(word)
-		if len(userCompletions) == 1 {
-			startIndex := len(str) - len(word)
-			completion := userCompletions[0]
-			if startIndex == 0 {
-				completion = completion + ": "
-			}
-			text = str[0:startIndex] + completion + text[len(str):]
-		} else if len(userCompletions) > 1 && len(userCompletions) < 6 {
-			roomView.SetStatus(fmt.Sprintf("Completions: %s", strings.Join(userCompletions, ", ")))
+func (view *MainView) InputTabComplete(roomView *widget.RoomView, text string, cursorOffset int) string {
+	str := runewidth.Truncate(text, cursorOffset, "")
+	word := findWordToTabComplete(str)
+	userCompletions := roomView.AutocompleteUser(word)
+	if len(userCompletions) == 1 {
+		startIndex := len(str) - len(word)
+		completion := userCompletions[0]
+		if startIndex == 0 {
+			completion = completion + ": "
 		}
+		text = str[0:startIndex] + completion + text[len(str):]
+	} else if len(userCompletions) > 1 && len(userCompletions) < 6 {
+		roomView.SetStatus(fmt.Sprintf("Completions: %s", strings.Join(userCompletions, ", ")))
 	}
 	return text
 }
 
-func (view *MainView) InputDone(key tcell.Key) {
-	if key != tcell.KeyEnter {
-		return
-	}
-	room, text := view.CurrentRoomID(), view.input.GetText()
+func (view *MainView) InputSubmit(roomView *widget.RoomView, text string) {
 	if len(text) == 0 {
 		return
 	} else if text[0] == '/' {
 		args := strings.SplitN(text, " ", 2)
 		command := strings.ToLower(args[0])
 		args = args[1:]
-		go view.HandleCommand(room, command, args)
+		go view.HandleCommand(roomView.Room.ID, command, args)
 	} else {
-		view.SendMessage(room, text)
+		view.SendMessage(roomView.Room.ID, text)
 	}
-	view.input.SetText("")
+	roomView.SetInputText("")
 }
 
 func (view *MainView) SendMessage(room, text string) {
@@ -205,7 +186,7 @@ func (view *MainView) HandleCommand(room, command string, args []string) {
 	}
 }
 
-func (view *MainView) InputCapture(key *tcell.EventKey) *tcell.EventKey {
+func (view *MainView) InputKeyHandler(roomView *widget.RoomView, key *tcell.EventKey) *tcell.EventKey {
 	k := key.Key()
 	if key.Modifiers() == tcell.ModCtrl || key.Modifiers() == tcell.ModAlt {
 		if k == tcell.KeyDown {
@@ -218,10 +199,10 @@ func (view *MainView) InputCapture(key *tcell.EventKey) *tcell.EventKey {
 			return key
 		}
 	} else if k == tcell.KeyPgUp || k == tcell.KeyPgDn || k == tcell.KeyUp || k == tcell.KeyDown {
-		msgView := view.rooms[view.CurrentRoomID()].MessageView()
+		msgView := roomView.MessageView()
 		if k == tcell.KeyPgUp || k == tcell.KeyUp {
 			if msgView.IsAtTop() {
-				go view.LoadMoreHistory(view.CurrentRoomID())
+				go view.LoadMoreHistory(roomView.Room.ID)
 			} else {
 				msgView.MoveUp(k == tcell.KeyPgUp)
 			}
@@ -252,7 +233,15 @@ func (view *MainView) SwitchRoom(roomIndex int) {
 	view.currentRoomIndex = roomIndex % len(view.roomIDs)
 	view.roomView.SwitchToPage(view.CurrentRoomID())
 	view.roomList.SetCurrentItem(roomIndex)
+	view.gmx.App().SetFocus(view)
 	view.parent.Render()
+}
+
+func (view *MainView) Focus(delegate func(p tview.Primitive)) {
+	roomView, ok := view.rooms[view.CurrentRoomID()]
+	if ok {
+		delegate(roomView)
+	}
 }
 
 func (view *MainView) addRoom(index int, room string) {
@@ -262,7 +251,11 @@ func (view *MainView) addRoom(index int, room string) {
 		view.SwitchRoom(index)
 	})
 	if !view.roomView.HasPage(room) {
-		roomView := widget.NewRoomView(roomStore)
+		roomView := widget.NewRoomView(roomStore).
+			SetInputSubmitFunc(view.InputSubmit).
+			SetInputChangedFunc(view.InputChanged).
+			SetTabCompleteFunc(view.InputTabComplete).
+			SetInputCapture(view.InputKeyHandler)
 		view.rooms[room] = roomView
 		view.roomView.AddPage(room, roomView, true, false)
 		roomView.UpdateUserList()
