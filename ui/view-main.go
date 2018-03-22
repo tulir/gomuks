@@ -374,15 +374,14 @@ func (view *MainView) LoadHistory(room string, initial bool) {
 	}
 	roomView.Room.PrevBatch = prevBatch
 	for _, evt := range history {
-		var room *widget.RoomView
 		var message *types.Message
 		if evt.Type == "m.room.message" {
-			room, message = view.ProcessMessageEvent(&evt)
+			message = view.ProcessMessageEvent(roomView, &evt)
 		} else if evt.Type == "m.room.member" {
-			room, message = view.ProcessMembershipEvent(&evt, false)
+			message = view.ProcessMembershipEvent(roomView, &evt)
 		}
-		if room != nil && message != nil {
-			room.AddMessage(message, widget.PrependMessage)
+		if message != nil {
+			roomView.AddMessage(message, widget.PrependMessage)
 		}
 	}
 	err = roomView.SaveHistory(view.config.HistoryDir)
@@ -393,66 +392,44 @@ func (view *MainView) LoadHistory(room string, initial bool) {
 	view.parent.Render()
 }
 
-func (view *MainView) ProcessMessageEvent(evt *gomatrix.Event) (room *widget.RoomView, message *types.Message) {
-	room = view.GetRoom(evt.RoomID)
-	if room != nil {
-		text, _ := evt.Content["body"].(string)
-		msgtype, _ := evt.Content["msgtype"].(string)
-		message = room.NewMessage(evt.ID, evt.Sender, msgtype, text, unixToTime(evt.Timestamp))
+func (view *MainView) ProcessMessageEvent(room *widget.RoomView, evt *gomatrix.Event) (message *types.Message) {
+	text, _ := evt.Content["body"].(string)
+	msgtype, _ := evt.Content["msgtype"].(string)
+	return room.NewMessage(evt.ID, evt.Sender, msgtype, text, unixToTime(evt.Timestamp))
+}
+
+func (view *MainView) getMembershipEventContent(evt *gomatrix.Event) (sender, text string) {
+	membership, _ := evt.Content["membership"].(string)
+	displayname, _ := evt.Content["displayname"].(string)
+	if len(displayname) == 0 {
+		displayname = *evt.StateKey
+	}
+
+	if membership == "invite" {
+		sender = "---"
+		text = fmt.Sprintf("%s invited %s.", evt.Sender, displayname)
+	} else if membership == "join" {
+		sender = "-->"
+		text = fmt.Sprintf("%s joined the room.", displayname)
+	} else if membership == "leave" {
+		sender = "<--"
+		if evt.Sender != *evt.StateKey {
+			reason, _ := evt.Content["reason"].(string)
+			text = fmt.Sprintf("%s kicked %s: %s", evt.Sender, displayname, reason)
+		} else {
+			text = fmt.Sprintf("%s left the room.", displayname)
+		}
 	}
 	return
 }
 
-func (view *MainView) processOwnMembershipChange(evt *gomatrix.Event) {
-	membership, _ := evt.Content["membership"].(string)
-	prevMembership := "leave"
-	if evt.Unsigned.PrevContent != nil {
-		prevMembership, _ = evt.Unsigned.PrevContent["membership"].(string)
-	}
-	if membership == prevMembership {
+func (view *MainView) ProcessMembershipEvent(room *widget.RoomView, evt *gomatrix.Event) (message *types.Message) {
+	sender, text := view.getMembershipEventContent(evt)
+	if len(text) == 0 {
 		return
 	}
-	if membership == "join" {
-		view.AddRoom(evt.RoomID)
-	} else if membership == "leave" {
-		view.RemoveRoom(evt.RoomID)
-	}
-}
-
-func (view *MainView) ProcessMembershipEvent(evt *gomatrix.Event, new bool) (room *widget.RoomView, message *types.Message) {
-	if new && evt.StateKey != nil && *evt.StateKey == view.config.Session.UserID {
-		view.processOwnMembershipChange(evt)
-	}
-
-	room = view.GetRoom(evt.RoomID)
-	if room != nil {
-		membership, _ := evt.Content["membership"].(string)
-		displayname, _ := evt.Content["displayname"].(string)
-		if len(displayname) == 0 {
-			displayname = *evt.StateKey
-		}
-		var sender, text string
-		if membership == "invite" {
-			sender = "---"
-			text = fmt.Sprintf("%s invited %s.", evt.Sender, displayname)
-		} else if membership == "join" {
-			sender = "-->"
-			text = fmt.Sprintf("%s joined the room.", displayname)
-		} else if membership == "leave" {
-			sender = "<--"
-			if evt.Sender != *evt.StateKey {
-				reason, _ := evt.Content["reason"].(string)
-				text = fmt.Sprintf("%s kicked %s: %s", evt.Sender, displayname, reason)
-			} else {
-				text = fmt.Sprintf("%s left the room.", displayname)
-			}
-		} else {
-			room = nil
-			return
-		}
-		message = room.NewMessage(evt.ID, sender, "m.room.member", text, unixToTime(evt.Timestamp))
-		message.TextColor = tcell.ColorGreen
-	}
+	message = room.NewMessage(evt.ID, sender, "m.room.member", text, unixToTime(evt.Timestamp))
+	message.TextColor = tcell.ColorGreen
 	return
 }
 

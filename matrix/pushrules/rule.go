@@ -22,6 +22,10 @@ import (
 	"maunium.net/go/gomuks/matrix/rooms"
 )
 
+type PushRuleCollection interface {
+	GetActions(room *rooms.Room, event *gomatrix.Event) PushActionArray
+}
+
 type PushRuleArray []*PushRule
 
 func (rules PushRuleArray) setType(typ PushRuleType) PushRuleArray {

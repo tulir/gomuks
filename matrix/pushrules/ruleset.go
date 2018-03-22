@@ -65,23 +65,23 @@ func (rs *PushRuleset) MarshalJSON() ([]byte, error) {
 	return json.Marshal(&data)
 }
 
+// DefaultPushActions is the value returned if none of the rule
+// collections in a Ruleset match the event given to GetActions()
 var DefaultPushActions = make(PushActionArray, 0)
 
+// GetActions matches the given event against all of the push rule
+// collections in this push ruleset in the order of priority as
+// specified in spec section 11.12.1.4.
 func (rs *PushRuleset) GetActions(room *rooms.Room, event *gomatrix.Event) (match PushActionArray) {
-	if match = rs.Override.GetActions(room, event); match != nil {
-		return
+	// Add push rule collections to array in priority order
+	arrays := []PushRuleCollection{rs.Override, rs.Content, rs.Room, rs.Sender, rs.Underride}
+	// Loop until one of the push rule collections matches the room/event combo.
+	for _, pra := range arrays {
+		if match = pra.GetActions(room, event); match != nil {
+			// Match found, return it.
+			return
+		}
 	}
-	if match = rs.Content.GetActions(room, event); match != nil {
-		return
-	}
-	if match = rs.Room.GetActions(room, event); match != nil {
-		return
-	}
-	if match = rs.Sender.GetActions(room, event); match != nil {
-		return
-	}
-	if match = rs.Underride.GetActions(room, event); match != nil {
-		return
-	}
+	// No match found, return default actions.
 	return DefaultPushActions
 }

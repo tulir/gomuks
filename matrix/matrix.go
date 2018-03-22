@@ -222,11 +222,16 @@ func (c *Container) NotifyMessage(room *rooms.Room, sender, text string, critica
 
 // HandleMessage is the event handler for the m.room.message timeline event.
 func (c *Container) HandleMessage(evt *gomatrix.Event) {
-	room, message := c.ui.MainView().ProcessMessageEvent(evt)
-	if room != nil {
-		pushRules := c.PushRules().GetActions(room.Room, evt).Should()
+	roomView := c.ui.MainView().GetRoom(evt.RoomID)
+	if roomView == nil {
+		return
+	}
+
+	message := c.ui.MainView().ProcessMessageEvent(roomView, evt)
+	if message != nil {
+		pushRules := c.PushRules().GetActions(roomView.Room, evt).Should()
 		if (pushRules.Notify || !pushRules.NotifySpecified) && evt.Sender != c.config.Session.UserID {
-			c.NotifyMessage(room.Room, message.Sender, message.Text, pushRules.Highlight)
+			c.NotifyMessage(roomView.Room, message.Sender, message.Text, pushRules.Highlight)
 		}
 		if pushRules.Highlight {
 			message.TextColor = tcell.ColorYellow
@@ -234,7 +239,7 @@ func (c *Container) HandleMessage(evt *gomatrix.Event) {
 		if pushRules.PlaySound {
 			// TODO play sound
 		}
-		room.AddMessage(message, widget.AppendMessage)
+		roomView.AddMessage(message, widget.AppendMessage)
 		c.ui.Render()
 	}
 }
@@ -249,6 +254,22 @@ func (c *Container) HandlePushRules(evt *gomatrix.Event) {
 	}
 }
 
+func (c *Container) processOwnMembershipChange(evt *gomatrix.Event) {
+	membership, _ := evt.Content["membership"].(string)
+	prevMembership := "leave"
+	if evt.Unsigned.PrevContent != nil {
+		prevMembership, _ = evt.Unsigned.PrevContent["membership"].(string)
+	}
+	if membership == prevMembership {
+		return
+	}
+	if membership == "join" {
+		c.ui.MainView().AddRoom(evt.RoomID)
+	} else if membership == "leave" {
+		c.ui.MainView().RemoveRoom(evt.RoomID)
+	}
+}
+
 // HandleMembership is the event handler for the m.room.membership state event.
 func (c *Container) HandleMembership(evt *gomatrix.Event) {
 	const Hour = 1 * 60 * 60 * 1000
@@ -256,14 +277,23 @@ func (c *Container) HandleMembership(evt *gomatrix.Event) {
 		return
 	}
 
-	room, message := c.ui.MainView().ProcessMembershipEvent(evt, true)
-	if room != nil {
-		// TODO this shouldn't be necessary
-		room.Room.UpdateState(evt)
-		// TODO This should probably also be in a different place
-		room.UpdateUserList()
+	if evt.StateKey != nil && *evt.StateKey == c.config.Session.UserID {
+		c.processOwnMembershipChange(evt)
+	}
 
-		room.AddMessage(message, widget.AppendMessage)
+	roomView := c.ui.MainView().GetRoom(evt.RoomID)
+	if roomView == nil {
+		return
+	}
+
+	message := c.ui.MainView().ProcessMembershipEvent(roomView, evt)
+	if message != nil {
+		// TODO this shouldn't be necessary
+		roomView.Room.UpdateState(evt)
+		// TODO This should probably also be in a different place
+		roomView.UpdateUserList()
+
+		roomView.AddMessage(message, widget.AppendMessage)
 		c.ui.Render()
 	}
 }
