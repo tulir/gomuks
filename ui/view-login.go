@@ -17,39 +17,64 @@
 package ui
 
 import (
+	"maunium.net/go/gomuks/config"
+	"maunium.net/go/gomuks/interface"
 	"maunium.net/go/gomuks/ui/debug"
 	"maunium.net/go/gomuks/ui/widget"
 	"maunium.net/go/tview"
 )
 
+type LoginView struct {
+	*tview.Form
+
+	homeserver *widget.AdvancedInputField
+	username   *widget.AdvancedInputField
+	password   *widget.AdvancedInputField
+
+	matrix ifc.MatrixContainer
+	config *config.Config
+	parent *GomuksUI
+}
+
 func (ui *GomuksUI) NewLoginView() tview.Primitive {
+	view := &LoginView{
+		Form: tview.NewForm(),
+
+		homeserver: widget.NewAdvancedInputField(),
+		username:   widget.NewAdvancedInputField(),
+		password:   widget.NewAdvancedInputField(),
+
+		matrix: ui.gmx.MatrixContainer(),
+		config: ui.gmx.Config(),
+		parent: ui,
+	}
 	hs := ui.gmx.Config().HS
 	if len(hs) == 0 {
 		hs = "https://matrix.org"
 	}
+	view.homeserver.SetLabel("Homeserver").SetText(hs).SetFieldWidth(30)
+	view.username.SetLabel("Username").SetText(ui.gmx.Config().UserID).SetFieldWidth(30)
+	view.password.SetLabel("Password").SetMaskCharacter('*').SetFieldWidth(30)
 
-	homeserver := widget.NewAdvancedInputField().SetLabel("Homeserver").SetText(hs).SetFieldWidth(30)
-	username := widget.NewAdvancedInputField().SetLabel("Username").SetText(ui.gmx.Config().UserID).SetFieldWidth(30)
-	password := widget.NewAdvancedInputField().SetLabel("Password").SetMaskCharacter('*').SetFieldWidth(30)
-
-	ui.loginView = tview.NewForm()
-	ui.loginView.
-		AddFormItem(homeserver).AddFormItem(username).AddFormItem(password).
-		AddButton("Log in", ui.login).
+	view.
+		AddFormItem(view.homeserver).AddFormItem(view.username).AddFormItem(view.password).
+		AddButton("Log in", view.Login).
 		AddButton("Quit", ui.gmx.Stop).
 		SetButtonsAlign(tview.AlignCenter).
 		SetBorder(true).SetTitle("Log in to Matrix")
+
+	ui.loginView = view
+
 	return widget.Center(45, 11, ui.loginView)
 }
 
-func (ui *GomuksUI) login() {
-	hs := ui.loginView.GetFormItem(0).(*widget.AdvancedInputField).GetText()
-	mxid := ui.loginView.GetFormItem(1).(*widget.AdvancedInputField).GetText()
-	password := ui.loginView.GetFormItem(2).(*widget.AdvancedInputField).GetText()
+func (view *LoginView) Login() {
+	hs := view.homeserver.GetText()
+	mxid := view.username.GetText()
+	password := view.password.GetText()
 
 	debug.Printf("Logging into %s as %s...", hs, mxid)
-	ui.gmx.Config().HS = hs
-	mx := ui.gmx.MatrixContainer()
-	debug.Print("Connect result:", mx.InitClient())
-	debug.Print("Login result:", mx.Login(mxid, password))
+	view.config.HS = hs
+	debug.Print("Connect result:", view.matrix.InitClient())
+	debug.Print("Login result:", view.matrix.Login(mxid, password))
 }

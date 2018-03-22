@@ -28,7 +28,7 @@ type GomuksUI struct {
 	views *tview.Pages
 
 	mainView  *MainView
-	loginView *tview.Form
+	loginView *LoginView
 }
 
 func init() {
@@ -62,4 +62,8 @@ func (ui *GomuksUI) InitViews() tview.Primitive {
 
 func (ui *GomuksUI) MainView() ifc.MainView {
 	return ui.mainView
+}
+
+func (ui *GomuksUI) LoginView() ifc.LoginView {
+	return ui.loginView
 }

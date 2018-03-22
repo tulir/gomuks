@@ -36,6 +36,7 @@ type GomuksUI interface {
 	SetView(name View)
 	InitViews() tview.Primitive
 	MainView() MainView
+	LoginView() LoginView
 }
 
 type MainView interface {
@@ -50,4 +51,8 @@ type MainView interface {
 	AddServiceMessage(roomID *widget.RoomView, message string)
 	ProcessMessageEvent(evt *gomatrix.Event) (*widget.RoomView, *types.Message)
 	ProcessMembershipEvent(evt *gomatrix.Event, new bool) (*widget.RoomView, *types.Message)
+}
+
+type LoginView interface {
+
 }
