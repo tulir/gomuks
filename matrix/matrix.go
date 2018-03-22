@@ -26,7 +26,7 @@ import (
 	"maunium.net/go/gomuks/config"
 	"maunium.net/go/gomuks/interface"
 	"maunium.net/go/gomuks/matrix/pushrules"
-	"maunium.net/go/gomuks/matrix/room"
+	"maunium.net/go/gomuks/matrix/rooms"
 	"maunium.net/go/gomuks/notification"
 	"maunium.net/go/gomuks/ui/debug"
 	"maunium.net/go/gomuks/ui/widget"

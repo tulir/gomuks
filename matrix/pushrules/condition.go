@@ -23,7 +23,7 @@ import (
 
 	"github.com/zyedidia/glob"
 	"maunium.net/go/gomatrix"
-	"maunium.net/go/gomuks/matrix/room"
+	"maunium.net/go/gomuks/matrix/rooms"
 )
 
 // PushCondKind is the type of a push condition.

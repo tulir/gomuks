@@ -1,12 +1,10 @@
 package pushrules
 
 import (
+	"encoding/json"
+	"net/url"
 
-"encoding/json"
-"net/url"
-
-"maunium.net/go/gomatrix"
-
+	"maunium.net/go/gomatrix"
 )
 
 // GetPushRules returns the push notification rules for the global scope.
@@ -39,4 +37,3 @@ func EventToPushRules(event *gomatrix.Event) (*PushRuleset, error) {
 
 	return ruleset, nil
 }
-

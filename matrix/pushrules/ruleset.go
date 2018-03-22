@@ -20,7 +20,7 @@ import (
 	"encoding/json"
 
 	"maunium.net/go/gomatrix"
-	"maunium.net/go/gomuks/matrix/room"
+	"maunium.net/go/gomuks/matrix/rooms"
 )
 
 type PushRuleset struct {

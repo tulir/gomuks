@@ -23,7 +23,7 @@ import (
 
 	"maunium.net/go/gomatrix"
 	"maunium.net/go/gomuks/matrix/pushrules"
-	"maunium.net/go/gomuks/matrix/room"
+	"maunium.net/go/gomuks/matrix/rooms"
 	"maunium.net/go/gomuks/ui/debug"
 )
 

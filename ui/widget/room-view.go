@@ -24,7 +24,7 @@ import (
 	"time"
 
 	"github.com/gdamore/tcell"
-	"maunium.net/go/gomuks/matrix/room"
+	"maunium.net/go/gomuks/matrix/rooms"
 	"maunium.net/go/gomuks/ui/types"
 	"maunium.net/go/tview"
 )

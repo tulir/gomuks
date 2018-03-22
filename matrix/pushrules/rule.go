@@ -19,7 +19,7 @@ package pushrules
 import (
 	"github.com/zyedidia/glob"
 	"maunium.net/go/gomatrix"
-	"maunium.net/go/gomuks/matrix/room"
+	"maunium.net/go/gomuks/matrix/rooms"
 )
 
 type PushRuleArray []*PushRule
