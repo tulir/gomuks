@@ -386,7 +386,7 @@ func (view *MainView) LoadHistory(room string, initial bool) {
 	}
 	err = roomView.SaveHistory(view.config.HistoryDir)
 	if err != nil {
-		debug.Printf("%Failed to save history of %s: %v", roomView.Room.GetTitle(), err)
+		debug.Printf("Failed to save history of %s: %v", roomView.Room.GetTitle(), err)
 	}
 	view.config.Session.Save()
 	view.parent.Render()

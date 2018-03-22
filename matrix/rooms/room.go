@@ -42,7 +42,7 @@ type Room struct {
 	topicCache string
 
 	// fetchHistoryLock is used to make sure multiple goroutines don't fetch history for this room at the same time.
-	fetchHistoryLock *sync.Mutex `json:"-"`
+	fetchHistoryLock *sync.Mutex
 }
 
 func (room *Room) LockHistory() {

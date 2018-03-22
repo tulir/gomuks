@@ -54,5 +54,4 @@ type MainView interface {
 }
 
 type LoginView interface {
-
 }

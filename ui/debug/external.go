@@ -34,7 +34,7 @@ func EnableExternal() {
 
 func ExtPrintf(text string, args ...interface{}) {
 	if writer != nil {
-		fmt.Fprintf(writer, text + "\n", args...)
+		fmt.Fprintf(writer, text+"\n", args...)
 	}
 }
 

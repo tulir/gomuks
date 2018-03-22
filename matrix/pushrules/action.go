@@ -46,9 +46,9 @@ type PushActionArrayShould struct {
 	// Whether or not the array contained a Notify, DontNotify or Coalesce action type.
 	NotifySpecified bool
 	// Whether or not the event in question should trigger a notification.
-	Notify          bool
+	Notify bool
 	// Whether or not the event in question should be highlighted.
-	Highlight       bool
+	Highlight bool
 
 	// Whether or not the event in question should trigger a sound alert.
 	PlaySound bool

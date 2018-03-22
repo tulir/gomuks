@@ -35,11 +35,11 @@ type Member struct {
 	// The MXID of the member.
 	UserID string `json:"-"`
 	// The membership status. Defaults to leave.
-	Membership  Membership `json:"membership"`
+	Membership Membership `json:"membership"`
 	// The display name of the user. Defaults to the user ID.
-	DisplayName string     `json:"displayname"`
+	DisplayName string `json:"displayname"`
 	// The avatar URL of the user. Defaults to an empty string.
-	AvatarURL   string     `json:"avatar_url"`
+	AvatarURL string `json:"avatar_url"`
 }
 
 // eventToRoomMember converts a m.room.member state event into a Member object.

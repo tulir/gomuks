@@ -222,23 +222,9 @@ func (field *AdvancedInputField) SetFinishedFunc(handler func(key tcell.Key)) tv
 	return field.SetDoneFunc(handler)
 }
 
-// Draw draws this primitive onto the screen.
-func (field *AdvancedInputField) Draw(screen tcell.Screen) {
-	field.Box.Draw(screen)
-
-	// Prepare
-	x, y, width, height := field.GetInnerRect()
-	rightLimit := x + width
-	if height < 1 || rightLimit <= x {
-		return
-	}
-
-	// Draw label.
-	_, drawnWidth := tview.Print(screen, field.label, x, y, rightLimit-x, tview.AlignLeft, field.labelColor)
-	x += drawnWidth
-
-	// Draw input area.
-	fieldWidth := field.fieldWidth
+// drawInput calculates the field width and draws the background.
+func (field *AdvancedInputField) drawInput(screen tcell.Screen, rightLimit, x, y int) (fieldWidth int) {
+	fieldWidth = field.fieldWidth
 	if fieldWidth == 0 {
 		fieldWidth = math.MaxInt32
 	}
@@ -249,13 +235,16 @@ func (field *AdvancedInputField) Draw(screen tcell.Screen) {
 	for index := 0; index < fieldWidth; index++ {
 		screen.SetContent(x+index, y, ' ', nil, fieldStyle)
 	}
+	return
+}
 
-	text := field.text
+// prepareText prepares the text to be displayed and recalculates the view and cursor offsets.
+func (field *AdvancedInputField) prepareText(screen tcell.Screen, fieldWidth, x, y int) (text string) {
+	text = field.text
 	if text == "" && field.placeholder != "" {
 		tview.Print(screen, field.placeholder, x, y, fieldWidth, tview.AlignLeft, field.placeholderTextColor)
 	}
 
-	// Draw entered text.
 	if field.maskCharacter > 0 {
 		text = strings.Repeat(string(field.maskCharacter), utf8.RuneCountInString(field.text))
 	}
@@ -264,7 +253,6 @@ func (field *AdvancedInputField) Draw(screen tcell.Screen) {
 		fieldWidth--
 	}
 
-	// Recalculate view offset
 	if field.cursorOffset < field.viewOffset {
 		field.viewOffset = field.cursorOffset
 	} else if field.cursorOffset > field.viewOffset+fieldWidth {
@@ -272,12 +260,16 @@ func (field *AdvancedInputField) Draw(screen tcell.Screen) {
 	} else if textWidth-field.viewOffset < fieldWidth {
 		field.viewOffset = textWidth - fieldWidth
 	}
-	// Make sure view offset didn't become negative
+
 	if field.viewOffset < 0 {
 		field.viewOffset = 0
 	}
 
-	// Draw entered text.
+	return
+}
+
+// drawText draws the text and the cursor.
+func (field *AdvancedInputField) drawText(screen tcell.Screen, fieldWidth, x, y int, text string) {
 	runes := []rune(text)
 	relPos := 0
 	for pos := field.viewOffset; pos <= fieldWidth+field.viewOffset && pos < len(runes); pos++ {
@@ -296,6 +288,24 @@ func (field *AdvancedInputField) Draw(screen tcell.Screen) {
 	if field.GetFocusable().HasFocus() {
 		field.setCursor(screen)
 	}
+}
+
+// Draw draws this primitive onto the screen.
+func (field *AdvancedInputField) Draw(screen tcell.Screen) {
+	field.Box.Draw(screen)
+
+	x, y, width, height := field.GetInnerRect()
+	rightLimit := x + width
+	if height < 1 || rightLimit <= x {
+		return
+	}
+
+	_, drawnWidth := tview.Print(screen, field.label, x, y, rightLimit-x, tview.AlignLeft, field.labelColor)
+	x += drawnWidth
+
+	fieldWidth := field.drawInput(screen, rightLimit, x, y)
+	text := field.prepareText(screen, fieldWidth, x, y)
+	field.drawText(screen, fieldWidth, x, y, text)
 }
 
 func (field *AdvancedInputField) GetCursorOffset() int {
