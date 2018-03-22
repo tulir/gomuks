@@ -430,20 +430,24 @@ func (view *MainView) ProcessMembershipEvent(evt *gomatrix.Event, new bool) (roo
 	room = view.GetRoom(evt.RoomID)
 	if room != nil {
 		membership, _ := evt.Content["membership"].(string)
+		displayname, _ := evt.Content["displayname"].(string)
+		if len(displayname) == 0 {
+			displayname = *evt.StateKey
+		}
 		var sender, text string
 		if membership == "invite" {
 			sender = "---"
-			text = fmt.Sprintf("%s invited %s.", evt.Sender, *evt.StateKey)
+			text = fmt.Sprintf("%s invited %s.", evt.Sender, displayname)
 		} else if membership == "join" {
 			sender = "-->"
-			text = fmt.Sprintf("%s joined the room.", *evt.StateKey)
+			text = fmt.Sprintf("%s joined the room.", displayname)
 		} else if membership == "leave" {
 			sender = "<--"
 			if evt.Sender != *evt.StateKey {
 				reason, _ := evt.Content["reason"].(string)
-				text = fmt.Sprintf("%s kicked %s: %s", evt.Sender, *evt.StateKey, reason)
+				text = fmt.Sprintf("%s kicked %s: %s", evt.Sender, displayname, reason)
 			} else {
-				text = fmt.Sprintf("%s left the room.", *evt.StateKey)
+				text = fmt.Sprintf("%s left the room.", displayname)
 			}
 		} else {
 			room = nil
