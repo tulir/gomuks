@@ -19,7 +19,6 @@ package widget
 import (
 	"fmt"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/gdamore/tcell"
@@ -35,22 +34,21 @@ type RoomView struct {
 	content  *MessageView
 	status   *tview.TextView
 	userList *tview.TextView
+	ulBorder *Border
 	input    *AdvancedInputField
 	Room     *rooms.Room
-
-	FetchHistoryLock *sync.Mutex
 }
 
 func NewRoomView(room *rooms.Room) *RoomView {
 	view := &RoomView{
-		Box:              tview.NewBox(),
-		topic:            tview.NewTextView(),
-		content:          NewMessageView(),
-		status:           tview.NewTextView(),
-		userList:         tview.NewTextView(),
-		input:            NewAdvancedInputField(),
-		FetchHistoryLock: &sync.Mutex{},
-		Room:             room,
+		Box:      tview.NewBox(),
+		topic:    tview.NewTextView(),
+		content:  NewMessageView(),
+		status:   tview.NewTextView(),
+		userList: tview.NewTextView(),
+		ulBorder: NewBorder(),
+		input:    NewAdvancedInputField(),
+		Room:     room,
 	}
 
 	view.input.
@@ -124,18 +122,14 @@ func (view *RoomView) Draw(screen tcell.Screen) {
 	view.content.SetRect(x, y+1, width-30, height-3)
 	view.status.SetRect(x, y+height-2, width, 1)
 	view.userList.SetRect(x+width-29, y+1, 29, height-3)
+	view.ulBorder.SetRect(x+width-30, y+1, 1, height-3)
 	view.input.SetRect(x, y+height-1, width, 1)
 
 	view.topic.Draw(screen)
 	view.content.Draw(screen)
 	view.status.Draw(screen)
 	view.input.Draw(screen)
-
-	borderX := x + width - 30
-	background := tcell.StyleDefault.Background(view.GetBackgroundColor()).Foreground(view.GetBorderColor())
-	for borderY := y + 1; borderY < y+height-2; borderY++ {
-		screen.SetContent(borderX, borderY, tview.GraphicsVertBar, nil, background)
-	}
+	view.ulBorder.Draw(screen)
 	view.userList.Draw(screen)
 }
 

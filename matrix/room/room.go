@@ -18,6 +18,7 @@ package rooms
 
 import (
 	"fmt"
+	"sync"
 
 	"maunium.net/go/gomatrix"
 )
@@ -28,17 +29,33 @@ type Room struct {
 
 	// The first batch of events that has been fetched for this room.
 	// Used for fetching additional history.
-	PrevBatch        string
+	PrevBatch string
 	// The MXID of the user whose session this room was created for.
-	SessionUserID    string
+	SessionUserID string
 	// MXID -> Member cache calculated from membership events.
-	memberCache      map[string]*Member
+	memberCache map[string]*Member
 	// The first non-SessionUserID member in the room. Calculated at the same time as memberCache.
 	firstMemberCache string
 	// The name of the room. Calculated from the state event name, canonical_alias or alias or the member cache.
-	nameCache        string
+	nameCache string
 	// The topic of the room. Directly fetched from the m.room.topic state event.
-	topicCache       string
+	topicCache string
+
+	// fetchHistoryLock is used to make sure multiple goroutines don't fetch history for this room at the same time.
+	fetchHistoryLock *sync.Mutex `json:"-"`
+}
+
+func (room *Room) LockHistory() {
+	if room.fetchHistoryLock == nil {
+		room.fetchHistoryLock = &sync.Mutex{}
+	}
+	room.fetchHistoryLock.Lock()
+}
+
+func (room *Room) UnlockHistory() {
+	if room.fetchHistoryLock != nil {
+		room.fetchHistoryLock.Unlock()
+	}
 }
 
 // UpdateState updates the room's current state with the given Event. This will clobber events based
@@ -211,7 +228,8 @@ func (room *Room) GetMember(userID string) *Member {
 // NewRoom creates a new Room with the given ID
 func NewRoom(roomID, owner string) *Room {
 	return &Room{
-		Room:          gomatrix.NewRoom(roomID),
-		SessionUserID: owner,
+		Room:             gomatrix.NewRoom(roomID),
+		fetchHistoryLock: &sync.Mutex{},
+		SessionUserID:    owner,
 	}
 }

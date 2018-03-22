@@ -226,11 +226,7 @@ func (view *MainView) SwitchRoom(roomIndex int) {
 		return
 	}
 	view.currentRoomIndex = roomIndex % len(view.roomIDs)
-	if !view.roomView.HasPage(view.CurrentRoomID()) {
-		debug.Print("Oh noes!", view.CurrentRoomID(), "has no page!")
-	} else {
-		view.roomView.SwitchToPage(view.CurrentRoomID())
-	}
+	view.roomView.SwitchToPage(view.CurrentRoomID())
 	view.roomList.SetCurrentItem(roomIndex)
 	view.gmx.App().SetFocus(view)
 	view.parent.Render()
@@ -344,10 +340,10 @@ func (view *MainView) LoadHistory(room string, initial bool) {
 	batch := roomView.Room.PrevBatch
 	lockTime := time.Now().Unix() + 1
 
-	roomView.FetchHistoryLock.Lock()
+	roomView.Room.LockHistory()
 	roomView.MessageView().LoadingMessages = true
 	defer func() {
-		roomView.FetchHistoryLock.Unlock()
+		roomView.Room.UnlockHistory()
 		roomView.MessageView().LoadingMessages = false
 	}()
 
