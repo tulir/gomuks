@@ -36,7 +36,7 @@ import (
 )
 
 type MainView struct {
-	*tview.Grid
+	*tview.Flex
 
 	roomList         *tview.List
 	roomView         *tview.Pages
@@ -50,13 +50,9 @@ type MainView struct {
 	parent *GomuksUI
 }
 
-func (view *MainView) addItem(p tview.Primitive, x, y, w, h int) {
-	view.Grid.AddItem(p, y, x, w, h, 0, 0, false)
-}
-
 func (ui *GomuksUI) NewMainView() tview.Primitive {
 	mainView := &MainView{
-		Grid:     tview.NewGrid(),
+		Flex:     tview.NewFlex(),
 		roomList: tview.NewList(),
 		roomView: tview.NewPages(),
 		rooms:    make(map[string]*widget.RoomView),
@@ -67,17 +63,16 @@ func (ui *GomuksUI) NewMainView() tview.Primitive {
 		parent: ui,
 	}
 
-	mainView.SetColumns(30, 1, 0).SetRows(0)
-
 	mainView.roomList.
 		ShowSecondaryText(false).
 		SetSelectedBackgroundColor(tcell.ColorDarkGreen).
 		SetSelectedTextColor(tcell.ColorWhite).
 		SetBorderPadding(0, 0, 1, 0)
 
-	mainView.addItem(mainView.roomList, 0, 0, 1, 1)
-	mainView.addItem(widget.NewBorder(), 1, 0, 1, 1)
-	mainView.addItem(mainView.roomView, 2, 0, 1, 1)
+	mainView.SetDirection(tview.FlexColumn)
+	mainView.AddItem(mainView.roomList, 30, 0, false)
+	mainView.AddItem(widget.NewBorder(), 1, 0, false)
+	mainView.AddItem(mainView.roomView, 0, 1, true)
 
 	ui.mainView = mainView
 
@@ -231,7 +226,11 @@ func (view *MainView) SwitchRoom(roomIndex int) {
 		return
 	}
 	view.currentRoomIndex = roomIndex % len(view.roomIDs)
-	view.roomView.SwitchToPage(view.CurrentRoomID())
+	if !view.roomView.HasPage(view.CurrentRoomID()) {
+		debug.Print("Oh noes!", view.CurrentRoomID(), "has no page!")
+	} else {
+		view.roomView.SwitchToPage(view.CurrentRoomID())
+	}
 	view.roomList.SetCurrentItem(roomIndex)
 	view.gmx.App().SetFocus(view)
 	view.parent.Render()
