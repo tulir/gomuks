@@ -26,6 +26,7 @@ import (
 
 var colorNames []string
 
+// init initializes the colorNames array.
 func init() {
 	colorNames = make([]string, len(tcell.ColorNames))
 	i := 0
@@ -33,9 +34,22 @@ func init() {
 		colorNames[i] = name
 		i++
 	}
+	// In order to have consistent coloring between restarts, we need to sort the array.
 	sort.Sort(sort.StringSlice(colorNames))
 }
 
+// GetHashColorName gets a color name for the given string based on its FNV-1 hash.
+//
+// The array of possible color names are the alphabetically ordered color
+// names specified in tcell.ColorNames.
+//
+// The algorithm to get the color is as follows:
+//  colorNames[ FNV1(string) % len(colorNames) ]
+//
+// With the exception of the three special cases:
+//  --> = green
+//  <-- = red
+//  --- = yellow
 func GetHashColorName(s string) string {
 	switch s {
 	case "-->":
@@ -51,10 +65,15 @@ func GetHashColorName(s string) string {
 	}
 }
 
+// GetHashColor gets the tcell Color value for the given string.
+//
+// GetHashColor calls GetHashColorName() and gets the Color value from the tcell.ColorNames map.
 func GetHashColor(s string) tcell.Color {
 	return tcell.ColorNames[GetHashColorName(s)]
 }
 
+// AddHashColor adds tview color tags to the given string.
+// The color added is the color returned by GetHashColorName().
 func AddHashColor(s string) string {
 	return fmt.Sprintf("[%s]%s[white]", GetHashColorName(s), s)
 }

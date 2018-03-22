@@ -20,6 +20,8 @@ import (
 	"maunium.net/go/tview"
 )
 
+// Center wraps the given tview primitive into a Flex element in order to
+// vertically and horizontally center the given primitive.
 func Center(width, height int, p tview.Primitive) tview.Primitive {
 	return tview.NewFlex().
 		AddItem(tview.NewBox(), 0, 1, false).

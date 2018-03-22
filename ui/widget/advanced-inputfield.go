@@ -14,6 +14,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+// Based on https://github.com/rivo/tview/blob/master/inputfield.go
+
 package widget
 
 import (
@@ -68,6 +70,7 @@ type AdvancedInputField struct {
 	// disables masking.
 	maskCharacter rune
 
+	// Whether or not to enable vim-style keybindings.
 	vimBindings bool
 
 	// An optional function which may reject the last character that was entered.

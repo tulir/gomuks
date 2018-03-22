@@ -21,10 +21,16 @@ import (
 	"maunium.net/go/tview"
 )
 
+// Border is a simple tview widget that renders a horizontal or vertical bar.
+//
+// If the width of the box is 1, the bar will be vertical.
+// If the height is 1, the bar will be horizontal.
+// If the width nor the height are 1, nothing will be rendered.
 type Border struct {
 	*tview.Box
 }
 
+// NewBorder wraps a new tview Box into a new Border.
 func NewBorder() *Border {
 	return &Border{tview.NewBox()}
 }
