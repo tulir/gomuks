@@ -41,6 +41,7 @@ type Message struct {
 	Type            string
 	Sender          string
 	SenderColor     tcell.Color
+	TextColor       tcell.Color
 	Timestamp       string
 	Date            string
 	Text            string
@@ -56,6 +57,7 @@ func NewMessage(id, sender, msgtype, text, timestamp, date string, senderColor t
 		Timestamp:       timestamp,
 		Date:            date,
 		SenderColor:     senderColor,
+		TextColor:       tcell.ColorDefault,
 		Type:            msgtype,
 		Text:            text,
 		ID:              id,
@@ -70,9 +72,11 @@ func (message *Message) CopyTo(to *Message) {
 	to.Type = message.Type
 	to.Sender = message.Sender
 	to.SenderColor = message.SenderColor
+	to.TextColor = message.TextColor
 	to.Timestamp = message.Timestamp
 	to.Date = message.Date
 	to.Text = message.Text
+	to.State = message.State
 	to.RecalculateBuffer()
 }
 
@@ -98,14 +102,7 @@ func (message *Message) GetSender() string {
 	}
 }
 
-// GetSenderColor returns the color the name of the sender should be shown in.
-//
-// If the message is being sent, the color is gray.
-// If sending has failed, the color is red.
-//
-// In any other case, the color is whatever is specified in the Message struct.
-// Usually that means it is the hash-based color of the sender (see ui/widget/color.go)
-func (message *Message) GetSenderColor() tcell.Color {
+func (message *Message) getStateSpecificColor() tcell.Color {
 	switch message.State {
 	case MessageStateSending:
 		return tcell.ColorGray
@@ -114,32 +111,44 @@ func (message *Message) GetSenderColor() tcell.Color {
 	case MessageStateDefault:
 		fallthrough
 	default:
-		return message.SenderColor
+		return tcell.ColorDefault
 	}
 }
 
+// GetSenderColor returns the color the name of the sender should be shown in.
+//
+// If the message is being sent, the color is gray.
+// If sending has failed, the color is red.
+//
+// In any other case, the color is whatever is specified in the Message struct.
+// Usually that means it is the hash-based color of the sender (see ui/widget/color.go)
+func (message *Message) GetSenderColor() (color tcell.Color) {
+	color = message.getStateSpecificColor()
+	if color == tcell.ColorDefault {
+		color = message.SenderColor
+	}
+	return
+}
+
 // GetTextColor returns the color the actual content of the message should be shown in.
+//
+// This returns the same colors as GetSenderColor(), but takes the default color from a different variable.
+func (message *Message) GetTextColor() (color tcell.Color) {
+	color = message.getStateSpecificColor()
+	if color == tcell.ColorDefault {
+		color = message.TextColor
+	}
+	return
+}
+
+// GetTimestampColor returns the color the timestamp should be shown in.
 //
 // As with GetSenderColor(), messages being sent and messages that failed to be sent are
 // gray and red respectively.
 //
 // However, other messages are the default color instead of a color stored in the struct.
-func (message *Message) GetTextColor() tcell.Color {
-	switch message.State {
-	case MessageStateSending:
-		return tcell.ColorGray
-	case MessageStateFailed:
-		return tcell.ColorRed
-	default:
-		return tcell.ColorDefault
-	}
-}
-
-// GetTimestampColor returns the color the timestamp should be shown in.
-//
-// Currently, this simply calls GetTextColor().
 func (message *Message) GetTimestampColor() tcell.Color {
-	return message.GetTextColor()
+	return message.getStateSpecificColor()
 }
 
 // RecalculateBuffer calculates the buffer again with the previously provided width.

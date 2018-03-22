@@ -253,10 +253,7 @@ func (view *RoomView) NewTempMessage(msgtype, text string) *types.Message {
 	id := strconv.FormatInt(now.UnixNano(), 10)
 	sender := view.Room.GetSessionOwner().DisplayName
 	message := view.NewMessage(id, sender, msgtype, text, now)
-	message.SetIsSending(true)
-	message.TimestampColor = tcell.ColorGray
-	message.TextColor = tcell.ColorGray
-	message.SenderColor = tcell.ColorGray
+	message.State = types.MessageStateSending
 	view.AddMessage(message, AppendMessage)
 	return message
 }

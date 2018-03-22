@@ -138,10 +138,7 @@ func (view *MainView) sendTempMessage(roomView *widget.RoomView, tempMessage *ty
 	defer view.gmx.Recover()
 	eventID, err := view.matrix.SendMessage(roomView.Room.ID, tempMessage.Type, tempMessage.Text)
 	if err != nil {
-		tempMessage.TextColor = tcell.ColorRed
-		tempMessage.TimestampColor = tcell.ColorRed
-		tempMessage.SenderColor = tcell.ColorRed
-		tempMessage.Sender = "Error"
+		tempMessage.State = types.MessageStateFailed
 		roomView.SetStatus(fmt.Sprintf("Failed to send message: %s", err))
 	} else {
 		roomView.MessageView().UpdateMessageID(tempMessage, eventID)

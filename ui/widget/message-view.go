@@ -152,7 +152,6 @@ func (view *MessageView) AddMessage(message *types.Message, direction MessageDir
 	if msg != nil && messageExists {
 		message.CopyTo(msg)
 		message = msg
-		message.SetIsSending(false)
 		direction = IgnoreMessage
 	}
 
