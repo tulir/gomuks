@@ -325,10 +325,10 @@ func (view *MessageView) Draw(screen tcell.Screen) {
 	}
 
 	totalHeight := float64(len(view.textBuffer))
-	// ceil(height / (totalHeight / height))
+	// The height of the scrollbar:  ceil(height / (totalHeight / height))
 	scrollBarHeight := int(math.Ceil(float64(height) / (totalHeight / float64(height))))
-	// height - ceil(scrollOffset) / totalHeight * height
-	scrollBarPos := height - int(math.Ceil(float64(view.ScrollOffset) / totalHeight * float64(height)))
+	// The position of the scrollbar from the bottom:  height - ceil(scrollOffset) / totalHeight * height
+	scrollBarPos := height - int(math.Ceil(float64(view.ScrollOffset)/totalHeight*float64(height)))
 
 	var prevMeta types.MessageMeta
 	firstLine := true
@@ -349,7 +349,7 @@ func (view *MessageView) Draw(screen tcell.Screen) {
 		} else if line == height-1 && view.ScrollOffset == 0 {
 			// At bottom of message history
 			borderChar = '┴'
-		} else if line >= scrollBarPos && line < scrollBarPos + scrollBarHeight {
+		} else if line >= scrollBarPos && line < scrollBarPos+scrollBarHeight {
 			// Scroll bar
 			borderChar = '║'
 			borderStyle = borderStyle.Foreground(tcell.ColorGreen)

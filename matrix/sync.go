@@ -26,6 +26,7 @@ import (
 
 	"maunium.net/go/gomatrix"
 	"maunium.net/go/gomuks/config"
+	"maunium.net/go/gomuks/matrix/rooms"
 )
 
 // GomuksSyncer is the default syncing implementation. You can either write your own syncer, or selectively
@@ -53,59 +54,57 @@ func (s *GomuksSyncer) ProcessResponse(res *gomatrix.RespSync, since string) (er
 
 	defer func() {
 		if r := recover(); r != nil {
-			err = fmt.Errorf("ProcessResponse panicked! userID=%s since=%s panic=%s\n%s", s.Session.UserID, since, r, debug.Stack())
+			err = fmt.Errorf("ProcessResponse for %s since %s panicked: %s\n%s", s.Session.UserID, since, r, debug.Stack())
 		}
 	}()
 
-	for _, event := range res.Presence.Events {
-		s.notifyListeners(event)
-	}
-	for _, event := range res.AccountData.Events {
-		s.notifyListeners(event)
-	}
+	s.processSyncEvents(nil, res.Presence.Events, false, false)
+	s.processSyncEvents(nil, res.AccountData.Events, false, false)
+
 	for roomID, roomData := range res.Rooms.Join {
 		room := s.Session.GetRoom(roomID)
-		for _, event := range roomData.State.Events {
-			event.RoomID = roomID
-			room.UpdateState(event)
-			s.notifyListeners(event)
-		}
-		for _, event := range roomData.Timeline.Events {
-			event.RoomID = roomID
-			s.notifyListeners(event)
-		}
-		for _, event := range roomData.Ephemeral.Events {
-			event.RoomID = roomID
-			s.notifyListeners(event)
-		}
+		s.processSyncEvents(room, roomData.State.Events, true, false)
+		s.processSyncEvents(room, roomData.Timeline.Events, false, false)
+		s.processSyncEvents(room, roomData.Ephemeral.Events, false, false)
 
 		if len(room.PrevBatch) == 0 {
 			room.PrevBatch = roomData.Timeline.PrevBatch
 		}
 	}
+
 	for roomID, roomData := range res.Rooms.Invite {
 		room := s.Session.GetRoom(roomID)
-		for _, event := range roomData.State.Events {
-			event.RoomID = roomID
-			room.UpdateState(event)
-			s.notifyListeners(event)
-		}
+		s.processSyncEvents(room, roomData.State.Events, true, false)
 	}
+
 	for roomID, roomData := range res.Rooms.Leave {
 		room := s.Session.GetRoom(roomID)
-		for _, event := range roomData.Timeline.Events {
-			if event.StateKey != nil {
-				event.RoomID = roomID
-				room.UpdateState(event)
-				s.notifyListeners(event)
-			}
-		}
+		s.processSyncEvents(room, roomData.Timeline.Events, true, true)
 
 		if len(room.PrevBatch) == 0 {
 			room.PrevBatch = roomData.Timeline.PrevBatch
 		}
 	}
+
 	return
+}
+
+func (s *GomuksSyncer) processSyncEvents(room *rooms.Room, events []*gomatrix.Event, isState bool, checkStateKey bool) {
+	for _, event := range events {
+		if !checkStateKey || event.StateKey != nil {
+			s.processSyncEvent(room, event, isState)
+		}
+	}
+}
+
+func (s *GomuksSyncer) processSyncEvent(room *rooms.Room, event *gomatrix.Event, isState bool) {
+	if room != nil {
+		event.RoomID = room.ID
+	}
+	if isState {
+		room.UpdateState(event)
+	}
+	s.notifyListeners(event)
 }
 
 // OnEventType allows callers to be notified when there are new events for the given event type.

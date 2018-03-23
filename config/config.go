@@ -26,6 +26,7 @@ import (
 	"maunium.net/go/gomuks/ui/debug"
 )
 
+// Config contains the main config of gomuks.
 type Config struct {
 	UserID string `yaml:"mxid"`
 	HS     string `yaml:"homeserver"`
@@ -35,6 +36,7 @@ type Config struct {
 	Session    *Session `yaml:"-"`
 }
 
+// NewConfig creates a config that loads data from the given directory.
 func NewConfig(dir string) *Config {
 	return &Config{
 		Dir:        dir,
@@ -42,6 +44,7 @@ func NewConfig(dir string) *Config {
 	}
 }
 
+// Clear clears the session cache and removes all history.
 func (config *Config) Clear() {
 	if config.Session != nil {
 		config.Session.Clear()
@@ -49,6 +52,7 @@ func (config *Config) Clear() {
 	os.RemoveAll(config.HistoryDir)
 }
 
+// Load loads the config from config.yaml in the directory given to the config struct.
 func (config *Config) Load() {
 	os.MkdirAll(config.Dir, 0700)
 	os.MkdirAll(config.HistoryDir, 0700)
@@ -70,6 +74,7 @@ func (config *Config) Load() {
 	}
 }
 
+// Save saves this config to config.yaml in the directory given to the config struct.
 func (config *Config) Save() {
 	os.MkdirAll(config.Dir, 0700)
 	data, err := yaml.Marshal(&config)
