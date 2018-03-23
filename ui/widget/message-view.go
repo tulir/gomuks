@@ -19,6 +19,7 @@ package widget
 import (
 	"encoding/gob"
 	"fmt"
+	"math"
 	"os"
 	"time"
 
@@ -37,7 +38,6 @@ type MessageView struct {
 	DateFormat      string
 	TimestampFormat string
 	TimestampWidth  int
-	Separator       rune
 	LoadingMessages bool
 
 	widestSender int
@@ -59,7 +59,6 @@ func NewMessageView() *MessageView {
 		DateFormat:      "January _2, 2006",
 		TimestampFormat: "15:04:05",
 		TimestampWidth:  8,
-		Separator:       '|',
 		ScrollOffset:    0,
 
 		messages:   make([]*types.Message, 0),
@@ -307,12 +306,9 @@ func (view *MessageView) Draw(screen tcell.Screen) {
 		return
 	}
 
-	usernameOffsetX := view.TimestampWidth + TimestampSenderGap
-	messageOffsetX := usernameOffsetX + view.widestSender + SenderMessageGap
-	separatorX := x + usernameOffsetX + view.widestSender + SenderSeparatorGap
-	for separatorY := y; separatorY < y+height; separatorY++ {
-		screen.SetContent(separatorX, separatorY, view.Separator, nil, tcell.StyleDefault)
-	}
+	usernameX := x + view.TimestampWidth + TimestampSenderGap
+	messageX := usernameX + view.widestSender + SenderMessageGap
+	separatorX := usernameX + view.widestSender + SenderSeparatorGap
 
 	indexOffset := len(view.textBuffer) - view.ScrollOffset - height
 	if indexOffset <= -PaddingAtTop {
@@ -320,7 +316,7 @@ func (view *MessageView) Draw(screen tcell.Screen) {
 		if view.LoadingMessages {
 			message = "Loading more messages..."
 		}
-		view.writeLine(screen, message, x+messageOffsetX, y, tcell.ColorGreen)
+		view.writeLine(screen, message, messageX, y, tcell.ColorGreen)
 	}
 
 	if len(view.textBuffer) != len(view.metaBuffer) {
@@ -328,7 +324,15 @@ func (view *MessageView) Draw(screen tcell.Screen) {
 		return
 	}
 
+	totalHeight := float64(len(view.textBuffer))
+	// ceil(height / (totalHeight / height))
+	scrollBarHeight := int(math.Ceil(float64(height) / (totalHeight / float64(height))))
+	// height - ceil(scrollOffset) / totalHeight * height
+	scrollBarPos := height - int(math.Ceil(float64(view.ScrollOffset) / totalHeight * float64(height)))
+
 	var prevMeta types.MessageMeta
+	firstLine := true
+
 	for line := 0; line < height; line++ {
 		index := indexOffset + line
 		if index < 0 {
@@ -336,6 +340,23 @@ func (view *MessageView) Draw(screen tcell.Screen) {
 		} else if index >= len(view.textBuffer) {
 			break
 		}
+
+		borderChar := '│'
+		borderStyle := tcell.StyleDefault
+		if firstLine && view.ScrollOffset+height >= len(view.textBuffer) {
+			// At top of loaded message history
+			borderChar = '┬'
+		} else if line == height-1 && view.ScrollOffset == 0 {
+			// At bottom of message history
+			borderChar = '┴'
+		} else if line >= scrollBarPos && line < scrollBarPos + scrollBarHeight {
+			// Scroll bar
+			borderChar = '║'
+			borderStyle = borderStyle.Foreground(tcell.ColorGreen)
+		}
+		firstLine = false
+		screen.SetContent(separatorX, y+line, borderChar, nil, borderStyle)
+
 		text, meta := view.textBuffer[index], view.metaBuffer[index]
 		if meta != prevMeta {
 			if len(meta.GetTimestamp()) > 0 {
@@ -344,11 +365,11 @@ func (view *MessageView) Draw(screen tcell.Screen) {
 			if prevMeta == nil || meta.GetSender() != prevMeta.GetSender() {
 				view.writeLineRight(
 					screen, meta.GetSender(),
-					x+usernameOffsetX, y+line,
+					usernameX, y+line,
 					view.widestSender, meta.GetSenderColor())
 			}
 			prevMeta = meta
 		}
-		view.writeLine(screen, text, x+messageOffsetX, y+line, meta.GetTextColor())
+		view.writeLine(screen, text, messageX, y+line, meta.GetTextColor())
 	}
 }
