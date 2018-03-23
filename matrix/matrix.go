@@ -263,9 +263,10 @@ func (c *Container) processOwnMembershipChange(evt *gomatrix.Event) {
 	if membership == prevMembership {
 		return
 	}
-	if membership == "join" {
+	switch membership {
+	case "join":
 		c.ui.MainView().AddRoom(evt.RoomID)
-	} else if membership == "leave" {
+	case "leave":
 		c.ui.MainView().RemoveRoom(evt.RoomID)
 	}
 }

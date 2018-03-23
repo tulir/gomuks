@@ -20,6 +20,7 @@ import (
 	"maunium.net/go/gomatrix"
 )
 
+// Membership is an enum specifying the membership state of a room member.
 type Membership string
 
 // The allowed membership states as specified in spec section 10.5.5.

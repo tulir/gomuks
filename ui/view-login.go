@@ -44,7 +44,7 @@ func (ui *GomuksUI) NewLoginView() tview.Primitive {
 		username:   widget.NewAdvancedInputField(),
 		password:   widget.NewAdvancedInputField(),
 
-		matrix: ui.gmx.MatrixContainer(),
+		matrix: ui.gmx.Matrix(),
 		config: ui.gmx.Config(),
 		parent: ui,
 	}

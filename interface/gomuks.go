@@ -17,14 +17,13 @@
 package ifc
 
 import (
-	"maunium.net/go/gomatrix"
 	"maunium.net/go/gomuks/config"
 	"maunium.net/go/tview"
 )
 
+// Gomuks is the wrapper for everything.
 type Gomuks interface {
-	Matrix() *gomatrix.Client
-	MatrixContainer() MatrixContainer
+	Matrix() MatrixContainer
 	App() *tview.Application
 	UI() GomuksUI
 	Config() *config.Config

@@ -39,6 +39,14 @@ type rawPushRuleset struct {
 	Underride PushRuleArray `json:"underride"`
 }
 
+// UnmarshalJSON parses JSON into this PushRuleset.
+//
+// For override, sender and underride push rule arrays, the type is added
+// to each PushRule and the array is used as-is.
+//
+// For room and sender push rule arrays, the type is added to each PushRule
+// and the array is converted to a map with the rule ID as the key and the
+// PushRule as the value.
 func (rs *PushRuleset) UnmarshalJSON(raw []byte) (err error) {
 	data := rawPushRuleset{}
 	err = json.Unmarshal(raw, &data)
@@ -54,6 +62,7 @@ func (rs *PushRuleset) UnmarshalJSON(raw []byte) (err error) {
 	return
 }
 
+// MarshalJSON is the reverse of UnmarshalJSON()
 func (rs *PushRuleset) MarshalJSON() ([]byte, error) {
 	data := rawPushRuleset{
 		Override:  rs.Override,

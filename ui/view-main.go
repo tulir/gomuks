@@ -56,7 +56,7 @@ func (ui *GomuksUI) NewMainView() tview.Primitive {
 		roomView: tview.NewPages(),
 		rooms:    make(map[string]*widget.RoomView),
 
-		matrix: ui.gmx.MatrixContainer(),
+		matrix: ui.gmx.Matrix(),
 		gmx:    ui.gmx,
 		config: ui.gmx.Config(),
 		parent: ui,

@@ -34,17 +34,22 @@ type Room struct {
 	SessionUserID string
 	// MXID -> Member cache calculated from membership events.
 	memberCache map[string]*Member
-	// The first non-SessionUserID member in the room. Calculated at the same time as memberCache.
+	// The first non-SessionUserID member in the room. Calculated at
+	// the same time as memberCache.
 	firstMemberCache string
-	// The name of the room. Calculated from the state event name, canonical_alias or alias or the member cache.
+	// The name of the room. Calculated from the state event name,
+	// canonical_alias or alias or the member cache.
 	nameCache string
 	// The topic of the room. Directly fetched from the m.room.topic state event.
 	topicCache string
 
-	// fetchHistoryLock is used to make sure multiple goroutines don't fetch history for this room at the same time.
+	// fetchHistoryLock is used to make sure multiple goroutines don't fetch
+	// history for this room at the same time.
 	fetchHistoryLock *sync.Mutex
 }
 
+// LockHistory locks the history fetching mutex.
+// If the mutex is nil, it will be created.
 func (room *Room) LockHistory() {
 	if room.fetchHistoryLock == nil {
 		room.fetchHistoryLock = &sync.Mutex{}
@@ -52,6 +57,8 @@ func (room *Room) LockHistory() {
 	room.fetchHistoryLock.Lock()
 }
 
+// UnlockHistory unlocks the history fetching mutex.
+// If the mutex is nil, this does nothing.
 func (room *Room) UnlockHistory() {
 	if room.fetchHistoryLock != nil {
 		room.fetchHistoryLock.Unlock()

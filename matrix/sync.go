@@ -49,7 +49,7 @@ func (s *GomuksSyncer) ProcessResponse(res *gomatrix.RespSync, since string) (er
 	if len(since) == 0 {
 		return
 	}
-	// gdebug.Print("Processing sync response", since, res)
+	// debug.Print("Processing sync response", since, res)
 
 	defer func() {
 		if r := recover(); r != nil {
