@@ -404,21 +404,33 @@ func (view *MainView) getMembershipEventContent(evt *gomatrix.Event) (sender, te
 	if len(displayname) == 0 {
 		displayname = *evt.StateKey
 	}
+	prevMembership := "leave"
+	prevDisplayname := ""
+	if evt.Unsigned.PrevContent != nil {
+		prevMembership, _ = evt.Unsigned.PrevContent["membership"].(string)
+		prevDisplayname, _ = evt.Unsigned.PrevContent["displayname"].(string)
+	}
 
-	if membership == "invite" {
-		sender = "---"
-		text = fmt.Sprintf("%s invited %s.", evt.Sender, displayname)
-	} else if membership == "join" {
-		sender = "-->"
-		text = fmt.Sprintf("%s joined the room.", displayname)
-	} else if membership == "leave" {
-		sender = "<--"
-		if evt.Sender != *evt.StateKey {
-			reason, _ := evt.Content["reason"].(string)
-			text = fmt.Sprintf("%s kicked %s: %s", evt.Sender, displayname, reason)
-		} else {
-			text = fmt.Sprintf("%s left the room.", displayname)
+	if membership != prevMembership {
+		switch membership {
+		case "invite":
+			sender = "---"
+			text = fmt.Sprintf("%s invited %s.", evt.Sender, displayname)
+		case "join":
+			sender = "-->"
+			text = fmt.Sprintf("%s joined the room.", displayname)
+		case "leave":
+			sender = "<--"
+			if evt.Sender != *evt.StateKey {
+				reason, _ := evt.Content["reason"].(string)
+				text = fmt.Sprintf("%s kicked %s: %s", evt.Sender, displayname, reason)
+			} else {
+				text = fmt.Sprintf("%s left the room.", displayname)
+			}
 		}
+	} else if displayname != prevDisplayname {
+		sender = "---"
+		text = fmt.Sprintf("%s changed their display name to %s.", prevDisplayname, displayname)
 	}
 	return
 }
