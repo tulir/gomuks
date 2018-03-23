@@ -251,7 +251,10 @@ func (view *RoomView) NewMessage(id, sender, msgtype, text string, timestamp tim
 func (view *RoomView) NewTempMessage(msgtype, text string) *types.Message {
 	now := time.Now()
 	id := strconv.FormatInt(now.UnixNano(), 10)
-	sender := view.Room.GetSessionOwner().DisplayName
+	sender := ""
+	if ownerMember := view.Room.GetSessionOwner(); ownerMember != nil {
+		sender = ownerMember.DisplayName
+	}
 	message := view.NewMessage(id, sender, msgtype, text, now)
 	message.State = types.MessageStateSending
 	view.AddMessage(message, AppendMessage)
