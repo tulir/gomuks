@@ -191,7 +191,7 @@ func (view *MainView) InputKeyHandler(roomView *widget.RoomView, key *tcell.Even
 		msgView := roomView.MessageView()
 		if k == tcell.KeyPgUp || k == tcell.KeyUp {
 			if msgView.IsAtTop() {
-				go view.LoadMoreHistory(roomView.Room.ID)
+				go view.LoadHistory(roomView.Room.ID, false)
 			} else {
 				msgView.MoveUp(k == tcell.KeyPgUp)
 			}
@@ -262,7 +262,7 @@ func (view *MainView) addRoom(index int, room string) {
 		if err != nil {
 			debug.Printf("Failed to load history of %s: %v", roomView.Room.GetTitle(), err)
 		} else if count <= 0 {
-			go view.LoadInitialHistory(room)
+			go view.LoadHistory(room, true)
 		}
 	}
 }
@@ -333,14 +333,6 @@ func (view *MainView) AddServiceMessage(roomView *widget.RoomView, text string) 
 	view.parent.Render()
 }
 
-func (view *MainView) LoadMoreHistory(room string) {
-	view.LoadHistory(room, false)
-}
-
-func (view *MainView) LoadInitialHistory(room string) {
-	view.LoadHistory(room, true)
-}
-
 func (view *MainView) LoadHistory(room string, initial bool) {
 	defer view.gmx.Recover()
 	roomView := view.rooms[room]
@@ -364,8 +356,10 @@ func (view *MainView) LoadHistory(room string, initial bool) {
 
 	if initial {
 		batch = view.config.Session.NextBatch
+		debug.Print("Loading initial history for", room)
+	} else {
+		debug.Print("Loading more history for", room, "starting from", batch)
 	}
-	debug.Print("Loading history for", room, "starting from", batch, "(initial:", initial, ")")
 	history, prevBatch, err := view.matrix.GetHistory(roomView.Room.ID, batch, 50)
 	if err != nil {
 		view.AddServiceMessage(roomView, "Failed to fetch history")
