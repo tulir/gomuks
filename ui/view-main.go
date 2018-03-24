@@ -43,6 +43,8 @@ type MainView struct {
 	currentRoomIndex int
 	roomIDs          []string
 
+	lastFocusTime time.Time
+
 	matrix ifc.MatrixContainer
 	gmx    ifc.Gomuks
 	config *config.Config
@@ -76,6 +78,10 @@ func (ui *GomuksUI) NewMainView() tview.Primitive {
 	ui.mainView = mainView
 
 	return mainView
+}
+
+func (view *MainView) BumpFocus() {
+	view.lastFocusTime = time.Now()
 }
 
 func (view *MainView) InputChanged(roomView *widget.RoomView, text string) {
@@ -175,7 +181,9 @@ func (view *MainView) HandleCommand(roomView *widget.RoomView, command string, a
 	}
 }
 
-func (view *MainView) InputKeyHandler(roomView *widget.RoomView, key *tcell.EventKey) *tcell.EventKey {
+func (view *MainView) KeyEventHandler(roomView *widget.RoomView, key *tcell.EventKey) *tcell.EventKey {
+	view.BumpFocus()
+
 	k := key.Key()
 	if key.Modifiers() == tcell.ModCtrl || key.Modifiers() == tcell.ModAlt {
 		if k == tcell.KeyDown {
@@ -198,11 +206,18 @@ func (view *MainView) InputKeyHandler(roomView *widget.RoomView, key *tcell.Even
 		} else {
 			msgView.MoveDown(k == tcell.KeyPgDn)
 		}
-		view.parent.Render()
 	} else {
 		return key
 	}
 	return nil
+}
+
+func (view *MainView) MouseEventHandler(roomView *widget.RoomView, event *tcell.EventMouse) *tcell.EventMouse {
+	if event.Buttons() != tcell.ButtonNone {
+		view.BumpFocus()
+	}
+
+	return event
 }
 
 func (view *MainView) CurrentRoomID() string {
@@ -253,7 +268,8 @@ func (view *MainView) addRoom(index int, room string) {
 			SetInputSubmitFunc(view.InputSubmit).
 			SetInputChangedFunc(view.InputChanged).
 			SetTabCompleteFunc(view.InputTabComplete).
-			SetInputCapture(view.InputKeyHandler)
+			SetInputCapture(view.KeyEventHandler).
+			SetMouseCapture(view.MouseEventHandler)
 		view.rooms[room] = roomView
 		view.roomView.AddPage(room, roomView, true, false)
 		roomView.UpdateUserList()

@@ -95,6 +95,13 @@ func (view *RoomView) SetInputCapture(fn func(room *RoomView, event *tcell.Event
 	return view
 }
 
+func (view *RoomView) SetMouseCapture(fn func(room *RoomView, event *tcell.EventMouse) *tcell.EventMouse) *RoomView {
+	view.input.SetMouseCapture(func(event *tcell.EventMouse) *tcell.EventMouse {
+		return fn(view, event)
+	})
+	return view
+}
+
 func (view *RoomView) SetInputSubmitFunc(fn func(room *RoomView, text string)) *RoomView {
 	view.input.SetDoneFunc(func(key tcell.Key) {
 		if key == tcell.KeyEnter {
