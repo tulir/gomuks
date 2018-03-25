@@ -24,7 +24,6 @@ import (
 	"time"
 
 	"github.com/gdamore/tcell"
-	"github.com/mattn/go-runewidth"
 	"maunium.net/go/gomuks/ui/debug"
 	"maunium.net/go/gomuks/ui/types"
 	"maunium.net/go/tview"
@@ -248,42 +247,6 @@ func (view *MessageView) IsAtTop() bool {
 	return view.ScrollOffset >= totalHeight-height+PaddingAtTop
 }
 
-func (view *MessageView) writeLine(screen tcell.Screen, line string, x, y int, color tcell.Color) {
-	offsetX := 0
-	for _, ch := range line {
-		chWidth := runewidth.RuneWidth(ch)
-		if chWidth == 0 {
-			continue
-		}
-
-		for localOffset := 0; localOffset < chWidth; localOffset++ {
-			screen.SetContent(x+offsetX+localOffset, y, ch, nil, tcell.StyleDefault.Foreground(color))
-		}
-		offsetX += chWidth
-	}
-}
-
-func (view *MessageView) writeLineRight(screen tcell.Screen, line string, x, y, maxWidth int, color tcell.Color) {
-	offsetX := maxWidth - runewidth.StringWidth(line)
-	if offsetX < 0 {
-		offsetX = 0
-	}
-	for _, ch := range line {
-		chWidth := runewidth.RuneWidth(ch)
-		if chWidth == 0 {
-			continue
-		}
-
-		for localOffset := 0; localOffset < chWidth; localOffset++ {
-			screen.SetContent(x+offsetX+localOffset, y, ch, nil, tcell.StyleDefault.Foreground(color))
-		}
-		offsetX += chWidth
-		if offsetX > maxWidth {
-			break
-		}
-	}
-}
-
 const (
 	TimestampSenderGap = 1
 	SenderSeparatorGap = 1
@@ -293,11 +256,11 @@ const (
 func (view *MessageView) Draw(screen tcell.Screen) {
 	view.Box.Draw(screen)
 
-	x, y, _, height := view.GetInnerRect()
+	x, y, width, height := view.GetInnerRect()
 	view.recalculateBuffers()
 
 	if len(view.textBuffer) == 0 {
-		view.writeLine(screen, "It's quite empty in here.", x, y+height, tcell.ColorDefault)
+		writeLine(screen, tview.AlignLeft,"It's quite empty in here.", x, y+height, width, tcell.ColorDefault)
 		return
 	}
 
@@ -311,7 +274,7 @@ func (view *MessageView) Draw(screen tcell.Screen) {
 		if view.LoadingMessages {
 			message = "Loading more messages..."
 		}
-		view.writeLine(screen, message, messageX, y, tcell.ColorGreen)
+		writeLine(screen, tview.AlignLeft, message, messageX, y, width, tcell.ColorGreen)
 	}
 
 	if len(view.textBuffer) != len(view.metaBuffer) {
@@ -355,16 +318,16 @@ func (view *MessageView) Draw(screen tcell.Screen) {
 		text, meta := view.textBuffer[index], view.metaBuffer[index]
 		if meta != prevMeta {
 			if len(meta.GetTimestamp()) > 0 {
-				view.writeLine(screen, meta.GetTimestamp(), x, y+line, meta.GetTimestampColor())
+				writeLine(screen, tview.AlignLeft, meta.GetTimestamp(), x, y+line, width, meta.GetTimestampColor())
 			}
 			if prevMeta == nil || meta.GetSender() != prevMeta.GetSender() {
-				view.writeLineRight(
-					screen, meta.GetSender(),
-					usernameX, y+line,
-					view.widestSender, meta.GetSenderColor())
+				writeLine(
+					screen, tview.AlignRight, meta.GetSender(),
+					usernameX, y+line, view.widestSender,
+					meta.GetSenderColor())
 			}
 			prevMeta = meta
 		}
-		view.writeLine(screen, text, messageX, y+line, meta.GetTextColor())
+		writeLine(screen, tview.AlignLeft, text, messageX, y+line, width, meta.GetTextColor())
 	}
 }

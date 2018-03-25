@@ -37,7 +37,7 @@ import (
 type MainView struct {
 	*tview.Flex
 
-	roomList         *tview.List
+	roomList         *widget.RoomList
 	roomView         *tview.Pages
 	rooms            map[string]*widget.RoomView
 	currentRoomIndex int
@@ -54,7 +54,7 @@ type MainView struct {
 func (ui *GomuksUI) NewMainView() tview.Primitive {
 	mainView := &MainView{
 		Flex:     tview.NewFlex(),
-		roomList: tview.NewList(),
+		roomList: widget.NewRoomList(),
 		roomView: tview.NewPages(),
 		rooms:    make(map[string]*widget.RoomView),
 
@@ -63,12 +63,6 @@ func (ui *GomuksUI) NewMainView() tview.Primitive {
 		config: ui.gmx.Config(),
 		parent: ui,
 	}
-
-	mainView.roomList.
-		ShowSecondaryText(false).
-		SetSelectedBackgroundColor(tcell.ColorDarkGreen).
-		SetSelectedTextColor(tcell.ColorWhite).
-		SetBorderPadding(0, 0, 1, 0)
 
 	mainView.SetDirection(tview.FlexColumn)
 	mainView.AddItem(mainView.roomList, 25, 0, false)
@@ -186,13 +180,12 @@ func (view *MainView) KeyEventHandler(roomView *widget.RoomView, key *tcell.Even
 
 	k := key.Key()
 	if key.Modifiers() == tcell.ModCtrl || key.Modifiers() == tcell.ModAlt {
-		if k == tcell.KeyDown {
+		switch k {
+		case tcell.KeyDown:
 			view.SwitchRoom(view.currentRoomIndex + 1)
-			view.roomList.SetCurrentItem(view.currentRoomIndex)
-		} else if k == tcell.KeyUp {
+		case tcell.KeyUp:
 			view.SwitchRoom(view.currentRoomIndex - 1)
-			view.roomList.SetCurrentItem(view.currentRoomIndex)
-		} else {
+		default:
 			return key
 		}
 	} else if k == tcell.KeyPgUp || k == tcell.KeyPgDn || k == tcell.KeyUp || k == tcell.KeyDown || k == tcell.KeyEnd || k == tcell.KeyHome {
@@ -265,7 +258,7 @@ func (view *MainView) SwitchRoom(roomIndex int) {
 	}
 	view.currentRoomIndex = roomIndex % len(view.roomIDs)
 	view.roomView.SwitchToPage(view.CurrentRoomID())
-	view.roomList.SetCurrentItem(roomIndex)
+	view.roomList.SetSelected(view.rooms[view.CurrentRoomID()].Room)
 	view.gmx.App().SetFocus(view)
 	view.parent.Render()
 }
@@ -289,9 +282,7 @@ func (view *MainView) SaveAllHistory() {
 func (view *MainView) addRoom(index int, room string) {
 	roomStore := view.matrix.GetRoom(room)
 
-	view.roomList.AddItem(roomStore.GetTitle(), "", 0, func() {
-		view.SwitchRoom(index)
-	})
+	view.roomList.Add(roomStore)
 	if !view.roomView.HasPage(room) {
 		roomView := widget.NewRoomView(roomStore).
 			SetInputSubmitFunc(view.InputSubmit).
@@ -334,7 +325,8 @@ func (view *MainView) AddRoom(room string) {
 }
 
 func (view *MainView) RemoveRoom(room string) {
-	if !view.HasRoom(room) {
+	roomView := view.GetRoom(room)
+	if roomView == nil {
 		return
 	}
 	removeIndex := 0
@@ -344,7 +336,7 @@ func (view *MainView) RemoveRoom(room string) {
 	} else {
 		removeIndex = sort.StringSlice(view.roomIDs).Search(room)
 	}
-	view.roomList.RemoveItem(removeIndex)
+	view.roomList.Remove(roomView.Room)
 	view.roomIDs = append(view.roomIDs[:removeIndex], view.roomIDs[removeIndex+1:]...)
 	view.roomView.RemovePage(room)
 	delete(view.rooms, room)
