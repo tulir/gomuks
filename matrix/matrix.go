@@ -17,6 +17,7 @@
 package matrix
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -178,6 +179,7 @@ func (c *Container) OnLogin() {
 	syncer.OnEventType("m.room.member", c.HandleMembership)
 	syncer.OnEventType("m.typing", c.HandleTyping)
 	syncer.OnEventType("m.push_rules", c.HandlePushRules)
+	syncer.OnEventType("m.tag", c.HandleTag)
 	c.client.Syncer = syncer
 
 	c.UpdateRoomList()
@@ -252,6 +254,13 @@ func (c *Container) HandlePushRules(evt *gomatrix.Event) {
 	if err != nil {
 		debug.Print("Failed to convert event to push rules:", err)
 	}
+}
+
+// HandleTag is the event handler for the m.tag account data event.
+func (c *Container) HandleTag(evt *gomatrix.Event) {
+	debug.Print("Received updated tags")
+	dat, _ := json.MarshalIndent(&evt.Content, "", "  ")
+	debug.Print(string(dat))
 }
 
 func (c *Container) processOwnMembershipChange(evt *gomatrix.Event) {

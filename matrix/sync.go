@@ -66,6 +66,7 @@ func (s *GomuksSyncer) ProcessResponse(res *gomatrix.RespSync, since string) (er
 		s.processSyncEvents(room, roomData.State.Events, true, false)
 		s.processSyncEvents(room, roomData.Timeline.Events, false, false)
 		s.processSyncEvents(room, roomData.Ephemeral.Events, false, false)
+		s.processSyncEvents(room, roomData.AccountData.Events, false, false)
 
 		if len(room.PrevBatch) == 0 {
 			room.PrevBatch = roomData.Timeline.PrevBatch
@@ -147,7 +148,9 @@ func (s *GomuksSyncer) GetFilterJSON(userID string) json.RawMessage {
 			"ephemeral": {
 				"types": ["m.typing"]
 			},
-			"account_data": {"types": []}
+			"account_data": {
+				"types": ["m.tag"]
+			}
 		},
 		"account_data": {
 			"types": ["m.push_rules"]
