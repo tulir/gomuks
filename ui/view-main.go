@@ -195,16 +195,26 @@ func (view *MainView) KeyEventHandler(roomView *widget.RoomView, key *tcell.Even
 		} else {
 			return key
 		}
-	} else if k == tcell.KeyPgUp || k == tcell.KeyPgDn || k == tcell.KeyUp || k == tcell.KeyDown {
+	} else if k == tcell.KeyPgUp || k == tcell.KeyPgDn || k == tcell.KeyUp || k == tcell.KeyDown || k == tcell.KeyEnd || k == tcell.KeyHome {
 		msgView := roomView.MessageView()
-		if k == tcell.KeyPgUp || k == tcell.KeyUp {
-			if msgView.IsAtTop() {
-				go view.LoadHistory(roomView.Room.ID, false)
-			} else {
-				msgView.MoveUp(k == tcell.KeyPgUp)
-			}
-		} else {
-			msgView.MoveDown(k == tcell.KeyPgDn)
+
+		if msgView.IsAtTop() && (k == tcell.KeyPgUp || k == tcell.KeyUp) {
+			go view.LoadHistory(roomView.Room.ID, false)
+		}
+
+		switch k {
+		case tcell.KeyPgUp:
+			msgView.AddScrollOffset(msgView.Height() / 2)
+		case tcell.KeyPgDn:
+			msgView.AddScrollOffset(-msgView.Height() / 2)
+		case tcell.KeyUp:
+			msgView.AddScrollOffset(1)
+		case tcell.KeyDown:
+			msgView.AddScrollOffset(-1)
+		case tcell.KeyHome:
+			msgView.AddScrollOffset(msgView.TotalHeight())
+		case tcell.KeyEnd:
+			msgView.AddScrollOffset(-msgView.TotalHeight())
 		}
 	} else {
 		return key
@@ -212,9 +222,28 @@ func (view *MainView) KeyEventHandler(roomView *widget.RoomView, key *tcell.Even
 	return nil
 }
 
+const WheelScrollOffsetDiff = 3
+
 func (view *MainView) MouseEventHandler(roomView *widget.RoomView, event *tcell.EventMouse) *tcell.EventMouse {
-	if event.Buttons() != tcell.ButtonNone {
-		view.BumpFocus()
+	if event.Buttons() == tcell.ButtonNone {
+		return event
+	}
+	view.BumpFocus()
+
+	msgView := roomView.MessageView()
+	x, y := event.Position()
+
+	switch event.Buttons() {
+	case tcell.WheelUp:
+		if msgView.IsAtTop() {
+			go view.LoadHistory(roomView.Room.ID, false)
+		} else {
+			msgView.AddScrollOffset(WheelScrollOffsetDiff)
+		}
+	case tcell.WheelDown:
+		msgView.AddScrollOffset(-WheelScrollOffsetDiff)
+	default:
+		debug.Print("Mouse event received:", event.Buttons(), event.Modifiers(), x, y)
 	}
 
 	return event

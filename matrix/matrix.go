@@ -260,7 +260,8 @@ func (c *Container) processOwnMembershipChange(evt *gomatrix.Event) {
 	if evt.Unsigned.PrevContent != nil {
 		prevMembership, _ = evt.Unsigned.PrevContent["membership"].(string)
 	}
-	if membership == prevMembership {
+	const Hour = 1 * 60 * 60 * 1000
+	if membership == prevMembership || evt.Unsigned.Age > Hour {
 		return
 	}
 	switch membership {
@@ -273,11 +274,6 @@ func (c *Container) processOwnMembershipChange(evt *gomatrix.Event) {
 
 // HandleMembership is the event handler for the m.room.membership state event.
 func (c *Container) HandleMembership(evt *gomatrix.Event) {
-	const Hour = 1 * 60 * 60 * 1000
-	if evt.Unsigned.Age > Hour {
-		return
-	}
-
 	if evt.StateKey != nil && *evt.StateKey == c.config.Session.UserID {
 		c.processOwnMembershipChange(evt)
 	}

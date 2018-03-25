@@ -211,46 +211,41 @@ func (view *MessageView) recalculateBuffers() {
 
 const PaddingAtTop = 5
 
-func (view *MessageView) MoveUp(page bool) {
+func (view *MessageView) AddScrollOffset(diff int) {
 	_, _, _, height := view.GetInnerRect()
 
 	totalHeight := len(view.textBuffer)
-	if view.ScrollOffset >= totalHeight-height {
+	if diff >= 0 && view.ScrollOffset >= totalHeight-height {
 		// If the user is at the top and presses page up again, add a bit of blank space.
-		if page {
+		if view.ScrollOffset+diff >= totalHeight-height+PaddingAtTop {
 			view.ScrollOffset = totalHeight - height + PaddingAtTop
-		} else if view.ScrollOffset < totalHeight-height+PaddingAtTop {
-			view.ScrollOffset++
+		} else {
+			view.ScrollOffset += diff
 		}
 		return
 	}
 
-	if page {
-		view.ScrollOffset += height / 2
-	} else {
-		view.ScrollOffset++
-	}
+	view.ScrollOffset += diff
 	if view.ScrollOffset > totalHeight-height {
 		view.ScrollOffset = totalHeight - height
+	} else if view.ScrollOffset < 0 {
+		view.ScrollOffset = 0
 	}
+}
+
+func (view *MessageView) Height() int {
+	_, _, _, height := view.GetInnerRect()
+	return height
+}
+
+func (view *MessageView) TotalHeight() int {
+	return len(view.textBuffer)
 }
 
 func (view *MessageView) IsAtTop() bool {
 	_, _, _, height := view.GetInnerRect()
 	totalHeight := len(view.textBuffer)
 	return view.ScrollOffset >= totalHeight-height+PaddingAtTop
-}
-
-func (view *MessageView) MoveDown(page bool) {
-	_, _, _, height := view.GetInnerRect()
-	if page {
-		view.ScrollOffset -= height / 2
-	} else {
-		view.ScrollOffset--
-	}
-	if view.ScrollOffset < 0 {
-		view.ScrollOffset = 0
-	}
 }
 
 func (view *MessageView) writeLine(screen tcell.Screen, line string, x, y int, color tcell.Color) {
