@@ -5,7 +5,7 @@
 [![Maintainability](https://shields-staging.herokuapp.com/codeclimate/maintainability/tulir/gomuks.svg)](https://codeclimate.com/github/tulir/gomuks)
 [![Coverage](https://shields-staging.herokuapp.com/codeclimate/coverage/tulir/gomuks.svg)](https://codeclimate.com/github/tulir/gomuks)
 
-![Preview](https://img.mau.lu/9lQGT.png)
+![Preview](https://img.mau.lu/tlVuN.png)
 
 A terminal Matrix client written in Go using [gomatrix](https://github.com/matrix-org/gomatrix) and [tview](https://github.com/rivo/tview).
 
