@@ -31,13 +31,16 @@ func init() {
 	TerminalNotifierAvailable = true
 }
 
-func Send(title, text string, critical bool) error {
+func Send(title, text string, critical, sound bool) error {
 	if TerminalNotifierAvailable {
 		args := []string{"-title", "gomuks", "-subtitle", title, "-message", text}
 		if critical {
 			args = append(args, "-timeout", "15")
 		} else {
 			args = append(args, "-timeout", "4")
+		}
+		if sound {
+			args = append(args, "-sound", "default")
 		}
 // 		if len(iconPath) > 0 {
 // 			args = append(args, "-appIcon", iconPath)

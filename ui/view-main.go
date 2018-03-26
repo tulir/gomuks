@@ -378,11 +378,11 @@ func (view *MainView) SetTyping(room string, users []string) {
 	}
 }
 
-func sendNotification(room *rooms.Room, sender, text string, critical bool) {
+func sendNotification(room *rooms.Room, sender, text string, critical, sound bool) {
 	if room.GetTitle() != sender {
 		sender = fmt.Sprintf("%s (%s)", sender, room.GetTitle())
 	}
-	notification.Send(sender, text, critical)
+	notification.Send(sender, text, critical, sound)
 }
 
 func (view *MainView) NotifyMessage(room *rooms.Room, message *types.Message, should pushrules.PushActionArrayShould) {
@@ -392,7 +392,8 @@ func (view *MainView) NotifyMessage(room *rooms.Room, message *types.Message, sh
 	}
 	shouldNotify := (should.Notify || !should.NotifySpecified) && message.Sender != view.config.Session.UserID
 	if shouldNotify {
-		sendNotification(room, message.Sender, message.Text, should.Highlight)
+		shouldPlaySound := should.PlaySound && should.SoundName == "default"
+		sendNotification(room, message.Sender, message.Text, should.Highlight, shouldPlaySound)
 		if !isCurrent {
 			room.UnreadMessages++
 		}

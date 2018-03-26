@@ -18,14 +18,21 @@ package notification
 
 import "os/exec"
 
-func Send(title, text string, critical bool) error {
+func Send(title, text string, critical, sound bool) error {
 	args := []string{"-a", "gomuks"}
 	if critical {
-		args = append(args, "-p", "critical")
+		args = append(args, "-u", "critical")
 	}
 // 	if iconPath {
 // 		args = append(args, "-i", iconPath)
 // 	}
 	args = append(args, title, text)
+	if sound {
+		soundName := "message-new-instant"
+		if critical {
+			soundName = "complete"
+		}
+		exec.Command("paplay", "/usr/share/sounds/freedesktop/stereo/"+soundName+".oga").Run()
+	}
 	return exec.Command("notify-send", args...).Run()
 }

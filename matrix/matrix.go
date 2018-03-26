@@ -270,18 +270,21 @@ func (c *Container) HandleMembership(evt *gomatrix.Event) {
 		c.processOwnMembershipChange(evt)
 	}
 
-	roomView := c.ui.MainView().GetRoom(evt.RoomID)
+	mainView := c.ui.MainView()
+	roomView := mainView.GetRoom(evt.RoomID)
 	if roomView == nil {
 		return
 	}
 
-	message := c.ui.MainView().ProcessMembershipEvent(roomView, evt)
+	message := mainView.ProcessMembershipEvent(roomView, evt)
 	if message != nil {
 		// TODO this shouldn't be necessary
 		roomView.Room.UpdateState(evt)
 		// TODO This should probably also be in a different place
 		roomView.UpdateUserList()
 
+		pushRules := c.PushRules().GetActions(roomView.Room, evt).Should()
+		mainView.NotifyMessage(roomView.Room, message, pushRules)
 		roomView.AddMessage(message, widget.AppendMessage)
 		c.ui.Render()
 	}

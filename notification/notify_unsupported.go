@@ -1,3 +1,5 @@
+// +build !linux,!darwin,!windows
+
 // gomuks - A terminal Matrix client written in Go.
 // Copyright (C) 2018 Tulir Asokan
 //
@@ -16,22 +18,6 @@
 
 package notification
 
-import "gopkg.in/toast.v1"
-
 func Send(title, text string, critical, sound bool) error {
-	notification := toast.Notification{
-		AppID:    "gomuks",
-		Title:    title,
-		Message:  message,
-		Audio:    toast.Silent,
-		Duration: toast.Short,
-// 		Icon: ...,
-	}
-	if sound {
-		notification.Audio = toast.IM
-	}
-	if critical {
-		notification.Duration = toast.Long
-	}
-	return notification.Push()
+	return nil
 }
