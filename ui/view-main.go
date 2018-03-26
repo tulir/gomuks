@@ -386,26 +386,32 @@ func sendNotification(room *rooms.Room, sender, text string, critical, sound boo
 }
 
 func (view *MainView) NotifyMessage(room *rooms.Room, message *types.Message, should pushrules.PushActionArrayShould) {
+	// Whether or not the room where the message came is the currently shown room.
 	isCurrent := room.ID == view.CurrentRoomID()
-	if !isCurrent {
-		room.HasNewMessages = true
-	}
+	// Whether or not the terminal window is focused.
+	isFocused := view.lastFocusTime.Add(30 * time.Second).Before(time.Now())
+
+	// Whether or not the push rules say this message should be notified about.
 	shouldNotify := (should.Notify || !should.NotifySpecified) && message.Sender != view.config.Session.UserID
-	if shouldNotify {
-		shouldPlaySound := should.PlaySound && should.SoundName == "default"
-		sendNotification(room, message.Sender, message.Text, should.Highlight, shouldPlaySound)
-		if !isCurrent {
+
+	if !isCurrent {
+		// The message is not in the current room, show new message status in room list.
+		room.HasNewMessages = true
+		room.Highlighted = should.Highlight || room.Highlighted
+		if shouldNotify {
 			room.UnreadMessages++
 		}
 	}
-	if should.Highlight {
-		message.TextColor = tcell.ColorYellow
-		if !isCurrent {
-			room.Highlighted = true
-		}
+
+	if shouldNotify && !isFocused {
+		// Push rules say notify and the terminal is not focused, send desktop notification.
+		shouldPlaySound := should.PlaySound && should.SoundName == "default"
+		sendNotification(room, message.Sender, message.Text, should.Highlight, shouldPlaySound)
 	}
-	if should.PlaySound {
-		// TODO play sound
+
+	if should.Highlight {
+		// Message is highlight, set color.
+		message.TextColor = tcell.ColorYellow
 	}
 }
 
