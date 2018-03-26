@@ -64,7 +64,9 @@ func NewRoomView(room *rooms.Room) *RoomView {
 
 	view.status.SetBackgroundColor(tcell.ColorDimGray)
 
-	view.userList.SetDynamicColors(true)
+	view.userList.
+		SetDynamicColors(true).
+		SetWrap(false)
 
 	return view
 }
