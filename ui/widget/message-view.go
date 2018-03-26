@@ -214,20 +214,16 @@ func (view *MessageView) AddScrollOffset(diff int) {
 	_, _, _, height := view.GetInnerRect()
 
 	totalHeight := len(view.textBuffer)
-	if diff >= 0 && view.ScrollOffset >= totalHeight-height {
-		// If the user is at the top and presses page up again, add a bit of blank space.
-		if view.ScrollOffset+diff >= totalHeight-height+PaddingAtTop {
-			view.ScrollOffset = totalHeight - height + PaddingAtTop
-		} else {
-			view.ScrollOffset += diff
-		}
-		return
+	if diff >= 0 && view.ScrollOffset+diff >= totalHeight-height+PaddingAtTop {
+		view.ScrollOffset = totalHeight - height + PaddingAtTop
+	} else {
+		view.ScrollOffset += diff
 	}
 
-	view.ScrollOffset += diff
-	if view.ScrollOffset > totalHeight-height {
-		view.ScrollOffset = totalHeight - height
-	} else if view.ScrollOffset < 0 {
+	if view.ScrollOffset > totalHeight-height+PaddingAtTop {
+		view.ScrollOffset = totalHeight - height + PaddingAtTop
+	}
+	if view.ScrollOffset < 0 {
 		view.ScrollOffset = 0
 	}
 }
@@ -253,6 +249,30 @@ const (
 	SenderMessageGap   = 3
 )
 
+func getScrollbarStyle(scrollbarHere, isTop, isBottom bool) (char rune, style tcell.Style) {
+	char = '│'
+	style = tcell.StyleDefault
+	if scrollbarHere {
+		style = style.Foreground(tcell.ColorGreen)
+	}
+	if isTop {
+		if scrollbarHere {
+			char = '╥'
+		} else {
+			char = '┬'
+		}
+	} else if isBottom {
+		if scrollbarHere {
+			char = '╨'
+		} else {
+			char = '┴'
+		}
+	} else if scrollbarHere {
+		char = '║'
+	}
+	return
+}
+
 func (view *MessageView) Draw(screen tcell.Screen) {
 	view.Box.Draw(screen)
 
@@ -260,7 +280,7 @@ func (view *MessageView) Draw(screen tcell.Screen) {
 	view.recalculateBuffers()
 
 	if len(view.textBuffer) == 0 {
-		writeLine(screen, tview.AlignLeft,"It's quite empty in here.", x, y+height, width, tcell.ColorDefault)
+		writeLine(screen, tview.AlignLeft, "It's quite empty in here.", x, y+height, width, tcell.ColorDefault)
 		return
 	}
 
@@ -282,37 +302,38 @@ func (view *MessageView) Draw(screen tcell.Screen) {
 		return
 	}
 
-	totalHeight := float64(len(view.textBuffer))
-	// The height of the scrollbar:  ceil(height / (totalHeight / height))
-	scrollBarHeight := int(math.Ceil(float64(height) / (totalHeight / float64(height))))
-	// The position of the scrollbar from the bottom:  height - ceil(scrollOffset) / totalHeight * height
-	scrollBarPos := height - int(math.Ceil(float64(view.ScrollOffset)/totalHeight*float64(height)))
+	var scrollBarHeight, scrollBarPos int
+	// Black magic (aka math) used to figure out where the scroll bar should be put.
+	{
+		viewportHeight := float64(height)
+		contentHeight := float64(len(view.textBuffer))
+
+		scrollBarHeight = int(math.Ceil(viewportHeight / (contentHeight / viewportHeight)))
+
+		scrollBarPos = height - int(math.Round(float64(view.ScrollOffset)/contentHeight*viewportHeight))
+	}
 
 	var prevMeta types.MessageMeta
 	firstLine := true
+	skippedLines := 0
 
 	for line := 0; line < height; line++ {
 		index := indexOffset + line
 		if index < 0 {
+			skippedLines++
 			continue
 		} else if index >= len(view.textBuffer) {
 			break
 		}
 
-		borderChar := '│'
-		borderStyle := tcell.StyleDefault
-		if firstLine && view.ScrollOffset+height >= len(view.textBuffer) {
-			// At top of loaded message history
-			borderChar = '┬'
-		} else if line == height-1 && view.ScrollOffset == 0 {
-			// At bottom of message history
-			borderChar = '┴'
-		} else if line >= scrollBarPos && line < scrollBarPos+scrollBarHeight {
-			// Scroll bar
-			borderChar = '║'
-			borderStyle = borderStyle.Foreground(tcell.ColorGreen)
-		}
+		showScrollbar := line-skippedLines >= scrollBarPos-scrollBarHeight && line-skippedLines < scrollBarPos
+		isTop := firstLine && view.ScrollOffset+height >= len(view.textBuffer)
+		isBottom := line == height-1 && view.ScrollOffset == 0
+
+		borderChar, borderStyle := getScrollbarStyle(showScrollbar, isTop, isBottom)
+
 		firstLine = false
+
 		screen.SetContent(separatorX, y+line, borderChar, nil, borderStyle)
 
 		text, meta := view.textBuffer[index], view.metaBuffer[index]

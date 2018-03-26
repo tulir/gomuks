@@ -232,11 +232,16 @@ func (view *MainView) MouseEventHandler(roomView *widget.RoomView, event *tcell.
 			go view.LoadHistory(roomView.Room.ID, false)
 		} else {
 			msgView.AddScrollOffset(WheelScrollOffsetDiff)
+
+			view.parent.Render()
 		}
 	case tcell.WheelDown:
 		msgView.AddScrollOffset(-WheelScrollOffsetDiff)
+
+		view.parent.Render()
 	default:
 		debug.Print("Mouse event received:", event.Buttons(), event.Modifiers(), x, y)
+		return event
 	}
 
 	return event
