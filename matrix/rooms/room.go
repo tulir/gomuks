@@ -32,6 +32,16 @@ type Room struct {
 	PrevBatch string
 	// The MXID of the user whose session this room was created for.
 	SessionUserID string
+
+	// The number of unread messages that were notified about.
+	UnreadMessages int
+	// Whether or not any of the unread messages were highlights.
+	Highlighted bool
+	// Whether or not the room contains any new messages.
+	// This can be true even when UnreadMessages is zero if there's
+	// a notificationless message like bot notices.
+	HasNewMessages bool
+
 	// MXID -> Member cache calculated from membership events.
 	memberCache map[string]*Member
 	// The first non-SessionUserID member in the room. Calculated at
@@ -63,6 +73,13 @@ func (room *Room) UnlockHistory() {
 	if room.fetchHistoryLock != nil {
 		room.fetchHistoryLock.Unlock()
 	}
+}
+
+// MarkRead clears the new message statuses on this room.
+func (room *Room) MarkRead() {
+	room.UnreadMessages = 0
+	room.Highlighted = false
+	room.HasNewMessages = false
 }
 
 // UpdateState updates the room's current state with the given Event. This will clobber events based

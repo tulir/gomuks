@@ -18,6 +18,8 @@ package ifc
 
 import (
 	"maunium.net/go/gomatrix"
+	"maunium.net/go/gomuks/matrix/pushrules"
+	"maunium.net/go/gomuks/matrix/rooms"
 	"maunium.net/go/gomuks/ui/types"
 	"maunium.net/go/gomuks/ui/widget"
 	"maunium.net/go/tview"
@@ -51,6 +53,7 @@ type MainView interface {
 	AddServiceMessage(roomID *widget.RoomView, message string)
 	ProcessMessageEvent(roomView *widget.RoomView, evt *gomatrix.Event) *types.Message
 	ProcessMembershipEvent(roomView *widget.RoomView, evt *gomatrix.Event) *types.Message
+	NotifyMessage(room *rooms.Room, message *types.Message, should pushrules.PushActionArrayShould)
 }
 
 type LoginView interface {

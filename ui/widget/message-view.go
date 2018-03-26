@@ -276,11 +276,11 @@ func getScrollbarStyle(scrollbarHere, isTop, isBottom bool) (char rune, style tc
 func (view *MessageView) Draw(screen tcell.Screen) {
 	view.Box.Draw(screen)
 
-	x, y, width, height := view.GetInnerRect()
+	x, y, _, height := view.GetInnerRect()
 	view.recalculateBuffers()
 
 	if len(view.textBuffer) == 0 {
-		writeLine(screen, tview.AlignLeft, "It's quite empty in here.", x, y+height, width, tcell.ColorDefault)
+		writeLineSimple(screen, "It's quite empty in here.", x, y+height)
 		return
 	}
 
@@ -294,7 +294,7 @@ func (view *MessageView) Draw(screen tcell.Screen) {
 		if view.LoadingMessages {
 			message = "Loading more messages..."
 		}
-		writeLine(screen, tview.AlignLeft, message, messageX, y, width, tcell.ColorGreen)
+		writeLineSimpleColor(screen, message, messageX, y, tcell.ColorGreen)
 	}
 
 	if len(view.textBuffer) != len(view.metaBuffer) {
@@ -339,16 +339,16 @@ func (view *MessageView) Draw(screen tcell.Screen) {
 		text, meta := view.textBuffer[index], view.metaBuffer[index]
 		if meta != prevMeta {
 			if len(meta.GetTimestamp()) > 0 {
-				writeLine(screen, tview.AlignLeft, meta.GetTimestamp(), x, y+line, width, meta.GetTimestampColor())
+				writeLineSimpleColor(screen, meta.GetTimestamp(), x, y+line, meta.GetTimestampColor())
 			}
 			if prevMeta == nil || meta.GetSender() != prevMeta.GetSender() {
-				writeLine(
+				writeLineColor(
 					screen, tview.AlignRight, meta.GetSender(),
 					usernameX, y+line, view.widestSender,
 					meta.GetSenderColor())
 			}
 			prevMeta = meta
 		}
-		writeLine(screen, tview.AlignLeft, text, messageX, y+line, width, meta.GetTextColor())
+		writeLineSimpleColor(screen, text, messageX, y+line, meta.GetTextColor())
 	}
 }

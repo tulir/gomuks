@@ -28,6 +28,9 @@ import (
 	"maunium.net/go/gomatrix"
 	"maunium.net/go/gomuks/config"
 	"maunium.net/go/gomuks/interface"
+	"maunium.net/go/gomuks/matrix/pushrules"
+	"maunium.net/go/gomuks/matrix/rooms"
+	"maunium.net/go/gomuks/notification"
 	"maunium.net/go/gomuks/ui/debug"
 	"maunium.net/go/gomuks/ui/types"
 	"maunium.net/go/gomuks/ui/widget"
@@ -239,6 +242,10 @@ func (view *MainView) MouseEventHandler(roomView *widget.RoomView, event *tcell.
 		msgView.AddScrollOffset(-WheelScrollOffsetDiff)
 
 		view.parent.Render()
+
+		if msgView.ScrollOffset == 0 {
+			roomView.Room.MarkRead()
+		}
 	default:
 		debug.Print("Mouse event received:", event.Buttons(), event.Modifiers(), x, y)
 		return event
@@ -263,7 +270,11 @@ func (view *MainView) SwitchRoom(roomIndex int) {
 	}
 	view.currentRoomIndex = roomIndex % len(view.roomIDs)
 	view.roomView.SwitchToPage(view.CurrentRoomID())
-	view.roomList.SetSelected(view.rooms[view.CurrentRoomID()].Room)
+	roomView := view.rooms[view.CurrentRoomID()]
+	if roomView.MessageView().ScrollOffset == 0 {
+		roomView.Room.MarkRead()
+	}
+	view.roomList.SetSelected(roomView.Room)
 	view.gmx.App().SetFocus(view)
 	view.parent.Render()
 }
@@ -364,6 +375,36 @@ func (view *MainView) SetTyping(room string, users []string) {
 	if ok {
 		roomView.SetTyping(users)
 		view.parent.Render()
+	}
+}
+
+func sendNotification(room *rooms.Room, sender, text string, critical bool) {
+	if room.GetTitle() != sender {
+		sender = fmt.Sprintf("%s (%s)", sender, room.GetTitle())
+	}
+	notification.Send(sender, text, critical)
+}
+
+func (view *MainView) NotifyMessage(room *rooms.Room, message *types.Message, should pushrules.PushActionArrayShould) {
+	isCurrent := room.ID == view.CurrentRoomID()
+	if !isCurrent {
+		room.HasNewMessages = true
+	}
+	shouldNotify := (should.Notify || !should.NotifySpecified) && message.Sender != view.config.Session.UserID
+	if shouldNotify {
+		sendNotification(room, message.Sender, message.Text, should.Highlight)
+		if !isCurrent {
+			room.UnreadMessages++
+		}
+	}
+	if should.Highlight {
+		message.TextColor = tcell.ColorYellow
+		if !isCurrent {
+			room.Highlighted = true
+		}
+	}
+	if should.PlaySound {
+		// TODO play sound
 	}
 }
 

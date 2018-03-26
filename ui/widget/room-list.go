@@ -17,6 +17,9 @@
 package widget
 
 import (
+	"fmt"
+	"strconv"
+
 	"github.com/gdamore/tcell"
 	"maunium.net/go/gomuks/matrix/rooms"
 	"maunium.net/go/tview"
@@ -104,21 +107,30 @@ func (list *RoomList) Draw(screen tcell.Screen) {
 
 		text := item.GetTitle()
 
-		writeLine(screen, tview.AlignLeft, text, x, y, width, list.mainTextColor)
+		lineWidth := width
 
-		// Background color of selected text.
+		style := tcell.StyleDefault.Foreground(list.mainTextColor)
 		if item == list.selected {
-			textWidth := tview.StringWidth(text)
-			for bx := 0; bx < textWidth && bx < width; bx++ {
-				m, c, style, _ := screen.GetContent(x+bx, y)
-				fg, _, _ := style.Decompose()
-				if fg == list.mainTextColor {
-					fg = list.selectedTextColor
-				}
-				style = style.Background(list.selectedBackgroundColor).Foreground(fg)
-				screen.SetContent(x+bx, y, m, c, style)
-			}
+			style = style.Foreground(list.selectedTextColor).Background(list.selectedBackgroundColor)
 		}
+		if item.HasNewMessages {
+			style = style.Bold(true)
+		}
+
+		if item.UnreadMessages > 0 {
+			unreadMessageCount := "99+"
+			if item.UnreadMessages < 100 {
+				unreadMessageCount = strconv.Itoa(item.UnreadMessages)
+			}
+			if item.Highlighted {
+				unreadMessageCount += "!"
+			}
+			unreadMessageCount = fmt.Sprintf("(%s)", unreadMessageCount)
+			writeLine(screen, tview.AlignRight, unreadMessageCount, x+lineWidth-6, y, 6, style)
+			lineWidth -= len(unreadMessageCount) + 1
+		}
+
+		writeLine(screen, tview.AlignLeft, text, x, y, lineWidth, style)
 
 		y++
 		if y >= bottomLimit {

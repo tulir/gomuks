@@ -22,13 +22,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/gdamore/tcell"
 	"maunium.net/go/gomatrix"
 	"maunium.net/go/gomuks/config"
 	"maunium.net/go/gomuks/interface"
 	"maunium.net/go/gomuks/matrix/pushrules"
 	"maunium.net/go/gomuks/matrix/rooms"
-	"maunium.net/go/gomuks/notification"
 	"maunium.net/go/gomuks/ui/debug"
 	"maunium.net/go/gomuks/ui/widget"
 )
@@ -214,33 +212,18 @@ func (c *Container) Start() {
 	}
 }
 
-// NotifyMessage sends a desktop notification of the message with the given details.
-func (c *Container) NotifyMessage(room *rooms.Room, sender, text string, critical bool) {
-	if room.GetTitle() != sender {
-		sender = fmt.Sprintf("%s (%s)", sender, room.GetTitle())
-	}
-	notification.Send(sender, text, critical)
-}
-
 // HandleMessage is the event handler for the m.room.message timeline event.
 func (c *Container) HandleMessage(evt *gomatrix.Event) {
-	roomView := c.ui.MainView().GetRoom(evt.RoomID)
+	mainView := c.ui.MainView()
+	roomView := mainView.GetRoom(evt.RoomID)
 	if roomView == nil {
 		return
 	}
 
-	message := c.ui.MainView().ProcessMessageEvent(roomView, evt)
+	message := mainView.ProcessMessageEvent(roomView, evt)
 	if message != nil {
 		pushRules := c.PushRules().GetActions(roomView.Room, evt).Should()
-		if (pushRules.Notify || !pushRules.NotifySpecified) && evt.Sender != c.config.Session.UserID {
-			c.NotifyMessage(roomView.Room, message.Sender, message.Text, pushRules.Highlight)
-		}
-		if pushRules.Highlight {
-			message.TextColor = tcell.ColorYellow
-		}
-		if pushRules.PlaySound {
-			// TODO play sound
-		}
+		mainView.NotifyMessage(roomView.Room, message, pushRules)
 		roomView.AddMessage(message, widget.AppendMessage)
 		c.ui.Render()
 	}

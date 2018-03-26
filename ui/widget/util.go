@@ -22,7 +22,19 @@ import (
 	"maunium.net/go/tview"
 )
 
-func writeLine(screen tcell.Screen, align int, line string, x, y, maxWidth int, color tcell.Color) {
+func writeLineSimple(screen tcell.Screen, line string, x, y int) {
+	writeLine(screen, tview.AlignLeft, line, x, y, 1<<30, tcell.StyleDefault)
+}
+
+func writeLineSimpleColor(screen tcell.Screen, line string, x, y int, color tcell.Color) {
+	writeLine(screen, tview.AlignLeft, line, x, y, 1<<30, tcell.StyleDefault.Foreground(color))
+}
+
+func writeLineColor(screen tcell.Screen, align int, line string, x, y, maxWidth int, color tcell.Color) {
+	writeLine(screen, align, line, x, y, maxWidth, tcell.StyleDefault.Foreground(color))
+}
+
+func writeLine(screen tcell.Screen, align int, line string, x, y, maxWidth int, style tcell.Style) {
 	offsetX := 0
 	if align == tview.AlignRight {
 		offsetX = maxWidth - runewidth.StringWidth(line)
@@ -37,7 +49,7 @@ func writeLine(screen tcell.Screen, align int, line string, x, y, maxWidth int, 
 		}
 
 		for localOffset := 0; localOffset < chWidth; localOffset++ {
-			screen.SetContent(x+offsetX+localOffset, y, ch, nil, tcell.StyleDefault.Foreground(color))
+			screen.SetContent(x+offsetX+localOffset, y, ch, nil, style)
 		}
 		offsetX += chWidth
 		if offsetX > maxWidth {
