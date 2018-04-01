@@ -43,7 +43,7 @@ type Gomuks struct {
 
 // NewGomuks creates a new Gomuks instance with everything initialized,
 // but does not start it.
-func NewGomuks(enableDebug bool) *Gomuks {
+func NewGomuks(enableDebug, forceExternalDebug bool) *Gomuks {
 	configDir := filepath.Join(os.Getenv("HOME"), ".config/gomuks")
 	gmx := &Gomuks{
 		app:  tview.NewApplication(),
@@ -70,7 +70,11 @@ func NewGomuks(enableDebug bool) *Gomuks {
 	main := gmx.ui.InitViews()
 	if enableDebug {
 		debug.EnableExternal()
-		main = gmx.debug.Wrap(main)
+		if forceExternalDebug {
+			debug.RedirectAllExt = true
+		} else {
+			main = gmx.debug.Wrap(main, debug.Right)
+		}
 		gmx.debugMode = true
 	}
 	gmx.app.SetRoot(main, true)
@@ -166,8 +170,8 @@ func (gmx *Gomuks) UI() ifc.GomuksUI {
 }
 
 func main() {
-	enableDebug := len(os.Getenv("DEBUG")) > 0
-	NewGomuks(enableDebug).Start()
+	debugVar := os.Getenv("DEBUG")
+	NewGomuks(len(debugVar) > 0, debugVar == "ext").Start()
 
 	// We use os.Exit() everywhere, so exiting by returning from Start() shouldn't happen.
 	time.Sleep(5 * time.Second)

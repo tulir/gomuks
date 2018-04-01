@@ -35,10 +35,12 @@ type Printer interface {
 type Pane struct {
 	*tview.TextView
 	Height int
+	Width  int
 	num    int
 }
 
 var Default Printer
+var RedirectAllExt bool
 
 func NewPane() *Pane {
 	pane := tview.NewTextView()
@@ -52,6 +54,7 @@ func NewPane() *Pane {
 	return &Pane{
 		TextView: pane,
 		Height:   35,
+		Width:    80,
 		num:      0,
 	}
 }
@@ -69,20 +72,49 @@ func (db *Pane) WriteString(text string) {
 	fmt.Fprintf(db, "[%d] %s", db.num, text)
 }
 
-func (db *Pane) Wrap(main tview.Primitive) tview.Primitive {
-	return tview.NewGrid().SetRows(0, db.Height).SetColumns(0).
-		AddItem(main, 0, 0, 1, 1, 1, 1, true).
-		AddItem(db, 1, 0, 1, 1, 1, 1, false)
+type PaneSide int
+
+const (
+	Top PaneSide = iota
+	Bottom
+	Left
+	Right
+)
+
+func (db *Pane) Wrap(main tview.Primitive, side PaneSide) tview.Primitive {
+	rows, columns := []int{0}, []int{0}
+	mainRow, mainColumn, paneRow, paneColumn := 0, 0, 0, 0
+	switch side {
+	case Top:
+		rows = []int{db.Height, 0}
+		mainRow = 1
+	case Bottom:
+		rows = []int{0, db.Height}
+		paneRow = 1
+	case Left:
+		columns = []int{db.Width, 0}
+		mainColumn = 1
+	case Right:
+		columns = []int{0, db.Width}
+		paneColumn = 1
+	}
+	return tview.NewGrid().SetRows(rows...).SetColumns(columns...).
+		AddItem(main, mainRow, mainColumn, 1, 1, 1, 1, true).
+		AddItem(db, paneRow, paneColumn, 1, 1, 1, 1, false)
 }
 
 func Printf(text string, args ...interface{}) {
-	if Default != nil {
+	if RedirectAllExt {
+		ExtPrintf(text, args...)
+	} else if Default != nil {
 		Default.Printf(text, args...)
 	}
 }
 
 func Print(text ...interface{}) {
-	if Default != nil {
+	if RedirectAllExt {
+		ExtPrint(text...)
+	} else if Default != nil {
 		Default.Print(text...)
 	}
 }
