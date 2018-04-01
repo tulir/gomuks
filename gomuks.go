@@ -62,10 +62,10 @@ func NewGomuks(enableDebug, forceExternalDebug bool) *Gomuks {
 
 	gmx.config.Load()
 	if len(gmx.config.UserID) > 0 {
-		gmx.config.LoadSession(gmx.config.UserID)
+		_ = gmx.config.LoadSession(gmx.config.UserID)
 	}
 
-	gmx.matrix.InitClient()
+	_ = gmx.matrix.InitClient()
 
 	main := gmx.ui.InitViews()
 	if enableDebug {
@@ -86,7 +86,7 @@ func NewGomuks(enableDebug, forceExternalDebug bool) *Gomuks {
 func (gmx *Gomuks) Save() {
 	if gmx.config.Session != nil {
 		gmx.debug.Print("Saving session...")
-		gmx.config.Session.Save()
+		_ = gmx.config.Session.Save()
 	}
 	gmx.debug.Print("Saving history...")
 	gmx.ui.MainView().SaveAllHistory()
