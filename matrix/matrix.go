@@ -36,6 +36,7 @@ import (
 // It is used for all Matrix calls from the UI and Matrix event handlers.
 type Container struct {
 	client  *gomatrix.Client
+	syncer  *GomuksSyncer
 	gmx     ifc.Gomuks
 	ui      ifc.GomuksUI
 	config  *config.Config
@@ -172,13 +173,13 @@ func (c *Container) OnLogout() {
 func (c *Container) OnLogin() {
 	c.client.Store = c.config.Session
 
-	syncer := NewGomuksSyncer(c.config.Session)
-	syncer.OnEventType("m.room.message", c.HandleMessage)
-	syncer.OnEventType("m.room.member", c.HandleMembership)
-	syncer.OnEventType("m.typing", c.HandleTyping)
-	syncer.OnEventType("m.push_rules", c.HandlePushRules)
-	syncer.OnEventType("m.tag", c.HandleTag)
-	c.client.Syncer = syncer
+	c.syncer = NewGomuksSyncer(c.config.Session)
+	c.syncer.OnEventType("m.room.message", c.HandleMessage)
+	c.syncer.OnEventType("m.room.member", c.HandleMembership)
+	c.syncer.OnEventType("m.typing", c.HandleTyping)
+	c.syncer.OnEventType("m.push_rules", c.HandlePushRules)
+	c.syncer.OnEventType("m.tag", c.HandleTag)
+	c.client.Syncer = c.syncer
 
 	c.UpdateRoomList()
 }
@@ -222,8 +223,10 @@ func (c *Container) HandleMessage(evt *gomatrix.Event) {
 
 	message := mainView.ProcessMessageEvent(roomView, evt)
 	if message != nil {
-		pushRules := c.PushRules().GetActions(roomView.Room, evt).Should()
-		mainView.NotifyMessage(roomView.Room, message, pushRules)
+		if c.syncer.FirstSyncDone {
+			pushRules := c.PushRules().GetActions(roomView.Room, evt).Should()
+			mainView.NotifyMessage(roomView.Room, message, pushRules)
+		}
 		roomView.AddMessage(message, widget.AppendMessage)
 		c.ui.Render()
 	}
@@ -283,8 +286,10 @@ func (c *Container) HandleMembership(evt *gomatrix.Event) {
 		// TODO This should probably also be in a different place
 		roomView.UpdateUserList()
 
-		pushRules := c.PushRules().GetActions(roomView.Room, evt).Should()
-		mainView.NotifyMessage(roomView.Room, message, pushRules)
+		if c.syncer.FirstSyncDone {
+			pushRules := c.PushRules().GetActions(roomView.Room, evt).Should()
+			mainView.NotifyMessage(roomView.Room, message, pushRules)
+		}
 		roomView.AddMessage(message, widget.AppendMessage)
 		c.ui.Render()
 	}

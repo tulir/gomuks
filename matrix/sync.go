@@ -33,15 +33,17 @@ import (
 // replace parts of this default syncer (e.g. the ProcessResponse method). The default syncer uses the observer
 // pattern to notify callers about incoming events. See GomuksSyncer.OnEventType for more information.
 type GomuksSyncer struct {
-	Session   *config.Session
-	listeners map[string][]gomatrix.OnEventListener // event type to listeners array
+	Session       *config.Session
+	listeners     map[string][]gomatrix.OnEventListener // event type to listeners array
+	FirstSyncDone bool
 }
 
 // NewGomuksSyncer returns an instantiated GomuksSyncer
 func NewGomuksSyncer(session *config.Session) *GomuksSyncer {
 	return &GomuksSyncer{
-		Session:   session,
-		listeners: make(map[string][]gomatrix.OnEventListener),
+		Session:       session,
+		listeners:     make(map[string][]gomatrix.OnEventListener),
+		FirstSyncDone: false,
 	}
 }
 
@@ -86,6 +88,8 @@ func (s *GomuksSyncer) ProcessResponse(res *gomatrix.RespSync, since string) (er
 			room.PrevBatch = roomData.Timeline.PrevBatch
 		}
 	}
+
+	s.FirstSyncDone = true
 
 	return
 }
