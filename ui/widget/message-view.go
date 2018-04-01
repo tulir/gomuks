@@ -130,7 +130,7 @@ func (view *MessageView) updateWidestSender(sender string) {
 type MessageDirection int
 
 const (
-	AppendMessage  MessageDirection = iota
+	AppendMessage MessageDirection = iota
 	PrependMessage
 	IgnoreMessage
 )

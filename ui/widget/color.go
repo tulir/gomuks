@@ -30,7 +30,7 @@ var colorNames []string
 func init() {
 	colorNames = make([]string, len(tcell.ColorNames))
 	i := 0
-	for name, _ := range tcell.ColorNames {
+	for name := range tcell.ColorNames {
 		colorNames[i] = name
 		i++
 	}
