@@ -20,7 +20,7 @@ precompiled executables and maybe even some Linux packages.
 
 For now, you'll have to compile from source:
 
-0. Install [Go](https://golang.org/)
+0. Install [Go](https://golang.org/) 1.10 or higher
 1. Run `go get -u maunium.net/go/gomuks`
 2. gomuks should now be in `$GOPATH/bin/gomuks`
 
