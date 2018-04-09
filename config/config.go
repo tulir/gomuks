@@ -23,7 +23,7 @@ import (
 	"path/filepath"
 
 	"gopkg.in/yaml.v2"
-	"maunium.net/go/gomuks/ui/debug"
+	"maunium.net/go/gomuks/debug"
 )
 
 // Config contains the main config of gomuks.

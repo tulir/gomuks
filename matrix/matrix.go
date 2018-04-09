@@ -22,13 +22,14 @@ import (
 	"strings"
 	"time"
 
-	"maunium.net/go/gomatrix"
-	"maunium.net/go/gomuks/config"
-	"maunium.net/go/gomuks/interface"
-	"maunium.net/go/gomuks/matrix/pushrules"
-	"maunium.net/go/gomuks/matrix/rooms"
-	"maunium.net/go/gomuks/ui/debug"
-	"maunium.net/go/gomuks/ui/widget"
+
+"maunium.net/go/gomatrix"
+"maunium.net/go/gomuks/config"
+"maunium.net/go/gomuks/debug"
+"maunium.net/go/gomuks/interface"
+"maunium.net/go/gomuks/matrix/pushrules"
+"maunium.net/go/gomuks/matrix/rooms"
+
 )
 
 // Container is a wrapper for a gomatrix Client and some other stuff.
@@ -224,10 +225,10 @@ func (c *Container) HandleMessage(evt *gomatrix.Event) {
 	message := mainView.ProcessMessageEvent(roomView, evt)
 	if message != nil {
 		if c.syncer.FirstSyncDone {
-			pushRules := c.PushRules().GetActions(roomView.Room, evt).Should()
-			mainView.NotifyMessage(roomView.Room, message, pushRules)
+			pushRules := c.PushRules().GetActions(roomView.MxRoom(), evt).Should()
+			mainView.NotifyMessage(roomView.MxRoom(), message, pushRules)
 		}
-		roomView.AddMessage(message, widget.AppendMessage)
+		roomView.AddMessage(message, ifc.AppendMessage)
 		c.ui.Render()
 	}
 }
@@ -255,8 +256,7 @@ func (c *Container) processOwnMembershipChange(evt *gomatrix.Event) {
 	if evt.Unsigned.PrevContent != nil {
 		prevMembership, _ = evt.Unsigned.PrevContent["membership"].(string)
 	}
-	const Hour = 1 * 60 * 60 * 1000
-	if membership == prevMembership || evt.Unsigned.Age > Hour {
+	if membership == prevMembership {
 		return
 	}
 	switch membership {
@@ -282,15 +282,15 @@ func (c *Container) HandleMembership(evt *gomatrix.Event) {
 	message := mainView.ProcessMembershipEvent(roomView, evt)
 	if message != nil {
 		// TODO this shouldn't be necessary
-		roomView.Room.UpdateState(evt)
+		roomView.MxRoom().UpdateState(evt)
 		// TODO This should probably also be in a different place
 		roomView.UpdateUserList()
 
 		if c.syncer.FirstSyncDone {
-			pushRules := c.PushRules().GetActions(roomView.Room, evt).Should()
-			mainView.NotifyMessage(roomView.Room, message, pushRules)
+			pushRules := c.PushRules().GetActions(roomView.MxRoom(), evt).Should()
+			mainView.NotifyMessage(roomView.MxRoom(), message, pushRules)
 		}
-		roomView.AddMessage(message, widget.AppendMessage)
+		roomView.AddMessage(message, ifc.AppendMessage)
 		c.ui.Render()
 	}
 }

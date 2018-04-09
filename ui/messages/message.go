@@ -14,32 +14,16 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-package debug
+package messages
 
-import (
-	"fmt"
-	"io"
-	"os"
-)
+import "maunium.net/go/gomuks/interface"
 
-var writer io.Writer
+// Message is a wrapper for the content and metadata of a Matrix message intended to be displayed.
+type UIMessage interface {
+	ifc.Message
 
-func EnableExternal() {
-	var err error
-	writer, err = os.OpenFile("/tmp/gomuks-debug.log", os.O_WRONLY|os.O_APPEND, 0644)
-	if err != nil {
-		writer = nil
-	}
-}
-
-func ExtPrintf(text string, args ...interface{}) {
-	if writer != nil {
-		fmt.Fprintf(writer, text+"\n", args...)
-	}
-}
-
-func ExtPrint(text ...interface{}) {
-	if writer != nil {
-		fmt.Fprintln(writer, text...)
-	}
+	CalculateBuffer(width int)
+	RecalculateBuffer()
+	Buffer() []string
+	Height() int
 }

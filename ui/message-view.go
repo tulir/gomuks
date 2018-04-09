@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-package widget
+package ui
 
 import (
 	"encoding/gob"
@@ -24,8 +24,10 @@ import (
 	"time"
 
 	"github.com/gdamore/tcell"
-	"maunium.net/go/gomuks/ui/debug"
-	"maunium.net/go/gomuks/ui/types"
+	"maunium.net/go/gomuks/debug"
+	"maunium.net/go/gomuks/interface"
+	"maunium.net/go/gomuks/ui/messages"
+	"maunium.net/go/gomuks/ui/widget"
 	"maunium.net/go/tview"
 )
 
@@ -44,11 +46,11 @@ type MessageView struct {
 	prevHeight   int
 	prevMsgCount int
 
-	messageIDs map[string]*types.Message
-	messages   []*types.Message
+	messageIDs map[string]messages.UIMessage
+	messages   []messages.UIMessage
 
 	textBuffer []string
-	metaBuffer []types.MessageMeta
+	metaBuffer []ifc.MessageMeta
 }
 
 func NewMessageView() *MessageView {
@@ -60,10 +62,10 @@ func NewMessageView() *MessageView {
 		TimestampWidth:  8,
 		ScrollOffset:    0,
 
-		messages:   make([]*types.Message, 0),
-		messageIDs: make(map[string]*types.Message),
+		messages:   make([]messages.UIMessage, 0),
+		messageIDs: make(map[string]messages.UIMessage),
 		textBuffer: make([]string, 0),
-		metaBuffer: make([]types.MessageMeta, 0),
+		metaBuffer: make([]ifc.MessageMeta, 0),
 
 		widestSender: 5,
 		prevWidth:    -1,
@@ -72,11 +74,11 @@ func NewMessageView() *MessageView {
 	}
 }
 
-func (view *MessageView) NewMessage(id, sender, msgtype, text string, timestamp time.Time) *types.Message {
-	return types.NewMessage(id, sender, msgtype, text,
+func (view *MessageView) NewMessage(id, sender, msgtype, text string, timestamp time.Time) messages.UIMessage {
+	return messages.NewMessage(id, sender, msgtype, text,
 		timestamp.Format(view.TimestampFormat),
 		timestamp.Format(view.DateFormat),
-		GetHashColor(sender))
+		widget.GetHashColor(sender))
 }
 
 func (view *MessageView) SaveHistory(path string) error {
@@ -112,7 +114,7 @@ func (view *MessageView) LoadHistory(path string) (int, error) {
 	}
 
 	for _, message := range view.messages {
-		view.updateWidestSender(message.Sender)
+		view.updateWidestSender(message.Sender())
 	}
 
 	return len(view.messages), nil
@@ -127,57 +129,61 @@ func (view *MessageView) updateWidestSender(sender string) {
 	}
 }
 
-type MessageDirection int
-
-const (
-	AppendMessage MessageDirection = iota
-	PrependMessage
-	IgnoreMessage
-)
-
-func (view *MessageView) UpdateMessageID(message *types.Message, newID string) {
-	delete(view.messageIDs, message.ID)
-	message.ID = newID
-	view.messageIDs[message.ID] = message
+func (view *MessageView) UpdateMessageID(ifcMessage ifc.Message, newID string) {
+	message, ok := ifcMessage.(messages.UIMessage)
+	if !ok {
+		debug.Print("[Warning] Passed non-UIMessage ifc.Message object to UpdateMessageID().")
+		debug.PrintStack()
+		return
+	}
+	delete(view.messageIDs, message.ID())
+	message.SetID(newID)
+	view.messageIDs[message.ID()] = message
 }
 
-func (view *MessageView) AddMessage(message *types.Message, direction MessageDirection) {
-	if message == nil {
+func (view *MessageView) AddMessage(ifcMessage ifc.Message, direction ifc.MessageDirection) {
+	if ifcMessage == nil {
+		return
+	}
+	message, ok := ifcMessage.(messages.UIMessage)
+	if !ok {
+		debug.Print("[Warning] Passed non-UIMessage ifc.Message object to AddMessage().")
+		debug.PrintStack()
 		return
 	}
 
-	msg, messageExists := view.messageIDs[message.ID]
+	msg, messageExists := view.messageIDs[message.ID()]
 	if msg != nil && messageExists {
-		message.CopyTo(msg)
+		msg.CopyFrom(message)
 		message = msg
-		direction = IgnoreMessage
+		direction = ifc.IgnoreMessage
 	}
 
-	view.updateWidestSender(message.Sender)
+	view.updateWidestSender(message.Sender())
 
 	_, _, width, _ := view.GetInnerRect()
 	width -= view.TimestampWidth + TimestampSenderGap + view.widestSender + SenderMessageGap
 	message.CalculateBuffer(width)
 
-	if direction == AppendMessage {
+	if direction == ifc.AppendMessage {
 		if view.ScrollOffset > 0 {
 			view.ScrollOffset += message.Height()
 		}
 		view.messages = append(view.messages, message)
 		view.appendBuffer(message)
-	} else if direction == PrependMessage {
-		view.messages = append([]*types.Message{message}, view.messages...)
+	} else if direction == ifc.PrependMessage {
+		view.messages = append([]messages.UIMessage{message}, view.messages...)
 	}
 
-	view.messageIDs[message.ID] = message
+	view.messageIDs[message.ID()] = message
 }
 
-func (view *MessageView) appendBuffer(message *types.Message) {
+func (view *MessageView) appendBuffer(message messages.UIMessage) {
 	if len(view.metaBuffer) > 0 {
 		prevMeta := view.metaBuffer[len(view.metaBuffer)-1]
-		if prevMeta != nil && prevMeta.GetDate() != message.Date {
-			view.textBuffer = append(view.textBuffer, fmt.Sprintf("Date changed to %s", message.Date))
-			view.metaBuffer = append(view.metaBuffer, &types.BasicMeta{TextColor: tcell.ColorGreen})
+		if prevMeta != nil && prevMeta.Date() != message.Date() {
+			view.textBuffer = append(view.textBuffer, fmt.Sprintf("Date changed to %s", message.Date()))
+			view.metaBuffer = append(view.metaBuffer, &messages.BasicMeta{BTextColor: tcell.ColorGreen})
 		}
 	}
 
@@ -195,7 +201,7 @@ func (view *MessageView) recalculateBuffers() {
 	recalculateMessageBuffers := width != view.prevWidth
 	if height != view.prevHeight || recalculateMessageBuffers || len(view.messages) != view.prevMsgCount {
 		view.textBuffer = []string{}
-		view.metaBuffer = []types.MessageMeta{}
+		view.metaBuffer = []ifc.MessageMeta{}
 		view.prevMsgCount = 0
 		for _, message := range view.messages {
 			if recalculateMessageBuffers {
@@ -280,7 +286,7 @@ func (view *MessageView) Draw(screen tcell.Screen) {
 	view.recalculateBuffers()
 
 	if len(view.textBuffer) == 0 {
-		writeLineSimple(screen, "It's quite empty in here.", x, y+height)
+		widget.WriteLineSimple(screen, "It's quite empty in here.", x, y+height)
 		return
 	}
 
@@ -294,11 +300,11 @@ func (view *MessageView) Draw(screen tcell.Screen) {
 		if view.LoadingMessages {
 			message = "Loading more messages..."
 		}
-		writeLineSimpleColor(screen, message, messageX, y, tcell.ColorGreen)
+		widget.WriteLineSimpleColor(screen, message, messageX, y, tcell.ColorGreen)
 	}
 
 	if len(view.textBuffer) != len(view.metaBuffer) {
-		debug.ExtPrintf("Unexpected text/meta buffer length mismatch: %d != %d.", len(view.textBuffer), len(view.metaBuffer))
+		debug.Printf("Unexpected text/meta buffer length mismatch: %d != %d.", len(view.textBuffer), len(view.metaBuffer))
 		return
 	}
 
@@ -313,7 +319,7 @@ func (view *MessageView) Draw(screen tcell.Screen) {
 		scrollBarPos = height - int(math.Round(float64(view.ScrollOffset)/contentHeight*viewportHeight))
 	}
 
-	var prevMeta types.MessageMeta
+	var prevMeta ifc.MessageMeta
 	firstLine := true
 	skippedLines := 0
 
@@ -338,17 +344,17 @@ func (view *MessageView) Draw(screen tcell.Screen) {
 
 		text, meta := view.textBuffer[index], view.metaBuffer[index]
 		if meta != prevMeta {
-			if len(meta.GetTimestamp()) > 0 {
-				writeLineSimpleColor(screen, meta.GetTimestamp(), x, y+line, meta.GetTimestampColor())
+			if len(meta.Timestamp()) > 0 {
+				widget.WriteLineSimpleColor(screen, meta.Timestamp(), x, y+line, meta.TimestampColor())
 			}
-			if prevMeta == nil || meta.GetSender() != prevMeta.GetSender() {
-				writeLineColor(
-					screen, tview.AlignRight, meta.GetSender(),
+			if prevMeta == nil || meta.Sender() != prevMeta.Sender() {
+				widget.WriteLineColor(
+					screen, tview.AlignRight, meta.Sender(),
 					usernameX, y+line, view.widestSender,
-					meta.GetSenderColor())
+					meta.SenderColor())
 			}
 			prevMeta = meta
 		}
-		writeLineSimpleColor(screen, text, messageX, y+line, meta.GetTextColor())
+		widget.WriteLineSimpleColor(screen, text, messageX, y+line, meta.TextColor())
 	}
 }

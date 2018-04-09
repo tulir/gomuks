@@ -18,104 +18,43 @@ package debug
 
 import (
 	"fmt"
+	"io"
 	"io/ioutil"
 	"os"
 	"time"
 
 	"runtime/debug"
 
-	"maunium.net/go/tview"
 )
 
-type Printer interface {
-	Printf(text string, args ...interface{})
-	Print(text ...interface{})
-}
+var writer io.Writer
 
-type Pane struct {
-	*tview.TextView
-	Height int
-	Width  int
-	num    int
-}
-
-var Default Printer
-var RedirectAllExt bool
-
-func NewPane() *Pane {
-	pane := tview.NewTextView()
-	pane.
-		SetScrollable(true).
-		SetWrap(true).
-		SetBorder(true).
-		SetTitle("Debug output")
-	fmt.Fprintln(pane, "[0] Debug pane initialized")
-
-	return &Pane{
-		TextView: pane,
-		Height:   35,
-		Width:    80,
-		num:      0,
+func init() {
+	var err error
+	writer, err = os.OpenFile("/tmp/gomuks-debug.log", os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
+	if err != nil {
+		writer = nil
 	}
-}
-
-func (db *Pane) Printf(text string, args ...interface{}) {
-	db.WriteString(fmt.Sprintf(text, args...) + "\n")
-}
-
-func (db *Pane) Print(text ...interface{}) {
-	db.WriteString(fmt.Sprintln(text...))
-}
-
-func (db *Pane) WriteString(text string) {
-	db.num++
-	fmt.Fprintf(db, "[%d] %s", db.num, text)
-}
-
-type PaneSide int
-
-const (
-	Top PaneSide = iota
-	Bottom
-	Left
-	Right
-)
-
-func (db *Pane) Wrap(main tview.Primitive, side PaneSide) tview.Primitive {
-	rows, columns := []int{0}, []int{0}
-	mainRow, mainColumn, paneRow, paneColumn := 0, 0, 0, 0
-	switch side {
-	case Top:
-		rows = []int{db.Height, 0}
-		mainRow = 1
-	case Bottom:
-		rows = []int{0, db.Height}
-		paneRow = 1
-	case Left:
-		columns = []int{db.Width, 0}
-		mainColumn = 1
-	case Right:
-		columns = []int{0, db.Width}
-		paneColumn = 1
-	}
-	return tview.NewGrid().SetRows(rows...).SetColumns(columns...).
-		AddItem(main, mainRow, mainColumn, 1, 1, 1, 1, true).
-		AddItem(db, paneRow, paneColumn, 1, 1, 1, 1, false)
 }
 
 func Printf(text string, args ...interface{}) {
-	if RedirectAllExt {
-		ExtPrintf(text, args...)
-	} else if Default != nil {
-		Default.Printf(text, args...)
+	if writer != nil {
+		fmt.Fprintf(writer, time.Now().Format("[2006-01-02 15:04:05] "))
+		fmt.Fprintf(writer, text+"\n", args...)
 	}
 }
 
 func Print(text ...interface{}) {
-	if RedirectAllExt {
-		ExtPrint(text...)
-	} else if Default != nil {
-		Default.Print(text...)
+	if writer != nil {
+		fmt.Fprintf(writer, time.Now().Format("[2006-01-02 15:04:05] "))
+		fmt.Fprintln(writer, text...)
+	}
+}
+
+func PrintStack() {
+	if writer != nil {
+		data := debug.Stack()
+		writer.Write(data)
 	}
 }
 

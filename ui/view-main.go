@@ -27,12 +27,11 @@ import (
 	"github.com/mattn/go-runewidth"
 	"maunium.net/go/gomatrix"
 	"maunium.net/go/gomuks/config"
+	"maunium.net/go/gomuks/debug"
 	"maunium.net/go/gomuks/interface"
 	"maunium.net/go/gomuks/matrix/pushrules"
 	"maunium.net/go/gomuks/matrix/rooms"
 	"maunium.net/go/gomuks/notification"
-	"maunium.net/go/gomuks/ui/debug"
-	"maunium.net/go/gomuks/ui/types"
 	"maunium.net/go/gomuks/ui/widget"
 	"maunium.net/go/tview"
 )
@@ -40,9 +39,9 @@ import (
 type MainView struct {
 	*tview.Flex
 
-	roomList         *widget.RoomList
+	roomList         *RoomList
 	roomView         *tview.Pages
-	rooms            map[string]*widget.RoomView
+	rooms            map[string]*RoomView
 	currentRoomIndex int
 	roomIDs          []string
 
@@ -57,9 +56,9 @@ type MainView struct {
 func (ui *GomuksUI) NewMainView() tview.Primitive {
 	mainView := &MainView{
 		Flex:     tview.NewFlex(),
-		roomList: widget.NewRoomList(),
+		roomList: NewRoomList(),
 		roomView: tview.NewPages(),
-		rooms:    make(map[string]*widget.RoomView),
+		rooms:    make(map[string]*RoomView),
 
 		matrix: ui.gmx.Matrix(),
 		gmx:    ui.gmx,
@@ -81,7 +80,7 @@ func (view *MainView) BumpFocus() {
 	view.lastFocusTime = time.Now()
 }
 
-func (view *MainView) InputChanged(roomView *widget.RoomView, text string) {
+func (view *MainView) InputChanged(roomView *RoomView, text string) {
 	if len(text) == 0 {
 		go view.matrix.SendTyping(roomView.Room.ID, false)
 	} else if text[0] != '/' {
@@ -101,7 +100,7 @@ func findWordToTabComplete(text string) string {
 	return output
 }
 
-func (view *MainView) InputTabComplete(roomView *widget.RoomView, text string, cursorOffset int) string {
+func (view *MainView) InputTabComplete(roomView *RoomView, text string, cursorOffset int) string {
 	str := runewidth.Truncate(text, cursorOffset, "")
 	word := findWordToTabComplete(str)
 	userCompletions := roomView.AutocompleteUser(word)
@@ -118,7 +117,7 @@ func (view *MainView) InputTabComplete(roomView *widget.RoomView, text string, c
 	return text
 }
 
-func (view *MainView) InputSubmit(roomView *widget.RoomView, text string) {
+func (view *MainView) InputSubmit(roomView *RoomView, text string) {
 	if len(text) == 0 {
 		return
 	} else if text[0] == '/' {
@@ -132,23 +131,23 @@ func (view *MainView) InputSubmit(roomView *widget.RoomView, text string) {
 	roomView.SetInputText("")
 }
 
-func (view *MainView) SendMessage(roomView *widget.RoomView, text string) {
+func (view *MainView) SendMessage(roomView *RoomView, text string) {
 	tempMessage := roomView.NewTempMessage("m.text", text)
 	go view.sendTempMessage(roomView, tempMessage)
 }
 
-func (view *MainView) sendTempMessage(roomView *widget.RoomView, tempMessage *types.Message) {
+func (view *MainView) sendTempMessage(roomView *RoomView, tempMessage ifc.Message) {
 	defer view.gmx.Recover()
-	eventID, err := view.matrix.SendMessage(roomView.Room.ID, tempMessage.Type, tempMessage.Text)
+	eventID, err := view.matrix.SendMessage(roomView.Room.ID, tempMessage.Type(), tempMessage.Text())
 	if err != nil {
-		tempMessage.State = types.MessageStateFailed
+		tempMessage.SetState(ifc.MessageStateFailed)
 		roomView.SetStatus(fmt.Sprintf("Failed to send message: %s", err))
 	} else {
 		roomView.MessageView().UpdateMessageID(tempMessage, eventID)
 	}
 }
 
-func (view *MainView) HandleCommand(roomView *widget.RoomView, command string, args []string) {
+func (view *MainView) HandleCommand(roomView *RoomView, command string, args []string) {
 	defer view.gmx.Recover()
 	debug.Print("Handling command", command, args)
 	switch command {
@@ -169,16 +168,16 @@ func (view *MainView) HandleCommand(roomView *widget.RoomView, command string, a
 		debug.Print("Leave room result:", view.matrix.LeaveRoom(roomView.Room.ID))
 	case "/join":
 		if len(args) == 0 {
-			view.AddServiceMessage(roomView, "Usage: /join <room>")
+			roomView.AddServiceMessage("Usage: /join <room>")
 			break
 		}
 		debug.Print("Join room result:", view.matrix.JoinRoom(args[0]))
 	default:
-		view.AddServiceMessage(roomView, "Unknown command.")
+		roomView.AddServiceMessage("Unknown command.")
 	}
 }
 
-func (view *MainView) KeyEventHandler(roomView *widget.RoomView, key *tcell.EventKey) *tcell.EventKey {
+func (view *MainView) KeyEventHandler(roomView *RoomView, key *tcell.EventKey) *tcell.EventKey {
 	view.BumpFocus()
 
 	k := key.Key()
@@ -220,7 +219,7 @@ func (view *MainView) KeyEventHandler(roomView *widget.RoomView, key *tcell.Even
 
 const WheelScrollOffsetDiff = 3
 
-func (view *MainView) MouseEventHandler(roomView *widget.RoomView, event *tcell.EventMouse) *tcell.EventMouse {
+func (view *MainView) MouseEventHandler(roomView *RoomView, event *tcell.EventMouse) *tcell.EventMouse {
 	if event.Buttons() == tcell.ButtonNone {
 		return event
 	}
@@ -300,7 +299,7 @@ func (view *MainView) addRoom(index int, room string) {
 
 	view.roomList.Add(roomStore)
 	if !view.roomView.HasPage(room) {
-		roomView := widget.NewRoomView(roomStore).
+		roomView := NewRoomView(roomStore).
 			SetInputSubmitFunc(view.InputSubmit).
 			SetInputChangedFunc(view.InputChanged).
 			SetTabCompleteFunc(view.InputTabComplete).
@@ -319,7 +318,7 @@ func (view *MainView) addRoom(index int, room string) {
 	}
 }
 
-func (view *MainView) GetRoom(id string) *widget.RoomView {
+func (view *MainView) GetRoom(id string) ifc.RoomView {
 	return view.rooms[id]
 }
 
@@ -352,7 +351,7 @@ func (view *MainView) RemoveRoom(room string) {
 	} else {
 		removeIndex = sort.StringSlice(view.roomIDs).Search(room)
 	}
-	view.roomList.Remove(roomView.Room)
+	view.roomList.Remove(roomView.MxRoom())
 	view.roomIDs = append(view.roomIDs[:removeIndex], view.roomIDs[removeIndex+1:]...)
 	view.roomView.RemovePage(room)
 	delete(view.rooms, room)
@@ -363,7 +362,7 @@ func (view *MainView) SetRooms(rooms []string) {
 	view.roomIDs = rooms
 	view.roomList.Clear()
 	view.roomView.Clear()
-	view.rooms = make(map[string]*widget.RoomView)
+	view.rooms = make(map[string]*RoomView)
 	for index, room := range rooms {
 		view.addRoom(index, room)
 	}
@@ -385,14 +384,14 @@ func sendNotification(room *rooms.Room, sender, text string, critical, sound boo
 	notification.Send(sender, text, critical, sound)
 }
 
-func (view *MainView) NotifyMessage(room *rooms.Room, message *types.Message, should pushrules.PushActionArrayShould) {
+func (view *MainView) NotifyMessage(room *rooms.Room, message ifc.Message, should pushrules.PushActionArrayShould) {
 	// Whether or not the room where the message came is the currently shown room.
 	isCurrent := room.ID == view.CurrentRoomID()
 	// Whether or not the terminal window is focused.
 	isFocused := view.lastFocusTime.Add(30 * time.Second).Before(time.Now())
 
 	// Whether or not the push rules say this message should be notified about.
-	shouldNotify := (should.Notify || !should.NotifySpecified) && message.Sender != view.config.Session.UserID
+	shouldNotify := (should.Notify || !should.NotifySpecified) && message.Sender() != view.config.Session.UserID
 
 	if !isCurrent {
 		// The message is not in the current room, show new message status in room list.
@@ -406,21 +405,10 @@ func (view *MainView) NotifyMessage(room *rooms.Room, message *types.Message, sh
 	if shouldNotify && !isFocused {
 		// Push rules say notify and the terminal is not focused, send desktop notification.
 		shouldPlaySound := should.PlaySound && should.SoundName == "default"
-		sendNotification(room, message.Sender, message.Text, should.Highlight, shouldPlaySound)
+		sendNotification(room, message.Sender(), message.Text(), should.Highlight, shouldPlaySound)
 	}
 
-	if should.Highlight {
-		// Message is highlight, set color.
-		message.TextColor = tcell.ColorYellow
-	}
-}
-
-func (view *MainView) AddServiceMessage(roomView *widget.RoomView, text string) {
-	message := roomView.NewMessage("", "*", "gomuks.service", text, time.Now())
-	message.TextColor = tcell.ColorGray
-	message.SenderColor = tcell.ColorGray
-	roomView.AddMessage(message, widget.AppendMessage)
-	view.parent.Render()
+	message.SetIsHighlight(should.Highlight)
 }
 
 func (view *MainView) LoadHistory(room string, initial bool) {
@@ -452,20 +440,20 @@ func (view *MainView) LoadHistory(room string, initial bool) {
 	}
 	history, prevBatch, err := view.matrix.GetHistory(roomView.Room.ID, batch, 50)
 	if err != nil {
-		view.AddServiceMessage(roomView, "Failed to fetch history")
+		roomView.AddServiceMessage("Failed to fetch history")
 		debug.Print("Failed to fetch history for", roomView.Room.ID, err)
 		return
 	}
 	roomView.Room.PrevBatch = prevBatch
 	for _, evt := range history {
-		var message *types.Message
+		var message ifc.Message
 		if evt.Type == "m.room.message" {
 			message = view.ProcessMessageEvent(roomView, &evt)
 		} else if evt.Type == "m.room.member" {
 			message = view.ProcessMembershipEvent(roomView, &evt)
 		}
 		if message != nil {
-			roomView.AddMessage(message, widget.PrependMessage)
+			roomView.AddMessage(message, ifc.PrependMessage)
 		}
 	}
 	err = roomView.SaveHistory(view.config.HistoryDir)
@@ -476,7 +464,7 @@ func (view *MainView) LoadHistory(room string, initial bool) {
 	view.parent.Render()
 }
 
-func (view *MainView) ProcessMessageEvent(room *widget.RoomView, evt *gomatrix.Event) (message *types.Message) {
+func (view *MainView) ProcessMessageEvent(room ifc.RoomView, evt *gomatrix.Event) ifc.Message {
 	text, _ := evt.Content["body"].(string)
 	msgtype, _ := evt.Content["msgtype"].(string)
 	return room.NewMessage(evt.ID, evt.Sender, msgtype, text, unixToTime(evt.Timestamp))
@@ -519,14 +507,12 @@ func (view *MainView) getMembershipEventContent(evt *gomatrix.Event) (sender, te
 	return
 }
 
-func (view *MainView) ProcessMembershipEvent(room *widget.RoomView, evt *gomatrix.Event) (message *types.Message) {
+func (view *MainView) ProcessMembershipEvent(room ifc.RoomView, evt *gomatrix.Event) ifc.Message {
 	sender, text := view.getMembershipEventContent(evt)
 	if len(text) == 0 {
-		return
+		return nil
 	}
-	message = room.NewMessage(evt.ID, sender, "m.room.member", text, unixToTime(evt.Timestamp))
-	message.TextColor = tcell.ColorGreen
-	return
+	return room.NewMessage(evt.ID, sender, "m.room.member", text, unixToTime(evt.Timestamp))
 }
 
 func unixToTime(unix int64) time.Time {
