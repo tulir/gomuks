@@ -20,10 +20,9 @@ import (
 	"encoding/gob"
 	"fmt"
 	"regexp"
-	"strings"
+	"time"
 
 	"github.com/gdamore/tcell"
-	"github.com/mattn/go-runewidth"
 	"maunium.net/go/gomuks/interface"
 )
 
@@ -36,22 +35,20 @@ type UITextMessage struct {
 	MsgType         string
 	MsgSender       string
 	MsgSenderColor  tcell.Color
-	MsgTimestamp    string
-	MsgDate         string
+	MsgTimestamp    time.Time
 	MsgText         string
 	MsgState        ifc.MessageState
 	MsgIsHighlight  bool
 	MsgIsService    bool
-	buffer          []string
+	buffer          []UIString
 	prevBufferWidth int
 }
 
 // NewMessage creates a new Message object with the provided values and the default state.
-func NewMessage(id, sender, msgtype, text, timestamp, date string, senderColor tcell.Color) UIMessage {
+func NewMessage(id, sender, msgtype, text string, timestamp time.Time, senderColor tcell.Color) UIMessage {
 	return &UITextMessage{
 		MsgSender:       sender,
 		MsgTimestamp:    timestamp,
-		MsgDate:         date,
 		MsgSenderColor:  senderColor,
 		MsgType:         msgtype,
 		MsgText:         text,
@@ -66,18 +63,19 @@ func NewMessage(id, sender, msgtype, text, timestamp, date string, senderColor t
 // CopyFrom replaces the content of this message object with the content of the given object.
 func (msg *UITextMessage) CopyFrom(from ifc.MessageMeta) {
 	msg.MsgSender = from.Sender()
-	msg.MsgTimestamp = from.Timestamp()
-	msg.MsgDate = from.Date()
 	msg.MsgSenderColor = from.SenderColor()
 
 	fromMsg, ok := from.(UIMessage)
 	if ok {
+		msg.MsgSender = fromMsg.RealSender()
 		msg.MsgID = fromMsg.ID()
 		msg.MsgType = fromMsg.Type()
+		msg.MsgTimestamp = fromMsg.Timestamp()
 		msg.MsgText = fromMsg.Text()
 		msg.MsgState = fromMsg.State()
 		msg.MsgIsService = fromMsg.IsService()
 		msg.MsgIsHighlight = fromMsg.IsHighlight()
+		msg.buffer = nil
 
 		msg.RecalculateBuffer()
 	}
@@ -103,6 +101,10 @@ func (msg *UITextMessage) Sender() string {
 	default:
 		return msg.MsgSender
 	}
+}
+
+func (msg *UITextMessage) RealSender() string {
+	return msg.MsgSender
 }
 
 func (msg *UITextMessage) getStateSpecificColor() tcell.Color {
@@ -176,7 +178,7 @@ func (msg *UITextMessage) RecalculateBuffer() {
 //
 // N.B. This will NOT automatically calculate the buffer if it hasn't been
 //      calculated already, as that requires the target width.
-func (msg *UITextMessage) Buffer() []string {
+func (msg *UITextMessage) Buffer() []UIString {
 	return msg.buffer
 }
 
@@ -185,14 +187,19 @@ func (msg *UITextMessage) Height() int {
 	return len(msg.buffer)
 }
 
-// Timestamp returns the formatted time when the message was sent.
-func (msg *UITextMessage) Timestamp() string {
+// Timestamp returns the full timestamp when the message was sent.
+func (msg *UITextMessage) Timestamp() time.Time {
 	return msg.MsgTimestamp
 }
 
-// Date returns the formatted date when the message was sent.
-func (msg *UITextMessage) Date() string {
-	return msg.MsgDate
+// FormatTime returns the formatted time when the message was sent.
+func (msg *UITextMessage) FormatTime() string {
+	return msg.MsgTimestamp.Format(TimeFormat)
+}
+
+// FormatDate returns the formatted date when the message was sent.
+func (msg *UITextMessage) FormatDate() string {
+	return msg.MsgTimestamp.Format(DateFormat)
 }
 
 func (msg *UITextMessage) ID() string {
@@ -259,30 +266,31 @@ func (msg *UITextMessage) CalculateBuffer(width int) {
 		return
 	}
 
-	msg.buffer = []string{}
-	text := msg.MsgText
+	msg.buffer = []UIString{}
+	text := NewColorUIString(msg.Text(), msg.TextColor())
 	if msg.MsgType == "m.emote" {
-		text = fmt.Sprintf("* %s %s", msg.MsgSender, msg.MsgText)
+		text = NewColorUIString(fmt.Sprintf("* %s %s", msg.MsgSender, msg.MsgText), msg.TextColor())
+		text.Colorize(2, 2+len(msg.MsgSender), msg.SenderColor())
 	}
 
-	forcedLinebreaks := strings.Split(text, "\n")
+	forcedLinebreaks := text.Split('\n')
 	newlines := 0
 	for _, str := range forcedLinebreaks {
 		if len(str) == 0 && newlines < 1 {
-			msg.buffer = append(msg.buffer, "")
+			msg.buffer = append(msg.buffer, UIString{})
 			newlines++
 		} else {
 			newlines = 0
 		}
-		// From tview/textview.go#reindexBuffer()
+		// Mostly from tview/textview.go#reindexBuffer()
 		for len(str) > 0 {
-			extract := runewidth.Truncate(str, width, "")
+			extract := str.Truncate(width)
 			if len(extract) < len(str) {
-				if spaces := spacePattern.FindStringIndex(str[len(extract):]); spaces != nil && spaces[0] == 0 {
+				if spaces := spacePattern.FindStringIndex(str[len(extract):].String()); spaces != nil && spaces[0] == 0 {
 					extract = str[:len(extract)+spaces[1]]
 				}
 
-				matches := boundaryPattern.FindAllStringIndex(extract, -1)
+				matches := boundaryPattern.FindAllStringIndex(extract.String(), -1)
 				if len(matches) > 0 {
 					extract = extract[:matches[len(matches)-1][1]]
 				}

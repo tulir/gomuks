@@ -49,22 +49,20 @@ type MessageView struct {
 	messageIDs map[string]messages.UIMessage
 	messages   []messages.UIMessage
 
-	textBuffer []string
+	textBuffer []messages.UIString
 	metaBuffer []ifc.MessageMeta
 }
 
 func NewMessageView() *MessageView {
 	return &MessageView{
-		Box:             tview.NewBox(),
-		MaxSenderWidth:  15,
-		DateFormat:      "January _2, 2006",
-		TimestampFormat: "15:04:05",
-		TimestampWidth:  8,
-		ScrollOffset:    0,
+		Box:            tview.NewBox(),
+		MaxSenderWidth: 15,
+		TimestampWidth: len(messages.TimeFormat),
+		ScrollOffset:   0,
 
 		messages:   make([]messages.UIMessage, 0),
 		messageIDs: make(map[string]messages.UIMessage),
-		textBuffer: make([]string, 0),
+		textBuffer: make([]messages.UIString, 0),
 		metaBuffer: make([]ifc.MessageMeta, 0),
 
 		widestSender: 5,
@@ -75,10 +73,7 @@ func NewMessageView() *MessageView {
 }
 
 func (view *MessageView) NewMessage(id, sender, msgtype, text string, timestamp time.Time) messages.UIMessage {
-	return messages.NewMessage(id, sender, msgtype, text,
-		timestamp.Format(view.TimestampFormat),
-		timestamp.Format(view.DateFormat),
-		widget.GetHashColor(sender))
+	return messages.NewMessage(id, sender, msgtype, text, timestamp, widget.GetHashColor(sender))
 }
 
 func (view *MessageView) SaveHistory(path string) error {
@@ -152,10 +147,10 @@ func (view *MessageView) AddMessage(ifcMessage ifc.Message, direction ifc.Messag
 		return
 	}
 
-	msg, messageExists := view.messageIDs[message.ID()]
-	if msg != nil && messageExists {
-		msg.CopyFrom(message)
-		message = msg
+	oldMsg, messageExists := view.messageIDs[message.ID()]
+	if messageExists {
+		oldMsg.CopyFrom(message)
+		message = oldMsg
 		direction = ifc.IgnoreMessage
 	}
 
@@ -173,6 +168,8 @@ func (view *MessageView) AddMessage(ifcMessage ifc.Message, direction ifc.Messag
 		view.appendBuffer(message)
 	} else if direction == ifc.PrependMessage {
 		view.messages = append([]messages.UIMessage{message}, view.messages...)
+	} else {
+		view.replaceBuffer(message)
 	}
 
 	view.messageIDs[message.ID()] = message
@@ -181,9 +178,12 @@ func (view *MessageView) AddMessage(ifcMessage ifc.Message, direction ifc.Messag
 func (view *MessageView) appendBuffer(message messages.UIMessage) {
 	if len(view.metaBuffer) > 0 {
 		prevMeta := view.metaBuffer[len(view.metaBuffer)-1]
-		if prevMeta != nil && prevMeta.Date() != message.Date() {
-			view.textBuffer = append(view.textBuffer, fmt.Sprintf("Date changed to %s", message.Date()))
-			view.metaBuffer = append(view.metaBuffer, &messages.BasicMeta{BTextColor: tcell.ColorGreen})
+		if prevMeta != nil && prevMeta.FormatDate() != message.FormatDate() {
+			view.textBuffer = append(view.textBuffer, messages.NewColorUIString(
+				fmt.Sprintf("Date changed to %s", message.FormatDate()),
+				tcell.ColorGreen))
+			view.metaBuffer = append(view.metaBuffer, &messages.BasicMeta{
+				BTimestampColor: tcell.ColorDefault, BTextColor: tcell.ColorGreen})
 		}
 	}
 
@@ -194,13 +194,42 @@ func (view *MessageView) appendBuffer(message messages.UIMessage) {
 	view.prevMsgCount++
 }
 
+func (view *MessageView) replaceBuffer(message messages.UIMessage) {
+	start := -1
+	end := -1
+	for index, meta := range view.metaBuffer {
+		if meta == message {
+			if start == -1 {
+				start = index
+			}
+			end = index
+		} else if start != -1 {
+			break
+		}
+	}
+
+	if len(view.textBuffer) > end {
+		end++
+	}
+
+	view.textBuffer = append(append(view.textBuffer[0:start], message.Buffer()...), view.textBuffer[end:]...)
+	if len(message.Buffer()) != end - start + 1 {
+		debug.Print(end, "-", start, "!=", len(message.Buffer()))
+		metaBuffer := view.metaBuffer[0:start]
+		for range message.Buffer() {
+			metaBuffer = append(metaBuffer, message)
+		}
+		view.metaBuffer = append(metaBuffer, view.metaBuffer[end:]...)
+	}
+}
+
 func (view *MessageView) recalculateBuffers() {
 	_, _, width, height := view.GetInnerRect()
 
 	width -= view.TimestampWidth + TimestampSenderGap + view.widestSender + SenderMessageGap
 	recalculateMessageBuffers := width != view.prevWidth
 	if height != view.prevHeight || recalculateMessageBuffers || len(view.messages) != view.prevMsgCount {
-		view.textBuffer = []string{}
+		view.textBuffer = []messages.UIString{}
 		view.metaBuffer = []ifc.MessageMeta{}
 		view.prevMsgCount = 0
 		for _, message := range view.messages {
@@ -219,7 +248,7 @@ const PaddingAtTop = 5
 func (view *MessageView) AddScrollOffset(diff int) {
 	_, _, _, height := view.GetInnerRect()
 
-	totalHeight := len(view.textBuffer)
+	totalHeight := view.TotalHeight()
 	if diff >= 0 && view.ScrollOffset+diff >= totalHeight-height+PaddingAtTop {
 		view.ScrollOffset = totalHeight - height + PaddingAtTop
 	} else {
@@ -285,7 +314,7 @@ func (view *MessageView) Draw(screen tcell.Screen) {
 	x, y, _, height := view.GetInnerRect()
 	view.recalculateBuffers()
 
-	if len(view.textBuffer) == 0 {
+	if view.TotalHeight() == 0 {
 		widget.WriteLineSimple(screen, "It's quite empty in here.", x, y+height)
 		return
 	}
@@ -294,7 +323,7 @@ func (view *MessageView) Draw(screen tcell.Screen) {
 	messageX := usernameX + view.widestSender + SenderMessageGap
 	separatorX := usernameX + view.widestSender + SenderSeparatorGap
 
-	indexOffset := len(view.textBuffer) - view.ScrollOffset - height
+	indexOffset := view.TotalHeight() - view.ScrollOffset - height
 	if indexOffset <= -PaddingAtTop {
 		message := "Scroll up to load more messages."
 		if view.LoadingMessages {
@@ -312,7 +341,7 @@ func (view *MessageView) Draw(screen tcell.Screen) {
 	// Black magic (aka math) used to figure out where the scroll bar should be put.
 	{
 		viewportHeight := float64(height)
-		contentHeight := float64(len(view.textBuffer))
+		contentHeight := float64(view.TotalHeight())
 
 		scrollBarHeight = int(math.Ceil(viewportHeight / (contentHeight / viewportHeight)))
 
@@ -328,12 +357,12 @@ func (view *MessageView) Draw(screen tcell.Screen) {
 		if index < 0 {
 			skippedLines++
 			continue
-		} else if index >= len(view.textBuffer) {
+		} else if index >= view.TotalHeight() {
 			break
 		}
 
 		showScrollbar := line-skippedLines >= scrollBarPos-scrollBarHeight && line-skippedLines < scrollBarPos
-		isTop := firstLine && view.ScrollOffset+height >= len(view.textBuffer)
+		isTop := firstLine && view.ScrollOffset+height >= view.TotalHeight()
 		isBottom := line == height-1 && view.ScrollOffset == 0
 
 		borderChar, borderStyle := getScrollbarStyle(showScrollbar, isTop, isBottom)
@@ -344,8 +373,8 @@ func (view *MessageView) Draw(screen tcell.Screen) {
 
 		text, meta := view.textBuffer[index], view.metaBuffer[index]
 		if meta != prevMeta {
-			if len(meta.Timestamp()) > 0 {
-				widget.WriteLineSimpleColor(screen, meta.Timestamp(), x, y+line, meta.TimestampColor())
+			if len(meta.FormatTime()) > 0 {
+				widget.WriteLineSimpleColor(screen, meta.FormatTime(), x, y+line, meta.TimestampColor())
 			}
 			if prevMeta == nil || meta.Sender() != prevMeta.Sender() {
 				widget.WriteLineColor(
@@ -355,6 +384,7 @@ func (view *MessageView) Draw(screen tcell.Screen) {
 			}
 			prevMeta = meta
 		}
-		widget.WriteLineSimpleColor(screen, text, messageX, y+line, meta.TextColor())
+
+		text.Draw(screen, messageX, y+line)
 	}
 }

@@ -17,13 +17,16 @@
 package messages
 
 import (
+	"time"
+
 	"github.com/gdamore/tcell"
 	"maunium.net/go/gomuks/interface"
 )
 
 // BasicMeta is a simple variable store implementation of MessageMeta.
 type BasicMeta struct {
-	BSender, BTimestamp, BDate                string
+	BSender string
+	BTimestamp time.Time
 	BSenderColor, BTextColor, BTimestampColor tcell.Color
 }
 
@@ -37,14 +40,19 @@ func (meta *BasicMeta) SenderColor() tcell.Color {
 	return meta.BSenderColor
 }
 
-// Timestamp returns the formatted time when the message was sent.
-func (meta *BasicMeta) Timestamp() string {
+// Timestamp returns the full time when the message was sent.
+func (meta *BasicMeta) Timestamp() time.Time {
 	return meta.BTimestamp
 }
 
-// Date returns the formatted date when the message was sent.
-func (meta *BasicMeta) Date() string {
-	return meta.BDate
+// FormatTime returns the formatted time when the message was sent.
+func (meta *BasicMeta) FormatTime() string {
+	return meta.BTimestamp.Format(TimeFormat)
+}
+
+// FormatDate returns the formatted date when the message was sent.
+func (meta *BasicMeta) FormatDate() string {
+	return meta.BTimestamp.Format(DateFormat)
 }
 
 // TextColor returns the color the actual content of the message should be shown in.
@@ -63,7 +71,6 @@ func (meta *BasicMeta) TimestampColor() tcell.Color {
 func (meta *BasicMeta) CopyFrom(from ifc.MessageMeta) {
 	meta.BSender = from.Sender()
 	meta.BTimestamp = from.Timestamp()
-	meta.BDate = from.Date()
 	meta.BSenderColor = from.SenderColor()
 	meta.BTextColor = from.TextColor()
 	meta.BTimestampColor = from.TimestampColor()

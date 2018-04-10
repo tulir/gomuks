@@ -87,8 +87,9 @@ type MessageMeta interface {
 	SenderColor() tcell.Color
 	TextColor() tcell.Color
 	TimestampColor() tcell.Color
-	Timestamp() string
-	Date() string
+	Timestamp() time.Time
+	FormatTime() string
+	FormatDate() string
 	CopyFrom(from MessageMeta)
 }
 
