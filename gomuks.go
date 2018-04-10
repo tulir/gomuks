@@ -117,7 +117,7 @@ func (gmx *Gomuks) Recover() {
 		if gmx.debugMode {
 			panic(p)
 		} else {
-			debug.PrettyPanic()
+			debug.PrettyPanic(p)
 		}
 	}
 }

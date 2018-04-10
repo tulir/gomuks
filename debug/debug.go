@@ -17,6 +17,7 @@
 package debug
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -67,14 +68,18 @@ const Oops = ` __________
           U  ||----W |
              ||     ||`
 
-func PrettyPanic() {
+func PrettyPanic(panic interface{}) {
 	fmt.Println(Oops)
 	fmt.Println("")
 	fmt.Println("A fatal error has occurred.")
 	fmt.Println("")
 	traceFile := fmt.Sprintf("/tmp/gomuks-panic-%s.txt", time.Now().Format("2006-01-02--15-04-05"))
-	data := debug.Stack()
-	err := ioutil.WriteFile(traceFile, data, 0644)
+
+	var buf bytes.Buffer
+	fmt.Fprintln(&buf, panic)
+	buf.Write(debug.Stack())
+	err := ioutil.WriteFile(traceFile, buf.Bytes(), 0644)
+
 	if err != nil {
 		fmt.Println("Saving the stack trace to", traceFile, "failed:")
 		fmt.Println("--------------------------------------------------------------------------------")
@@ -85,6 +90,7 @@ func PrettyPanic() {
 		fmt.Println("Please provide the file save error (above) and the stack trace of the original error (below) when filing an issue.")
 		fmt.Println("")
 		fmt.Println("--------------------------------------------------------------------------------")
+		fmt.Println(panic)
 		debug.PrintStack()
 		fmt.Println("--------------------------------------------------------------------------------")
 	} else {
