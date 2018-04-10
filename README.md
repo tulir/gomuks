@@ -2,8 +2,8 @@
 ![Languages](https://img.shields.io/github/languages/top/tulir/gomuks.svg)
 [![License](https://img.shields.io/github/license/tulir/gomuks.svg)](LICENSE)
 [![Release](https://img.shields.io/github/release/tulir/gomuks/all.svg)](https://github.com/tulir/gomuks/releases)
-[![Maintainability](https://img.shields.io/codeclimate/maintainability/tulir/gomuks.svg)](https://codeclimate.com/github/tulir/gomuks)
-[![Coverage](https://img.shields.io/codeclimate/coverage/tulir/gomuks.svg)](https://codeclimate.com/github/tulir/gomuks)
+[![Maintainability](https://shields-staging.herokuapp.com/codeclimate/maintainability/tulir/gomuks.svg)](https://codeclimate.com/github/tulir/gomuks)
+[![Coverage](https://shields-staging.herokuapp.com/codeclimate/coverage/tulir/gomuks.svg)](https://codeclimate.com/github/tulir/gomuks)
 
 ![Preview](https://img.mau.lu/tlVuN.png)
 

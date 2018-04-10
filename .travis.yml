@@ -1,0 +1,18 @@
+language: go
+go_import_path: maunium.net/go/gomuks
+go:
+  - "1.10"
+notifications:
+  email: false
+install:
+  - curl -L https://codeclimate.com/downloads/test-reporter/test-reporter-latest-linux-amd64 > ./cc-test-reporter
+  - chmod +x ./cc-test-reporter
+  - go get -u github.com/stretchr/testify/assert
+  - go get
+before_script:
+  - ./cc-test-reporter before-build
+script:
+  - go test -v -race ./... -coverprofile c.out
+  - go vet ./...
+after_script:
+  - ./cc-test-reporter after-build --coverage-input-type gocov --exit-code $TRAVIS_TEST_RESULT

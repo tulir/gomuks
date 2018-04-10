@@ -29,7 +29,7 @@ import (
 
 type Session struct {
 	UserID      string `json:"-"`
-	path        string `json:"-"`
+	path        string
 	AccessToken string
 	NextBatch   string
 	FilterID    string
