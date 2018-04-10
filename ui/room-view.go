@@ -260,7 +260,7 @@ func (view *RoomView) newUIMessage(id, sender, msgtype, text string, timestamp t
 	if member != nil {
 		sender = member.DisplayName
 	}
-	return view.content.NewMessage(id, sender, msgtype, text, timestamp)
+	return messages.NewTextMessage(id, sender, msgtype, text, timestamp)
 }
 
 func (view *RoomView) NewMessage(id, sender, msgtype, text string, timestamp time.Time) ifc.Message {

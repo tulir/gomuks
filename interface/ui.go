@@ -51,8 +51,9 @@ type MainView interface {
 	SaveAllHistory()
 
 	SetTyping(roomID string, users []string)
-	ProcessMessageEvent(roomView RoomView, evt *gomatrix.Event) Message
-	ProcessMembershipEvent(roomView RoomView, evt *gomatrix.Event) Message
+	ParseEvent(roomView RoomView, evt *gomatrix.Event) Message
+	//ProcessMessageEvent(roomView RoomView, evt *gomatrix.Event) Message
+	//ProcessMembershipEvent(roomView RoomView, evt *gomatrix.Event) Message
 	NotifyMessage(room *rooms.Room, message Message, should pushrules.PushActionArrayShould)
 }
 

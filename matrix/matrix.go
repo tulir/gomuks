@@ -17,19 +17,25 @@
 package matrix
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
+	"io/ioutil"
+	"net/url"
+	"os"
+	"path"
+	"path/filepath"
+	"regexp"
 	"strings"
 	"time"
 
-
-"maunium.net/go/gomatrix"
-"maunium.net/go/gomuks/config"
-"maunium.net/go/gomuks/debug"
-"maunium.net/go/gomuks/interface"
-"maunium.net/go/gomuks/matrix/pushrules"
-"maunium.net/go/gomuks/matrix/rooms"
-
+	"maunium.net/go/gomatrix"
+	"maunium.net/go/gomuks/config"
+	"maunium.net/go/gomuks/debug"
+	"maunium.net/go/gomuks/interface"
+	"maunium.net/go/gomuks/matrix/pushrules"
+	"maunium.net/go/gomuks/matrix/rooms"
 )
 
 // Container is a wrapper for a gomatrix Client and some other stuff.
@@ -222,7 +228,7 @@ func (c *Container) HandleMessage(evt *gomatrix.Event) {
 		return
 	}
 
-	message := mainView.ProcessMessageEvent(roomView, evt)
+	message := mainView.ParseEvent(roomView, evt)
 	if message != nil {
 		if c.syncer.FirstSyncDone {
 			pushRules := c.PushRules().GetActions(roomView.MxRoom(), evt).Should()
@@ -279,7 +285,7 @@ func (c *Container) HandleMembership(evt *gomatrix.Event) {
 		return
 	}
 
-	message := mainView.ProcessMembershipEvent(roomView, evt)
+	message := mainView.ParseEvent(roomView, evt)
 	if message != nil {
 		// TODO this shouldn't be necessary
 		roomView.MxRoom().UpdateState(evt)
@@ -402,4 +408,54 @@ func (c *Container) GetRoom(roomID string) *rooms.Room {
 		}
 	}
 	return room
+}
+
+var mxcRegex = regexp.MustCompile("mxc://(.+)/(.+)")
+
+func (c *Container) Download(mxcURL string) ([]byte, error) {
+	parts := mxcRegex.FindStringSubmatch(mxcURL)
+	if parts == nil || len(parts) != 3 {
+		debug.Print(parts)
+		return nil, fmt.Errorf("invalid matrix content URL")
+	}
+	hs := parts[1]
+	id := parts[2]
+
+	cacheFile := c.getCachePath(hs, id)
+	if _, err := os.Stat(cacheFile); err != nil {
+		data, err := ioutil.ReadFile(cacheFile)
+		if err == nil {
+			return data, nil
+		}
+	}
+
+	dlURL, _ := url.Parse(c.client.HomeserverURL.String())
+	dlURL.Path = path.Join(dlURL.Path, "/_matrix/media/v1/download", hs, id)
+
+	resp, err := c.client.Client.Get(dlURL.String())
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	var buf bytes.Buffer
+	_, err = io.Copy(&buf, resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	data := buf.Bytes()
+
+	err = ioutil.WriteFile(cacheFile, data, 0600)
+	return data, err
+}
+func (c *Container) getCachePath(homeserver, fileID string) string {
+	dir := filepath.Join(c.config.MediaDir, homeserver)
+
+	err := os.MkdirAll(dir, 0700)
+	if err != nil {
+		return ""
+	}
+
+	return filepath.Join(dir, fileID)
 }

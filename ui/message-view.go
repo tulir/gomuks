@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"math"
 	"os"
-	"time"
 
 	"github.com/gdamore/tcell"
 	"maunium.net/go/gomuks/debug"
@@ -72,10 +71,6 @@ func NewMessageView() *MessageView {
 	}
 }
 
-func (view *MessageView) NewMessage(id, sender, msgtype, text string, timestamp time.Time) messages.UIMessage {
-	return messages.NewMessage(id, sender, msgtype, text, timestamp, widget.GetHashColor(sender))
-}
-
 func (view *MessageView) SaveHistory(path string) error {
 	file, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE, 0600)
 	if err != nil {
@@ -102,14 +97,23 @@ func (view *MessageView) LoadHistory(path string) (int, error) {
 	}
 	defer file.Close()
 
+	var msgs []messages.UIMessage
+
 	dec := gob.NewDecoder(file)
-	err = dec.Decode(&view.messages)
+	err = dec.Decode(&msgs)
 	if err != nil {
 		return -1, err
 	}
 
-	for _, message := range view.messages {
-		view.updateWidestSender(message.Sender())
+	view.messages = make([]messages.UIMessage, len(msgs))
+	indexOffset := 0
+	for index, message := range msgs {
+		if message != nil {
+			view.messages[index-indexOffset] = message
+			view.updateWidestSender(message.Sender())
+		} else {
+			indexOffset++
+		}
 	}
 
 	return len(view.messages), nil
@@ -213,7 +217,7 @@ func (view *MessageView) replaceBuffer(message messages.UIMessage) {
 	}
 
 	view.textBuffer = append(append(view.textBuffer[0:start], message.Buffer()...), view.textBuffer[end:]...)
-	if len(message.Buffer()) != end - start + 1 {
+	if len(message.Buffer()) != end-start+1 {
 		debug.Print(end, "-", start, "!=", len(message.Buffer()))
 		metaBuffer := view.metaBuffer[0:start]
 		for range message.Buffer() {
@@ -232,7 +236,11 @@ func (view *MessageView) recalculateBuffers() {
 		view.textBuffer = []messages.UIString{}
 		view.metaBuffer = []ifc.MessageMeta{}
 		view.prevMsgCount = 0
-		for _, message := range view.messages {
+		for i, message := range view.messages {
+			if message == nil {
+				debug.Print("O.o found nil message at", i)
+				break
+			}
 			if recalculateMessageBuffers {
 				message.CalculateBuffer(width)
 			}

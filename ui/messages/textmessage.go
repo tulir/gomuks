@@ -24,10 +24,67 @@ import (
 
 	"github.com/gdamore/tcell"
 	"maunium.net/go/gomuks/interface"
+	"maunium.net/go/gomuks/ui/widget"
 )
 
 func init() {
 	gob.Register(&UITextMessage{})
+	gob.Register(&UIExpandedTextMessage{})
+}
+
+type UIExpandedTextMessage struct {
+	UITextMessage
+	MsgUIStringText UIString
+}
+
+// NewExpandedTextMessage creates a new UIExpandedTextMessage object with the provided values and the default state.
+func NewExpandedTextMessage(id, sender, msgtype string, text UIString, timestamp time.Time) UIMessage {
+	return &UIExpandedTextMessage{
+		UITextMessage{
+			MsgSender:       sender,
+			MsgTimestamp:    timestamp,
+			MsgSenderColor:  widget.GetHashColor(sender),
+			MsgType:         msgtype,
+			MsgText:         text.String(),
+			MsgID:           id,
+			prevBufferWidth: 0,
+			MsgState:        ifc.MessageStateDefault,
+			MsgIsHighlight:  false,
+			MsgIsService:    false,
+		},
+		text,
+	}
+}
+
+func (msg *UIExpandedTextMessage) GetUIStringText() UIString {
+	return msg.MsgUIStringText
+}
+
+// CopyFrom replaces the content of this message object with the content of the given object.
+func (msg *UIExpandedTextMessage) CopyFrom(from ifc.MessageMeta) {
+	msg.MsgSender = from.Sender()
+	msg.MsgSenderColor = from.SenderColor()
+
+	fromMsg, ok := from.(UIMessage)
+	if ok {
+		msg.MsgSender = fromMsg.RealSender()
+		msg.MsgID = fromMsg.ID()
+		msg.MsgType = fromMsg.Type()
+		msg.MsgTimestamp = fromMsg.Timestamp()
+		msg.MsgState = fromMsg.State()
+		msg.MsgIsService = fromMsg.IsService()
+		msg.MsgIsHighlight = fromMsg.IsHighlight()
+		msg.buffer = nil
+
+		fromExpandedMsg, ok := from.(*UIExpandedTextMessage)
+		if ok {
+			msg.MsgUIStringText = fromExpandedMsg.MsgUIStringText
+		} else {
+			msg.MsgUIStringText = NewColorUIString(fromMsg.Text(), from.TextColor())
+		}
+
+		msg.RecalculateBuffer()
+	}
 }
 
 type UITextMessage struct {
@@ -44,12 +101,12 @@ type UITextMessage struct {
 	prevBufferWidth int
 }
 
-// NewMessage creates a new Message object with the provided values and the default state.
-func NewMessage(id, sender, msgtype, text string, timestamp time.Time, senderColor tcell.Color) UIMessage {
+// NewTextMessage creates a new UITextMessage object with the provided values and the default state.
+func NewTextMessage(id, sender, msgtype, text string, timestamp time.Time) UIMessage {
 	return &UITextMessage{
 		MsgSender:       sender,
 		MsgTimestamp:    timestamp,
-		MsgSenderColor:  senderColor,
+		MsgSenderColor:  widget.GetHashColor(sender),
 		MsgType:         msgtype,
 		MsgText:         text,
 		MsgID:           id,
@@ -250,6 +307,10 @@ func (msg *UITextMessage) SetIsService(isService bool) {
 	msg.MsgIsService = isService
 }
 
+func (msg *UITextMessage) GetUIStringText() UIString {
+	return NewColorUIString(msg.Text(), msg.TextColor())
+}
+
 // Regular expressions used to split lines when calculating the buffer.
 //
 // From tview/textview.go
@@ -267,10 +328,10 @@ func (msg *UITextMessage) CalculateBuffer(width int) {
 	}
 
 	msg.buffer = []UIString{}
-	text := NewColorUIString(msg.Text(), msg.TextColor())
+	text := msg.GetUIStringText()
 	if msg.MsgType == "m.emote" {
-		text = NewColorUIString(fmt.Sprintf("* %s %s", msg.MsgSender, msg.MsgText), msg.TextColor())
-		text.Colorize(2, 2+len(msg.MsgSender), msg.SenderColor())
+		text = NewColorUIString(fmt.Sprintf("* %s %s", msg.MsgSender, text.String()), msg.TextColor())
+		text.Colorize(2, len(msg.MsgSender), msg.SenderColor())
 	}
 
 	forcedLinebreaks := text.Split('\n')

@@ -32,6 +32,7 @@ import (
 	"maunium.net/go/gomuks/matrix/pushrules"
 	"maunium.net/go/gomuks/matrix/rooms"
 	"maunium.net/go/gomuks/notification"
+	"maunium.net/go/gomuks/ui/messages"
 	"maunium.net/go/gomuks/ui/widget"
 	"maunium.net/go/tview"
 )
@@ -446,12 +447,7 @@ func (view *MainView) LoadHistory(room string, initial bool) {
 	}
 	roomView.Room.PrevBatch = prevBatch
 	for _, evt := range history {
-		var message ifc.Message
-		if evt.Type == "m.room.message" {
-			message = view.ProcessMessageEvent(roomView, &evt)
-		} else if evt.Type == "m.room.member" {
-			message = view.ProcessMembershipEvent(roomView, &evt)
-		}
+		message := view.ParseEvent(roomView, &evt)
 		if message != nil {
 			roomView.AddMessage(message, ifc.PrependMessage)
 		}
@@ -464,61 +460,6 @@ func (view *MainView) LoadHistory(room string, initial bool) {
 	view.parent.Render()
 }
 
-func (view *MainView) ProcessMessageEvent(room ifc.RoomView, evt *gomatrix.Event) ifc.Message {
-	text, _ := evt.Content["body"].(string)
-	msgtype, _ := evt.Content["msgtype"].(string)
-	return room.NewMessage(evt.ID, evt.Sender, msgtype, text, unixToTime(evt.Timestamp))
-}
-
-func (view *MainView) getMembershipEventContent(evt *gomatrix.Event) (sender, text string) {
-	membership, _ := evt.Content["membership"].(string)
-	displayname, _ := evt.Content["displayname"].(string)
-	if len(displayname) == 0 {
-		displayname = *evt.StateKey
-	}
-	prevMembership := "leave"
-	prevDisplayname := ""
-	if evt.Unsigned.PrevContent != nil {
-		prevMembership, _ = evt.Unsigned.PrevContent["membership"].(string)
-		prevDisplayname, _ = evt.Unsigned.PrevContent["displayname"].(string)
-	}
-
-	if membership != prevMembership {
-		switch membership {
-		case "invite":
-			sender = "---"
-			text = fmt.Sprintf("%s invited %s.", evt.Sender, displayname)
-		case "join":
-			sender = "-->"
-			text = fmt.Sprintf("%s joined the room.", displayname)
-		case "leave":
-			sender = "<--"
-			if evt.Sender != *evt.StateKey {
-				reason, _ := evt.Content["reason"].(string)
-				text = fmt.Sprintf("%s kicked %s: %s", evt.Sender, displayname, reason)
-			} else {
-				text = fmt.Sprintf("%s left the room.", displayname)
-			}
-		}
-	} else if displayname != prevDisplayname {
-		sender = "---"
-		text = fmt.Sprintf("%s changed their display name to %s.", prevDisplayname, displayname)
-	}
-	return
-}
-
-func (view *MainView) ProcessMembershipEvent(room ifc.RoomView, evt *gomatrix.Event) ifc.Message {
-	sender, text := view.getMembershipEventContent(evt)
-	if len(text) == 0 {
-		return nil
-	}
-	return room.NewMessage(evt.ID, sender, "m.room.member", text, unixToTime(evt.Timestamp))
-}
-
-func unixToTime(unix int64) time.Time {
-	timestamp := time.Now()
-	if unix != 0 {
-		timestamp = time.Unix(unix/1000, unix%1000*1000)
-	}
-	return timestamp
+func (view *MainView) ParseEvent(roomView ifc.RoomView, evt *gomatrix.Event) ifc.Message {
+	return messages.ParseEvent(view.matrix, roomView.MxRoom(), evt)
 }

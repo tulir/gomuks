@@ -14,25 +14,38 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-package ifc
+package messages
 
 import (
-	"maunium.net/go/gomatrix"
-	"maunium.net/go/gomuks/matrix/rooms"
+	"github.com/gdamore/tcell"
+	"github.com/mattn/go-runewidth"
 )
 
-type MatrixContainer interface {
-	Client() *gomatrix.Client
-	InitClient() error
-	Initialized() bool
-	Login(user, password string) error
-	Start()
-	Stop()
-	SendMessage(roomID, msgtype, message string) (string, error)
-	SendTyping(roomID string, typing bool)
-	JoinRoom(roomID string) error
-	LeaveRoom(roomID string) error
-	GetHistory(roomID, prevBatch string, limit int) ([]gomatrix.Event, string, error)
-	GetRoom(roomID string) *rooms.Room
-	Download(mxcURL string) ([]byte, error)
+type Cell struct {
+	Char  rune
+	Style tcell.Style
+}
+
+func NewStyleCell(char rune, style tcell.Style) Cell {
+	return Cell{char, style}
+}
+
+func NewColorCell(char rune, color tcell.Color) Cell {
+	return Cell{char, tcell.StyleDefault.Foreground(color)}
+}
+
+func NewCell(char rune) Cell {
+	return Cell{char, tcell.StyleDefault}
+}
+
+func (cell Cell) RuneWidth() int {
+	return runewidth.RuneWidth(cell.Char)
+}
+
+func (cell Cell) Draw(screen tcell.Screen, x, y int) (chWidth int) {
+	chWidth = cell.RuneWidth()
+	for runeWidthOffset := 0; runeWidthOffset < chWidth; runeWidthOffset++ {
+		screen.SetContent(x+runeWidthOffset, y, cell.Char, nil, cell.Style)
+	}
+	return
 }
