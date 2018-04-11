@@ -22,70 +22,14 @@ import (
 	"regexp"
 	"time"
 
-	"maunium.net/go/gomuks/ui/messages/tstring"
-	"maunium.net/go/tcell"
 	"maunium.net/go/gomuks/interface"
+	"maunium.net/go/gomuks/ui/messages/tstring"
 	"maunium.net/go/gomuks/ui/widget"
+	"maunium.net/go/tcell"
 )
 
 func init() {
 	gob.Register(&UITextMessage{})
-	gob.Register(&UIExpandedTextMessage{})
-}
-
-type UIExpandedTextMessage struct {
-	UITextMessage
-	MsgTStringText tstring.TString
-}
-
-// NewExpandedTextMessage creates a new UIExpandedTextMessage object with the provided values and the default state.
-func NewExpandedTextMessage(id, sender, msgtype string, text tstring.TString, timestamp time.Time) UIMessage {
-	return &UIExpandedTextMessage{
-		UITextMessage{
-			MsgSender:       sender,
-			MsgTimestamp:    timestamp,
-			MsgSenderColor:  widget.GetHashColor(sender),
-			MsgType:         msgtype,
-			MsgText:         text.String(),
-			MsgID:           id,
-			prevBufferWidth: 0,
-			MsgState:        ifc.MessageStateDefault,
-			MsgIsHighlight:  false,
-			MsgIsService:    false,
-		},
-		text,
-	}
-}
-
-func (msg *UIExpandedTextMessage) GetTStringText() tstring.TString {
-	return msg.MsgTStringText
-}
-
-// CopyFrom replaces the content of this message object with the content of the given object.
-func (msg *UIExpandedTextMessage) CopyFrom(from ifc.MessageMeta) {
-	msg.MsgSender = from.Sender()
-	msg.MsgSenderColor = from.SenderColor()
-
-	fromMsg, ok := from.(UIMessage)
-	if ok {
-		msg.MsgSender = fromMsg.RealSender()
-		msg.MsgID = fromMsg.ID()
-		msg.MsgType = fromMsg.Type()
-		msg.MsgTimestamp = fromMsg.Timestamp()
-		msg.MsgState = fromMsg.State()
-		msg.MsgIsService = fromMsg.IsService()
-		msg.MsgIsHighlight = fromMsg.IsHighlight()
-		msg.buffer = nil
-
-		fromExpandedMsg, ok := from.(*UIExpandedTextMessage)
-		if ok {
-			msg.MsgTStringText = fromExpandedMsg.MsgTStringText
-		} else {
-			msg.MsgTStringText = tstring.NewColorTString(fromMsg.Text(), from.TextColor())
-		}
-
-		msg.RecalculateBuffer()
-	}
 }
 
 type UITextMessage struct {
@@ -117,6 +61,8 @@ func NewTextMessage(id, sender, msgtype, text string, timestamp time.Time) UIMes
 		MsgIsService:    false,
 	}
 }
+
+func (msg *UITextMessage) RegisterGomuks(gmx ifc.Gomuks) {}
 
 // CopyFrom replaces the content of this message object with the content of the given object.
 func (msg *UITextMessage) CopyFrom(from ifc.MessageMeta) {

@@ -22,6 +22,7 @@ import (
 	"math"
 	"os"
 
+	"maunium.net/go/gomuks/lib/open"
 	"maunium.net/go/gomuks/ui/messages/tstring"
 	"maunium.net/go/tcell"
 	"maunium.net/go/gomuks/debug"
@@ -88,7 +89,7 @@ func (view *MessageView) SaveHistory(path string) error {
 	return nil
 }
 
-func (view *MessageView) LoadHistory(path string) (int, error) {
+func (view *MessageView) LoadHistory(gmx ifc.Gomuks, path string) (int, error) {
 	file, err := os.OpenFile(path, os.O_RDONLY, 0600)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -112,6 +113,7 @@ func (view *MessageView) LoadHistory(path string) (int, error) {
 		if message != nil {
 			view.messages[index-indexOffset] = message
 			view.updateWidestSender(message.Sender())
+			message.RegisterGomuks(gmx)
 		} else {
 			indexOffset++
 		}
@@ -249,6 +251,30 @@ func (view *MessageView) recalculateBuffers() {
 		view.prevHeight = height
 		view.prevWidth = width
 	}
+}
+
+func (view *MessageView) HandleClick(x, y int, button tcell.ButtonMask) {
+	if button != tcell.Button1 {
+		return
+	}
+
+	_, _, _, height := view.GetRect()
+	line := view.TotalHeight() - view.ScrollOffset - height + y
+	if line < 0 || line >= view.TotalHeight() {
+		return
+	}
+
+	message := view.metaBuffer[line]
+	imageMessage, ok := message.(*messages.UIImageMessage)
+	if !ok {
+		uiMessage, ok := message.(messages.UIMessage)
+		if ok {
+			debug.Print("Message clicked:", uiMessage.Text())
+		}
+		return
+	}
+
+	open.Open(imageMessage.Path())
 }
 
 const PaddingAtTop = 5

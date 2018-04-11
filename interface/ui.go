@@ -71,7 +71,7 @@ const (
 type RoomView interface {
 	MxRoom() *rooms.Room
 	SaveHistory(dir string) error
-	LoadHistory(dir string) (int, error)
+	LoadHistory(gmx Gomuks, dir string) (int, error)
 
 	SetStatus(status string)
 	SetTyping(users []string)

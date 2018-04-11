@@ -31,6 +31,7 @@ type UIMessage interface {
 	Height() int
 
 	RealSender() string
+	RegisterGomuks(gmx ifc.Gomuks)
 }
 
 const DateFormat = "January _2, 2006"

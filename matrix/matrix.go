@@ -413,17 +413,16 @@ func (c *Container) GetRoom(roomID string) *rooms.Room {
 
 var mxcRegex = regexp.MustCompile("mxc://(.+)/(.+)")
 
-func (c *Container) Download(mxcURL string) (data []byte, fullID string, err error) {
+func (c *Container) Download(mxcURL string) (data []byte, hs, id string, err error) {
 	parts := mxcRegex.FindStringSubmatch(mxcURL)
 	if parts == nil || len(parts) != 3 {
 		err = fmt.Errorf("invalid matrix content URL")
 		return
 	}
-	hs := parts[1]
-	id := parts[2]
-	fullID = fmt.Sprintf("%s/%s", hs, id)
+	hs = parts[1]
+	id = parts[2]
 
-	cacheFile := c.getCachePath(hs, id)
+	cacheFile := c.GetCachePath(hs, id)
 	if _, err = os.Stat(cacheFile); err != nil {
 		data, err = ioutil.ReadFile(cacheFile)
 		if err == nil {
@@ -452,7 +451,8 @@ func (c *Container) Download(mxcURL string) (data []byte, fullID string, err err
 	err = ioutil.WriteFile(cacheFile, data, 0600)
 	return
 }
-func (c *Container) getCachePath(homeserver, fileID string) string {
+
+func (c *Container) GetCachePath(homeserver, fileID string) string {
 	dir := filepath.Join(c.config.MediaDir, homeserver)
 
 	err := os.MkdirAll(dir, 0700)

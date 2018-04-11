@@ -19,15 +19,16 @@ package messages
 import (
 	"bytes"
 	"encoding/gob"
+	"fmt"
 	"time"
 
 	"image/color"
 
 	"maunium.net/go/gomuks/debug"
 	"maunium.net/go/gomuks/interface"
+	"maunium.net/go/gomuks/lib/ansimage"
 	"maunium.net/go/gomuks/ui/messages/tstring"
 	"maunium.net/go/gomuks/ui/widget"
-	"maunium.net/go/gomuks/lib/ansimage"
 	"maunium.net/go/tcell"
 )
 
@@ -37,12 +38,15 @@ func init() {
 
 type UIImageMessage struct {
 	UITextMessage
-	Path string
-	data []byte
+	Homeserver string
+	FileID     string
+	data       []byte
+
+	gmx ifc.Gomuks
 }
 
 // NewImageMessage creates a new UIImageMessage object with the provided values and the default state.
-func NewImageMessage(id, sender, msgtype string, path string, data []byte, timestamp time.Time) UIMessage {
+func NewImageMessage(gmx ifc.Gomuks, id, sender, msgtype, homeserver, fileID string, data []byte, timestamp time.Time) UIMessage {
 	return &UIImageMessage{
 		UITextMessage{
 			MsgSender:       sender,
@@ -55,9 +59,37 @@ func NewImageMessage(id, sender, msgtype string, path string, data []byte, times
 			MsgIsHighlight:  false,
 			MsgIsService:    false,
 		},
-		path,
+		homeserver,
+		fileID,
 		data,
+		gmx,
 	}
+}
+
+func (msg *UIImageMessage) RegisterGomuks(gmx ifc.Gomuks) {
+	msg.gmx = gmx
+
+	debug.Print(len(msg.data), msg.data)
+	if len(msg.data) == 0 {
+		go func() {
+			defer gmx.Recover()
+			msg.updateData()
+		}()
+	}
+}
+
+func (msg *UIImageMessage) updateData() {
+	debug.Print("Loading image:", msg.Homeserver, msg.FileID)
+	data, _, _, err := msg.gmx.Matrix().Download(fmt.Sprintf("mxc://%s/%s", msg.Homeserver, msg.FileID))
+	if err != nil {
+		debug.Print("Failed to download image %s/%s: %v", msg.Homeserver, msg.FileID, err)
+		return
+	}
+	msg.data = data
+}
+
+func (msg *UIImageMessage) Path() string {
+	return msg.gmx.Matrix().GetCachePath(msg.Homeserver, msg.FileID)
 }
 
 // CopyFrom replaces the content of this message object with the content of the given object.

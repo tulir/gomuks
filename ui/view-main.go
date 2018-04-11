@@ -23,7 +23,6 @@ import (
 	"time"
 	"unicode"
 
-	"maunium.net/go/tcell"
 	"github.com/mattn/go-runewidth"
 	"maunium.net/go/gomatrix"
 	"maunium.net/go/gomuks/config"
@@ -34,6 +33,7 @@ import (
 	"maunium.net/go/gomuks/matrix/rooms"
 	"maunium.net/go/gomuks/ui/messages"
 	"maunium.net/go/gomuks/ui/widget"
+	"maunium.net/go/tcell"
 	"maunium.net/go/tview"
 )
 
@@ -221,7 +221,7 @@ func (view *MainView) KeyEventHandler(roomView *RoomView, key *tcell.EventKey) *
 const WheelScrollOffsetDiff = 3
 
 func (view *MainView) MouseEventHandler(roomView *RoomView, event *tcell.EventMouse) *tcell.EventMouse {
-	if event.Buttons() == tcell.ButtonNone {
+	if event.Buttons() == tcell.ButtonNone || event.HasMotion() {
 		return event
 	}
 	view.BumpFocus()
@@ -230,11 +230,6 @@ func (view *MainView) MouseEventHandler(roomView *RoomView, event *tcell.EventMo
 	x, y := event.Position()
 
 	switch event.Buttons() {
-	case tcell.Button1:
-		mx, my, mw, mh := msgView.GetRect()
-		if x >= mx && y >= my && x < mx+mw && y < my+mh {
-			debug.Print("Message view clicked")
-		}
 	case tcell.WheelUp:
 		if msgView.IsAtTop() {
 			go view.LoadHistory(roomView.Room.ID, false)
@@ -252,7 +247,12 @@ func (view *MainView) MouseEventHandler(roomView *RoomView, event *tcell.EventMo
 			roomView.Room.MarkRead()
 		}
 	default:
-		debug.Print("Mouse event received:", event.Buttons(), event.Modifiers(), x, y)
+		mx, my, mw, mh := msgView.GetRect()
+		if x >= mx && y >= my && x < mx+mw && y < my+mh {
+			msgView.HandleClick(x-mx, y-my, event.Buttons())
+		} else {
+			debug.Print("Mouse event received:", event.Buttons(), event.Modifiers(), x, y)
+		}
 		return event
 	}
 
@@ -315,7 +315,7 @@ func (view *MainView) addRoom(index int, room string) {
 		view.roomView.AddPage(room, roomView, true, false)
 		roomView.UpdateUserList()
 
-		count, err := roomView.LoadHistory(view.config.HistoryDir)
+		count, err := roomView.LoadHistory(view.gmx, view.config.HistoryDir)
 		if err != nil {
 			debug.Printf("Failed to load history of %s: %v", roomView.Room.GetTitle(), err)
 		} else if count <= 0 {
@@ -466,5 +466,5 @@ func (view *MainView) LoadHistory(room string, initial bool) {
 }
 
 func (view *MainView) ParseEvent(roomView ifc.RoomView, evt *gomatrix.Event) ifc.Message {
-	return messages.ParseEvent(view.matrix, roomView.MxRoom(), evt)
+	return messages.ParseEvent(view.gmx, roomView.MxRoom(), evt)
 }

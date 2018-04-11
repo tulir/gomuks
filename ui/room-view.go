@@ -81,8 +81,8 @@ func (view *RoomView) SaveHistory(dir string) error {
 	return view.MessageView().SaveHistory(view.logPath(dir))
 }
 
-func (view *RoomView) LoadHistory(dir string) (int, error) {
-	return view.MessageView().LoadHistory(view.logPath(dir))
+func (view *RoomView) LoadHistory(gmx ifc.Gomuks, dir string) (int, error) {
+	return view.MessageView().LoadHistory(gmx, view.logPath(dir))
 }
 
 func (view *RoomView) SetTabCompleteFunc(fn func(room *RoomView, text string, cursorOffset int) string) *RoomView {
