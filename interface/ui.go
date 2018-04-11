@@ -19,7 +19,7 @@ package ifc
 import (
 	"time"
 
-	"github.com/gdamore/tcell"
+	"maunium.net/go/tcell"
 	"maunium.net/go/gomatrix"
 	"maunium.net/go/gomuks/matrix/pushrules"
 	"maunium.net/go/gomuks/matrix/rooms"

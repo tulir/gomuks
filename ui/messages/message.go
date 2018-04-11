@@ -18,6 +18,7 @@ package messages
 
 import (
 	"maunium.net/go/gomuks/interface"
+	"maunium.net/go/gomuks/ui/messages/tstring"
 )
 
 // Message is a wrapper for the content and metadata of a Matrix message intended to be displayed.
@@ -26,7 +27,7 @@ type UIMessage interface {
 
 	CalculateBuffer(width int)
 	RecalculateBuffer()
-	Buffer() []UIString
+	Buffer() []tstring.TString
 	Height() int
 
 	RealSender() string

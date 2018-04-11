@@ -23,7 +23,7 @@ import (
 	"time"
 	"unicode"
 
-	"github.com/gdamore/tcell"
+	"maunium.net/go/tcell"
 	"github.com/mattn/go-runewidth"
 	"maunium.net/go/gomatrix"
 	"maunium.net/go/gomuks/config"
@@ -230,6 +230,11 @@ func (view *MainView) MouseEventHandler(roomView *RoomView, event *tcell.EventMo
 	x, y := event.Position()
 
 	switch event.Buttons() {
+	case tcell.Button1:
+		mx, my, mw, mh := msgView.GetRect()
+		if x >= mx && y >= my && x < mx+mw && y < my+mh {
+			debug.Print("Message view clicked")
+		}
 	case tcell.WheelUp:
 		if msgView.IsAtTop() {
 			go view.LoadHistory(roomView.Room.ID, false)

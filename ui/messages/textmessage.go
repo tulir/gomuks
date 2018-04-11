@@ -22,7 +22,8 @@ import (
 	"regexp"
 	"time"
 
-	"github.com/gdamore/tcell"
+	"maunium.net/go/gomuks/ui/messages/tstring"
+	"maunium.net/go/tcell"
 	"maunium.net/go/gomuks/interface"
 	"maunium.net/go/gomuks/ui/widget"
 )
@@ -34,11 +35,11 @@ func init() {
 
 type UIExpandedTextMessage struct {
 	UITextMessage
-	MsgUIStringText UIString
+	MsgTStringText tstring.TString
 }
 
 // NewExpandedTextMessage creates a new UIExpandedTextMessage object with the provided values and the default state.
-func NewExpandedTextMessage(id, sender, msgtype string, text UIString, timestamp time.Time) UIMessage {
+func NewExpandedTextMessage(id, sender, msgtype string, text tstring.TString, timestamp time.Time) UIMessage {
 	return &UIExpandedTextMessage{
 		UITextMessage{
 			MsgSender:       sender,
@@ -56,8 +57,8 @@ func NewExpandedTextMessage(id, sender, msgtype string, text UIString, timestamp
 	}
 }
 
-func (msg *UIExpandedTextMessage) GetUIStringText() UIString {
-	return msg.MsgUIStringText
+func (msg *UIExpandedTextMessage) GetTStringText() tstring.TString {
+	return msg.MsgTStringText
 }
 
 // CopyFrom replaces the content of this message object with the content of the given object.
@@ -78,9 +79,9 @@ func (msg *UIExpandedTextMessage) CopyFrom(from ifc.MessageMeta) {
 
 		fromExpandedMsg, ok := from.(*UIExpandedTextMessage)
 		if ok {
-			msg.MsgUIStringText = fromExpandedMsg.MsgUIStringText
+			msg.MsgTStringText = fromExpandedMsg.MsgTStringText
 		} else {
-			msg.MsgUIStringText = NewColorUIString(fromMsg.Text(), from.TextColor())
+			msg.MsgTStringText = tstring.NewColorTString(fromMsg.Text(), from.TextColor())
 		}
 
 		msg.RecalculateBuffer()
@@ -97,7 +98,7 @@ type UITextMessage struct {
 	MsgState        ifc.MessageState
 	MsgIsHighlight  bool
 	MsgIsService    bool
-	buffer          []UIString
+	buffer          []tstring.TString
 	prevBufferWidth int
 }
 
@@ -235,7 +236,7 @@ func (msg *UITextMessage) RecalculateBuffer() {
 //
 // N.B. This will NOT automatically calculate the buffer if it hasn't been
 //      calculated already, as that requires the target width.
-func (msg *UITextMessage) Buffer() []UIString {
+func (msg *UITextMessage) Buffer() []tstring.TString {
 	return msg.buffer
 }
 
@@ -307,8 +308,8 @@ func (msg *UITextMessage) SetIsService(isService bool) {
 	msg.MsgIsService = isService
 }
 
-func (msg *UITextMessage) GetUIStringText() UIString {
-	return NewColorUIString(msg.Text(), msg.TextColor())
+func (msg *UITextMessage) GetTStringText() tstring.TString {
+	return tstring.NewColorTString(msg.Text(), msg.TextColor())
 }
 
 // Regular expressions used to split lines when calculating the buffer.
@@ -327,10 +328,10 @@ func (msg *UITextMessage) CalculateBuffer(width int) {
 		return
 	}
 
-	msg.buffer = []UIString{}
-	text := msg.GetUIStringText()
+	msg.buffer = []tstring.TString{}
+	text := msg.GetTStringText()
 	if msg.MsgType == "m.emote" {
-		text = NewColorUIString(fmt.Sprintf("* %s %s", msg.MsgSender, text.String()), msg.TextColor())
+		text = tstring.NewColorTString(fmt.Sprintf("* %s %s", msg.MsgSender, text.String()), msg.TextColor())
 		text.Colorize(2, len(msg.MsgSender), msg.SenderColor())
 	}
 
@@ -338,7 +339,7 @@ func (msg *UITextMessage) CalculateBuffer(width int) {
 	newlines := 0
 	for _, str := range forcedLinebreaks {
 		if len(str) == 0 && newlines < 1 {
-			msg.buffer = append(msg.buffer, UIString{})
+			msg.buffer = append(msg.buffer, tstring.TString{})
 			newlines++
 		} else {
 			newlines = 0

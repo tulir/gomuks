@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"net/http"
 	"net/url"
 	"os"
 	"path"
@@ -412,42 +413,44 @@ func (c *Container) GetRoom(roomID string) *rooms.Room {
 
 var mxcRegex = regexp.MustCompile("mxc://(.+)/(.+)")
 
-func (c *Container) Download(mxcURL string) ([]byte, error) {
+func (c *Container) Download(mxcURL string) (data []byte, fullID string, err error) {
 	parts := mxcRegex.FindStringSubmatch(mxcURL)
 	if parts == nil || len(parts) != 3 {
-		debug.Print(parts)
-		return nil, fmt.Errorf("invalid matrix content URL")
+		err = fmt.Errorf("invalid matrix content URL")
+		return
 	}
 	hs := parts[1]
 	id := parts[2]
+	fullID = fmt.Sprintf("%s/%s", hs, id)
 
 	cacheFile := c.getCachePath(hs, id)
-	if _, err := os.Stat(cacheFile); err != nil {
-		data, err := ioutil.ReadFile(cacheFile)
+	if _, err = os.Stat(cacheFile); err != nil {
+		data, err = ioutil.ReadFile(cacheFile)
 		if err == nil {
-			return data, nil
+			return
 		}
 	}
 
 	dlURL, _ := url.Parse(c.client.HomeserverURL.String())
 	dlURL.Path = path.Join(dlURL.Path, "/_matrix/media/v1/download", hs, id)
 
-	resp, err := c.client.Client.Get(dlURL.String())
+	var resp *http.Response
+	resp, err = c.client.Client.Get(dlURL.String())
 	if err != nil {
-		return nil, err
+		return
 	}
 	defer resp.Body.Close()
 
 	var buf bytes.Buffer
 	_, err = io.Copy(&buf, resp.Body)
 	if err != nil {
-		return nil, err
+		return
 	}
 
-	data := buf.Bytes()
+	data = buf.Bytes()
 
 	err = ioutil.WriteFile(cacheFile, data, 0600)
-	return data, err
+	return
 }
 func (c *Container) getCachePath(homeserver, fileID string) string {
 	dir := filepath.Join(c.config.MediaDir, homeserver)

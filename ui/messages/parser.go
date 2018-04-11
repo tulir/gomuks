@@ -20,12 +20,13 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/gdamore/tcell"
 	"maunium.net/go/gomatrix"
 	"maunium.net/go/gomuks/debug"
 	"maunium.net/go/gomuks/interface"
 	"maunium.net/go/gomuks/matrix/rooms"
+	"maunium.net/go/gomuks/ui/messages/tstring"
 	"maunium.net/go/gomuks/ui/widget"
+	"maunium.net/go/tcell"
 )
 
 func ParseEvent(mx ifc.MatrixContainer, room *rooms.Room, evt *gomatrix.Event) UIMessage {
@@ -59,16 +60,16 @@ func ParseMessage(mx ifc.MatrixContainer, evt *gomatrix.Event) UIMessage {
 		return NewTextMessage(evt.ID, evt.Sender, msgtype, text, ts)
 	case "m.image":
 		url, _ := evt.Content["url"].(string)
-		data, err := mx.Download(url)
+		data, path, err := mx.Download(url)
 		if err != nil {
 			debug.Printf("Failed to download %s: %v", url, err)
 		}
-		return NewImageMessage(evt.ID, evt.Sender, msgtype, data, ts)
+		return NewImageMessage(evt.ID, evt.Sender, msgtype, path, data, ts)
 	}
 	return nil
 }
 
-func getMembershipEventContent(evt *gomatrix.Event) (sender string, text UIString) {
+func getMembershipEventContent(evt *gomatrix.Event) (sender string, text tstring.TString) {
 	membership, _ := evt.Content["membership"].(string)
 	displayname, _ := evt.Content["displayname"].(string)
 	if len(displayname) == 0 {
@@ -85,28 +86,28 @@ func getMembershipEventContent(evt *gomatrix.Event) (sender string, text UIStrin
 		switch membership {
 		case "invite":
 			sender = "---"
-			text = NewColorUIString(fmt.Sprintf("%s invited %s.", evt.Sender, displayname), tcell.ColorYellow)
+			text = tstring.NewColorTString(fmt.Sprintf("%s invited %s.", evt.Sender, displayname), tcell.ColorYellow)
 			text.Colorize(0, len(evt.Sender), widget.GetHashColor(evt.Sender))
 			text.Colorize(len(evt.Sender)+len(" invited "), len(displayname), widget.GetHashColor(displayname))
 		case "join":
 			sender = "-->"
-			text = NewColorUIString(fmt.Sprintf("%s joined the room.", displayname), tcell.ColorGreen)
+			text = tstring.NewColorTString(fmt.Sprintf("%s joined the room.", displayname), tcell.ColorGreen)
 			text.Colorize(0, len(displayname), widget.GetHashColor(displayname))
 		case "leave":
 			sender = "<--"
 			if evt.Sender != *evt.StateKey {
 				reason, _ := evt.Content["reason"].(string)
-				text = NewColorUIString(fmt.Sprintf("%s kicked %s: %s", evt.Sender, displayname, reason), tcell.ColorRed)
+				text = tstring.NewColorTString(fmt.Sprintf("%s kicked %s: %s", evt.Sender, displayname, reason), tcell.ColorRed)
 				text.Colorize(0, len(evt.Sender), widget.GetHashColor(evt.Sender))
 				text.Colorize(len(evt.Sender)+len(" kicked "), len(displayname), widget.GetHashColor(displayname))
 			} else {
-				text = NewColorUIString(fmt.Sprintf("%s left the room.", displayname), tcell.ColorRed)
+				text = tstring.NewColorTString(fmt.Sprintf("%s left the room.", displayname), tcell.ColorRed)
 				text.Colorize(0, len(displayname), widget.GetHashColor(displayname))
 			}
 		}
 	} else if displayname != prevDisplayname {
 		sender = "---"
-		text = NewColorUIString(fmt.Sprintf("%s changed their display name to %s.", prevDisplayname, displayname), tcell.ColorYellow)
+		text = tstring.NewColorTString(fmt.Sprintf("%s changed their display name to %s.", prevDisplayname, displayname), tcell.ColorYellow)
 		text.Colorize(0, len(prevDisplayname), widget.GetHashColor(prevDisplayname))
 		text.Colorize(len(prevDisplayname)+len(" changed their display name to "), len(displayname), widget.GetHashColor(displayname))
 	}

@@ -23,7 +23,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/gdamore/tcell"
+	"maunium.net/go/tcell"
 	"maunium.net/go/gomuks/interface"
 	"maunium.net/go/gomuks/matrix/rooms"
 	"maunium.net/go/gomuks/ui/messages"

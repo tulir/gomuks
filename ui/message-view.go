@@ -22,7 +22,8 @@ import (
 	"math"
 	"os"
 
-	"github.com/gdamore/tcell"
+	"maunium.net/go/gomuks/ui/messages/tstring"
+	"maunium.net/go/tcell"
 	"maunium.net/go/gomuks/debug"
 	"maunium.net/go/gomuks/interface"
 	"maunium.net/go/gomuks/ui/messages"
@@ -48,7 +49,7 @@ type MessageView struct {
 	messageIDs map[string]messages.UIMessage
 	messages   []messages.UIMessage
 
-	textBuffer []messages.UIString
+	textBuffer []tstring.TString
 	metaBuffer []ifc.MessageMeta
 }
 
@@ -61,7 +62,7 @@ func NewMessageView() *MessageView {
 
 		messages:   make([]messages.UIMessage, 0),
 		messageIDs: make(map[string]messages.UIMessage),
-		textBuffer: make([]messages.UIString, 0),
+		textBuffer: make([]tstring.TString, 0),
 		metaBuffer: make([]ifc.MessageMeta, 0),
 
 		widestSender: 5,
@@ -183,7 +184,7 @@ func (view *MessageView) appendBuffer(message messages.UIMessage) {
 	if len(view.metaBuffer) > 0 {
 		prevMeta := view.metaBuffer[len(view.metaBuffer)-1]
 		if prevMeta != nil && prevMeta.FormatDate() != message.FormatDate() {
-			view.textBuffer = append(view.textBuffer, messages.NewColorUIString(
+			view.textBuffer = append(view.textBuffer, tstring.NewColorTString(
 				fmt.Sprintf("Date changed to %s", message.FormatDate()),
 				tcell.ColorGreen))
 			view.metaBuffer = append(view.metaBuffer, &messages.BasicMeta{
@@ -218,7 +219,6 @@ func (view *MessageView) replaceBuffer(message messages.UIMessage) {
 
 	view.textBuffer = append(append(view.textBuffer[0:start], message.Buffer()...), view.textBuffer[end:]...)
 	if len(message.Buffer()) != end-start+1 {
-		debug.Print(end, "-", start, "!=", len(message.Buffer()))
 		metaBuffer := view.metaBuffer[0:start]
 		for range message.Buffer() {
 			metaBuffer = append(metaBuffer, message)
@@ -233,7 +233,7 @@ func (view *MessageView) recalculateBuffers() {
 	width -= view.TimestampWidth + TimestampSenderGap + view.widestSender + SenderMessageGap
 	recalculateMessageBuffers := width != view.prevWidth
 	if height != view.prevHeight || recalculateMessageBuffers || len(view.messages) != view.prevMsgCount {
-		view.textBuffer = []messages.UIString{}
+		view.textBuffer = []tstring.TString{}
 		view.metaBuffer = []ifc.MessageMeta{}
 		view.prevMsgCount = 0
 		for i, message := range view.messages {

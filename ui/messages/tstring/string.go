@@ -14,18 +14,18 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-package messages
+package tstring
 
 import (
 	"strings"
 
-	"github.com/gdamore/tcell"
+	"maunium.net/go/tcell"
 	"github.com/mattn/go-runewidth"
 )
 
-type UIString []Cell
+type TString []Cell
 
-func NewUIString(str string) UIString {
+func NewTString(str string) TString {
 	newStr := make([]Cell, len(str))
 	for i, char := range str {
 		newStr[i] = NewCell(char)
@@ -33,7 +33,7 @@ func NewUIString(str string) UIString {
 	return newStr
 }
 
-func NewColorUIString(str string, color tcell.Color) UIString {
+func NewColorTString(str string, color tcell.Color) TString {
 	newStr := make([]Cell, len(str))
 	for i, char := range str {
 		newStr[i] = NewColorCell(char, color)
@@ -41,7 +41,7 @@ func NewColorUIString(str string, color tcell.Color) UIString {
 	return newStr
 }
 
-func NewStyleUIString(str string, style tcell.Style) UIString {
+func NewStyleTString(str string, style tcell.Style) TString {
 	newStr := make([]Cell, len(str))
 	for i, char := range str {
 		newStr[i] = NewStyleCell(char, style)
@@ -49,27 +49,27 @@ func NewStyleUIString(str string, style tcell.Style) UIString {
 	return newStr
 }
 
-func (str UIString) Colorize(from, length int, color tcell.Color) {
+func (str TString) Colorize(from, length int, color tcell.Color) {
 	for i := from; i < from+length; i++ {
 		str[i].Style = str[i].Style.Foreground(color)
 	}
 }
 
-func (str UIString) Draw(screen tcell.Screen, x, y int) {
+func (str TString) Draw(screen tcell.Screen, x, y int) {
 	offsetX := 0
 	for _, cell := range str {
 		offsetX += cell.Draw(screen, x+offsetX, y)
 	}
 }
 
-func (str UIString) RuneWidth() (width int) {
+func (str TString) RuneWidth() (width int) {
 	for _, cell := range str {
 		width += runewidth.RuneWidth(cell.Char)
 	}
 	return width
 }
 
-func (str UIString) String() string {
+func (str TString) String() string {
 	var buf strings.Builder
 	for _, cell := range str {
 		buf.WriteRune(cell.Char)
@@ -78,7 +78,7 @@ func (str UIString) String() string {
 }
 
 // Truncate return string truncated with w cells
-func (str UIString) Truncate(w int) UIString {
+func (str TString) Truncate(w int) TString {
 	if str.RuneWidth() <= w {
 		return str[:]
 	}
@@ -94,7 +94,7 @@ func (str UIString) Truncate(w int) UIString {
 	return str[0:i]
 }
 
-func (str UIString) IndexFrom(r rune, from int) int {
+func (str TString) IndexFrom(r rune, from int) int {
 	for i := from; i < len(str); i++ {
 		if str[i].Char == r {
 			return i
@@ -103,11 +103,11 @@ func (str UIString) IndexFrom(r rune, from int) int {
 	return -1
 }
 
-func (str UIString) Index(r rune) int {
+func (str TString) Index(r rune) int {
 	return str.IndexFrom(r, 0)
 }
 
-func (str UIString) Count(r rune) (counter int) {
+func (str TString) Count(r rune) (counter int) {
 	index := 0
 	for {
 		index = str.IndexFrom(r, index)
@@ -120,8 +120,8 @@ func (str UIString) Count(r rune) (counter int) {
 	return
 }
 
-func (str UIString) Split(sep rune) []UIString {
-	a := make([]UIString, str.Count(sep)+1)
+func (str TString) Split(sep rune) []TString {
+	a := make([]TString, str.Count(sep)+1)
 	i := 0
 	orig := str
 	for {

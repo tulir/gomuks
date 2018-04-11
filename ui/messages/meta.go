@@ -19,7 +19,7 @@ package messages
 import (
 	"time"
 
-	"github.com/gdamore/tcell"
+	"maunium.net/go/tcell"
 	"maunium.net/go/gomuks/interface"
 )
 

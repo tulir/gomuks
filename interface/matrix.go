@@ -34,5 +34,5 @@ type MatrixContainer interface {
 	LeaveRoom(roomID string) error
 	GetHistory(roomID, prevBatch string, limit int) ([]gomatrix.Event, string, error)
 	GetRoom(roomID string) *rooms.Room
-	Download(mxcURL string) ([]byte, error)
+	Download(mxcURL string) ([]byte, string, error)
 }

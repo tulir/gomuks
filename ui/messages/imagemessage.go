@@ -23,11 +23,12 @@ import (
 
 	"image/color"
 
-	"github.com/gdamore/tcell"
 	"maunium.net/go/gomuks/debug"
 	"maunium.net/go/gomuks/interface"
+	"maunium.net/go/gomuks/ui/messages/tstring"
 	"maunium.net/go/gomuks/ui/widget"
-	"maunium.net/go/pixterm/ansimage"
+	"maunium.net/go/gomuks/lib/ansimage"
+	"maunium.net/go/tcell"
 )
 
 func init() {
@@ -36,11 +37,12 @@ func init() {
 
 type UIImageMessage struct {
 	UITextMessage
+	Path string
 	data []byte
 }
 
 // NewImageMessage creates a new UIImageMessage object with the provided values and the default state.
-func NewImageMessage(id, sender, msgtype string, data []byte, timestamp time.Time) UIMessage {
+func NewImageMessage(id, sender, msgtype string, path string, data []byte, timestamp time.Time) UIMessage {
 	return &UIImageMessage{
 		UITextMessage{
 			MsgSender:       sender,
@@ -53,6 +55,7 @@ func NewImageMessage(id, sender, msgtype string, data []byte, timestamp time.Tim
 			MsgIsHighlight:  false,
 			MsgIsService:    false,
 		},
+		path,
 		data,
 	}
 }
@@ -90,24 +93,13 @@ func (msg *UIImageMessage) CalculateBuffer(width int) {
 		return
 	}
 
-	image, err := ansimage.NewScaledFromReader(bytes.NewReader(msg.data), -1, width, color.Black, ansimage.ScaleModeResize, ansimage.NoDithering)
+	image, err := ansimage.NewScaledFromReader(bytes.NewReader(msg.data), 0, width, color.Black)
 	if err != nil {
-		msg.buffer = []UIString{NewColorUIString("Failed to display image", tcell.ColorRed)}
+		msg.buffer = []tstring.TString{tstring.NewColorTString("Failed to display image", tcell.ColorRed)}
 		debug.Print("Failed to display image:", err)
 		return
 	}
 
-	msg.buffer = make([]UIString, image.Height())
-	pixels := image.Pixmap()
-	for row, pixelRow := range pixels {
-		msg.buffer[row] = make(UIString, len(pixelRow))
-		for column, pixel := range pixelRow {
-			pixelColor := tcell.NewRGBColor(int32(pixel.R), int32(pixel.G), int32(pixel.B))
-			msg.buffer[row][column] = Cell{
-				Char: ' ',
-				Style: tcell.StyleDefault.Background(pixelColor),
-			}
-		}
-	}
+	msg.buffer = image.Render()
 	msg.prevBufferWidth = width
 }
