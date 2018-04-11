@@ -42,6 +42,7 @@ type UITextMessage struct {
 	MsgState        ifc.MessageState
 	MsgIsHighlight  bool
 	MsgIsService    bool
+	text            tstring.TString
 	buffer          []tstring.TString
 	prevBufferWidth int
 }
@@ -220,6 +221,7 @@ func (msg *UITextMessage) Type() string {
 
 func (msg *UITextMessage) SetType(msgtype string) {
 	msg.MsgType = msgtype
+	msg.text = nil
 }
 
 func (msg *UITextMessage) Text() string {
@@ -228,6 +230,7 @@ func (msg *UITextMessage) Text() string {
 
 func (msg *UITextMessage) SetText(text string) {
 	msg.MsgText = text
+	msg.text = nil
 }
 
 func (msg *UITextMessage) State() ifc.MessageState {
@@ -236,6 +239,7 @@ func (msg *UITextMessage) State() ifc.MessageState {
 
 func (msg *UITextMessage) SetState(state ifc.MessageState) {
 	msg.MsgState = state
+	msg.text = nil
 }
 
 func (msg *UITextMessage) IsHighlight() bool {
@@ -244,6 +248,7 @@ func (msg *UITextMessage) IsHighlight() bool {
 
 func (msg *UITextMessage) SetIsHighlight(isHighlight bool) {
 	msg.MsgIsHighlight = isHighlight
+	msg.text = nil
 }
 
 func (msg *UITextMessage) IsService() bool {
@@ -252,10 +257,14 @@ func (msg *UITextMessage) IsService() bool {
 
 func (msg *UITextMessage) SetIsService(isService bool) {
 	msg.MsgIsService = isService
+	msg.text = nil
 }
 
 func (msg *UITextMessage) GetTStringText() tstring.TString {
-	return tstring.NewColorTString(msg.Text(), msg.TextColor())
+	if msg.text == nil || len(msg.text) == 0 {
+		msg.text = tstring.NewColorTString(msg.Text(), msg.TextColor())
+	}
+	return msg.text
 }
 
 // Regular expressions used to split lines when calculating the buffer.
@@ -278,7 +287,7 @@ func (msg *UITextMessage) CalculateBuffer(width int) {
 	text := msg.GetTStringText()
 	if msg.MsgType == "m.emote" {
 		text = tstring.NewColorTString(fmt.Sprintf("* %s %s", msg.MsgSender, text.String()), msg.TextColor())
-		text.Colorize(2, len(msg.MsgSender), msg.SenderColor())
+		text.Colorize(0, len(msg.MsgSender), msg.SenderColor())
 	}
 
 	forcedLinebreaks := text.Split('\n')
