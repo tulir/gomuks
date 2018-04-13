@@ -119,8 +119,7 @@ type Message interface {
 	SetType(msgtype string)
 	Type() string
 
-	SetText(text string)
-	Text() string
+	NotificationContent() string
 
 	SetState(state MessageState)
 	State() MessageState

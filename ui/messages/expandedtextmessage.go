@@ -22,65 +22,50 @@ import (
 
 	"maunium.net/go/gomuks/interface"
 	"maunium.net/go/gomuks/ui/messages/tstring"
-	"maunium.net/go/gomuks/ui/widget"
 )
 
 func init() {
-	gob.Register(&UITextMessage{})
-	gob.Register(&UIExpandedTextMessage{})
+	gob.Register(&ExpandedTextMessage{})
 }
 
-type UIExpandedTextMessage struct {
-	UITextMessage
-	MsgTStringText tstring.TString
+type ExpandedTextMessage struct {
+	BaseTextMessage
+	MsgText tstring.TString
 }
 
-// NewExpandedTextMessage creates a new UIExpandedTextMessage object with the provided values and the default state.
+// NewExpandedTextMessage creates a new ExpandedTextMessage object with the provided values and the default state.
 func NewExpandedTextMessage(id, sender, msgtype string, text tstring.TString, timestamp time.Time) UIMessage {
-	return &UIExpandedTextMessage{
-		UITextMessage{
-			MsgSender:       sender,
-			MsgTimestamp:    timestamp,
-			MsgSenderColor:  widget.GetHashColor(sender),
-			MsgType:         msgtype,
-			MsgText:         text.String(),
-			MsgID:           id,
-			prevBufferWidth: 0,
-			MsgState:        ifc.MessageStateDefault,
-			MsgIsHighlight:  false,
-			MsgIsService:    false,
-		},
-		text,
+	return &ExpandedTextMessage{
+		BaseTextMessage: newBaseTextMessage(id, sender, msgtype, timestamp),
+		MsgText: text,
 	}
 }
 
-func (msg *UIExpandedTextMessage) GetTStringText() tstring.TString {
-	return msg.MsgTStringText
+func (msg *ExpandedTextMessage) GenerateText() tstring.TString {
+	return msg.MsgText
 }
 
 // CopyFrom replaces the content of this message object with the content of the given object.
-func (msg *UIExpandedTextMessage) CopyFrom(from ifc.MessageMeta) {
-	msg.MsgSender = from.Sender()
-	msg.MsgSenderColor = from.SenderColor()
+func (msg *ExpandedTextMessage) CopyFrom(from ifc.MessageMeta) {
+	msg.BaseTextMessage.CopyFrom(from)
 
-	fromMsg, ok := from.(UIMessage)
+	fromExpandedMsg, ok := from.(*ExpandedTextMessage)
 	if ok {
-		msg.MsgSender = fromMsg.RealSender()
-		msg.MsgID = fromMsg.ID()
-		msg.MsgType = fromMsg.Type()
-		msg.MsgTimestamp = fromMsg.Timestamp()
-		msg.MsgState = fromMsg.State()
-		msg.MsgIsService = fromMsg.IsService()
-		msg.MsgIsHighlight = fromMsg.IsHighlight()
-		msg.buffer = nil
-
-		fromExpandedMsg, ok := from.(*UIExpandedTextMessage)
-		if ok {
-			msg.MsgTStringText = fromExpandedMsg.MsgTStringText
-		} else {
-			msg.MsgTStringText = tstring.NewColorTString(fromMsg.Text(), from.TextColor())
-		}
-
-		msg.RecalculateBuffer()
+		msg.MsgText = fromExpandedMsg.MsgText
 	}
+
+	msg.RecalculateBuffer()
+}
+
+func (msg *ExpandedTextMessage) NotificationContent() string {
+	return msg.MsgText.String()
+}
+
+func (msg *ExpandedTextMessage) CalculateBuffer(width int) {
+	msg.BaseTextMessage.calculateBufferWithText(msg.MsgText, width)
+}
+
+// RecalculateBuffer calculates the buffer again with the previously provided width.
+func (msg *ExpandedTextMessage) RecalculateBuffer() {
+	msg.CalculateBuffer(msg.prevBufferWidth)
 }

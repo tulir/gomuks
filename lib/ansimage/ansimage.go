@@ -124,8 +124,8 @@ func (ai *ANSImage) Render() []tstring.TString {
 	rows := make([]tstring.TString, ai.h/2)
 	for y := 0; y < ai.h; y += ai.maxprocs {
 		ch := make(chan renderData, ai.maxprocs)
-		for n, r := 0, y+1; (n <= ai.maxprocs) && (2*r+1 < ai.h); n, r = n+1, y+n+1 {
-			go func(r, y int) {
+		for n, row := 0, y; (n <= ai.maxprocs) && (2*row+1 < ai.h); n, row = n+1, y+n {
+			go func(row, y int) {
 				str := make(tstring.TString, ai.w)
 				for x := 0; x < ai.w; x++ {
 					topPixel := ai.pixmap[y][x]
@@ -139,10 +139,10 @@ func (ai *ANSImage) Render() []tstring.TString {
 						Style: tcell.StyleDefault.Background(topColor).Foreground(bottomColor),
 					}
 				}
-				ch <- renderData{row: r, render: str}
-			}(r, 2*r)
+				ch <- renderData{row: row, render: str}
+			}(row, 2*row)
 		}
-		for n, r := 0, y+1; (n <= ai.maxprocs) && (2*r+1 < ai.h); n, r = n+1, y+n+1 {
+		for n, row := 0, y; (n <= ai.maxprocs) && (2*row+1 < ai.h); n, row = n+1, y+n {
 			data := <-ch
 			rows[data.row] = data.render
 		}

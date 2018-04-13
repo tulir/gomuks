@@ -55,7 +55,7 @@ func ParseMessage(gmx ifc.Gomuks, evt *gomatrix.Event) UIMessage {
 	msgtype, _ := evt.Content["msgtype"].(string)
 	ts := unixToTime(evt.Timestamp)
 	switch msgtype {
-	case "m.text", "m.notice":
+	case "m.text", "m.notice", "m.emote":
 		text, _ := evt.Content["body"].(string)
 		return NewTextMessage(evt.ID, evt.Sender, msgtype, text, ts)
 	case "m.image":
@@ -86,7 +86,7 @@ func getMembershipEventContent(evt *gomatrix.Event) (sender string, text tstring
 		switch membership {
 		case "invite":
 			sender = "---"
-			text = tstring.NewColorTString(fmt.Sprintf("%s invited %s.", evt.Sender, displayname), tcell.ColorYellow)
+			text = tstring.NewColorTString(fmt.Sprintf("%s invited %s.", evt.Sender, displayname), tcell.ColorGreen)
 			text.Colorize(0, len(evt.Sender), widget.GetHashColor(evt.Sender))
 			text.Colorize(len(evt.Sender)+len(" invited "), len(displayname), widget.GetHashColor(displayname))
 		case "join":

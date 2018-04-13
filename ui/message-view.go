@@ -265,11 +265,11 @@ func (view *MessageView) HandleClick(x, y int, button tcell.ButtonMask) {
 	}
 
 	message := view.metaBuffer[line]
-	imageMessage, ok := message.(*messages.UIImageMessage)
+	imageMessage, ok := message.(*messages.ImageMessage)
 	if !ok {
 		uiMessage, ok := message.(messages.UIMessage)
 		if ok {
-			debug.Print("Message clicked:", uiMessage.Text())
+			debug.Print("Message clicked:", uiMessage.NotificationContent())
 		}
 		return
 	}

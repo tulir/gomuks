@@ -134,12 +134,12 @@ func (view *MainView) InputSubmit(roomView *RoomView, text string) {
 
 func (view *MainView) SendMessage(roomView *RoomView, text string) {
 	tempMessage := roomView.NewTempMessage("m.text", text)
-	go view.sendTempMessage(roomView, tempMessage)
+	go view.sendTempMessage(roomView, tempMessage, text)
 }
 
-func (view *MainView) sendTempMessage(roomView *RoomView, tempMessage ifc.Message) {
+func (view *MainView) sendTempMessage(roomView *RoomView, tempMessage ifc.Message, text string) {
 	defer view.gmx.Recover()
-	eventID, err := view.matrix.SendMessage(roomView.Room.ID, tempMessage.Type(), tempMessage.Text())
+	eventID, err := view.matrix.SendMessage(roomView.Room.ID, tempMessage.Type(), text)
 	if err != nil {
 		tempMessage.SetState(ifc.MessageStateFailed)
 		roomView.SetStatus(fmt.Sprintf("Failed to send message: %s", err))
@@ -153,8 +153,9 @@ func (view *MainView) HandleCommand(roomView *RoomView, command string, args []s
 	debug.Print("Handling command", command, args)
 	switch command {
 	case "/me":
-		tempMessage := roomView.NewTempMessage("m.emote", strings.Join(args, " "))
-		go view.sendTempMessage(roomView, tempMessage)
+		text := strings.Join(args, " ")
+		tempMessage := roomView.NewTempMessage("m.emote", text)
+		go view.sendTempMessage(roomView, tempMessage, text)
 		view.parent.Render()
 	case "/quit":
 		view.gmx.Stop()
@@ -411,7 +412,7 @@ func (view *MainView) NotifyMessage(room *rooms.Room, message ifc.Message, shoul
 	if shouldNotify && !isFocused {
 		// Push rules say notify and the terminal is not focused, send desktop notification.
 		shouldPlaySound := should.PlaySound && should.SoundName == "default"
-		sendNotification(room, message.Sender(), message.Text(), should.Highlight, shouldPlaySound)
+		sendNotification(room, message.Sender(), message.NotificationContent(), should.Highlight, shouldPlaySound)
 	}
 
 	message.SetIsHighlight(should.Highlight)
