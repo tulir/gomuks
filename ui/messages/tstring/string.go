@@ -19,8 +19,8 @@ package tstring
 import (
 	"strings"
 
-	"maunium.net/go/tcell"
 	"github.com/mattn/go-runewidth"
+	"maunium.net/go/tcell"
 )
 
 type TString []Cell
@@ -45,6 +45,37 @@ func NewStyleTString(str string, style tcell.Style) TString {
 	newStr := make([]Cell, len(str))
 	for i, char := range str {
 		newStr[i] = NewStyleCell(char, style)
+	}
+	return newStr
+}
+
+func (str TString) AppendTString(data TString) TString {
+	return append(str, data...)
+}
+
+func (str TString) Append(data string) TString {
+	newStr := make(TString, len(str)+len(data))
+	copy(newStr, str)
+	for i, char := range data {
+		newStr[i+len(str)] = NewCell(char)
+	}
+	return newStr
+}
+
+func (str TString) AppendColor(data string, color tcell.Color) TString {
+	newStr := make(TString, len(str)+len(data))
+	copy(newStr, str)
+	for i, char := range data {
+		newStr[i+len(str)] = NewColorCell(char, color)
+	}
+	return newStr
+}
+
+func (str TString) AppendStyle(data string, style tcell.Style) TString {
+	newStr := make(TString, len(str)+len(data))
+	copy(newStr, str)
+	for i, char := range data {
+		newStr[i+len(str)] = NewStyleCell(char, style)
 	}
 	return newStr
 }

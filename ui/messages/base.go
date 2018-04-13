@@ -141,9 +141,7 @@ func (msg *BaseMessage) TextColor() tcell.Color {
 	switch {
 	case stateColor != tcell.ColorDefault:
 		return stateColor
-	case msg.MsgIsService:
-		fallthrough
-	case msg.MsgType == "m.notice":
+	case msg.MsgIsService, msg.MsgType == "m.notice":
 		return tcell.ColorGray
 	case msg.MsgIsHighlight:
 		return tcell.ColorYellow

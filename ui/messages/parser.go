@@ -56,8 +56,14 @@ func ParseMessage(gmx ifc.Gomuks, evt *gomatrix.Event) UIMessage {
 	ts := unixToTime(evt.Timestamp)
 	switch msgtype {
 	case "m.text", "m.notice", "m.emote":
-		text, _ := evt.Content["body"].(string)
-		return NewTextMessage(evt.ID, evt.Sender, msgtype, text, ts)
+		format, hasFormat := evt.Content["format"].(string)
+		if hasFormat && format == "org.matrix.custom.html" {
+			text := ParseHTMLMessage(evt)
+			return NewExpandedTextMessage(evt.ID, evt.Sender, msgtype, text, ts)
+		} else {
+			text, _ := evt.Content["body"].(string)
+			return NewTextMessage(evt.ID, evt.Sender, msgtype, text, ts)
+		}
 	case "m.image":
 		url, _ := evt.Content["url"].(string)
 		data, hs, id, err := gmx.Matrix().Download(url)

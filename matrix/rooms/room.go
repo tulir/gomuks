@@ -94,11 +94,7 @@ func (room *Room) UpdateState(event *gomatrix.Event) {
 		room.memberCache = nil
 		room.firstMemberCache = ""
 		fallthrough
-	case "m.room.name":
-		fallthrough
-	case "m.room.canonical_alias":
-		fallthrough
-	case "m.room.alias":
+	case "m.room.name", "m.room.canonical_alias", "m.room.alias":
 		room.nameCache = ""
 	case "m.room.topic":
 		room.topicCache = ""

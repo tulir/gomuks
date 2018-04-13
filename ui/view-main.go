@@ -164,9 +164,7 @@ func (view *MainView) HandleCommand(roomView *RoomView, command string, args []s
 		view.gmx.Stop()
 	case "/panic":
 		panic("This is a test panic.")
-	case "/part":
-		fallthrough
-	case "/leave":
+	case "/part", "/leave":
 		debug.Print("Leave room result:", view.matrix.LeaveRoom(roomView.Room.ID))
 	case "/join":
 		if len(args) == 0 {
