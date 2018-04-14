@@ -31,7 +31,7 @@ import (
 	"maunium.net/go/gomuks/lib/notification"
 	"maunium.net/go/gomuks/matrix/pushrules"
 	"maunium.net/go/gomuks/matrix/rooms"
-	"maunium.net/go/gomuks/ui/messages"
+	"maunium.net/go/gomuks/ui/messages/parser"
 	"maunium.net/go/gomuks/ui/widget"
 	"maunium.net/go/tcell"
 	"maunium.net/go/tview"
@@ -465,5 +465,5 @@ func (view *MainView) LoadHistory(room string, initial bool) {
 }
 
 func (view *MainView) ParseEvent(roomView ifc.RoomView, evt *gomatrix.Event) ifc.Message {
-	return messages.ParseEvent(view.gmx, roomView.MxRoom(), evt)
+	return parser.ParseEvent(view.gmx, roomView.MxRoom(), evt)
 }

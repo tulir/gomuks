@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-package messages
+package parser
 
 import (
 	"fmt"
@@ -24,12 +24,13 @@ import (
 	"maunium.net/go/gomuks/debug"
 	"maunium.net/go/gomuks/interface"
 	"maunium.net/go/gomuks/matrix/rooms"
+	"maunium.net/go/gomuks/ui/messages"
 	"maunium.net/go/gomuks/ui/messages/tstring"
 	"maunium.net/go/gomuks/ui/widget"
 	"maunium.net/go/tcell"
 )
 
-func ParseEvent(gmx ifc.Gomuks, room *rooms.Room, evt *gomatrix.Event) UIMessage {
+func ParseEvent(gmx ifc.Gomuks, room *rooms.Room, evt *gomatrix.Event) messages.UIMessage {
 	member := room.GetMember(evt.Sender)
 	if member != nil {
 		evt.Sender = member.DisplayName
@@ -51,7 +52,7 @@ func unixToTime(unix int64) time.Time {
 	return timestamp
 }
 
-func ParseMessage(gmx ifc.Gomuks, room *rooms.Room, evt *gomatrix.Event) UIMessage {
+func ParseMessage(gmx ifc.Gomuks, room *rooms.Room, evt *gomatrix.Event) messages.UIMessage {
 	msgtype, _ := evt.Content["msgtype"].(string)
 	ts := unixToTime(evt.Timestamp)
 	switch msgtype {
@@ -59,10 +60,10 @@ func ParseMessage(gmx ifc.Gomuks, room *rooms.Room, evt *gomatrix.Event) UIMessa
 		format, hasFormat := evt.Content["format"].(string)
 		if hasFormat && format == "org.matrix.custom.html" {
 			text := ParseHTMLMessage(room, evt)
-			return NewExpandedTextMessage(evt.ID, evt.Sender, msgtype, text, ts)
+			return messages.NewExpandedTextMessage(evt.ID, evt.Sender, msgtype, text, ts)
 		} else {
 			text, _ := evt.Content["body"].(string)
-			return NewTextMessage(evt.ID, evt.Sender, msgtype, text, ts)
+			return messages.NewTextMessage(evt.ID, evt.Sender, msgtype, text, ts)
 		}
 	case "m.image":
 		url, _ := evt.Content["url"].(string)
@@ -70,7 +71,7 @@ func ParseMessage(gmx ifc.Gomuks, room *rooms.Room, evt *gomatrix.Event) UIMessa
 		if err != nil {
 			debug.Printf("Failed to download %s: %v", url, err)
 		}
-		return NewImageMessage(gmx, evt.ID, evt.Sender, msgtype, hs, id, data, ts)
+		return messages.NewImageMessage(gmx, evt.ID, evt.Sender, msgtype, hs, id, data, ts)
 	}
 	return nil
 }
@@ -120,8 +121,8 @@ func getMembershipEventContent(evt *gomatrix.Event) (sender string, text tstring
 	return
 }
 
-func ParseMembershipEvent(evt *gomatrix.Event) UIMessage {
+func ParseMembershipEvent(evt *gomatrix.Event) messages.UIMessage {
 	sender, text := getMembershipEventContent(evt)
 	ts := unixToTime(evt.Timestamp)
-	return NewExpandedTextMessage(evt.ID, sender, "m.room.membership", text, ts)
+	return messages.NewExpandedTextMessage(evt.ID, sender, "m.room.membership", text, ts)
 }
