@@ -72,7 +72,7 @@ func (parser *MatrixHTMLProcessor) HandleText(text string) {
 		}
 	}
 
-	if parser.openTags.Has("pre", "code") {
+	if !parser.openTags.Has("pre", "code") {
 		text = strings.Replace(text, "\n", "", -1)
 	}
 	parser.text = parser.text.AppendStyle(text, style)
