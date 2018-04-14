@@ -17,24 +17,24 @@
 package widget
 
 import (
-	"github.com/gdamore/tcell"
+	"maunium.net/go/tcell"
 	"github.com/mattn/go-runewidth"
 	"maunium.net/go/tview"
 )
 
-func writeLineSimple(screen tcell.Screen, line string, x, y int) {
-	writeLine(screen, tview.AlignLeft, line, x, y, 1<<30, tcell.StyleDefault)
+func WriteLineSimple(screen tcell.Screen, line string, x, y int) {
+	WriteLine(screen, tview.AlignLeft, line, x, y, 1<<30, tcell.StyleDefault)
 }
 
-func writeLineSimpleColor(screen tcell.Screen, line string, x, y int, color tcell.Color) {
-	writeLine(screen, tview.AlignLeft, line, x, y, 1<<30, tcell.StyleDefault.Foreground(color))
+func WriteLineSimpleColor(screen tcell.Screen, line string, x, y int, color tcell.Color) {
+	WriteLine(screen, tview.AlignLeft, line, x, y, 1<<30, tcell.StyleDefault.Foreground(color))
 }
 
-func writeLineColor(screen tcell.Screen, align int, line string, x, y, maxWidth int, color tcell.Color) {
-	writeLine(screen, align, line, x, y, maxWidth, tcell.StyleDefault.Foreground(color))
+func WriteLineColor(screen tcell.Screen, align int, line string, x, y, maxWidth int, color tcell.Color) {
+	WriteLine(screen, align, line, x, y, maxWidth, tcell.StyleDefault.Foreground(color))
 }
 
-func writeLine(screen tcell.Screen, align int, line string, x, y, maxWidth int, style tcell.Style) {
+func WriteLine(screen tcell.Screen, align int, line string, x, y, maxWidth int, style tcell.Style) {
 	offsetX := 0
 	if align == tview.AlignRight {
 		offsetX = maxWidth - runewidth.StringWidth(line)

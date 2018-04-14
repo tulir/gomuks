@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-package widget
+package ui
 
 import (
 	"fmt"
@@ -23,9 +23,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/gdamore/tcell"
+	"maunium.net/go/tcell"
+	"maunium.net/go/gomuks/interface"
 	"maunium.net/go/gomuks/matrix/rooms"
-	"maunium.net/go/gomuks/ui/types"
+	"maunium.net/go/gomuks/ui/messages"
+	"maunium.net/go/gomuks/ui/widget"
 	"maunium.net/go/tview"
 )
 
@@ -36,8 +38,8 @@ type RoomView struct {
 	content  *MessageView
 	status   *tview.TextView
 	userList *tview.TextView
-	ulBorder *Border
-	input    *AdvancedInputField
+	ulBorder *widget.Border
+	input    *widget.AdvancedInputField
 	Room     *rooms.Room
 }
 
@@ -45,13 +47,13 @@ func NewRoomView(room *rooms.Room) *RoomView {
 	view := &RoomView{
 		Box:      tview.NewBox(),
 		topic:    tview.NewTextView(),
-		content:  NewMessageView(),
 		status:   tview.NewTextView(),
 		userList: tview.NewTextView(),
-		ulBorder: NewBorder(),
-		input:    NewAdvancedInputField(),
+		ulBorder: widget.NewBorder(),
+		input:    widget.NewAdvancedInputField(),
 		Room:     room,
 	}
+	view.content = NewMessageView(view)
 
 	view.input.
 		SetFieldBackgroundColor(tcell.ColorDefault).
@@ -79,8 +81,8 @@ func (view *RoomView) SaveHistory(dir string) error {
 	return view.MessageView().SaveHistory(view.logPath(dir))
 }
 
-func (view *RoomView) LoadHistory(dir string) (int, error) {
-	return view.MessageView().LoadHistory(view.logPath(dir))
+func (view *RoomView) LoadHistory(gmx ifc.Gomuks, dir string) (int, error) {
+	return view.MessageView().LoadHistory(gmx, view.logPath(dir))
 }
 
 func (view *RoomView) SetTabCompleteFunc(fn func(room *RoomView, text string, cursorOffset int) string) *RoomView {
@@ -129,7 +131,7 @@ func (view *RoomView) GetInputText() string {
 	return view.input.GetText()
 }
 
-func (view *RoomView) GetInputField() *AdvancedInputField {
+func (view *RoomView) GetInputField() *widget.AdvancedInputField {
 	return view.input
 }
 
@@ -230,15 +232,19 @@ func (view *RoomView) MessageView() *MessageView {
 	return view.content
 }
 
+func (view *RoomView) MxRoom() *rooms.Room {
+	return view.Room
+}
+
 func (view *RoomView) UpdateUserList() {
 	var joined strings.Builder
 	var invited strings.Builder
 	for _, user := range view.Room.GetMembers() {
 		if user.Membership == "join" {
-			joined.WriteString(AddHashColor(user.DisplayName))
+			joined.WriteString(widget.AddHashColor(user.DisplayName))
 			joined.WriteRune('\n')
 		} else if user.Membership == "invite" {
-			invited.WriteString(AddHashColor(user.DisplayName))
+			invited.WriteString(widget.AddHashColor(user.DisplayName))
 			invited.WriteRune('\n')
 		}
 	}
@@ -249,27 +255,37 @@ func (view *RoomView) UpdateUserList() {
 	}
 }
 
-func (view *RoomView) NewMessage(id, sender, msgtype, text string, timestamp time.Time) *types.Message {
+func (view *RoomView) newUIMessage(id, sender, msgtype, text string, timestamp time.Time) messages.UIMessage {
 	member := view.Room.GetMember(sender)
 	if member != nil {
 		sender = member.DisplayName
 	}
-	return view.content.NewMessage(id, sender, msgtype, text, timestamp)
+	return messages.NewTextMessage(id, sender, msgtype, text, timestamp)
 }
 
-func (view *RoomView) NewTempMessage(msgtype, text string) *types.Message {
+func (view *RoomView) NewMessage(id, sender, msgtype, text string, timestamp time.Time) ifc.Message {
+	return view.newUIMessage(id, sender, msgtype, text, timestamp)
+}
+
+func (view *RoomView) NewTempMessage(msgtype, text string) ifc.Message {
 	now := time.Now()
 	id := strconv.FormatInt(now.UnixNano(), 10)
 	sender := ""
 	if ownerMember := view.Room.GetSessionOwner(); ownerMember != nil {
 		sender = ownerMember.DisplayName
 	}
-	message := view.NewMessage(id, sender, msgtype, text, now)
-	message.State = types.MessageStateSending
-	view.AddMessage(message, AppendMessage)
+	message := view.newUIMessage(id, sender, msgtype, text, now)
+	message.SetState(ifc.MessageStateSending)
+	view.AddMessage(message, ifc.AppendMessage)
 	return message
 }
 
-func (view *RoomView) AddMessage(message *types.Message, direction MessageDirection) {
+func (view *RoomView) AddServiceMessage(text string) {
+	message := view.newUIMessage("", "*", "gomuks.service", text, time.Now())
+	message.SetIsService(true)
+	view.AddMessage(message, ifc.AppendMessage)
+}
+
+func (view *RoomView) AddMessage(message ifc.Message, direction ifc.MessageDirection) {
 	view.content.AddMessage(message, direction)
 }

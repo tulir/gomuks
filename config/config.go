@@ -23,7 +23,7 @@ import (
 	"path/filepath"
 
 	"gopkg.in/yaml.v2"
-	"maunium.net/go/gomuks/ui/debug"
+	"maunium.net/go/gomuks/debug"
 )
 
 // Config contains the main config of gomuks.
@@ -33,6 +33,7 @@ type Config struct {
 
 	Dir        string   `yaml:"-"`
 	HistoryDir string   `yaml:"history_dir"`
+	MediaDir   string   `yaml:"media_dir"`
 	Session    *Session `yaml:"-"`
 }
 
@@ -41,6 +42,7 @@ func NewConfig(dir string) *Config {
 	return &Config{
 		Dir:        dir,
 		HistoryDir: filepath.Join(dir, "history"),
+		MediaDir:   filepath.Join(dir, "media"),
 	}
 }
 

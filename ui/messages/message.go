@@ -14,26 +14,25 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-package ifc
+package messages
 
 import (
-	"maunium.net/go/gomatrix"
-	"maunium.net/go/gomuks/matrix/rooms"
+	"maunium.net/go/gomuks/interface"
+	"maunium.net/go/gomuks/ui/messages/tstring"
 )
 
-type MatrixContainer interface {
-	Client() *gomatrix.Client
-	InitClient() error
-	Initialized() bool
-	Login(user, password string) error
-	Start()
-	Stop()
-	SendMessage(roomID, msgtype, message string) (string, error)
-	SendTyping(roomID string, typing bool)
-	JoinRoom(roomID string) error
-	LeaveRoom(roomID string) error
-	GetHistory(roomID, prevBatch string, limit int) ([]gomatrix.Event, string, error)
-	GetRoom(roomID string) *rooms.Room
-	Download(mxcURL string) ([]byte, string, string, error)
-	GetCachePath(homeserver, fileID string) string
+// Message is a wrapper for the content and metadata of a Matrix message intended to be displayed.
+type UIMessage interface {
+	ifc.Message
+
+	CalculateBuffer(width int)
+	RecalculateBuffer()
+	Buffer() []tstring.TString
+	Height() int
+
+	RealSender() string
+	RegisterGomuks(gmx ifc.Gomuks)
 }
+
+const DateFormat = "January _2, 2006"
+const TimeFormat = "15:04:05"

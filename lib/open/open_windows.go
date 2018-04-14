@@ -14,26 +14,16 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-package ifc
+package open
 
 import (
-	"maunium.net/go/gomatrix"
-	"maunium.net/go/gomuks/matrix/rooms"
+	"os/exec"
 )
 
-type MatrixContainer interface {
-	Client() *gomatrix.Client
-	InitClient() error
-	Initialized() bool
-	Login(user, password string) error
-	Start()
-	Stop()
-	SendMessage(roomID, msgtype, message string) (string, error)
-	SendTyping(roomID string, typing bool)
-	JoinRoom(roomID string) error
-	LeaveRoom(roomID string) error
-	GetHistory(roomID, prevBatch string, limit int) ([]gomatrix.Event, string, error)
-	GetRoom(roomID string) *rooms.Room
-	Download(mxcURL string) ([]byte, string, string, error)
-	GetCachePath(homeserver, fileID string) string
+const FileProtocolHandler = "url.dll,FileProtocolHandler"
+
+var RunDLL32 = filepath.Join(os.Getenv("SYSTEMROOT"), "System32", "rundll32.exe")
+
+func Open(input string) error {
+	return exec.Command(RunDLL32, FileProtocolHandler, input).Start()
 }

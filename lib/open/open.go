@@ -1,3 +1,5 @@
+// +build !windows,!darwin
+
 // gomuks - A terminal Matrix client written in Go.
 // Copyright (C) 2018 Tulir Asokan
 //
@@ -14,32 +16,12 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-package debug
+package open
 
 import (
-	"fmt"
-	"io"
-	"os"
+	"os/exec"
 )
 
-var writer io.Writer
-
-func EnableExternal() {
-	var err error
-	writer, err = os.OpenFile("/tmp/gomuks-debug.log", os.O_WRONLY|os.O_APPEND, 0644)
-	if err != nil {
-		writer = nil
-	}
-}
-
-func ExtPrintf(text string, args ...interface{}) {
-	if writer != nil {
-		fmt.Fprintf(writer, text+"\n", args...)
-	}
-}
-
-func ExtPrint(text ...interface{}) {
-	if writer != nil {
-		fmt.Fprintln(writer, text...)
-	}
+func Open(input string) error {
+	return exec.Command("xdg-open", input).Start()
 }

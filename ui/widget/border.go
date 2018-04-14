@@ -17,7 +17,7 @@
 package widget
 
 import (
-	"github.com/gdamore/tcell"
+	"maunium.net/go/tcell"
 	"maunium.net/go/tview"
 )
 

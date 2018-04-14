@@ -17,11 +17,12 @@
 package ifc
 
 import (
+	"time"
+
+	"maunium.net/go/tcell"
 	"maunium.net/go/gomatrix"
 	"maunium.net/go/gomuks/matrix/pushrules"
 	"maunium.net/go/gomuks/matrix/rooms"
-	"maunium.net/go/gomuks/ui/types"
-	"maunium.net/go/gomuks/ui/widget"
 	"maunium.net/go/tview"
 )
 
@@ -42,7 +43,7 @@ type GomuksUI interface {
 }
 
 type MainView interface {
-	GetRoom(roomID string) *widget.RoomView
+	GetRoom(roomID string) RoomView
 	HasRoom(roomID string) bool
 	AddRoom(roomID string)
 	RemoveRoom(roomID string)
@@ -50,11 +51,76 @@ type MainView interface {
 	SaveAllHistory()
 
 	SetTyping(roomID string, users []string)
-	AddServiceMessage(roomID *widget.RoomView, message string)
-	ProcessMessageEvent(roomView *widget.RoomView, evt *gomatrix.Event) *types.Message
-	ProcessMembershipEvent(roomView *widget.RoomView, evt *gomatrix.Event) *types.Message
-	NotifyMessage(room *rooms.Room, message *types.Message, should pushrules.PushActionArrayShould)
+	ParseEvent(roomView RoomView, evt *gomatrix.Event) Message
+	//ProcessMessageEvent(roomView RoomView, evt *gomatrix.Event) Message
+	//ProcessMembershipEvent(roomView RoomView, evt *gomatrix.Event) Message
+	NotifyMessage(room *rooms.Room, message Message, should pushrules.PushActionArrayShould)
 }
 
 type LoginView interface {
+}
+
+type MessageDirection int
+
+const (
+	AppendMessage  MessageDirection = iota
+	PrependMessage
+	IgnoreMessage
+)
+
+type RoomView interface {
+	MxRoom() *rooms.Room
+	SaveHistory(dir string) error
+	LoadHistory(gmx Gomuks, dir string) (int, error)
+
+	SetStatus(status string)
+	SetTyping(users []string)
+	UpdateUserList()
+
+	NewMessage(id, sender, msgtype, text string, timestamp time.Time) Message
+	NewTempMessage(msgtype, text string) Message
+	AddMessage(message Message, direction MessageDirection)
+	AddServiceMessage(message string)
+}
+
+type MessageMeta interface {
+	Sender() string
+	SenderColor() tcell.Color
+	TextColor() tcell.Color
+	TimestampColor() tcell.Color
+	Timestamp() time.Time
+	FormatTime() string
+	FormatDate() string
+	CopyFrom(from MessageMeta)
+}
+
+// MessageState is an enum to specify if a Message is being sent, failed to send or was successfully sent.
+type MessageState int
+
+// Allowed MessageStates.
+const (
+	MessageStateSending MessageState = iota
+	MessageStateDefault
+	MessageStateFailed
+)
+
+type Message interface {
+	MessageMeta
+
+	SetIsHighlight(isHighlight bool)
+	IsHighlight() bool
+
+	SetIsService(isService bool)
+	IsService() bool
+
+	SetID(id string)
+	ID() string
+
+	SetType(msgtype string)
+	Type() string
+
+	NotificationContent() string
+
+	SetState(state MessageState)
+	State() MessageState
 }

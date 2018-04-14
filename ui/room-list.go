@@ -14,14 +14,15 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-package widget
+package ui
 
 import (
 	"fmt"
 	"strconv"
 
-	"github.com/gdamore/tcell"
+	"maunium.net/go/tcell"
 	"maunium.net/go/gomuks/matrix/rooms"
+	"maunium.net/go/gomuks/ui/widget"
 	"maunium.net/go/tview"
 )
 
@@ -126,11 +127,11 @@ func (list *RoomList) Draw(screen tcell.Screen) {
 				unreadMessageCount += "!"
 			}
 			unreadMessageCount = fmt.Sprintf("(%s)", unreadMessageCount)
-			writeLine(screen, tview.AlignRight, unreadMessageCount, x+lineWidth-6, y, 6, style)
+			widget.WriteLine(screen, tview.AlignRight, unreadMessageCount, x+lineWidth-6, y, 6, style)
 			lineWidth -= len(unreadMessageCount) + 1
 		}
 
-		writeLine(screen, tview.AlignLeft, text, x, y, lineWidth, style)
+		widget.WriteLine(screen, tview.AlignLeft, text, x, y, lineWidth, style)
 
 		y++
 		if y >= bottomLimit {

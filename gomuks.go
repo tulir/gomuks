@@ -23,10 +23,10 @@ import (
 	"time"
 
 	"maunium.net/go/gomuks/config"
+	"maunium.net/go/gomuks/debug"
 	"maunium.net/go/gomuks/interface"
 	"maunium.net/go/gomuks/matrix"
 	"maunium.net/go/gomuks/ui"
-	"maunium.net/go/gomuks/ui/debug"
 	"maunium.net/go/tview"
 )
 
@@ -35,7 +35,6 @@ type Gomuks struct {
 	app       *tview.Application
 	ui        *ui.GomuksUI
 	matrix    *matrix.Container
-	debug     *debug.Pane
 	debugMode bool
 	config    *config.Config
 	stop      chan bool
@@ -43,18 +42,13 @@ type Gomuks struct {
 
 // NewGomuks creates a new Gomuks instance with everything initialized,
 // but does not start it.
-func NewGomuks(enableDebug, forceExternalDebug bool) *Gomuks {
+func NewGomuks(enableDebug bool) *Gomuks {
 	configDir := filepath.Join(os.Getenv("HOME"), ".config/gomuks")
 	gmx := &Gomuks{
-		app:  tview.NewApplication(),
-		stop: make(chan bool, 1),
+		app:       tview.NewApplication(),
+		stop:      make(chan bool, 1),
+		debugMode: enableDebug,
 	}
-
-	gmx.debug = debug.NewPane()
-	gmx.debug.SetChangedFunc(func() {
-		gmx.ui.Render()
-	})
-	debug.Default = gmx.debug
 
 	gmx.config = config.NewConfig(configDir)
 	gmx.ui = ui.NewGomuksUI(gmx)
@@ -68,15 +62,6 @@ func NewGomuks(enableDebug, forceExternalDebug bool) *Gomuks {
 	_ = gmx.matrix.InitClient()
 
 	main := gmx.ui.InitViews()
-	if enableDebug {
-		debug.EnableExternal()
-		if forceExternalDebug {
-			debug.RedirectAllExt = true
-		} else {
-			main = gmx.debug.Wrap(main, debug.Right)
-		}
-		gmx.debugMode = true
-	}
 	gmx.app.SetRoot(main, true)
 
 	return gmx
@@ -85,10 +70,10 @@ func NewGomuks(enableDebug, forceExternalDebug bool) *Gomuks {
 // Save saves the active session and message history.
 func (gmx *Gomuks) Save() {
 	if gmx.config.Session != nil {
-		gmx.debug.Print("Saving session...")
+		debug.Print("Saving session...")
 		_ = gmx.config.Session.Save()
 	}
-	gmx.debug.Print("Saving history...")
+	debug.Print("Saving history...")
 	gmx.ui.MainView().SaveAllHistory()
 }
 
@@ -112,9 +97,9 @@ func (gmx *Gomuks) StartAutosave() {
 // Stop stops the Matrix syncer, the tview app and the autosave goroutine,
 // then saves everything and calls os.Exit(0).
 func (gmx *Gomuks) Stop() {
-	gmx.debug.Print("Disconnecting from Matrix...")
+	debug.Print("Disconnecting from Matrix...")
 	gmx.matrix.Stop()
-	gmx.debug.Print("Cleaning up UI...")
+	debug.Print("Cleaning up UI...")
 	gmx.app.Stop()
 	gmx.stop <- true
 	gmx.Save()
@@ -132,7 +117,7 @@ func (gmx *Gomuks) Recover() {
 		if gmx.debugMode {
 			panic(p)
 		} else {
-			debug.PrettyPanic()
+			debug.PrettyPanic(p)
 		}
 	}
 }
@@ -170,8 +155,8 @@ func (gmx *Gomuks) UI() ifc.GomuksUI {
 }
 
 func main() {
-	debugVar := os.Getenv("DEBUG")
-	NewGomuks(len(debugVar) > 0, debugVar == "ext").Start()
+	enableDebug := len(os.Getenv("DEBUG")) > 0
+	NewGomuks(enableDebug).Start()
 
 	// We use os.Exit() everywhere, so exiting by returning from Start() shouldn't happen.
 	time.Sleep(5 * time.Second)
