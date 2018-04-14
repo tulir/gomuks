@@ -36,7 +36,7 @@ func ParseEvent(gmx ifc.Gomuks, room *rooms.Room, evt *gomatrix.Event) UIMessage
 	}
 	switch evt.Type {
 	case "m.room.message":
-		return ParseMessage(gmx, evt)
+		return ParseMessage(gmx, room, evt)
 	case "m.room.member":
 		return ParseMembershipEvent(evt)
 	}
@@ -51,14 +51,14 @@ func unixToTime(unix int64) time.Time {
 	return timestamp
 }
 
-func ParseMessage(gmx ifc.Gomuks, evt *gomatrix.Event) UIMessage {
+func ParseMessage(gmx ifc.Gomuks, room *rooms.Room, evt *gomatrix.Event) UIMessage {
 	msgtype, _ := evt.Content["msgtype"].(string)
 	ts := unixToTime(evt.Timestamp)
 	switch msgtype {
 	case "m.text", "m.notice", "m.emote":
 		format, hasFormat := evt.Content["format"].(string)
 		if hasFormat && format == "org.matrix.custom.html" {
-			text := ParseHTMLMessage(evt)
+			text := ParseHTMLMessage(room, evt)
 			return NewExpandedTextMessage(evt.ID, evt.Sender, msgtype, text, ts)
 		} else {
 			text, _ := evt.Content["body"].(string)

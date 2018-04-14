@@ -25,6 +25,10 @@ import (
 
 type TString []Cell
 
+func NewBlankTString() TString {
+	return make([]Cell, 0)
+}
+
 func NewTString(str string) TString {
 	newStr := make([]Cell, len(str))
 	for i, char := range str {

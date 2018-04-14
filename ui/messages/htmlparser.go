@@ -17,120 +17,170 @@
 package messages
 
 import (
+	"fmt"
+	"io"
+	"math"
+	"regexp"
 	"strings"
 
-	"golang.org/x/net/html"
 	"maunium.net/go/gomatrix"
 	"maunium.net/go/gomuks/debug"
+	"maunium.net/go/gomuks/lib/htmlparser"
+	"maunium.net/go/gomuks/matrix/rooms"
 	"maunium.net/go/gomuks/ui/messages/tstring"
+	"maunium.net/go/gomuks/ui/widget"
 	"maunium.net/go/tcell"
 )
 
-// TagArray is a reversed queue for remembering what HTML tags are open.
-type TagArray []string
+var matrixToURL = regexp.MustCompile("^(?:https?://)?(?:www\\.)?matrix\\.to/#/([#@!].*)")
 
-// Pushb converts the given byte array into a string and calls Push().
-func (ta *TagArray) Pushb(tag []byte) {
-	ta.Push(string(tag))
+type MatrixHTMLProcessor struct {
+	text tstring.TString
+
+	indent    string
+	listType  string
+	lineIsNew bool
+	openTags  *TagArray
+
+	room *rooms.Room
 }
 
-// Popb converts the given byte array into a string and calls Pop().
-func (ta *TagArray) Popb(tag []byte) {
-	ta.Pop(string(tag))
-}
-
-// Hasb converts the given byte array into a string and calls Has().
-func (ta *TagArray) Hasb(tag []byte) {
-	ta.Has(string(tag))
-}
-
-// HasAfterb converts the given byte array into a string and calls HasAfter().
-func (ta *TagArray) HasAfterb(tag []byte, after int) {
-	ta.HasAfter(string(tag), after)
-}
-
-// Push adds the given tag to the array.
-func (ta *TagArray) Push(tag string) {
-	*ta = append(*ta, "")
-	copy((*ta)[1:], *ta)
-	(*ta)[0] = tag
-}
-
-// Pop removes the given tag from the array.
-func (ta *TagArray) Pop(tag string) {
-	if (*ta)[0] == tag {
-		// This is the default case and is lighter than append(), so we handle it separately.
-		*ta = (*ta)[1:]
-	} else if index := ta.Has(tag); index != -1 {
-		*ta = append((*ta)[:index], (*ta)[index+1:]...)
+func (parser *MatrixHTMLProcessor) newline() {
+	if !parser.lineIsNew {
+		parser.text = parser.text.Append("\n" + parser.indent)
+		parser.lineIsNew = true
 	}
 }
 
-// Has returns the first index where the given tag is, or -1 if it's not in the list.
-func (ta *TagArray) Has(tag string) int {
-	return ta.HasAfter(tag, -1)
-}
+func (parser *MatrixHTMLProcessor) Preprocess() {}
 
-// HasAfter returns the first index after the given index where the given tag is,
-// or -1 if the given tag is not on the list after the given index.
-func (ta *TagArray) HasAfter(tag string, after int) int {
-	for i := after + 1; i < len(*ta); i++ {
-		if (*ta)[i] == tag {
-			return i
+func (parser *MatrixHTMLProcessor) HandleText(text string) {
+	style := tcell.StyleDefault
+	for _, tag := range *parser.openTags {
+		switch tag.Tag {
+		case "b", "strong":
+			style = style.Bold(true)
+		case "i", "em":
+			style = style.Italic(true)
+		case "s", "del":
+			style = style.Strikethrough(true)
+		case "u", "ins":
+			style = style.Underline(true)
+		case "a":
+			tag.Text += text
+			return
 		}
 	}
-	return -1
+
+	if parser.openTags.Has("pre", "code") {
+		text = strings.Replace(text, "\n", "", -1)
+	}
+	parser.text = parser.text.AppendStyle(text, style)
+	parser.lineIsNew = false
+}
+
+func (parser *MatrixHTMLProcessor) HandleStartTag(tagName string, attrs map[string]string) {
+	tag := &TagWithMeta{Tag: tagName}
+	switch tag.Tag {
+	case "h1", "h2", "h3", "h4", "h5", "h6":
+		length := int(tag.Tag[1] - '0')
+		parser.text = parser.text.Append(strings.Repeat("#", length) + " ")
+		parser.lineIsNew = false
+	case "a":
+		tag.Meta, _ = attrs["href"]
+	case "ol", "ul":
+		parser.listType = tag.Tag
+	case "li":
+		indentSize := 2
+		if parser.listType == "ol" {
+			list := parser.openTags.Get(parser.listType)
+			list.Counter++
+			parser.text = parser.text.Append(fmt.Sprintf("%d. ", list.Counter))
+			indentSize = int(math.Log10(float64(list.Counter))+1) + len(". ")
+		} else {
+			parser.text = parser.text.Append("* ")
+		}
+		parser.indent += strings.Repeat(" ", indentSize)
+		parser.lineIsNew = false
+	case "blockquote":
+		parser.indent += "> "
+		parser.text = parser.text.Append("> ")
+		parser.lineIsNew = false
+	}
+	parser.openTags.PushMeta(tag)
+}
+
+func (parser *MatrixHTMLProcessor) HandleSelfClosingTag(tagName string, attrs map[string]string) {
+	if tagName == "br" {
+		parser.newline()
+	}
+}
+
+func (parser *MatrixHTMLProcessor) HandleEndTag(tagName string) {
+	tag := parser.openTags.Pop(tagName)
+
+	switch tag.Tag {
+	case "li", "blockquote":
+		indentSize := 2
+		if tag.Tag == "li" && parser.listType == "ol" {
+			list := parser.openTags.Get(parser.listType)
+			indentSize = int(math.Log10(float64(list.Counter))+1) + len(". ")
+		}
+		if len(parser.indent) >= indentSize {
+			parser.indent = parser.indent[0 : len(parser.indent)-indentSize]
+		}
+		// TODO this newline is sometimes not good
+		parser.newline()
+	case "a":
+		match := matrixToURL.FindStringSubmatch(tag.Meta)
+		if len(match) == 2 {
+			pillTarget := match[1]
+			if pillTarget[0] == '@' {
+				if member := parser.room.GetMember(pillTarget); member != nil {
+					parser.text = parser.text.AppendColor(member.DisplayName, widget.GetHashColor(member.DisplayName))
+				} else {
+					parser.text = parser.text.Append(pillTarget)
+				}
+			} else {
+				parser.text = parser.text.Append(pillTarget)
+			}
+		} else {
+			// TODO make text clickable rather than printing URL
+			parser.text = parser.text.Append(fmt.Sprintf("%s (%s)", tag.Text, tag.Meta))
+		}
+		parser.lineIsNew = false
+	case "p", "pre", "ol", "ul", "h1", "h2", "h3", "h4", "h5", "h6", "div":
+		// parser.newline()
+	}
+}
+
+func (parser *MatrixHTMLProcessor) ReceiveError(err error) {
+	if err != io.EOF {
+		debug.Print("Unexpected error parsing HTML:", err)
+	}
+}
+
+func (parser *MatrixHTMLProcessor) Postprocess() {
+	if len(parser.text) > 0 && parser.text[len(parser.text)-1].Char == '\n' {
+		parser.text = parser.text[:len(parser.text)-1]
+	}
 }
 
 // ParseHTMLMessage parses a HTML-formatted Matrix event into a UIMessage.
-func ParseHTMLMessage(evt *gomatrix.Event) tstring.TString {
-	//textData, _ := evt.Content["body"].(string)
+func ParseHTMLMessage(room *rooms.Room, evt *gomatrix.Event) tstring.TString {
 	htmlData, _ := evt.Content["formatted_body"].(string)
 
-	z := html.NewTokenizer(strings.NewReader(htmlData))
-	text := tstring.NewTString("")
-
-	openTags := &TagArray{}
-
-Loop:
-	for {
-		tt := z.Next()
-		switch tt {
-		case html.ErrorToken:
-			break Loop
-		case html.TextToken:
-			style := tcell.StyleDefault
-			for _, tag := range *openTags {
-				switch tag {
-				case "b", "strong":
-					style = style.Bold(true)
-				case "i", "em":
-					style = style.Italic(true)
-				case "s", "del":
-					style = style.Strikethrough(true)
-				case "u", "ins":
-					style = style.Underline(true)
-				}
-			}
-			text = text.AppendStyle(string(z.Text()), style)
-		case html.SelfClosingTagToken, html.StartTagToken:
-			tagb, _ := z.TagName()
-			tag := string(tagb)
-			switch tag {
-			case "br":
-				debug.Print("BR found")
-				debug.Print(text.String())
-				text = text.Append("\n")
-			default:
-				if tt == html.StartTagToken {
-					openTags.Push(tag)
-				}
-			}
-		case html.EndTagToken:
-			tagb, _ := z.TagName()
-			openTags.Popb(tagb)
-		}
+	processor := &MatrixHTMLProcessor{
+		room:      room,
+		text:      tstring.NewBlankTString(),
+		indent:    "",
+		listType:  "",
+		lineIsNew: true,
+		openTags:  &TagArray{},
 	}
 
-	return text
+	parser := htmlparser.NewHTMLParserFromString(htmlData, processor)
+	parser.Process()
+
+	return processor.text
 }
