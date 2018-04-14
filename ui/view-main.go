@@ -248,7 +248,9 @@ func (view *MainView) MouseEventHandler(roomView *RoomView, event *tcell.EventMo
 	default:
 		mx, my, mw, mh := msgView.GetRect()
 		if x >= mx && y >= my && x < mx+mw && y < my+mh {
-			msgView.HandleClick(x-mx, y-my, event.Buttons())
+			if msgView.HandleClick(x-mx, y-my, event.Buttons()) {
+				view.parent.Render()
+			}
 		} else {
 			debug.Print("Mouse event received:", event.Buttons(), event.Modifiers(), x, y)
 		}

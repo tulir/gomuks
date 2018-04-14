@@ -22,18 +22,20 @@ import (
 	"math"
 	"os"
 
-	"maunium.net/go/gomuks/lib/open"
-	"maunium.net/go/gomuks/ui/messages/tstring"
-	"maunium.net/go/tcell"
 	"maunium.net/go/gomuks/debug"
 	"maunium.net/go/gomuks/interface"
+	"maunium.net/go/gomuks/lib/open"
 	"maunium.net/go/gomuks/ui/messages"
+	"maunium.net/go/gomuks/ui/messages/tstring"
 	"maunium.net/go/gomuks/ui/widget"
+	"maunium.net/go/tcell"
 	"maunium.net/go/tview"
 )
 
 type MessageView struct {
 	*tview.Box
+
+	parent *RoomView
 
 	ScrollOffset    int
 	MaxSenderWidth  int
@@ -54,9 +56,11 @@ type MessageView struct {
 	metaBuffer []ifc.MessageMeta
 }
 
-func NewMessageView() *MessageView {
+func NewMessageView(parent *RoomView) *MessageView {
 	return &MessageView{
-		Box:            tview.NewBox(),
+		Box:    tview.NewBox(),
+		parent: parent,
+
 		MaxSenderWidth: 15,
 		TimestampWidth: len(messages.TimeFormat),
 		ScrollOffset:   0,
@@ -253,28 +257,64 @@ func (view *MessageView) recalculateBuffers() {
 	}
 }
 
-func (view *MessageView) HandleClick(x, y int, button tcell.ButtonMask) {
+func (view *MessageView) HandleClick(x, y int, button tcell.ButtonMask) bool {
 	if button != tcell.Button1 {
-		return
+		return false
 	}
 
 	_, _, _, height := view.GetRect()
 	line := view.TotalHeight() - view.ScrollOffset - height + y
 	if line < 0 || line >= view.TotalHeight() {
-		return
+		return false
 	}
 
 	message := view.metaBuffer[line]
-	imageMessage, ok := message.(*messages.ImageMessage)
-	if !ok {
-		uiMessage, ok := message.(messages.UIMessage)
-		if ok {
-			debug.Print("Message clicked:", uiMessage.NotificationContent())
-		}
-		return
+	var prevMessage ifc.MessageMeta
+	if line > 0 {
+		prevMessage = view.metaBuffer[line-1]
 	}
 
-	open.Open(imageMessage.Path())
+	usernameX := view.TimestampWidth + TimestampSenderGap
+	messageX := usernameX + view.widestSender + SenderMessageGap
+	if x >= messageX {
+		switch message := message.(type) {
+		case *messages.ImageMessage:
+			open.Open(message.Path())
+		case messages.UIMessage:
+			debug.Print("Message clicked:", message.NotificationContent())
+		}
+	} else if x >= usernameX {
+		uiMessage, ok := message.(messages.UIMessage)
+		if !ok {
+			return false
+		}
+
+		prevUIMessage, _ := prevMessage.(messages.UIMessage)
+		if prevUIMessage != nil && prevUIMessage.Sender() == uiMessage.Sender() {
+			return false
+		}
+
+		sender := []rune(uiMessage.Sender())
+		if len(sender) == 0 {
+			return false
+		}
+
+		cursorPos := view.parent.input.GetCursorOffset()
+		text := []rune(view.parent.input.GetText())
+		var newText []rune
+		if cursorPos == 0 {
+			newText = append(sender, ':', ' ')
+			newText = append(newText, text...)
+		} else {
+			newText = append(text[0:cursorPos], sender...)
+			newText = append(newText, ' ')
+			newText = append(newText, text[cursorPos:]...)
+		}
+		view.parent.input.SetText(string(newText))
+		view.parent.input.SetCursorOffset(cursorPos + len(newText) - len(text))
+		return true
+	}
+	return false
 }
 
 const PaddingAtTop = 5

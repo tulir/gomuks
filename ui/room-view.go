@@ -47,13 +47,13 @@ func NewRoomView(room *rooms.Room) *RoomView {
 	view := &RoomView{
 		Box:      tview.NewBox(),
 		topic:    tview.NewTextView(),
-		content:  NewMessageView(),
 		status:   tview.NewTextView(),
 		userList: tview.NewTextView(),
 		ulBorder: widget.NewBorder(),
 		input:    widget.NewAdvancedInputField(),
 		Room:     room,
 	}
+	view.content = NewMessageView(view)
 
 	view.input.
 		SetFieldBackgroundColor(tcell.ColorDefault).
