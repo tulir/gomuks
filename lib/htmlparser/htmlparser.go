@@ -23,21 +23,43 @@ import (
 	"golang.org/x/net/html"
 )
 
+// HTMLProcessor contains the functions to process parsed HTML data.
 type HTMLProcessor interface {
+	// Preprocess is called before the parsing is started.
 	Preprocess()
+
+	// HandleStartTag is called with the tag name and attributes when
+	// the parser encounters a StartTagToken, except if the tag is
+	// always self-closing.
 	HandleStartTag(tagName string, attrs map[string]string)
+	// HandleSelfClosingTag is called with the tag name and attributes
+	// when the parser encounters a SelfClosingTagToken OR a StartTagToken
+	// with a tag that's always self-closing.
 	HandleSelfClosingTag(tagName string, attrs map[string]string)
+	// HandleText is called with the text when the parser encounters
+	// a TextToken.
 	HandleText(text string)
+	// HandleEndTag is called with the tag name when the parser encounters
+	// an EndTagToken.
 	HandleEndTag(tagName string)
+
+	// ReceiveError is called with the error when the parser encounters
+	// an ErrorToken that IS NOT io.EOF.
 	ReceiveError(err error)
+
+	// Postprocess is called after parsing is completed successfully.
+	// An unsuccessful parsing will trigger a ReceiveError() call.
 	Postprocess()
 }
 
+// HTMLParser wraps a net/html.Tokenizer and a HTMLProcessor to call
+// the HTMLProcessor with data from the Tokenizer.
 type HTMLParser struct {
 	*html.Tokenizer
 	processor HTMLProcessor
 }
 
+// NewHTMLParserFromTokenizer creates a new HTMLParser from an existing html Tokenizer.
 func NewHTMLParserFromTokenizer(z *html.Tokenizer, processor HTMLProcessor) HTMLParser {
 	return HTMLParser{
 		z,
@@ -45,14 +67,21 @@ func NewHTMLParserFromTokenizer(z *html.Tokenizer, processor HTMLProcessor) HTML
 	}
 }
 
+// NewHTMLParserFromReader creates a Tokenizer with the given io.Reader and
+// then uses that to create a new HTMLParser.
 func NewHTMLParserFromReader(reader io.Reader, processor HTMLProcessor) HTMLParser {
 	return NewHTMLParserFromTokenizer(html.NewTokenizer(reader), processor)
 }
 
+// NewHTMLParserFromString creates a Tokenizer with a reader of the given
+// string and then uses that to create a new HTMLParser.
 func NewHTMLParserFromString(html string, processor HTMLProcessor) HTMLParser {
 	return NewHTMLParserFromReader(strings.NewReader(html), processor)
 }
 
+// SelfClosingTags is the list of tags that always call
+// HTMLProcessor.HandleSelfClosingTag() even if it is encountered
+// as a html.StartTagToken rather than html.SelfClosingTagToken.
 var SelfClosingTags = []string{"img", "br", "hr", "area", "base", "basefont", "input", "link", "meta"}
 
 func (parser HTMLParser) mapAttrs() map[string]string {
@@ -75,6 +104,8 @@ func (parser HTMLParser) isSelfClosing(tag string) bool {
 	return false
 }
 
+// Process parses the HTML using the tokenizer in this parser and
+// calls the appropriate functions of the HTML processor.
 func (parser HTMLParser) Process() {
 	parser.processor.Preprocess()
 Loop:
@@ -82,7 +113,10 @@ Loop:
 		tt := parser.Next()
 		switch tt {
 		case html.ErrorToken:
-			parser.processor.ReceiveError(parser.Err())
+			if parser.Err() != io.EOF {
+				parser.processor.ReceiveError(parser.Err())
+				return
+			}
 			break Loop
 		case html.TextToken:
 			parser.processor.HandleText(string(parser.Text()))
