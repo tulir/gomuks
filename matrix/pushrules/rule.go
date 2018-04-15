@@ -19,11 +19,10 @@ package pushrules
 import (
 	"github.com/zyedidia/glob"
 	"maunium.net/go/gomatrix"
-	"maunium.net/go/gomuks/matrix/rooms"
 )
 
 type PushRuleCollection interface {
-	GetActions(room *rooms.Room, event *gomatrix.Event) PushActionArray
+	GetActions(room Room, event *gomatrix.Event) PushActionArray
 }
 
 type PushRuleArray []*PushRule
@@ -35,7 +34,7 @@ func (rules PushRuleArray) setType(typ PushRuleType) PushRuleArray {
 	return rules
 }
 
-func (rules PushRuleArray) GetActions(room *rooms.Room, event *gomatrix.Event) PushActionArray {
+func (rules PushRuleArray) GetActions(room Room, event *gomatrix.Event) PushActionArray {
 	for _, rule := range rules {
 		if !rule.Match(room, event) {
 			continue
@@ -62,7 +61,7 @@ func (rules PushRuleArray) setTypeAndMap(typ PushRuleType) PushRuleMap {
 	return data
 }
 
-func (ruleMap PushRuleMap) GetActions(room *rooms.Room, event *gomatrix.Event) PushActionArray {
+func (ruleMap PushRuleMap) GetActions(room Room, event *gomatrix.Event) PushActionArray {
 	var rule *PushRule
 	var found bool
 	switch ruleMap.Type {
@@ -117,7 +116,7 @@ type PushRule struct {
 	Pattern string `json:"pattern,omitempty"`
 }
 
-func (rule *PushRule) Match(room *rooms.Room, event *gomatrix.Event) bool {
+func (rule *PushRule) Match(room Room, event *gomatrix.Event) bool {
 	if !rule.Enabled {
 		return false
 	}
@@ -135,7 +134,7 @@ func (rule *PushRule) Match(room *rooms.Room, event *gomatrix.Event) bool {
 	}
 }
 
-func (rule *PushRule) matchConditions(room *rooms.Room, event *gomatrix.Event) bool {
+func (rule *PushRule) matchConditions(room Room, event *gomatrix.Event) bool {
 	for _, cond := range rule.Conditions {
 		if !cond.Match(room, event) {
 			return false
@@ -144,7 +143,7 @@ func (rule *PushRule) matchConditions(room *rooms.Room, event *gomatrix.Event) b
 	return true
 }
 
-func (rule *PushRule) matchPattern(room *rooms.Room, event *gomatrix.Event) bool {
+func (rule *PushRule) matchPattern(room Room, event *gomatrix.Event) bool {
 	pattern, err := glob.Compile(rule.Pattern)
 	if err != nil {
 		return false

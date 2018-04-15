@@ -26,6 +26,13 @@ import (
 	"maunium.net/go/gomuks/matrix/rooms"
 )
 
+// Room is an interface with the functions that are needed for processing room-specific push conditions
+type Room interface {
+	GetMember(mxid string) *rooms.Member
+	GetMembers() map[string]*rooms.Member
+	GetSessionOwner() *rooms.Member
+}
+
 // PushCondKind is the type of a push condition.
 type PushCondKind string
 
@@ -53,7 +60,7 @@ type PushCondition struct {
 var MemberCountFilterRegex = regexp.MustCompile("^(==|[<>]=?)?([0-9]+)$")
 
 // Match checks if this condition is fulfilled for the given event in the given room.
-func (cond *PushCondition) Match(room *rooms.Room, event *gomatrix.Event) bool {
+func (cond *PushCondition) Match(room Room, event *gomatrix.Event) bool {
 	switch cond.Kind {
 	case KindEventMatch:
 		return cond.matchValue(room, event)
@@ -66,7 +73,7 @@ func (cond *PushCondition) Match(room *rooms.Room, event *gomatrix.Event) bool {
 	}
 }
 
-func (cond *PushCondition) matchValue(room *rooms.Room, event *gomatrix.Event) bool {
+func (cond *PushCondition) matchValue(room Room, event *gomatrix.Event) bool {
 	index := strings.IndexRune(cond.Key, '.')
 	key := cond.Key
 	subkey := ""
@@ -75,10 +82,7 @@ func (cond *PushCondition) matchValue(room *rooms.Room, event *gomatrix.Event) b
 		key = key[0:index]
 	}
 
-	pattern, err := glob.Compile(cond.Pattern)
-	if err != nil {
-		return false
-	}
+	pattern, _ := glob.Compile(cond.Pattern)
 
 	switch key {
 	case "type":
@@ -100,48 +104,39 @@ func (cond *PushCondition) matchValue(room *rooms.Room, event *gomatrix.Event) b
 	}
 }
 
-func (cond *PushCondition) matchDisplayName(room *rooms.Room, event *gomatrix.Event) bool {
-	member := room.GetMember(room.SessionUserID)
-	if member == nil {
+func (cond *PushCondition) matchDisplayName(room Room, event *gomatrix.Event) bool {
+	member := room.GetSessionOwner()
+	if member == nil || member.UserID == event.Sender {
 		return false
 	}
 	text, _ := event.Content["body"].(string)
 	return strings.Contains(text, member.DisplayName)
 }
 
-func (cond *PushCondition) matchMemberCount(room *rooms.Room, event *gomatrix.Event) bool {
-	groupGroups := MemberCountFilterRegex.FindAllStringSubmatch(cond.MemberCountCondition, -1)
-	if len(groupGroups) != 1 {
+func (cond *PushCondition) matchMemberCount(room Room, event *gomatrix.Event) bool {
+	group := MemberCountFilterRegex.FindStringSubmatch(cond.MemberCountCondition)
+	if len(group) != 3 {
 		return false
 	}
 
-	operator := "=="
-	wantedMemberCount := 0
-
-	group := groupGroups[0]
-	if len(group) == 0 {
-		return false
-	} else if len(group) == 1 {
-		wantedMemberCount, _ = strconv.Atoi(group[0])
-	} else {
-		operator = group[0]
-		wantedMemberCount, _ = strconv.Atoi(group[1])
-	}
+	operator := group[1]
+	wantedMemberCount, _ := strconv.Atoi(group[2])
 
 	memberCount := len(room.GetMembers())
 
 	switch operator {
-	case "==":
-		return wantedMemberCount == memberCount
+	case "==", "":
+		return memberCount == wantedMemberCount
 	case ">":
-		return wantedMemberCount > memberCount
+		return memberCount > wantedMemberCount
 	case ">=":
-		return wantedMemberCount >= memberCount
+		return memberCount >= wantedMemberCount
 	case "<":
-		return wantedMemberCount < memberCount
+		return memberCount < wantedMemberCount
 	case "<=":
-		return wantedMemberCount <= memberCount
+		return memberCount <= wantedMemberCount
 	default:
+		// Should be impossible due to regex.
 		return false
 	}
 }

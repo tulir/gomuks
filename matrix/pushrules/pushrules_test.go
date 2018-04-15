@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-package pushrules
+package pushrules_test
 
 import (
 	"encoding/json"
@@ -22,6 +22,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"maunium.net/go/gomatrix"
+	"maunium.net/go/gomuks/matrix/pushrules"
 )
 
 var mapExamplePushRules map[string]interface{}
@@ -37,15 +38,15 @@ func TestEventToPushRules(t *testing.T) {
 		Timestamp: 1523380910,
 		Content:   mapExamplePushRules,
 	}
-	pushRuleset, err := EventToPushRules(event)
+	pushRuleset, err := pushrules.EventToPushRules(event)
 	assert.Nil(t, err)
 	assert.NotNil(t, pushRuleset)
 
-	assert.IsType(t, pushRuleset.Override, PushRuleArray{})
-	assert.IsType(t, pushRuleset.Content, PushRuleArray{})
-	assert.IsType(t, pushRuleset.Room, PushRuleMap{})
-	assert.IsType(t, pushRuleset.Sender, PushRuleMap{})
-	assert.IsType(t, pushRuleset.Underride, PushRuleArray{})
+	assert.IsType(t, pushRuleset.Override, pushrules.PushRuleArray{})
+	assert.IsType(t, pushRuleset.Content, pushrules.PushRuleArray{})
+	assert.IsType(t, pushRuleset.Room, pushrules.PushRuleMap{})
+	assert.IsType(t, pushRuleset.Sender, pushrules.PushRuleMap{})
+	assert.IsType(t, pushRuleset.Underride, pushrules.PushRuleArray{})
 	assert.Len(t, pushRuleset.Override, 2)
 	assert.Len(t, pushRuleset.Content, 1)
 	assert.Empty(t, pushRuleset.Room.Map)
