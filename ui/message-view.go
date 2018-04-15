@@ -257,6 +257,48 @@ func (view *MessageView) recalculateBuffers() {
 	}
 }
 
+func (view *MessageView) handleMessageClick(message ifc.MessageMeta) bool {
+	switch message := message.(type) {
+	case *messages.ImageMessage:
+		open.Open(message.Path())
+	case messages.UIMessage:
+		debug.Print("Message clicked:", message.NotificationContent())
+	}
+	return false
+}
+
+func (view *MessageView) handleUsernameClick(message ifc.MessageMeta, prevMessage ifc.MessageMeta) bool {
+	uiMessage, ok := message.(messages.UIMessage)
+	if !ok {
+		return false
+	}
+
+	prevUIMessage, _ := prevMessage.(messages.UIMessage)
+	if prevUIMessage != nil && prevUIMessage.Sender() == uiMessage.Sender() {
+		return false
+	}
+
+	sender := []rune(uiMessage.Sender())
+	if len(sender) == 0 {
+		return false
+	}
+
+	cursorPos := view.parent.input.GetCursorOffset()
+	text := []rune(view.parent.input.GetText())
+	var newText []rune
+	if cursorPos == 0 {
+		newText = append(sender, ':', ' ')
+		newText = append(newText, text...)
+	} else {
+		newText = append(text[0:cursorPos], sender...)
+		newText = append(newText, ' ')
+		newText = append(newText, text[cursorPos:]...)
+	}
+	view.parent.input.SetText(string(newText))
+	view.parent.input.SetCursorOffset(cursorPos + len(newText) - len(text))
+	return true
+}
+
 func (view *MessageView) HandleClick(x, y int, button tcell.ButtonMask) bool {
 	if button != tcell.Button1 {
 		return false
@@ -270,51 +312,21 @@ func (view *MessageView) HandleClick(x, y int, button tcell.ButtonMask) bool {
 
 	message := view.metaBuffer[line]
 	var prevMessage ifc.MessageMeta
-	if line > 0 {
+	if y != 0 && line > 0 {
 		prevMessage = view.metaBuffer[line-1]
 	}
 
 	usernameX := view.TimestampWidth + TimestampSenderGap
 	messageX := usernameX + view.widestSender + SenderMessageGap
+
+	shouldRerender := false
 	if x >= messageX {
-		switch message := message.(type) {
-		case *messages.ImageMessage:
-			open.Open(message.Path())
-		case messages.UIMessage:
-			debug.Print("Message clicked:", message.NotificationContent())
-		}
+		shouldRerender = view.handleMessageClick(message)
 	} else if x >= usernameX {
-		uiMessage, ok := message.(messages.UIMessage)
-		if !ok {
-			return false
-		}
-
-		prevUIMessage, _ := prevMessage.(messages.UIMessage)
-		if prevUIMessage != nil && prevUIMessage.Sender() == uiMessage.Sender() {
-			return false
-		}
-
-		sender := []rune(uiMessage.Sender())
-		if len(sender) == 0 {
-			return false
-		}
-
-		cursorPos := view.parent.input.GetCursorOffset()
-		text := []rune(view.parent.input.GetText())
-		var newText []rune
-		if cursorPos == 0 {
-			newText = append(sender, ':', ' ')
-			newText = append(newText, text...)
-		} else {
-			newText = append(text[0:cursorPos], sender...)
-			newText = append(newText, ' ')
-			newText = append(newText, text[cursorPos:]...)
-		}
-		view.parent.input.SetText(string(newText))
-		view.parent.input.SetCursorOffset(cursorPos + len(newText) - len(text))
-		return true
+		shouldRerender = view.handleUsernameClick(message, prevMessage)
 	}
-	return false
+
+	return shouldRerender
 }
 
 const PaddingAtTop = 5
@@ -382,9 +394,31 @@ func getScrollbarStyle(scrollbarHere, isTop, isBottom bool) (char rune, style tc
 	return
 }
 
-func (view *MessageView) Draw(screen tcell.Screen) {
-	view.Box.Draw(screen)
+func (view *MessageView) calculateScrollBar(height int) (scrollBarHeight, scrollBarPos int) {
+	viewportHeight := float64(height)
+	contentHeight := float64(view.TotalHeight())
 
+	scrollBarHeight = int(math.Ceil(viewportHeight / (contentHeight / viewportHeight)))
+
+	scrollBarPos = height - int(math.Round(float64(view.ScrollOffset)/contentHeight*viewportHeight))
+
+	return
+}
+
+func (view *MessageView) getIndexOffset(screen tcell.Screen, height, messageX int) (indexOffset int) {
+	indexOffset = view.TotalHeight() - view.ScrollOffset - height
+	if indexOffset <= -PaddingAtTop {
+		message := "Scroll up to load more messages."
+		if view.LoadingMessages {
+			message = "Loading more messages..."
+		}
+		_, y, _, _ := view.GetInnerRect()
+		widget.WriteLineSimpleColor(screen, message, messageX, y, tcell.ColorGreen)
+	}
+	return
+}
+
+func (view *MessageView) Draw(screen tcell.Screen) {
 	x, y, _, height := view.GetInnerRect()
 	view.recalculateBuffers()
 
@@ -397,30 +431,14 @@ func (view *MessageView) Draw(screen tcell.Screen) {
 	messageX := usernameX + view.widestSender + SenderMessageGap
 	separatorX := usernameX + view.widestSender + SenderSeparatorGap
 
-	indexOffset := view.TotalHeight() - view.ScrollOffset - height
-	if indexOffset <= -PaddingAtTop {
-		message := "Scroll up to load more messages."
-		if view.LoadingMessages {
-			message = "Loading more messages..."
-		}
-		widget.WriteLineSimpleColor(screen, message, messageX, y, tcell.ColorGreen)
-	}
+	indexOffset := view.getIndexOffset(screen, height, messageX)
 
 	if len(view.textBuffer) != len(view.metaBuffer) {
 		debug.Printf("Unexpected text/meta buffer length mismatch: %d != %d.", len(view.textBuffer), len(view.metaBuffer))
 		return
 	}
 
-	var scrollBarHeight, scrollBarPos int
-	// Black magic (aka math) used to figure out where the scroll bar should be put.
-	{
-		viewportHeight := float64(height)
-		contentHeight := float64(view.TotalHeight())
-
-		scrollBarHeight = int(math.Ceil(viewportHeight / (contentHeight / viewportHeight)))
-
-		scrollBarPos = height - int(math.Round(float64(view.ScrollOffset)/contentHeight*viewportHeight))
-	}
+	scrollBarHeight, scrollBarPos := view.calculateScrollBar(height)
 
 	var prevMeta ifc.MessageMeta
 	firstLine := true

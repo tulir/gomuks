@@ -419,6 +419,7 @@ func (c *Container) Download(mxcURL string) (data []byte, hs, id string, err err
 		err = fmt.Errorf("invalid matrix content URL")
 		return
 	}
+
 	hs = parts[1]
 	id = parts[2]
 
@@ -430,6 +431,11 @@ func (c *Container) Download(mxcURL string) (data []byte, hs, id string, err err
 		}
 	}
 
+	data, err = c.download(hs, id, cacheFile)
+	return
+}
+
+func (c *Container) download(hs, id, cacheFile string) (data []byte, err error) {
 	dlURL, _ := url.Parse(c.client.HomeserverURL.String())
 	dlURL.Path = path.Join(dlURL.Path, "/_matrix/media/v1/download", hs, id)
 
