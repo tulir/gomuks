@@ -30,26 +30,6 @@ var BlankTag = &TagWithMeta{}
 // TagArray is a reversed queue for remembering what HTML tags are open.
 type TagArray []*TagWithMeta
 
-// Pushb converts the given byte array into a string and calls Push().
-func (ta *TagArray) Pushb(tag []byte) {
-	ta.Push(string(tag))
-}
-
-// Popb converts the given byte array into a string and calls Pop().
-func (ta *TagArray) Popb(tag []byte) *TagWithMeta {
-	return ta.Pop(string(tag))
-}
-
-// Indexb converts the given byte array into a string and calls Index().
-func (ta *TagArray) Indexb(tag []byte) {
-	ta.Index(string(tag))
-}
-
-// IndexAfterb converts the given byte array into a string and calls IndexAfter().
-func (ta *TagArray) IndexAfterb(tag []byte, after int) {
-	ta.IndexAfter(string(tag), after)
-}
-
 // Push adds the given tag to the array.
 func (ta *TagArray) Push(tag string) {
 	ta.PushMeta(&TagWithMeta{Tag: tag})
@@ -64,7 +44,9 @@ func (ta *TagArray) PushMeta(tag *TagWithMeta) {
 
 // Pop removes the given tag from the array.
 func (ta *TagArray) Pop(tag string) (removed *TagWithMeta) {
-	if (*ta)[0].Tag == tag {
+	if len(*ta) == 0 {
+		return
+	} else if (*ta)[0].Tag == tag {
 		// This is the default case and is lighter than append(), so we handle it separately.
 		removed = (*ta)[0]
 		*ta = (*ta)[1:]
