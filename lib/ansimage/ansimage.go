@@ -26,6 +26,7 @@ import (
 	_ "golang.org/x/image/bmp"  // initialize decoder
 	_ "golang.org/x/image/tiff" // initialize decoder
 	_ "golang.org/x/image/webp" // initialize decoder
+	"maunium.net/go/gomuks/debug"
 	"maunium.net/go/gomuks/ui/messages/tstring"
 	"maunium.net/go/tcell"
 )
@@ -126,6 +127,11 @@ func (ai *ANSImage) Render() []tstring.TString {
 		ch := make(chan renderData, ai.maxprocs)
 		for n, row := 0, y; (n <= ai.maxprocs) && (2*row+1 < ai.h); n, row = n+1, y+n {
 			go func(row, y int) {
+				defer func() {
+					err := recover()
+					debug.Print("Panic rendering ANSImage:", err)
+					ch <- renderData{row: row, render: tstring.NewColorTString("ERROR", tcell.ColorRed)}
+				}()
 				str := make(tstring.TString, ai.w)
 				for x := 0; x < ai.w; x++ {
 					topPixel := ai.pixmap[y][x]
