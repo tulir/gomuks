@@ -104,9 +104,10 @@ func (c *Container) Initialized() bool {
 // Login sends a password login request with the given username and password.
 func (c *Container) Login(user, password string) error {
 	resp, err := c.client.Login(&gomatrix.ReqLogin{
-		Type:     "m.login.password",
-		User:     user,
-		Password: password,
+		Type:                     "m.login.password",
+		User:                     user,
+		Password:                 password,
+		InitialDeviceDisplayName: "gomuks",
 	})
 	if err != nil {
 		return err
