@@ -118,6 +118,9 @@ func (parser *MatrixHTMLProcessor) HandleSelfClosingTag(tagName string, attrs ma
 
 func (parser *MatrixHTMLProcessor) HandleEndTag(tagName string) {
 	tag := parser.openTags.Pop(tagName)
+	if tag == nil {
+		return
+	}
 
 	switch tag.Tag {
 	case "li", "blockquote":
