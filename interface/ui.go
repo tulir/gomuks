@@ -19,11 +19,10 @@ package ifc
 import (
 	"time"
 
-	"maunium.net/go/tcell"
 	"maunium.net/go/gomatrix"
 	"maunium.net/go/gomuks/matrix/pushrules"
 	"maunium.net/go/gomuks/matrix/rooms"
-	"maunium.net/go/tview"
+	"maunium.net/go/tcell"
 )
 
 type View string
@@ -37,7 +36,6 @@ const (
 type GomuksUI interface {
 	Render()
 	SetView(name View)
-	InitViews() tview.Primitive
 	MainView() MainView
 	LoginView() LoginView
 }
