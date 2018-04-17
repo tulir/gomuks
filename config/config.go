@@ -52,16 +52,19 @@ func (config *Config) Clear() {
 		config.Session.Clear()
 	}
 	os.RemoveAll(config.HistoryDir)
+	os.RemoveAll(config.MediaDir)
 }
 
 // Load loads the config from config.yaml in the directory given to the config struct.
 func (config *Config) Load() {
 	os.MkdirAll(config.Dir, 0700)
-	os.MkdirAll(config.HistoryDir, 0700)
+
 	configPath := filepath.Join(config.Dir, "config.yaml")
 	data, err := ioutil.ReadFile(configPath)
 	if err != nil {
 		if os.IsNotExist(err) {
+			os.MkdirAll(config.HistoryDir, 0700)
+			os.MkdirAll(config.MediaDir, 0700)
 			return
 		} else {
 			fmt.Println("Failed to read config from", configPath)
@@ -74,6 +77,8 @@ func (config *Config) Load() {
 		fmt.Println("Failed to parse config at", configPath)
 		panic(err)
 	}
+	os.MkdirAll(config.HistoryDir, 0700)
+	os.MkdirAll(config.MediaDir, 0700)
 }
 
 // Save saves this config to config.yaml in the directory given to the config struct.
