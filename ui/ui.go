@@ -36,14 +36,32 @@ func init() {
 	tview.Styles.ContrastBackgroundColor = tcell.ColorDarkGreen
 }
 
-func NewGomuksUI(gmx ifc.Gomuks) (ui *GomuksUI) {
-	ui = &GomuksUI{
+func NewGomuksUI(gmx ifc.Gomuks) ifc.GomuksUI {
+	ui := &GomuksUI{
 		gmx:   gmx,
-		app:   gmx.App(),
+		app:   tview.NewApplication(),
 		views: tview.NewPages(),
 	}
 	ui.views.SetChangedFunc(ui.Render)
-	return
+	return ui
+}
+
+func (ui *GomuksUI) Init() {
+	ui.app.SetRoot(ui.InitViews(), true)
+}
+
+func (ui *GomuksUI) Start() error {
+	return ui.app.Run()
+}
+
+func (ui *GomuksUI) Stop() {
+	ui.app.Stop()
+}
+
+func (ui *GomuksUI) Finish() {
+	if ui.app.GetScreen() != nil {
+		ui.app.GetScreen().Fini()
+	}
 }
 
 func (ui *GomuksUI) Render() {

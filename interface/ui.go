@@ -33,11 +33,18 @@ const (
 	ViewMain  View = "main"
 )
 
+type UIProvider func(gmx Gomuks) GomuksUI
+
 type GomuksUI interface {
 	Render()
 	SetView(name View)
 	MainView() MainView
 	LoginView() LoginView
+
+	Init()
+	Start() error
+	Stop()
+	Finish()
 }
 
 type MainView interface {
@@ -50,8 +57,7 @@ type MainView interface {
 
 	SetTyping(roomID string, users []string)
 	ParseEvent(roomView RoomView, evt *gomatrix.Event) Message
-	//ProcessMessageEvent(roomView RoomView, evt *gomatrix.Event) Message
-	//ProcessMembershipEvent(roomView RoomView, evt *gomatrix.Event) Message
+
 	NotifyMessage(room *rooms.Room, message Message, should pushrules.PushActionArrayShould)
 }
 
@@ -69,7 +75,7 @@ const (
 type RoomView interface {
 	MxRoom() *rooms.Room
 	SaveHistory(dir string) error
-	LoadHistory(gmx Gomuks, dir string) (int, error)
+	LoadHistory(matrix MatrixContainer, dir string) (int, error)
 
 	SetStatus(status string)
 	SetTyping(users []string)

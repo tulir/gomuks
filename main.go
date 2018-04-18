@@ -14,18 +14,31 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-package ifc
+package main
 
 import (
-	"maunium.net/go/gomuks/config"
+	"fmt"
+	"os"
+	"time"
+
+	"maunium.net/go/gomuks/debug"
+	"maunium.net/go/gomuks/interface"
+	"maunium.net/go/gomuks/ui"
 )
 
-// Gomuks is the wrapper for everything.
-type Gomuks interface {
-	Matrix() MatrixContainer
-	UI() GomuksUI
-	Config() *config.Config
+var MainUIProvider ifc.UIProvider = ui.NewGomuksUI
 
-	Start()
-	Stop()
+func main() {
+	defer debug.Recover()
+
+	enableDebug := len(os.Getenv("DEBUG")) > 0
+	debug.RecoverPrettyPanic = !enableDebug
+
+	gmx := NewGomuks(MainUIProvider)
+	gmx.Start()
+
+	// We use os.Exit() everywhere, so exiting by returning from Start() shouldn't happen.
+	time.Sleep(5 * time.Second)
+	fmt.Println("Unexpected exit by return from gmx.Start().")
+	os.Exit(2)
 }

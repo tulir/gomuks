@@ -143,7 +143,7 @@ func (view *MainView) SendMessage(roomView *RoomView, text string) {
 }
 
 func (view *MainView) sendTempMessage(roomView *RoomView, tempMessage ifc.Message, text string) {
-	defer view.gmx.Recover()
+	defer debug.Recover()
 	eventID, err := view.matrix.SendMarkdownMessage(roomView.Room.ID, tempMessage.Type(), text)
 	if err != nil {
 		tempMessage.SetState(ifc.MessageStateFailed)
@@ -154,7 +154,7 @@ func (view *MainView) sendTempMessage(roomView *RoomView, tempMessage ifc.Messag
 }
 
 func (view *MainView) HandleCommand(roomView *RoomView, command string, args []string) {
-	defer view.gmx.Recover()
+	defer debug.Recover()
 	debug.Print("Handling command", command, args)
 	switch command {
 	case "/me":
@@ -286,7 +286,7 @@ func (view *MainView) SwitchRoom(roomIndex int) {
 		roomView.Room.MarkRead()
 	}
 	view.roomList.SetSelected(roomView.Room)
-	view.gmx.App().SetFocus(view)
+	view.parent.app.SetFocus(view)
 	view.parent.Render()
 }
 
@@ -321,7 +321,7 @@ func (view *MainView) addRoom(index int, room string) {
 		view.roomView.AddPage(room, roomView, true, false)
 		roomView.UpdateUserList()
 
-		count, err := roomView.LoadHistory(view.gmx, view.config.HistoryDir)
+		count, err := roomView.LoadHistory(view.matrix, view.config.HistoryDir)
 		if err != nil {
 			debug.Printf("Failed to load history of %s: %v", roomView.Room.GetTitle(), err)
 		} else if count <= 0 {
@@ -424,7 +424,7 @@ func (view *MainView) NotifyMessage(room *rooms.Room, message ifc.Message, shoul
 }
 
 func (view *MainView) LoadHistory(room string, initial bool) {
-	defer view.gmx.Recover()
+	defer debug.Recover()
 	roomView := view.rooms[room]
 
 	batch := roomView.Room.PrevBatch
@@ -472,5 +472,5 @@ func (view *MainView) LoadHistory(room string, initial bool) {
 }
 
 func (view *MainView) ParseEvent(roomView ifc.RoomView, evt *gomatrix.Event) ifc.Message {
-	return parser.ParseEvent(view.gmx, roomView.MxRoom(), evt)
+	return parser.ParseEvent(view.matrix, roomView.MxRoom(), evt)
 }

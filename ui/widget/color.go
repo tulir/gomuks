@@ -21,7 +21,6 @@ import (
 	"hash/fnv"
 	"sort"
 
-	"maunium.net/go/gomuks/debug"
 	"maunium.net/go/tcell"
 )
 
@@ -52,7 +51,6 @@ func init() {
 //  <-- = red
 //  --- = yellow
 func GetHashColorName(s string) string {
-	debug.Print("Getting color for", s)
 	switch s {
 	case "-->":
 		return "green"

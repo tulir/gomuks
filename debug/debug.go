@@ -29,6 +29,8 @@ import (
 )
 
 var writer io.Writer
+var RecoverPrettyPanic bool
+var OnRecover func()
 
 func init() {
 	var err error
@@ -56,6 +58,22 @@ func PrintStack() {
 	if writer != nil {
 		data := debug.Stack()
 		writer.Write(data)
+	}
+}
+
+// Recover recovers a panic, runs the OnRecover handler and either re-panics or
+// shows an user-friendly message about the panic depending on whether or not
+// the pretty panic mode is enabled.
+func Recover() {
+	if p := recover(); p != nil {
+		if OnRecover != nil {
+			OnRecover()
+		}
+		if RecoverPrettyPanic {
+			PrettyPanic(p)
+		} else {
+			panic(p)
+		}
 	}
 }
 

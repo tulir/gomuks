@@ -41,27 +41,26 @@ type ImageMessage struct {
 	FileID     string
 	data       []byte
 
-	gmx ifc.Gomuks
+	matrix ifc.MatrixContainer
 }
 
 // NewImageMessage creates a new ImageMessage object with the provided values and the default state.
-func NewImageMessage(gmx ifc.Gomuks, id, sender, displayname, msgtype, homeserver, fileID string, data []byte, timestamp time.Time) UIMessage {
+func NewImageMessage(matrix ifc.MatrixContainer, id, sender, displayname, msgtype, homeserver, fileID string, data []byte, timestamp time.Time) UIMessage {
 	return &ImageMessage{
 		newBaseMessage(id, sender, displayname, msgtype, timestamp),
 		homeserver,
 		fileID,
 		data,
-		gmx,
+		matrix,
 	}
 }
 
-func (msg *ImageMessage) RegisterGomuks(gmx ifc.Gomuks) {
-	msg.gmx = gmx
+func (msg *ImageMessage) RegisterMatrix(matrix ifc.MatrixContainer) {
+	msg.matrix = matrix
 
-	debug.Print(len(msg.data), msg.data)
 	if len(msg.data) == 0 {
 		go func() {
-			defer gmx.Recover()
+			defer debug.Recover()
 			msg.updateData()
 		}()
 	}
@@ -73,7 +72,7 @@ func (msg *ImageMessage) NotificationContent() string {
 
 func (msg *ImageMessage) updateData() {
 	debug.Print("Loading image:", msg.Homeserver, msg.FileID)
-	data, _, _, err := msg.gmx.Matrix().Download(fmt.Sprintf("mxc://%s/%s", msg.Homeserver, msg.FileID))
+	data, _, _, err := msg.matrix.Download(fmt.Sprintf("mxc://%s/%s", msg.Homeserver, msg.FileID))
 	if err != nil {
 		debug.Print("Failed to download image %s/%s: %v", msg.Homeserver, msg.FileID, err)
 		return
@@ -82,7 +81,7 @@ func (msg *ImageMessage) updateData() {
 }
 
 func (msg *ImageMessage) Path() string {
-	return msg.gmx.Matrix().GetCachePath(msg.Homeserver, msg.FileID)
+	return msg.matrix.GetCachePath(msg.Homeserver, msg.FileID)
 }
 
 // CalculateBuffer generates the internal buffer for this message that consists
@@ -108,4 +107,3 @@ func (msg *ImageMessage) CalculateBuffer(width int) {
 func (msg *ImageMessage) RecalculateBuffer() {
 	msg.CalculateBuffer(msg.prevBufferWidth)
 }
-

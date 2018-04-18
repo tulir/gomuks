@@ -59,7 +59,7 @@ func newBaseMessage(id, sender, displayname, msgtype string, timestamp time.Time
 	}
 }
 
-func (msg *BaseMessage) RegisterGomuks(gmx ifc.Gomuks) {}
+func (msg *BaseMessage) RegisterMatrix(matrix ifc.MatrixContainer) {}
 
 // Sender gets the string that should be displayed as the sender of this message.
 //

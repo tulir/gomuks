@@ -32,7 +32,7 @@ type UIMessage interface {
 
 	SenderID() string
 	RealSender() string
-	RegisterGomuks(gmx ifc.Gomuks)
+	RegisterMatrix(matrix ifc.MatrixContainer)
 }
 
 const DateFormat = "January _2, 2006"

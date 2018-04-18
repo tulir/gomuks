@@ -30,10 +30,10 @@ import (
 	"maunium.net/go/tcell"
 )
 
-func ParseEvent(gmx ifc.Gomuks, room *rooms.Room, evt *gomatrix.Event) messages.UIMessage {
+func ParseEvent(matrix ifc.MatrixContainer, room *rooms.Room, evt *gomatrix.Event) messages.UIMessage {
 	switch evt.Type {
 	case "m.room.message":
-		return ParseMessage(gmx, room, evt)
+		return ParseMessage(matrix, room, evt)
 	case "m.room.member":
 		return ParseMembershipEvent(room, evt)
 	}
@@ -48,7 +48,7 @@ func unixToTime(unix int64) time.Time {
 	return timestamp
 }
 
-func ParseMessage(gmx ifc.Gomuks, room *rooms.Room, evt *gomatrix.Event) messages.UIMessage {
+func ParseMessage(matrix ifc.MatrixContainer, room *rooms.Room, evt *gomatrix.Event) messages.UIMessage {
 	displayname := evt.Sender
 	member := room.GetMember(evt.Sender)
 	if member != nil {
@@ -68,11 +68,11 @@ func ParseMessage(gmx ifc.Gomuks, room *rooms.Room, evt *gomatrix.Event) message
 		}
 	case "m.image":
 		url, _ := evt.Content["url"].(string)
-		data, hs, id, err := gmx.Matrix().Download(url)
+		data, hs, id, err := matrix.Download(url)
 		if err != nil {
 			debug.Printf("Failed to download %s: %v", url, err)
 		}
-		return messages.NewImageMessage(gmx, evt.ID, evt.Sender, displayname, msgtype, hs, id, data, ts)
+		return messages.NewImageMessage(matrix, evt.ID, evt.Sender, displayname, msgtype, hs, id, data, ts)
 	}
 	return nil
 }

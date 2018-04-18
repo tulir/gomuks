@@ -196,7 +196,7 @@ func (c *Container) OnLogin() {
 
 // Start moves the UI to the main view, calls OnLogin() and runs the syncer forever until stopped with Stop()
 func (c *Container) Start() {
-	defer c.gmx.Recover()
+	defer debug.Recover()
 
 	c.ui.SetView(ifc.ViewMain)
 	c.OnLogin()
@@ -317,7 +317,7 @@ func (c *Container) HandleTyping(evt *gomatrix.Event) {
 
 // SendMessage sends a message with the given text to the given room.
 func (c *Container) SendMessage(roomID, msgtype, text string) (string, error) {
-	defer c.gmx.Recover()
+	defer debug.Recover()
 	c.SendTyping(roomID, false)
 	resp, err := c.client.SendMessageEvent(roomID, "m.room.message",
 		gomatrix.TextMessage{MsgType: msgtype, Body: text})
@@ -328,7 +328,7 @@ func (c *Container) SendMessage(roomID, msgtype, text string) (string, error) {
 }
 
 func (c *Container) SendMarkdownMessage(roomID, msgtype, text string) (string, error) {
-	defer c.gmx.Recover()
+	defer debug.Recover()
 
 	html := string(blackfriday.Run([]byte(text)))
 	if html == text {
@@ -351,7 +351,7 @@ func (c *Container) SendMarkdownMessage(roomID, msgtype, text string) (string, e
 
 // SendTyping sets whether or not the user is typing in the given room.
 func (c *Container) SendTyping(roomID string, typing bool) {
-	defer c.gmx.Recover()
+	defer debug.Recover()
 	ts := time.Now().Unix()
 	if c.typing > ts && typing {
 		return

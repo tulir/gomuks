@@ -95,7 +95,7 @@ func (view *MessageView) SaveHistory(path string) error {
 	return nil
 }
 
-func (view *MessageView) LoadHistory(gmx ifc.Gomuks, path string) (int, error) {
+func (view *MessageView) LoadHistory(matrix ifc.MatrixContainer, path string) (int, error) {
 	file, err := os.OpenFile(path, os.O_RDONLY, 0600)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -119,7 +119,7 @@ func (view *MessageView) LoadHistory(gmx ifc.Gomuks, path string) (int, error) {
 		if message != nil {
 			view.messages[index-indexOffset] = message
 			view.updateWidestSender(message.Sender())
-			message.RegisterGomuks(gmx)
+			message.RegisterMatrix(matrix)
 		} else {
 			indexOffset++
 		}
