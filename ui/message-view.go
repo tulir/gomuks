@@ -162,8 +162,7 @@ func (view *MessageView) AddMessage(ifcMessage ifc.Message, direction ifc.Messag
 
 	oldMsg, messageExists := view.messageIDs[message.ID()]
 	if messageExists {
-		oldMsg.CopyFrom(message)
-		message = oldMsg
+		view.replaceMessage(oldMsg, message)
 		direction = ifc.IgnoreMessage
 	}
 
@@ -181,8 +180,10 @@ func (view *MessageView) AddMessage(ifcMessage ifc.Message, direction ifc.Messag
 		view.appendBuffer(message)
 	} else if direction == ifc.PrependMessage {
 		view.messages = append([]messages.UIMessage{message}, view.messages...)
+	} else if oldMsg != nil {
+		view.replaceBuffer(oldMsg, message)
 	} else {
-		view.replaceBuffer(message)
+		view.replaceBuffer(message, message)
 	}
 
 	view.messageIDs[message.ID()] = message
@@ -207,11 +208,20 @@ func (view *MessageView) appendBuffer(message messages.UIMessage) {
 	view.prevMsgCount++
 }
 
-func (view *MessageView) replaceBuffer(message messages.UIMessage) {
+func (view *MessageView) replaceMessage(original messages.UIMessage, new messages.UIMessage) {
+	view.messageIDs[new.ID()] = new
+	for index, msg := range view.messages {
+		if msg == original {
+			view.messages[index] = new
+		}
+	}
+}
+
+func (view *MessageView) replaceBuffer(original messages.UIMessage, new messages.UIMessage) {
 	start := -1
 	end := -1
 	for index, meta := range view.metaBuffer {
-		if meta == message {
+		if meta == original {
 			if start == -1 {
 				start = index
 			}
@@ -225,13 +235,17 @@ func (view *MessageView) replaceBuffer(message messages.UIMessage) {
 		end++
 	}
 
-	view.textBuffer = append(append(view.textBuffer[0:start], message.Buffer()...), view.textBuffer[end:]...)
-	if len(message.Buffer()) != end-start+1 {
+	view.textBuffer = append(append(view.textBuffer[0:start], new.Buffer()...), view.textBuffer[end:]...)
+	if len(new.Buffer()) != end-start+1 {
 		metaBuffer := view.metaBuffer[0:start]
-		for range message.Buffer() {
-			metaBuffer = append(metaBuffer, message)
+		for range new.Buffer() {
+			metaBuffer = append(metaBuffer, new)
 		}
 		view.metaBuffer = append(metaBuffer, view.metaBuffer[end:]...)
+	} else {
+		for i := start; i < end; i++ {
+			view.metaBuffer[i] = new
+		}
 	}
 }
 

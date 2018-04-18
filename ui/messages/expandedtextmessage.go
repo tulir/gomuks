@@ -20,7 +20,6 @@ import (
 	"encoding/gob"
 	"time"
 
-	"maunium.net/go/gomuks/interface"
 	"maunium.net/go/gomuks/ui/messages/tstring"
 )
 
@@ -37,24 +36,12 @@ type ExpandedTextMessage struct {
 func NewExpandedTextMessage(id, sender, displayname, msgtype string, text tstring.TString, timestamp time.Time) UIMessage {
 	return &ExpandedTextMessage{
 		BaseTextMessage: newBaseTextMessage(id, sender, displayname, msgtype, timestamp),
-		MsgText: text,
+		MsgText:         text,
 	}
 }
 
 func (msg *ExpandedTextMessage) GenerateText() tstring.TString {
 	return msg.MsgText
-}
-
-// CopyFrom replaces the content of this message object with the content of the given object.
-func (msg *ExpandedTextMessage) CopyFrom(from ifc.MessageMeta) {
-	msg.BaseTextMessage.CopyFrom(from)
-
-	fromExpandedMsg, ok := from.(*ExpandedTextMessage)
-	if ok {
-		msg.MsgText = fromExpandedMsg.MsgText
-	}
-
-	msg.RecalculateBuffer()
 }
 
 func (msg *ExpandedTextMessage) NotificationContent() string {

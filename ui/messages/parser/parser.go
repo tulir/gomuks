@@ -60,7 +60,7 @@ func ParseMessage(gmx ifc.Gomuks, room *rooms.Room, evt *gomatrix.Event) message
 	case "m.text", "m.notice", "m.emote":
 		format, hasFormat := evt.Content["format"].(string)
 		if hasFormat && format == "org.matrix.custom.html" {
-			text := ParseHTMLMessage(room, evt)
+			text := ParseHTMLMessage(room, evt, displayname)
 			return messages.NewExpandedTextMessage(evt.ID, evt.Sender, displayname, msgtype, text, ts)
 		} else {
 			text, _ := evt.Content["body"].(string)

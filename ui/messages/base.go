@@ -61,25 +61,6 @@ func newBaseMessage(id, sender, displayname, msgtype string, timestamp time.Time
 
 func (msg *BaseMessage) RegisterGomuks(gmx ifc.Gomuks) {}
 
-// CopyFrom replaces the content of this message object with the content of the given object.
-func (msg *BaseMessage) CopyFrom(from ifc.MessageMeta) {
-	msg.MsgSender = from.Sender()
-	msg.MsgSenderColor = from.SenderColor()
-
-	fromMsg, ok := from.(UIMessage)
-	if ok {
-		msg.MsgSenderID = fromMsg.SenderID()
-		msg.MsgSender = fromMsg.RealSender()
-		msg.MsgID = fromMsg.ID()
-		msg.MsgType = fromMsg.Type()
-		msg.MsgTimestamp = fromMsg.Timestamp()
-		msg.MsgState = fromMsg.State()
-		msg.MsgIsService = fromMsg.IsService()
-		msg.MsgIsHighlight = fromMsg.IsHighlight()
-		msg.buffer = nil
-	}
-}
-
 // Sender gets the string that should be displayed as the sender of this message.
 //
 // If the message is being sent, the sender is "Sending...".

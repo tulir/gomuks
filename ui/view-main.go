@@ -144,7 +144,7 @@ func (view *MainView) SendMessage(roomView *RoomView, text string) {
 
 func (view *MainView) sendTempMessage(roomView *RoomView, tempMessage ifc.Message, text string) {
 	defer view.gmx.Recover()
-	eventID, err := view.matrix.SendMessage(roomView.Room.ID, tempMessage.Type(), text)
+	eventID, err := view.matrix.SendMarkdownMessage(roomView.Room.ID, tempMessage.Type(), text)
 	if err != nil {
 		tempMessage.SetState(ifc.MessageStateFailed)
 		roomView.SetStatus(fmt.Sprintf("Failed to send message: %s", err))

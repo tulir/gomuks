@@ -31,6 +31,7 @@ import (
 	"strings"
 	"time"
 
+	"gopkg.in/russross/blackfriday.v2"
 	"maunium.net/go/gomatrix"
 	"maunium.net/go/gomuks/config"
 	"maunium.net/go/gomuks/debug"
@@ -320,6 +321,30 @@ func (c *Container) SendMessage(roomID, msgtype, text string) (string, error) {
 	c.SendTyping(roomID, false)
 	resp, err := c.client.SendMessageEvent(roomID, "m.room.message",
 		gomatrix.TextMessage{MsgType: msgtype, Body: text})
+	if err != nil {
+		return "", err
+	}
+	return resp.EventID, nil
+}
+
+func (c *Container) SendMarkdownMessage(roomID, msgtype, text string) (string, error) {
+	defer c.gmx.Recover()
+
+	html := string(blackfriday.Run([]byte(text)))
+	if html == text {
+		return c.SendMessage(roomID, msgtype, text)
+	}
+	debug.Print(html)
+	debug.Print(text)
+
+	c.SendTyping(roomID, false)
+	resp, err := c.client.SendMessageEvent(roomID, "m.room.message",
+		map[string]interface{}{
+			"msgtype":        msgtype,
+			"body":           text,
+			"format":         "org.matrix.custom.html",
+			"formatted_body": html,
+		})
 	if err != nil {
 		return "", err
 	}

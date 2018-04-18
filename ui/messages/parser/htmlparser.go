@@ -37,6 +37,9 @@ var matrixToURL = regexp.MustCompile("^(?:https?://)?(?:www\\.)?matrix\\.to/#/([
 type MatrixHTMLProcessor struct {
 	text tstring.TString
 
+	sender  string
+	msgtype string
+
 	indent    string
 	listType  string
 	lineIsNew bool
@@ -52,7 +55,11 @@ func (parser *MatrixHTMLProcessor) newline() {
 	}
 }
 
-func (parser *MatrixHTMLProcessor) Preprocess() {}
+func (parser *MatrixHTMLProcessor) Preprocess() {
+	if parser.msgtype == "m.emote" {
+		parser.text = tstring.NewColorTString(fmt.Sprintf("* %s ", parser.sender), widget.GetHashColor(parser.sender))
+	}
+}
 
 func (parser *MatrixHTMLProcessor) HandleText(text string) {
 	style := tcell.StyleDefault
@@ -170,12 +177,15 @@ func (parser *MatrixHTMLProcessor) Postprocess() {
 }
 
 // ParseHTMLMessage parses a HTML-formatted Matrix event into a UIMessage.
-func ParseHTMLMessage(room *rooms.Room, evt *gomatrix.Event) tstring.TString {
+func ParseHTMLMessage(room *rooms.Room, evt *gomatrix.Event, senderDisplayname string) tstring.TString {
 	htmlData, _ := evt.Content["formatted_body"].(string)
+	msgtype, _ := evt.Content["msgtype"].(string)
 
 	processor := &MatrixHTMLProcessor{
 		room:      room,
 		text:      tstring.NewBlankTString(),
+		msgtype:   msgtype,
+		sender:    senderDisplayname,
 		indent:    "",
 		listType:  "",
 		lineIsNew: true,

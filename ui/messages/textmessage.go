@@ -56,18 +56,6 @@ func (msg *TextMessage) getCache() tstring.TString {
 	return msg.cache
 }
 
-// CopyFrom replaces the content of this message object with the content of the given object.
-func (msg *TextMessage) CopyFrom(from ifc.MessageMeta) {
-	msg.BaseTextMessage.CopyFrom(from)
-
-	fromTextMsg, ok := from.(*TextMessage)
-	if ok {
-		msg.MsgText = fromTextMsg.MsgText
-	}
-
-	msg.cache = nil
-	msg.RecalculateBuffer()
-}
 func (msg *TextMessage) SetType(msgtype string) {
 	msg.BaseTextMessage.SetType(msgtype)
 	msg.cache = nil

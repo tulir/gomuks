@@ -89,7 +89,6 @@ type MessageMeta interface {
 	Timestamp() time.Time
 	FormatTime() string
 	FormatDate() string
-	CopyFrom(from MessageMeta)
 }
 
 // MessageState is an enum to specify if a Message is being sent, failed to send or was successfully sent.

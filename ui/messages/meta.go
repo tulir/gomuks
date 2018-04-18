@@ -20,13 +20,12 @@ import (
 	"time"
 
 	"maunium.net/go/tcell"
-	"maunium.net/go/gomuks/interface"
 )
 
 // BasicMeta is a simple variable store implementation of MessageMeta.
 type BasicMeta struct {
-	BSender string
-	BTimestamp time.Time
+	BSender                                   string
+	BTimestamp                                time.Time
 	BSenderColor, BTextColor, BTimestampColor tcell.Color
 }
 
@@ -65,13 +64,4 @@ func (meta *BasicMeta) TextColor() tcell.Color {
 // This usually does not apply to the date, as it is rendered separately from the message.
 func (meta *BasicMeta) TimestampColor() tcell.Color {
 	return meta.BTimestampColor
-}
-
-// CopyFrom replaces the content of this meta object with the content of the given object.
-func (meta *BasicMeta) CopyFrom(from ifc.MessageMeta) {
-	meta.BSender = from.Sender()
-	meta.BTimestamp = from.Timestamp()
-	meta.BSenderColor = from.SenderColor()
-	meta.BTextColor = from.TextColor()
-	meta.BTimestampColor = from.TimestampColor()
 }

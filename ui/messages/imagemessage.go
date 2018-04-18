@@ -85,18 +85,6 @@ func (msg *ImageMessage) Path() string {
 	return msg.gmx.Matrix().GetCachePath(msg.Homeserver, msg.FileID)
 }
 
-// CopyFrom replaces the content of this message object with the content of the given object.
-func (msg *ImageMessage) CopyFrom(from ifc.MessageMeta) {
-	msg.BaseMessage.CopyFrom(from)
-
-	fromImgMsg, ok := from.(*ImageMessage)
-	if ok {
-		msg.data = fromImgMsg.data
-	}
-
-	msg.RecalculateBuffer()
-}
-
 // CalculateBuffer generates the internal buffer for this message that consists
 // of the text of this message split into lines at most as wide as the width
 // parameter.
