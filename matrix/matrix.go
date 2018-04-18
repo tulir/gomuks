@@ -334,8 +334,6 @@ func (c *Container) SendMarkdownMessage(roomID, msgtype, text string) (string, e
 	if html == text {
 		return c.SendMessage(roomID, msgtype, text)
 	}
-	debug.Print(html)
-	debug.Print(text)
 
 	c.SendTyping(roomID, false)
 	resp, err := c.client.SendMessageEvent(roomID, "m.room.message",
