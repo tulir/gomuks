@@ -240,10 +240,10 @@ func (view *RoomView) UpdateUserList() {
 	var invited strings.Builder
 	for _, user := range view.Room.GetMembers() {
 		if user.Membership == "join" {
-			joined.WriteString(widget.AddHashColor(user.DisplayName))
+			joined.WriteString(widget.AddColor(user.DisplayName, widget.GetHashColorName(user.UserID)))
 			joined.WriteRune('\n')
 		} else if user.Membership == "invite" {
-			invited.WriteString(widget.AddHashColor(user.DisplayName))
+			invited.WriteString(widget.AddColor(user.DisplayName, widget.GetHashColorName(user.UserID)))
 			invited.WriteRune('\n')
 		}
 	}

@@ -37,8 +37,9 @@ var matrixToURL = regexp.MustCompile("^(?:https?://)?(?:www\\.)?matrix\\.to/#/([
 type MatrixHTMLProcessor struct {
 	text tstring.TString
 
-	sender  string
-	msgtype string
+	senderID string
+	sender   string
+	msgtype  string
 
 	indent    string
 	listType  string
@@ -57,7 +58,7 @@ func (parser *MatrixHTMLProcessor) newline() {
 
 func (parser *MatrixHTMLProcessor) Preprocess() {
 	if parser.msgtype == "m.emote" {
-		parser.text = tstring.NewColorTString(fmt.Sprintf("* %s ", parser.sender), widget.GetHashColor(parser.sender))
+		parser.text = tstring.NewColorTString(fmt.Sprintf("* %s ", parser.sender), widget.GetHashColor(parser.senderID))
 	}
 }
 
@@ -147,7 +148,7 @@ func (parser *MatrixHTMLProcessor) HandleEndTag(tagName string) {
 			pillTarget := match[1]
 			if pillTarget[0] == '@' {
 				if member := parser.room.GetMember(pillTarget); member != nil {
-					parser.text = parser.text.AppendColor(member.DisplayName, widget.GetHashColor(member.DisplayName))
+					parser.text = parser.text.AppendColor(member.DisplayName, widget.GetHashColor(member.UserID))
 				} else {
 					parser.text = parser.text.Append(pillTarget)
 				}
@@ -185,6 +186,7 @@ func ParseHTMLMessage(room *rooms.Room, evt *gomatrix.Event, senderDisplayname s
 		room:      room,
 		text:      tstring.NewBlankTString(),
 		msgtype:   msgtype,
+		senderID:  evt.Sender,
 		sender:    senderDisplayname,
 		indent:    "",
 		listType:  "",

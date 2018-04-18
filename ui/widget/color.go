@@ -21,6 +21,7 @@ import (
 	"hash/fnv"
 	"sort"
 
+	"maunium.net/go/gomuks/debug"
 	"maunium.net/go/tcell"
 )
 
@@ -51,6 +52,7 @@ func init() {
 //  <-- = red
 //  --- = yellow
 func GetHashColorName(s string) string {
+	debug.Print("Getting color for", s)
 	switch s {
 	case "-->":
 		return "green"
@@ -72,8 +74,7 @@ func GetHashColor(s string) tcell.Color {
 	return tcell.ColorNames[GetHashColorName(s)]
 }
 
-// AddHashColor adds tview color tags to the given string.
-// The color added is the color returned by GetHashColorName().
-func AddHashColor(s string) string {
-	return fmt.Sprintf("[%s]%s[white]", GetHashColorName(s), s)
+// AddColor adds tview color tags to the given string.
+func AddColor(s, color string) string {
+	return fmt.Sprintf("[%s]%s[white]", color, s)
 }
