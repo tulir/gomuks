@@ -129,8 +129,10 @@ func (ai *ANSImage) Render() []tstring.TString {
 			go func(row, y int) {
 				defer func() {
 					err := recover()
-					debug.Print("Panic rendering ANSImage:", err)
-					ch <- renderData{row: row, render: tstring.NewColorTString("ERROR", tcell.ColorRed)}
+					if err != nil {
+						debug.Print("Panic rendering ANSImage:", err)
+						ch <- renderData{row: row, render: tstring.NewColorTString("ERROR", tcell.ColorRed)}
+					}
 				}()
 				str := make(tstring.TString, ai.w)
 				for x := 0; x < ai.w; x++ {
