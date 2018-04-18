@@ -33,6 +33,7 @@ func init() {
 type BaseMessage struct {
 	MsgID           string
 	MsgType         string
+	MsgSenderID     string
 	MsgSender       string
 	MsgSenderColor  tcell.Color
 	MsgTimestamp    time.Time
@@ -43,9 +44,10 @@ type BaseMessage struct {
 	prevBufferWidth int
 }
 
-func newBaseMessage(id, sender, msgtype string, timestamp time.Time) BaseMessage {
+func newBaseMessage(id, sender, displayname, msgtype string, timestamp time.Time) BaseMessage {
 	return BaseMessage{
-		MsgSender:       sender,
+		MsgSenderID:     sender,
+		MsgSender:       displayname,
 		MsgTimestamp:    timestamp,
 		MsgSenderColor:  widget.GetHashColor(sender),
 		MsgType:         msgtype,
@@ -66,6 +68,7 @@ func (msg *BaseMessage) CopyFrom(from ifc.MessageMeta) {
 
 	fromMsg, ok := from.(UIMessage)
 	if ok {
+		msg.MsgSenderID = fromMsg.SenderID()
 		msg.MsgSender = fromMsg.RealSender()
 		msg.MsgID = fromMsg.ID()
 		msg.MsgType = fromMsg.Type()
@@ -97,6 +100,10 @@ func (msg *BaseMessage) Sender() string {
 	default:
 		return msg.MsgSender
 	}
+}
+
+func (msg *BaseMessage) SenderID() string {
+	return msg.MsgSenderID
 }
 
 func (msg *BaseMessage) RealSender() string {

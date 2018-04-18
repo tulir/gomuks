@@ -30,6 +30,7 @@ type UIMessage interface {
 	Buffer() []tstring.TString
 	Height() int
 
+	SenderID() string
 	RealSender() string
 	RegisterGomuks(gmx ifc.Gomuks)
 }

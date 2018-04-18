@@ -104,17 +104,22 @@ func findWordToTabComplete(text string) string {
 func (view *MainView) InputTabComplete(roomView *RoomView, text string, cursorOffset int) string {
 	str := runewidth.Truncate(text, cursorOffset, "")
 	word := findWordToTabComplete(str)
+
 	userCompletions := roomView.AutocompleteUser(word)
 	if len(userCompletions) == 1 {
 		startIndex := len(str) - len(word)
-		completion := userCompletions[0]
+		member := userCompletions[0]
+		completion := fmt.Sprintf("[%s](https://matrix.to/#/%s)", member.DisplayName, member.UserID)
 		if startIndex == 0 {
 			completion = completion + ": "
 		}
 		text = str[0:startIndex] + completion + text[len(str):]
-	} else if len(userCompletions) > 1 && len(userCompletions) < 6 {
-		roomView.SetStatus(fmt.Sprintf("Completions: %s", strings.Join(userCompletions, ", ")))
+	} else if len(userCompletions) > 1 && len(userCompletions) <= 5 {
+		// roomView.SetStatus(fmt.Sprintf("Completions: %s", strings.Join(userCompletions, ", ")))
+	} else if len(userCompletions) > 5 {
+		roomView.SetStatus("Over 5 completion options.")
 	}
+
 	return text
 }
 

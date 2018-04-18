@@ -23,11 +23,11 @@ import (
 	"strings"
 	"time"
 
-	"maunium.net/go/tcell"
 	"maunium.net/go/gomuks/interface"
 	"maunium.net/go/gomuks/matrix/rooms"
 	"maunium.net/go/gomuks/ui/messages"
 	"maunium.net/go/gomuks/ui/widget"
+	"maunium.net/go/tcell"
 	"maunium.net/go/tview"
 )
 
@@ -213,16 +213,15 @@ func (view *RoomView) SetTyping(users []string) {
 	}
 }
 
-func (view *RoomView) AutocompleteUser(existingText string) (completions []string) {
+func (view *RoomView) AutocompleteUser(existingText string) (completions []*rooms.Member) {
 	textWithoutPrefix := existingText
 	if strings.HasPrefix(existingText, "@") {
 		textWithoutPrefix = existingText[1:]
 	}
 	for _, user := range view.Room.GetMembers() {
-		if strings.HasPrefix(user.DisplayName, textWithoutPrefix) {
-			completions = append(completions, user.DisplayName)
-		} else if strings.HasPrefix(user.UserID, existingText) {
-			completions = append(completions, user.UserID)
+		if strings.HasPrefix(user.DisplayName, textWithoutPrefix) ||
+			strings.HasPrefix(user.UserID, existingText) {
+			completions = append(completions, user)
 		}
 	}
 	return
@@ -257,10 +256,12 @@ func (view *RoomView) UpdateUserList() {
 
 func (view *RoomView) newUIMessage(id, sender, msgtype, text string, timestamp time.Time) messages.UIMessage {
 	member := view.Room.GetMember(sender)
+	displayname := sender
 	if member != nil {
-		sender = member.DisplayName
+		displayname = member.DisplayName
 	}
-	return messages.NewTextMessage(id, sender, msgtype, text, timestamp)
+	msg := messages.NewTextMessage(id, sender, displayname, msgtype, text, timestamp)
+	return msg
 }
 
 func (view *RoomView) NewMessage(id, sender, msgtype, text string, timestamp time.Time) ifc.Message {

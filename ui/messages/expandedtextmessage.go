@@ -34,9 +34,9 @@ type ExpandedTextMessage struct {
 }
 
 // NewExpandedTextMessage creates a new ExpandedTextMessage object with the provided values and the default state.
-func NewExpandedTextMessage(id, sender, msgtype string, text tstring.TString, timestamp time.Time) UIMessage {
+func NewExpandedTextMessage(id, sender, displayname, msgtype string, text tstring.TString, timestamp time.Time) UIMessage {
 	return &ExpandedTextMessage{
-		BaseTextMessage: newBaseTextMessage(id, sender, msgtype, timestamp),
+		BaseTextMessage: newBaseTextMessage(id, sender, displayname, msgtype, timestamp),
 		MsgText: text,
 	}
 }

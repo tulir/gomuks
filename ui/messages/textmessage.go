@@ -36,9 +36,9 @@ type TextMessage struct {
 }
 
 // NewTextMessage creates a new UITextMessage object with the provided values and the default state.
-func NewTextMessage(id, sender, msgtype, text string, timestamp time.Time) UIMessage {
+func NewTextMessage(id, sender, displayname, msgtype, text string, timestamp time.Time) UIMessage {
 	return &TextMessage{
-		BaseTextMessage: newBaseTextMessage(id, sender, msgtype, timestamp),
+		BaseTextMessage: newBaseTextMessage(id, sender, displayname, msgtype, timestamp),
 		MsgText:         text,
 	}
 }

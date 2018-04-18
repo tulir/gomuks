@@ -45,9 +45,9 @@ type ImageMessage struct {
 }
 
 // NewImageMessage creates a new ImageMessage object with the provided values and the default state.
-func NewImageMessage(gmx ifc.Gomuks, id, sender, msgtype, homeserver, fileID string, data []byte, timestamp time.Time) UIMessage {
+func NewImageMessage(gmx ifc.Gomuks, id, sender, displayname, msgtype, homeserver, fileID string, data []byte, timestamp time.Time) UIMessage {
 	return &ImageMessage{
-		newBaseMessage(id, sender, msgtype, timestamp),
+		newBaseMessage(id, sender, displayname, msgtype, timestamp),
 		homeserver,
 		fileID,
 		data,

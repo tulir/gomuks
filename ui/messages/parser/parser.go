@@ -31,15 +31,11 @@ import (
 )
 
 func ParseEvent(gmx ifc.Gomuks, room *rooms.Room, evt *gomatrix.Event) messages.UIMessage {
-	member := room.GetMember(evt.Sender)
-	if member != nil {
-		evt.Sender = member.DisplayName
-	}
 	switch evt.Type {
 	case "m.room.message":
 		return ParseMessage(gmx, room, evt)
 	case "m.room.member":
-		return ParseMembershipEvent(evt)
+		return ParseMembershipEvent(room, evt)
 	}
 	return nil
 }
@@ -53,6 +49,11 @@ func unixToTime(unix int64) time.Time {
 }
 
 func ParseMessage(gmx ifc.Gomuks, room *rooms.Room, evt *gomatrix.Event) messages.UIMessage {
+	displayname := evt.Sender
+	member := room.GetMember(evt.Sender)
+	if member != nil {
+		displayname = member.DisplayName
+	}
 	msgtype, _ := evt.Content["msgtype"].(string)
 	ts := unixToTime(evt.Timestamp)
 	switch msgtype {
@@ -60,10 +61,10 @@ func ParseMessage(gmx ifc.Gomuks, room *rooms.Room, evt *gomatrix.Event) message
 		format, hasFormat := evt.Content["format"].(string)
 		if hasFormat && format == "org.matrix.custom.html" {
 			text := ParseHTMLMessage(room, evt)
-			return messages.NewExpandedTextMessage(evt.ID, evt.Sender, msgtype, text, ts)
+			return messages.NewExpandedTextMessage(evt.ID, evt.Sender, displayname, msgtype, text, ts)
 		} else {
 			text, _ := evt.Content["body"].(string)
-			return messages.NewTextMessage(evt.ID, evt.Sender, msgtype, text, ts)
+			return messages.NewTextMessage(evt.ID, evt.Sender, displayname, msgtype, text, ts)
 		}
 	case "m.image":
 		url, _ := evt.Content["url"].(string)
@@ -71,12 +72,16 @@ func ParseMessage(gmx ifc.Gomuks, room *rooms.Room, evt *gomatrix.Event) message
 		if err != nil {
 			debug.Printf("Failed to download %s: %v", url, err)
 		}
-		return messages.NewImageMessage(gmx, evt.ID, evt.Sender, msgtype, hs, id, data, ts)
+		return messages.NewImageMessage(gmx, evt.ID, evt.Sender, displayname, msgtype, hs, id, data, ts)
 	}
 	return nil
 }
 
-func getMembershipEventContent(evt *gomatrix.Event) (sender string, text tstring.TString) {
+func getMembershipEventContent(room *rooms.Room, evt *gomatrix.Event) (sender string, text tstring.TString) {
+	member := room.GetMember(evt.Sender)
+	if member != nil {
+		evt.Sender = member.DisplayName
+	}
 	membership, _ := evt.Content["membership"].(string)
 	displayname, _ := evt.Content["displayname"].(string)
 	if len(displayname) == 0 {
@@ -121,8 +126,8 @@ func getMembershipEventContent(evt *gomatrix.Event) (sender string, text tstring
 	return
 }
 
-func ParseMembershipEvent(evt *gomatrix.Event) messages.UIMessage {
-	sender, text := getMembershipEventContent(evt)
+func ParseMembershipEvent(room *rooms.Room, evt *gomatrix.Event) messages.UIMessage {
+	displayname, text := getMembershipEventContent(room, evt)
 	ts := unixToTime(evt.Timestamp)
-	return messages.NewExpandedTextMessage(evt.ID, sender, "m.room.membership", text, ts)
+	return messages.NewExpandedTextMessage(evt.ID, evt.Sender, displayname, "m.room.membership", text, ts)
 }

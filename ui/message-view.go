@@ -21,7 +21,9 @@ import (
 	"fmt"
 	"math"
 	"os"
+	"strings"
 
+	"github.com/mattn/go-runewidth"
 	"maunium.net/go/gomuks/debug"
 	"maunium.net/go/gomuks/interface"
 	"maunium.net/go/gomuks/lib/open"
@@ -278,22 +280,28 @@ func (view *MessageView) handleUsernameClick(message ifc.MessageMeta, prevMessag
 		return false
 	}
 
-	sender := []rune(uiMessage.Sender())
-	if len(sender) == 0 {
+	if len(uiMessage.Sender()) == 0 {
 		return false
 	}
+	sender := fmt.Sprintf("[%s](https://matrix.to/#/%s)", uiMessage.Sender(), uiMessage.SenderID())
 
 	cursorPos := view.parent.input.GetCursorOffset()
-	text := []rune(view.parent.input.GetText())
-	var newText []rune
+	text := view.parent.input.GetText()
+	var buf strings.Builder
 	if cursorPos == 0 {
-		newText = append(sender, ':', ' ')
-		newText = append(newText, text...)
+		buf.WriteString(sender)
+		buf.WriteRune(':')
+		buf.WriteRune(' ')
+		buf.WriteString(text)
 	} else {
-		newText = append(text[0:cursorPos], sender...)
-		newText = append(newText, ' ')
-		newText = append(newText, text[cursorPos:]...)
+		textBefore := runewidth.Truncate(text, cursorPos, "")
+		textAfter := text[len(textBefore):]
+		buf.WriteString(textBefore)
+		buf.WriteString(sender)
+		buf.WriteRune(' ')
+		buf.WriteString(textAfter)
 	}
+	newText := buf.String()
 	view.parent.input.SetText(string(newText))
 	view.parent.input.SetCursorOffset(cursorPos + len(newText) - len(text))
 	return true

@@ -32,8 +32,8 @@ type BaseTextMessage struct {
 	BaseMessage
 }
 
-func newBaseTextMessage(id, sender, msgtype string, timestamp time.Time) BaseTextMessage {
-	return BaseTextMessage{newBaseMessage(id, sender, msgtype, timestamp)}
+func newBaseTextMessage(id, sender, displayname, msgtype string, timestamp time.Time) BaseTextMessage {
+	return BaseTextMessage{newBaseMessage(id, sender, displayname, msgtype, timestamp)}
 }
 
 // Regular expressions used to split lines when calculating the buffer.
