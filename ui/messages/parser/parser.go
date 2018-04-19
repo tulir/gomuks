@@ -62,10 +62,9 @@ func ParseMessage(matrix ifc.MatrixContainer, room *rooms.Room, evt *gomatrix.Ev
 		if hasFormat && format == "org.matrix.custom.html" {
 			text := ParseHTMLMessage(room, evt, displayname)
 			return messages.NewExpandedTextMessage(evt.ID, evt.Sender, displayname, msgtype, text, ts)
-		} else {
-			text, _ := evt.Content["body"].(string)
-			return messages.NewTextMessage(evt.ID, evt.Sender, displayname, msgtype, text, ts)
 		}
+		text, _ := evt.Content["body"].(string)
+		return messages.NewTextMessage(evt.ID, evt.Sender, displayname, msgtype, text, ts)
 	case "m.image":
 		url, _ := evt.Content["url"].(string)
 		data, hs, id, err := matrix.Download(url)

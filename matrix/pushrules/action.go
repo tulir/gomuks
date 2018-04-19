@@ -128,8 +128,7 @@ func (action *PushAction) MarshalJSON() (raw []byte, err error) {
 			"value":     action.Value,
 		}
 		return json.Marshal(&data)
-	} else {
-		data := string(action.Action)
-		return json.Marshal(&data)
 	}
+	data := string(action.Action)
+	return json.Marshal(&data)
 }
