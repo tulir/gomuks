@@ -67,7 +67,7 @@ type LoginView interface {
 type MessageDirection int
 
 const (
-	AppendMessage  MessageDirection = iota
+	AppendMessage MessageDirection = iota
 	PrependMessage
 	IgnoreMessage
 )

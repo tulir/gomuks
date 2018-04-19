@@ -18,8 +18,8 @@ package ui
 
 import (
 	"maunium.net/go/gomuks/config"
-	"maunium.net/go/gomuks/interface"
 	"maunium.net/go/gomuks/debug"
+	"maunium.net/go/gomuks/interface"
 	"maunium.net/go/gomuks/ui/widget"
 	"maunium.net/go/tview"
 )

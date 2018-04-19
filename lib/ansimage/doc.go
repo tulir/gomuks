@@ -9,4 +9,3 @@
 //
 // This package is licensed under the Mozilla Public License v2.0.
 package ansimage
-

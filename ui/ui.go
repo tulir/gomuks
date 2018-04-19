@@ -17,8 +17,8 @@
 package ui
 
 import (
-	"maunium.net/go/tcell"
 	"maunium.net/go/gomuks/interface"
+	"maunium.net/go/tcell"
 	"maunium.net/go/tview"
 )
 

@@ -42,9 +42,9 @@ func Send(title, text string, critical, sound bool) error {
 		if sound {
 			args = append(args, "-sound", "default")
 		}
-// 		if len(iconPath) > 0 {
-// 			args = append(args, "-appIcon", iconPath)
-// 		}
+		// 		if len(iconPath) > 0 {
+		// 			args = append(args, "-appIcon", iconPath)
+		// 		}
 		return exec.Command("terminal-notifier", args...).Run()
 	}
 	title = strings.Replace(title, `"`, `\"`, -1)

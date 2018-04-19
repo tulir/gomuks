@@ -102,13 +102,13 @@ func (ai *ANSImage) SetAt(y, x int, r, g, b, brightness uint8) error {
 func (ai *ANSImage) GetAt(y, x int) (*ANSIpixel, error) {
 	if y >= 0 && y < ai.h && x >= 0 && x < ai.w {
 		return &ANSIpixel{
-			R:          ai.pixmap[y][x].R,
-			G:          ai.pixmap[y][x].G,
-			B:          ai.pixmap[y][x].B,
-			Brightness: ai.pixmap[y][x].Brightness,
-			upper:      ai.pixmap[y][x].upper,
-			source:     ai.pixmap[y][x].source,
-		},
+				R:          ai.pixmap[y][x].R,
+				G:          ai.pixmap[y][x].G,
+				B:          ai.pixmap[y][x].B,
+				Brightness: ai.pixmap[y][x].Brightness,
+				upper:      ai.pixmap[y][x].upper,
+				source:     ai.pixmap[y][x].source,
+			},
 			nil
 	}
 	return nil, ErrOutOfBounds
@@ -170,7 +170,7 @@ func New(h, w int, bg color.Color) (*ANSImage, error) {
 
 	r, g, b, _ := bg.RGBA()
 	ansimage := &ANSImage{
-		h:        h, w: w,
+		h: h, w: w,
 		maxprocs: 1,
 		bgR:      uint8(r),
 		bgG:      uint8(g),

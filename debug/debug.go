@@ -25,7 +25,6 @@ import (
 	"time"
 
 	"runtime/debug"
-
 )
 
 var writer io.Writer

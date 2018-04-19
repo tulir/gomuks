@@ -24,9 +24,9 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	"maunium.net/go/tcell"
 	"github.com/mattn/go-runewidth"
 	"github.com/zyedidia/clipboard"
+	"maunium.net/go/tcell"
 	"maunium.net/go/tview"
 )
 

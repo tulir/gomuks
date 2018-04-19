@@ -23,9 +23,9 @@ func Send(title, text string, critical, sound bool) error {
 	if critical {
 		args = append(args, "-u", "critical")
 	}
-// 	if iconPath {
-// 		args = append(args, "-i", iconPath)
-// 	}
+	// 	if iconPath {
+	// 		args = append(args, "-i", iconPath)
+	// 	}
 	args = append(args, title, text)
 	if sound {
 		soundName := "message-new-instant"

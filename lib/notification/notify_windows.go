@@ -25,7 +25,7 @@ func Send(title, text string, critical, sound bool) error {
 		Message:  message,
 		Audio:    toast.Silent,
 		Duration: toast.Short,
-// 		Icon: ...,
+		// 		Icon: ...,
 	}
 	if sound {
 		notification.Audio = toast.IM
