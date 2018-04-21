@@ -23,7 +23,6 @@ import (
 	"time"
 	"unicode"
 
-	"github.com/mattn/go-runewidth"
 	"maunium.net/go/gomatrix"
 	"maunium.net/go/gomuks/config"
 	"maunium.net/go/gomuks/debug"
@@ -101,28 +100,6 @@ func findWordToTabComplete(text string) string {
 	return output
 }
 
-func (view *MainView) InputTabComplete(roomView *RoomView, text string, cursorOffset int) string {
-	str := runewidth.Truncate(text, cursorOffset, "")
-	word := findWordToTabComplete(str)
-
-	userCompletions := roomView.AutocompleteUser(word)
-	if len(userCompletions) == 1 {
-		startIndex := len(str) - len(word)
-		member := userCompletions[0]
-		completion := fmt.Sprintf("[%s](https://matrix.to/#/%s)", member.DisplayName, member.UserID)
-		if startIndex == 0 {
-			completion = completion + ": "
-		}
-		text = str[0:startIndex] + completion + text[len(str):]
-	} else if len(userCompletions) > 1 && len(userCompletions) <= 5 {
-		// roomView.SetStatus(fmt.Sprintf("Completions: %s", strings.Join(userCompletions, ", ")))
-	} else if len(userCompletions) > 5 {
-		roomView.SetStatus("Over 5 completion options.")
-	}
-
-	return text
-}
-
 func (view *MainView) InputSubmit(roomView *RoomView, text string) {
 	if len(text) == 0 {
 		return
@@ -147,7 +124,7 @@ func (view *MainView) sendTempMessage(roomView *RoomView, tempMessage ifc.Messag
 	eventID, err := view.matrix.SendMarkdownMessage(roomView.Room.ID, tempMessage.Type(), text)
 	if err != nil {
 		tempMessage.SetState(ifc.MessageStateFailed)
-		roomView.SetStatus(fmt.Sprintf("Failed to send message: %s", err))
+		roomView.AddServiceMessage(fmt.Sprintf("Failed to send message: %v", err))
 	} else {
 		roomView.MessageView().UpdateMessageID(tempMessage, eventID)
 	}
@@ -314,7 +291,6 @@ func (view *MainView) addRoom(index int, room string) {
 		roomView := NewRoomView(roomStore).
 			SetInputSubmitFunc(view.InputSubmit).
 			SetInputChangedFunc(view.InputChanged).
-			SetTabCompleteFunc(view.InputTabComplete).
 			SetInputCapture(view.KeyEventHandler).
 			SetMouseCapture(view.MouseEventHandler)
 		view.rooms[room] = roomView

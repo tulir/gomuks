@@ -84,7 +84,7 @@ type AdvancedInputField struct {
 	done func(tcell.Key)
 
 	// An optional function which is called when the user presses tab.
-	tabComplete func(text string, cursorOffset int) string
+	tabComplete func(text string, cursorOffset int)
 }
 
 // NewAdvancedInputField returns a new input field.
@@ -103,6 +103,20 @@ func (field *AdvancedInputField) SetText(text string) *AdvancedInputField {
 	field.text = text
 	if field.changed != nil {
 		field.changed(text)
+	}
+	return field
+}
+
+// SetTextAndMoveCursor sets the current text of the input field and moves the cursor with the width difference.
+func (field *AdvancedInputField) SetTextAndMoveCursor(text string) *AdvancedInputField {
+	oldWidth := runewidth.StringWidth(field.text)
+	field.text = text
+	newWidth := runewidth.StringWidth(field.text)
+	if oldWidth != newWidth {
+		field.cursorOffset += newWidth - oldWidth
+	}
+	if field.changed != nil {
+		field.changed(field.text)
 	}
 	return field
 }
@@ -212,7 +226,7 @@ func (field *AdvancedInputField) SetDoneFunc(handler func(key tcell.Key)) *Advan
 	return field
 }
 
-func (field *AdvancedInputField) SetTabCompleteFunc(handler func(text string, cursorOffset int) string) *AdvancedInputField {
+func (field *AdvancedInputField) SetTabCompleteFunc(handler func(text string, cursorOffset int)) *AdvancedInputField {
 	field.tabComplete = handler
 	return field
 }
@@ -443,12 +457,7 @@ func (field *AdvancedInputField) RemovePreviousCharacter() {
 
 func (field *AdvancedInputField) TriggerTabComplete() bool {
 	if field.tabComplete != nil {
-		oldWidth := runewidth.StringWidth(field.text)
-		field.text = field.tabComplete(field.text, field.cursorOffset)
-		newWidth := runewidth.StringWidth(field.text)
-		if oldWidth != newWidth {
-			field.cursorOffset += newWidth - oldWidth
-		}
+		field.tabComplete(field.text, field.cursorOffset)
 		return true
 	}
 	return false

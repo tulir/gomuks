@@ -77,7 +77,7 @@ type RoomView interface {
 	SaveHistory(dir string) error
 	LoadHistory(matrix MatrixContainer, dir string) (int, error)
 
-	SetStatus(status string)
+	SetCompletions(completions []string)
 	SetTyping(users []string)
 	UpdateUserList()
 

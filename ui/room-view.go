@@ -19,11 +19,14 @@ package ui
 import (
 	"fmt"
 	"path/filepath"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
 
+	"github.com/mattn/go-runewidth"
 	"maunium.net/go/gomuks/interface"
+	"maunium.net/go/gomuks/lib/util"
 	"maunium.net/go/gomuks/matrix/rooms"
 	"maunium.net/go/gomuks/ui/messages"
 	"maunium.net/go/gomuks/ui/widget"
@@ -41,6 +44,13 @@ type RoomView struct {
 	ulBorder *widget.Border
 	input    *widget.AdvancedInputField
 	Room     *rooms.Room
+
+	typing []string
+	completions struct {
+		list      []string
+		textCache string
+		time      time.Time
+	}
 }
 
 func NewRoomView(room *rooms.Room) *RoomView {
@@ -58,7 +68,8 @@ func NewRoomView(room *rooms.Room) *RoomView {
 	view.input.
 		SetFieldBackgroundColor(tcell.ColorDefault).
 		SetPlaceholder("Send a message...").
-		SetPlaceholderExtColor(tcell.ColorGray)
+		SetPlaceholderExtColor(tcell.ColorGray).
+		SetTabCompleteFunc(view.InputTabComplete)
 
 	view.topic.
 		SetText(strings.Replace(room.GetTopic(), "\n", " ", -1)).
@@ -83,13 +94,6 @@ func (view *RoomView) SaveHistory(dir string) error {
 
 func (view *RoomView) LoadHistory(matrix ifc.MatrixContainer, dir string) (int, error) {
 	return view.MessageView().LoadHistory(matrix, view.logPath(dir))
-}
-
-func (view *RoomView) SetTabCompleteFunc(fn func(room *RoomView, text string, cursorOffset int) string) *RoomView {
-	view.input.SetTabCompleteFunc(func(text string, cursorOffset int) string {
-		return fn(view, text, cursorOffset)
-	})
-	return view
 }
 
 func (view *RoomView) SetInputCapture(fn func(room *RoomView, event *tcell.EventKey) *tcell.EventKey) *RoomView {
@@ -151,6 +155,30 @@ const (
 	StaticVerticalSpace = TopicBarHeight + StatusBarHeight + InputBarHeight
 )
 
+func (view *RoomView) GetStatus() string {
+	var buf strings.Builder
+
+	if len(view.completions.list) > 0 {
+		if view.completions.textCache != view.input.GetText() || view.completions.time.Add(10 * time.Second).Before(time.Now()) {
+			view.completions.list = []string{}
+		} else {
+			buf.WriteString(strings.Join(view.completions.list, ", "))
+			buf.WriteString(" - ")
+		}
+	}
+
+	if len(view.typing) == 1 {
+		buf.WriteString("Typing: " + view.typing[0])
+		buf.WriteString(" - ")
+	} else if len(view.typing) > 1 {
+		fmt.Fprintf(&buf,
+			"Typing: %s and %s - ",
+			strings.Join(view.typing[:len(view.typing)-1], ", "), view.typing[len(view.typing)-1])
+	}
+
+	return strings.TrimSuffix(buf.String(), " - ")
+}
+
 func (view *RoomView) Draw(screen tcell.Screen) {
 	x, y, width, height := view.GetInnerRect()
 	if width <= 0 || height <= 0 {
@@ -185,14 +213,17 @@ func (view *RoomView) Draw(screen tcell.Screen) {
 	view.Box.Draw(screen)
 	view.topic.Draw(screen)
 	view.content.Draw(screen)
+	view.status.SetText(view.GetStatus())
 	view.status.Draw(screen)
 	view.input.Draw(screen)
 	view.ulBorder.Draw(screen)
 	view.userList.Draw(screen)
 }
 
-func (view *RoomView) SetStatus(status string) {
-	view.status.SetText(status)
+func (view *RoomView) SetCompletions(completions []string) {
+	view.completions.list = completions
+	view.completions.textCache = view.input.GetText()
+	view.completions.time = time.Now()
 }
 
 func (view *RoomView) SetTyping(users []string) {
@@ -202,29 +233,72 @@ func (view *RoomView) SetTyping(users []string) {
 			users[index] = member.DisplayName
 		}
 	}
-	if len(users) == 0 {
-		view.status.SetText("")
-	} else if len(users) < 2 {
-		view.status.SetText("Typing: " + strings.Join(users, " and "))
-	} else {
-		view.status.SetText(fmt.Sprintf(
-			"Typing: %s and %s",
-			strings.Join(users[:len(users)-1], ", "), users[len(users)-1]))
-	}
+	view.typing = users
 }
 
-func (view *RoomView) AutocompleteUser(existingText string) (completions []*rooms.Member) {
+type completion struct {
+	displayName string
+	id          string
+}
+
+func (view *RoomView) AutocompleteUser(existingText string) (completions []completion) {
 	textWithoutPrefix := existingText
 	if strings.HasPrefix(existingText, "@") {
 		textWithoutPrefix = existingText[1:]
 	}
 	for _, user := range view.Room.GetMembers() {
-		if strings.HasPrefix(user.DisplayName, textWithoutPrefix) ||
-			strings.HasPrefix(user.UserID, existingText) {
-			completions = append(completions, user)
+		if user.DisplayName == textWithoutPrefix || user.UserID == existingText {
+			// Exact match, return that.
+			return []completion{{user.DisplayName, user.UserID}}
+		}
+
+		if strings.HasPrefix(user.DisplayName, textWithoutPrefix) || strings.HasPrefix(user.UserID, existingText) {
+			completions = append(completions, completion{user.DisplayName, user.UserID})
 		}
 	}
 	return
+}
+
+func (view *RoomView) AutocompleteRoom(existingText string) (completions []completion) {
+	// TODO - This was harder than I expected.
+
+	return []completion{}
+}
+
+func (view *RoomView) InputTabComplete(text string, cursorOffset int) {
+	str := runewidth.Truncate(text, cursorOffset, "")
+	word := findWordToTabComplete(str)
+	startIndex := len(str) - len(word)
+
+	var strCompletions []string
+	var strCompletion string
+
+	completions := view.AutocompleteUser(word)
+	completions = append(completions, view.AutocompleteRoom(word)...)
+
+	if len(completions) == 1 {
+		completion := completions[0]
+		strCompletion = fmt.Sprintf("[%s](https://matrix.to/#/%s)", completion.displayName, completion.id)
+		if startIndex == 0 {
+			strCompletion = strCompletion + ": "
+		}
+	} else if len(completions) > 1 {
+		for _, completion := range completions {
+			strCompletions = append(strCompletions, completion.displayName)
+		}
+	}
+
+	if len(strCompletions) > 0 {
+		strCompletion = util.LongestCommonPrefix(strCompletions)
+		sort.Sort(sort.StringSlice(strCompletions))
+	}
+
+	if len(strCompletion) > 0 {
+		text = str[0:startIndex] + strCompletion + text[len(str):]
+	}
+
+	view.input.SetTextAndMoveCursor(text)
+	view.SetCompletions(strCompletions)
 }
 
 func (view *RoomView) MessageView() *MessageView {
