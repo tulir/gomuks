@@ -83,6 +83,13 @@ func (list *RoomList) SetSelected(room *rooms.Room) {
 	list.selected = room
 }
 
+func (list *RoomList) Get(n int) *rooms.Room {
+	if n < 0 || n >= len(list.items) {
+		return nil
+	}
+	return list.items[n]
+}
+
 // Draw draws this primitive onto the screen.
 func (list *RoomList) Draw(screen tcell.Screen) {
 	list.Box.Draw(screen)

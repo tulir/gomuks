@@ -201,6 +201,11 @@ func (view *MainView) KeyEventHandler(roomView *RoomView, key *tcell.EventKey) *
 
 const WheelScrollOffsetDiff = 3
 
+func isInArea(x, y int, p tview.Primitive) bool {
+	rx, ry, rw, rh := p.GetRect()
+	return x >= rx && y >= ry && x < rx+rw && y < ry+rh
+}
+
 func (view *MainView) MouseEventHandler(roomView *RoomView, event *tcell.EventMouse) *tcell.EventMouse {
 	if event.Buttons() == tcell.ButtonNone || event.HasMotion() {
 		return event
@@ -228,13 +233,19 @@ func (view *MainView) MouseEventHandler(roomView *RoomView, event *tcell.EventMo
 			roomView.Room.MarkRead()
 		}
 	default:
-		mx, my, mw, mh := msgView.GetRect()
-		if x >= mx && y >= my && x < mx+mw && y < my+mh {
+		if isInArea(x, y, msgView) {
+			mx, my, _, _ := msgView.GetRect()
 			if msgView.HandleClick(x-mx, y-my, event.Buttons()) {
 				view.parent.Render()
 			}
+		} else if isInArea(x, y, view.roomList) && event.Buttons() == tcell.Button1 {
+			_, rly, _, _ := msgView.GetRect()
+			n := y-rly+1
+			if n >= 0 && n < len(view.roomIDs) {
+				view.SwitchRoom(n)
+			}
 		} else {
-			debug.Print("Mouse event received:", event.Buttons(), event.Modifiers(), x, y)
+			debug.Print("Unhandled mouse event:", event.Buttons(), event.Modifiers(), x, y)
 		}
 		return event
 	}
