@@ -36,6 +36,7 @@ import (
 	"maunium.net/go/gomuks/config"
 	"maunium.net/go/gomuks/debug"
 	"maunium.net/go/gomuks/interface"
+	"maunium.net/go/gomuks/lib/bfhtml"
 	"maunium.net/go/gomuks/matrix/pushrules"
 	"maunium.net/go/gomuks/matrix/rooms"
 )
@@ -327,13 +328,45 @@ func (c *Container) SendMessage(roomID, msgtype, text string) (string, error) {
 	return resp.EventID, nil
 }
 
+func (c *Container) RenderMarkdown(text string) string {
+	parser := blackfriday.New(
+		blackfriday.WithExtensions(blackfriday.NoIntraEmphasis |
+			blackfriday.Tables |
+			blackfriday.FencedCode |
+			blackfriday.Strikethrough |
+			blackfriday.SpaceHeadings |
+			blackfriday.DefinitionLists))
+	ast := parser.Parse([]byte(text))
+
+	renderer := bfhtml.HTMLRenderer{
+		HTMLRenderer: blackfriday.NewHTMLRenderer(blackfriday.HTMLRendererParameters{
+			Flags: blackfriday.UseXHTML,
+		}),
+	}
+
+	var buf strings.Builder
+	renderer.RenderHeader(&buf, ast)
+	ast.Walk(func(node *blackfriday.Node, entering bool) blackfriday.WalkStatus {
+		return renderer.RenderNode(&buf, node, entering)
+	})
+	renderer.RenderFooter(&buf, ast)
+	return buf.String()
+}
+
+var mentionRegex = regexp.MustCompile("\\[(.+?)]\\(https://matrix.to/#/@.+?:.+?\\)")
+var roomRegex = regexp.MustCompile("\\[.+?]\\(https://matrix.to/#/(#.+?:[^/]+?)\\)")
+
 func (c *Container) SendMarkdownMessage(roomID, msgtype, text string) (string, error) {
 	defer debug.Recover()
 
-	html := string(blackfriday.Run([]byte(text)))
+	html := c.RenderMarkdown(text)
 	if html == text {
 		return c.SendMessage(roomID, msgtype, text)
 	}
+
+	// Remove markdown link stuff from plaintext mentions and room links
+	text = mentionRegex.ReplaceAllString(text, "$1")
+	text = roomRegex.ReplaceAllString(text, "$1")
 
 	c.SendTyping(roomID, false)
 	resp, err := c.client.SendMessageEvent(roomID, "m.room.message",

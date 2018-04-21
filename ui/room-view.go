@@ -242,10 +242,7 @@ type completion struct {
 }
 
 func (view *RoomView) AutocompleteUser(existingText string) (completions []completion) {
-	textWithoutPrefix := existingText
-	if strings.HasPrefix(existingText, "@") {
-		textWithoutPrefix = existingText[1:]
-	}
+	textWithoutPrefix := strings.TrimPrefix(existingText, "@")
 	for _, user := range view.Room.GetMembers() {
 		if user.DisplayName == textWithoutPrefix || user.UserID == existingText {
 			// Exact match, return that.
