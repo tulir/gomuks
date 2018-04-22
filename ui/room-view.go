@@ -241,7 +241,7 @@ type completion struct {
 	id          string
 }
 
-func (view *RoomView) AutocompleteUser(existingText string) (completions []completion) {
+func (view *RoomView) autocompleteUser(existingText string) (completions []completion) {
 	textWithoutPrefix := strings.TrimPrefix(existingText, "@")
 	for _, user := range view.Room.GetMembers() {
 		if user.DisplayName == textWithoutPrefix || user.UserID == existingText {
@@ -256,7 +256,7 @@ func (view *RoomView) AutocompleteUser(existingText string) (completions []compl
 	return
 }
 
-func (view *RoomView) AutocompleteRoom(existingText string) (completions []completion) {
+func (view *RoomView) autocompleteRoom(existingText string) (completions []completion) {
 	// TODO - This was harder than I expected.
 
 	return []completion{}
@@ -270,8 +270,8 @@ func (view *RoomView) InputTabComplete(text string, cursorOffset int) {
 	var strCompletions []string
 	var strCompletion string
 
-	completions := view.AutocompleteUser(word)
-	completions = append(completions, view.AutocompleteRoom(word)...)
+	completions := view.autocompleteUser(word)
+	completions = append(completions, view.autocompleteRoom(word)...)
 
 	if len(completions) == 1 {
 		completion := completions[0]

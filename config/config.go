@@ -66,10 +66,9 @@ func (config *Config) Load() {
 			os.MkdirAll(config.HistoryDir, 0700)
 			os.MkdirAll(config.MediaDir, 0700)
 			return
-		} else {
-			fmt.Println("Failed to read config from", configPath)
-			panic(err)
 		}
+		fmt.Println("Failed to read config from", configPath)
+		panic(err)
 	}
 
 	err = yaml.Unmarshal(data, &config)

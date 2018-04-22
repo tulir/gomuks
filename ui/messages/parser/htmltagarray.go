@@ -35,7 +35,7 @@ func (ta *TagArray) Push(tag string) {
 	ta.PushMeta(&TagWithMeta{Tag: tag})
 }
 
-// Push adds the given tag to the array.
+// PushMeta adds the given tag to the array.
 func (ta *TagArray) PushMeta(tag *TagWithMeta) {
 	*ta = append(*ta, BlankTag)
 	copy((*ta)[1:], *ta)
@@ -78,7 +78,7 @@ func (ta *TagArray) Get(tag string) *TagWithMeta {
 	return ta.GetAfter(tag, -1)
 }
 
-// IndexAfter returns the first occurrence of the given tag, or nil if the given
+// GetAfter returns the first occurrence of the given tag, or nil if the given
 // tag is not on the list after the given index.
 func (ta *TagArray) GetAfter(tag string, after int) *TagWithMeta {
 	for i := after + 1; i < len(*ta); i++ {

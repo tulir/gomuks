@@ -21,7 +21,7 @@ import (
 	"maunium.net/go/gomuks/ui/messages/tstring"
 )
 
-// Message is a wrapper for the content and metadata of a Matrix message intended to be displayed.
+// UIMessage is a wrapper for the content and metadata of a Matrix message intended to be displayed.
 type UIMessage interface {
 	ifc.Message
 
