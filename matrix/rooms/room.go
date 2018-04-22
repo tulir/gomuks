@@ -56,7 +56,7 @@ type Room struct {
 	memberCache map[string]*Member
 	// The first non-SessionUserID member in the room. Calculated at
 	// the same time as memberCache.
-	firstMemberCache string
+	firstMemberCache *Member
 	// The name of the room. Calculated from the state event name,
 	// canonical_alias or alias or the member cache.
 	nameCache string
@@ -120,7 +120,7 @@ func (room *Room) UpdateState(event *gomatrix.Event) {
 		room.aliasesCache = nil
 	case "m.room.member":
 		room.memberCache = nil
-		room.firstMemberCache = ""
+		room.firstMemberCache = nil
 		if room.nameCacheSource >= MemberRoomName {
 			room.nameCache = ""
 		}
@@ -225,10 +225,12 @@ func (room *Room) updateNameFromMembers() {
 	members := room.GetMembers()
 	if len(members) <= 1 {
 		room.nameCache = "Empty room"
+	} else if room.firstMemberCache == nil {
+		room.nameCache = "Room"
 	} else if len(members) == 2 {
-		room.nameCache = members[room.firstMemberCache].DisplayName
+		room.nameCache = room.firstMemberCache.DisplayName
 	} else {
-		firstMember := members[room.firstMemberCache].DisplayName
+		firstMember := room.firstMemberCache.DisplayName
 		room.nameCache = fmt.Sprintf("%s and %d others", firstMember, len(members)-2)
 	}
 }
@@ -267,13 +269,13 @@ func (room *Room) GetTitle() string {
 func (room *Room) createMemberCache() map[string]*Member {
 	cache := make(map[string]*Member)
 	events := room.GetStateEvents("m.room.member")
-	room.firstMemberCache = ""
+	room.firstMemberCache = nil
 	if events != nil {
 		for userID, event := range events {
-			if len(room.firstMemberCache) == 0 && userID != room.SessionUserID {
-				room.firstMemberCache = userID
-			}
 			member := eventToRoomMember(userID, event)
+			if room.firstMemberCache == nil && userID != room.SessionUserID {
+				room.firstMemberCache = member
+			}
 			if member.Membership != "leave" {
 				cache[member.UserID] = member
 			}
@@ -288,7 +290,7 @@ func (room *Room) createMemberCache() map[string]*Member {
 // The members are returned from the cache.
 // If the cache is empty, it is updated first.
 func (room *Room) GetMembers() map[string]*Member {
-	if len(room.memberCache) == 0 {
+	if len(room.memberCache) == 0 || room.firstMemberCache == nil {
 		room.createMemberCache()
 	}
 	return room.memberCache
