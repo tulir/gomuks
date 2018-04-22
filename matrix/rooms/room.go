@@ -27,7 +27,7 @@ import (
 type RoomNameSource int
 
 const (
-	ExplicitRoomName       RoomNameSource = iota
+	ExplicitRoomName RoomNameSource = iota
 	CanonicalAliasRoomName
 	AliasRoomName
 	MemberRoomName

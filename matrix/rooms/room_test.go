@@ -26,7 +26,6 @@ import (
 )
 
 func TestNewRoom_DefaultValues(t *testing.T) {
-	/*
 	room := rooms.NewRoom("!test:maunium.net", "@tulir:maunium.net")
 	assert.Equal(t, "!test:maunium.net", room.ID)
 	assert.Equal(t, "@tulir:maunium.net", room.SessionUserID)
@@ -36,7 +35,6 @@ func TestNewRoom_DefaultValues(t *testing.T) {
 	assert.Empty(t, room.GetCanonicalAlias())
 	assert.Empty(t, room.GetTopic())
 	assert.Nil(t, room.GetSessionOwner())
-	*/
 }
 
 func TestRoom_GetCanonicalAlias(t *testing.T) {
@@ -60,7 +58,6 @@ func TestRoom_GetTopic(t *testing.T) {
 	})
 	assert.Equal(t, "test topic", room.GetTopic())
 }
-
 
 func TestRoom_GetAliases(t *testing.T) {
 	room := rooms.NewRoom("!test:maunium.net", "@tulir:maunium.net")
@@ -94,7 +91,7 @@ func addCanonicalAlias(room *rooms.Room) {
 func addAliases(room *rooms.Room) {
 	server1 := "maunium.net"
 	room.UpdateState(&gomatrix.Event{
-		Type: "m.room.aliases",
+		Type:     "m.room.aliases",
 		StateKey: &server1,
 		Content: map[string]interface{}{
 			"aliases": []interface{}{"#bar:maunium.net", "#test:maunium.net", "#foo:maunium.net"},
@@ -103,7 +100,7 @@ func addAliases(room *rooms.Room) {
 
 	server2 := "matrix.org"
 	room.UpdateState(&gomatrix.Event{
-		Type: "m.room.aliases",
+		Type:     "m.room.aliases",
 		StateKey: &server2,
 		Content: map[string]interface{}{
 			"aliases": []interface{}{"#foo:matrix.org", "#test:matrix.org"},
@@ -114,11 +111,11 @@ func addAliases(room *rooms.Room) {
 func addMembers(room *rooms.Room, count int) {
 	user1 := "@tulir:maunium.net"
 	room.UpdateState(&gomatrix.Event{
-		Type: "m.room.member",
+		Type:     "m.room.member",
 		StateKey: &user1,
 		Content: map[string]interface{}{
 			"displayname": "tulir",
-			"membership": "join",
+			"membership":  "join",
 		},
 	})
 
@@ -127,16 +124,16 @@ func addMembers(room *rooms.Room, count int) {
 		content := map[string]interface{}{
 			"membership": "join",
 		}
-		if i % 2 == 1 {
+		if i%2 == 1 {
 			content["displayname"] = fmt.Sprintf("User #%d", i+1)
 		}
-		if i % 5 == 0 {
+		if i%5 == 0 {
 			content["membership"] = "invite"
 		}
 		room.UpdateState(&gomatrix.Event{
-			Type: "m.room.member",
+			Type:     "m.room.member",
 			StateKey: &userN,
-			Content: content,
+			Content:  content,
 		})
 	}
 }

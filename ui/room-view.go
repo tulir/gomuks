@@ -163,7 +163,7 @@ func (view *RoomView) GetStatus() string {
 	var buf strings.Builder
 
 	if len(view.completions.list) > 0 {
-		if view.completions.textCache != view.input.GetText() || view.completions.time.Add(10 * time.Second).Before(time.Now()) {
+		if view.completions.textCache != view.input.GetText() || view.completions.time.Add(10*time.Second).Before(time.Now()) {
 			view.completions.list = []string{}
 		} else {
 			buf.WriteString(strings.Join(view.completions.list, ", "))

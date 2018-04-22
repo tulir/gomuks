@@ -240,7 +240,7 @@ func (view *MainView) MouseEventHandler(roomView *RoomView, event *tcell.EventMo
 			}
 		} else if isInArea(x, y, view.roomList) && event.Buttons() == tcell.Button1 {
 			_, rly, _, _ := msgView.GetRect()
-			n := y-rly+1
+			n := y - rly + 1
 			if n >= 0 && n < len(view.roomIDs) {
 				view.SwitchRoom(n)
 			}
