@@ -45,12 +45,6 @@ type Member struct {
 
 // eventToRoomMember converts a m.room.member state event into a Member object.
 func eventToRoomMember(userID string, event *gomatrix.Event) *Member {
-	if event == nil {
-		return &Member{
-			UserID:     userID,
-			Membership: MembershipLeave,
-		}
-	}
 	membership, _ := event.Content["membership"].(string)
 	avatarURL, _ := event.Content["avatar_url"].(string)
 

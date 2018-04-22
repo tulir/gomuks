@@ -15,3 +15,20 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 package matrix_test
+
+import (
+	"maunium.net/go/gomuks/matrix/rooms"
+)
+
+type mockSyncerSession struct {
+	rooms  map[string]*rooms.Room
+	userID string
+}
+
+func (mss *mockSyncerSession) GetRoom(id string) *rooms.Room {
+	return mss.rooms[id]
+}
+
+func (mss *mockSyncerSession) GetUserID() string {
+	return mss.userID
+}

@@ -25,21 +25,25 @@ import (
 	"time"
 
 	"maunium.net/go/gomatrix"
-	"maunium.net/go/gomuks/config"
 	"maunium.net/go/gomuks/matrix/rooms"
 )
+
+type SyncerSession interface {
+	GetRoom(id string) *rooms.Room
+	GetUserID() string
+}
 
 // GomuksSyncer is the default syncing implementation. You can either write your own syncer, or selectively
 // replace parts of this default syncer (e.g. the ProcessResponse method). The default syncer uses the observer
 // pattern to notify callers about incoming events. See GomuksSyncer.OnEventType for more information.
 type GomuksSyncer struct {
-	Session       *config.Session
+	Session       SyncerSession
 	listeners     map[string][]gomatrix.OnEventListener // event type to listeners array
 	FirstSyncDone bool
 }
 
 // NewGomuksSyncer returns an instantiated GomuksSyncer
-func NewGomuksSyncer(session *config.Session) *GomuksSyncer {
+func NewGomuksSyncer(session SyncerSession) *GomuksSyncer {
 	return &GomuksSyncer{
 		Session:       session,
 		listeners:     make(map[string][]gomatrix.OnEventListener),
@@ -56,7 +60,7 @@ func (s *GomuksSyncer) ProcessResponse(res *gomatrix.RespSync, since string) (er
 
 	defer func() {
 		if r := recover(); r != nil {
-			err = fmt.Errorf("ProcessResponse for %s since %s panicked: %s\n%s", s.Session.UserID, since, r, debug.Stack())
+			err = fmt.Errorf("ProcessResponse for %s since %s panicked: %s\n%s", s.Session.GetUserID(), since, r, debug.Stack())
 		}
 	}()
 

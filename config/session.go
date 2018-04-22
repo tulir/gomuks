@@ -50,6 +50,10 @@ func (config *Config) NewSession(mxid string) *Session {
 	}
 }
 
+func (s *Session) GetUserID() string {
+	return s.UserID
+}
+
 func (s *Session) Clear() {
 	s.Rooms = make(map[string]*rooms.Room)
 	s.PushRules = nil
