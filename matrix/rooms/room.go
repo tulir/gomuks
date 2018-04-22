@@ -23,6 +23,15 @@ import (
 	"maunium.net/go/gomatrix"
 )
 
+type RoomNameSource int
+
+const (
+	ExplicitRoomName RoomNameSource = iota
+	CanonicalAliasRoomName
+	AliasRoomName
+	MemberRoomName
+)
+
 // Room represents a single Matrix room.
 type Room struct {
 	*gomatrix.Room
@@ -50,8 +59,14 @@ type Room struct {
 	// The name of the room. Calculated from the state event name,
 	// canonical_alias or alias or the member cache.
 	nameCache string
+	// The event type from which the name cache was calculated from.
+	nameCacheSource RoomNameSource
 	// The topic of the room. Directly fetched from the m.room.topic state event.
 	topicCache string
+	// The canonical alias of the room. Directly fetched from the m.room.canonical_alias state event.
+	canonicalAliasCache string
+	// The list of aliases. Directly fetched from the m.room.aliases state event.
+	aliasesCache []string
 
 	// fetchHistoryLock is used to make sure multiple goroutines don't fetch
 	// history for this room at the same time.
@@ -90,12 +105,24 @@ func (room *Room) UpdateState(event *gomatrix.Event) {
 		room.State[event.Type] = make(map[string]*gomatrix.Event)
 	}
 	switch event.Type {
+	case "m.room.name":
+		room.nameCache = ""
+	case "m.room.canonical_alias":
+		if room.nameCacheSource >= CanonicalAliasRoomName {
+			room.nameCache = ""
+		}
+		room.canonicalAliasCache = ""
+	case "m.room.aliases":
+		if room.nameCacheSource >= AliasRoomName {
+			room.nameCache = ""
+		}
+		room.aliasesCache = nil
 	case "m.room.member":
 		room.memberCache = nil
 		room.firstMemberCache = ""
-		fallthrough
-	case "m.room.name", "m.room.canonical_alias", "m.room.alias":
-		room.nameCache = ""
+		if room.nameCacheSource >= MemberRoomName {
+			room.nameCache = ""
+		}
 	case "m.room.topic":
 		room.topicCache = ""
 	}
@@ -126,6 +153,40 @@ func (room *Room) GetTopic() string {
 	return room.topicCache
 }
 
+func (room *Room) GetCanonicalAlias() string {
+	if len(room.canonicalAliasCache) == 0 {
+		canonicalAliasEvt := room.GetStateEvent("m.room.canonical_alias", "")
+		if canonicalAliasEvt != nil {
+			room.canonicalAliasCache, _ = canonicalAliasEvt.Content["alias"].(string)
+		} else {
+			room.canonicalAliasCache = "-"
+		}
+	}
+	if room.canonicalAliasCache == "-" {
+		return ""
+	}
+	return room.canonicalAliasCache
+}
+
+// GetAliases returns the list of aliases that point to this room.
+func (room *Room) GetAliases() []string {
+	if room.aliasesCache == nil {
+		aliasEvents := room.GetStateEvents("m.room.aliases")
+		room.aliasesCache = []string{}
+		for _, event := range aliasEvents {
+			aliases, _ := event.Content["aliases"].([]interface{})
+
+			newAliases := make([]string, len(room.aliasesCache)+len(aliases))
+			copy(newAliases, room.aliasesCache)
+			for index, alias := range aliases {
+				newAliases[len(room.aliasesCache) + index], _ = alias.(string)
+			}
+			room.aliasesCache = newAliases
+		}
+	}
+	return room.aliasesCache
+}
+
 // updateNameFromNameEvent updates the room display name to be the name set in the name event.
 func (room *Room) updateNameFromNameEvent() {
 	nameEvt := room.GetStateEvent("m.room.name", "")
@@ -134,17 +195,9 @@ func (room *Room) updateNameFromNameEvent() {
 	}
 }
 
-// updateNameFromCanonicalAlias updates the room display name to be the canonical alias of the room.
-func (room *Room) updateNameFromCanonicalAlias() {
-	canonicalAliasEvt := room.GetStateEvent("m.room.canonical_alias", "")
-	if canonicalAliasEvt != nil {
-		room.nameCache, _ = canonicalAliasEvt.Content["alias"].(string)
-	}
-}
-
 // updateNameFromAliases updates the room display name to be the first room alias it finds.
 //
-// Deprecated: the Client-Server API recommends against using aliases as display name.
+// Deprecated: the Client-Server API recommends against using non-canonical aliases as display name.
 func (room *Room) updateNameFromAliases() {
 	// TODO the spec says clients should not use m.room.aliases for room names.
 	//      However, Riot also uses m.room.aliases, so this is here now.
@@ -183,15 +236,19 @@ func (room *Room) updateNameFromMembers() {
 func (room *Room) updateNameCache() {
 	if len(room.nameCache) == 0 {
 		room.updateNameFromNameEvent()
+		room.nameCacheSource = ExplicitRoomName
 	}
 	if len(room.nameCache) == 0 {
-		room.updateNameFromCanonicalAlias()
+		room.nameCache = room.GetCanonicalAlias()
+		room.nameCacheSource = CanonicalAliasRoomName
 	}
 	if len(room.nameCache) == 0 {
 		room.updateNameFromAliases()
+		room.nameCacheSource = AliasRoomName
 	}
 	if len(room.nameCache) == 0 {
 		room.updateNameFromMembers()
+		room.nameCacheSource = MemberRoomName
 	}
 }
 

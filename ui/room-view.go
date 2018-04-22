@@ -45,7 +45,10 @@ type RoomView struct {
 	input    *widget.AdvancedInputField
 	Room     *rooms.Room
 
+	parent *MainView
+
 	typing []string
+
 	completions struct {
 		list      []string
 		textCache string
@@ -53,7 +56,7 @@ type RoomView struct {
 	}
 }
 
-func NewRoomView(room *rooms.Room) *RoomView {
+func NewRoomView(parent *MainView, room *rooms.Room) *RoomView {
 	view := &RoomView{
 		Box:      tview.NewBox(),
 		topic:    tview.NewTextView(),
@@ -62,6 +65,7 @@ func NewRoomView(room *rooms.Room) *RoomView {
 		ulBorder: widget.NewBorder(),
 		input:    widget.NewAdvancedInputField(),
 		Room:     room,
+		parent:   parent,
 	}
 	view.content = NewMessageView(view)
 
@@ -257,9 +261,18 @@ func (view *RoomView) autocompleteUser(existingText string) (completions []compl
 }
 
 func (view *RoomView) autocompleteRoom(existingText string) (completions []completion) {
-	// TODO - This was harder than I expected.
-
-	return []completion{}
+	for _, room := range view.parent.rooms {
+		alias := room.Room.GetCanonicalAlias()
+		if alias == existingText {
+			// Exact match, return that.
+			return []completion{{alias, room.Room.ID}}
+		}
+		if strings.HasPrefix(alias, existingText) {
+			completions = append(completions, completion{alias, room.Room.ID})
+			continue
+		}
+	}
+	return
 }
 
 func (view *RoomView) InputTabComplete(text string, cursorOffset int) {

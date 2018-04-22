@@ -299,7 +299,7 @@ func (view *MainView) addRoom(index int, room string) {
 
 	view.roomList.Add(roomStore)
 	if !view.roomView.HasPage(room) {
-		roomView := NewRoomView(roomStore).
+		roomView := NewRoomView(view, roomStore).
 			SetInputSubmitFunc(view.InputSubmit).
 			SetInputChangedFunc(view.InputChanged).
 			SetInputCapture(view.KeyEventHandler).
