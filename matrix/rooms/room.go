@@ -18,6 +18,7 @@ package rooms
 
 import (
 	"fmt"
+	"sort"
 	"sync"
 
 	"maunium.net/go/gomatrix"
@@ -26,7 +27,7 @@ import (
 type RoomNameSource int
 
 const (
-	ExplicitRoomName RoomNameSource = iota
+	ExplicitRoomName       RoomNameSource = iota
 	CanonicalAliasRoomName
 	AliasRoomName
 	MemberRoomName
@@ -126,7 +127,11 @@ func (room *Room) UpdateState(event *gomatrix.Event) {
 	case "m.room.topic":
 		room.topicCache = ""
 	}
-	room.State[event.Type][*event.StateKey] = event
+	if event.StateKey == nil {
+		room.State[event.Type][""] = event
+	} else {
+		room.State[event.Type][*event.StateKey] = event
+	}
 }
 
 // GetStateEvent returns the state event for the given type/state_key combo, or nil.
@@ -179,7 +184,7 @@ func (room *Room) GetAliases() []string {
 			newAliases := make([]string, len(room.aliasesCache)+len(aliases))
 			copy(newAliases, room.aliasesCache)
 			for index, alias := range aliases {
-				newAliases[len(room.aliasesCache) + index], _ = alias.(string)
+				newAliases[len(room.aliasesCache)+index], _ = alias.(string)
 			}
 			room.aliasesCache = newAliases
 		}
@@ -201,13 +206,10 @@ func (room *Room) updateNameFromNameEvent() {
 func (room *Room) updateNameFromAliases() {
 	// TODO the spec says clients should not use m.room.aliases for room names.
 	//      However, Riot also uses m.room.aliases, so this is here now.
-	aliasEvents := room.GetStateEvents("m.room.aliases")
-	for _, event := range aliasEvents {
-		aliases, _ := event.Content["aliases"].([]interface{})
-		if len(aliases) > 0 {
-			room.nameCache, _ = aliases[0].(string)
-			break
-		}
+	aliases := room.GetAliases()
+	if len(aliases) > 0 {
+		sort.Sort(sort.StringSlice(aliases))
+		room.nameCache = aliases[0]
 	}
 }
 
