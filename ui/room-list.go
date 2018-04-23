@@ -18,7 +18,9 @@ package ui
 
 import (
 	"fmt"
+	"regexp"
 	"strconv"
+	"strings"
 	"time"
 
 	"maunium.net/go/gomuks/matrix/rooms"
@@ -27,13 +29,21 @@ import (
 	"maunium.net/go/tview"
 )
 
+type roomListItem struct {
+	room     *rooms.Room
+	priority float64
+}
+
 type RoomList struct {
 	*tview.Box
 
+	// The list of tags in display order.
+	tags []string
 	// The list of rooms, in reverse order.
-	items []*rooms.Room
+	items map[string][]*rooms.Room
 	// The selected room.
-	selected *rooms.Room
+	selected    *rooms.Room
+	selectedTag string
 
 	// The item main text color.
 	mainTextColor tcell.Color
@@ -46,7 +56,7 @@ type RoomList struct {
 func NewRoomList() *RoomList {
 	return &RoomList{
 		Box:   tview.NewBox(),
-		items: []*rooms.Room{},
+		items: make(map[string][]*rooms.Room),
 
 		mainTextColor:           tcell.ColorWhite,
 		selectedTextColor:       tcell.ColorWhite,
@@ -55,107 +65,248 @@ func NewRoomList() *RoomList {
 }
 
 func (list *RoomList) Contains(roomID string) bool {
-	for _, room := range list.items {
-		if room.ID == roomID {
-			return true
+	for _, roomList := range list.items {
+		for _, room := range roomList {
+			if room.ID == roomID {
+				return true
+			}
 		}
 	}
 	return false
 }
 
 func (list *RoomList) Add(room *rooms.Room) {
-	list.items = append(list.items, nil)
-	insertAt := len(list.items) - 1
-	for i := 0; i < len(list.items)-1; i++ {
-		if list.items[i].LastReceivedMessage.After(room.LastReceivedMessage) {
+	for _, tag := range room.Tags() {
+		list.AddToTag(tag.Tag, room)
+	}
+}
+
+func (list *RoomList) CheckTag(tag string) {
+	index := list.IndexTag(tag)
+
+	items, ok := list.items[tag]
+
+	if len(items) == 0 {
+		delete(list.items, tag)
+		ok = false
+	}
+
+	if ok && index == -1 {
+		list.tags = append(list.tags, tag)
+	} else if index != -1 {
+		list.tags = append(list.tags[0:index], list.tags[index+1:]...)
+	}
+}
+
+func (list *RoomList) AddToTag(tag string, room *rooms.Room) {
+	items, ok := list.items[tag]
+	if !ok {
+		list.items[tag] = []*rooms.Room{room}
+		return
+	}
+
+	// Add space for new item.
+	items = append(items, nil)
+	// The default insert index is the newly added slot.
+	// That index will be used if all other rooms in the list have the same LastReceivedMessage timestamp.
+	insertAt := len(items) - 1
+	// Find the spot where the new room should be put according to the last received message timestamps.
+	for i := 0; i < len(items)-1; i++ {
+		if items[i].LastReceivedMessage.After(room.LastReceivedMessage) {
 			insertAt = i
 			break
 		}
 	}
-	for i := len(list.items) - 1; i > insertAt; i-- {
-		list.items[i] = list.items[i-1]
+	// Move newer rooms forward in the array.
+	for i := len(items) - 1; i > insertAt; i-- {
+		items[i] = items[i-1]
 	}
-	list.items[insertAt] = room
+	// Insert room.
+	items[insertAt] = room
+
+	list.items[tag] = items
+	list.CheckTag(tag)
 }
 
 func (list *RoomList) Remove(room *rooms.Room) {
-	index := list.Index(room)
-	if index != -1 {
-		list.items = append(list.items[0:index], list.items[index+1:]...)
-		if room == list.selected {
-			if index > 0 {
-				list.selected = list.items[index-1]
-			} else if len(list.items) > 0 {
-				list.selected = list.items[0]
-			} else {
-				list.selected = nil
+	for _, tag := range room.Tags() {
+		list.RemoveFromTag(tag.Tag, room)
+	}
+}
+
+func (list *RoomList) RemoveFromTag(tag string, room *rooms.Room) {
+	items, ok := list.items[tag]
+	if !ok {
+		return
+	}
+
+	index := list.indexInTag(tag, room)
+	if index == -1 {
+		return
+	}
+
+	items = append(items[0:index], items[index+1:]...)
+
+	if len(items) == 0 {
+		delete(list.items, tag)
+	} else {
+		list.items[tag] = items
+	}
+
+	if room == list.selected {
+		// Room is currently selected, move selection to another room.
+		if index > 0 {
+			list.selected = items[index-1]
+		} else if len(items) > 0 {
+			list.selected = items[0]
+		} else if len(list.items) > 0 {
+			for _, tag := range list.tags {
+				moreItems := list.items[tag]
+				if len(moreItems) > 0 {
+					list.selected = moreItems[0]
+					list.selectedTag = tag
+				}
 			}
+		} else {
+			list.selected = nil
+			list.selectedTag = ""
 		}
 	}
+	list.CheckTag(tag)
 }
 
 func (list *RoomList) Bump(room *rooms.Room) {
+	for _, tag := range room.Tags() {
+		list.bumpInTag(tag.Tag, room)
+	}
+}
+
+func (list *RoomList) bumpInTag(tag string, room *rooms.Room) {
+	items, ok := list.items[tag]
+	if !ok {
+		return
+	}
+
 	found := false
-	for i := 0; i < len(list.items)-1; i++ {
-		if list.items[i] == room {
+	for i := 0; i < len(items)-1; i++ {
+		if items[i] == room {
 			found = true
 		}
 		if found {
-			list.items[i] = list.items[i+1]
+			items[i] = items[i+1]
 		}
 	}
-	list.items[len(list.items)-1] = room
-	room.LastReceivedMessage = time.Now()
+	if found {
+		items[len(items)-1] = room
+		room.LastReceivedMessage = time.Now()
+	}
 }
 
 func (list *RoomList) Clear() {
-	list.items = []*rooms.Room{}
+	list.items = make(map[string][]*rooms.Room)
 	list.selected = nil
+	list.selectedTag = ""
 }
 
-func (list *RoomList) SetSelected(room *rooms.Room) {
+func (list *RoomList) SetSelected(tag string, room *rooms.Room) {
 	list.selected = room
+	list.selectedTag = ""
 }
 
 func (list *RoomList) HasSelected() bool {
 	return list.selected != nil
 }
 
-func (list *RoomList) Selected() *rooms.Room {
+func (list *RoomList) Selected() (string, *rooms.Room) {
+	return list.selectedTag, list.selected
+}
+
+func (list *RoomList) SelectedRoom() *rooms.Room {
 	return list.selected
 }
 
-func (list *RoomList) Previous() *rooms.Room {
-	if len(list.items) == 0 {
-		return nil
-	} else if list.selected == nil {
-		return list.items[0]
+func (list *RoomList) First() (string, *rooms.Room) {
+	for _, tag := range list.tags {
+		items := list.items[tag]
+		if len(items) > 0 {
+			return tag, items[0]
+		}
 	}
-
-	index := list.Index(list.selected)
-	if index == len(list.items)-1 {
-		return list.items[0]
-	}
-	return list.items[index+1]
+	return "", nil
 }
 
-func (list *RoomList) Next() *rooms.Room {
+func (list *RoomList) Last() (string, *rooms.Room) {
+	for tagIndex := len(list.tags) - 1; tagIndex >= 0; tagIndex-- {
+		tag := list.tags[tagIndex]
+		items := list.items[tag]
+		if len(items) > 0 {
+			return tag, items[len(items)-1]
+		}
+	}
+	return "", nil
+}
+
+func (list *RoomList) IndexTag(tag string) int {
+	for index, entry := range list.tags {
+		if tag == entry {
+			return index
+		}
+	}
+	return -1
+}
+
+func (list *RoomList) Previous() (string, *rooms.Room) {
 	if len(list.items) == 0 {
-		return nil
+		return "", nil
 	} else if list.selected == nil {
-		return list.items[0]
+		return list.First()
 	}
 
-	index := list.Index(list.selected)
+	items := list.items[list.selectedTag]
+	index := list.indexInTag(list.selectedTag, list.selected)
+	if index == len(items)-1 {
+		tagIndex := list.IndexTag(list.selectedTag)
+		tagIndex++
+		for ; tagIndex < len(list.tags); tagIndex++ {
+			nextTag := list.tags[tagIndex]
+			nextTagItems := list.items[nextTag]
+			if len(nextTagItems) > 0 {
+				return nextTag, nextTagItems[0]
+			}
+		}
+		return list.First()
+	}
+	return list.selectedTag, items[index+1]
+}
+
+func (list *RoomList) Next() (string, *rooms.Room) {
+	if len(list.items) == 0 {
+		return "", nil
+	} else if list.selected == nil {
+		return list.First()
+	}
+
+	items := list.items[list.selectedTag]
+	index := list.indexInTag(list.selectedTag, list.selected)
 	if index == 0 {
-		return list.items[len(list.items)-1]
+		tagIndex := list.IndexTag(list.selectedTag)
+		tagIndex--
+		for ; tagIndex >= 0; tagIndex-- {
+			prevTag := list.tags[tagIndex]
+			prevTagItems := list.items[prevTag]
+			if len(prevTagItems) > 0 {
+				return prevTag, prevTagItems[len(prevTagItems)-1]
+			}
+		}
+		return list.Last()
 	}
-	return list.items[index-1]
+	return list.selectedTag, items[index-1]
 }
 
-func (list *RoomList) Index(room *rooms.Room) int {
+func (list *RoomList) indexInTag(tag string, room *rooms.Room) int {
 	roomIndex := -1
-	for index, entry := range list.items {
+	items := list.items[tag]
+	for index, entry := range items {
 		if entry == room {
 			roomIndex = index
 			break
@@ -164,11 +315,46 @@ func (list *RoomList) Index(room *rooms.Room) int {
 	return roomIndex
 }
 
-func (list *RoomList) Get(n int) *rooms.Room {
-	if n < 0 || n > len(list.items)-1 {
-		return nil
+func (list *RoomList) Get(n int) (string, *rooms.Room) {
+	if n < 0 {
+		return "", nil
 	}
-	return list.items[len(list.items)-1-n]
+	for _, tag := range list.tags {
+		// Tag header
+		n--
+
+		items := list.items[tag]
+		if n < 0 {
+			return "", nil
+		} else if n < len(items) {
+			return tag, items[len(items)-1-n]
+		}
+
+		// Tag items
+		n -= len(items)
+	}
+	return "", nil
+}
+
+var nsRegex = regexp.MustCompile("^[a-z]\\.[a-z](?:\\.[a-z])*$")
+
+func (list *RoomList) GetTagDisplayName(tag string) string {
+	switch {
+	case len(tag) == 0:
+		return "Rooms"
+	case tag == "m.favourite":
+		return "Favorites"
+	case tag == "m.lowpriority":
+		return "Low Priority"
+	case strings.HasPrefix(tag, "m."):
+		return strings.Title(strings.Replace(tag[len("m."):], "_", " ", -1))
+	case strings.HasPrefix(tag, "u."):
+		return tag[len("u."):]
+	case !nsRegex.MatchString(tag):
+		return tag
+	default:
+		return ""
+	}
 }
 
 // Draw draws this primitive onto the screen.
@@ -179,54 +365,60 @@ func (list *RoomList) Draw(screen tcell.Screen) {
 	bottomLimit := y + height
 
 	var offset int
+	/* TODO fix offset
 	currentItemIndex := list.Index(list.selected)
 	if currentItemIndex >= height {
 		offset = currentItemIndex + 1 - height
-	}
+	}*/
 
 	// Draw the list items.
-	for i := len(list.items) - 1; i >= 0; i-- {
-		item := list.items[i]
-		index := len(list.items) - 1 - i
-
-		if index < offset {
-			continue
-		}
-
-		if y >= bottomLimit {
-			break
-		}
-
-		text := item.GetTitle()
-
-		lineWidth := width
-
-		style := tcell.StyleDefault.Foreground(list.mainTextColor)
-		if item == list.selected {
-			style = style.Foreground(list.selectedTextColor).Background(list.selectedBackgroundColor)
-		}
-		if item.HasNewMessages {
-			style = style.Bold(true)
-		}
-
-		if item.UnreadMessages > 0 {
-			unreadMessageCount := "99+"
-			if item.UnreadMessages < 100 {
-				unreadMessageCount = strconv.Itoa(item.UnreadMessages)
-			}
-			if item.Highlighted {
-				unreadMessageCount += "!"
-			}
-			unreadMessageCount = fmt.Sprintf("(%s)", unreadMessageCount)
-			widget.WriteLine(screen, tview.AlignRight, unreadMessageCount, x+lineWidth-6, y, 6, style)
-			lineWidth -= len(unreadMessageCount) + 1
-		}
-
-		widget.WriteLine(screen, tview.AlignLeft, text, x, y, lineWidth, style)
-
+	for _, tag := range list.tags {
+		items := list.items[tag]
+		widget.WriteLine(screen, tview.AlignLeft, list.GetTagDisplayName(tag), x, y, width, tcell.StyleDefault.Underline(true).Bold(true))
 		y++
-		if y >= bottomLimit {
-			break
+		for i := len(items) - 1; i >= 0; i-- {
+			item := items[i]
+			index := len(items) - 1 - i
+
+			if index < offset {
+				continue
+			}
+
+			if y >= bottomLimit {
+				break
+			}
+
+			text := item.GetTitle()
+
+			lineWidth := width
+
+			style := tcell.StyleDefault.Foreground(list.mainTextColor)
+			if tag == list.selectedTag && item == list.selected {
+				style = style.Foreground(list.selectedTextColor).Background(list.selectedBackgroundColor)
+			}
+			if item.HasNewMessages {
+				style = style.Bold(true)
+			}
+
+			if item.UnreadMessages > 0 {
+				unreadMessageCount := "99+"
+				if item.UnreadMessages < 100 {
+					unreadMessageCount = strconv.Itoa(item.UnreadMessages)
+				}
+				if item.Highlighted {
+					unreadMessageCount += "!"
+				}
+				unreadMessageCount = fmt.Sprintf("(%s)", unreadMessageCount)
+				widget.WriteLine(screen, tview.AlignRight, unreadMessageCount, x+lineWidth-6, y, 6, style)
+				lineWidth -= len(unreadMessageCount) + 1
+			}
+
+			widget.WriteLine(screen, tview.AlignLeft, text, x, y, lineWidth, style)
+
+			y++
+			if y >= bottomLimit {
+				break
+			}
 		}
 	}
 }

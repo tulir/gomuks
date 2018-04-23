@@ -248,7 +248,7 @@ func (view *MainView) MouseEventHandler(roomView *RoomView, event *tcell.EventMo
 	return event
 }
 
-func (view *MainView) SwitchRoom(room *rooms.Room) {
+func (view *MainView) SwitchRoom(tag string, room *rooms.Room) {
 	if room == nil {
 		return
 	}
@@ -258,13 +258,13 @@ func (view *MainView) SwitchRoom(room *rooms.Room) {
 	if roomView.MessageView().ScrollOffset == 0 {
 		roomView.Room.MarkRead()
 	}
-	view.roomList.SetSelected(room)
+	view.roomList.SetSelected(tag, room)
 	view.parent.app.SetFocus(view)
 	view.parent.Render()
 }
 
 func (view *MainView) Focus(delegate func(p tview.Primitive)) {
-	room := view.roomList.Selected()
+	room := view.roomList.SelectedRoom()
 	if room != nil {
 		roomView, ok := view.rooms[room.ID]
 		if ok {
@@ -283,7 +283,6 @@ func (view *MainView) SaveAllHistory() {
 }
 
 func (view *MainView) addRoomPage(room *rooms.Room) {
-
 	if !view.roomView.HasPage(room.ID) {
 		roomView := NewRoomView(view, room).
 			SetInputSubmitFunc(view.InputSubmit).
@@ -304,7 +303,13 @@ func (view *MainView) addRoomPage(room *rooms.Room) {
 }
 
 func (view *MainView) GetRoom(roomID string) ifc.RoomView {
-	return view.rooms[roomID]
+	room, ok := view.rooms[roomID]
+	if !ok {
+		view.AddRoom(roomID)
+		room, _ := view.rooms[roomID]
+		return room
+	}
+	return room
 }
 
 func (view *MainView) AddRoom(roomID string) {
@@ -335,14 +340,46 @@ func (view *MainView) SetRooms(roomIDs []string) {
 	view.roomList.Clear()
 	view.roomView.Clear()
 	view.rooms = make(map[string]*RoomView)
-	for index, roomID := range roomIDs {
+	for _, roomID := range roomIDs {
 		room := view.matrix.GetRoom(roomID)
 		view.roomList.Add(room)
 		view.addRoomPage(room)
-		if index == len(roomIDs)-1 {
-			view.SwitchRoom(room)
+	}
+	view.SwitchRoom(view.roomList.First())
+}
+
+func (view *MainView) UpdateTags(room *rooms.Room, newTags []rooms.RoomTag) {
+	if len(newTags) == 0 {
+		for _, tag := range room.RawTags {
+			view.roomList.RemoveFromTag(tag.Tag, room)
+		}
+		view.roomList.AddToTag("", room)
+	} else if len(room.RawTags) == 0 {
+		view.roomList.RemoveFromTag("", room)
+		for _, tag := range newTags {
+			view.roomList.AddToTag(tag.Tag, room)
+		}
+	} else {
+	NewTags:
+		for _, newTag := range newTags {
+			for _, oldTag := range room.RawTags {
+				if newTag.Tag == oldTag.Tag {
+					continue NewTags
+				}
+			}
+			view.roomList.AddToTag(newTag.Tag, room)
+		}
+	OldTags:
+		for _, oldTag := range room.RawTags {
+			for _, newTag := range newTags {
+				if newTag.Tag == oldTag.Tag {
+					continue OldTags
+				}
+			}
+			view.roomList.RemoveFromTag(oldTag.Tag, room)
 		}
 	}
+	room.RawTags = newTags
 }
 
 func (view *MainView) SetTyping(room string, users []string) {
@@ -362,7 +399,7 @@ func sendNotification(room *rooms.Room, sender, text string, critical, sound boo
 
 func (view *MainView) NotifyMessage(room *rooms.Room, message ifc.Message, should pushrules.PushActionArrayShould) {
 	// Whether or not the room where the message came is the currently shown room.
-	isCurrent := room == view.roomList.Selected()
+	isCurrent := room == view.roomList.SelectedRoom()
 	// Whether or not the terminal window is focused.
 	isFocused := view.lastFocusTime.Add(30 * time.Second).Before(time.Now())
 

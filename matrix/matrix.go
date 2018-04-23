@@ -18,7 +18,6 @@ package matrix
 
 import (
 	"bytes"
-	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -255,9 +254,23 @@ func (c *Container) HandlePushRules(evt *gomatrix.Event) {
 
 // HandleTag is the event handler for the m.tag account data event.
 func (c *Container) HandleTag(evt *gomatrix.Event) {
-	debug.Print("Received updated tags for", evt.RoomID)
-	dat, _ := json.MarshalIndent(&evt.Content, "", "  ")
-	debug.Print(string(dat))
+	room := c.config.Session.GetRoom(evt.RoomID)
+
+	tags, _ := evt.Content["tags"].(map[string]interface{})
+	newTags := make([]rooms.RoomTag, len(tags))
+	index := 0
+	for tag, infoifc := range tags {
+		info, _ := infoifc.(map[string]interface{})
+		order, _ := info["order"].(float64)
+		newTags[index] = rooms.RoomTag{
+			Tag:   tag,
+			Order: order,
+		}
+		index++
+	}
+
+	mainView := c.ui.MainView()
+	mainView.UpdateTags(room, newTags)
 }
 
 func (c *Container) processOwnMembershipChange(evt *gomatrix.Event) {

@@ -34,6 +34,14 @@ const (
 	MemberRoomName
 )
 
+// RoomTag is a tag given to a specific room.
+type RoomTag struct {
+	// The name of the tag.
+	Tag string
+	// The order of the tag. Smaller values are ordered higher.
+	Order float64
+}
+
 // Room represents a single Matrix room.
 type Room struct {
 	*gomatrix.Room
@@ -53,7 +61,9 @@ type Room struct {
 	// a notificationless message like bot notices.
 	HasNewMessages bool
 
-	Tags []string
+	// List of tags given to this room
+	RawTags []RoomTag
+	// Timestamp of previously received actual message.
 	LastReceivedMessage time.Time
 
 	// MXID -> Member cache calculated from membership events.
@@ -100,6 +110,13 @@ func (room *Room) MarkRead() {
 	room.UnreadMessages = 0
 	room.Highlighted = false
 	room.HasNewMessages = false
+}
+
+func (room *Room) Tags() []RoomTag {
+	if len(room.RawTags) == 0 {
+		return []RoomTag{{"", 0.5}}
+	}
+	return room.RawTags
 }
 
 // UpdateState updates the room's current state with the given Event. This will clobber events based
