@@ -29,7 +29,6 @@ import (
 type RoomList struct {
 	*tview.Box
 
-	indices  map[*rooms.Room]int
 	items    []*rooms.Room
 	selected *rooms.Room
 
@@ -43,9 +42,8 @@ type RoomList struct {
 
 func NewRoomList() *RoomList {
 	return &RoomList{
-		Box:     tview.NewBox(),
-		indices: make(map[*rooms.Room]int),
-		items:   []*rooms.Room{},
+		Box:   tview.NewBox(),
+		items: []*rooms.Room{},
 
 		mainTextColor:           tcell.ColorWhite,
 		selectedTextColor:       tcell.ColorWhite,
@@ -53,28 +51,49 @@ func NewRoomList() *RoomList {
 	}
 }
 
-func (list *RoomList) Add(room *rooms.Room) {
-	list.indices[room] = len(list.items)
-	list.items = append(list.items, room)
-	if list.selected == nil {
-		list.selected = room
+func (list *RoomList) Contains(roomID string) bool {
+	for _, room := range list.items {
+		if room.ID == roomID {
+			return true
+		}
 	}
+	return false
+}
+
+func (list *RoomList) Add(room *rooms.Room) {
+	list.items = append(list.items, room)
 }
 
 func (list *RoomList) Remove(room *rooms.Room) {
-	index, ok := list.indices[room]
-	if !ok {
-		return
-	}
-	delete(list.indices, room)
-	list.items = append(list.items[0:index], list.items[index+1:]...)
-	if len(list.items) == 0 {
-		list.selected = nil
+	index := list.Index(room)
+	if index != -1 {
+		list.items = append(list.items[0:index], list.items[index+1:]...)
+		if room == list.selected {
+			if index > 0 {
+				list.selected = list.items[index-1]
+			} else if len(list.items) > 0 {
+				list.selected = list.items[0]
+			} else {
+				list.selected = nil
+			}
+		}
 	}
 }
 
+func (list *RoomList) Bump(room *rooms.Room) {
+	found := false
+	for i := 0; i < len(list.items)-1; i++ {
+		if list.items[i] == room {
+			found = true
+		}
+		if found {
+			list.items[i] = list.items[i+1]
+		}
+	}
+	list.items[len(list.items)-1] = room
+}
+
 func (list *RoomList) Clear() {
-	list.indices = make(map[*rooms.Room]int)
 	list.items = []*rooms.Room{}
 	list.selected = nil
 }
@@ -83,11 +102,55 @@ func (list *RoomList) SetSelected(room *rooms.Room) {
 	list.selected = room
 }
 
-func (list *RoomList) Get(n int) *rooms.Room {
-	if n < 0 || n >= len(list.items) {
+func (list *RoomList) HasSelected() bool {
+	return list.selected != nil
+}
+
+func (list *RoomList) Selected() *rooms.Room {
+	return list.selected
+}
+
+func (list *RoomList) Previous() *rooms.Room {
+	if len(list.items) == 0 {
 		return nil
+	} else if list.selected == nil {
+		return list.items[0]
 	}
-	return list.items[n]
+
+	index := list.Index(list.selected)
+	if index == len(list.items)-1 {
+		return list.items[0]
+	}
+	return list.items[index+1]
+}
+
+func (list *RoomList) Next() *rooms.Room {
+	if len(list.items) == 0 {
+		return nil
+	} else if list.selected == nil {
+		return list.items[0]
+	}
+
+	index := list.Index(list.selected)
+	if index == 0 {
+		return list.items[len(list.items)-1]
+	}
+	return list.items[index-1]
+}
+
+func (list *RoomList) Index(room *rooms.Room) int {
+	roomIndex := -1
+	for index, entry := range list.items {
+		if entry == room {
+			roomIndex = index
+			break
+		}
+	}
+	return roomIndex
+}
+
+func (list *RoomList) Get(n int) *rooms.Room {
+	return list.items[len(list.items)-1-(n%len(list.items))]
 }
 
 // Draw draws this primitive onto the screen.
@@ -98,13 +161,16 @@ func (list *RoomList) Draw(screen tcell.Screen) {
 	bottomLimit := y + height
 
 	var offset int
-	currentItemIndex, hasSelected := list.indices[list.selected]
-	if hasSelected && currentItemIndex >= height {
+	currentItemIndex := list.Index(list.selected)
+	if currentItemIndex >= height {
 		offset = currentItemIndex + 1 - height
 	}
 
 	// Draw the list items.
-	for index, item := range list.items {
+	for i := len(list.items) - 1; i >= 0; i-- {
+		item := list.items[i]
+		index := len(list.items) - 1 - i
+
 		if index < offset {
 			continue
 		}

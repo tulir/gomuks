@@ -18,7 +18,6 @@ package ui
 
 import (
 	"fmt"
-	"sort"
 	"strings"
 	"time"
 	"unicode"
@@ -39,11 +38,9 @@ import (
 type MainView struct {
 	*tview.Flex
 
-	roomList         *RoomList
-	roomView         *tview.Pages
-	rooms            map[string]*RoomView
-	currentRoomIndex int
-	roomIDs          []string
+	roomList *RoomList
+	roomView *tview.Pages
+	rooms    map[string]*RoomView
 
 	lastFocusTime time.Time
 
@@ -166,9 +163,9 @@ func (view *MainView) KeyEventHandler(roomView *RoomView, key *tcell.EventKey) *
 	if key.Modifiers() == tcell.ModCtrl || key.Modifiers() == tcell.ModAlt {
 		switch k {
 		case tcell.KeyDown:
-			view.SwitchRoom(view.currentRoomIndex + 1)
+			view.SwitchRoom(view.roomList.Next())
 		case tcell.KeyUp:
-			view.SwitchRoom(view.currentRoomIndex - 1)
+			view.SwitchRoom(view.roomList.Previous())
 		default:
 			return key
 		}
@@ -241,9 +238,7 @@ func (view *MainView) MouseEventHandler(roomView *RoomView, event *tcell.EventMo
 		} else if isInArea(x, y, view.roomList) && event.Buttons() == tcell.Button1 {
 			_, rly, _, _ := msgView.GetRect()
 			n := y - rly + 1
-			if n >= 0 && n < len(view.roomIDs) {
-				view.SwitchRoom(n)
-			}
+			view.SwitchRoom(view.roomList.Get(n))
 		} else {
 			debug.Print("Unhandled mouse event:", event.Buttons(), event.Modifiers(), x, y)
 		}
@@ -253,35 +248,24 @@ func (view *MainView) MouseEventHandler(roomView *RoomView, event *tcell.EventMo
 	return event
 }
 
-func (view *MainView) CurrentRoomID() string {
-	if len(view.roomIDs) == 0 {
-		return ""
-	}
-	return view.roomIDs[view.currentRoomIndex]
-}
-
-func (view *MainView) SwitchRoom(roomIndex int) {
-	if roomIndex < 0 {
-		roomIndex = len(view.roomIDs) - 1
-	}
-	if len(view.roomIDs) == 0 {
-		return
-	}
-	view.currentRoomIndex = roomIndex % len(view.roomIDs)
-	view.roomView.SwitchToPage(view.CurrentRoomID())
-	roomView := view.rooms[view.CurrentRoomID()]
+func (view *MainView) SwitchRoom(room *rooms.Room) {
+	view.roomView.SwitchToPage(room.ID)
+	roomView := view.rooms[room.ID]
 	if roomView.MessageView().ScrollOffset == 0 {
 		roomView.Room.MarkRead()
 	}
-	view.roomList.SetSelected(roomView.Room)
+	view.roomList.SetSelected(room)
 	view.parent.app.SetFocus(view)
 	view.parent.Render()
 }
 
 func (view *MainView) Focus(delegate func(p tview.Primitive)) {
-	roomView, ok := view.rooms[view.CurrentRoomID()]
-	if ok {
-		delegate(roomView)
+	room := view.roomList.Selected()
+	if room != nil {
+		roomView, ok := view.rooms[room.ID]
+		if ok {
+			delegate(roomView)
+		}
 	}
 }
 
@@ -294,78 +278,67 @@ func (view *MainView) SaveAllHistory() {
 	}
 }
 
-func (view *MainView) addRoom(index int, room string) {
-	roomStore := view.matrix.GetRoom(room)
+func (view *MainView) addRoomPage(room *rooms.Room) {
 
-	view.roomList.Add(roomStore)
-	if !view.roomView.HasPage(room) {
-		roomView := NewRoomView(view, roomStore).
+	if !view.roomView.HasPage(room.ID) {
+		roomView := NewRoomView(view, room).
 			SetInputSubmitFunc(view.InputSubmit).
 			SetInputChangedFunc(view.InputChanged).
 			SetInputCapture(view.KeyEventHandler).
 			SetMouseCapture(view.MouseEventHandler)
-		view.rooms[room] = roomView
-		view.roomView.AddPage(room, roomView, true, false)
+		view.rooms[room.ID] = roomView
+		view.roomView.AddPage(room.ID, roomView, true, false)
 		roomView.UpdateUserList()
 
 		count, err := roomView.LoadHistory(view.matrix, view.config.HistoryDir)
 		if err != nil {
 			debug.Printf("Failed to load history of %s: %v", roomView.Room.GetTitle(), err)
 		} else if count <= 0 {
-			go view.LoadHistory(room, true)
+			go view.LoadHistory(room.ID, true)
 		}
 	}
 }
 
-func (view *MainView) GetRoom(id string) ifc.RoomView {
-	return view.rooms[id]
+func (view *MainView) GetRoom(roomID string) ifc.RoomView {
+	return view.rooms[roomID]
 }
 
-func (view *MainView) HasRoom(room string) bool {
-	for _, existingRoom := range view.roomIDs {
-		if existingRoom == room {
-			return true
-		}
-	}
-	return false
-}
-
-func (view *MainView) AddRoom(room string) {
-	if view.HasRoom(room) {
+func (view *MainView) AddRoom(roomID string) {
+	if view.roomList.Contains(roomID) {
 		return
 	}
-	view.roomIDs = append(view.roomIDs, room)
-	view.addRoom(len(view.roomIDs)-1, room)
+	room := view.matrix.GetRoom(roomID)
+	view.roomList.Add(room)
+	view.addRoomPage(room)
 }
 
-func (view *MainView) RemoveRoom(room string) {
-	roomView := view.GetRoom(room)
+func (view *MainView) RemoveRoom(roomID string) {
+	roomView := view.GetRoom(roomID)
 	if roomView == nil {
 		return
 	}
-	removeIndex := 0
-	if view.CurrentRoomID() == room {
-		removeIndex = view.currentRoomIndex
-		view.SwitchRoom(view.currentRoomIndex - 1)
-	} else {
-		removeIndex = sort.StringSlice(view.roomIDs).Search(room)
-	}
+
 	view.roomList.Remove(roomView.MxRoom())
-	view.roomIDs = append(view.roomIDs[:removeIndex], view.roomIDs[removeIndex+1:]...)
-	view.roomView.RemovePage(room)
-	delete(view.rooms, room)
+	view.SwitchRoom(view.roomList.Selected())
+
+	view.roomView.RemovePage(roomID)
+	delete(view.rooms, roomID)
+
 	view.parent.Render()
 }
 
-func (view *MainView) SetRooms(rooms []string) {
-	view.roomIDs = rooms
+func (view *MainView) SetRooms(roomIDs []string) {
 	view.roomList.Clear()
 	view.roomView.Clear()
 	view.rooms = make(map[string]*RoomView)
-	for index, room := range rooms {
-		view.addRoom(index, room)
+	for index, roomID := range roomIDs {
+		room := view.matrix.GetRoom(roomID)
+		view.roomList.Add(room)
+		view.addRoomPage(room)
+		if index == len(roomIDs)-1 {
+			view.SwitchRoom(room)
+		}
 	}
-	view.SwitchRoom(0)
 }
 
 func (view *MainView) SetTyping(room string, users []string) {
@@ -385,7 +358,7 @@ func sendNotification(room *rooms.Room, sender, text string, critical, sound boo
 
 func (view *MainView) NotifyMessage(room *rooms.Room, message ifc.Message, should pushrules.PushActionArrayShould) {
 	// Whether or not the room where the message came is the currently shown room.
-	isCurrent := room.ID == view.CurrentRoomID()
+	isCurrent := room == view.roomList.Selected()
 	// Whether or not the terminal window is focused.
 	isFocused := view.lastFocusTime.Add(30 * time.Second).Before(time.Now())
 
@@ -408,6 +381,7 @@ func (view *MainView) NotifyMessage(room *rooms.Room, message ifc.Message, shoul
 	}
 
 	message.SetIsHighlight(should.Highlight)
+	view.roomList.Bump(room)
 }
 
 func (view *MainView) LoadHistory(room string, initial bool) {

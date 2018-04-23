@@ -17,7 +17,9 @@
 package open
 
 import (
+	"os"
 	"os/exec"
+	"path/filepath"
 )
 
 const FileProtocolHandler = "url.dll,FileProtocolHandler"

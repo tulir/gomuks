@@ -49,7 +49,6 @@ type GomuksUI interface {
 
 type MainView interface {
 	GetRoom(roomID string) RoomView
-	HasRoom(roomID string) bool
 	AddRoom(roomID string)
 	RemoveRoom(roomID string)
 	SetRooms(roomIDs []string)
