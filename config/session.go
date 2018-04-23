@@ -35,6 +35,8 @@ type Session struct {
 	FilterID    string
 	Rooms       map[string]*rooms.Room
 	PushRules   *pushrules.PushRuleset
+
+	InitialSyncDone bool
 }
 
 func (config *Config) LoadSession(mxid string) error {
@@ -48,6 +50,10 @@ func (config *Config) NewSession(mxid string) *Session {
 		path:   filepath.Join(config.Dir, mxid+".session"),
 		Rooms:  make(map[string]*rooms.Room),
 	}
+}
+
+func (s *Session) SetInitialSyncDone() {
+	s.InitialSyncDone = true
 }
 
 func (s *Session) GetUserID() string {

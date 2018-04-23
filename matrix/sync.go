@@ -20,16 +20,16 @@ package matrix
 
 import (
 	"encoding/json"
-	"fmt"
-	"runtime/debug"
 	"time"
 
 	"maunium.net/go/gomatrix"
+	"maunium.net/go/gomuks/debug"
 	"maunium.net/go/gomuks/matrix/rooms"
 )
 
 type SyncerSession interface {
 	GetRoom(id string) *rooms.Room
+	SetInitialSyncDone()
 	GetUserID() string
 }
 
@@ -53,16 +53,7 @@ func NewGomuksSyncer(session SyncerSession) *GomuksSyncer {
 
 // ProcessResponse processes a Matrix sync response.
 func (s *GomuksSyncer) ProcessResponse(res *gomatrix.RespSync, since string) (err error) {
-	if len(since) == 0 {
-		return
-	}
-	// debug.Print("Processing sync response", since, res)
-
-	defer func() {
-		if r := recover(); r != nil {
-			err = fmt.Errorf("ProcessResponse for %s since %s panicked: %s\n%s", s.Session.GetUserID(), since, r, debug.Stack())
-		}
-	}()
+	debug.Print("Processing sync response", since, res)
 
 	s.processSyncEvents(nil, res.Presence.Events, false, false)
 	s.processSyncEvents(nil, res.AccountData.Events, false, false)
@@ -93,6 +84,9 @@ func (s *GomuksSyncer) ProcessResponse(res *gomatrix.RespSync, since string) (er
 		}
 	}
 
+	if since == "" {
+		s.Session.SetInitialSyncDone()
+	}
 	s.FirstSyncDone = true
 
 	return

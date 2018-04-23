@@ -191,7 +191,7 @@ func (c *Container) OnLogin() {
 	c.syncer.OnEventType("m.tag", c.HandleTag)
 	c.client.Syncer = c.syncer
 
-	c.UpdateRoomList()
+	//c.UpdateRoomList()
 }
 
 // Start moves the UI to the main view, calls OnLogin() and runs the syncer forever until stopped with Stop()
@@ -294,6 +294,10 @@ func (c *Container) processOwnMembershipChange(evt *gomatrix.Event) {
 func (c *Container) HandleMembership(evt *gomatrix.Event) {
 	if evt.StateKey != nil && *evt.StateKey == c.config.Session.UserID {
 		c.processOwnMembershipChange(evt)
+	}
+
+	if !c.config.Session.InitialSyncDone && evt.Timestamp < time.Now().Add(-1*time.Hour).Unix() {
+		return
 	}
 
 	mainView := c.ui.MainView()
