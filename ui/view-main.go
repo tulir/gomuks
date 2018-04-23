@@ -249,6 +249,10 @@ func (view *MainView) MouseEventHandler(roomView *RoomView, event *tcell.EventMo
 }
 
 func (view *MainView) SwitchRoom(room *rooms.Room) {
+	if room == nil {
+		return
+	}
+
 	view.roomView.SwitchToPage(room.ID)
 	roomView := view.rooms[room.ID]
 	if roomView.MessageView().ScrollOffset == 0 {

@@ -255,7 +255,7 @@ func (c *Container) HandlePushRules(evt *gomatrix.Event) {
 
 // HandleTag is the event handler for the m.tag account data event.
 func (c *Container) HandleTag(evt *gomatrix.Event) {
-	debug.Print("Received updated tags")
+	debug.Print("Received updated tags for", evt.RoomID)
 	dat, _ := json.MarshalIndent(&evt.Content, "", "  ")
 	debug.Print(string(dat))
 }

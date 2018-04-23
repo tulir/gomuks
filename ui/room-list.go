@@ -19,6 +19,7 @@ package ui
 import (
 	"fmt"
 	"strconv"
+	"time"
 
 	"maunium.net/go/gomuks/matrix/rooms"
 	"maunium.net/go/gomuks/ui/widget"
@@ -29,7 +30,9 @@ import (
 type RoomList struct {
 	*tview.Box
 
-	items    []*rooms.Room
+	// The list of rooms, in reverse order.
+	items []*rooms.Room
+	// The selected room.
 	selected *rooms.Room
 
 	// The item main text color.
@@ -61,7 +64,18 @@ func (list *RoomList) Contains(roomID string) bool {
 }
 
 func (list *RoomList) Add(room *rooms.Room) {
-	list.items = append(list.items, room)
+	list.items = append(list.items, nil)
+	insertAt := len(list.items) - 1
+	for i := 0; i < len(list.items)-1; i++ {
+		if list.items[i].LastReceivedMessage.After(room.LastReceivedMessage) {
+			insertAt = i
+			break
+		}
+	}
+	for i := len(list.items) - 1; i > insertAt; i-- {
+		list.items[i] = list.items[i-1]
+	}
+	list.items[insertAt] = room
 }
 
 func (list *RoomList) Remove(room *rooms.Room) {
@@ -91,6 +105,7 @@ func (list *RoomList) Bump(room *rooms.Room) {
 		}
 	}
 	list.items[len(list.items)-1] = room
+	room.LastReceivedMessage = time.Now()
 }
 
 func (list *RoomList) Clear() {
@@ -150,7 +165,10 @@ func (list *RoomList) Index(room *rooms.Room) int {
 }
 
 func (list *RoomList) Get(n int) *rooms.Room {
-	return list.items[len(list.items)-1-(n%len(list.items))]
+	if n < 0 || n > len(list.items)-1 {
+		return nil
+	}
+	return list.items[len(list.items)-1-n]
 }
 
 // Draw draws this primitive onto the screen.

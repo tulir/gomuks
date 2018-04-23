@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"sort"
 	"sync"
+	"time"
 
 	"maunium.net/go/gomatrix"
 )
@@ -51,6 +52,9 @@ type Room struct {
 	// This can be true even when UnreadMessages is zero if there's
 	// a notificationless message like bot notices.
 	HasNewMessages bool
+
+	Tags []string
+	LastReceivedMessage time.Time
 
 	// MXID -> Member cache calculated from membership events.
 	memberCache map[string]*Member
