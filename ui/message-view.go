@@ -231,6 +231,12 @@ func (view *MessageView) replaceBuffer(original messages.UIMessage, new messages
 		}
 	}
 
+	if start == -1 {
+		debug.Print("Called replaceBuffer() with message that was not in the buffer:", original)
+		view.appendBuffer(new)
+		return
+	}
+
 	if len(view.textBuffer) > end {
 		end++
 	}
