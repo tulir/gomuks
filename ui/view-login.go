@@ -17,6 +17,7 @@
 package ui
 
 import (
+	"maunium.net/go/gomatrix"
 	"maunium.net/go/gomuks/config"
 	"maunium.net/go/gomuks/debug"
 	"maunium.net/go/gomuks/interface"
@@ -30,6 +31,7 @@ type LoginView struct {
 	homeserver *widget.AdvancedInputField
 	username   *widget.AdvancedInputField
 	password   *widget.AdvancedInputField
+	error      *widget.FormTextView
 
 	matrix ifc.MatrixContainer
 	config *config.Config
@@ -65,7 +67,15 @@ func (ui *GomuksUI) NewLoginView() tview.Primitive {
 
 	ui.loginView = view
 
-	return widget.Center(45, 11, ui.loginView)
+	return widget.Center(45, 13, ui.loginView)
+}
+
+func (view *LoginView) Error(err string) {
+	if view.error == nil {
+		view.error = &widget.FormTextView{TextView: tview.NewTextView()}
+		view.AddFormItem(view.error)
+	}
+	view.error.SetText(err)
 }
 
 func (view *LoginView) Login() {
@@ -75,6 +85,19 @@ func (view *LoginView) Login() {
 
 	debug.Printf("Logging into %s as %s...", hs, mxid)
 	view.config.HS = hs
-	debug.Print("Connect result:", view.matrix.InitClient())
-	debug.Print("Login result:", view.matrix.Login(mxid, password))
+	err := view.matrix.InitClient()
+	debug.Print("Init error:", err)
+	err = view.matrix.Login(mxid, password)
+	if err != nil {
+		if httpErr, ok := err.(gomatrix.HTTPError); ok {
+			if respErr, ok := httpErr.WrappedError.(gomatrix.RespError); ok {
+				view.Error(respErr.Err)
+			} else {
+				view.Error(httpErr.Message)
+			}
+		} else {
+			view.Error("Failed to connect to server.")
+		}
+		debug.Print("Login error:", err)
+	}
 }
