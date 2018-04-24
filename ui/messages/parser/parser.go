@@ -18,6 +18,7 @@ package parser
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"maunium.net/go/gomatrix"
@@ -64,6 +65,7 @@ func ParseMessage(matrix ifc.MatrixContainer, room *rooms.Room, evt *gomatrix.Ev
 			return messages.NewExpandedTextMessage(evt.ID, evt.Sender, displayname, msgtype, text, ts)
 		}
 		text, _ := evt.Content["body"].(string)
+		text = strings.Replace(text, "\t", "    ", -1)
 		return messages.NewTextMessage(evt.ID, evt.Sender, displayname, msgtype, text, ts)
 	case "m.image":
 		url, _ := evt.Content["url"].(string)

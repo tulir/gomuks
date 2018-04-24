@@ -180,6 +180,7 @@ func (parser *MatrixHTMLProcessor) Postprocess() {
 // ParseHTMLMessage parses a HTML-formatted Matrix event into a UIMessage.
 func ParseHTMLMessage(room *rooms.Room, evt *gomatrix.Event, senderDisplayname string) tstring.TString {
 	htmlData, _ := evt.Content["formatted_body"].(string)
+	htmlData = strings.Replace(htmlData, "\t", "    ", -1)
 	msgtype, _ := evt.Content["msgtype"].(string)
 
 	processor := &MatrixHTMLProcessor{
