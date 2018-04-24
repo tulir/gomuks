@@ -51,7 +51,7 @@ type MainView interface {
 	GetRoom(roomID string) RoomView
 	AddRoom(roomID string)
 	RemoveRoom(roomID string)
-	SetRooms(roomIDs []string)
+	SetRooms(rooms map[string]*rooms.Room)
 	SaveAllHistory()
 
 	UpdateTags(room *rooms.Room, newTags []rooms.RoomTag)

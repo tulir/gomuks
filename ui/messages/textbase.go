@@ -72,8 +72,18 @@ func (msg *BaseTextMessage) calculateBufferWithText(text tstring.TString, width 
 				}
 
 				matches := boundaryPattern.FindAllStringIndex(extract.String(), -1)
-				if len(matches) > 0 {
-					extract = extract[:matches[len(matches)-1][1]]
+				if len(matches) == 0 {
+					continue
+				}
+
+				match := matches[len(matches)-1]
+				if len(match) < 2 {
+					continue
+				}
+
+				until := match[1]
+				if until < len(extract) {
+					extract = extract[:until]
 				}
 			}
 			msg.buffer = append(msg.buffer, extract)

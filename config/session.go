@@ -35,6 +35,8 @@ type Session struct {
 	FilterID    string
 	Rooms       map[string]*rooms.Room
 	PushRules   *pushrules.PushRuleset
+
+	InitialSyncDone bool
 }
 
 func (config *Config) LoadSession(mxid string) error {
@@ -59,6 +61,7 @@ func (s *Session) Clear() {
 	s.PushRules = nil
 	s.NextBatch = ""
 	s.FilterID = ""
+	s.InitialSyncDone = false
 	s.Save()
 }
 

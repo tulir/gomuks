@@ -23,6 +23,7 @@ import (
 	"strings"
 	"time"
 
+	"maunium.net/go/gomuks/debug"
 	"maunium.net/go/gomuks/matrix/rooms"
 	"maunium.net/go/gomuks/ui/widget"
 	"maunium.net/go/tcell"
@@ -57,6 +58,7 @@ func NewRoomList() *RoomList {
 	return &RoomList{
 		Box:   tview.NewBox(),
 		items: make(map[string][]*rooms.Room),
+		tags:  []string{"m.favourite", "im.vector.fake.direct", "", "m.lowpriority"},
 
 		mainTextColor:           tcell.ColorWhite,
 		selectedTextColor:       tcell.ColorWhite,
@@ -86,16 +88,17 @@ func (list *RoomList) CheckTag(tag string) {
 
 	items, ok := list.items[tag]
 
-	if len(items) == 0 {
+	if ok && len(items) == 0 {
 		delete(list.items, tag)
 		ok = false
 	}
 
 	if ok && index == -1 {
 		list.tags = append(list.tags, tag)
-	} else if index != -1 {
+	} /* TODO this doesn't work properly
+	else if index != -1 {
 		list.tags = append(list.tags[0:index], list.tags[index+1:]...)
-	}
+	}*/
 }
 
 func (list *RoomList) AddToTag(tag string, room *rooms.Room) {
@@ -210,7 +213,8 @@ func (list *RoomList) Clear() {
 
 func (list *RoomList) SetSelected(tag string, room *rooms.Room) {
 	list.selected = room
-	list.selectedTag = ""
+	list.selectedTag = tag
+	debug.Print("Selecting", room.GetTitle(), "in", tag)
 }
 
 func (list *RoomList) HasSelected() bool {
@@ -229,7 +233,7 @@ func (list *RoomList) First() (string, *rooms.Room) {
 	for _, tag := range list.tags {
 		items := list.items[tag]
 		if len(items) > 0 {
-			return tag, items[0]
+			return tag, items[len(items)-1]
 		}
 	}
 	return "", nil
@@ -240,7 +244,7 @@ func (list *RoomList) Last() (string, *rooms.Room) {
 		tag := list.tags[tagIndex]
 		items := list.items[tag]
 		if len(items) > 0 {
-			return tag, items[len(items)-1]
+			return tag, items[0]
 		}
 	}
 	return "", nil
@@ -264,17 +268,19 @@ func (list *RoomList) Previous() (string, *rooms.Room) {
 
 	items := list.items[list.selectedTag]
 	index := list.indexInTag(list.selectedTag, list.selected)
-	if index == len(items)-1 {
+	if index == -1 {
+		return list.First()
+	} else if index == len(items)-1 {
 		tagIndex := list.IndexTag(list.selectedTag)
-		tagIndex++
-		for ; tagIndex < len(list.tags); tagIndex++ {
-			nextTag := list.tags[tagIndex]
-			nextTagItems := list.items[nextTag]
-			if len(nextTagItems) > 0 {
-				return nextTag, nextTagItems[0]
+		tagIndex--
+		for ; tagIndex >= 0; tagIndex-- {
+			prevTag := list.tags[tagIndex]
+			prevTagItems := list.items[prevTag]
+			if len(prevTagItems) > 0 {
+				return prevTag, prevTagItems[0]
 			}
 		}
-		return list.First()
+		return list.Last()
 	}
 	return list.selectedTag, items[index+1]
 }
@@ -288,17 +294,19 @@ func (list *RoomList) Next() (string, *rooms.Room) {
 
 	items := list.items[list.selectedTag]
 	index := list.indexInTag(list.selectedTag, list.selected)
-	if index == 0 {
+	if index == -1 {
+		return list.Last()
+	} else if index == 0 {
 		tagIndex := list.IndexTag(list.selectedTag)
-		tagIndex--
-		for ; tagIndex >= 0; tagIndex-- {
-			prevTag := list.tags[tagIndex]
-			prevTagItems := list.items[prevTag]
-			if len(prevTagItems) > 0 {
-				return prevTag, prevTagItems[len(prevTagItems)-1]
+		tagIndex++
+		for ; tagIndex < len(list.tags); tagIndex++ {
+			nextTag := list.tags[tagIndex]
+			nextTagItems := list.items[nextTag]
+			if len(nextTagItems) > 0 {
+				return nextTag, nextTagItems[len(nextTagItems)-1]
 			}
 		}
-		return list.Last()
+		return list.First()
 	}
 	return list.selectedTag, items[index-1]
 }
@@ -332,6 +340,8 @@ func (list *RoomList) Get(n int) (string, *rooms.Room) {
 
 		// Tag items
 		n -= len(items)
+		// Tag footer
+		n--
 	}
 	return "", nil
 }
@@ -346,6 +356,8 @@ func (list *RoomList) GetTagDisplayName(tag string) string {
 		return "Favorites"
 	case tag == "m.lowpriority":
 		return "Low Priority"
+	case tag == "im.vector.fake.direct":
+		return "People"
 	case strings.HasPrefix(tag, "m."):
 		return strings.Title(strings.Replace(tag[len("m."):], "_", " ", -1))
 	case strings.HasPrefix(tag, "u."):
@@ -420,5 +432,6 @@ func (list *RoomList) Draw(screen tcell.Screen) {
 				break
 			}
 		}
+		y++
 	}
 }

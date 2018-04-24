@@ -183,7 +183,8 @@ func (view *MessageView) AddMessage(ifcMessage ifc.Message, direction ifc.Messag
 	} else if oldMsg != nil {
 		view.replaceBuffer(oldMsg, message)
 	} else {
-		view.replaceBuffer(message, message)
+		debug.Print("Unexpected AddMessage() call: Direction is not append or prepend, but message is new.")
+		debug.PrintStack()
 	}
 
 	view.messageIDs[message.ID()] = message
@@ -232,7 +233,8 @@ func (view *MessageView) replaceBuffer(original messages.UIMessage, new messages
 	}
 
 	if start == -1 {
-		debug.Print("Called replaceBuffer() with message that was not in the buffer:", original)
+		debug.Print("Called replaceBuffer() with message that was not in the buffer:", original.ID())
+		debug.PrintStack()
 		view.appendBuffer(new)
 		return
 	}

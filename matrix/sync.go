@@ -20,8 +20,6 @@ package matrix
 
 import (
 	"encoding/json"
-	"fmt"
-	"runtime/debug"
 	"time"
 
 	"maunium.net/go/gomatrix"
@@ -37,9 +35,10 @@ type SyncerSession interface {
 // replace parts of this default syncer (e.g. the ProcessResponse method). The default syncer uses the observer
 // pattern to notify callers about incoming events. See GomuksSyncer.OnEventType for more information.
 type GomuksSyncer struct {
-	Session       SyncerSession
-	listeners     map[string][]gomatrix.OnEventListener // event type to listeners array
-	FirstSyncDone bool
+	Session          SyncerSession
+	listeners        map[string][]gomatrix.OnEventListener // event type to listeners array
+	FirstSyncDone    bool
+	InitDoneCallback func()
 }
 
 // NewGomuksSyncer returns an instantiated GomuksSyncer
@@ -53,17 +52,6 @@ func NewGomuksSyncer(session SyncerSession) *GomuksSyncer {
 
 // ProcessResponse processes a Matrix sync response.
 func (s *GomuksSyncer) ProcessResponse(res *gomatrix.RespSync, since string) (err error) {
-	if len(since) == 0 {
-		return
-	}
-	// debug.Print("Processing sync response", since, res)
-
-	defer func() {
-		if r := recover(); r != nil {
-			err = fmt.Errorf("ProcessResponse for %s since %s panicked: %s\n%s", s.Session.GetUserID(), since, r, debug.Stack())
-		}
-	}()
-
 	s.processSyncEvents(nil, res.Presence.Events, false, false)
 	s.processSyncEvents(nil, res.AccountData.Events, false, false)
 
@@ -93,6 +81,9 @@ func (s *GomuksSyncer) ProcessResponse(res *gomatrix.RespSync, since string) (er
 		}
 	}
 
+	if since == "" && s.InitDoneCallback != nil {
+		s.InitDoneCallback()
+	}
 	s.FirstSyncDone = true
 
 	return
@@ -147,7 +138,13 @@ func (s *GomuksSyncer) GetFilterJSON(userID string) json.RawMessage {
 		"room": {
 			"include_leave": true,
 			"state": {
-				"types": ["m.room.member"]
+				"types": [
+					"m.room.member",
+					"m.room.name",
+					"m.room.topic",
+					"m.room.canonical_alias",
+					"m.room.aliases"
+				]
 			},
 			"timeline": {
 				"types": ["m.room.message"],

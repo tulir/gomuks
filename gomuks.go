@@ -18,7 +18,9 @@ package main
 
 import (
 	"os"
+	"os/signal"
 	"path/filepath"
+	"syscall"
 	"time"
 
 	"maunium.net/go/gomuks/config"
@@ -103,6 +105,13 @@ func (gmx *Gomuks) Stop() {
 // will be recovered as specified in Recover().
 func (gmx *Gomuks) Start() {
 	_ = gmx.matrix.InitClient()
+
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
+	go func() {
+		<-c
+		gmx.Stop()
+	}()
 
 	go gmx.StartAutosave()
 	if err := gmx.ui.Start(); err != nil {

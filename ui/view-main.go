@@ -173,7 +173,7 @@ func (view *MainView) KeyEventHandler(roomView *RoomView, key *tcell.EventKey) *
 		msgView := roomView.MessageView()
 
 		if msgView.IsAtTop() && (k == tcell.KeyPgUp || k == tcell.KeyUp) {
-			go view.LoadHistory(roomView.Room.ID, false)
+			go view.LoadHistory(roomView.Room.ID)
 		}
 
 		switch k {
@@ -215,7 +215,7 @@ func (view *MainView) MouseEventHandler(roomView *RoomView, event *tcell.EventMo
 	switch event.Buttons() {
 	case tcell.WheelUp:
 		if msgView.IsAtTop() {
-			go view.LoadHistory(roomView.Room.ID, false)
+			go view.LoadHistory(roomView.Room.ID)
 		} else {
 			msgView.AddScrollOffset(WheelScrollOffsetDiff)
 
@@ -293,11 +293,9 @@ func (view *MainView) addRoomPage(room *rooms.Room) {
 		view.roomView.AddPage(room.ID, roomView, true, false)
 		roomView.UpdateUserList()
 
-		count, err := roomView.LoadHistory(view.matrix, view.config.HistoryDir)
+		_, err := roomView.LoadHistory(view.matrix, view.config.HistoryDir)
 		if err != nil {
 			debug.Printf("Failed to load history of %s: %v", roomView.Room.GetTitle(), err)
-		} else if count <= 0 {
-			go view.LoadHistory(room.ID, true)
 		}
 	}
 }
@@ -314,18 +312,25 @@ func (view *MainView) GetRoom(roomID string) ifc.RoomView {
 
 func (view *MainView) AddRoom(roomID string) {
 	if view.roomList.Contains(roomID) {
+		debug.Print("Add aborted", roomID)
 		return
 	}
+	debug.Print("Adding", roomID)
 	room := view.matrix.GetRoom(roomID)
 	view.roomList.Add(room)
 	view.addRoomPage(room)
+	if !view.roomList.HasSelected() {
+		view.SwitchRoom(view.roomList.First())
+	}
 }
 
 func (view *MainView) RemoveRoom(roomID string) {
 	roomView := view.GetRoom(roomID)
 	if roomView == nil {
+		debug.Print("Remove aborted", roomID)
 		return
 	}
+	debug.Print("Removing", roomID)
 
 	view.roomList.Remove(roomView.MxRoom())
 	view.SwitchRoom(view.roomList.Selected())
@@ -336,12 +341,11 @@ func (view *MainView) RemoveRoom(roomID string) {
 	view.parent.Render()
 }
 
-func (view *MainView) SetRooms(roomIDs []string) {
+func (view *MainView) SetRooms(rooms map[string]*rooms.Room) {
 	view.roomList.Clear()
 	view.roomView.Clear()
 	view.rooms = make(map[string]*RoomView)
-	for _, roomID := range roomIDs {
-		room := view.matrix.GetRoom(roomID)
+	for _, room := range rooms {
 		view.roomList.Add(room)
 		view.addRoomPage(room)
 	}
@@ -425,7 +429,7 @@ func (view *MainView) NotifyMessage(room *rooms.Room, message ifc.Message, shoul
 	view.roomList.Bump(room)
 }
 
-func (view *MainView) LoadHistory(room string, initial bool) {
+func (view *MainView) LoadHistory(room string) {
 	defer debug.Recover()
 	roomView := view.rooms[room]
 
@@ -446,12 +450,7 @@ func (view *MainView) LoadHistory(room string, initial bool) {
 		return
 	}
 
-	if initial {
-		batch = view.config.Session.NextBatch
-		debug.Print("Loading initial history for", room)
-	} else {
-		debug.Print("Loading more history for", room, "starting from", batch)
-	}
+	debug.Print("Fetching history for", room, "starting from", batch)
 	history, prevBatch, err := view.matrix.GetHistory(roomView.Room.ID, batch, 50)
 	if err != nil {
 		roomView.AddServiceMessage("Failed to fetch history")
