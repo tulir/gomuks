@@ -28,7 +28,6 @@ import (
 
 type SyncerSession interface {
 	GetRoom(id string) *rooms.Room
-	SetInitialSyncDone()
 	GetUserID() string
 }
 
@@ -36,9 +35,10 @@ type SyncerSession interface {
 // replace parts of this default syncer (e.g. the ProcessResponse method). The default syncer uses the observer
 // pattern to notify callers about incoming events. See GomuksSyncer.OnEventType for more information.
 type GomuksSyncer struct {
-	Session       SyncerSession
-	listeners     map[string][]gomatrix.OnEventListener // event type to listeners array
-	FirstSyncDone bool
+	Session          SyncerSession
+	listeners        map[string][]gomatrix.OnEventListener // event type to listeners array
+	FirstSyncDone    bool
+	InitDoneCallback func()
 }
 
 // NewGomuksSyncer returns an instantiated GomuksSyncer
@@ -81,8 +81,8 @@ func (s *GomuksSyncer) ProcessResponse(res *gomatrix.RespSync, since string) (er
 		}
 	}
 
-	if since == "" {
-		s.Session.SetInitialSyncDone()
+	if since == "" && s.InitDoneCallback != nil {
+		s.InitDoneCallback()
 	}
 	s.FirstSyncDone = true
 

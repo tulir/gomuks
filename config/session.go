@@ -52,10 +52,6 @@ func (config *Config) NewSession(mxid string) *Session {
 	}
 }
 
-func (s *Session) SetInitialSyncDone() {
-	s.InitialSyncDone = true
-}
-
 func (s *Session) GetUserID() string {
 	return s.UserID
 }

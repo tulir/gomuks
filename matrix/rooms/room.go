@@ -155,7 +155,7 @@ func (room *Room) UpdateState(event *gomatrix.Event) {
 		stateKey = *event.StateKey
 	}
 	if event.Type != "m.room.member" {
-		debug.Printf("[ROOM] Updating state %s#%s for %s", event.Type, stateKey, room.ID)
+		debug.Printf("Updating state %s#%s for %s", event.Type, stateKey, room.ID)
 	}
 
 	if event.StateKey == nil {

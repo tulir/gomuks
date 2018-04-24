@@ -175,6 +175,10 @@ func (c *Container) OnLogin() {
 	c.syncer.OnEventType("m.typing", c.HandleTyping)
 	c.syncer.OnEventType("m.push_rules", c.HandlePushRules)
 	c.syncer.OnEventType("m.tag", c.HandleTag)
+	c.syncer.InitDoneCallback = func() {
+		c.config.Session.InitialSyncDone = true
+		c.ui.Render()
+	}
 	c.client.Syncer = c.syncer
 
 	debug.Print("Setting existing rooms")
@@ -224,7 +228,6 @@ func (c *Container) HandleMessage(evt *gomatrix.Event) {
 
 	message := mainView.ParseEvent(roomView, evt)
 	if message != nil {
-		debug.Print("Adding message", message.ID(), c.syncer.FirstSyncDone, c.config.Session.InitialSyncDone)
 		roomView.AddMessage(message, ifc.AppendMessage)
 		if c.syncer.FirstSyncDone {
 			pushRules := c.PushRules().GetActions(roomView.MxRoom(), evt).Should()
@@ -307,7 +310,6 @@ func (c *Container) HandleMembership(evt *gomatrix.Event) {
 
 	message := mainView.ParseEvent(roomView, evt)
 	if message != nil {
-		debug.Print("Adding membership event", message.ID(), c.syncer.FirstSyncDone, c.config.Session.InitialSyncDone)
 		// TODO this shouldn't be necessary
 		//roomView.MxRoom().UpdateState(evt)
 		// TODO This should probably also be in a different place
