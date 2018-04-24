@@ -210,7 +210,7 @@ func (list *RoomList) Clear() {
 
 func (list *RoomList) SetSelected(tag string, room *rooms.Room) {
 	list.selected = room
-	list.selectedTag = ""
+	list.selectedTag = tag
 }
 
 func (list *RoomList) HasSelected() bool {
@@ -264,7 +264,9 @@ func (list *RoomList) Previous() (string, *rooms.Room) {
 
 	items := list.items[list.selectedTag]
 	index := list.indexInTag(list.selectedTag, list.selected)
-	if index == len(items)-1 {
+	if index == -1 {
+		return list.First()
+	} else if index == len(items)-1 {
 		tagIndex := list.IndexTag(list.selectedTag)
 		tagIndex++
 		for ; tagIndex < len(list.tags); tagIndex++ {
@@ -288,7 +290,9 @@ func (list *RoomList) Next() (string, *rooms.Room) {
 
 	items := list.items[list.selectedTag]
 	index := list.indexInTag(list.selectedTag, list.selected)
-	if index == 0 {
+	if index == -1 {
+		return list.Last()
+	} else if index == 0 {
 		tagIndex := list.IndexTag(list.selectedTag)
 		tagIndex--
 		for ; tagIndex >= 0; tagIndex-- {
@@ -332,6 +336,8 @@ func (list *RoomList) Get(n int) (string, *rooms.Room) {
 
 		// Tag items
 		n -= len(items)
+		// Tag footer
+		n--
 	}
 	return "", nil
 }
@@ -420,5 +426,6 @@ func (list *RoomList) Draw(screen tcell.Screen) {
 				break
 			}
 		}
+		y++
 	}
 }

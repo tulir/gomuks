@@ -336,12 +336,11 @@ func (view *MainView) RemoveRoom(roomID string) {
 	view.parent.Render()
 }
 
-func (view *MainView) SetRooms(roomIDs []string) {
+func (view *MainView) SetRooms(rooms map[string]*rooms.Room) {
 	view.roomList.Clear()
 	view.roomView.Clear()
 	view.rooms = make(map[string]*RoomView)
-	for _, roomID := range roomIDs {
-		room := view.matrix.GetRoom(roomID)
+	for _, room := range rooms {
 		view.roomList.Add(room)
 		view.addRoomPage(room)
 	}

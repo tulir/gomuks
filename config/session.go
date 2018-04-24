@@ -65,6 +65,7 @@ func (s *Session) Clear() {
 	s.PushRules = nil
 	s.NextBatch = ""
 	s.FilterID = ""
+	s.InitialSyncDone = false
 	s.Save()
 }
 

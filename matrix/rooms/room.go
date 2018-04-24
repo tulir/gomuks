@@ -23,6 +23,7 @@ import (
 	"time"
 
 	"maunium.net/go/gomatrix"
+	"maunium.net/go/gomuks/debug"
 )
 
 type RoomNameSource int
@@ -148,6 +149,15 @@ func (room *Room) UpdateState(event *gomatrix.Event) {
 	case "m.room.topic":
 		room.topicCache = ""
 	}
+
+	stateKey := ""
+	if event.StateKey != nil {
+		stateKey = *event.StateKey
+	}
+	if event.Type != "m.room.member" {
+		debug.Printf("[ROOM] Updating state %s#%s for %s", event.Type, stateKey, room.ID)
+	}
+
 	if event.StateKey == nil {
 		room.State[event.Type][""] = event
 	} else {

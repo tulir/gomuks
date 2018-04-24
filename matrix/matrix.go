@@ -129,6 +129,7 @@ func (c *Container) Login(user, password string) error {
 // Stop stops the Matrix syncer.
 func (c *Container) Stop() {
 	if c.running {
+		debug.Print("Stopping Matrix container...")
 		c.stop <- true
 		c.client.StopSync()
 	}
@@ -157,22 +158,6 @@ func (c *Container) PushRules() *pushrules.PushRuleset {
 	return c.config.Session.PushRules
 }
 
-// UpdateRoomList fetches the list of rooms the user has joined and sends them to the UI.
-func (c *Container) UpdateRoomList() {
-	resp, err := c.client.JoinedRooms()
-	if err != nil {
-		respErr, _ := err.(gomatrix.HTTPError).WrappedError.(gomatrix.RespError)
-		if respErr.ErrCode == "M_UNKNOWN_TOKEN" {
-			c.OnLogout()
-			return
-		}
-		debug.Print("Error fetching room list:", err)
-		return
-	}
-
-	c.ui.MainView().SetRooms(resp.JoinedRooms)
-}
-
 // OnLogout stops the syncer and moves the UI back to the login view.
 func (c *Container) OnLogout() {
 	c.Stop()
@@ -183,6 +168,7 @@ func (c *Container) OnLogout() {
 func (c *Container) OnLogin() {
 	c.client.Store = c.config.Session
 
+	debug.Print("Initializing syncer")
 	c.syncer = NewGomuksSyncer(c.config.Session)
 	c.syncer.OnEventType("m.room.message", c.HandleMessage)
 	c.syncer.OnEventType("m.room.member", c.HandleMembership)
@@ -191,7 +177,10 @@ func (c *Container) OnLogin() {
 	c.syncer.OnEventType("m.tag", c.HandleTag)
 	c.client.Syncer = c.syncer
 
-	//c.UpdateRoomList()
+	debug.Print("Setting existing rooms")
+	c.ui.MainView().SetRooms(c.config.Session.Rooms)
+
+	debug.Print("OnLogin() done.")
 }
 
 // Start moves the UI to the main view, calls OnLogin() and runs the syncer forever until stopped with Stop()
@@ -226,19 +215,24 @@ func (c *Container) Start() {
 // HandleMessage is the event handler for the m.room.message timeline event.
 func (c *Container) HandleMessage(evt *gomatrix.Event) {
 	mainView := c.ui.MainView()
+
 	roomView := mainView.GetRoom(evt.RoomID)
 	if roomView == nil {
+		debug.Printf("Failed to handle event %v: No room view found.", evt)
 		return
 	}
 
 	message := mainView.ParseEvent(roomView, evt)
 	if message != nil {
+		debug.Print("Adding message", message.ID(), c.syncer.FirstSyncDone, c.config.Session.InitialSyncDone)
+		roomView.AddMessage(message, ifc.AppendMessage)
 		if c.syncer.FirstSyncDone {
 			pushRules := c.PushRules().GetActions(roomView.MxRoom(), evt).Should()
 			mainView.NotifyMessage(roomView.MxRoom(), message, pushRules)
+			c.ui.Render()
 		}
-		roomView.AddMessage(message, ifc.AppendMessage)
-		c.ui.Render()
+	} else {
+		debug.Printf("Parsing event %v failed (ParseEvent() returned nil).", evt)
 	}
 }
 
@@ -279,6 +273,7 @@ func (c *Container) processOwnMembershipChange(evt *gomatrix.Event) {
 	if evt.Unsigned.PrevContent != nil {
 		prevMembership, _ = evt.Unsigned.PrevContent["membership"].(string)
 	}
+	debug.Printf("Processing own membership change: %s->%s in %s", membership, prevMembership, evt.RoomID)
 	if membership == prevMembership {
 		return
 	}
@@ -287,6 +282,9 @@ func (c *Container) processOwnMembershipChange(evt *gomatrix.Event) {
 		c.ui.MainView().AddRoom(evt.RoomID)
 	case "leave":
 		c.ui.MainView().RemoveRoom(evt.RoomID)
+	case "invite":
+		// TODO handle
+		debug.Printf("%s invited the user to %s", evt.Sender, evt.RoomID)
 	}
 }
 
@@ -296,7 +294,8 @@ func (c *Container) HandleMembership(evt *gomatrix.Event) {
 		c.processOwnMembershipChange(evt)
 	}
 
-	if !c.config.Session.InitialSyncDone && evt.Timestamp < time.Now().Add(-1*time.Hour).Unix() {
+	if !c.config.Session.InitialSyncDone /*&& evt.Timestamp < time.Now().Add(-1*time.Hour).Unix()*/ {
+		// We don't care about other users' membership events in the initial sync.
 		return
 	}
 
@@ -308,17 +307,19 @@ func (c *Container) HandleMembership(evt *gomatrix.Event) {
 
 	message := mainView.ParseEvent(roomView, evt)
 	if message != nil {
+		debug.Print("Adding membership event", message.ID(), c.syncer.FirstSyncDone, c.config.Session.InitialSyncDone)
 		// TODO this shouldn't be necessary
-		roomView.MxRoom().UpdateState(evt)
+		//roomView.MxRoom().UpdateState(evt)
 		// TODO This should probably also be in a different place
-		roomView.UpdateUserList()
+		//roomView.UpdateUserList()
 
+		roomView.AddMessage(message, ifc.AppendMessage)
+		// We don't want notifications at startup.
 		if c.syncer.FirstSyncDone {
 			pushRules := c.PushRules().GetActions(roomView.MxRoom(), evt).Should()
 			mainView.NotifyMessage(roomView.MxRoom(), message, pushRules)
+			c.ui.Render()
 		}
-		roomView.AddMessage(message, ifc.AppendMessage)
-		c.ui.Render()
 	}
 }
 
@@ -475,12 +476,12 @@ func (c *Container) GetHistory(roomID, prevBatch string, limit int) ([]gomatrix.
 func (c *Container) GetRoom(roomID string) *rooms.Room {
 	room := c.config.Session.GetRoom(roomID)
 	if room != nil && len(room.State) == 0 {
-		events := c.getState(room.ID)
+		/*events := c.getState(room.ID)
 		if events != nil {
 			for _, event := range events {
 				room.UpdateState(event)
 			}
-		}
+		}*/
 	}
 	return room
 }

@@ -23,7 +23,6 @@ import (
 	"time"
 
 	"maunium.net/go/gomatrix"
-	"maunium.net/go/gomuks/debug"
 	"maunium.net/go/gomuks/matrix/rooms"
 )
 
@@ -53,8 +52,6 @@ func NewGomuksSyncer(session SyncerSession) *GomuksSyncer {
 
 // ProcessResponse processes a Matrix sync response.
 func (s *GomuksSyncer) ProcessResponse(res *gomatrix.RespSync, since string) (err error) {
-	debug.Print("Processing sync response", since, res)
-
 	s.processSyncEvents(nil, res.Presence.Events, false, false)
 	s.processSyncEvents(nil, res.AccountData.Events, false, false)
 
@@ -141,7 +138,13 @@ func (s *GomuksSyncer) GetFilterJSON(userID string) json.RawMessage {
 		"room": {
 			"include_leave": true,
 			"state": {
-				"types": ["m.room.member"]
+				"types": [
+					"m.room.member",
+					"m.room.name",
+					"m.room.topic",
+					"m.room.canonical_alias",
+					"m.room.aliases"
+				]
 			},
 			"timeline": {
 				"types": ["m.room.message"],
