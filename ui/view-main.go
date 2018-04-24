@@ -319,6 +319,9 @@ func (view *MainView) AddRoom(roomID string) {
 	room := view.matrix.GetRoom(roomID)
 	view.roomList.Add(room)
 	view.addRoomPage(room)
+	if !view.roomList.HasSelected() {
+		view.SwitchRoom(view.roomList.First())
+	}
 }
 
 func (view *MainView) RemoveRoom(roomID string) {
