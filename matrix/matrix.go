@@ -276,7 +276,7 @@ func (c *Container) processOwnMembershipChange(evt *gomatrix.Event) {
 	if evt.Unsigned.PrevContent != nil {
 		prevMembership, _ = evt.Unsigned.PrevContent["membership"].(string)
 	}
-	debug.Printf("Processing own membership change: %s->%s in %s", membership, prevMembership, evt.RoomID)
+	debug.Printf("Processing own membership change: %s->%s in %s", prevMembership, membership, evt.RoomID)
 	if membership == prevMembership {
 		return
 	}
