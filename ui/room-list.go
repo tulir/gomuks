@@ -58,7 +58,7 @@ func NewRoomList() *RoomList {
 	return &RoomList{
 		Box:   tview.NewBox(),
 		items: make(map[string][]*rooms.Room),
-		tags: []string{"m.favourite", "im.vector.fake.direct", "", "m.lowpriority"},
+		tags:  []string{"m.favourite", "im.vector.fake.direct", "", "m.lowpriority"},
 
 		mainTextColor:           tcell.ColorWhite,
 		selectedTextColor:       tcell.ColorWhite,
@@ -95,7 +95,7 @@ func (list *RoomList) CheckTag(tag string) {
 
 	if ok && index == -1 {
 		list.tags = append(list.tags, tag)
-	}/* TODO this doesn't work properly
+	} /* TODO this doesn't work properly
 	else if index != -1 {
 		list.tags = append(list.tags[0:index], list.tags[index+1:]...)
 	}*/
