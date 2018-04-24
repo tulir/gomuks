@@ -295,9 +295,7 @@ func (c *Container) processOwnMembershipChange(evt *gomatrix.Event) {
 func (c *Container) HandleMembership(evt *gomatrix.Event) {
 	if evt.StateKey != nil && *evt.StateKey == c.config.Session.UserID {
 		c.processOwnMembershipChange(evt)
-	}
-
-	if !c.config.Session.InitialSyncDone /*&& evt.Timestamp < time.Now().Add(-1*time.Hour).Unix()*/ {
+	} else if !c.config.Session.InitialSyncDone /*&& evt.Timestamp < time.Now().Add(-1*time.Hour).Unix()*/ {
 		// We don't care about other users' membership events in the initial sync.
 		return
 	}

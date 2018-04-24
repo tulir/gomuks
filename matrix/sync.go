@@ -74,7 +74,8 @@ func (s *GomuksSyncer) ProcessResponse(res *gomatrix.RespSync, since string) (er
 
 	for roomID, roomData := range res.Rooms.Leave {
 		room := s.Session.GetRoom(roomID)
-		s.processSyncEvents(room, roomData.Timeline.Events, true, true)
+		s.processSyncEvents(room, roomData.State.Events, true, true)
+		s.processSyncEvents(room, roomData.Timeline.Events, false, false)
 
 		if len(room.PrevBatch) == 0 {
 			room.PrevBatch = roomData.Timeline.PrevBatch
