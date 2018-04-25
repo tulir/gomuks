@@ -67,6 +67,7 @@ func (ui *GomuksUI) NewMainView() tview.Primitive {
 	mainView.AddItem(mainView.roomList, 25, 0, false)
 	mainView.AddItem(widget.NewBorder(), 1, 0, false)
 	mainView.AddItem(mainView.roomView, 0, 1, true)
+	mainView.BumpFocus()
 
 	ui.mainView = mainView
 
@@ -398,6 +399,7 @@ func sendNotification(room *rooms.Room, sender, text string, critical, sound boo
 	if room.GetTitle() != sender {
 		sender = fmt.Sprintf("%s (%s)", sender, room.GetTitle())
 	}
+	debug.Printf("Sending notification with body \"%s\" from %s in room ID %s (critical=%v, sound=%v)", text, sender, room.ID, critical, sound)
 	notification.Send(sender, text, critical, sound)
 }
 
@@ -405,7 +407,7 @@ func (view *MainView) NotifyMessage(room *rooms.Room, message ifc.Message, shoul
 	// Whether or not the room where the message came is the currently shown room.
 	isCurrent := room == view.roomList.SelectedRoom()
 	// Whether or not the terminal window is focused.
-	isFocused := view.lastFocusTime.Add(30 * time.Second).Before(time.Now())
+	isFocused := time.Now().Add(-30 * time.Second).Before(view.lastFocusTime)
 
 	// Whether or not the push rules say this message should be notified about.
 	shouldNotify := (should.Notify || !should.NotifySpecified) && message.Sender() != view.config.Session.UserID

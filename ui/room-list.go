@@ -58,7 +58,7 @@ func NewRoomList() *RoomList {
 	return &RoomList{
 		Box:   tview.NewBox(),
 		items: make(map[string][]*rooms.Room),
-		tags:  []string{"m.favourite", "im.vector.fake.direct", "", "m.lowpriority"},
+		tags:  []string{"m.favourite", "net.maunium.gomuks.fake.direct", "", "m.lowpriority"},
 
 		mainTextColor:           tcell.ColorWhite,
 		selectedTextColor:       tcell.ColorWhite,
@@ -102,6 +102,9 @@ func (list *RoomList) CheckTag(tag string) {
 }
 
 func (list *RoomList) AddToTag(tag string, room *rooms.Room) {
+	if tag == "" && len(room.GetMembers()) == 2 {
+		tag = "net.maunium.gomuks.fake.direct"
+	}
 	items, ok := list.items[tag]
 	if !ok {
 		list.items[tag] = []*rooms.Room{room}
@@ -214,7 +217,7 @@ func (list *RoomList) Clear() {
 func (list *RoomList) SetSelected(tag string, room *rooms.Room) {
 	list.selected = room
 	list.selectedTag = tag
-	debug.Print("Selecting", room.GetTitle(), "in", tag)
+	debug.Print("Selecting", room.GetTitle(), "in", list.GetTagDisplayName(tag))
 }
 
 func (list *RoomList) HasSelected() bool {
@@ -356,10 +359,8 @@ func (list *RoomList) GetTagDisplayName(tag string) string {
 		return "Favorites"
 	case tag == "m.lowpriority":
 		return "Low Priority"
-	case tag == "im.vector.fake.direct":
+	case tag == "net.maunium.gomuks.fake.direct":
 		return "People"
-	case strings.HasPrefix(tag, "m."):
-		return strings.Title(strings.Replace(tag[len("m."):], "_", " ", -1))
 	case strings.HasPrefix(tag, "u."):
 		return tag[len("u."):]
 	case !nsRegex.MatchString(tag):
@@ -386,7 +387,12 @@ func (list *RoomList) Draw(screen tcell.Screen) {
 	// Draw the list items.
 	for _, tag := range list.tags {
 		items := list.items[tag]
-		widget.WriteLine(screen, tview.AlignLeft, list.GetTagDisplayName(tag), x, y, width, tcell.StyleDefault.Underline(true).Bold(true))
+		tagDisplayName := list.GetTagDisplayName(tag)
+		if len(tagDisplayName) == 0 {
+			continue
+		}
+
+		widget.WriteLine(screen, tview.AlignLeft, tagDisplayName, x, y, width, tcell.StyleDefault.Underline(true).Bold(true))
 		y++
 		for i := len(items) - 1; i >= 0; i-- {
 			item := items[i]
