@@ -122,7 +122,14 @@ func (view *MainView) sendTempMessage(roomView *RoomView, tempMessage ifc.Messag
 	eventID, err := view.matrix.SendMarkdownMessage(roomView.Room.ID, tempMessage.Type(), text)
 	if err != nil {
 		tempMessage.SetState(ifc.MessageStateFailed)
+		if httpErr, ok := err.(gomatrix.HTTPError); ok {
+			if respErr, ok := httpErr.WrappedError.(gomatrix.RespError); ok {
+				// Show shorter version if available
+				err = respErr
+			}
+		}
 		roomView.AddServiceMessage(fmt.Sprintf("Failed to send message: %v", err))
+		view.parent.Render()
 	} else {
 		roomView.MessageView().UpdateMessageID(tempMessage, eventID)
 	}
