@@ -62,6 +62,10 @@ type AdvancedInputField struct {
 	// The text color of the placeholder.
 	placeholderTextColor tcell.Color
 
+	// The screen width of the label area. A value of 0 means use the width of
+	// the label text.
+	labelWidth int
+
 	// The screen width of the input area. A value of 0 means extend as much as
 	// possible.
 	fieldWidth int
@@ -132,6 +136,13 @@ func (field *AdvancedInputField) SetLabel(label string) *AdvancedInputField {
 	return field
 }
 
+// SetLabelWidth sets the screen width of the label. A value of 0 will cause the
+// primitive to use the width of the label string.
+func (field *AdvancedInputField) SetLabelWidth(width int) *AdvancedInputField {
+	field.labelWidth = width
+	return field
+}
+
 // GetLabel returns the text to be displayed before the input area.
 func (field *AdvancedInputField) GetLabel() string {
 	return field.label
@@ -168,8 +179,8 @@ func (field *AdvancedInputField) SetPlaceholderExtColor(color tcell.Color) *Adva
 }
 
 // SetFormAttributes sets attributes shared by all form items.
-func (field *AdvancedInputField) SetFormAttributes(label string, labelColor, bgColor, fieldTextColor, fieldBgColor tcell.Color) tview.FormItem {
-	field.label = label
+func (field *AdvancedInputField) SetFormAttributes(labelWidth int, labelColor, bgColor, fieldTextColor, fieldBgColor tcell.Color) tview.FormItem {
+	field.labelWidth = labelWidth
 	field.labelColor = labelColor
 	field.SetBackgroundColor(bgColor)
 	field.fieldTextColor = fieldTextColor
@@ -314,8 +325,18 @@ func (field *AdvancedInputField) Draw(screen tcell.Screen) {
 		return
 	}
 
-	_, drawnWidth := tview.Print(screen, field.label, x, y, rightLimit-x, tview.AlignLeft, field.labelColor)
-	x += drawnWidth
+	// Draw label.
+	if field.labelWidth > 0 {
+		labelWidth := field.labelWidth
+		if labelWidth > rightLimit-x {
+			labelWidth = rightLimit - x
+		}
+		tview.Print(screen, field.label, x, y, labelWidth, tview.AlignLeft, field.labelColor)
+		x += labelWidth
+	} else {
+		_, drawnWidth := tview.Print(screen, field.label, x, y, rightLimit-x, tview.AlignLeft, field.labelColor)
+		x += drawnWidth
+	}
 
 	fieldWidth := field.drawInput(screen, rightLimit, x, y)
 	text := field.prepareText(screen, fieldWidth, x, y)
@@ -349,7 +370,11 @@ func (field *AdvancedInputField) setCursor(screen tcell.Screen) {
 		y++
 		rightLimit -= 2
 	}
-	x = x + tview.StringWidth(field.label) + field.cursorOffset - field.viewOffset
+	labelWidth := field.labelWidth
+	if labelWidth == 0 {
+		labelWidth = tview.StringWidth(field.label)
+	}
+	x = x + labelWidth + field.cursorOffset - field.viewOffset
 	if x >= rightLimit {
 		x = rightLimit - 1
 	} else if x < origX {
@@ -482,6 +507,18 @@ func (field *AdvancedInputField) handleInputChanges(originalText string) {
 // InputHandler returns the handler for this primitive.
 func (field *AdvancedInputField) InputHandler() func(event *tcell.EventKey, setFocus func(p tview.Primitive)) {
 	return field.WrapInputHandler(field.inputHandler)
+}
+
+func (field *AdvancedInputField) PasteHandler() func(event *tcell.EventPaste) {
+	return field.WrapPasteHandler(field.pasteHandler)
+}
+
+func (field *AdvancedInputField) pasteHandler(event *tcell.EventPaste) {
+	defer field.handleInputChanges(field.text)
+	clip := event.Text()
+	leftPart := SubstringBefore(field.text, field.cursorOffset)
+	field.text = leftPart + clip + field.text[len(leftPart):]
+	field.cursorOffset += runewidth.StringWidth(clip)
 }
 
 func (field *AdvancedInputField) inputHandler(event *tcell.EventKey, setFocus func(p tview.Primitive)) {

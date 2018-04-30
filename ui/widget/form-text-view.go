@@ -29,7 +29,7 @@ func (ftv *FormTextView) GetLabel() string {
 	return ""
 }
 
-func (ftv *FormTextView) SetFormAttributes(label string, labelColor, bgColor, fieldTextColor, fieldBgColor tcell.Color) tview.FormItem {
+func (ftv *FormTextView) SetFormAttributes(labelWidth int, labelColor, bgColor, fieldTextColor, fieldBgColor tcell.Color) tview.FormItem {
 	return ftv
 }
 
