@@ -213,39 +213,47 @@ func (view *MainView) MouseEventHandler(roomView *RoomView, event *tcell.EventMo
 	msgView := roomView.MessageView()
 	x, y := event.Position()
 
-	switch event.Buttons() {
-	case tcell.WheelUp:
-		if msgView.IsAtTop() {
-			go view.LoadHistory(roomView.Room.ID)
-		} else {
-			msgView.AddScrollOffset(WheelScrollOffsetDiff)
+	switch {
+	case isInArea(x, y, msgView):
+		mx, my, _, _ := msgView.GetRect()
+		switch event.Buttons() {
+		case tcell.WheelUp:
+			if msgView.IsAtTop() {
+				go view.LoadHistory(roomView.Room.ID)
+			} else {
+				msgView.AddScrollOffset(WheelScrollOffsetDiff)
+
+				view.parent.Render()
+			}
+		case tcell.WheelDown:
+			msgView.AddScrollOffset(-WheelScrollOffsetDiff)
 
 			view.parent.Render()
-		}
-	case tcell.WheelDown:
-		msgView.AddScrollOffset(-WheelScrollOffsetDiff)
 
-		view.parent.Render()
-
-		if msgView.ScrollOffset == 0 {
-			roomView.Room.MarkRead()
-		}
-	default:
-		if isInArea(x, y, msgView) {
-			mx, my, _, _ := msgView.GetRect()
+			if msgView.ScrollOffset == 0 {
+				roomView.Room.MarkRead()
+			}
+		default:
 			if msgView.HandleClick(x-mx, y-my, event.Buttons()) {
 				view.parent.Render()
 			}
-		} else if isInArea(x, y, view.roomList) && event.Buttons() == tcell.Button1 {
+		}
+	case isInArea(x, y, view.roomList):
+		switch event.Buttons() {
+		case tcell.WheelUp:
+			view.roomList.AddScrollOffset(-WheelScrollOffsetDiff)
+			view.parent.Render()
+		case tcell.WheelDown:
+			view.roomList.AddScrollOffset(WheelScrollOffsetDiff)
+			view.parent.Render()
+		case tcell.Button1:
 			_, rly, _, _ := msgView.GetRect()
 			n := y - rly + 1
 			view.SwitchRoom(view.roomList.Get(n))
-		} else {
-			debug.Print("Unhandled mouse event:", event.Buttons(), event.Modifiers(), x, y)
 		}
-		return event
+	default:
+		debug.Print("Unhandled mouse event:", event.Buttons(), event.Modifiers(), x, y)
 	}
-
 	return event
 }
 
@@ -305,7 +313,10 @@ func (view *MainView) GetRoom(roomID string) ifc.RoomView {
 	room, ok := view.rooms[roomID]
 	if !ok {
 		view.AddRoom(roomID)
-		room, _ := view.rooms[roomID]
+		room, ok := view.rooms[roomID]
+		if !ok {
+			return nil
+		}
 		return room
 	}
 	return room

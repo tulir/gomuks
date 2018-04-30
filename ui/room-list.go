@@ -46,6 +46,8 @@ type RoomList struct {
 	selected    *rooms.Room
 	selectedTag string
 
+	scrollOffset int
+
 	// The item main text color.
 	mainTextColor tcell.Color
 	// The text color for selected items.
@@ -59,6 +61,8 @@ func NewRoomList() *RoomList {
 		Box:   tview.NewBox(),
 		items: make(map[string][]*rooms.Room),
 		tags:  []string{"m.favourite", "net.maunium.gomuks.fake.direct", "", "m.lowpriority"},
+
+		scrollOffset: 0,
 
 		mainTextColor:           tcell.ColorWhite,
 		selectedTextColor:       tcell.ColorWhite,
@@ -217,6 +221,12 @@ func (list *RoomList) Clear() {
 func (list *RoomList) SetSelected(tag string, room *rooms.Room) {
 	list.selected = room
 	list.selectedTag = tag
+	pos := list.index(tag, room)
+	_, _, _, height := list.GetRect()
+	if pos < list.scrollOffset || pos > list.scrollOffset+height {
+		// TODO this does weird stuff sometimes, needs to be fixed
+		//list.scrollOffset = pos
+	}
 	debug.Print("Selecting", room.GetTitle(), "in", list.GetTagDisplayName(tag))
 }
 
@@ -230,6 +240,18 @@ func (list *RoomList) Selected() (string, *rooms.Room) {
 
 func (list *RoomList) SelectedRoom() *rooms.Room {
 	return list.selected
+}
+
+func (list *RoomList) AddScrollOffset(offset int) {
+	list.scrollOffset += offset
+	if list.scrollOffset < 0 {
+		list.scrollOffset = 0
+	}
+	_, _, _, viewHeight := list.GetRect()
+	contentHeight := list.ContentHeight()
+	if list.scrollOffset > contentHeight-viewHeight {
+		list.scrollOffset = contentHeight - viewHeight
+	}
 }
 
 func (list *RoomList) First() (string, *rooms.Room) {
@@ -326,7 +348,52 @@ func (list *RoomList) indexInTag(tag string, room *rooms.Room) int {
 	return roomIndex
 }
 
+func (list *RoomList) index(tag string, room *rooms.Room) int {
+	tagIndex := list.IndexTag(tag)
+	if tagIndex == -1 {
+		return -1
+	}
+
+	localIndex := list.indexInTag(tag, room)
+	if localIndex == -1 {
+		return -1
+	}
+
+	// Tag header
+	localIndex += 1
+
+	if tagIndex > 0 {
+		for i := 0; i < tagIndex; i++ {
+			previousTag := list.tags[i]
+			previousItems := list.items[previousTag]
+
+			tagDisplayName := list.GetTagDisplayName(previousTag)
+			if len(tagDisplayName) > 0 {
+				// Previous tag header + space
+				localIndex += 2
+				// Previous tag items
+				localIndex += len(previousItems)
+			}
+		}
+	}
+
+	return localIndex
+}
+
+func (list *RoomList) ContentHeight() (height int) {
+	for _, tag := range list.tags {
+		items := list.items[tag]
+		tagDisplayName := list.GetTagDisplayName(tag)
+		if len(tagDisplayName) == 0 {
+			continue
+		}
+		height += 2 + len(items)
+	}
+	return
+}
+
 func (list *RoomList) Get(n int) (string, *rooms.Room) {
+	n += list.scrollOffset
 	if n < 0 {
 		return "", nil
 	}
@@ -377,12 +444,7 @@ func (list *RoomList) Draw(screen tcell.Screen) {
 	x, y, width, height := list.GetInnerRect()
 	bottomLimit := y + height
 
-	var offset int
-	/* TODO fix offset
-	currentItemIndex := list.Index(list.selected)
-	if currentItemIndex >= height {
-		offset = currentItemIndex + 1 - height
-	}*/
+	handledOffset := 0
 
 	// Draw the list items.
 	for _, tag := range list.tags {
@@ -392,18 +454,30 @@ func (list *RoomList) Draw(screen tcell.Screen) {
 			continue
 		}
 
+		localOffset := 0
+
+		if handledOffset < list.scrollOffset {
+			if handledOffset+len(items) < list.scrollOffset {
+				handledOffset += len(items) + 2
+				continue
+			} else {
+				localOffset = list.scrollOffset - handledOffset
+				handledOffset += localOffset
+			}
+		}
+
 		widget.WriteLine(screen, tview.AlignLeft, tagDisplayName, x, y, width, tcell.StyleDefault.Underline(true).Bold(true))
 		y++
 		for i := len(items) - 1; i >= 0; i-- {
 			item := items[i]
 			index := len(items) - 1 - i
 
-			if index < offset {
-				continue
-			}
-
 			if y >= bottomLimit {
 				break
+			}
+
+			if index < localOffset {
+				continue
 			}
 
 			text := item.GetTitle()
