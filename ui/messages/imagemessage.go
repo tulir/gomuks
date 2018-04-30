@@ -59,10 +59,7 @@ func (msg *ImageMessage) RegisterMatrix(matrix ifc.MatrixContainer) {
 	msg.matrix = matrix
 
 	if len(msg.data) == 0 {
-		go func() {
-			defer debug.Recover()
-			msg.updateData()
-		}()
+		go msg.updateData()
 	}
 }
 
@@ -71,12 +68,14 @@ func (msg *ImageMessage) NotificationContent() string {
 }
 
 func (msg *ImageMessage) updateData() {
+	defer debug.Recover()
 	debug.Print("Loading image:", msg.Homeserver, msg.FileID)
 	data, _, _, err := msg.matrix.Download(fmt.Sprintf("mxc://%s/%s", msg.Homeserver, msg.FileID))
 	if err != nil {
 		debug.Print("Failed to download image %s/%s: %v", msg.Homeserver, msg.FileID, err)
 		return
 	}
+	debug.Print("Image", msg.Homeserver, msg.FileID, "loaded.")
 	msg.data = data
 }
 
