@@ -26,14 +26,14 @@ import (
 )
 
 func TestNewConfig_Defaults(t *testing.T) {
-	cfg := config.NewConfig("/tmp/gomuks-test-0")
+	cfg := config.NewConfig("/tmp/gomuks-test-0", "/tmp/gomuks-test-0")
 	assert.Equal(t, "/tmp/gomuks-test-0", cfg.Dir)
 	assert.Equal(t, "/tmp/gomuks-test-0/history", cfg.HistoryDir)
 	assert.Equal(t, "/tmp/gomuks-test-0/media", cfg.MediaDir)
 }
 
 func TestConfig_Load_NonexistentDoesntFail(t *testing.T) {
-	cfg := config.NewConfig("/tmp/gomuks-test-1")
+	cfg := config.NewConfig("/tmp/gomuks-test-1", "/tmp/gomuks-test-1")
 
 	defer os.RemoveAll("/tmp/gomuks-test-1")
 
@@ -50,7 +50,7 @@ func TestConfig_Load_NonexistentDoesntFail(t *testing.T) {
 
 func TestConfig_Load_DirectoryFails(t *testing.T) {
 	os.MkdirAll("/tmp/gomuks-test-2/config.yaml", 0700)
-	cfg := config.NewConfig("/tmp/gomuks-test-2")
+	cfg := config.NewConfig("/tmp/gomuks-test-2", "/tmp/gomuks-test-2")
 
 	defer os.RemoveAll("/tmp/gomuks-test-2")
 	defer func() {
@@ -70,7 +70,7 @@ func TestConfig_Load_ExistingFileIsLoaded(t *testing.T) {
 		"history_dir": "/tmp/gomuks-test-3/foo",
 		"media_dir": "/tmp/gomuks-test-3/bar"
 	}`), 0700)
-	cfg := config.NewConfig("/tmp/gomuks-test-3")
+	cfg := config.NewConfig("/tmp/gomuks-test-3", "/tmp/gomuks-test-3")
 
 	defer os.RemoveAll("/tmp/gomuks-test-3")
 
@@ -93,7 +93,7 @@ func TestConfig_Load_ExistingFileIsLoaded(t *testing.T) {
 func TestConfig_Load_InvalidExistingFilePanics(t *testing.T) {
 	os.MkdirAll("/tmp/gomuks-test-4", 0700)
 	ioutil.WriteFile("/tmp/gomuks-test-4/config.yaml", []byte(`this is not JSON.`), 0700)
-	cfg := config.NewConfig("/tmp/gomuks-test-4")
+	cfg := config.NewConfig("/tmp/gomuks-test-4", "/tmp/gomuks-test-4")
 
 	defer os.RemoveAll("/tmp/gomuks-test-4")
 	defer func() {
@@ -106,7 +106,7 @@ func TestConfig_Load_InvalidExistingFilePanics(t *testing.T) {
 }
 
 func TestConfig_Clear(t *testing.T) {
-	cfg := config.NewConfig("/tmp/gomuks-test-5")
+	cfg := config.NewConfig("/tmp/gomuks-test-5", "/tmp/gomuks-test-5")
 
 	defer os.RemoveAll("/tmp/gomuks-test-5")
 
@@ -132,7 +132,7 @@ func TestConfig_Clear(t *testing.T) {
 }
 
 func TestConfig_Save(t *testing.T) {
-	cfg := config.NewConfig("/tmp/gomuks-test-6")
+	cfg := config.NewConfig("/tmp/gomuks-test-6", "/tmp/gomuks-test-6")
 
 	defer os.RemoveAll("/tmp/gomuks-test-6")
 
