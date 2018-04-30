@@ -223,9 +223,10 @@ func (list *RoomList) SetSelected(tag string, room *rooms.Room) {
 	list.selectedTag = tag
 	pos := list.index(tag, room)
 	_, _, _, height := list.GetRect()
-	if pos < list.scrollOffset || pos > list.scrollOffset+height {
-		// TODO this does weird stuff sometimes, needs to be fixed
-		//list.scrollOffset = pos
+	if pos <= list.scrollOffset {
+		list.scrollOffset = pos-1
+	} else if pos >= list.scrollOffset+height {
+		list.scrollOffset = pos-height+1
 	}
 	debug.Print("Selecting", room.GetTitle(), "in", list.GetTagDisplayName(tag))
 }
@@ -358,6 +359,7 @@ func (list *RoomList) index(tag string, room *rooms.Room) int {
 	if localIndex == -1 {
 		return -1
 	}
+	localIndex = len(list.items[tag]) - 1 - localIndex
 
 	// Tag header
 	localIndex += 1
