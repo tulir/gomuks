@@ -137,5 +137,5 @@ func ParseMembershipEvent(room *rooms.Room, evt *gomatrix.Event) messages.UIMess
 	}
 
 	ts := unixToTime(evt.Timestamp)
-	return messages.NewExpandedTextMessage(evt.ID, evt.Sender, displayname, "m.room.membership", text, ts)
+	return messages.NewExpandedTextMessage(evt.ID, evt.Sender, displayname, "m.room.member", text, ts)
 }

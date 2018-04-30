@@ -294,7 +294,7 @@ func (c *Container) processOwnMembershipChange(evt *gomatrix.Event) {
 	}
 }
 
-// HandleMembership is the event handler for the m.room.membership state event.
+// HandleMembership is the event handler for the m.room.member state event.
 func (c *Container) HandleMembership(source EventSource, evt *gomatrix.Event) {
 	if !c.config.Session.InitialSyncDone && source == EventSourceLeave {
 		return
@@ -418,9 +418,9 @@ func (c *Container) SendTyping(roomID string, typing bool) {
 }
 
 // JoinRoom makes the current user try to join the given room.
-func (c *Container) JoinRoom(roomID string) error {
+func (c *Container) JoinRoom(roomID string) (*rooms.Room, error) {
 	if len(roomID) == 0 {
-		return fmt.Errorf("invalid room ID")
+		return nil, fmt.Errorf("invalid room ID")
 	}
 
 	server := ""
@@ -428,12 +428,15 @@ func (c *Container) JoinRoom(roomID string) error {
 		server = roomID[strings.Index(roomID, ":")+1:]
 	}
 
-	_, err := c.client.JoinRoom(roomID, server, nil)
+	resp, err := c.client.JoinRoom(roomID, server, nil)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	return nil
+	room := c.GetRoom(resp.RoomID)
+	room.HasLeft = false
+
+	return room, nil
 }
 
 // LeaveRoom makes the current user leave the given room.
@@ -447,18 +450,9 @@ func (c *Container) LeaveRoom(roomID string) error {
 		return err
 	}
 
+	room := c.GetRoom(roomID)
+	room.HasLeft = true
 	return nil
-}
-
-// getState requests the state of the given room.
-func (c *Container) getState(roomID string) []*gomatrix.Event {
-	content := make([]*gomatrix.Event, 0)
-	err := c.client.StateEvent(roomID, "", "", &content)
-	if err != nil {
-		debug.Print("Error getting state of", roomID, err)
-		return nil
-	}
-	return content
 }
 
 // GetHistory fetches room history.
@@ -471,19 +465,8 @@ func (c *Container) GetHistory(roomID, prevBatch string, limit int) ([]gomatrix.
 }
 
 // GetRoom gets the room instance stored in the session.
-//
-// If the room doesn't have any state events stored, its state will be updated.
 func (c *Container) GetRoom(roomID string) *rooms.Room {
-	room := c.config.Session.GetRoom(roomID)
-	if room != nil && len(room.State) == 0 {
-		/*events := c.getState(room.ID)
-		if events != nil {
-			for _, event := range events {
-				room.UpdateState(event)
-			}
-		}*/
-	}
-	return room
+	return c.config.Session.GetRoom(roomID)
 }
 
 var mxcRegex = regexp.MustCompile("mxc://(.+)/(.+)")

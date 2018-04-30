@@ -152,13 +152,21 @@ func (view *MainView) HandleCommand(roomView *RoomView, command string, args []s
 	case "/panic":
 		panic("This is a test panic.")
 	case "/part", "/leave":
-		debug.Print("Leave room result:", view.matrix.LeaveRoom(roomView.Room.ID))
+		err := view.matrix.LeaveRoom(roomView.Room.ID)
+		debug.Print("Leave room error:", err)
+		if err == nil {
+			view.RemoveRoom(roomView.Room.ID)
+		}
 	case "/join":
 		if len(args) == 0 {
 			roomView.AddServiceMessage("Usage: /join <room>")
 			break
 		}
-		debug.Print("Join room result:", view.matrix.JoinRoom(args[0]))
+		room, err := view.matrix.JoinRoom(args[0])
+		debug.Print("Join room error:", err)
+		if err == nil {
+			view.AddRoom(room.ID)
+		}
 	default:
 		roomView.AddServiceMessage("Unknown command.")
 	}

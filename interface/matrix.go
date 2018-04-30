@@ -31,7 +31,7 @@ type MatrixContainer interface {
 	SendMessage(roomID, msgtype, message string) (string, error)
 	SendMarkdownMessage(roomID, msgtype, message string) (string, error)
 	SendTyping(roomID string, typing bool)
-	JoinRoom(roomID string) error
+	JoinRoom(roomID string) (*rooms.Room, error)
 	LeaveRoom(roomID string) error
 	GetHistory(roomID, prevBatch string, limit int) ([]gomatrix.Event, string, error)
 	GetRoom(roomID string) *rooms.Room

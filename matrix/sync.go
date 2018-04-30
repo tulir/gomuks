@@ -150,7 +150,7 @@ func (s *GomuksSyncer) OnFailedSync(res *gomatrix.RespSync, err error) (time.Dur
 func (s *GomuksSyncer) GetFilterJSON(userID string) json.RawMessage {
 	return json.RawMessage(`{
 		"room": {
-			"include_leave": true,
+			"include_leave": false,
 			"state": {
 				"types": [
 					"m.room.member",
