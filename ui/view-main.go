@@ -358,6 +358,9 @@ func (view *MainView) SetRooms(rooms map[string]*rooms.Room) {
 	view.roomView.Clear()
 	view.rooms = make(map[string]*RoomView)
 	for _, room := range rooms {
+		if room.HasLeft {
+			continue
+		}
 		view.roomList.Add(room)
 		view.addRoomPage(room)
 	}

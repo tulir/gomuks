@@ -47,6 +47,9 @@ type RoomTag struct {
 type Room struct {
 	*gomatrix.Room
 
+	// Whether or not the user has left the room.
+	HasLeft bool
+
 	// The first batch of events that has been fetched for this room.
 	// Used for fetching additional history.
 	PrevBatch string

@@ -31,12 +31,24 @@ type SyncerSession interface {
 	GetUserID() string
 }
 
+type EventSource int
+
+const (
+	EventSourcePresence    EventSource = iota
+	EventSourceAccountData
+	EventSourceJoin
+	EventSourceInvite
+	EventSourceLeave
+)
+
+type EventHandler func(source EventSource, event *gomatrix.Event)
+
 // GomuksSyncer is the default syncing implementation. You can either write your own syncer, or selectively
 // replace parts of this default syncer (e.g. the ProcessResponse method). The default syncer uses the observer
 // pattern to notify callers about incoming events. See GomuksSyncer.OnEventType for more information.
 type GomuksSyncer struct {
 	Session          SyncerSession
-	listeners        map[string][]gomatrix.OnEventListener // event type to listeners array
+	listeners        map[string][]EventHandler // event type to listeners array
 	FirstSyncDone    bool
 	InitDoneCallback func()
 }
@@ -45,22 +57,22 @@ type GomuksSyncer struct {
 func NewGomuksSyncer(session SyncerSession) *GomuksSyncer {
 	return &GomuksSyncer{
 		Session:       session,
-		listeners:     make(map[string][]gomatrix.OnEventListener),
+		listeners:     make(map[string][]EventHandler),
 		FirstSyncDone: false,
 	}
 }
 
 // ProcessResponse processes a Matrix sync response.
 func (s *GomuksSyncer) ProcessResponse(res *gomatrix.RespSync, since string) (err error) {
-	s.processSyncEvents(nil, res.Presence.Events, false, false)
-	s.processSyncEvents(nil, res.AccountData.Events, false, false)
+	s.processSyncEvents(nil, res.Presence.Events, EventSourcePresence, false, false)
+	s.processSyncEvents(nil, res.AccountData.Events, EventSourceAccountData, false, false)
 
 	for roomID, roomData := range res.Rooms.Join {
 		room := s.Session.GetRoom(roomID)
-		s.processSyncEvents(room, roomData.State.Events, true, false)
-		s.processSyncEvents(room, roomData.Timeline.Events, false, false)
-		s.processSyncEvents(room, roomData.Ephemeral.Events, false, false)
-		s.processSyncEvents(room, roomData.AccountData.Events, false, false)
+		s.processSyncEvents(room, roomData.State.Events, EventSourceJoin, true, false)
+		s.processSyncEvents(room, roomData.Timeline.Events, EventSourceJoin, false, false)
+		s.processSyncEvents(room, roomData.Ephemeral.Events, EventSourceJoin, false, false)
+		s.processSyncEvents(room, roomData.AccountData.Events, EventSourceJoin, false, false)
 
 		if len(room.PrevBatch) == 0 {
 			room.PrevBatch = roomData.Timeline.PrevBatch
@@ -69,13 +81,14 @@ func (s *GomuksSyncer) ProcessResponse(res *gomatrix.RespSync, since string) (er
 
 	for roomID, roomData := range res.Rooms.Invite {
 		room := s.Session.GetRoom(roomID)
-		s.processSyncEvents(room, roomData.State.Events, true, false)
+		s.processSyncEvents(room, roomData.State.Events, EventSourceInvite, true, false)
 	}
 
 	for roomID, roomData := range res.Rooms.Leave {
 		room := s.Session.GetRoom(roomID)
-		s.processSyncEvents(room, roomData.State.Events, true, true)
-		s.processSyncEvents(room, roomData.Timeline.Events, false, false)
+		room.HasLeft = true
+		s.processSyncEvents(room, roomData.State.Events, EventSourceLeave, true, true)
+		s.processSyncEvents(room, roomData.Timeline.Events, EventSourceLeave, false, false)
 
 		if len(room.PrevBatch) == 0 {
 			room.PrevBatch = roomData.Timeline.PrevBatch
@@ -90,41 +103,41 @@ func (s *GomuksSyncer) ProcessResponse(res *gomatrix.RespSync, since string) (er
 	return
 }
 
-func (s *GomuksSyncer) processSyncEvents(room *rooms.Room, events []*gomatrix.Event, isState bool, checkStateKey bool) {
+func (s *GomuksSyncer) processSyncEvents(room *rooms.Room, events []*gomatrix.Event, source EventSource, isState bool, checkStateKey bool) {
 	for _, event := range events {
 		if !checkStateKey || event.StateKey != nil {
-			s.processSyncEvent(room, event, isState)
+			s.processSyncEvent(room, event, source, isState)
 		}
 	}
 }
 
-func (s *GomuksSyncer) processSyncEvent(room *rooms.Room, event *gomatrix.Event, isState bool) {
+func (s *GomuksSyncer) processSyncEvent(room *rooms.Room, event *gomatrix.Event, source EventSource, isState bool) {
 	if room != nil {
 		event.RoomID = room.ID
 	}
 	if isState {
 		room.UpdateState(event)
 	}
-	s.notifyListeners(event)
+	s.notifyListeners(source, event)
 }
 
 // OnEventType allows callers to be notified when there are new events for the given event type.
 // There are no duplicate checks.
-func (s *GomuksSyncer) OnEventType(eventType string, callback gomatrix.OnEventListener) {
+func (s *GomuksSyncer) OnEventType(eventType string, callback EventHandler) {
 	_, exists := s.listeners[eventType]
 	if !exists {
-		s.listeners[eventType] = []gomatrix.OnEventListener{}
+		s.listeners[eventType] = []EventHandler{}
 	}
 	s.listeners[eventType] = append(s.listeners[eventType], callback)
 }
 
-func (s *GomuksSyncer) notifyListeners(event *gomatrix.Event) {
+func (s *GomuksSyncer) notifyListeners(source EventSource, event *gomatrix.Event) {
 	listeners, exists := s.listeners[event.Type]
 	if !exists {
 		return
 	}
 	for _, fn := range listeners {
-		fn(event)
+		fn(source, event)
 	}
 }
 

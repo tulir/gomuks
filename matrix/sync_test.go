@@ -177,7 +177,7 @@ type mockListener struct {
 	received []*gomatrix.Event
 }
 
-func (ml *mockListener) receive(evt *gomatrix.Event) {
+func (ml *mockListener) receive(source matrix.EventSource, evt *gomatrix.Event) {
 	ml.received = append(ml.received, evt)
 }
 

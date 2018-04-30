@@ -217,7 +217,10 @@ func (c *Container) Start() {
 }
 
 // HandleMessage is the event handler for the m.room.message timeline event.
-func (c *Container) HandleMessage(evt *gomatrix.Event) {
+func (c *Container) HandleMessage(source EventSource, evt *gomatrix.Event) {
+	if source == EventSourceLeave {
+		return
+	}
 	mainView := c.ui.MainView()
 
 	roomView := mainView.GetRoom(evt.RoomID)
@@ -240,7 +243,7 @@ func (c *Container) HandleMessage(evt *gomatrix.Event) {
 }
 
 // HandlePushRules is the event handler for the m.push_rules account data event.
-func (c *Container) HandlePushRules(evt *gomatrix.Event) {
+func (c *Container) HandlePushRules(source EventSource, evt *gomatrix.Event) {
 	debug.Print("Received updated push rules")
 	var err error
 	c.config.Session.PushRules, err = pushrules.EventToPushRules(evt)
@@ -250,7 +253,7 @@ func (c *Container) HandlePushRules(evt *gomatrix.Event) {
 }
 
 // HandleTag is the event handler for the m.tag account data event.
-func (c *Container) HandleTag(evt *gomatrix.Event) {
+func (c *Container) HandleTag(source EventSource, evt *gomatrix.Event) {
 	room := c.config.Session.GetRoom(evt.RoomID)
 
 	tags, _ := evt.Content["tags"].(map[string]interface{})
@@ -292,11 +295,13 @@ func (c *Container) processOwnMembershipChange(evt *gomatrix.Event) {
 }
 
 // HandleMembership is the event handler for the m.room.membership state event.
-func (c *Container) HandleMembership(evt *gomatrix.Event) {
-	if evt.StateKey != nil && *evt.StateKey == c.config.Session.UserID {
+func (c *Container) HandleMembership(source EventSource, evt *gomatrix.Event) {
+	if !c.config.Session.InitialSyncDone && source == EventSourceLeave {
+		return
+	} else if evt.StateKey != nil && *evt.StateKey == c.config.Session.UserID {
 		c.processOwnMembershipChange(evt)
-	} else if !c.config.Session.InitialSyncDone /*&& evt.Timestamp < time.Now().Add(-1*time.Hour).Unix()*/ {
-		// We don't care about other users' membership events in the initial sync.
+	} else if !c.config.Session.InitialSyncDone || source == EventSourceLeave {
+		// We don't care about other users' membership events in the initial sync or chats we've left.
 		return
 	}
 
@@ -308,11 +313,6 @@ func (c *Container) HandleMembership(evt *gomatrix.Event) {
 
 	message := mainView.ParseEvent(roomView, evt)
 	if message != nil {
-		// TODO this shouldn't be necessary
-		//roomView.MxRoom().UpdateState(evt)
-		// TODO This should probably also be in a different place
-		//roomView.UpdateUserList()
-
 		roomView.AddMessage(message, ifc.AppendMessage)
 		// We don't want notifications at startup.
 		if c.syncer.FirstSyncDone {
@@ -324,7 +324,7 @@ func (c *Container) HandleMembership(evt *gomatrix.Event) {
 }
 
 // HandleTyping is the event handler for the m.typing event.
-func (c *Container) HandleTyping(evt *gomatrix.Event) {
+func (c *Container) HandleTyping(source EventSource, evt *gomatrix.Event) {
 	users := evt.Content["user_ids"].([]interface{})
 
 	strUsers := make([]string, len(users))
