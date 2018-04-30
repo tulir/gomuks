@@ -41,11 +41,12 @@ type Gomuks struct {
 // but does not start it.
 func NewGomuks(uiProvider ifc.UIProvider) *Gomuks {
 	configDir := filepath.Join(os.Getenv("HOME"), ".config/gomuks")
+	cacheDir := filepath.Join(os.Getenv("HOME"), ".cache/gomuks")
 	gmx := &Gomuks{
 		stop: make(chan bool, 1),
 	}
 
-	gmx.config = config.NewConfig(configDir)
+	gmx.config = config.NewConfig(configDir, cacheDir)
 	gmx.ui = uiProvider(gmx)
 	gmx.matrix = matrix.NewContainer(gmx)
 	gmx.ui.Init()

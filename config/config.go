@@ -38,11 +38,11 @@ type Config struct {
 }
 
 // NewConfig creates a config that loads data from the given directory.
-func NewConfig(dir string) *Config {
+func NewConfig(configDir, cacheDir string) *Config {
 	return &Config{
-		Dir:        dir,
-		HistoryDir: filepath.Join(dir, "history"),
-		MediaDir:   filepath.Join(dir, "media"),
+		Dir:        configDir,
+		HistoryDir: filepath.Join(cacheDir, "history"),
+		MediaDir:   filepath.Join(cacheDir, "media"),
 	}
 }
 
