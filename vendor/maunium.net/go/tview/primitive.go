@@ -36,6 +36,8 @@ type Primitive interface {
 
 	MouseHandler() func(event *tcell.EventMouse, setFocus func(p Primitive))
 
+	PasteHandler() func(event *tcell.EventPaste)
+
 	// Focus is called by the application when the primitive receives focus.
 	// Implementers may call delegate() to pass the focus on to another primitive.
 	Focus(delegate func(p Primitive))

@@ -38,6 +38,8 @@ type Application struct {
 	// be forwarded).
 	mouseCapture func(event *tcell.EventMouse) *tcell.EventMouse
 
+	pasteCapture func(event *tcell.EventPaste) *tcell.EventPaste
+
 	// An optional callback function which is invoked just before the root
 	// primitive is drawn.
 	beforeDraw func(screen tcell.Screen) bool
@@ -188,6 +190,24 @@ func (a *Application) Run() error {
 						a.SetFocus(p)
 					})
 					//a.Draw()
+				}
+			}
+		case *tcell.EventPaste:
+			a.RLock()
+			p := a.focus
+			a.RUnlock()
+
+			if a.pasteCapture != nil {
+				event = a.pasteCapture(event)
+				if event == nil {
+					break
+				}
+			}
+
+			if p != nil {
+				if handler := p.PasteHandler(); handler != nil {
+					handler(event)
+					a.Draw()
 				}
 			}
 		case *tcell.EventResize:

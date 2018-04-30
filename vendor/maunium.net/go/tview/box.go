@@ -62,6 +62,8 @@ type Box struct {
 	// nothing should be forwarded).
 	mouseCapture func(event *tcell.EventMouse) *tcell.EventMouse
 
+	pasteCapture func(event *tcell.EventPaste) *tcell.EventPaste
+
 	// An optional function which is called before the box is drawn.
 	draw func(screen tcell.Screen, x, y, width, height int) (int, int, int, int)
 }
@@ -216,6 +218,36 @@ func (b *Box) SetMouseCapture(capture func(event *tcell.EventMouse) *tcell.Event
 // if no such function has been installed.
 func (b *Box) GetMouseCapture() func(event *tcell.EventMouse) *tcell.EventMouse {
 	return b.mouseCapture
+}
+
+func (b *Box) WrapPasteHandler(pasteHandler func(*tcell.EventPaste)) func(*tcell.EventPaste) {
+	return func(event *tcell.EventPaste) {
+		if b.pasteCapture != nil {
+			event = b.pasteCapture(event)
+		}
+		if event != nil && pasteHandler != nil {
+			pasteHandler(event)
+		}
+	}
+}
+
+func (b *Box) PasteHandler() func(event *tcell.EventPaste) {
+	return b.WrapPasteHandler(func(event *tcell.EventPaste) {
+		// Default paste handler just calls input handler with each character.
+		inputHandler := b.InputHandler()
+		for _, char := range event.Text() {
+			inputHandler(tcell.NewEventKey(tcell.KeyRune, char, tcell.ModNone), nil)
+		}
+	})
+}
+
+func (b *Box) SetPasteCapture(capture func(event *tcell.EventPaste) *tcell.EventPaste) *Box {
+	b.pasteCapture = capture
+	return b
+}
+
+func (b *Box) GetPasteCapture() func(event *tcell.EventPaste) *tcell.EventPaste {
+	return b.pasteCapture
 }
 
 // SetBackgroundColor sets the box's background color.

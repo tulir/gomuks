@@ -139,7 +139,7 @@
   branch = "master"
   name = "maunium.net/go/tview"
   packages = ["."]
-  revision = "6146b7fe2331e23a78e217016705bc6801bfc55a"
+  revision = "7eabba90a261a481d36ace89daa79c56582238d7"
 
 [solve-meta]
   analyzer-name = "dep"

@@ -1,8 +1,6 @@
 package tview
 
 import (
-	"strings"
-
 	"maunium.net/go/tcell"
 )
 
@@ -20,7 +18,7 @@ type FormItem interface {
 	GetLabel() string
 
 	// SetFormAttributes sets a number of item attributes at once.
-	SetFormAttributes(label string, labelColor, bgColor, fieldTextColor, fieldBgColor tcell.Color) FormItem
+	SetFormAttributes(labelWidth int, labelColor, bgColor, fieldTextColor, fieldBgColor tcell.Color) FormItem
 
 	// GetFieldWidth returns the width of the form item's field (the area which
 	// is manipulated by the user) in number of screen cells. A value of 0
@@ -233,7 +231,14 @@ func (f *Form) Clear(includeButtons bool) *Form {
 
 // AddFormItem adds a new item to the form. This can be used to add your own
 // objects to the form. Note, however, that the Form class will override some
-// of its attributes to make it work in the form context.
+// of its attributes to make it work in the form context. Specifically, these
+// are:
+//
+//   - The label width
+//   - The label color
+//   - The background color
+//   - The field text color
+//   - The field background color
 func (f *Form) AddFormItem(item FormItem) *Form {
 	f.items = append(f.items, item)
 	return f
@@ -244,6 +249,18 @@ func (f *Form) AddFormItem(item FormItem) *Form {
 // not included.
 func (f *Form) GetFormItem(index int) FormItem {
 	return f.items[index]
+}
+
+// GetFormItemByLabel returns the first form element with the given label. If
+// no such element is found, nil is returned. Buttons are not searched and will
+// therefore not be returned.
+func (f *Form) GetFormItemByLabel(label string) FormItem {
+	for _, item := range f.items {
+		if item.GetLabel() == label {
+			return item
+		}
+	}
+	return nil
 }
 
 // SetCancelFunc sets a handler which is called when the user hits the Escape
@@ -267,8 +284,7 @@ func (f *Form) Draw(screen tcell.Screen) {
 	// Find the longest label.
 	var maxLabelWidth int
 	for _, item := range f.items {
-		label := strings.TrimSpace(item.GetLabel())
-		labelWidth := StringWidth(label)
+		labelWidth := StringWidth(item.GetLabel())
 		if labelWidth > maxLabelWidth {
 			maxLabelWidth = labelWidth
 		}
@@ -280,20 +296,18 @@ func (f *Form) Draw(screen tcell.Screen) {
 	var focusedPosition struct{ x, y, width, height int }
 	for index, item := range f.items {
 		// Calculate the space needed.
-		label := strings.TrimSpace(item.GetLabel())
-		labelWidth := StringWidth(label)
+		labelWidth := StringWidth(item.GetLabel())
 		var itemWidth int
 		if f.horizontal {
 			fieldWidth := item.GetFieldWidth()
 			if fieldWidth == 0 {
 				fieldWidth = DefaultFormFieldWidth
 			}
-			label += " "
 			labelWidth++
 			itemWidth = labelWidth + fieldWidth
 		} else {
 			// We want all fields to align vertically.
-			label += strings.Repeat(" ", maxLabelWidth-labelWidth)
+			labelWidth = maxLabelWidth
 			itemWidth = width
 		}
 
@@ -308,7 +322,7 @@ func (f *Form) Draw(screen tcell.Screen) {
 			itemWidth = rightLimit - x
 		}
 		item.SetFormAttributes(
-			label,
+			labelWidth,
 			f.labelColor,
 			f.backgroundColor,
 			f.fieldTextColor,
