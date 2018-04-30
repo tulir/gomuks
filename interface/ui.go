@@ -49,8 +49,8 @@ type GomuksUI interface {
 
 type MainView interface {
 	GetRoom(roomID string) RoomView
-	AddRoom(roomID string)
-	RemoveRoom(roomID string)
+	AddRoom(room *rooms.Room)
+	RemoveRoom(room *rooms.Room)
 	SetRooms(rooms map[string]*rooms.Room)
 	SaveAllHistory()
 

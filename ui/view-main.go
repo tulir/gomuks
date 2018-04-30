@@ -155,7 +155,7 @@ func (view *MainView) HandleCommand(roomView *RoomView, command string, args []s
 		err := view.matrix.LeaveRoom(roomView.Room.ID)
 		debug.Print("Leave room error:", err)
 		if err == nil {
-			view.RemoveRoom(roomView.Room.ID)
+			view.RemoveRoom(roomView.Room)
 		}
 	case "/join":
 		if len(args) == 0 {
@@ -165,7 +165,7 @@ func (view *MainView) HandleCommand(roomView *RoomView, command string, args []s
 		room, err := view.matrix.JoinRoom(args[0])
 		debug.Print("Join room error:", err)
 		if err == nil {
-			view.AddRoom(room.ID)
+			view.AddRoom(room)
 		}
 	default:
 		roomView.AddServiceMessage("Unknown command.")
@@ -327,7 +327,7 @@ func (view *MainView) addRoomPage(room *rooms.Room) {
 func (view *MainView) GetRoom(roomID string) ifc.RoomView {
 	room, ok := view.rooms[roomID]
 	if !ok {
-		view.AddRoom(roomID)
+		view.AddRoom(room.Room)
 		room, ok := view.rooms[roomID]
 		if !ok {
 			return nil
@@ -337,13 +337,12 @@ func (view *MainView) GetRoom(roomID string) ifc.RoomView {
 	return room
 }
 
-func (view *MainView) AddRoom(roomID string) {
-	if view.roomList.Contains(roomID) {
-		debug.Print("Add aborted", roomID)
+func (view *MainView) AddRoom(room *rooms.Room) {
+	if view.roomList.Contains(room.ID) {
+		debug.Print("Add aborted", room.ID)
 		return
 	}
-	debug.Print("Adding", roomID)
-	room := view.matrix.GetRoom(roomID)
+	debug.Print("Adding", room.ID)
 	view.roomList.Add(room)
 	view.addRoomPage(room)
 	if !view.roomList.HasSelected() {
@@ -351,19 +350,19 @@ func (view *MainView) AddRoom(roomID string) {
 	}
 }
 
-func (view *MainView) RemoveRoom(roomID string) {
-	roomView := view.GetRoom(roomID)
+func (view *MainView) RemoveRoom(room *rooms.Room) {
+	roomView := view.GetRoom(room.ID)
 	if roomView == nil {
-		debug.Print("Remove aborted", roomID)
+		debug.Print("Remove aborted", room.ID)
 		return
 	}
-	debug.Print("Removing", roomID)
+	debug.Print("Removing", room.ID)
 
-	view.roomList.Remove(roomView.MxRoom())
+	view.roomList.Remove(room)
 	view.SwitchRoom(view.roomList.Selected())
 
-	view.roomView.RemovePage(roomID)
-	delete(view.rooms, roomID)
+	view.roomView.RemovePage(room.ID)
+	delete(view.rooms, room.ID)
 
 	view.parent.Render()
 }

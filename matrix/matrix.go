@@ -283,11 +283,14 @@ func (c *Container) processOwnMembershipChange(evt *gomatrix.Event) {
 	if membership == prevMembership {
 		return
 	}
+	room := c.GetRoom(evt.RoomID)
 	switch membership {
 	case "join":
-		c.ui.MainView().AddRoom(evt.RoomID)
+		c.ui.MainView().AddRoom(room)
+		room.HasLeft = false
 	case "leave":
-		c.ui.MainView().RemoveRoom(evt.RoomID)
+		c.ui.MainView().RemoveRoom(room)
+		room.HasLeft = true
 	case "invite":
 		// TODO handle
 		debug.Printf("%s invited the user to %s", evt.Sender, evt.RoomID)
