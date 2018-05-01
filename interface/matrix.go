@@ -25,16 +25,21 @@ type MatrixContainer interface {
 	Client() *gomatrix.Client
 	InitClient() error
 	Initialized() bool
-	Login(user, password string) error
+
 	Start()
 	Stop()
+
+	Login(user, password string) error
+
 	SendMessage(roomID, msgtype, message string) (string, error)
 	SendMarkdownMessage(roomID, msgtype, message string) (string, error)
 	SendTyping(roomID string, typing bool)
 	JoinRoom(roomID string) (*rooms.Room, error)
 	LeaveRoom(roomID string) error
+
 	GetHistory(roomID, prevBatch string, limit int) ([]gomatrix.Event, string, error)
 	GetRoom(roomID string) *rooms.Room
+
 	Download(mxcURL string) ([]byte, string, string, error)
 	GetCachePath(homeserver, fileID string) string
 }

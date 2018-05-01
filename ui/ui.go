@@ -22,6 +22,14 @@ import (
 	"maunium.net/go/tview"
 )
 
+type View string
+
+// Allowed views in GomuksUI
+const (
+	ViewLogin View = "login"
+	ViewMain  View = "main"
+)
+
 type GomuksUI struct {
 	gmx   ifc.Gomuks
 	app   *tview.Application
@@ -68,20 +76,24 @@ func (ui *GomuksUI) Render() {
 	ui.app.Draw()
 }
 
-func (ui *GomuksUI) SetView(name ifc.View) {
+func (ui *GomuksUI) OnLogin() {
+	ui.SetView(ViewMain)
+}
+
+func (ui *GomuksUI) OnLogout() {
+	ui.SetView(ViewLogin)
+}
+
+func (ui *GomuksUI) SetView(name View) {
 	ui.views.SwitchToPage(string(name))
 }
 
 func (ui *GomuksUI) InitViews() tview.Primitive {
-	ui.views.AddPage(string(ifc.ViewLogin), ui.NewLoginView(), true, true)
-	ui.views.AddPage(string(ifc.ViewMain), ui.NewMainView(), true, false)
+	ui.views.AddPage(string(ViewLogin), ui.NewLoginView(), true, true)
+	ui.views.AddPage(string(ViewMain), ui.NewMainView(), true, false)
 	return ui.views
 }
 
 func (ui *GomuksUI) MainView() ifc.MainView {
 	return ui.mainView
-}
-
-func (ui *GomuksUI) LoginView() ifc.LoginView {
-	return ui.loginView
 }

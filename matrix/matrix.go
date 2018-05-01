@@ -135,11 +135,6 @@ func (c *Container) Stop() {
 	}
 }
 
-// Client returns the underlying gomatrix client object.
-func (c *Container) Client() *gomatrix.Client {
-	return c.client
-}
-
 // UpdatePushRules fetches the push notification rules from the server and stores them in the current Session object.
 func (c *Container) UpdatePushRules() {
 	debug.Print("Updating push rules...")
@@ -160,12 +155,14 @@ func (c *Container) PushRules() *pushrules.PushRuleset {
 
 // OnLogout stops the syncer and moves the UI back to the login view.
 func (c *Container) OnLogout() {
+	c.ui.OnLogout()
 	c.Stop()
-	c.ui.SetView(ifc.ViewLogin)
 }
 
 // OnLogin initializes the syncer and updates the room list.
 func (c *Container) OnLogin() {
+	c.ui.OnLogin()
+
 	c.client.Store = c.config.Session
 
 	debug.Print("Initializing syncer")
@@ -191,7 +188,6 @@ func (c *Container) OnLogin() {
 func (c *Container) Start() {
 	defer debug.Recover()
 
-	c.ui.SetView(ifc.ViewMain)
 	c.OnLogin()
 
 	if c.client == nil {
@@ -349,7 +345,7 @@ func (c *Container) SendMessage(roomID, msgtype, text string) (string, error) {
 	return resp.EventID, nil
 }
 
-func (c *Container) RenderMarkdown(text string) string {
+func (c *Container) renderMarkdown(text string) string {
 	parser := blackfriday.New(
 		blackfriday.WithExtensions(blackfriday.NoIntraEmphasis |
 			blackfriday.Tables |
@@ -377,10 +373,14 @@ func (c *Container) RenderMarkdown(text string) string {
 var mentionRegex = regexp.MustCompile("\\[(.+?)]\\(https://matrix.to/#/@.+?:.+?\\)")
 var roomRegex = regexp.MustCompile("\\[.+?]\\(https://matrix.to/#/(#.+?:[^/]+?)\\)")
 
+// SendMarkdownMessage sends a message with the given text to the given room.
+//
+// If the given text contains markdown formatting symbols, it will be rendered into HTML before sending.
+// Otherwise, it will be sent as plain text.
 func (c *Container) SendMarkdownMessage(roomID, msgtype, text string) (string, error) {
 	defer debug.Recover()
 
-	html := c.RenderMarkdown(text)
+	html := c.renderMarkdown(text)
 	if html == text {
 		return c.SendMessage(roomID, msgtype, text)
 	}
@@ -474,6 +474,9 @@ func (c *Container) GetRoom(roomID string) *rooms.Room {
 
 var mxcRegex = regexp.MustCompile("mxc://(.+)/(.+)")
 
+// Download fetches the given Matrix content (mxc) URL and returns the data, homeserver, file ID and potential errors.
+//
+// The file will be either read from the media cache (if found) or downloaded from the server.
 func (c *Container) Download(mxcURL string) (data []byte, hs, id string, err error) {
 	parts := mxcRegex.FindStringSubmatch(mxcURL)
 	if parts == nil || len(parts) != 3 {
@@ -519,6 +522,8 @@ func (c *Container) download(hs, id, cacheFile string) (data []byte, err error) 
 	return
 }
 
+// GetCachePath gets the path to the cached version of the given homeserver:fileID combination.
+// The file may or may not exist, use Download() to ensure it has been cached.
 func (c *Container) GetCachePath(homeserver, fileID string) string {
 	dir := filepath.Join(c.config.MediaDir, homeserver)
 

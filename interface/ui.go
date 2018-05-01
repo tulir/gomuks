@@ -25,21 +25,13 @@ import (
 	"maunium.net/go/tcell"
 )
 
-type View string
-
-// Allowed views in GomuksUI
-const (
-	ViewLogin View = "login"
-	ViewMain  View = "main"
-)
-
 type UIProvider func(gmx Gomuks) GomuksUI
 
 type GomuksUI interface {
 	Render()
-	SetView(name View)
+	OnLogin()
+	OnLogout()
 	MainView() MainView
-	LoginView() LoginView
 
 	Init()
 	Start() error
@@ -60,9 +52,6 @@ type MainView interface {
 	ParseEvent(roomView RoomView, evt *gomatrix.Event) Message
 
 	NotifyMessage(room *rooms.Room, message Message, should pushrules.PushActionArrayShould)
-}
-
-type LoginView interface {
 }
 
 type MessageDirection int
