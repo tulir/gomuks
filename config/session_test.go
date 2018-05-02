@@ -45,10 +45,8 @@ func TestSession_Load(t *testing.T) {
 	cfg := config.NewConfig("/tmp/gomuks-test-8", "/tmp/gomuks-test-8")
 	cfg.Load()
 	session := cfg.NewSession("@tulir:maunium.net")
-	session.NextBatch = "foobar"
-	session.FilterID = "1234"
-
-	assert.Nil(t, session.Save())
+	session.SaveNextBatch("@tulir:maunium.net", "foobar")
+	session.SaveFilterID("@tulir:maunium.net", "1234")
 
 	cfg = config.NewConfig("/tmp/gomuks-test-8", "/tmp/gomuks-test-8")
 	cfg.LoadSession("@tulir:maunium.net")
@@ -63,10 +61,8 @@ func TestSession_Clear(t *testing.T) {
 	cfg := config.NewConfig("/tmp/gomuks-test-9", "/tmp/gomuks-test-9")
 	cfg.Load()
 	session := cfg.NewSession("@tulir:maunium.net")
-	session.NextBatch = "foobar"
-	session.FilterID = "1234"
-
-	assert.Nil(t, session.Save())
+	session.SaveNextBatch("@tulir:maunium.net", "foobar")
+	session.SaveFilterID("@tulir:maunium.net", "1234")
 
 	cfg = config.NewConfig("/tmp/gomuks-test-9", "/tmp/gomuks-test-9")
 	cfg.LoadSession("@tulir:maunium.net")
@@ -84,4 +80,59 @@ func TestSession_Clear(t *testing.T) {
 	assert.Empty(t, cfg.Session.FilterID)
 	assert.Empty(t, cfg.Session.NextBatch)
 	assert.Empty(t, cfg.Session.Rooms)
+}
+
+func TestConfig_ClearWithSession(t *testing.T) {
+	defer os.RemoveAll("/tmp/gomuks-test-9")
+
+	cfg := config.NewConfig("/tmp/gomuks-test-9", "/tmp/gomuks-test-9")
+	cfg.Load()
+	session := cfg.NewSession("@tulir:maunium.net")
+	session.SaveNextBatch("@tulir:maunium.net", "foobar")
+	session.SaveFilterID("@tulir:maunium.net", "1234")
+
+	cfg = config.NewConfig("/tmp/gomuks-test-9", "/tmp/gomuks-test-9")
+	cfg.LoadSession("@tulir:maunium.net")
+	assert.NotNil(t, cfg.Session)
+	assert.Equal(t, "foobar", cfg.Session.LoadNextBatch("@tulir:maunium.net"))
+	assert.Equal(t, "1234", cfg.Session.LoadFilterID("@tulir:maunium.net"))
+
+	cfg.Clear()
+	assert.Empty(t, cfg.Session.FilterID)
+	assert.Empty(t, cfg.Session.NextBatch)
+	assert.Empty(t, cfg.Session.Rooms)
+
+	cfg = config.NewConfig("/tmp/gomuks-test-9", "/tmp/gomuks-test-9")
+	cfg.LoadSession("@tulir:maunium.net")
+	assert.Empty(t, cfg.Session.FilterID)
+	assert.Empty(t, cfg.Session.NextBatch)
+	assert.Empty(t, cfg.Session.Rooms)
+}
+
+func TestSession_GetRoom(t *testing.T) {
+	defer os.RemoveAll("/tmp/gomuks-test-10")
+
+	cfg := config.NewConfig("/tmp/gomuks-test-10", "/tmp/gomuks-test-10")
+	cfg.Session = cfg.NewSession("@tulir:maunium.net")
+	room := cfg.Session.GetRoom("!foo:maunium.net")
+	assert.NotNil(t, room)
+	assert.Equal(t, room.Room, cfg.Session.LoadRoom("!foo:maunium.net"))
+}
+
+func TestSession_PutRoom(t *testing.T) {
+	defer os.RemoveAll("/tmp/gomuks-test-11")
+
+	cfg := config.NewConfig("/tmp/gomuks-test-11", "/tmp/gomuks-test-11")
+	cfg.Load()
+	cfg.LoadSession("@tulir:maunium.net")
+	room := cfg.Session.GetRoom("!foo:maunium.net")
+	room.PrevBatch = "foobar"
+	room.HasLeft = true
+	cfg.Session.PutRoom(room)
+
+	cfg = config.NewConfig("/tmp/gomuks-test-11", "/tmp/gomuks-test-11")
+	cfg.LoadSession("@tulir:maunium.net")
+	reloadedRoom := cfg.Session.GetRoom("!foo:maunium.net")
+	assert.Equal(t, "foobar", reloadedRoom.PrevBatch, "%v %v", room, reloadedRoom)
+	assert.True(t, reloadedRoom.HasLeft, "%v %v", room, reloadedRoom)
 }

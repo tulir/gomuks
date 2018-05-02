@@ -59,6 +59,22 @@ func TestRoom_GetTopic(t *testing.T) {
 	assert.Equal(t, "test topic", room.GetTopic())
 }
 
+func TestRoom_Tags_Empty(t *testing.T) {
+	room := rooms.NewRoom("!test:maunium.net", "@tulir:maunium.net")
+	assert.Empty(t, room.RawTags)
+	tags := room.Tags()
+	assert.Len(t, tags, 1)
+	assert.Equal(t, "", tags[0].Tag)
+	assert.Equal(t, 0.5, tags[0].Order)
+}
+
+func TestRoom_Tags_NotEmpty(t *testing.T) {
+	room := rooms.NewRoom("!test:maunium.net", "@tulir:maunium.net")
+	room.RawTags = []rooms.RoomTag{{"foo", 1}, {"bar", 1}}
+	tags := room.Tags()
+	assert.Equal(t, room.RawTags, tags)
+}
+
 func TestRoom_GetAliases(t *testing.T) {
 	room := rooms.NewRoom("!test:maunium.net", "@tulir:maunium.net")
 	addAliases(room)
