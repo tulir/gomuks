@@ -327,7 +327,7 @@ func (view *MainView) addRoomPage(room *rooms.Room) {
 func (view *MainView) GetRoom(roomID string) ifc.RoomView {
 	room, ok := view.rooms[roomID]
 	if !ok {
-		view.AddRoom(room.Room)
+		view.AddRoom(view.matrix.GetRoom(roomID))
 		room, ok := view.rooms[roomID]
 		if !ok {
 			return nil
