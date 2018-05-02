@@ -17,7 +17,7 @@
 package pushrules
 
 import (
-	"github.com/zyedidia/glob"
+	"maunium.net/go/gomuks/lib/glob"
 	"maunium.net/go/gomatrix"
 )
 

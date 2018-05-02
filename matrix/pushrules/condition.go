@@ -21,7 +21,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/zyedidia/glob"
+	"maunium.net/go/gomuks/lib/glob"
 	"maunium.net/go/gomatrix"
 	"maunium.net/go/gomuks/matrix/rooms"
 )
@@ -82,7 +82,10 @@ func (cond *PushCondition) matchValue(room Room, event *gomatrix.Event) bool {
 		key = key[0:index]
 	}
 
-	pattern, _ := glob.Compile(cond.Pattern)
+	pattern, err := glob.Compile(cond.Pattern)
+	if err != nil {
+		return false
+	}
 
 	switch key {
 	case "type":

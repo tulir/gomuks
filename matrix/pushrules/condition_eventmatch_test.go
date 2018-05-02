@@ -47,6 +47,12 @@ func TestPushCondition_Match_KindEvent_EventType(t *testing.T) {
 	assert.True(t, condition.Match(blankTestRoom, event))
 }
 
+func TestPushCondition_Match_KindEvent_EventType_IllegalGlob(t *testing.T) {
+	condition := newMatchPushCondition("type", "m.room.invalid_glo[b")
+	event := newFakeEvent("m.room.invalid_glob", map[string]interface{}{})
+	assert.False(t, condition.Match(blankTestRoom, event))
+}
+
 func TestPushCondition_Match_KindEvent_Sender_Fail(t *testing.T) {
 	condition := newMatchPushCondition("sender", "@foo:maunium.net")
 	event := newFakeEvent("m.room.foo", map[string]interface{}{})

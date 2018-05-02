@@ -24,6 +24,8 @@ func globToRegex(glob string) (*regexp.Regexp, error) {
 	firstIndexInClass := -1
 	arr := []byte(glob)
 
+	hasGlobCharacters := false
+
 	for i := 0; i < len(arr); i++ {
 		ch := arr[i]
 
@@ -50,16 +52,19 @@ func globToRegex(glob string) (*regexp.Regexp, error) {
 			} else {
 				regex += "*"
 			}
+			hasGlobCharacters = true
 		case '?':
 			if inClass == 0 {
 				regex += "."
 			} else {
 				regex += "?"
 			}
+			hasGlobCharacters = true
 		case '[':
 			inClass++
 			firstIndexInClass = i + 1
 			regex += "["
+			hasGlobCharacters = true
 		case ']':
 			inClass--
 			regex += "]"
@@ -68,21 +73,25 @@ func globToRegex(glob string) (*regexp.Regexp, error) {
 				regex += "\\"
 			}
 			regex += string(ch)
+			hasGlobCharacters = true
 		case '!':
 			if firstIndexInClass == i {
 				regex += "^"
 			} else {
 				regex += "!"
 			}
+			hasGlobCharacters = true
 		case '{':
 			inGroup++
 			regex += "("
+			hasGlobCharacters = true
 		case '}':
 			inGroup--
 			regex += ")"
 		case ',':
 			if inGroup > 0 {
 				regex += "|"
+				hasGlobCharacters = true
 			} else {
 				regex += ","
 			}
@@ -90,5 +99,10 @@ func globToRegex(glob string) (*regexp.Regexp, error) {
 			regex += string(ch)
 		}
 	}
-	return regexp.Compile("^" + regex + "$")
+
+	if hasGlobCharacters {
+		return regexp.Compile("^" + regex + "$")
+	} else {
+		return regexp.Compile(regex)
+	}
 }

@@ -63,12 +63,6 @@
 
 [[projects]]
   branch = "master"
-  name = "github.com/zyedidia/glob"
-  packages = ["."]
-  revision = "dd4023a66dc351ae26e592d21cd133b5b143f3d8"
-
-[[projects]]
-  branch = "master"
   name = "golang.org/x/image"
   packages = [
     "bmp",
@@ -88,7 +82,7 @@
     "html",
     "html/atom"
   ]
-  revision = "5f9ae10d9af5b1c89ae6904293b14b064d4ada23"
+  revision = "640f4622ab692b87c2f3a94265e6f579fe38263d"
 
 [[projects]]
   name = "golang.org/x/text"
@@ -144,6 +138,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "ea0f742be221116a10b3fb332aee126fd8f4b3392b65a8e38a7c26e8c45faf8f"
+  inputs-digest = "375d42f271992a59ae0bcf25e2401aae2f4d8adb7b63605c4ffef577c5154025"
   solver-name = "gps-cdcl"
   solver-version = 1
