@@ -70,7 +70,7 @@ func TestRoom_Tags_Empty(t *testing.T) {
 
 func TestRoom_Tags_NotEmpty(t *testing.T) {
 	room := rooms.NewRoom("!test:maunium.net", "@tulir:maunium.net")
-	room.RawTags = []rooms.RoomTag{{"foo", 1}, {"bar", 1}}
+	room.RawTags = []rooms.RoomTag{{Tag: "foo", Order: 1}, {Tag: "bar", Order: 1}}
 	tags := room.Tags()
 	assert.Equal(t, room.RawTags, tags)
 }
