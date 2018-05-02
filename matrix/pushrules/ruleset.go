@@ -53,11 +53,11 @@ func (rs *PushRuleset) UnmarshalJSON(raw []byte) (err error) {
 		return
 	}
 
-	rs.Override = data.Override.setType(OverrideRule)
-	rs.Content = data.Content.setType(ContentRule)
-	rs.Room = data.Room.setTypeAndMap(RoomRule)
-	rs.Sender = data.Sender.setTypeAndMap(SenderRule)
-	rs.Underride = data.Underride.setType(UnderrideRule)
+	rs.Override = data.Override.SetType(OverrideRule)
+	rs.Content = data.Content.SetType(ContentRule)
+	rs.Room = data.Room.SetTypeAndMap(RoomRule)
+	rs.Sender = data.Sender.SetTypeAndMap(SenderRule)
+	rs.Underride = data.Underride.SetType(UnderrideRule)
 	return
 }
 
@@ -66,8 +66,8 @@ func (rs *PushRuleset) MarshalJSON() ([]byte, error) {
 	data := rawPushRuleset{
 		Override:  rs.Override,
 		Content:   rs.Content,
-		Room:      rs.Room.unmap(),
-		Sender:    rs.Sender.unmap(),
+		Room:      rs.Room.Unmap(),
+		Sender:    rs.Sender.Unmap(),
 		Underride: rs.Underride,
 	}
 	return json.Marshal(&data)

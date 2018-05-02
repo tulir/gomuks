@@ -27,7 +27,7 @@ type PushRuleCollection interface {
 
 type PushRuleArray []*PushRule
 
-func (rules PushRuleArray) setType(typ PushRuleType) PushRuleArray {
+func (rules PushRuleArray) SetType(typ PushRuleType) PushRuleArray {
 	for _, rule := range rules {
 		rule.Type = typ
 	}
@@ -49,7 +49,7 @@ type PushRuleMap struct {
 	Type PushRuleType
 }
 
-func (rules PushRuleArray) setTypeAndMap(typ PushRuleType) PushRuleMap {
+func (rules PushRuleArray) SetTypeAndMap(typ PushRuleType) PushRuleMap {
 	data := PushRuleMap{
 		Map:  make(map[string]*PushRule),
 		Type: typ,
@@ -76,7 +76,7 @@ func (ruleMap PushRuleMap) GetActions(room Room, event *gomatrix.Event) PushActi
 	return nil
 }
 
-func (ruleMap PushRuleMap) unmap() PushRuleArray {
+func (ruleMap PushRuleMap) Unmap() PushRuleArray {
 	array := make(PushRuleArray, len(ruleMap.Map))
 	index := 0
 	for _, rule := range ruleMap.Map {
