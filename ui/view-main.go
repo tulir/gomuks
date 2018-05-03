@@ -263,8 +263,13 @@ func (view *MainView) MouseEventHandler(roomView *RoomView, event *tcell.EventMo
 			view.parent.Render()
 		case tcell.Button1:
 			_, rly, _, _ := msgView.GetRect()
-			n := y - rly + 1
-			view.SwitchRoom(view.roomList.Get(n))
+			line := y - rly + 1
+			switchToTag, switchToRoom := view.roomList.HandleClick(x, line, event.Modifiers() == tcell.ModCtrl)
+			if switchToRoom != nil {
+				view.SwitchRoom(switchToTag, switchToRoom)
+			} else {
+				view.parent.Render()
+			}
 		}
 	default:
 		debug.Print("Unhandled mouse event:", event.Buttons(), event.Modifiers(), x, y)
@@ -386,11 +391,11 @@ func (view *MainView) UpdateTags(room *rooms.Room, newTags []rooms.RoomTag) {
 		for _, tag := range room.RawTags {
 			view.roomList.RemoveFromTag(tag.Tag, room)
 		}
-		view.roomList.AddToTag("", room)
+		view.roomList.AddToTag(rooms.RoomTag{Tag: "", Order: "0.5"}, room)
 	} else if len(room.RawTags) == 0 {
 		view.roomList.RemoveFromTag("", room)
 		for _, tag := range newTags {
-			view.roomList.AddToTag(tag.Tag, room)
+			view.roomList.AddToTag(tag, room)
 		}
 	} else {
 	NewTags:
@@ -400,7 +405,7 @@ func (view *MainView) UpdateTags(room *rooms.Room, newTags []rooms.RoomTag) {
 					continue NewTags
 				}
 			}
-			view.roomList.AddToTag(newTag.Tag, room)
+			view.roomList.AddToTag(newTag, room)
 		}
 	OldTags:
 		for _, oldTag := range room.RawTags {
@@ -456,6 +461,7 @@ func (view *MainView) NotifyMessage(room *rooms.Room, message ifc.Message, shoul
 	}
 
 	message.SetIsHighlight(should.Highlight)
+	room.LastReceivedMessage = message.Timestamp()
 	view.roomList.Bump(room)
 }
 

@@ -262,7 +262,11 @@ func (c *Container) HandleTag(source EventSource, evt *gomatrix.Event) {
 	index := 0
 	for tag, infoifc := range tags {
 		info, _ := infoifc.(map[string]interface{})
-		order, _ := info["order"].(float64)
+		order := "0.5"
+		rawOrder, ok := info["order"]
+		if ok {
+			order = fmt.Sprintf("%v", rawOrder)
+		}
 		newTags[index] = rooms.RoomTag{
 			Tag:   tag,
 			Order: order,

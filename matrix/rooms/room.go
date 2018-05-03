@@ -39,8 +39,8 @@ const (
 type RoomTag struct {
 	// The name of the tag.
 	Tag string
-	// The order of the tag. Smaller values are ordered higher.
-	Order float64
+	// The order of the tag.
+	Order string
 }
 
 // Room represents a single Matrix room.
@@ -118,7 +118,7 @@ func (room *Room) MarkRead() {
 
 func (room *Room) Tags() []RoomTag {
 	if len(room.RawTags) == 0 {
-		return []RoomTag{{"", 0.5}}
+		return []RoomTag{{"", "0.5"}}
 	}
 	return room.RawTags
 }

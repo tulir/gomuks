@@ -21,7 +21,6 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
-	"time"
 
 	"maunium.net/go/gomuks/debug"
 	"maunium.net/go/gomuks/matrix/rooms"
@@ -30,9 +29,187 @@ import (
 	"maunium.net/go/tview"
 )
 
-type roomListItem struct {
-	room     *rooms.Room
-	priority float64
+type orderedRoom struct {
+	*rooms.Room
+	order string
+}
+
+func newOrderedRoom(order string, room *rooms.Room) *orderedRoom {
+	return &orderedRoom{
+		Room:  room,
+		order: order,
+	}
+}
+
+func convertRoom(room *rooms.Room) *orderedRoom {
+	return newOrderedRoom("", room)
+}
+
+func convertTaggedRoom(tag rooms.RoomTag, room *rooms.Room) *orderedRoom {
+	return newOrderedRoom(tag.Order, room)
+}
+
+type tagRoomList struct {
+	rooms    []*orderedRoom
+	maxShown int
+}
+
+func newTagRoomList(rooms ...*orderedRoom) *tagRoomList {
+	return &tagRoomList{
+		maxShown: 10,
+		rooms:    rooms,
+	}
+}
+
+func (trl *tagRoomList) Visible() []*orderedRoom {
+	return trl.rooms[len(trl.rooms)-trl.Length():]
+}
+
+func (trl *tagRoomList) FirstVisible() *rooms.Room {
+	visible := trl.Visible()
+	if len(visible) > 0 {
+		return visible[len(visible)-1].Room
+	}
+	return nil
+}
+
+func (trl *tagRoomList) LastVisible() *rooms.Room {
+	visible := trl.Visible()
+	if len(visible) > 0 {
+		return visible[0].Room
+	}
+	return nil
+}
+
+func (trl *tagRoomList) All() []*orderedRoom {
+	return trl.rooms
+}
+
+func (trl *tagRoomList) Length() int {
+	if len(trl.rooms) < trl.maxShown {
+		return len(trl.rooms)
+	}
+	return trl.maxShown
+}
+
+func (trl *tagRoomList) TotalLength() int {
+	return len(trl.rooms)
+}
+
+func (trl *tagRoomList) IsEmpty() bool {
+	return len(trl.rooms) == 0
+}
+
+func (trl *tagRoomList) IsCollapsed() bool {
+	return trl.maxShown == 0
+}
+
+func (trl *tagRoomList) ToggleCollapse() {
+	if trl.IsCollapsed() {
+		trl.maxShown = 10
+	} else {
+		trl.maxShown = 0
+	}
+}
+
+func (trl *tagRoomList) HasInvisibleRooms() bool {
+	return trl.maxShown < trl.TotalLength()
+}
+
+func (trl *tagRoomList) HasVisibleRooms() bool {
+	return !trl.IsEmpty() && trl.maxShown > 0
+}
+
+func (trl *tagRoomList) Insert(order string, room *rooms.Room) {
+	trl.rooms = append(trl.rooms, nil)
+	// The default insert index is the newly added slot.
+	// That index will be used if all other rooms in the list have the same LastReceivedMessage timestamp.
+	insertAt := len(trl.rooms) - 1
+	// Find the spot where the new room should be put according to the last received message timestamps.
+	for i := 0; i < len(trl.rooms)-1; i++ {
+		roomAtIndex := trl.rooms[i]
+		orderComp := strings.Compare(order, roomAtIndex.order)
+		if orderComp == 1 || (orderComp == 0 && roomAtIndex.LastReceivedMessage.After(room.LastReceivedMessage)) {
+			insertAt = i
+			break
+		}
+	}
+	// Move newer rooms forward in the array.
+	for i := len(trl.rooms) - 1; i > insertAt; i-- {
+		trl.rooms[i] = trl.rooms[i-1]
+	}
+	// Insert room.
+	trl.rooms[insertAt] = newOrderedRoom(order, room)
+}
+
+func (trl *tagRoomList) String() string {
+	var str strings.Builder
+	fmt.Fprintln(&str, "&tagRoomList{")
+	fmt.Fprintf(&str, "    maxShown: %d,\n", trl.maxShown)
+	fmt.Fprint(&str, "    rooms: {")
+	for i, room := range trl.rooms {
+		if room == nil {
+			fmt.Fprintf(&str, "<<NIL>>")
+		} else {
+			fmt.Fprint(&str, room.ID)
+		}
+		if i != len(trl.rooms)-1 {
+			fmt.Fprint(&str, ", ")
+		}
+	}
+	fmt.Fprintln(&str, "},")
+	fmt.Fprintln(&str, "}")
+	return str.String()
+}
+
+func (trl *tagRoomList) Bump(room *rooms.Room) {
+	var found *orderedRoom
+	inserted := false
+	for i := 0; i < len(trl.rooms); i++ {
+		currentRoom := trl.rooms[i]
+		if found != nil {
+			if currentRoom.LastReceivedMessage.Before(room.LastReceivedMessage) {
+				trl.rooms[i-1] = currentRoom
+			} else {
+				trl.rooms[i-1] = found
+				inserted = true
+				break
+			}
+		} else if currentRoom.Room == room {
+			found = currentRoom
+		}
+	}
+	if !inserted {
+		trl.rooms[len(trl.rooms)-1] = found
+	}
+}
+
+func (trl *tagRoomList) Remove(room *rooms.Room) {
+	trl.RemoveIndex(trl.Index(room))
+}
+
+func (trl *tagRoomList) RemoveIndex(index int) {
+	if index < 0 || index > len(trl.rooms) {
+		return
+	}
+	trl.rooms = append(trl.rooms[0:index], trl.rooms[index+1:]...)
+}
+
+func (trl *tagRoomList) Index(room *rooms.Room) int {
+	return trl.indexInList(trl.All(), room)
+}
+
+func (trl *tagRoomList) IndexVisible(room *rooms.Room) int {
+	return trl.indexInList(trl.Visible(), room)
+}
+
+func (trl *tagRoomList) indexInList(list []*orderedRoom, room *rooms.Room) int {
+	for index, entry := range list {
+		if entry.Room == room {
+			return index
+		}
+	}
+	return -1
 }
 
 type RoomList struct {
@@ -41,7 +218,7 @@ type RoomList struct {
 	// The list of tags in display order.
 	tags []string
 	// The list of rooms, in reverse order.
-	items map[string][]*rooms.Room
+	items map[string]*tagRoomList
 	// The selected room.
 	selected    *rooms.Room
 	selectedTag string
@@ -57,9 +234,9 @@ type RoomList struct {
 }
 
 func NewRoomList() *RoomList {
-	return &RoomList{
+	list := &RoomList{
 		Box:   tview.NewBox(),
-		items: make(map[string][]*rooms.Room),
+		items: make(map[string]*tagRoomList),
 		tags:  []string{"m.favourite", "net.maunium.gomuks.fake.direct", "", "m.lowpriority"},
 
 		scrollOffset: 0,
@@ -68,11 +245,15 @@ func NewRoomList() *RoomList {
 		selectedTextColor:       tcell.ColorWhite,
 		selectedBackgroundColor: tcell.ColorDarkGreen,
 	}
+	for _, tag := range list.tags {
+		list.items[tag] = newTagRoomList()
+	}
+	return list
 }
 
 func (list *RoomList) Contains(roomID string) bool {
-	for _, roomList := range list.items {
-		for _, room := range roomList {
+	for _, tagRoomList := range list.items {
+		for _, room := range tagRoomList.All() {
 			if room.ID == roomID {
 				return true
 			}
@@ -83,16 +264,16 @@ func (list *RoomList) Contains(roomID string) bool {
 
 func (list *RoomList) Add(room *rooms.Room) {
 	for _, tag := range room.Tags() {
-		list.AddToTag(tag.Tag, room)
+		list.AddToTag(tag, room)
 	}
 }
 
 func (list *RoomList) CheckTag(tag string) {
 	index := list.IndexTag(tag)
 
-	items, ok := list.items[tag]
+	tagRoomList, ok := list.items[tag]
 
-	if ok && len(items) == 0 {
+	if ok && tagRoomList.IsEmpty() {
 		delete(list.items, tag)
 		ok = false
 	}
@@ -105,37 +286,19 @@ func (list *RoomList) CheckTag(tag string) {
 	}*/
 }
 
-func (list *RoomList) AddToTag(tag string, room *rooms.Room) {
-	if tag == "" && len(room.GetMembers()) == 2 {
-		tag = "net.maunium.gomuks.fake.direct"
+func (list *RoomList) AddToTag(tag rooms.RoomTag, room *rooms.Room) {
+	if tag.Tag == "" && len(room.GetMembers()) == 2 {
+		tag.Tag = "net.maunium.gomuks.fake.direct"
 	}
-	items, ok := list.items[tag]
+
+	tagRoomList, ok := list.items[tag.Tag]
 	if !ok {
-		list.items[tag] = []*rooms.Room{room}
+		list.items[tag.Tag] = newTagRoomList(convertRoom(room))
 		return
 	}
 
-	// Add space for new item.
-	items = append(items, nil)
-	// The default insert index is the newly added slot.
-	// That index will be used if all other rooms in the list have the same LastReceivedMessage timestamp.
-	insertAt := len(items) - 1
-	// Find the spot where the new room should be put according to the last received message timestamps.
-	for i := 0; i < len(items)-1; i++ {
-		if items[i].LastReceivedMessage.After(room.LastReceivedMessage) {
-			insertAt = i
-			break
-		}
-	}
-	// Move newer rooms forward in the array.
-	for i := len(items) - 1; i > insertAt; i-- {
-		items[i] = items[i-1]
-	}
-	// Insert room.
-	items[insertAt] = room
-
-	list.items[tag] = items
-	list.CheckTag(tag)
+	tagRoomList.Insert(tag.Order, room)
+	list.CheckTag(tag.Tag)
 }
 
 func (list *RoomList) Remove(room *rooms.Room) {
@@ -145,35 +308,32 @@ func (list *RoomList) Remove(room *rooms.Room) {
 }
 
 func (list *RoomList) RemoveFromTag(tag string, room *rooms.Room) {
-	items, ok := list.items[tag]
+	tagRoomList, ok := list.items[tag]
 	if !ok {
 		return
 	}
 
-	index := list.indexInTag(tag, room)
+	index := tagRoomList.Index(room)
 	if index == -1 {
 		return
 	}
 
-	items = append(items[0:index], items[index+1:]...)
+	tagRoomList.RemoveIndex(index)
 
-	if len(items) == 0 {
+	if tagRoomList.IsEmpty() {
 		delete(list.items, tag)
-	} else {
-		list.items[tag] = items
 	}
 
 	if room == list.selected {
-		// Room is currently selected, move selection to another room.
 		if index > 0 {
-			list.selected = items[index-1]
-		} else if len(items) > 0 {
-			list.selected = items[0]
+			list.selected = tagRoomList.All()[index-1].Room
+		} else if tagRoomList.Length() > 0 {
+			list.selected = tagRoomList.Visible()[0].Room
 		} else if len(list.items) > 0 {
 			for _, tag := range list.tags {
 				moreItems := list.items[tag]
-				if len(moreItems) > 0 {
-					list.selected = moreItems[0]
+				if moreItems.Length() > 0 {
+					list.selected = moreItems.Visible()[0].Room
 					list.selectedTag = tag
 				}
 			}
@@ -187,33 +347,20 @@ func (list *RoomList) RemoveFromTag(tag string, room *rooms.Room) {
 
 func (list *RoomList) Bump(room *rooms.Room) {
 	for _, tag := range room.Tags() {
-		list.bumpInTag(tag.Tag, room)
-	}
-}
-
-func (list *RoomList) bumpInTag(tag string, room *rooms.Room) {
-	items, ok := list.items[tag]
-	if !ok {
-		return
-	}
-
-	found := false
-	for i := 0; i < len(items)-1; i++ {
-		if items[i] == room {
-			found = true
+		tagRoomList, ok := list.items[tag.Tag]
+		if !ok {
+			return
 		}
-		if found {
-			items[i] = items[i+1]
-		}
-	}
-	if found {
-		items[len(items)-1] = room
-		room.LastReceivedMessage = time.Now()
+		tagRoomList.Bump(room)
 	}
 }
 
 func (list *RoomList) Clear() {
-	list.items = make(map[string][]*rooms.Room)
+	list.items = make(map[string]*tagRoomList)
+	list.tags = []string{"m.favourite", "net.maunium.gomuks.fake.direct", "", "m.lowpriority"}
+	for _, tag := range list.tags {
+		list.items[tag] = newTagRoomList()
+	}
 	list.selected = nil
 	list.selectedTag = ""
 }
@@ -224,9 +371,12 @@ func (list *RoomList) SetSelected(tag string, room *rooms.Room) {
 	pos := list.index(tag, room)
 	_, _, _, height := list.GetRect()
 	if pos <= list.scrollOffset {
-		list.scrollOffset = pos-1
+		list.scrollOffset = pos - 1
 	} else if pos >= list.scrollOffset+height {
-		list.scrollOffset = pos-height+1
+		list.scrollOffset = pos - height + 1
+	}
+	if list.scrollOffset < 0 {
+		list.scrollOffset = 0
 	}
 	debug.Print("Selecting", room.GetTitle(), "in", list.GetTagDisplayName(tag))
 }
@@ -245,21 +395,21 @@ func (list *RoomList) SelectedRoom() *rooms.Room {
 
 func (list *RoomList) AddScrollOffset(offset int) {
 	list.scrollOffset += offset
-	if list.scrollOffset < 0 {
-		list.scrollOffset = 0
-	}
 	_, _, _, viewHeight := list.GetRect()
 	contentHeight := list.ContentHeight()
 	if list.scrollOffset > contentHeight-viewHeight {
 		list.scrollOffset = contentHeight - viewHeight
 	}
+	if list.scrollOffset < 0 {
+		list.scrollOffset = 0
+	}
 }
 
 func (list *RoomList) First() (string, *rooms.Room) {
 	for _, tag := range list.tags {
-		items := list.items[tag]
-		if len(items) > 0 {
-			return tag, items[len(items)-1]
+		tagRoomList := list.items[tag]
+		if tagRoomList.HasVisibleRooms() {
+			return tag, tagRoomList.FirstVisible()
 		}
 	}
 	return "", nil
@@ -268,9 +418,9 @@ func (list *RoomList) First() (string, *rooms.Room) {
 func (list *RoomList) Last() (string, *rooms.Room) {
 	for tagIndex := len(list.tags) - 1; tagIndex >= 0; tagIndex-- {
 		tag := list.tags[tagIndex]
-		items := list.items[tag]
-		if len(items) > 0 {
-			return tag, items[0]
+		tagRoomList := list.items[tag]
+		if tagRoomList.HasVisibleRooms() {
+			return tag, tagRoomList.LastVisible()
 		}
 	}
 	return "", nil
@@ -292,23 +442,28 @@ func (list *RoomList) Previous() (string, *rooms.Room) {
 		return list.First()
 	}
 
-	items := list.items[list.selectedTag]
-	index := list.indexInTag(list.selectedTag, list.selected)
-	if index == -1 {
-		return list.First()
-	} else if index == len(items)-1 {
+	tagRoomList := list.items[list.selectedTag]
+	indexVisible := tagRoomList.IndexVisible(list.selected)
+	index := tagRoomList.Index(list.selected)
+
+	if indexVisible == tagRoomList.Length()-1 || (indexVisible == -1 && index == tagRoomList.TotalLength()-1) {
 		tagIndex := list.IndexTag(list.selectedTag)
 		tagIndex--
 		for ; tagIndex >= 0; tagIndex-- {
 			prevTag := list.tags[tagIndex]
-			prevTagItems := list.items[prevTag]
-			if len(prevTagItems) > 0 {
-				return prevTag, prevTagItems[0]
+			prevTagRoomList := list.items[prevTag]
+			if prevTagRoomList.HasVisibleRooms() {
+				return prevTag, prevTagRoomList.LastVisible()
 			}
 		}
 		return list.Last()
 	}
-	return list.selectedTag, items[index+1]
+	if indexVisible != -1 {
+		return list.selectedTag, tagRoomList.Visible()[indexVisible+1].Room
+	} else if index != -1 {
+		return list.selectedTag, tagRoomList.All()[index+1].Room
+	}
+	return list.First()
 }
 
 func (list *RoomList) Next() (string, *rooms.Room) {
@@ -318,35 +473,28 @@ func (list *RoomList) Next() (string, *rooms.Room) {
 		return list.First()
 	}
 
-	items := list.items[list.selectedTag]
-	index := list.indexInTag(list.selectedTag, list.selected)
-	if index == -1 {
-		return list.Last()
-	} else if index == 0 {
+	tagRoomList := list.items[list.selectedTag]
+	indexVisible := tagRoomList.IndexVisible(list.selected)
+	index := tagRoomList.Index(list.selected)
+
+	if indexVisible == 0 || (indexVisible == -1 && index == 0) {
 		tagIndex := list.IndexTag(list.selectedTag)
 		tagIndex++
 		for ; tagIndex < len(list.tags); tagIndex++ {
 			nextTag := list.tags[tagIndex]
-			nextTagItems := list.items[nextTag]
-			if len(nextTagItems) > 0 {
-				return nextTag, nextTagItems[len(nextTagItems)-1]
+			nextTagRoomList := list.items[nextTag]
+			if nextTagRoomList.HasVisibleRooms() {
+				return nextTag, nextTagRoomList.FirstVisible()
 			}
 		}
 		return list.First()
 	}
-	return list.selectedTag, items[index-1]
-}
-
-func (list *RoomList) indexInTag(tag string, room *rooms.Room) int {
-	roomIndex := -1
-	items := list.items[tag]
-	for index, entry := range items {
-		if entry == room {
-			roomIndex = index
-			break
-		}
+	if indexVisible != -1 {
+		return list.selectedTag, tagRoomList.Visible()[indexVisible-1].Room
+	} else if index != -1 {
+		return list.selectedTag, tagRoomList.All()[index-1].Room
 	}
-	return roomIndex
+	return list.Last()
 }
 
 func (list *RoomList) index(tag string, room *rooms.Room) int {
@@ -355,11 +503,15 @@ func (list *RoomList) index(tag string, room *rooms.Room) int {
 		return -1
 	}
 
-	localIndex := list.indexInTag(tag, room)
+	tagRoomList, ok := list.items[tag]
+	localIndex := -1
+	if ok {
+		localIndex = tagRoomList.IndexVisible(room)
+	}
 	if localIndex == -1 {
 		return -1
 	}
-	localIndex = len(list.items[tag]) - 1 - localIndex
+	localIndex = tagRoomList.Length() - 1 - localIndex
 
 	// Tag header
 	localIndex += 1
@@ -367,14 +519,22 @@ func (list *RoomList) index(tag string, room *rooms.Room) int {
 	if tagIndex > 0 {
 		for i := 0; i < tagIndex; i++ {
 			previousTag := list.tags[i]
-			previousItems := list.items[previousTag]
+			previousTagRoomList := list.items[previousTag]
 
 			tagDisplayName := list.GetTagDisplayName(previousTag)
 			if len(tagDisplayName) > 0 {
+				if previousTagRoomList.IsCollapsed() {
+					localIndex++
+					continue
+				}
 				// Previous tag header + space
 				localIndex += 2
+				if previousTagRoomList.HasInvisibleRooms() {
+					// Previous tag "Show more" button
+					localIndex++
+				}
 				// Previous tag items
-				localIndex += len(previousItems)
+				localIndex += previousTagRoomList.Length()
 			}
 		}
 	}
@@ -384,36 +544,70 @@ func (list *RoomList) index(tag string, room *rooms.Room) int {
 
 func (list *RoomList) ContentHeight() (height int) {
 	for _, tag := range list.tags {
-		items := list.items[tag]
+		tagRoomList := list.items[tag]
 		tagDisplayName := list.GetTagDisplayName(tag)
 		if len(tagDisplayName) == 0 {
 			continue
 		}
-		height += 2 + len(items)
+		if tagRoomList.IsCollapsed() {
+			height++
+			continue
+		}
+		height += 2 + tagRoomList.Length()
+		if tagRoomList.HasInvisibleRooms() {
+			height++
+		}
 	}
 	return
 }
 
-func (list *RoomList) Get(n int) (string, *rooms.Room) {
-	n += list.scrollOffset
-	if n < 0 {
+func (list *RoomList) HandleClick(column, line int, mod bool) (string, *rooms.Room) {
+	line += list.scrollOffset
+	if line < 0 {
 		return "", nil
 	}
 	for _, tag := range list.tags {
-		// Tag header
-		n--
-
-		items := list.items[tag]
-		if n < 0 {
+		tagRoomList := list.items[tag]
+		if line--; line == -1 {
+			tagRoomList.ToggleCollapse()
 			return "", nil
-		} else if n < len(items) {
-			return tag, items[len(items)-1-n]
+		}
+
+		if tagRoomList.IsCollapsed() {
+			continue
+		}
+
+		if line < 0 {
+			return "", nil
+		} else if line < tagRoomList.Length() {
+			return tag, tagRoomList.Visible()[tagRoomList.Length()-1-line].Room
 		}
 
 		// Tag items
-		n -= len(items)
+		line -= tagRoomList.Length()
+
+		hasMore := tagRoomList.HasInvisibleRooms()
+		hasLess := tagRoomList.maxShown > 10
+		if hasMore || hasLess {
+			if line--; line == -1 {
+				diff := 10
+				if mod {
+					diff = 100
+				}
+				_, _, width, _ := list.GetRect()
+				if column <= 6 && hasLess {
+					tagRoomList.maxShown -= diff
+				} else if column >= width-6 && hasMore {
+					tagRoomList.maxShown += diff
+				}
+				if tagRoomList.maxShown < 10 {
+					tagRoomList.maxShown = 10
+				}
+				return "", nil
+			}
+		}
 		// Tag footer
-		n--
+		line--
 	}
 	return "", nil
 }
@@ -450,7 +644,7 @@ func (list *RoomList) Draw(screen tcell.Screen) {
 
 	// Draw the list items.
 	for _, tag := range list.tags {
-		items := list.items[tag]
+		tagRoomList := list.items[tag]
 		tagDisplayName := list.GetTagDisplayName(tag)
 		if len(tagDisplayName) == 0 {
 			continue
@@ -459,8 +653,15 @@ func (list *RoomList) Draw(screen tcell.Screen) {
 		localOffset := 0
 
 		if handledOffset < list.scrollOffset {
-			if handledOffset+len(items) < list.scrollOffset {
-				handledOffset += len(items) + 2
+			if handledOffset+tagRoomList.Length() < list.scrollOffset {
+				if tagRoomList.IsCollapsed() {
+					handledOffset++
+				} else {
+					handledOffset += tagRoomList.Length() + 2
+					if tagRoomList.HasInvisibleRooms() || tagRoomList.maxShown > 10 {
+						handledOffset++
+					}
+				}
 				continue
 			} else {
 				localOffset = list.scrollOffset - handledOffset
@@ -469,8 +670,18 @@ func (list *RoomList) Draw(screen tcell.Screen) {
 		}
 
 		widget.WriteLine(screen, tview.AlignLeft, tagDisplayName, x, y, width, tcell.StyleDefault.Underline(true).Bold(true))
+
+		items := tagRoomList.Visible()
+
+		if tagRoomList.IsCollapsed() {
+			screen.SetCell(x+width-1, y, tcell.StyleDefault, '▶')
+			y++
+			continue
+		}
+		screen.SetCell(x+width-1, y, tcell.StyleDefault, '▼')
 		y++
-		for i := len(items) - 1; i >= 0; i-- {
+
+		for i := tagRoomList.Length() - 1; i >= 0; i-- {
 			item := items[i]
 			index := len(items) - 1 - i
 
@@ -487,7 +698,7 @@ func (list *RoomList) Draw(screen tcell.Screen) {
 			lineWidth := width
 
 			style := tcell.StyleDefault.Foreground(list.mainTextColor)
-			if tag == list.selectedTag && item == list.selected {
+			if tag == list.selectedTag && item.Room == list.selected {
 				style = style.Foreground(list.selectedTextColor).Background(list.selectedBackgroundColor)
 			}
 			if item.HasNewMessages {
@@ -508,12 +719,24 @@ func (list *RoomList) Draw(screen tcell.Screen) {
 			}
 
 			widget.WriteLine(screen, tview.AlignLeft, text, x, y, lineWidth, style)
-
 			y++
+
 			if y >= bottomLimit {
 				break
 			}
 		}
+		hasLess := tagRoomList.maxShown > 10
+		hasMore := tagRoomList.HasInvisibleRooms()
+		if hasLess || hasMore {
+			if hasMore {
+				widget.WriteLine(screen, tview.AlignRight, "More ↓", x, y, width, tcell.StyleDefault)
+			}
+			if hasLess {
+				widget.WriteLine(screen, tview.AlignLeft, "↑ Less", x, y, width, tcell.StyleDefault)
+			}
+			y++
+		}
+
 		y++
 	}
 }
