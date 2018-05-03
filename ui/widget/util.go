@@ -20,6 +20,8 @@ import (
 	"github.com/mattn/go-runewidth"
 	"maunium.net/go/tcell"
 	"maunium.net/go/tview"
+	"fmt"
+	"strconv"
 )
 
 func WriteLineSimple(screen tcell.Screen, line string, x, y int) {
@@ -56,4 +58,14 @@ func WriteLine(screen tcell.Screen, align int, line string, x, y, maxWidth int, 
 			break
 		}
 	}
+}
+
+func WriteLinePadded(screen tcell.Screen, align int, line string, x, y, maxWidth int, style tcell.Style) {
+	padding := strconv.Itoa(maxWidth)
+	if align == tview.AlignRight {
+		line = fmt.Sprintf("%"+padding+"s", line)
+	} else {
+		line = fmt.Sprintf("%-"+padding+"s", line)
+	}
+	WriteLine(screen, tview.AlignLeft, line, x, y, maxWidth, style)
 }

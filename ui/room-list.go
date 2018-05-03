@@ -718,7 +718,7 @@ func (list *RoomList) Draw(screen tcell.Screen) {
 				lineWidth -= len(unreadMessageCount) + 1
 			}
 
-			widget.WriteLine(screen, tview.AlignLeft, text, x, y, lineWidth, style)
+			widget.WriteLinePadded(screen, tview.AlignLeft, text, x, y, lineWidth, style)
 			y++
 
 			if y >= bottomLimit {
