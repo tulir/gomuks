@@ -1,5 +1,8 @@
 .idea/
+target/
 gomuks
-gomuks.exe
+*.exe
+*.deb
 coverage.out
 coverage.html
+deb/usr

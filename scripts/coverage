@@ -1,0 +1,8 @@
+#!/bin/bash
+mkdir -p target/
+go test ./... -coverprofile=target/coverage.out
+if [ ! -z $1 ]; then
+	go tool cover -html=coverage.out -o $1
+else
+	go tool cover -html=coverage.out
+fi
