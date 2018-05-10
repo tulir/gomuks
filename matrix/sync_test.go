@@ -56,6 +56,7 @@ func TestGomuksSyncer_ProcessResponse(t *testing.T) {
 	syncer := matrix.NewGomuksSyncer(mss)
 	syncer.OnEventType("m.room.member", ml.receive)
 	syncer.OnEventType("m.room.message", ml.receive)
+	syncer.GetFilterJSON("@tulir:maunium.net")
 
 	joinEvt := &gomatrix.Event{
 		ID:       "!join:maunium.net",

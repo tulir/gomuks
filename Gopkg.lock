@@ -10,8 +10,8 @@
 [[projects]]
   name = "github.com/disintegration/imaging"
   packages = ["."]
-  revision = "fd34ef7671b12cdf1b024d98c6b327b2770d32c4"
-  version = "v1.4.1"
+  revision = "bbcee2f5c9d5e94ca42c8b50ec847fec64a6c134"
+  version = "v1.4.2"
 
 [[projects]]
   branch = "master"
@@ -82,7 +82,7 @@
     "html",
     "html/atom"
   ]
-  revision = "640f4622ab692b87c2f3a94265e6f579fe38263d"
+  revision = "f73e4c9ed3b7ebdd5f699a16a880c2b1994e50dd"
 
 [[projects]]
   name = "golang.org/x/text"
@@ -118,7 +118,7 @@
   branch = "master"
   name = "maunium.net/go/gomatrix"
   packages = ["."]
-  revision = "618319f327acbd401426c711f54e1a634e2243e4"
+  revision = "4ddf8d780ff6a0434a52c256015f7fcd2ca67dc9"
 
 [[projects]]
   branch = "master"

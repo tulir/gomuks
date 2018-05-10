@@ -148,32 +148,36 @@ func (s *GomuksSyncer) OnFailedSync(res *gomatrix.RespSync, err error) (time.Dur
 
 // GetFilterJSON returns a filter with a timeline limit of 50.
 func (s *GomuksSyncer) GetFilterJSON(userID string) json.RawMessage {
-	return json.RawMessage(`{
-		"room": {
-			"include_leave": false,
-			"state": {
-				"types": [
+	filter := &gomatrix.Filter{
+		Room: gomatrix.RoomFilter{
+			IncludeLeave: false,
+			State: gomatrix.FilterPart{
+				Types: []string{
 					"m.room.member",
 					"m.room.name",
 					"m.room.topic",
 					"m.room.canonical_alias",
-					"m.room.aliases"
-				]
+					"m.room.aliases",
+				},
 			},
-			"timeline": {
-				"types": ["m.room.message"],
-				"limit": 50
+			Timeline: gomatrix.FilterPart{
+				Types: []string{"m.room.message"},
+				Limit: 50,
 			},
-			"ephemeral": {
-				"types": ["m.typing"]
+			Ephemeral: gomatrix.FilterPart{
+				Types: []string{"m.typing"},
 			},
-			"account_data": {
-				"types": ["m.tag"]
-			}
+			AccountData: gomatrix.FilterPart{
+				Types: []string{"m.tag"},
+			},
 		},
-		"account_data": {
-			"types": ["m.push_rules"]
+		AccountData: gomatrix.FilterPart{
+			Types: []string{"m.push_rules"},
 		},
-		"presence": {"types": []}
-	}`)
+		Presence: gomatrix.FilterPart{
+			Types: []string{},
+		},
+	}
+	rawFilter, _ := json.Marshal(&filter)
+	return rawFilter
 }
