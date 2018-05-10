@@ -32,6 +32,7 @@ Scroll chat with the scroll wheel (3 rows per tick), page up/down (half of heigh
 
 ### Commands
 * `/quit` - Close gomuks
+* `/logout` - Log out, clear caches and go back to the login view
 * `/clearcache` - Clear room state cache and close gomuks
 * `/leave` - Leave the current room
 * `/join <room>` - Join the room with the given room ID or alias
