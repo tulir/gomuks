@@ -78,10 +78,12 @@ func (ui *GomuksUI) Render() {
 
 func (ui *GomuksUI) OnLogin() {
 	ui.SetView(ViewMain)
+	ui.app.SetFocus(ui.mainView)
 }
 
 func (ui *GomuksUI) OnLogout() {
 	ui.SetView(ViewLogin)
+	ui.app.SetFocus(ui.loginView)
 }
 
 func (ui *GomuksUI) SetView(name View) {

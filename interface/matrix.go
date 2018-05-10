@@ -30,6 +30,7 @@ type MatrixContainer interface {
 	Stop()
 
 	Login(user, password string) error
+	Logout()
 
 	SendMessage(roomID, msgtype, message string) (string, error)
 	SendMarkdownMessage(roomID, msgtype, message string) (string, error)

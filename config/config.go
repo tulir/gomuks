@@ -55,6 +55,17 @@ func (config *Config) Clear() {
 	os.RemoveAll(config.MediaDir)
 }
 
+func (config *Config) DeleteSession() {
+	if config.Session != nil {
+		os.Remove(config.Session.path)
+		config.Session = nil
+	}
+	os.RemoveAll(config.HistoryDir)
+	os.RemoveAll(config.MediaDir)
+	os.MkdirAll(config.HistoryDir, 0700)
+	os.MkdirAll(config.MediaDir, 0700)
+}
+
 // Load loads the config from config.yaml in the directory given to the config struct.
 func (config *Config) Load() {
 	os.MkdirAll(config.Dir, 0700)

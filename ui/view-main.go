@@ -119,6 +119,7 @@ func (view *MainView) SendMessage(roomView *RoomView, text string) {
 
 func (view *MainView) sendTempMessage(roomView *RoomView, tempMessage ifc.Message, text string) {
 	defer debug.Recover()
+	debug.Print("Sending message", tempMessage.Type(), text)
 	eventID, err := view.matrix.SendMarkdownMessage(roomView.Room.ID, tempMessage.Type(), text)
 	if err != nil {
 		tempMessage.SetState(ifc.MessageStateFailed)
@@ -131,6 +132,7 @@ func (view *MainView) sendTempMessage(roomView *RoomView, tempMessage ifc.Messag
 		roomView.AddServiceMessage(fmt.Sprintf("Failed to send message: %v", err))
 		view.parent.Render()
 	} else {
+		debug.Print("Event ID received:", eventID)
 		roomView.MessageView().UpdateMessageID(tempMessage, eventID)
 	}
 }
@@ -167,6 +169,8 @@ func (view *MainView) HandleCommand(roomView *RoomView, command string, args []s
 		if err == nil {
 			view.AddRoom(room)
 		}
+	case "/logout":
+		view.matrix.Logout()
 	default:
 		roomView.AddServiceMessage("Unknown command.")
 	}

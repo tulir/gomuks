@@ -131,6 +131,15 @@ func (c *Container) Login(user, password string) error {
 	return nil
 }
 
+// Logout revokes the access token, stops the syncer and calls the OnLogout() method of the UI.
+func (c *Container) Logout() {
+	c.client.Logout()
+	c.config.DeleteSession()
+	c.Stop()
+	c.client = nil
+	c.ui.OnLogout()
+}
+
 // Stop stops the Matrix syncer.
 func (c *Container) Stop() {
 	if c.running {
@@ -156,12 +165,6 @@ func (c *Container) PushRules() *pushrules.PushRuleset {
 		c.UpdatePushRules()
 	}
 	return c.config.Session.PushRules
-}
-
-// OnLogout stops the syncer and moves the UI back to the login view.
-func (c *Container) OnLogout() {
-	c.ui.OnLogout()
-	c.Stop()
 }
 
 // OnLogin initializes the syncer and updates the room list.
@@ -209,7 +212,12 @@ func (c *Container) Start() {
 			return
 		default:
 			if err := c.client.Sync(); err != nil {
-				debug.Print("Sync() errored", err)
+				if httpErr, ok := err.(gomatrix.HTTPError); ok && httpErr.Code == http.StatusUnauthorized {
+					debug.Print("Sync() errored with ", err, " -> logging out")
+					c.Logout()
+				} else {
+					debug.Print("Sync() errored", err)
+				}
 			} else {
 				debug.Print("Sync() returned without error")
 			}
