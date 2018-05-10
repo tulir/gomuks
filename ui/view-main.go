@@ -164,7 +164,12 @@ func (view *MainView) HandleCommand(roomView *RoomView, command string, args []s
 			roomView.AddServiceMessage("Usage: /join <room>")
 			break
 		}
-		room, err := view.matrix.JoinRoom(args[0])
+		identifer := args[0]
+		server := ""
+		if len(args) > 1 {
+			server = args[1]
+		}
+		room, err := view.matrix.JoinRoom(identifer, server)
 		debug.Print("Join room error:", err)
 		if err == nil {
 			view.AddRoom(room)

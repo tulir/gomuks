@@ -438,14 +438,9 @@ func (c *Container) SendTyping(roomID string, typing bool) {
 }
 
 // JoinRoom makes the current user try to join the given room.
-func (c *Container) JoinRoom(roomID string) (*rooms.Room, error) {
+func (c *Container) JoinRoom(roomID, server string) (*rooms.Room, error) {
 	if len(roomID) == 0 {
 		return nil, fmt.Errorf("invalid room ID")
-	}
-
-	server := ""
-	if roomID[0] == '!' {
-		server = roomID[strings.Index(roomID, ":")+1:]
 	}
 
 	resp, err := c.client.JoinRoom(roomID, server, nil)
