@@ -439,10 +439,6 @@ func (c *Container) SendTyping(roomID string, typing bool) {
 
 // JoinRoom makes the current user try to join the given room.
 func (c *Container) JoinRoom(roomID, server string) (*rooms.Room, error) {
-	if len(roomID) == 0 {
-		return nil, fmt.Errorf("invalid room ID")
-	}
-
 	resp, err := c.client.JoinRoom(roomID, server, nil)
 	if err != nil {
 		return nil, err
@@ -456,10 +452,6 @@ func (c *Container) JoinRoom(roomID, server string) (*rooms.Room, error) {
 
 // LeaveRoom makes the current user leave the given room.
 func (c *Container) LeaveRoom(roomID string) error {
-	if len(roomID) == 0 {
-		return fmt.Errorf("invalid room ID")
-	}
-
 	_, err := c.client.LeaveRoom(roomID)
 	if err != nil {
 		return err
@@ -500,7 +492,8 @@ func (c *Container) Download(mxcURL string) (data []byte, hs, id string, err err
 	id = parts[2]
 
 	cacheFile := c.GetCachePath(hs, id)
-	if _, err = os.Stat(cacheFile); err != nil {
+	var info os.FileInfo
+	if info, err = os.Stat(cacheFile); err == nil && !info.IsDir() {
 		data, err = ioutil.ReadFile(cacheFile)
 		if err == nil {
 			return

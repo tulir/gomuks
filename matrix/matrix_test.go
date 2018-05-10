@@ -26,9 +26,11 @@ import (
 	"fmt"
 	"io/ioutil"
 	"encoding/json"
+	"os"
 )
 
 func TestContainer_InitClient_Empty(t *testing.T) {
+	defer os.RemoveAll("/tmp/gomuks-mxtest-0")
 	cfg := config.NewConfig("/tmp/gomuks-mxtest-0", "/tmp/gomuks-mxtest-0")
 	cfg.HS = "https://matrix.org"
 	c := Container{config: cfg}
@@ -36,6 +38,7 @@ func TestContainer_InitClient_Empty(t *testing.T) {
 }
 
 func TestContainer_GetCachePath(t *testing.T) {
+	defer os.RemoveAll("/tmp/gomuks-mxtest-1")
 	cfg := config.NewConfig("/tmp/gomuks-mxtest-1", "/tmp/gomuks-mxtest-1")
 	c := Container{config: cfg}
 	assert.Equal(t, "/tmp/gomuks-mxtest-1/media/maunium.net/foobar", c.GetCachePath("maunium.net", "foobar"))
@@ -79,7 +82,7 @@ func TestContainer_SendMarkdownMessage_WithMarkdown(t *testing.T) {
 func TestContainer_SendTyping(t *testing.T) {
 	var calls []gomatrix.ReqTyping
 	c := Container{client: mockClient(func(req *http.Request) (*http.Response, error) {
-		if req.Method != http.MethodPut || !strings.HasPrefix(req.URL.Path, "/_matrix/client/r0/rooms/!foo:example.com/typing/@user:example.com") {
+		if req.Method != http.MethodPut || req.URL.Path != "/_matrix/client/r0/rooms/!foo:example.com/typing/@user:example.com" {
 			return nil, fmt.Errorf("unexpected query: %s %s", req.Method, req.URL.Path)
 		}
 
@@ -109,6 +112,58 @@ func TestContainer_SendTyping(t *testing.T) {
 	assert.False(t, calls[1].Typing)
 	assert.True(t, calls[2].Typing)
 	assert.False(t, calls[3].Typing)
+}
+
+func TestContainer_JoinRoom(t *testing.T) {
+	defer os.RemoveAll("/tmp/gomuks-mxtest-2")
+	cfg := config.NewConfig("/tmp/gomuks-mxtest-2", "/tmp/gomuks-mxtest-2")
+	cfg.LoadSession("@user:example.com")
+	c := Container{client: mockClient(func(req *http.Request) (*http.Response, error) {
+		if req.Method == http.MethodPost && req.URL.Path == "/_matrix/client/r0/join/!foo:example.com" {
+			return mockResponse(http.StatusOK, `{"room_id": "!foo:example.com"}`), nil
+		} else if req.Method == http.MethodPost && req.URL.Path == "/_matrix/client/r0/rooms/!foo:example.com/leave" {
+			return mockResponse(http.StatusOK, `{}`), nil
+		}
+		return nil, fmt.Errorf("unexpected query: %s %s", req.Method, req.URL.Path)
+	}), config: cfg}
+
+	room, err := c.JoinRoom("!foo:example.com", "")
+	assert.Nil(t, err)
+	assert.Equal(t, "!foo:example.com", room.ID)
+	assert.False(t, room.HasLeft)
+
+	err = c.LeaveRoom("!foo:example.com")
+	assert.Nil(t, err)
+	assert.True(t, room.HasLeft)
+}
+
+func TestContainer_Download(t *testing.T) {
+	defer os.RemoveAll("/tmp/gomuks-mxtest-3")
+	cfg := config.NewConfig("/tmp/gomuks-mxtest-3", "/tmp/gomuks-mxtest-3")
+	cfg.Load()
+	cfg.LoadSession("@user:example.com")
+	callCounter := 0
+	c := Container{client: mockClient(func(req *http.Request) (*http.Response, error) {
+		if req.Method != http.MethodGet || req.URL.Path != "/_matrix/media/v1/download/example.com/foobar" {
+			return nil, fmt.Errorf("unexpected query: %s %s", req.Method, req.URL.Path)
+		}
+		callCounter++
+		return mockResponse(http.StatusOK, `example file`), nil
+	}), config: cfg}
+
+	// Check that download works
+	data, hs, id, err := c.Download("mxc://example.com/foobar")
+	assert.Equal(t, "example.com", hs)
+	assert.Equal(t, "foobar", id)
+	assert.Equal(t, 1, callCounter)
+	assert.Equal(t, []byte("example file"), data)
+	assert.Nil(t, err)
+
+	// Check that cache works
+	data, _, _, err = c.Download("mxc://example.com/foobar")
+	assert.Nil(t, err)
+	assert.Equal(t, []byte("example file"), data)
+	assert.Equal(t, 1, callCounter)
 }
 
 func mockClient(fn func(*http.Request) (*http.Response, error)) *gomatrix.Client {
