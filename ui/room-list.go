@@ -274,7 +274,7 @@ func (list *RoomList) CheckTag(tag string) {
 	tagRoomList, ok := list.items[tag]
 
 	if ok && tagRoomList.IsEmpty() {
-		delete(list.items, tag)
+		//delete(list.items, tag)
 		ok = false
 	}
 

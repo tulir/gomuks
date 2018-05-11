@@ -136,3 +136,28 @@ func TestSession_PutRoom(t *testing.T) {
 	assert.Equal(t, "foobar", reloadedRoom.PrevBatch, "%v %v", room, reloadedRoom)
 	assert.True(t, reloadedRoom.HasLeft, "%v %v", room, reloadedRoom)
 }
+
+func TestConfig_DeleteSession(t *testing.T) {
+	defer os.RemoveAll("/tmp/gomuks-test-12")
+
+	cfg := config.NewConfig("/tmp/gomuks-test-12", "/tmp/gomuks-test-12")
+	cfg.Load()
+	cfg.LoadSession("@tulir:maunium.net")
+	cfg.Session.SaveNextBatch("@tulir:maunium.net", "foobar")
+	cfg.Session.SaveFilterID("@tulir:maunium.net", "1234")
+
+	cfg.DeleteSession()
+
+	assert.Nil(t, cfg.Session)
+
+	sessFile, err := os.Stat("/tmp/gomuks-test-12/@tulir:maunium.net.session")
+	assert.Nil(t, sessFile)
+	assert.True(t, os.IsNotExist(err))
+
+	mediaDir, err := os.Stat("/tmp/gomuks-test-12/media")
+	assert.True(t, mediaDir.IsDir())
+	assert.Nil(t, err)
+	historyDir, err := os.Stat("/tmp/gomuks-test-12/history")
+	assert.True(t, historyDir.IsDir())
+	assert.Nil(t, err)
+}
