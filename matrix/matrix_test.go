@@ -166,6 +166,29 @@ func TestContainer_Download(t *testing.T) {
 	assert.Equal(t, 1, callCounter)
 }
 
+func TestContainer_Download_InvalidURL(t *testing.T) {
+	c := Container{}
+	data, hs, id, err := c.Download("mxc://invalid mxc")
+	assert.NotNil(t, err)
+	assert.Empty(t, id)
+	assert.Empty(t, hs)
+	assert.Empty(t, data)
+}
+
+func TestContainer_GetHistory(t *testing.T) {
+	c := Container{client: mockClient(func(req *http.Request) (*http.Response, error) {
+		if req.Method != http.MethodGet || req.URL.Path != "/_matrix/client/r0/rooms/!foo:maunium.net/messages" {
+			return nil, fmt.Errorf("unexpected query: %s %s", req.Method, req.URL.Path)
+		}
+		return mockResponse(http.StatusOK, `{"start": "123", "end": "456", "chunk": [{"event_id": "it works"}]}`), nil
+	})}
+
+	history, prevBatch, err := c.GetHistory("!foo:maunium.net", "123", 5)
+	assert.Nil(t, err)
+	assert.Equal(t, "it works", history[0].ID)
+	assert.Equal(t, "456", prevBatch)
+}
+
 func mockClient(fn func(*http.Request) (*http.Response, error)) *gomatrix.Client {
 	client, _ := gomatrix.NewClient("https://example.com", "@user:example.com", "foobar")
 	client.Client = &http.Client{Transport: MockRoundTripper{RT: fn}}
