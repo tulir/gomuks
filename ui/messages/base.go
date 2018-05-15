@@ -116,6 +116,8 @@ func (msg *BaseMessage) SenderColor() tcell.Color {
 	switch {
 	case stateColor != tcell.ColorDefault:
 		return stateColor
+	case msg.MsgType == "m.room.member":
+		return widget.GetHashColor(msg.MsgSender)
 	case msg.MsgIsService:
 		return tcell.ColorGray
 	default:
