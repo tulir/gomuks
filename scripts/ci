@@ -1,4 +1,5 @@
 #!/bin/bash
+source /etc/environment
 mkdir -p .tmp/src/maunium.net/go
 ln -s ../../../../ .tmp/src/maunium.net/go/gomuks
 mkdir -p target/
