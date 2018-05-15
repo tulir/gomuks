@@ -52,6 +52,7 @@ type MainView interface {
 	ParseEvent(roomView RoomView, evt *gomatrix.Event) Message
 
 	NotifyMessage(room *rooms.Room, message Message, should pushrules.PushActionArrayShould)
+	InitialSyncDone()
 }
 
 type MessageDirection int

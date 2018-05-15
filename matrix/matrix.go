@@ -182,6 +182,7 @@ func (c *Container) OnLogin() {
 	c.syncer.OnEventType("m.tag", c.HandleTag)
 	c.syncer.InitDoneCallback = func() {
 		c.config.Session.InitialSyncDone = true
+		c.ui.MainView().InitialSyncDone()
 		c.ui.Render()
 	}
 	c.client.Syncer = c.syncer
@@ -241,6 +242,7 @@ func (c *Container) HandleMessage(source EventSource, evt *gomatrix.Event) {
 	message := mainView.ParseEvent(roomView, evt)
 	if message != nil {
 		roomView.AddMessage(message, ifc.AppendMessage)
+		roomView.MxRoom().LastReceivedMessage = message.Timestamp()
 		if c.syncer.FirstSyncDone {
 			pushRules := c.PushRules().GetActions(roomView.MxRoom(), evt).Should()
 			mainView.NotifyMessage(roomView.MxRoom(), message, pushRules)
@@ -333,6 +335,7 @@ func (c *Container) HandleMembership(source EventSource, evt *gomatrix.Event) {
 	message := mainView.ParseEvent(roomView, evt)
 	if message != nil {
 		roomView.AddMessage(message, ifc.AppendMessage)
+		roomView.MxRoom().LastReceivedMessage = message.Timestamp()
 		// We don't want notifications at startup.
 		if c.syncer.FirstSyncDone {
 			pushRules := c.PushRules().GetActions(roomView.MxRoom(), evt).Should()

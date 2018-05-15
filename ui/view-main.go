@@ -470,8 +470,14 @@ func (view *MainView) NotifyMessage(room *rooms.Room, message ifc.Message, shoul
 	}
 
 	message.SetIsHighlight(should.Highlight)
-	room.LastReceivedMessage = message.Timestamp()
 	view.roomList.Bump(room)
+}
+
+func (view *MainView) InitialSyncDone() {
+	view.roomList.Clear()
+	for _, room := range view.rooms {
+		view.roomList.Add(room.Room)
+	}
 }
 
 func (view *MainView) LoadHistory(room string) {
