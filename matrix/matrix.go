@@ -227,7 +227,7 @@ func (c *Container) Start() {
 
 // HandleMessage is the event handler for the m.room.message timeline event.
 func (c *Container) HandleMessage(source EventSource, evt *gomatrix.Event) {
-	if source == EventSourceLeave {
+	if source & EventSourceLeave != 0 {
 		return
 	}
 	mainView := c.ui.MainView()
@@ -312,11 +312,14 @@ func (c *Container) processOwnMembershipChange(evt *gomatrix.Event) {
 
 // HandleMembership is the event handler for the m.room.member state event.
 func (c *Container) HandleMembership(source EventSource, evt *gomatrix.Event) {
-	if !c.config.Session.InitialSyncDone && source == EventSourceLeave {
+	isLeave := source & EventSourceLeave != 0
+	isTimeline := source & EventSourceTimeline != 0
+	isNonTimelineLeave := isLeave && !isTimeline
+	if !c.config.Session.InitialSyncDone && isNonTimelineLeave {
 		return
 	} else if evt.StateKey != nil && *evt.StateKey == c.config.Session.UserID {
 		c.processOwnMembershipChange(evt)
-	} else if !c.config.Session.InitialSyncDone || source == EventSourceLeave {
+	} else if !isTimeline && (!c.config.Session.InitialSyncDone || isLeave) {
 		// We don't care about other users' membership events in the initial sync or chats we've left.
 		return
 	}

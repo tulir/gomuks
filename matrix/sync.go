@@ -34,11 +34,14 @@ type SyncerSession interface {
 type EventSource int
 
 const (
-	EventSourcePresence    EventSource = iota
-	EventSourceAccountData
+	EventSourcePresence    EventSource = 1 << iota
 	EventSourceJoin
 	EventSourceInvite
 	EventSourceLeave
+	EventSourceAccountData
+	EventSourceTimeline
+	EventSourceState
+	EventSourceEphemeral
 )
 
 type EventHandler func(source EventSource, event *gomatrix.Event)
@@ -64,15 +67,15 @@ func NewGomuksSyncer(session SyncerSession) *GomuksSyncer {
 
 // ProcessResponse processes a Matrix sync response.
 func (s *GomuksSyncer) ProcessResponse(res *gomatrix.RespSync, since string) (err error) {
-	s.processSyncEvents(nil, res.Presence.Events, EventSourcePresence, false, false)
-	s.processSyncEvents(nil, res.AccountData.Events, EventSourceAccountData, false, false)
+	s.processSyncEvents(nil, res.Presence.Events, EventSourcePresence, false)
+	s.processSyncEvents(nil, res.AccountData.Events, EventSourceAccountData, false)
 
 	for roomID, roomData := range res.Rooms.Join {
 		room := s.Session.GetRoom(roomID)
-		s.processSyncEvents(room, roomData.State.Events, EventSourceJoin, true, false)
-		s.processSyncEvents(room, roomData.Timeline.Events, EventSourceJoin, false, false)
-		s.processSyncEvents(room, roomData.Ephemeral.Events, EventSourceJoin, false, false)
-		s.processSyncEvents(room, roomData.AccountData.Events, EventSourceJoin, false, false)
+		s.processSyncEvents(room, roomData.State.Events, EventSourceJoin | EventSourceState, false)
+		s.processSyncEvents(room, roomData.Timeline.Events, EventSourceJoin | EventSourceTimeline, false)
+		s.processSyncEvents(room, roomData.Ephemeral.Events, EventSourceJoin | EventSourceEphemeral, false)
+		s.processSyncEvents(room, roomData.AccountData.Events, EventSourceJoin | EventSourceAccountData, false)
 
 		if len(room.PrevBatch) == 0 {
 			room.PrevBatch = roomData.Timeline.PrevBatch
@@ -81,14 +84,14 @@ func (s *GomuksSyncer) ProcessResponse(res *gomatrix.RespSync, since string) (er
 
 	for roomID, roomData := range res.Rooms.Invite {
 		room := s.Session.GetRoom(roomID)
-		s.processSyncEvents(room, roomData.State.Events, EventSourceInvite, true, false)
+		s.processSyncEvents(room, roomData.State.Events, EventSourceInvite | EventSourceState, false)
 	}
 
 	for roomID, roomData := range res.Rooms.Leave {
 		room := s.Session.GetRoom(roomID)
 		room.HasLeft = true
-		s.processSyncEvents(room, roomData.State.Events, EventSourceLeave, true, true)
-		s.processSyncEvents(room, roomData.Timeline.Events, EventSourceLeave, false, false)
+		s.processSyncEvents(room, roomData.State.Events, EventSourceLeave | EventSourceState, true)
+		s.processSyncEvents(room, roomData.Timeline.Events, EventSourceLeave | EventSourceTimeline, false)
 
 		if len(room.PrevBatch) == 0 {
 			room.PrevBatch = roomData.Timeline.PrevBatch
@@ -103,19 +106,28 @@ func (s *GomuksSyncer) ProcessResponse(res *gomatrix.RespSync, since string) (er
 	return
 }
 
-func (s *GomuksSyncer) processSyncEvents(room *rooms.Room, events []*gomatrix.Event, source EventSource, isState bool, checkStateKey bool) {
+func (s *GomuksSyncer) processSyncEvents(room *rooms.Room, events []*gomatrix.Event, source EventSource, checkStateKey bool) {
 	for _, event := range events {
 		if !checkStateKey || event.StateKey != nil {
-			s.processSyncEvent(room, event, source, isState)
+			s.processSyncEvent(room, event, source)
 		}
 	}
 }
 
-func (s *GomuksSyncer) processSyncEvent(room *rooms.Room, event *gomatrix.Event, source EventSource, isState bool) {
+func isState(event *gomatrix.Event) bool {
+	switch event.Type {
+	case "m.room.member", "m.room.name", "m.room.topic", "m.room.aliases", "m.room.canonical_alias":
+		return true
+	default:
+		return false
+	}
+}
+
+func (s *GomuksSyncer) processSyncEvent(room *rooms.Room, event *gomatrix.Event, source EventSource) {
 	if room != nil {
 		event.RoomID = room.ID
 	}
-	if isState {
+	if isState(event) {
 		room.UpdateState(event)
 	}
 	s.notifyListeners(source, event)
@@ -161,7 +173,7 @@ func (s *GomuksSyncer) GetFilterJSON(userID string) json.RawMessage {
 				},
 			},
 			Timeline: gomatrix.FilterPart{
-				Types: []string{"m.room.message"},
+				Types: []string{"m.room.message", "m.room.member"},
 				Limit: 50,
 			},
 			Ephemeral: gomatrix.FilterPart{
