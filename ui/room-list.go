@@ -27,6 +27,7 @@ import (
 	"maunium.net/go/gomuks/ui/widget"
 	"maunium.net/go/tcell"
 	"maunium.net/go/tview"
+	"math"
 )
 
 type orderedRoom struct {
@@ -42,11 +43,7 @@ func newOrderedRoom(order string, room *rooms.Room) *orderedRoom {
 }
 
 func convertRoom(room *rooms.Room) *orderedRoom {
-	return newOrderedRoom("", room)
-}
-
-func convertTaggedRoom(tag rooms.RoomTag, room *rooms.Room) *orderedRoom {
-	return newOrderedRoom(tag.Order, room)
+	return newOrderedRoom("0.5", room)
 }
 
 type tagRoomList struct {
@@ -120,16 +117,22 @@ func (trl *tagRoomList) HasVisibleRooms() bool {
 	return !trl.IsEmpty() && trl.maxShown > 0
 }
 
-func (trl *tagRoomList) Insert(order string, room *rooms.Room) {
+// ShouldBeBefore returns if the first room should be after the second room in the room list.
+// The manual order and last received message timestamp are considered.
+func (trl *tagRoomList) ShouldBeAfter(room1 *orderedRoom, room2 *orderedRoom) bool {
+	orderComp := strings.Compare(room1.order, room2.order)
+	return orderComp == 1 || (orderComp == 0 && room2.LastReceivedMessage.After(room1.LastReceivedMessage))
+}
+
+func (trl *tagRoomList) Insert(order string, mxRoom *rooms.Room) {
+	room := newOrderedRoom(order, mxRoom)
 	trl.rooms = append(trl.rooms, nil)
 	// The default insert index is the newly added slot.
 	// That index will be used if all other rooms in the list have the same LastReceivedMessage timestamp.
 	insertAt := len(trl.rooms) - 1
 	// Find the spot where the new room should be put according to the last received message timestamps.
 	for i := 0; i < len(trl.rooms)-1; i++ {
-		roomAtIndex := trl.rooms[i]
-		orderComp := strings.Compare(order, roomAtIndex.order)
-		if orderComp == 1 || (orderComp == 0 && roomAtIndex.LastReceivedMessage.After(room.LastReceivedMessage)) {
+		if trl.ShouldBeAfter(room, trl.rooms[i]) {
 			insertAt = i
 			break
 		}
@@ -139,7 +142,7 @@ func (trl *tagRoomList) Insert(order string, room *rooms.Room) {
 		trl.rooms[i] = trl.rooms[i-1]
 	}
 	// Insert room.
-	trl.rooms[insertAt] = newOrderedRoom(order, room)
+	trl.rooms[insertAt] = room
 }
 
 func (trl *tagRoomList) String() string {
@@ -162,26 +165,25 @@ func (trl *tagRoomList) String() string {
 	return str.String()
 }
 
-func (trl *tagRoomList) Bump(room *rooms.Room) {
+func (trl *tagRoomList) Bump(mxRoom *rooms.Room) {
 	var found *orderedRoom
-	inserted := false
 	for i := 0; i < len(trl.rooms); i++ {
 		currentRoom := trl.rooms[i]
 		if found != nil {
-			if currentRoom.LastReceivedMessage.Before(room.LastReceivedMessage) {
-				trl.rooms[i-1] = currentRoom
-			} else {
+			if trl.ShouldBeAfter(found, trl.rooms[i]) {
+				// This room should be after the room being bumped, so insert the
+				// room being bumped here and return
 				trl.rooms[i-1] = found
-				inserted = true
-				break
+				return
 			}
-		} else if currentRoom.Room == room {
+			// Move older rooms back in the array
+			trl.rooms[i-1] = currentRoom
+		} else if currentRoom.Room == mxRoom {
 			found = currentRoom
 		}
 	}
-	if !inserted {
-		trl.rooms[len(trl.rooms)-1] = found
-	}
+	// If the room being bumped should be first in the list, it won't be inserted during the loop.
+	trl.rooms[len(trl.rooms)-1] = found
 }
 
 func (trl *tagRoomList) Remove(room *rooms.Room) {
@@ -443,10 +445,15 @@ func (list *RoomList) Previous() (string, *rooms.Room) {
 	}
 
 	tagRoomList := list.items[list.selectedTag]
-	indexVisible := tagRoomList.IndexVisible(list.selected)
-	index := tagRoomList.Index(list.selected)
+	index := tagRoomList.IndexVisible(list.selected)
+	indexInvisible := tagRoomList.Index(list.selected)
+	if index == -1 && indexInvisible >= 0 {
+		num := tagRoomList.TotalLength() - indexInvisible
+		tagRoomList.maxShown = int(math.Ceil(float64(num) / 10.0) * 10.0)
+		index = tagRoomList.IndexVisible(list.selected)
+	}
 
-	if indexVisible == tagRoomList.Length()-1 || (indexVisible == -1 && index == tagRoomList.TotalLength()-1) {
+	if index == tagRoomList.Length()-1 {
 		tagIndex := list.IndexTag(list.selectedTag)
 		tagIndex--
 		for ; tagIndex >= 0; tagIndex-- {
@@ -457,11 +464,8 @@ func (list *RoomList) Previous() (string, *rooms.Room) {
 			}
 		}
 		return list.Last()
-	}
-	if indexVisible != -1 {
-		return list.selectedTag, tagRoomList.Visible()[indexVisible+1].Room
-	} else if index != -1 {
-		return list.selectedTag, tagRoomList.All()[index+1].Room
+	} else if index >= 0 {
+		return list.selectedTag, tagRoomList.Visible()[index+1].Room
 	}
 	return list.First()
 }
@@ -474,10 +478,15 @@ func (list *RoomList) Next() (string, *rooms.Room) {
 	}
 
 	tagRoomList := list.items[list.selectedTag]
-	indexVisible := tagRoomList.IndexVisible(list.selected)
-	index := tagRoomList.Index(list.selected)
+	index := tagRoomList.IndexVisible(list.selected)
+	indexInvisible := tagRoomList.Index(list.selected)
+	if index == -1 && indexInvisible >= 0 {
+		num := tagRoomList.TotalLength() - indexInvisible + 1
+		tagRoomList.maxShown = int(math.Ceil(float64(num) / 10.0) * 10.0)
+		index = tagRoomList.IndexVisible(list.selected)
+	}
 
-	if indexVisible == 0 || (indexVisible == -1 && index == 0) {
+	if index == 0 {
 		tagIndex := list.IndexTag(list.selectedTag)
 		tagIndex++
 		for ; tagIndex < len(list.tags); tagIndex++ {
@@ -488,11 +497,8 @@ func (list *RoomList) Next() (string, *rooms.Room) {
 			}
 		}
 		return list.First()
-	}
-	if indexVisible != -1 {
-		return list.selectedTag, tagRoomList.Visible()[indexVisible-1].Room
-	} else if index != -1 {
-		return list.selectedTag, tagRoomList.All()[index-1].Room
+	} else if index > 0 {
+		return list.selectedTag, tagRoomList.Visible()[index-1].Room
 	}
 	return list.Last()
 }
