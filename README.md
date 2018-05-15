@@ -17,9 +17,9 @@ Matrix room: [#gomuks:maunium.net](https://matrix.to/#/#gomuks:maunium.net)
 
 ## Installation
 Once the client becomes actually usable, I'll start making GitHub releases with
-precompiled executables and maybe even some Linux packages.
-
-For now, you'll have to compile from source:
+precompiled executables. For now, you can either compile from source or download
+a CI build from [dl.maunium.net/programs/gomuks](https://dl.maunium.net/programs/gomuks)
+or compile from source:
 
 0. Install [Go](https://golang.org/) 1.10 or higher
 1. Run `go get -u maunium.net/go/gomuks`
