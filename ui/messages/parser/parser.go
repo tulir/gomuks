@@ -125,7 +125,6 @@ func getMembershipEventContent(room *rooms.Room, evt *gomatrix.Event) (sender st
 		sender = "---"
 		text = tstring.NewColorTString(fmt.Sprintf("%s changed their display name to %s.", prevDisplayname, displayname), tcell.ColorGreen)
 		text.Colorize(0, len(prevDisplayname), widget.GetHashColor(*evt.StateKey))
-		text.Colorize(len(prevDisplayname)+len(" changed their display name to "), len(displayname), widget.GetHashColor(*evt.StateKey))
 	}
 	return
 }
