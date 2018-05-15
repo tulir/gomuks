@@ -28,6 +28,7 @@ const (
 	MembershipJoin   Membership = "join"
 	MembershipLeave  Membership = "leave"
 	MembershipInvite Membership = "invite"
+	MembershipBan    Membership = "ban"
 	MembershipKnock  Membership = "knock"
 )
 
