@@ -1,0 +1,9 @@
+shell: /bin/bash
+shell-args: [ "-c" ]
+
+env:
+- PROJECT_NAME=gomuks
+
+commands:
+- ./scripts/ci
+- rm -rf .tmp/ target/

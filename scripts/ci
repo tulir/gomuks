@@ -1,0 +1,24 @@
+#!/bin/bash
+mkdir -p .tmp/src/maunium.net/go
+ln -s ../../../../ .tmp/src/maunium.net/go/gomuks
+mkdir -p target/
+export GOPATH=$(pwd)/.tmp
+export SHORTHEAD=${HEAD:0:7}
+export VERSION=$(awk '/^Version:/ { print $2 }' deb/DEBIAN/control | sed -E 's/\-[0-9]+$//')
+
+echo "Compiling for linux/amd64"
+go build -o "target/$PROJECT_NAME-linux-amd64"
+echo "Compiling for linux/arm"
+GOARCH=arm go build -o "target/$PROJECT_NAME-linux-arm"
+echo "Compiling for darwin/amd64"
+GOOS=darwin go build -o "target/$PROJECT_NAME-darwin-amd64"
+
+echo "Packaging for debian (linux/amd64)"
+mkdir -p deb/usr/bin/
+cp target/$PROJECT_NAME-linux-amd64 deb/usr/bin/gomuks
+sed -i.bak -E 's/(Version: [0-9]+\.[0-9]+\.[0-9]+\-[0-9]+)/\1+'$SHORTHEAD'/' deb/DEBIAN/control
+dpkg-deb --build deb 'target/'$PROJECT_NAME'_linux_amd64.deb'
+mv -f deb/DEBIAN/control.bak deb/DEBIAN/control
+
+mkdir -p /srv/downloads/programs/gomuks/$VERSION-$SHORTHEAD
+mv target/* /srv/downloads/programs/gomuks/$VERSION-$SHORTHEAD/
