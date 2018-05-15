@@ -96,6 +96,9 @@ func getMembershipEventContent(room *rooms.Room, evt *gomatrix.Event) (sender st
 	if evt.Unsigned.PrevContent != nil {
 		prevMembership, _ = evt.Unsigned.PrevContent["membership"].(string)
 		prevDisplayname, _ = evt.Unsigned.PrevContent["displayname"].(string)
+		if len(prevDisplayname) == 0 {
+			prevDisplayname = *evt.StateKey
+		}
 	}
 
 	if membership != prevMembership {
@@ -117,6 +120,9 @@ func getMembershipEventContent(room *rooms.Room, evt *gomatrix.Event) (sender st
 				text.Colorize(0, len(senderDisplayname), widget.GetHashColor(evt.Sender))
 				text.Colorize(len(senderDisplayname)+len(" kicked "), len(displayname), widget.GetHashColor(*evt.StateKey))
 			} else {
+				if displayname == *evt.StateKey {
+					displayname = prevDisplayname
+				}
 				text = tstring.NewColorTString(fmt.Sprintf("%s left the room.", displayname), tcell.ColorRed)
 				text.Colorize(0, len(displayname), widget.GetHashColor(*evt.StateKey))
 			}
