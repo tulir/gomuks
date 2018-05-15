@@ -1,5 +1,6 @@
 .idea/
 target/
+.tmp/
 gomuks
 *.exe
 *.deb
