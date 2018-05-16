@@ -34,6 +34,10 @@ func (meta *BasicMeta) Sender() string {
 	return meta.BSender
 }
 
+func (meta *BasicMeta) SenderID() string {
+	return meta.BSender
+}
+
 // SenderColor returns the color the name of the sender should be shown in.
 func (meta *BasicMeta) SenderColor() tcell.Color {
 	return meta.BSenderColor

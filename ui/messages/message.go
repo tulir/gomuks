@@ -30,7 +30,6 @@ type UIMessage interface {
 	Buffer() []tstring.TString
 	Height() int
 
-	SenderID() string
 	RealSender() string
 	RegisterMatrix(matrix ifc.MatrixContainer)
 }

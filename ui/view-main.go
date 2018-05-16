@@ -429,6 +429,10 @@ func sendNotification(room *rooms.Room, sender, text string, critical, sound boo
 }
 
 func (view *MainView) NotifyMessage(room *rooms.Room, message ifc.Message, should pushrules.PushActionArrayShould) {
+	view.roomList.Bump(room)
+	if message.SenderID() == view.config.Session.UserID {
+		return
+	}
 	// Whether or not the room where the message came is the currently shown room.
 	isCurrent := room == view.roomList.SelectedRoom()
 	// Whether or not the terminal window is focused.
@@ -436,7 +440,7 @@ func (view *MainView) NotifyMessage(room *rooms.Room, message ifc.Message, shoul
 	isFocused := time.Now().Add(-5 * time.Second).Before(view.lastFocusTime)
 
 	// Whether or not the push rules say this message should be notified about.
-	shouldNotify := (should.Notify || !should.NotifySpecified) && message.Sender() != view.config.Session.UserID
+	shouldNotify := should.Notify || !should.NotifySpecified
 
 	if !isCurrent || !isFocused {
 		// The message is not in the current room, show new message status in room list.
@@ -452,7 +456,6 @@ func (view *MainView) NotifyMessage(room *rooms.Room, message ifc.Message, shoul
 	}
 
 	message.SetIsHighlight(should.Highlight)
-	view.roomList.Bump(room)
 }
 
 func (view *MainView) InitialSyncDone() {

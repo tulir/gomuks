@@ -117,4 +117,6 @@ type Message interface {
 
 	SetState(state MessageState)
 	State() MessageState
+
+	SenderID() string
 }
