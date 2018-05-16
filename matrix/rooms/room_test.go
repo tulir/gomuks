@@ -228,6 +228,6 @@ func TestRoom_MarkRead(t *testing.T) {
 	assert.Equal(t, 2, room.UnreadCount())
 	assert.True(t, room.Highlighted())
 
-	room.MarkRead("")
+	room.MarkRead("asd")
 	assert.Empty(t, room.UnreadMessages)
 }
