@@ -672,7 +672,9 @@ func (list *RoomList) Draw(screen tcell.Screen) {
 			}
 		}
 
-		widget.WriteLine(screen, tview.AlignLeft, tagDisplayName, x, y, width, tcell.StyleDefault.Underline(true).Bold(true))
+		roomCount := strconv.Itoa(tagRoomList.TotalLength())
+		widget.WriteLine(screen, tview.AlignLeft, tagDisplayName, x, y, width-1-len(roomCount), tcell.StyleDefault.Underline(true).Bold(true))
+		widget.WriteLine(screen, tview.AlignLeft, roomCount, x+len(tagDisplayName)+1, y, width-2-len(tagDisplayName), tcell.StyleDefault.Italic(true))
 
 		items := tagRoomList.Visible()
 
