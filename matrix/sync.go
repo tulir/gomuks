@@ -177,14 +177,14 @@ func (s *GomuksSyncer) GetFilterJSON(userID string) json.RawMessage {
 				Limit: 50,
 			},
 			Ephemeral: gomatrix.FilterPart{
-				Types: []string{"m.typing"},
+				Types: []string{"m.typing", "m.receipt"},
 			},
 			AccountData: gomatrix.FilterPart{
 				Types: []string{"m.tag"},
 			},
 		},
 		AccountData: gomatrix.FilterPart{
-			Types: []string{"m.push_rules"},
+			Types: []string{"m.push_rules", "m.direct"},
 		},
 		Presence: gomatrix.FilterPart{
 			Types: []string{},

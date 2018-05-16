@@ -35,6 +35,7 @@ type MatrixContainer interface {
 	SendMessage(roomID, msgtype, message string) (string, error)
 	SendMarkdownMessage(roomID, msgtype, message string) (string, error)
 	SendTyping(roomID string, typing bool)
+	MarkRead(roomID, eventID string)
 	JoinRoom(roomID, server string) (*rooms.Room, error)
 	LeaveRoom(roomID string) error
 

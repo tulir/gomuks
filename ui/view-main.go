@@ -67,15 +67,25 @@ func (ui *GomuksUI) NewMainView() tview.Primitive {
 	mainView.AddItem(mainView.roomList, 25, 0, false)
 	mainView.AddItem(widget.NewBorder(), 1, 0, false)
 	mainView.AddItem(mainView.roomView, 0, 1, true)
-	mainView.BumpFocus()
+	mainView.BumpFocus(nil)
 
 	ui.mainView = mainView
 
 	return mainView
 }
 
-func (view *MainView) BumpFocus() {
+func (view *MainView) BumpFocus(roomView *RoomView) {
 	view.lastFocusTime = time.Now()
+	view.MarkRead(roomView)
+}
+
+func (view *MainView) MarkRead(roomView *RoomView) {
+	if roomView != nil && roomView.Room.HasNewMessages() && roomView.MessageView().ScrollOffset == 0 {
+		msgList := roomView.MessageView().messages
+		msg := msgList[len(msgList)-1]
+		roomView.Room.MarkRead(msg.ID())
+		view.matrix.MarkRead(roomView.Room.ID, msg.ID())
+	}
 }
 
 func (view *MainView) InputChanged(roomView *RoomView, text string) {
@@ -182,7 +192,7 @@ func (view *MainView) HandleCommand(roomView *RoomView, command string, args []s
 }
 
 func (view *MainView) KeyEventHandler(roomView *RoomView, key *tcell.EventKey) *tcell.EventKey {
-	view.BumpFocus()
+	view.BumpFocus(roomView)
 
 	k := key.Key()
 	if key.Modifiers() == tcell.ModCtrl || key.Modifiers() == tcell.ModAlt {
@@ -232,7 +242,7 @@ func (view *MainView) MouseEventHandler(roomView *RoomView, event *tcell.EventMo
 	if event.Buttons() == tcell.ButtonNone || event.HasMotion() {
 		return event
 	}
-	view.BumpFocus()
+	view.BumpFocus(roomView)
 
 	msgView := roomView.MessageView()
 	x, y := event.Position()
@@ -251,12 +261,8 @@ func (view *MainView) MouseEventHandler(roomView *RoomView, event *tcell.EventMo
 			}
 		case tcell.WheelDown:
 			msgView.AddScrollOffset(-WheelScrollOffsetDiff)
-
 			view.parent.Render()
-
-			if msgView.ScrollOffset == 0 {
-				roomView.Room.MarkRead()
-			}
+			view.MarkRead(roomView)
 		default:
 			if msgView.HandleClick(x-mx, y-my, event.Buttons()) {
 				view.parent.Render()
@@ -293,9 +299,12 @@ func (view *MainView) SwitchRoom(tag string, room *rooms.Room) {
 
 	view.roomView.SwitchToPage(room.ID)
 	roomView := view.rooms[room.ID]
-	if roomView.MessageView().ScrollOffset == 0 {
-		roomView.Room.MarkRead()
+	if roomView == nil {
+		debug.Print("Tried to switch to non-nil room with nil roomView!")
+		debug.Print(tag, room)
+		return
 	}
+	view.MarkRead(roomView)
 	view.roomList.SetSelected(tag, room)
 	view.parent.app.SetFocus(view)
 	view.parent.Render()
@@ -353,10 +362,10 @@ func (view *MainView) GetRoom(roomID string) ifc.RoomView {
 
 func (view *MainView) AddRoom(room *rooms.Room) {
 	if view.roomList.Contains(room.ID) {
-		debug.Print("Add aborted", room.ID)
+		debug.Print("Add aborted (room exists)", room.ID, room.GetTitle())
 		return
 	}
-	debug.Print("Adding", room.ID)
+	debug.Print("Adding", room.ID, room.GetTitle())
 	view.roomList.Add(room)
 	view.addRoomPage(room)
 	if !view.roomList.HasSelected() {
@@ -367,10 +376,10 @@ func (view *MainView) AddRoom(room *rooms.Room) {
 func (view *MainView) RemoveRoom(room *rooms.Room) {
 	roomView := view.GetRoom(room.ID)
 	if roomView == nil {
-		debug.Print("Remove aborted", room.ID)
+		debug.Print("Remove aborted (not found)", room.ID, room.GetTitle())
 		return
 	}
-	debug.Print("Removing", room.ID)
+	debug.Print("Removing", room.ID, room.GetTitle())
 
 	view.roomList.Remove(room)
 	view.SwitchRoom(view.roomList.Selected())
@@ -395,38 +404,12 @@ func (view *MainView) SetRooms(rooms map[string]*rooms.Room) {
 	view.SwitchRoom(view.roomList.First())
 }
 
-func (view *MainView) UpdateTags(room *rooms.Room, newTags []rooms.RoomTag) {
-	if len(newTags) == 0 {
-		for _, tag := range room.RawTags {
-			view.roomList.RemoveFromTag(tag.Tag, room)
-		}
-		view.roomList.AddToTag(rooms.RoomTag{Tag: "", Order: "0.5"}, room)
-	} else if len(room.RawTags) == 0 {
-		view.roomList.RemoveFromTag("", room)
-		for _, tag := range newTags {
-			view.roomList.AddToTag(tag, room)
-		}
-	} else {
-	NewTags:
-		for _, newTag := range newTags {
-			for _, oldTag := range room.RawTags {
-				if newTag.Tag == oldTag.Tag {
-					continue NewTags
-				}
-			}
-			view.roomList.AddToTag(newTag, room)
-		}
-	OldTags:
-		for _, oldTag := range room.RawTags {
-			for _, newTag := range newTags {
-				if newTag.Tag == oldTag.Tag {
-					continue OldTags
-				}
-			}
-			view.roomList.RemoveFromTag(oldTag.Tag, room)
-		}
+func (view *MainView) UpdateTags(room *rooms.Room) {
+	if !view.roomList.Contains(room.ID) {
+		return
 	}
-	room.RawTags = newTags
+	view.roomList.Remove(room)
+	view.roomList.Add(room)
 }
 
 func (view *MainView) SetTyping(room string, users []string) {
@@ -449,21 +432,20 @@ func (view *MainView) NotifyMessage(room *rooms.Room, message ifc.Message, shoul
 	// Whether or not the room where the message came is the currently shown room.
 	isCurrent := room == view.roomList.SelectedRoom()
 	// Whether or not the terminal window is focused.
-	isFocused := time.Now().Add(-30 * time.Second).Before(view.lastFocusTime)
+	recentlyFocused := time.Now().Add(-30 * time.Second).Before(view.lastFocusTime)
+	isFocused := time.Now().Add(-5 * time.Second).Before(view.lastFocusTime)
 
 	// Whether or not the push rules say this message should be notified about.
 	shouldNotify := (should.Notify || !should.NotifySpecified) && message.Sender() != view.config.Session.UserID
 
-	if !isCurrent {
+	if !isCurrent || !isFocused {
 		// The message is not in the current room, show new message status in room list.
-		room.HasNewMessages = true
-		room.Highlighted = should.Highlight || room.Highlighted
-		if shouldNotify {
-			room.UnreadMessages++
-		}
+		room.AddUnread(message.ID(), shouldNotify, should.Highlight)
+	} else {
+		view.matrix.MarkRead(room.ID, message.ID())
 	}
 
-	if shouldNotify && !isFocused {
+	if shouldNotify && !recentlyFocused {
 		// Push rules say notify and the terminal is not focused, send desktop notification.
 		shouldPlaySound := should.PlaySound && should.SoundName == "default"
 		sendNotification(room, message.Sender(), message.NotificationContent(), should.Highlight, shouldPlaySound)

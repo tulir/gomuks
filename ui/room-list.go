@@ -265,6 +265,7 @@ func (list *RoomList) Contains(roomID string) bool {
 }
 
 func (list *RoomList) Add(room *rooms.Room) {
+	debug.Print("Adding room to list", room.ID, room.GetTitle(), room.IsDirect, room.Tags())
 	for _, tag := range room.Tags() {
 		list.AddToTag(tag, room)
 	}
@@ -289,10 +290,6 @@ func (list *RoomList) CheckTag(tag string) {
 }
 
 func (list *RoomList) AddToTag(tag rooms.RoomTag, room *rooms.Room) {
-	if tag.Tag == "" && len(room.GetMembers()) == 2 {
-		tag.Tag = "net.maunium.gomuks.fake.direct"
-	}
-
 	tagRoomList, ok := list.items[tag.Tag]
 	if !ok {
 		list.items[tag.Tag] = newTagRoomList(convertRoom(room))
@@ -304,8 +301,8 @@ func (list *RoomList) AddToTag(tag rooms.RoomTag, room *rooms.Room) {
 }
 
 func (list *RoomList) Remove(room *rooms.Room) {
-	for _, tag := range room.Tags() {
-		list.RemoveFromTag(tag.Tag, room)
+	for _, tag := range list.tags {
+		list.RemoveFromTag(tag, room)
 	}
 }
 
@@ -707,21 +704,22 @@ func (list *RoomList) Draw(screen tcell.Screen) {
 			if tag == list.selectedTag && item.Room == list.selected {
 				style = style.Foreground(list.selectedTextColor).Background(list.selectedBackgroundColor)
 			}
-			if item.HasNewMessages {
+			if item.HasNewMessages() {
 				style = style.Bold(true)
 			}
 
-			if item.UnreadMessages > 0 {
+			unreadCount := item.UnreadCount()
+			if unreadCount > 0 {
 				unreadMessageCount := "99+"
-				if item.UnreadMessages < 100 {
-					unreadMessageCount = strconv.Itoa(item.UnreadMessages)
+				if unreadCount < 100 {
+					unreadMessageCount = strconv.Itoa(unreadCount)
 				}
-				if item.Highlighted {
+				if item.Highlighted() {
 					unreadMessageCount += "!"
 				}
 				unreadMessageCount = fmt.Sprintf("(%s)", unreadMessageCount)
-				widget.WriteLine(screen, tview.AlignRight, unreadMessageCount, x+lineWidth-6, y, 6, style)
-				lineWidth -= len(unreadMessageCount) + 1
+				widget.WriteLine(screen, tview.AlignRight, unreadMessageCount, x+lineWidth-7, y, 7, style)
+				lineWidth -= len(unreadMessageCount)
 			}
 
 			widget.WriteLinePadded(screen, tview.AlignLeft, text, x, y, lineWidth, style)

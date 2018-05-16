@@ -215,11 +215,19 @@ func TestRoom_GetTitle_Members_GroupChat(t *testing.T) {
 
 func TestRoom_MarkRead(t *testing.T) {
 	room := rooms.NewRoom("!test:maunium.net", "@tulir:maunium.net")
-	room.UnreadMessages = 123
-	room.Highlighted = true
-	room.HasNewMessages = true
-	room.MarkRead()
-	assert.Zero(t, room.UnreadMessages)
-	assert.False(t, room.Highlighted)
-	assert.False(t, room.HasNewMessages)
+
+	room.AddUnread("foo", true, false)
+	assert.Equal(t, 1, room.UnreadCount())
+	assert.False(t, room.Highlighted())
+
+	room.AddUnread("bar", true, false)
+	assert.Equal(t, 2, room.UnreadCount())
+	assert.False(t, room.Highlighted())
+
+	room.AddUnread("asd", false, true)
+	assert.Equal(t, 2, room.UnreadCount())
+	assert.True(t, room.Highlighted())
+
+	room.MarkRead("")
+	assert.Empty(t, room.UnreadMessages)
 }

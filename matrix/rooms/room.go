@@ -43,6 +43,12 @@ type RoomTag struct {
 	Order string
 }
 
+type UnreadMessage struct {
+	EventID string
+	Counted bool
+	Highlight bool
+}
+
 // Room represents a single Matrix room.
 type Room struct {
 	*gomatrix.Room
@@ -57,13 +63,11 @@ type Room struct {
 	SessionUserID string
 
 	// The number of unread messages that were notified about.
-	UnreadMessages int
-	// Whether or not any of the unread messages were highlights.
-	Highlighted bool
-	// Whether or not the room contains any new messages.
-	// This can be true even when UnreadMessages is zero if there's
-	// a notificationless message like bot notices.
-	HasNewMessages bool
+	UnreadMessages []UnreadMessage
+	unreadCountCache *int
+	highlightCache *bool
+	// Whether or not this room is marked as a direct chat.
+	IsDirect bool
 
 	// List of tags given to this room
 	RawTags []RoomTag
@@ -110,14 +114,74 @@ func (room *Room) UnlockHistory() {
 }
 
 // MarkRead clears the new message statuses on this room.
-func (room *Room) MarkRead() {
-	room.UnreadMessages = 0
-	room.Highlighted = false
-	room.HasNewMessages = false
+func (room *Room) MarkRead(eventID string) {
+	readToIndex := -1
+	for index, unreadMessage := range room.UnreadMessages {
+		if unreadMessage.EventID == eventID {
+			readToIndex = index
+		}
+	}
+	if readToIndex >= 0 {
+		room.UnreadMessages = room.UnreadMessages[readToIndex+1:]
+		room.highlightCache = nil
+		room.unreadCountCache = nil
+	}
+}
+
+func (room *Room) UnreadCount() int {
+	if room.unreadCountCache == nil {
+		room.unreadCountCache = new(int)
+		for _, unreadMessage := range room.UnreadMessages {
+			if unreadMessage.Counted {
+				*room.unreadCountCache++
+			}
+		}
+	}
+	return *room.unreadCountCache
+}
+
+func (room *Room) Highlighted() bool {
+	if room.highlightCache == nil {
+		room.highlightCache = new(bool)
+		for _, unreadMessage := range room.UnreadMessages {
+			if unreadMessage.Highlight {
+				*room.highlightCache = true
+				break
+			}
+		}
+	}
+	return *room.highlightCache
+}
+
+func (room *Room) HasNewMessages() bool {
+	return len(room.UnreadMessages) > 0
+}
+
+func (room *Room) AddUnread(eventID string, counted, highlight bool) {
+	room.UnreadMessages = append(room.UnreadMessages, UnreadMessage{
+		EventID: eventID,
+		Counted: counted,
+		Highlight: highlight,
+	})
+	if counted {
+		if room.unreadCountCache == nil {
+			room.unreadCountCache = new(int)
+		}
+		*room.unreadCountCache++
+	}
+	if highlight {
+		if room.highlightCache == nil {
+			room.highlightCache = new(bool)
+		}
+		*room.highlightCache = true
+	}
 }
 
 func (room *Room) Tags() []RoomTag {
 	if len(room.RawTags) == 0 {
+		if room.IsDirect {
+			return []RoomTag{{"net.maunium.gomuks.fake.direct", "0.5"}}
+		}
 		return []RoomTag{{"", "0.5"}}
 	}
 	return room.RawTags

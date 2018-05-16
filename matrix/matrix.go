@@ -177,7 +177,9 @@ func (c *Container) OnLogin() {
 	c.syncer = NewGomuksSyncer(c.config.Session)
 	c.syncer.OnEventType("m.room.message", c.HandleMessage)
 	c.syncer.OnEventType("m.room.member", c.HandleMembership)
+	c.syncer.OnEventType("m.receipt", c.HandleReadReceipt)
 	c.syncer.OnEventType("m.typing", c.HandleTyping)
+	c.syncer.OnEventType("m.direct", c.HandleDirectChatInfo)
 	c.syncer.OnEventType("m.push_rules", c.HandlePushRules)
 	c.syncer.OnEventType("m.tag", c.HandleTag)
 	c.syncer.InitDoneCallback = func() {
@@ -228,7 +230,7 @@ func (c *Container) Start() {
 
 // HandleMessage is the event handler for the m.room.message timeline event.
 func (c *Container) HandleMessage(source EventSource, evt *gomatrix.Event) {
-	if source & EventSourceLeave != 0 {
+	if source&EventSourceLeave != 0 {
 		return
 	}
 	mainView := c.ui.MainView()
@@ -250,6 +252,82 @@ func (c *Container) HandleMessage(source EventSource, evt *gomatrix.Event) {
 		}
 	} else {
 		debug.Printf("Parsing event %v failed (ParseEvent() returned nil).", evt)
+	}
+}
+
+func (c *Container) parseReadReceipt(evt *gomatrix.Event) (largestTimestampEvent string) {
+	var largestTimestamp int64
+	for eventID, rawContent := range evt.Content {
+		content, ok := rawContent.(map[string]interface{})
+		if !ok {
+			continue
+		}
+
+		mRead, ok := content["m.read"].(map[string]interface{})
+		if !ok {
+			continue
+		}
+
+		myInfo, ok := mRead[c.config.Session.UserID].(map[string]interface{})
+		if !ok {
+			continue
+		}
+
+		ts, ok := myInfo["ts"].(float64)
+		if int64(ts) > largestTimestamp {
+			largestTimestamp = int64(ts)
+			largestTimestampEvent = eventID
+		}
+	}
+	return
+}
+
+func (c *Container) HandleReadReceipt(source EventSource, evt *gomatrix.Event) {
+	if source&EventSourceLeave != 0 {
+		return
+	}
+
+	lastReadEvent := c.parseReadReceipt(evt)
+	if len(lastReadEvent) == 0 {
+		return
+	}
+
+	room := c.GetRoom(evt.RoomID)
+	room.MarkRead(lastReadEvent)
+	c.ui.Render()
+}
+
+func (c *Container) parseDirectChatInfo(evt *gomatrix.Event) (map[*rooms.Room]bool){
+	directChats := make(map[*rooms.Room]bool)
+	for _, rawRoomIDList := range evt.Content {
+		roomIDList, ok := rawRoomIDList.([]interface{})
+		if !ok {
+			continue
+		}
+
+		for _, rawRoomID := range roomIDList {
+			roomID, ok := rawRoomID.(string)
+			if !ok {
+				continue
+			}
+
+			room := c.GetRoom(roomID)
+			if room != nil && !room.HasLeft {
+				directChats[room] = true
+			}
+		}
+	}
+	return directChats
+}
+
+func (c *Container) HandleDirectChatInfo(source EventSource, evt *gomatrix.Event) {
+	directChats := c.parseDirectChatInfo(evt)
+	for _, room := range c.config.Session.Rooms {
+		shouldBeDirect := directChats[room]
+		if shouldBeDirect != room.IsDirect {
+			room.IsDirect = shouldBeDirect
+			c.ui.MainView().UpdateTags(room)
+		}
 	}
 }
 
@@ -285,7 +363,8 @@ func (c *Container) HandleTag(source EventSource, evt *gomatrix.Event) {
 	}
 
 	mainView := c.ui.MainView()
-	mainView.UpdateTags(room, newTags)
+	room.RawTags = newTags
+	mainView.UpdateTags(room)
 }
 
 func (c *Container) processOwnMembershipChange(evt *gomatrix.Event) {
@@ -314,8 +393,8 @@ func (c *Container) processOwnMembershipChange(evt *gomatrix.Event) {
 
 // HandleMembership is the event handler for the m.room.member state event.
 func (c *Container) HandleMembership(source EventSource, evt *gomatrix.Event) {
-	isLeave := source & EventSourceLeave != 0
-	isTimeline := source & EventSourceTimeline != 0
+	isLeave := source&EventSourceLeave != 0
+	isTimeline := source&EventSourceTimeline != 0
 	isNonTimelineLeave := isLeave && !isTimeline
 	if !c.config.Session.InitialSyncDone && isNonTimelineLeave {
 		return
@@ -354,6 +433,11 @@ func (c *Container) HandleTyping(source EventSource, evt *gomatrix.Event) {
 		strUsers[i] = user.(string)
 	}
 	c.ui.MainView().SetTyping(evt.RoomID, strUsers)
+}
+
+func (c *Container) MarkRead(roomID, eventID string) {
+	urlPath := c.client.BuildURL("rooms", roomID, "receipt", "m.read", eventID)
+	c.client.MakeRequest("POST", urlPath, struct{}{}, nil)
 }
 
 // SendMessage sends a message with the given text to the given room.

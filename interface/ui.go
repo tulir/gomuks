@@ -46,7 +46,7 @@ type MainView interface {
 	SetRooms(rooms map[string]*rooms.Room)
 	SaveAllHistory()
 
-	UpdateTags(room *rooms.Room, newTags []rooms.RoomTag)
+	UpdateTags(room *rooms.Room)
 
 	SetTyping(roomID string, users []string)
 	ParseEvent(roomView RoomView, evt *gomatrix.Event) Message
