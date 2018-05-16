@@ -477,6 +477,7 @@ func (view *MainView) InitialSyncDone() {
 	view.roomList.Clear()
 	for _, room := range view.rooms {
 		view.roomList.Add(room.Room)
+		room.UpdateUserList()
 	}
 }
 
