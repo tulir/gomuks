@@ -19,7 +19,13 @@ package pushrules
 import (
 	"maunium.net/go/gomuks/lib/glob"
 	"maunium.net/go/gomatrix"
+	"encoding/gob"
 )
+
+func init() {
+	gob.Register(PushRuleArray{})
+	gob.Register(PushRuleMap{})
+}
 
 type PushRuleCollection interface {
 	GetActions(room Room, event *gomatrix.Event) PushActionArray

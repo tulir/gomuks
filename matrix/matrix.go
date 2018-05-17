@@ -83,8 +83,8 @@ func (c *Container) InitClient() error {
 	}
 
 	var mxid, accessToken string
-	if c.config.Session != nil {
-		accessToken = c.config.Session.AccessToken
+	if len(c.config.AccessToken) > 0 {
+		accessToken = c.config.AccessToken
 		mxid = c.config.UserID
 	}
 
@@ -96,7 +96,7 @@ func (c *Container) InitClient() error {
 
 	c.stop = make(chan bool, 1)
 
-	if c.config.Session != nil && len(accessToken) > 0 {
+	if len(accessToken) > 0 {
 		go c.Start()
 	}
 	return nil
@@ -120,11 +120,8 @@ func (c *Container) Login(user, password string) error {
 	}
 	c.client.SetCredentials(resp.UserID, resp.AccessToken)
 	c.config.UserID = resp.UserID
+	c.config.AccessToken = resp.AccessToken
 	c.config.Save()
-
-	c.config.Session = c.config.NewSession(resp.UserID)
-	c.config.Session.AccessToken = resp.AccessToken
-	c.config.Session.Save()
 
 	go c.Start()
 
@@ -156,25 +153,26 @@ func (c *Container) UpdatePushRules() {
 	if err != nil {
 		debug.Print("Failed to fetch push rules:", err)
 	}
-	c.config.Session.PushRules = resp
+	c.config.PushRules = resp
+	c.config.SavePushRules()
 }
 
 // PushRules returns the push notification rules. If no push rules are cached, UpdatePushRules() will be called first.
 func (c *Container) PushRules() *pushrules.PushRuleset {
-	if c.config.Session.PushRules == nil {
+	if c.config.PushRules == nil {
 		c.UpdatePushRules()
 	}
-	return c.config.Session.PushRules
+	return c.config.PushRules
 }
 
 // OnLogin initializes the syncer and updates the room list.
 func (c *Container) OnLogin() {
 	c.ui.OnLogin()
 
-	c.client.Store = c.config.Session
+	c.client.Store = c.config
 
 	debug.Print("Initializing syncer")
-	c.syncer = NewGomuksSyncer(c.config.Session)
+	c.syncer = NewGomuksSyncer(c.config)
 	c.syncer.OnEventType("m.room.message", c.HandleMessage)
 	c.syncer.OnEventType("m.room.member", c.HandleMembership)
 	c.syncer.OnEventType("m.receipt", c.HandleReadReceipt)
@@ -183,14 +181,15 @@ func (c *Container) OnLogin() {
 	c.syncer.OnEventType("m.push_rules", c.HandlePushRules)
 	c.syncer.OnEventType("m.tag", c.HandleTag)
 	c.syncer.InitDoneCallback = func() {
-		c.config.Session.InitialSyncDone = true
+		c.config.AuthCache.InitialSyncDone = true
+		c.config.SaveAuthCache()
 		c.ui.MainView().InitialSyncDone()
 		c.ui.Render()
 	}
 	c.client.Syncer = c.syncer
 
 	debug.Print("Setting existing rooms")
-	c.ui.MainView().SetRooms(c.config.Session.Rooms)
+	c.ui.MainView().SetRooms(c.config.Rooms)
 
 	debug.Print("OnLogin() done.")
 }
@@ -268,7 +267,7 @@ func (c *Container) parseReadReceipt(evt *gomatrix.Event) (largestTimestampEvent
 			continue
 		}
 
-		myInfo, ok := mRead[c.config.Session.UserID].(map[string]interface{})
+		myInfo, ok := mRead[c.config.UserID].(map[string]interface{})
 		if !ok {
 			continue
 		}
@@ -322,7 +321,7 @@ func (c *Container) parseDirectChatInfo(evt *gomatrix.Event) (map[*rooms.Room]bo
 
 func (c *Container) HandleDirectChatInfo(source EventSource, evt *gomatrix.Event) {
 	directChats := c.parseDirectChatInfo(evt)
-	for _, room := range c.config.Session.Rooms {
+	for _, room := range c.config.Rooms {
 		shouldBeDirect := directChats[room]
 		if shouldBeDirect != room.IsDirect {
 			room.IsDirect = shouldBeDirect
@@ -335,15 +334,17 @@ func (c *Container) HandleDirectChatInfo(source EventSource, evt *gomatrix.Event
 func (c *Container) HandlePushRules(source EventSource, evt *gomatrix.Event) {
 	debug.Print("Received updated push rules")
 	var err error
-	c.config.Session.PushRules, err = pushrules.EventToPushRules(evt)
+	c.config.PushRules, err = pushrules.EventToPushRules(evt)
 	if err != nil {
 		debug.Print("Failed to convert event to push rules:", err)
+		return
 	}
+	c.config.SavePushRules()
 }
 
 // HandleTag is the event handler for the m.tag account data event.
 func (c *Container) HandleTag(source EventSource, evt *gomatrix.Event) {
-	room := c.config.Session.GetRoom(evt.RoomID)
+	room := c.config.GetRoom(evt.RoomID)
 
 	tags, _ := evt.Content["tags"].(map[string]interface{})
 	newTags := make([]rooms.RoomTag, len(tags))
@@ -396,11 +397,11 @@ func (c *Container) HandleMembership(source EventSource, evt *gomatrix.Event) {
 	isLeave := source&EventSourceLeave != 0
 	isTimeline := source&EventSourceTimeline != 0
 	isNonTimelineLeave := isLeave && !isTimeline
-	if !c.config.Session.InitialSyncDone && isNonTimelineLeave {
+	if !c.config.AuthCache.InitialSyncDone && isNonTimelineLeave {
 		return
-	} else if evt.StateKey != nil && *evt.StateKey == c.config.Session.UserID {
+	} else if evt.StateKey != nil && *evt.StateKey == c.config.UserID {
 		c.processOwnMembershipChange(evt)
-	} else if !isTimeline && (!c.config.Session.InitialSyncDone || isLeave) {
+	} else if !isTimeline && (!c.config.AuthCache.InitialSyncDone || isLeave) {
 		// We don't care about other users' membership events in the initial sync or chats we've left.
 		return
 	}
@@ -563,7 +564,7 @@ func (c *Container) GetHistory(roomID, prevBatch string, limit int) ([]gomatrix.
 
 // GetRoom gets the room instance stored in the session.
 func (c *Container) GetRoom(roomID string) *rooms.Room {
-	return c.config.Session.GetRoom(roomID)
+	return c.config.GetRoom(roomID)
 }
 
 var mxcRegex = regexp.MustCompile("mxc://(.+)/(.+)")

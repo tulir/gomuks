@@ -24,12 +24,19 @@ import (
 
 	"maunium.net/go/gomatrix"
 	"maunium.net/go/gomuks/debug"
+	"os"
+	"encoding/gob"
 )
+
+func init() {
+	gob.Register([]interface{}{})
+	gob.Register(map[string]interface{}{})
+}
 
 type RoomNameSource int
 
 const (
-	ExplicitRoomName RoomNameSource = iota
+	ExplicitRoomName       RoomNameSource = iota
 	CanonicalAliasRoomName
 	AliasRoomName
 	MemberRoomName
@@ -44,8 +51,8 @@ type RoomTag struct {
 }
 
 type UnreadMessage struct {
-	EventID string
-	Counted bool
+	EventID   string
+	Counted   bool
 	Highlight bool
 }
 
@@ -63,9 +70,9 @@ type Room struct {
 	SessionUserID string
 
 	// The number of unread messages that were notified about.
-	UnreadMessages []UnreadMessage
+	UnreadMessages   []UnreadMessage
 	unreadCountCache *int
-	highlightCache *bool
+	highlightCache   *bool
 	// Whether or not this room is marked as a direct chat.
 	IsDirect bool
 
@@ -111,6 +118,26 @@ func (room *Room) UnlockHistory() {
 	if room.fetchHistoryLock != nil {
 		room.fetchHistoryLock.Unlock()
 	}
+}
+
+func (room *Room) Load(path string) error {
+	file, err := os.OpenFile(path, os.O_RDONLY, 0600)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+	dec := gob.NewDecoder(file)
+	return dec.Decode(room)
+}
+
+func (room *Room) Save(path string) error {
+	file, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE, 0600)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+	enc := gob.NewEncoder(file)
+	return enc.Encode(room)
 }
 
 // MarkRead clears the new message statuses on this room.
@@ -159,8 +186,8 @@ func (room *Room) HasNewMessages() bool {
 
 func (room *Room) AddUnread(eventID string, counted, highlight bool) {
 	room.UnreadMessages = append(room.UnreadMessages, UnreadMessage{
-		EventID: eventID,
-		Counted: counted,
+		EventID:   eventID,
+		Counted:   counted,
 		Highlight: highlight,
 	})
 	if counted {

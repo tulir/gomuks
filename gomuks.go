@@ -50,24 +50,17 @@ func NewGomuks(uiProvider ifc.UIProvider) *Gomuks {
 	gmx.ui = uiProvider(gmx)
 	gmx.matrix = matrix.NewContainer(gmx)
 
-	gmx.config.Load()
+	gmx.config.LoadAll()
 	gmx.ui.Init()
 
 	debug.OnRecover = gmx.ui.Finish
-
-	if len(gmx.config.UserID) > 0 {
-		_ = gmx.config.LoadSession(gmx.config.UserID)
-	}
 
 	return gmx
 }
 
 // Save saves the active session and message history.
 func (gmx *Gomuks) Save() {
-	if gmx.config.Session != nil {
-		debug.Print("Saving session...")
-		_ = gmx.config.Session.Save()
-	}
+	gmx.config.SaveAll()
 	debug.Print("Saving history...")
 	gmx.ui.MainView().SaveAllHistory()
 }

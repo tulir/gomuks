@@ -430,7 +430,7 @@ func sendNotification(room *rooms.Room, sender, text string, critical, sound boo
 
 func (view *MainView) NotifyMessage(room *rooms.Room, message ifc.Message, should pushrules.PushActionArrayShould) {
 	view.roomList.Bump(room)
-	if message.SenderID() == view.config.Session.UserID {
+	if message.SenderID() == view.config.UserID {
 		return
 	}
 	// Whether or not the room where the message came is the currently shown room.
@@ -505,7 +505,7 @@ func (view *MainView) LoadHistory(room string) {
 	if err != nil {
 		debug.Printf("Failed to save history of %s: %v", roomView.Room.GetTitle(), err)
 	}
-	view.config.Session.Save()
+	view.config.PutRoom(roomView.Room)
 	view.parent.Render()
 }
 
