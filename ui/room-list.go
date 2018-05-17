@@ -320,7 +320,7 @@ func (list *RoomList) RemoveFromTag(tag string, room *rooms.Room) {
 	tagRoomList.RemoveIndex(index)
 
 	if tagRoomList.IsEmpty() {
-		delete(list.items, tag)
+		// delete(list.items, tag)
 	}
 
 	if room == list.selected {
