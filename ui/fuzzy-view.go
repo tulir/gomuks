@@ -24,12 +24,13 @@ import (
 	"github.com/evidlo/fuzzysearch/fuzzy"
 	"maunium.net/go/gomuks/debug"
 	"maunium.net/go/gomuks/matrix/rooms"
+	"maunium.net/go/gomuks/ui/widget"
 	"maunium.net/go/tcell"
 	"maunium.net/go/tview"
 )
 
 type FuzzyView struct {
-	*tview.Grid
+	tview.Primitive
 	matches  fuzzy.Ranks
 	selected int
 }
@@ -69,12 +70,9 @@ func NewFuzzyView(view *MainView, width int, height int) *FuzzyView {
 	var matches fuzzy.Ranks
 	var selected int
 	fuzz := &FuzzyView{
-		Grid: tview.NewGrid().
-			SetColumns(0, width, 0).
-			SetRows(0, height, 0).
-			AddItem(fuzzyFlex, 1, 1, 1, 1, 0, 0, true),
-		matches:  matches,
-		selected: selected,
+		Primitive: widget.TransparentCenter(width, height, fuzzyFlex),
+		matches:   matches,
+		selected:  selected,
 	}
 
 	// callback to update search box
