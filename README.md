@@ -26,9 +26,10 @@ or compile from source:
 2. gomuks should now be in `$GOPATH/bin/gomuks`
 
 ## Usage
-Switch between rooms by clicking or with ctrl + up/down arrow (alt+arrows works too).
-
-Scroll chat with the scroll wheel (3 rows per tick), page up/down (half of height per click) or up/down arrow (1 row per click)
+- switch rooms - `Ctrl + ↑` `Ctrl + ↓` `Alt + ↑` `Alt + ↓`
+- scroll chat (line) - `↑` `↓`
+- scroll chat (page) - `PgUp` `PgDown`
+- jump to room - `Alt + Enter`, then `Tab` and `Enter` to navigate and select room
 
 ### Commands
 * `/quit` - Close gomuks

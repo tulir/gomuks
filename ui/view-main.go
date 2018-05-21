@@ -201,6 +201,10 @@ func (view *MainView) KeyEventHandler(roomView *RoomView, key *tcell.EventKey) *
 			view.SwitchRoom(view.roomList.Next())
 		case tcell.KeyUp:
 			view.SwitchRoom(view.roomList.Previous())
+		case tcell.KeyEnter:
+			fuzz := NewFuzzyView(view, 42, 12)
+			view.parent.views.AddPage("fuzzy", fuzz, true, true)
+			view.parent.app.SetFocus(fuzz)
 		default:
 			return key
 		}
