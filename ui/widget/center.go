@@ -18,17 +18,53 @@ package widget
 
 import (
 	"maunium.net/go/tview"
+	"maunium.net/go/tcell"
 )
 
 // Center wraps the given tview primitive into a Flex element in order to
 // vertically and horizontally center the given primitive.
 func Center(width, height int, p tview.Primitive) tview.Primitive {
 	return tview.NewFlex().
-		AddItem(tview.NewBox(), 0, 1, false).
+		AddItem(nil, 0, 1, false).
 		AddItem(tview.NewFlex().
 			SetDirection(tview.FlexRow).
-			AddItem(tview.NewBox(), 0, 1, false).
+			AddItem(nil, 0, 1, false).
 			AddItem(p, height, 1, true).
-			AddItem(tview.NewBox(), 0, 1, false), width, 1, true).
-		AddItem(tview.NewBox(), 0, 1, false)
+			AddItem(nil, 0, 1, false), width, 1, true).
+		AddItem(nil, 0, 1, false)
+}
+
+type transparentCenter struct {
+	*tview.Box
+	prefWidth, prefHeight int
+	p tview.Primitive
+}
+
+func TransparentCenter(width, height int, p tview.Primitive) tview.Primitive {
+	return &transparentCenter{
+		Box: tview.NewBox(),
+		prefWidth: width,
+		prefHeight: height,
+		p: p,
+	}
+}
+
+func (tc *transparentCenter) Draw(screen tcell.Screen) {
+	x, y, width, height := tc.GetRect()
+	if width > tc.prefWidth {
+		x += (width - tc.prefWidth) / 2
+		width = tc.prefWidth
+	}
+	if height > tc.prefHeight {
+		y += (height - tc.prefHeight) / 2
+		height = tc.prefHeight
+	}
+	tc.p.SetRect(x, y, width, height)
+	tc.p.Draw(screen)
+}
+
+func (tc *transparentCenter) Focus(delegate func(p tview.Primitive)) {
+	if delegate != nil {
+		delegate(tc.p)
+	}
 }
