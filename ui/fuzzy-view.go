@@ -37,12 +37,12 @@ type FuzzyView struct {
 
 func NewFuzzyView(view *MainView, width int, height int) *FuzzyView {
 
-	rooms := []*rooms.Room{}
-	roomtitles := []string{}
+	roomList := []*rooms.Room{}
+	roomTitles := []string{}
 	for _, tag := range view.roomList.tags {
 		for _, room := range view.roomList.items[tag].rooms {
-			rooms = append(rooms, room.Room)
-			roomtitles = append(roomtitles, room.GetTitle())
+			roomList = append(roomList, room.Room)
+			roomTitles = append(roomTitles, room.GetTitle())
 		}
 	}
 	// search box for fuzzy search
@@ -78,7 +78,7 @@ func NewFuzzyView(view *MainView, width int, height int) *FuzzyView {
 	// callback to update search box
 	fuzzySearch.SetChangedFunc(func(str string) {
 		// get matches and display in fuzzyResults
-		fuzz.matches = fuzzy.RankFindFold(str, roomtitles)
+		fuzz.matches = fuzzy.RankFindFold(str, roomTitles)
 		if len(str) > 0 && len(fuzz.matches) > 0 {
 			sort.Sort(fuzz.matches)
 			fuzzyResults.Clear()
@@ -99,6 +99,7 @@ func NewFuzzyView(view *MainView, width int, height int) *FuzzyView {
 		highlights := fuzzyResults.GetHighlights()
 		if event.Key() == tcell.KeyEsc {
 			view.parent.views.RemovePage("fuzzy")
+			view.parent.app.SetFocus(view.parent.views)
 			return nil
 		} else if event.Key() == tcell.KeyTab {
 			// cycle highlighted area to next fuzzy match
@@ -111,8 +112,8 @@ func NewFuzzyView(view *MainView, width int, height int) *FuzzyView {
 		} else if event.Key() == tcell.KeyEnter {
 			// switch room to currently selected room
 			if len(highlights) > 0 {
-				debug.Print("Fuzzy Selected Room:", rooms[fuzz.matches[fuzz.selected].Index].GetTitle())
-				view.SwitchRoom(rooms[fuzz.matches[fuzz.selected].Index].Tags()[0].Tag, rooms[fuzz.matches[fuzz.selected].Index])
+				debug.Print("Fuzzy Selected Room:", roomList[fuzz.matches[fuzz.selected].Index].GetTitle())
+				view.SwitchRoom(roomList[fuzz.matches[fuzz.selected].Index].Tags()[0].Tag, roomList[fuzz.matches[fuzz.selected].Index])
 			}
 			view.parent.views.RemovePage("fuzzy")
 			fuzzyResults.Clear()
