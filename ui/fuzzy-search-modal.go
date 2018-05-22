@@ -93,7 +93,7 @@ func (fs *FuzzySearchModal) changeHandler(str string) {
 		sort.Sort(fs.matches)
 		fs.results.Clear()
 		for _, match := range fs.matches {
-			fmt.Fprintf(fs.results, `["%d"]%s[""]\n`, match.Index, match.Target)
+			fmt.Fprintf(fs.results, `["%d"]%s[""]%s`, match.Index, match.Target, "\n")
 		}
 		fs.parent.Render()
 		fs.results.Highlight(strconv.Itoa(fs.matches[0].Index))
