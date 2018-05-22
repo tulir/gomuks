@@ -73,6 +73,10 @@
   branch = "master"
   name = "maunium.net/go/tview"
 
+[[constraint]]
+  branch = "master"
+  name = "github.com/evidlo/fuzzysearch"
+
 [prune]
   go-tests = true
   unused-packages = true

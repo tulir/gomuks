@@ -15,6 +15,12 @@
 
 [[projects]]
   branch = "master"
+  name = "github.com/evidlo/fuzzysearch"
+  packages = ["fuzzy"]
+  revision = "f6153b556daf86b90da85818544c8b498640759c"
+
+[[projects]]
+  branch = "master"
   name = "github.com/gdamore/encoding"
   packages = ["."]
   revision = "b23993cbb6353f0e6aa98d0ee318a34728f628b9"
@@ -138,6 +144,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "375d42f271992a59ae0bcf25e2401aae2f4d8adb7b63605c4ffef577c5154025"
+  inputs-digest = "a206fe41b10601a6e9cf402fc120084d48f589287882674baee54855ad513da1"
   solver-name = "gps-cdcl"
   solver-version = 1
