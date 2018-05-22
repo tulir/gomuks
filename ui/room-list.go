@@ -330,7 +330,7 @@ func (list *RoomList) index(tag string, room *rooms.Room) int {
 	localIndex = trl.Length() - 1 - localIndex
 
 	// Tag header
-	localIndex += 1
+	localIndex++
 
 	if tagIndex > 0 {
 		for i := 0; i < tagIndex; i++ {
@@ -359,7 +359,7 @@ func (list *RoomList) HandleClick(column, line int, mod bool) (string, *rooms.Ro
 		trl := list.items[tag]
 		if line--; line == -1 {
 			trl.ToggleCollapse()
-			return "", nil
+			break
 		}
 
 		if trl.IsCollapsed() {
@@ -367,7 +367,7 @@ func (list *RoomList) HandleClick(column, line int, mod bool) (string, *rooms.Ro
 		}
 
 		if line < 0 {
-			return "", nil
+			break
 		} else if line < trl.Length() {
 			return tag, trl.Visible()[trl.Length()-1-line].Room
 		}
@@ -392,7 +392,7 @@ func (list *RoomList) HandleClick(column, line int, mod bool) (string, *rooms.Ro
 				if trl.maxShown < 10 {
 					trl.maxShown = 10
 				}
-				return "", nil
+				break
 			}
 		}
 		// Tag footer
@@ -439,7 +439,7 @@ func (list *RoomList) Draw(screen tcell.Screen) {
 		}
 
 		renderHeight := trl.RenderHeight()
-		if y + renderHeight >= yLimit {
+		if y+renderHeight >= yLimit {
 			renderHeight = yLimit - y
 		}
 		trl.SetRect(x, y, width, renderHeight)

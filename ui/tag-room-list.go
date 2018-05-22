@@ -17,13 +17,13 @@
 package ui
 
 import (
-	"maunium.net/go/gomuks/matrix/rooms"
-	"strings"
 	"fmt"
-	"maunium.net/go/tcell"
-	"strconv"
+	"maunium.net/go/gomuks/matrix/rooms"
 	"maunium.net/go/gomuks/ui/widget"
+	"maunium.net/go/tcell"
 	"maunium.net/go/tview"
+	"strconv"
+	"strings"
 )
 
 type OrderedRoom struct {
