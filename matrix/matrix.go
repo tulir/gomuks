@@ -38,6 +38,7 @@ import (
 	"maunium.net/go/gomuks/lib/bfhtml"
 	"maunium.net/go/gomuks/matrix/pushrules"
 	"maunium.net/go/gomuks/matrix/rooms"
+	"crypto/tls"
 )
 
 // Container is a wrapper for a gomatrix Client and some other stuff.
@@ -92,6 +93,13 @@ func (c *Container) InitClient() error {
 	c.client, err = gomatrix.NewClient(c.config.HS, mxid, accessToken)
 	if err != nil {
 		return err
+	}
+
+	allowInsecure := len(os.Getenv("GOMUKS_ALLOW_INSECURE_SERVER")) > 0
+	if allowInsecure {
+		c.client.Client = &http.Client{
+			Transport: &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}},
+		}
 	}
 
 	c.stop = make(chan bool, 1)
