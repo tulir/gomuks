@@ -145,7 +145,9 @@ func getMembershipEventContent(room *rooms.Room, evt *gomatrix.Event) (sender st
 	} else if displayname != prevDisplayname {
 		sender = "---"
 		text = tstring.NewColorTString(fmt.Sprintf("%s changed their display name to %s.", prevDisplayname, displayname), tcell.ColorGreen)
-		text.Colorize(0, len(prevDisplayname), widget.GetHashColor(*evt.StateKey))
+		color := widget.GetHashColor(*evt.StateKey)
+		text.Colorize(0, len(prevDisplayname), color)
+		text.Colorize(len(prevDisplayname) + len(" changed their display name to "), len(displayname), color)
 	}
 	return
 }
