@@ -277,6 +277,7 @@ func (a *Application) Suspend(f func()) bool {
 		a.Unlock()
 		panic(err)
 	}
+	a.screen.EnableMouse()
 	a.Unlock()
 	a.Draw()
 

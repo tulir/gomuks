@@ -29,7 +29,7 @@
   branch = "master"
   name = "github.com/lucasb-eyer/go-colorful"
   packages = ["."]
-  revision = "231272389856c976b7500c4fffcc52ddf06ff4eb"
+  revision = "fa0f842f26263fb2ace6d6118309c8481e029fc1"
 
 [[projects]]
   name = "github.com/mattn/go-runewidth"
@@ -88,7 +88,7 @@
     "html",
     "html/atom"
   ]
-  revision = "f73e4c9ed3b7ebdd5f699a16a880c2b1994e50dd"
+  revision = "9ef9f5bb98a1fdc41f8cf6c250a4404b4085e389"
 
 [[projects]]
   name = "golang.org/x/text"
@@ -124,7 +124,7 @@
   branch = "master"
   name = "maunium.net/go/gomatrix"
   packages = ["."]
-  revision = "4ddf8d780ff6a0434a52c256015f7fcd2ca67dc9"
+  revision = "b491397f18b90e34ef54b8b3598666564b90b01a"
 
 [[projects]]
   branch = "master"
@@ -139,7 +139,7 @@
   branch = "master"
   name = "maunium.net/go/tview"
   packages = ["."]
-  revision = "7eabba90a261a481d36ace89daa79c56582238d7"
+  revision = "8b261597bbdb95dcaef03854aaa0cc192f56b1ff"
 
 [solve-meta]
   analyzer-name = "dep"
