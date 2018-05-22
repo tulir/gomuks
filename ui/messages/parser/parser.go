@@ -78,6 +78,45 @@ func ParseMessage(matrix ifc.MatrixContainer, room *rooms.Room, evt *gomatrix.Ev
 	return nil
 }
 
+func getMembershipChangeMessage(evt *gomatrix.Event, membership, prevMembership, senderDisplayname, displayname, prevDisplayname string) (sender string, text tstring.TString) {
+	switch membership {
+	case "invite":
+		sender = "---"
+		text = tstring.NewColorTString(fmt.Sprintf("%s invited %s.", senderDisplayname, displayname), tcell.ColorGreen)
+		text.Colorize(0, len(senderDisplayname), widget.GetHashColor(evt.Sender))
+		text.Colorize(len(senderDisplayname)+len(" invited "), len(displayname), widget.GetHashColor(*evt.StateKey))
+	case "join":
+		sender = "-->"
+		text = tstring.NewColorTString(fmt.Sprintf("%s joined the room.", displayname), tcell.ColorGreen)
+		text.Colorize(0, len(displayname), widget.GetHashColor(*evt.StateKey))
+	case "leave":
+		sender = "<--"
+		if evt.Sender != *evt.StateKey {
+			if prevMembership == "ban" {
+				text = tstring.NewColorTString(fmt.Sprintf("%s unbanned %s", senderDisplayname, displayname), tcell.ColorGreen)
+				text.Colorize(len(senderDisplayname)+len(" unbanned "), len(displayname), widget.GetHashColor(*evt.StateKey))
+			} else {
+				reason, _ := evt.Content["reason"].(string)
+				text = tstring.NewColorTString(fmt.Sprintf("%s kicked %s: %s", senderDisplayname, displayname, reason), tcell.ColorRed)
+				text.Colorize(len(senderDisplayname)+len(" kicked "), len(displayname), widget.GetHashColor(*evt.StateKey))
+			}
+			text.Colorize(0, len(senderDisplayname), widget.GetHashColor(evt.Sender))
+		} else {
+			if displayname == *evt.StateKey {
+				displayname = prevDisplayname
+			}
+			text = tstring.NewColorTString(fmt.Sprintf("%s left the room.", displayname), tcell.ColorRed)
+			text.Colorize(0, len(displayname), widget.GetHashColor(*evt.StateKey))
+		}
+	case "ban":
+		reason, _ := evt.Content["reason"].(string)
+		text = tstring.NewColorTString(fmt.Sprintf("%s banned %s: %s", senderDisplayname, displayname, reason), tcell.ColorRed)
+		text.Colorize(len(senderDisplayname)+len(" banned "), len(displayname), widget.GetHashColor(*evt.StateKey))
+		text.Colorize(0, len(senderDisplayname), widget.GetHashColor(evt.Sender))
+	}
+	return
+}
+
 func getMembershipEventContent(room *rooms.Room, evt *gomatrix.Event) (sender string, text tstring.TString) {
 	member := room.GetMember(evt.Sender)
 	senderDisplayname := evt.Sender
@@ -102,41 +141,7 @@ func getMembershipEventContent(room *rooms.Room, evt *gomatrix.Event) (sender st
 	}
 
 	if membership != prevMembership {
-		switch membership {
-		case "invite":
-			sender = "---"
-			text = tstring.NewColorTString(fmt.Sprintf("%s invited %s.", senderDisplayname, displayname), tcell.ColorGreen)
-			text.Colorize(0, len(senderDisplayname), widget.GetHashColor(evt.Sender))
-			text.Colorize(len(senderDisplayname)+len(" invited "), len(displayname), widget.GetHashColor(*evt.StateKey))
-		case "join":
-			sender = "-->"
-			text = tstring.NewColorTString(fmt.Sprintf("%s joined the room.", displayname), tcell.ColorGreen)
-			text.Colorize(0, len(displayname), widget.GetHashColor(*evt.StateKey))
-		case "leave":
-			sender = "<--"
-			if evt.Sender != *evt.StateKey {
-				if prevMembership == "ban" {
-					text = tstring.NewColorTString(fmt.Sprintf("%s unbanned %s", senderDisplayname, displayname), tcell.ColorGreen)
-					text.Colorize(len(senderDisplayname)+len(" unbanned "), len(displayname), widget.GetHashColor(*evt.StateKey))
-				} else {
-					reason, _ := evt.Content["reason"].(string)
-					text = tstring.NewColorTString(fmt.Sprintf("%s kicked %s: %s", senderDisplayname, displayname, reason), tcell.ColorRed)
-					text.Colorize(len(senderDisplayname)+len(" kicked "), len(displayname), widget.GetHashColor(*evt.StateKey))
-				}
-				text.Colorize(0, len(senderDisplayname), widget.GetHashColor(evt.Sender))
-			} else {
-				if displayname == *evt.StateKey {
-					displayname = prevDisplayname
-				}
-				text = tstring.NewColorTString(fmt.Sprintf("%s left the room.", displayname), tcell.ColorRed)
-				text.Colorize(0, len(displayname), widget.GetHashColor(*evt.StateKey))
-			}
-		case "ban":
-			reason, _ := evt.Content["reason"].(string)
-			text = tstring.NewColorTString(fmt.Sprintf("%s banned %s: %s", senderDisplayname, displayname, reason), tcell.ColorRed)
-			text.Colorize(len(senderDisplayname)+len(" banned "), len(displayname), widget.GetHashColor(*evt.StateKey))
-			text.Colorize(0, len(senderDisplayname), widget.GetHashColor(evt.Sender))
-		}
+		sender, text = getMembershipChangeMessage(evt, membership, prevMembership, senderDisplayname, displayname, prevDisplayname)
 	} else if displayname != prevDisplayname {
 		sender = "---"
 		text = tstring.NewColorTString(fmt.Sprintf("%s changed their display name to %s.", prevDisplayname, displayname), tcell.ColorGreen)
