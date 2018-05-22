@@ -17,8 +17,8 @@
 package widget
 
 import (
-	"maunium.net/go/tview"
 	"maunium.net/go/tcell"
+	"maunium.net/go/tview"
 )
 
 // Center wraps the given tview primitive into a Flex element in order to
@@ -37,15 +37,15 @@ func Center(width, height int, p tview.Primitive) tview.Primitive {
 type transparentCenter struct {
 	*tview.Box
 	prefWidth, prefHeight int
-	p tview.Primitive
+	p                     tview.Primitive
 }
 
 func TransparentCenter(width, height int, p tview.Primitive) tview.Primitive {
 	return &transparentCenter{
-		Box: tview.NewBox(),
-		prefWidth: width,
+		Box:        tview.NewBox(),
+		prefWidth:  width,
 		prefHeight: height,
-		p: p,
+		p:          p,
 	}
 }
 

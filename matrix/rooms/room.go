@@ -22,10 +22,10 @@ import (
 	"sync"
 	"time"
 
+	"encoding/gob"
 	"maunium.net/go/gomatrix"
 	"maunium.net/go/gomuks/debug"
 	"os"
-	"encoding/gob"
 )
 
 func init() {
@@ -36,7 +36,7 @@ func init() {
 type RoomNameSource int
 
 const (
-	ExplicitRoomName       RoomNameSource = iota
+	ExplicitRoomName RoomNameSource = iota
 	CanonicalAliasRoomName
 	AliasRoomName
 	MemberRoomName

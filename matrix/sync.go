@@ -34,7 +34,7 @@ type SyncerSession interface {
 type EventSource int
 
 const (
-	EventSourcePresence    EventSource = 1 << iota
+	EventSourcePresence EventSource = 1 << iota
 	EventSourceJoin
 	EventSourceInvite
 	EventSourceLeave
@@ -72,10 +72,10 @@ func (s *GomuksSyncer) ProcessResponse(res *gomatrix.RespSync, since string) (er
 
 	for roomID, roomData := range res.Rooms.Join {
 		room := s.Session.GetRoom(roomID)
-		s.processSyncEvents(room, roomData.State.Events, EventSourceJoin | EventSourceState, false)
-		s.processSyncEvents(room, roomData.Timeline.Events, EventSourceJoin | EventSourceTimeline, false)
-		s.processSyncEvents(room, roomData.Ephemeral.Events, EventSourceJoin | EventSourceEphemeral, false)
-		s.processSyncEvents(room, roomData.AccountData.Events, EventSourceJoin | EventSourceAccountData, false)
+		s.processSyncEvents(room, roomData.State.Events, EventSourceJoin|EventSourceState, false)
+		s.processSyncEvents(room, roomData.Timeline.Events, EventSourceJoin|EventSourceTimeline, false)
+		s.processSyncEvents(room, roomData.Ephemeral.Events, EventSourceJoin|EventSourceEphemeral, false)
+		s.processSyncEvents(room, roomData.AccountData.Events, EventSourceJoin|EventSourceAccountData, false)
 
 		if len(room.PrevBatch) == 0 {
 			room.PrevBatch = roomData.Timeline.PrevBatch
@@ -84,14 +84,14 @@ func (s *GomuksSyncer) ProcessResponse(res *gomatrix.RespSync, since string) (er
 
 	for roomID, roomData := range res.Rooms.Invite {
 		room := s.Session.GetRoom(roomID)
-		s.processSyncEvents(room, roomData.State.Events, EventSourceInvite | EventSourceState, false)
+		s.processSyncEvents(room, roomData.State.Events, EventSourceInvite|EventSourceState, false)
 	}
 
 	for roomID, roomData := range res.Rooms.Leave {
 		room := s.Session.GetRoom(roomID)
 		room.HasLeft = true
-		s.processSyncEvents(room, roomData.State.Events, EventSourceLeave | EventSourceState, true)
-		s.processSyncEvents(room, roomData.Timeline.Events, EventSourceLeave | EventSourceTimeline, false)
+		s.processSyncEvents(room, roomData.State.Events, EventSourceLeave|EventSourceState, true)
+		s.processSyncEvents(room, roomData.Timeline.Events, EventSourceLeave|EventSourceTimeline, false)
 
 		if len(room.PrevBatch) == 0 {
 			room.PrevBatch = roomData.Timeline.PrevBatch

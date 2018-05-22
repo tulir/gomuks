@@ -17,10 +17,10 @@
 package widget
 
 import (
+	"fmt"
 	"github.com/mattn/go-runewidth"
 	"maunium.net/go/tcell"
 	"maunium.net/go/tview"
-	"fmt"
 	"strconv"
 )
 

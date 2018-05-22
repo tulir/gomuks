@@ -17,16 +17,16 @@
 package matrix
 
 import (
-	"testing"
-	"maunium.net/go/gomuks/config"
-	"github.com/stretchr/testify/assert"
-	"net/http"
-	"maunium.net/go/gomatrix"
-	"strings"
-	"fmt"
-	"io/ioutil"
 	"encoding/json"
+	"fmt"
+	"github.com/stretchr/testify/assert"
+	"io/ioutil"
+	"maunium.net/go/gomatrix"
+	"maunium.net/go/gomuks/config"
+	"net/http"
 	"os"
+	"strings"
+	"testing"
 )
 
 func TestContainer_InitClient_Empty(t *testing.T) {

@@ -17,17 +17,17 @@
 package pushrules_test
 
 import (
-	"testing"
 	"github.com/stretchr/testify/assert"
 	"maunium.net/go/gomuks/matrix/pushrules"
+	"testing"
 )
 
 func TestPushRule_Match_Conditions(t *testing.T) {
 	cond1 := newMatchPushCondition("content.msgtype", "m.emote")
 	cond2 := newMatchPushCondition("content.body", "*pushrules")
 	rule := &pushrules.PushRule{
-		Type: pushrules.OverrideRule,
-		Enabled: true,
+		Type:       pushrules.OverrideRule,
+		Enabled:    true,
 		Conditions: []*pushrules.PushCondition{cond1, cond2},
 	}
 
@@ -42,8 +42,8 @@ func TestPushRule_Match_Conditions_Disabled(t *testing.T) {
 	cond1 := newMatchPushCondition("content.msgtype", "m.emote")
 	cond2 := newMatchPushCondition("content.body", "*pushrules")
 	rule := &pushrules.PushRule{
-		Type: pushrules.OverrideRule,
-		Enabled: false,
+		Type:       pushrules.OverrideRule,
+		Enabled:    false,
 		Conditions: []*pushrules.PushCondition{cond1, cond2},
 	}
 
@@ -58,8 +58,8 @@ func TestPushRule_Match_Conditions_FailIfOneFails(t *testing.T) {
 	cond1 := newMatchPushCondition("content.msgtype", "m.emote")
 	cond2 := newMatchPushCondition("content.body", "*pushrules")
 	rule := &pushrules.PushRule{
-		Type: pushrules.OverrideRule,
-		Enabled: true,
+		Type:       pushrules.OverrideRule,
+		Enabled:    true,
 		Conditions: []*pushrules.PushCondition{cond1, cond2},
 	}
 
@@ -72,7 +72,7 @@ func TestPushRule_Match_Conditions_FailIfOneFails(t *testing.T) {
 
 func TestPushRule_Match_Content(t *testing.T) {
 	rule := &pushrules.PushRule{
-		Type: pushrules.ContentRule,
+		Type:    pushrules.ContentRule,
 		Enabled: true,
 		Pattern: "is testing*",
 	}
@@ -86,7 +86,7 @@ func TestPushRule_Match_Content(t *testing.T) {
 
 func TestPushRule_Match_Content_Fail(t *testing.T) {
 	rule := &pushrules.PushRule{
-		Type: pushrules.ContentRule,
+		Type:    pushrules.ContentRule,
 		Enabled: true,
 		Pattern: "is testing*",
 	}
@@ -100,7 +100,7 @@ func TestPushRule_Match_Content_Fail(t *testing.T) {
 
 func TestPushRule_Match_Content_ImplicitGlob(t *testing.T) {
 	rule := &pushrules.PushRule{
-		Type: pushrules.ContentRule,
+		Type:    pushrules.ContentRule,
 		Enabled: true,
 		Pattern: "testing",
 	}
@@ -114,7 +114,7 @@ func TestPushRule_Match_Content_ImplicitGlob(t *testing.T) {
 
 func TestPushRule_Match_Content_IllegalGlob(t *testing.T) {
 	rule := &pushrules.PushRule{
-		Type: pushrules.ContentRule,
+		Type:    pushrules.ContentRule,
 		Enabled: true,
 		Pattern: "this is not a valid glo[b",
 	}
@@ -128,9 +128,9 @@ func TestPushRule_Match_Content_IllegalGlob(t *testing.T) {
 
 func TestPushRule_Match_Room(t *testing.T) {
 	rule := &pushrules.PushRule{
-		Type: pushrules.RoomRule,
+		Type:    pushrules.RoomRule,
 		Enabled: true,
-		RuleID: "!fakeroom:maunium.net",
+		RuleID:  "!fakeroom:maunium.net",
 	}
 
 	event := newFakeEvent("m.room.message", map[string]interface{}{})
@@ -139,21 +139,20 @@ func TestPushRule_Match_Room(t *testing.T) {
 
 func TestPushRule_Match_Room_Fail(t *testing.T) {
 	rule := &pushrules.PushRule{
-		Type: pushrules.RoomRule,
+		Type:    pushrules.RoomRule,
 		Enabled: true,
-		RuleID: "!otherroom:maunium.net",
+		RuleID:  "!otherroom:maunium.net",
 	}
 
 	event := newFakeEvent("m.room.message", map[string]interface{}{})
 	assert.False(t, rule.Match(blankTestRoom, event))
 }
 
-
 func TestPushRule_Match_Sender(t *testing.T) {
 	rule := &pushrules.PushRule{
-		Type: pushrules.SenderRule,
+		Type:    pushrules.SenderRule,
 		Enabled: true,
-		RuleID: "@tulir:maunium.net",
+		RuleID:  "@tulir:maunium.net",
 	}
 
 	event := newFakeEvent("m.room.message", map[string]interface{}{})
@@ -162,9 +161,9 @@ func TestPushRule_Match_Sender(t *testing.T) {
 
 func TestPushRule_Match_Sender_Fail(t *testing.T) {
 	rule := &pushrules.PushRule{
-		Type: pushrules.RoomRule,
+		Type:    pushrules.RoomRule,
 		Enabled: true,
-		RuleID: "@someone:matrix.org",
+		RuleID:  "@someone:matrix.org",
 	}
 
 	event := newFakeEvent("m.room.message", map[string]interface{}{})
@@ -173,9 +172,9 @@ func TestPushRule_Match_Sender_Fail(t *testing.T) {
 
 func TestPushRule_Match_UnknownTypeAlwaysFail(t *testing.T) {
 	rule := &pushrules.PushRule{
-		Type: pushrules.PushRuleType("foobar"),
+		Type:    pushrules.PushRuleType("foobar"),
 		Enabled: true,
-		RuleID: "@someone:matrix.org",
+		RuleID:  "@someone:matrix.org",
 	}
 
 	event := newFakeEvent("m.room.message", map[string]interface{}{})

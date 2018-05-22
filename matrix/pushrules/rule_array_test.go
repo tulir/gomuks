@@ -17,9 +17,9 @@
 package pushrules_test
 
 import (
-	"testing"
-	"maunium.net/go/gomuks/matrix/pushrules"
 	"github.com/stretchr/testify/assert"
+	"maunium.net/go/gomuks/matrix/pushrules"
+	"testing"
 )
 
 func TestPushRuleArray_GetActions_FirstMatchReturns(t *testing.T) {

@@ -21,8 +21,8 @@ import (
 	"strconv"
 	"strings"
 
-	"maunium.net/go/gomuks/lib/glob"
 	"maunium.net/go/gomatrix"
+	"maunium.net/go/gomuks/lib/glob"
 	"maunium.net/go/gomuks/matrix/rooms"
 )
 

@@ -22,12 +22,12 @@ import (
 	"strconv"
 	"strings"
 
+	"math"
 	"maunium.net/go/gomuks/debug"
 	"maunium.net/go/gomuks/matrix/rooms"
 	"maunium.net/go/gomuks/ui/widget"
 	"maunium.net/go/tcell"
 	"maunium.net/go/tview"
-	"math"
 )
 
 type orderedRoom struct {
@@ -446,7 +446,7 @@ func (list *RoomList) Previous() (string, *rooms.Room) {
 	indexInvisible := tagRoomList.Index(list.selected)
 	if index == -1 && indexInvisible >= 0 {
 		num := tagRoomList.TotalLength() - indexInvisible
-		tagRoomList.maxShown = int(math.Ceil(float64(num) / 10.0) * 10.0)
+		tagRoomList.maxShown = int(math.Ceil(float64(num)/10.0) * 10.0)
 		index = tagRoomList.IndexVisible(list.selected)
 	}
 
@@ -479,7 +479,7 @@ func (list *RoomList) Next() (string, *rooms.Room) {
 	indexInvisible := tagRoomList.Index(list.selected)
 	if index == -1 && indexInvisible >= 0 {
 		num := tagRoomList.TotalLength() - indexInvisible + 1
-		tagRoomList.maxShown = int(math.Ceil(float64(num) / 10.0) * 10.0)
+		tagRoomList.maxShown = int(math.Ceil(float64(num)/10.0) * 10.0)
 		index = tagRoomList.IndexVisible(list.selected)
 	}
 

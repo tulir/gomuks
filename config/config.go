@@ -21,13 +21,13 @@ import (
 	"os"
 	"path/filepath"
 
-	"gopkg.in/yaml.v2"
-	"maunium.net/go/gomuks/debug"
-	"maunium.net/go/gomuks/matrix/rooms"
-	"maunium.net/go/gomuks/matrix/pushrules"
 	"encoding/json"
-	"strings"
+	"gopkg.in/yaml.v2"
 	"maunium.net/go/gomatrix"
+	"maunium.net/go/gomuks/debug"
+	"maunium.net/go/gomuks/matrix/pushrules"
+	"maunium.net/go/gomuks/matrix/rooms"
+	"strings"
 )
 
 // Config contains the main config of gomuks.
@@ -261,7 +261,7 @@ func (config *Config) SaveRooms() {
 	if config.nosave {
 		return
 	}
-	
+
 	os.MkdirAll(config.StateDir, 0700)
 	for _, room := range config.Rooms {
 		path := config.getRoomCachePath(room)

@@ -22,17 +22,17 @@ import (
 	"strconv"
 
 	"github.com/evidlo/fuzzysearch/fuzzy"
+	"maunium.net/go/gomuks/debug"
 	"maunium.net/go/gomuks/matrix/rooms"
 	"maunium.net/go/gomuks/ui/widget"
-	"maunium.net/go/tview"
 	"maunium.net/go/tcell"
-	"maunium.net/go/gomuks/debug"
+	"maunium.net/go/tview"
 )
 
 type FuzzySearchModal struct {
 	tview.Primitive
 
-	search *tview.InputField
+	search  *tview.InputField
 	results *tview.TextView
 
 	matches  fuzzy.Ranks

@@ -337,7 +337,7 @@ func (c *Container) HandleReadReceipt(source EventSource, evt *gomatrix.Event) {
 	c.ui.Render()
 }
 
-func (c *Container) parseDirectChatInfo(evt *gomatrix.Event) (map[*rooms.Room]bool){
+func (c *Container) parseDirectChatInfo(evt *gomatrix.Event) map[*rooms.Room]bool {
 	directChats := make(map[*rooms.Room]bool)
 	for _, rawRoomIDList := range evt.Content {
 		roomIDList, ok := rawRoomIDList.([]interface{})
