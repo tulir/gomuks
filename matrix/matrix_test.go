@@ -117,7 +117,6 @@ func TestContainer_SendTyping(t *testing.T) {
 func TestContainer_JoinRoom(t *testing.T) {
 	defer os.RemoveAll("/tmp/gomuks-mxtest-2")
 	cfg := config.NewConfig("/tmp/gomuks-mxtest-2", "/tmp/gomuks-mxtest-2")
-	cfg.LoadSession("@user:example.com")
 	c := Container{client: mockClient(func(req *http.Request) (*http.Response, error) {
 		if req.Method == http.MethodPost && req.URL.Path == "/_matrix/client/r0/join/!foo:example.com" {
 			return mockResponse(http.StatusOK, `{"room_id": "!foo:example.com"}`), nil
@@ -140,8 +139,7 @@ func TestContainer_JoinRoom(t *testing.T) {
 func TestContainer_Download(t *testing.T) {
 	defer os.RemoveAll("/tmp/gomuks-mxtest-3")
 	cfg := config.NewConfig("/tmp/gomuks-mxtest-3", "/tmp/gomuks-mxtest-3")
-	cfg.Load()
-	cfg.LoadSession("@user:example.com")
+	cfg.LoadAll()
 	callCounter := 0
 	c := Container{client: mockClient(func(req *http.Request) (*http.Response, error) {
 		if req.Method != http.MethodGet || req.URL.Path != "/_matrix/media/v1/download/example.com/foobar" {
