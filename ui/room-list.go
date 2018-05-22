@@ -105,7 +105,7 @@ func (list *RoomList) CheckTag(tag string) {
 func (list *RoomList) AddToTag(tag rooms.RoomTag, room *rooms.Room) {
 	trl, ok := list.items[tag.Tag]
 	if !ok {
-		list.items[tag.Tag] = NewTagRoomList(list, tag.Tag, convertRoom(room))
+		list.items[tag.Tag] = NewTagRoomList(list, tag.Tag, NewDefaultOrderedRoom(room))
 		return
 	}
 

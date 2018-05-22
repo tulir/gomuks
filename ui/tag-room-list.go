@@ -26,32 +26,59 @@ import (
 	"maunium.net/go/tview"
 )
 
-type orderedRoom struct {
+type OrderedRoom struct {
 	*rooms.Room
 	order string
 }
 
-func newOrderedRoom(order string, room *rooms.Room) *orderedRoom {
-	return &orderedRoom{
+func NewOrderedRoom(order string, room *rooms.Room) *OrderedRoom {
+	return &OrderedRoom{
 		Room:  room,
 		order: order,
 	}
 }
 
-func convertRoom(room *rooms.Room) *orderedRoom {
-	return newOrderedRoom("0.5", room)
+func NewDefaultOrderedRoom(room *rooms.Room) *OrderedRoom {
+	return NewOrderedRoom("0.5", room)
+}
+
+func (or *OrderedRoom) Draw(roomList *RoomList, screen tcell.Screen, x, y, lineWidth int, isSelected bool) {
+	style := tcell.StyleDefault.
+		Foreground(roomList.mainTextColor).
+		Bold(or.HasNewMessages())
+	if isSelected {
+		style = style.
+			Foreground(roomList.selectedTextColor).
+			Background(roomList.selectedBackgroundColor)
+	}
+
+	unreadCount := or.UnreadCount()
+	if unreadCount > 0 {
+		unreadMessageCount := "99+"
+		if unreadCount < 100 {
+			unreadMessageCount = strconv.Itoa(unreadCount)
+		}
+		if or.Highlighted() {
+			unreadMessageCount += "!"
+		}
+		unreadMessageCount = fmt.Sprintf("(%s)", unreadMessageCount)
+		widget.WriteLine(screen, tview.AlignRight, unreadMessageCount, x+lineWidth-7, y, 7, style)
+		lineWidth -= len(unreadMessageCount)
+	}
+
+	widget.WriteLinePadded(screen, tview.AlignLeft, or.GetTitle(), x, y, lineWidth, style)
 }
 
 type TagRoomList struct {
 	*tview.Box
-	rooms       []*orderedRoom
+	rooms       []*OrderedRoom
 	maxShown    int
 	name        string
 	displayname string
 	parent      *RoomList
 }
 
-func NewTagRoomList(parent *RoomList, name string, rooms ...*orderedRoom) *TagRoomList {
+func NewTagRoomList(parent *RoomList, name string, rooms ...*OrderedRoom) *TagRoomList {
 	return &TagRoomList{
 		Box:         tview.NewBox(),
 		maxShown:    10,
@@ -62,7 +89,7 @@ func NewTagRoomList(parent *RoomList, name string, rooms ...*orderedRoom) *TagRo
 	}
 }
 
-func (trl *TagRoomList) Visible() []*orderedRoom {
+func (trl *TagRoomList) Visible() []*OrderedRoom {
 	return trl.rooms[len(trl.rooms)-trl.Length():]
 }
 
@@ -82,7 +109,7 @@ func (trl *TagRoomList) LastVisible() *rooms.Room {
 	return nil
 }
 
-func (trl *TagRoomList) All() []*orderedRoom {
+func (trl *TagRoomList) All() []*OrderedRoom {
 	return trl.rooms
 }
 
@@ -123,13 +150,13 @@ func (trl *TagRoomList) HasVisibleRooms() bool {
 
 // ShouldBeBefore returns if the first room should be after the second room in the room list.
 // The manual order and last received message timestamp are considered.
-func (trl *TagRoomList) ShouldBeAfter(room1 *orderedRoom, room2 *orderedRoom) bool {
+func (trl *TagRoomList) ShouldBeAfter(room1 *OrderedRoom, room2 *OrderedRoom) bool {
 	orderComp := strings.Compare(room1.order, room2.order)
 	return orderComp == 1 || (orderComp == 0 && room2.LastReceivedMessage.After(room1.LastReceivedMessage))
 }
 
 func (trl *TagRoomList) Insert(order string, mxRoom *rooms.Room) {
-	room := newOrderedRoom(order, mxRoom)
+	room := NewOrderedRoom(order, mxRoom)
 	trl.rooms = append(trl.rooms, nil)
 	// The default insert index is the newly added slot.
 	// That index will be used if all other rooms in the list have the same LastReceivedMessage timestamp.
@@ -149,28 +176,8 @@ func (trl *TagRoomList) Insert(order string, mxRoom *rooms.Room) {
 	trl.rooms[insertAt] = room
 }
 
-func (trl *TagRoomList) String() string {
-	var str strings.Builder
-	fmt.Fprintln(&str, "&TagRoomList{")
-	fmt.Fprintf(&str, "    maxShown: %d,\n", trl.maxShown)
-	fmt.Fprint(&str, "    rooms: {")
-	for i, room := range trl.rooms {
-		if room == nil {
-			fmt.Fprintf(&str, "<<NIL>>")
-		} else {
-			fmt.Fprint(&str, room.ID)
-		}
-		if i != len(trl.rooms)-1 {
-			fmt.Fprint(&str, ", ")
-		}
-	}
-	fmt.Fprintln(&str, "},")
-	fmt.Fprintln(&str, "}")
-	return str.String()
-}
-
 func (trl *TagRoomList) Bump(mxRoom *rooms.Room) {
-	var found *orderedRoom
+	var found *OrderedRoom
 	for i := 0; i < len(trl.rooms); i++ {
 		currentRoom := trl.rooms[i]
 		if found != nil {
@@ -209,7 +216,7 @@ func (trl *TagRoomList) IndexVisible(room *rooms.Room) int {
 	return trl.indexInList(trl.Visible(), room)
 }
 
-func (trl *TagRoomList) indexInList(list []*orderedRoom, room *rooms.Room) int {
+func (trl *TagRoomList) indexInList(list []*OrderedRoom, room *rooms.Room) int {
 	for index, entry := range list {
 		if entry.Room == room {
 			return index
@@ -236,14 +243,8 @@ func (trl *TagRoomList) RenderHeight() int {
 	return height
 }
 
-func (trl *TagRoomList) Draw(screen tcell.Screen) {
-	if len(trl.displayname) == 0 {
-		return
-	}
-
-	x, y, width, height := trl.GetRect()
-	yLimit := y + height
-
+func (trl *TagRoomList) DrawHeader(screen tcell.Screen) {
+	x, y, width, _ := trl.GetRect()
 	roomCount := strconv.Itoa(trl.TotalLength())
 
 	// Draw tag name
@@ -254,6 +255,17 @@ func (trl *TagRoomList) Draw(screen tcell.Screen) {
 	roomCountX := x + len(trl.displayname) + 1
 	roomCountWidth := width - 2 - len(trl.displayname)
 	widget.WriteLine(screen, tview.AlignLeft, roomCount, roomCountX, y, roomCountWidth, TagRoomCountStyle)
+}
+
+func (trl *TagRoomList) Draw(screen tcell.Screen) {
+	if len(trl.displayname) == 0 {
+		return
+	}
+
+	trl.DrawHeader(screen)
+
+	x, y, width, height := trl.GetRect()
+	yLimit := y + height
 
 	items := trl.Visible()
 
@@ -271,33 +283,9 @@ func (trl *TagRoomList) Draw(screen tcell.Screen) {
 
 		item := items[i]
 
-		text := item.GetTitle()
-
 		lineWidth := width
-
-		style := tcell.StyleDefault.Foreground(trl.parent.mainTextColor)
-		if trl.name == trl.parent.selectedTag && item.Room == trl.parent.selected {
-			style = style.Foreground(trl.parent.selectedTextColor).Background(trl.parent.selectedBackgroundColor)
-		}
-		if item.HasNewMessages() {
-			style = style.Bold(true)
-		}
-
-		unreadCount := item.UnreadCount()
-		if unreadCount > 0 {
-			unreadMessageCount := "99+"
-			if unreadCount < 100 {
-				unreadMessageCount = strconv.Itoa(unreadCount)
-			}
-			if item.Highlighted() {
-				unreadMessageCount += "!"
-			}
-			unreadMessageCount = fmt.Sprintf("(%s)", unreadMessageCount)
-			widget.WriteLine(screen, tview.AlignRight, unreadMessageCount, x+lineWidth-7, y+offsetY, 7, style)
-			lineWidth -= len(unreadMessageCount)
-		}
-
-		widget.WriteLinePadded(screen, tview.AlignLeft, text, x, y+offsetY, lineWidth, style)
+		isSelected := trl.name == trl.parent.selectedTag && item.Room == trl.parent.selected
+		item.Draw(trl.parent, screen, x, y+offsetY, lineWidth, isSelected)
 		offsetY++
 	}
 	hasLess := trl.maxShown > 10
