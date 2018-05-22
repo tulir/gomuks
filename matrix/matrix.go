@@ -95,7 +95,7 @@ func (c *Container) InitClient() error {
 		return err
 	}
 
-	allowInsecure := len(os.Getenv("GOMUKS_ALLOW_INSECURE_SERVER")) > 0
+	allowInsecure := len(os.Getenv("GOMUKS_ALLOW_INSECURE_CONNECTIONS")) > 0
 	if allowInsecure {
 		c.client.Client = &http.Client{
 			Transport: &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}},
