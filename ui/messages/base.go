@@ -41,7 +41,9 @@ type BaseMessage struct {
 	MsgIsHighlight  bool
 	MsgIsService    bool
 	buffer          []tstring.TString
+	plainBuffer     []tstring.TString
 	prevBufferWidth int
+	prevBareMode    bool
 }
 
 func newBaseMessage(id, sender, displayname, msgtype string, timestamp time.Time) BaseMessage {
@@ -53,6 +55,7 @@ func newBaseMessage(id, sender, displayname, msgtype string, timestamp time.Time
 		MsgType:         msgtype,
 		MsgID:           id,
 		prevBufferWidth: 0,
+		prevBareMode:    false,
 		MsgState:        ifc.MessageStateDefault,
 		MsgIsHighlight:  false,
 		MsgIsService:    false,

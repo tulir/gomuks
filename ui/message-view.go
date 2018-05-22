@@ -50,6 +50,7 @@ type MessageView struct {
 	prevWidth    int
 	prevHeight   int
 	prevMsgCount int
+	prevBareMode bool
 
 	messageIDs map[string]messages.UIMessage
 	messages   []messages.UIMessage
@@ -76,6 +77,7 @@ func NewMessageView(parent *RoomView) *MessageView {
 		prevWidth:    -1,
 		prevHeight:   -1,
 		prevMsgCount: -1,
+		prevBareMode: false,
 	}
 }
 
@@ -168,9 +170,12 @@ func (view *MessageView) AddMessage(ifcMessage ifc.Message, direction ifc.Messag
 
 	view.updateWidestSender(message.Sender())
 
-	_, _, width, _ := view.GetInnerRect()
-	width -= view.TimestampWidth + TimestampSenderGap + view.widestSender + SenderMessageGap
-	message.CalculateBuffer(width)
+	_, _, width, _ := view.GetRect()
+	bare := view.parent.parent.bareDisplay
+	if !bare {
+		width -= view.TimestampWidth + TimestampSenderGap + view.widestSender + SenderMessageGap
+	}
+	message.CalculateBuffer(bare, width)
 
 	if direction == ifc.AppendMessage {
 		if view.ScrollOffset > 0 {
@@ -258,11 +263,13 @@ func (view *MessageView) replaceBuffer(original messages.UIMessage, new messages
 }
 
 func (view *MessageView) recalculateBuffers() {
-	_, _, width, height := view.GetInnerRect()
-
-	width -= view.TimestampWidth + TimestampSenderGap + view.widestSender + SenderMessageGap
-	recalculateMessageBuffers := width != view.prevWidth
-	if height != view.prevHeight || recalculateMessageBuffers || len(view.messages) != view.prevMsgCount {
+	_, _, width, height := view.GetRect()
+	bareMode := view.parent.parent.bareDisplay
+	if !bareMode {
+		width -= view.TimestampWidth + TimestampSenderGap + view.widestSender + SenderMessageGap
+	}
+	recalculateMessageBuffers := width != view.prevWidth || bareMode != view.prevBareMode
+	if recalculateMessageBuffers || len(view.messages) != view.prevMsgCount {
 		view.textBuffer = []tstring.TString{}
 		view.metaBuffer = []ifc.MessageMeta{}
 		view.prevMsgCount = 0
@@ -272,13 +279,14 @@ func (view *MessageView) recalculateBuffers() {
 				break
 			}
 			if recalculateMessageBuffers {
-				message.CalculateBuffer(width)
+				message.CalculateBuffer(bareMode, width)
 			}
 			view.appendBuffer(message)
 		}
-		view.prevHeight = height
-		view.prevWidth = width
 	}
+	view.prevHeight = height
+	view.prevWidth = width
+	view.prevBareMode = bareMode
 }
 
 func (view *MessageView) handleMessageClick(message ifc.MessageMeta) bool {
@@ -362,7 +370,7 @@ func (view *MessageView) HandleClick(x, y int, button tcell.ButtonMask) bool {
 const PaddingAtTop = 5
 
 func (view *MessageView) AddScrollOffset(diff int) {
-	_, _, _, height := view.GetInnerRect()
+	_, _, _, height := view.GetRect()
 
 	totalHeight := view.TotalHeight()
 	if diff >= 0 && view.ScrollOffset+diff >= totalHeight-height+PaddingAtTop {
@@ -380,7 +388,7 @@ func (view *MessageView) AddScrollOffset(diff int) {
 }
 
 func (view *MessageView) Height() int {
-	_, _, _, height := view.GetInnerRect()
+	_, _, _, height := view.GetRect()
 	return height
 }
 
@@ -389,7 +397,7 @@ func (view *MessageView) TotalHeight() int {
 }
 
 func (view *MessageView) IsAtTop() bool {
-	_, _, _, height := view.GetInnerRect()
+	_, _, _, height := view.GetRect()
 	totalHeight := len(view.textBuffer)
 	return view.ScrollOffset >= totalHeight-height+PaddingAtTop
 }
@@ -442,14 +450,14 @@ func (view *MessageView) getIndexOffset(screen tcell.Screen, height, messageX in
 		if view.LoadingMessages {
 			message = "Loading more messages..."
 		}
-		_, y, _, _ := view.GetInnerRect()
+		_, y, _, _ := view.GetRect()
 		widget.WriteLineSimpleColor(screen, message, messageX, y, tcell.ColorGreen)
 	}
 	return
 }
 
 func (view *MessageView) Draw(screen tcell.Screen) {
-	x, y, _, height := view.GetInnerRect()
+	x, y, _, height := view.GetRect()
 	view.recalculateBuffers()
 
 	if view.TotalHeight() == 0 {
@@ -460,6 +468,11 @@ func (view *MessageView) Draw(screen tcell.Screen) {
 	usernameX := x + view.TimestampWidth + TimestampSenderGap
 	messageX := usernameX + view.widestSender + SenderMessageGap
 	separatorX := usernameX + view.widestSender + SenderSeparatorGap
+
+	bareMode := view.parent.parent.bareDisplay
+	if bareMode {
+		messageX = 0
+	}
 
 	indexOffset := view.getIndexOffset(screen, height, messageX)
 
@@ -491,14 +504,16 @@ func (view *MessageView) Draw(screen tcell.Screen) {
 
 		firstLine = false
 
-		screen.SetContent(separatorX, y+line, borderChar, nil, borderStyle)
+		if !bareMode {
+			screen.SetContent(separatorX, y+line, borderChar, nil, borderStyle)
+		}
 
 		text, meta := view.textBuffer[index], view.metaBuffer[index]
 		if meta != prevMeta {
 			if len(meta.FormatTime()) > 0 {
 				widget.WriteLineSimpleColor(screen, meta.FormatTime(), x, y+line, meta.TimestampColor())
 			}
-			if prevMeta == nil || meta.Sender() != prevMeta.Sender() {
+			if !bareMode && (prevMeta == nil || meta.Sender() != prevMeta.Sender()) {
 				widget.WriteLineColor(
 					screen, tview.AlignRight, meta.Sender(),
 					usernameX, y+line, view.widestSender,

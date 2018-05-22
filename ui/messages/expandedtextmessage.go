@@ -28,14 +28,14 @@ func init() {
 }
 
 type ExpandedTextMessage struct {
-	BaseTextMessage
+	BaseMessage
 	MsgText tstring.TString
 }
 
 // NewExpandedTextMessage creates a new ExpandedTextMessage object with the provided values and the default state.
 func NewExpandedTextMessage(id, sender, displayname, msgtype string, text tstring.TString, timestamp time.Time) UIMessage {
 	return &ExpandedTextMessage{
-		BaseTextMessage: newBaseTextMessage(id, sender, displayname, msgtype, timestamp),
+		BaseMessage: newBaseMessage(id, sender, displayname, msgtype, timestamp),
 		MsgText:         text,
 	}
 }
@@ -48,11 +48,15 @@ func (msg *ExpandedTextMessage) NotificationContent() string {
 	return msg.MsgText.String()
 }
 
-func (msg *ExpandedTextMessage) CalculateBuffer(width int) {
-	msg.BaseTextMessage.calculateBufferWithText(msg.MsgText, width)
+func (msg *ExpandedTextMessage) PlainText() string {
+	return msg.MsgText.String()
+}
+
+func (msg *ExpandedTextMessage) CalculateBuffer(bare bool, width int) {
+	msg.calculateBufferWithText(bare, msg.MsgText, width)
 }
 
 // RecalculateBuffer calculates the buffer again with the previously provided width.
 func (msg *ExpandedTextMessage) RecalculateBuffer() {
-	msg.CalculateBuffer(msg.prevBufferWidth)
+	msg.CalculateBuffer(msg.prevBareMode, msg.prevBufferWidth)
 }

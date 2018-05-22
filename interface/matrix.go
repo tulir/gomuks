@@ -43,5 +43,6 @@ type MatrixContainer interface {
 	GetRoom(roomID string) *rooms.Room
 
 	Download(mxcURL string) ([]byte, string, string, error)
+	GetDownloadURL(homeserver, fileID string) string
 	GetCachePath(homeserver, fileID string) string
 }

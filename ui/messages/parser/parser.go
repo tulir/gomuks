@@ -56,6 +56,7 @@ func ParseMessage(matrix ifc.MatrixContainer, room *rooms.Room, evt *gomatrix.Ev
 		displayname = member.DisplayName
 	}
 	msgtype, _ := evt.Content["msgtype"].(string)
+	text, _ := evt.Content["body"].(string)
 	ts := unixToTime(evt.Timestamp)
 	switch msgtype {
 	case "m.text", "m.notice", "m.emote":
@@ -64,7 +65,6 @@ func ParseMessage(matrix ifc.MatrixContainer, room *rooms.Room, evt *gomatrix.Ev
 			text := ParseHTMLMessage(room, evt, displayname)
 			return messages.NewExpandedTextMessage(evt.ID, evt.Sender, displayname, msgtype, text, ts)
 		}
-		text, _ := evt.Content["body"].(string)
 		text = strings.Replace(text, "\t", "    ", -1)
 		return messages.NewTextMessage(evt.ID, evt.Sender, displayname, msgtype, text, ts)
 	case "m.image":
@@ -73,7 +73,7 @@ func ParseMessage(matrix ifc.MatrixContainer, room *rooms.Room, evt *gomatrix.Ev
 		if err != nil {
 			debug.Printf("Failed to download %s: %v", url, err)
 		}
-		return messages.NewImageMessage(matrix, evt.ID, evt.Sender, displayname, msgtype, hs, id, data, ts)
+		return messages.NewImageMessage(matrix, evt.ID, evt.Sender, displayname, msgtype, text, hs, id, data, ts)
 	}
 	return nil
 }

@@ -579,12 +579,15 @@ func (c *Container) Download(mxcURL string) (data []byte, hs, id string, err err
 	return
 }
 
-func (c *Container) download(hs, id, cacheFile string) (data []byte, err error) {
+func (c *Container) GetDownloadURL(hs, id string) string {
 	dlURL, _ := url.Parse(c.client.HomeserverURL.String())
 	dlURL.Path = path.Join(dlURL.Path, "/_matrix/media/v1/download", hs, id)
+	return dlURL.String()
+}
 
+func (c *Container) download(hs, id, cacheFile string) (data []byte, err error) {
 	var resp *http.Response
-	resp, err = c.client.Client.Get(dlURL.String())
+	resp, err = c.client.Client.Get(c.GetDownloadURL(hs, id))
 	if err != nil {
 		return
 	}

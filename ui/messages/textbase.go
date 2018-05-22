@@ -17,35 +17,26 @@
 package messages
 
 import (
-	"encoding/gob"
 	"regexp"
-	"time"
-
 	"maunium.net/go/gomuks/ui/messages/tstring"
+	"fmt"
 )
-
-func init() {
-	gob.Register(BaseTextMessage{})
-}
-
-type BaseTextMessage struct {
-	BaseMessage
-}
-
-func newBaseTextMessage(id, sender, displayname, msgtype string, timestamp time.Time) BaseTextMessage {
-	return BaseTextMessage{newBaseMessage(id, sender, displayname, msgtype, timestamp)}
-}
 
 // Regular expressions used to split lines when calculating the buffer.
 //
 // From tview/textview.go
 var (
-	boundaryPattern = regexp.MustCompile("([[:punct:]]\\s*|\\s+)")
+	boundaryPattern = regexp.MustCompile(`([[:punct:]]\s*|\s+)`)
+	bareBoundaryPattern = regexp.MustCompile(`(\s+)`)
 	spacePattern    = regexp.MustCompile(`\s+`)
 )
 
-func matchBoundaryPattern(extract tstring.TString) tstring.TString {
-	matches := boundaryPattern.FindAllStringIndex(extract.String(), -1)
+func matchBoundaryPattern(bare bool, extract tstring.TString) tstring.TString {
+	regex := boundaryPattern
+	if bare {
+		regex = bareBoundaryPattern
+	}
+	matches := regex.FindAllStringIndex(extract.String(), -1)
 	if len(matches) > 0 {
 		if match := matches[len(matches)-1]; len(match) >= 2 {
 			if until := match[1]; until < len(extract) {
@@ -59,12 +50,19 @@ func matchBoundaryPattern(extract tstring.TString) tstring.TString {
 // CalculateBuffer generates the internal buffer for this message that consists
 // of the text of this message split into lines at most as wide as the width
 // parameter.
-func (msg *BaseTextMessage) calculateBufferWithText(text tstring.TString, width int) {
+func (msg *BaseMessage) calculateBufferWithText(bare bool, text tstring.TString, width int) {
 	if width < 2 {
 		return
 	}
 
 	msg.buffer = []tstring.TString{}
+
+	if bare {
+		text = tstring.
+			NewTString(msg.FormatTime()).
+			AppendTString(tstring.NewColorTString(fmt.Sprintf(" <%s> ", msg.Sender()), msg.SenderColor())).
+			AppendTString(text)
+	}
 
 	forcedLinebreaks := text.Split('\n')
 	newlines := 0
@@ -82,11 +80,12 @@ func (msg *BaseTextMessage) calculateBufferWithText(text tstring.TString, width 
 				if spaces := spacePattern.FindStringIndex(str[len(extract):].String()); spaces != nil && spaces[0] == 0 {
 					extract = str[:len(extract)+spaces[1]]
 				}
-				extract = matchBoundaryPattern(extract)
+				extract = matchBoundaryPattern(bare, extract)
 			}
 			msg.buffer = append(msg.buffer, extract)
 			str = str[len(extract):]
 		}
 	}
 	msg.prevBufferWidth = width
+	msg.prevBareMode = bare
 }

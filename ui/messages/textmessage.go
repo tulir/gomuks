@@ -30,7 +30,7 @@ func init() {
 }
 
 type TextMessage struct {
-	BaseTextMessage
+	BaseMessage
 	cache   tstring.TString
 	MsgText string
 }
@@ -38,7 +38,7 @@ type TextMessage struct {
 // NewTextMessage creates a new UITextMessage object with the provided values and the default state.
 func NewTextMessage(id, sender, displayname, msgtype, text string, timestamp time.Time) UIMessage {
 	return &TextMessage{
-		BaseTextMessage: newBaseTextMessage(id, sender, displayname, msgtype, timestamp),
+		BaseMessage: newBaseMessage(id, sender, displayname, msgtype, timestamp),
 		MsgText:         text,
 	}
 }
@@ -57,22 +57,22 @@ func (msg *TextMessage) getCache() tstring.TString {
 }
 
 func (msg *TextMessage) SetType(msgtype string) {
-	msg.BaseTextMessage.SetType(msgtype)
+	msg.BaseMessage.SetType(msgtype)
 	msg.cache = nil
 }
 
 func (msg *TextMessage) SetState(state ifc.MessageState) {
-	msg.BaseTextMessage.SetState(state)
+	msg.BaseMessage.SetState(state)
 	msg.cache = nil
 }
 
 func (msg *TextMessage) SetIsHighlight(isHighlight bool) {
-	msg.BaseTextMessage.SetIsHighlight(isHighlight)
+	msg.BaseMessage.SetIsHighlight(isHighlight)
 	msg.cache = nil
 }
 
 func (msg *TextMessage) SetIsService(isService bool) {
-	msg.BaseTextMessage.SetIsService(isService)
+	msg.BaseMessage.SetIsService(isService)
 	msg.cache = nil
 }
 
@@ -80,11 +80,15 @@ func (msg *TextMessage) NotificationContent() string {
 	return msg.MsgText
 }
 
-func (msg *TextMessage) CalculateBuffer(width int) {
-	msg.BaseTextMessage.calculateBufferWithText(msg.getCache(), width)
+func (msg *TextMessage) PlainText() string {
+	return msg.MsgText
+}
+
+func (msg *TextMessage) CalculateBuffer(bare bool, width int) {
+	msg.calculateBufferWithText(bare, msg.getCache(), width)
 }
 
 // RecalculateBuffer calculates the buffer again with the previously provided width.
 func (msg *TextMessage) RecalculateBuffer() {
-	msg.CalculateBuffer(msg.prevBufferWidth)
+	msg.CalculateBuffer(msg.prevBareMode, msg.prevBufferWidth)
 }

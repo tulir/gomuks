@@ -25,7 +25,7 @@ import (
 type UIMessage interface {
 	ifc.Message
 
-	CalculateBuffer(width int)
+	CalculateBuffer(bare bool, width int)
 	RecalculateBuffer()
 	Buffer() []tstring.TString
 	Height() int

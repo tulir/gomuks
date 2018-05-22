@@ -426,7 +426,7 @@ func (list *RoomList) GetTagDisplayName(tag string) string {
 func (list *RoomList) Draw(screen tcell.Screen) {
 	list.Box.Draw(screen)
 
-	x, y, width, height := list.GetInnerRect()
+	x, y, width, height := list.GetRect()
 	yLimit := y + height
 	y -= list.scrollOffset
 

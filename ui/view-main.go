@@ -48,6 +48,18 @@ type MainView struct {
 	gmx    ifc.Gomuks
 	config *config.Config
 	parent *GomuksUI
+
+	hideUserList bool
+	hideRoomList bool
+	bareDisplay  bool
+}
+
+func (view *MainView) ShowRoomList() bool {
+	return !view.bareDisplay && !view.hideRoomList
+}
+
+func (view *MainView) ShowUserList() bool {
+	return !view.bareDisplay && !view.hideUserList
 }
 
 func (ui *GomuksUI) NewMainView() tview.Primitive {
@@ -63,15 +75,25 @@ func (ui *GomuksUI) NewMainView() tview.Primitive {
 		parent: ui,
 	}
 
-	mainView.SetDirection(tview.FlexColumn)
-	mainView.AddItem(mainView.roomList, 25, 0, false)
-	mainView.AddItem(widget.NewBorder(), 1, 0, false)
-	mainView.AddItem(mainView.roomView, 0, 1, true)
+	mainView.
+		SetDirection(tview.FlexColumn).
+		AddItem(mainView.roomList, 25, 0, false).
+		AddItem(widget.NewBorder(), 1, 0, false).
+		AddItem(mainView.roomView, 0, 1, true)
 	mainView.BumpFocus(nil)
 
 	ui.mainView = mainView
 
 	return mainView
+}
+
+func (view *MainView) Draw(screen tcell.Screen) {
+	if !view.ShowRoomList() {
+		view.roomView.SetRect(view.GetRect())
+		view.roomView.Draw(screen)
+	} else {
+		view.Flex.Draw(screen)
+	}
 }
 
 func (view *MainView) BumpFocus(roomView *RoomView) {
@@ -195,16 +217,20 @@ func (view *MainView) KeyEventHandler(roomView *RoomView, key *tcell.EventKey) *
 	view.BumpFocus(roomView)
 
 	k := key.Key()
+	c := key.Rune()
 	if key.Modifiers() == tcell.ModCtrl || key.Modifiers() == tcell.ModAlt {
-		switch k {
-		case tcell.KeyDown:
+		switch {
+		case k == tcell.KeyDown:
 			view.SwitchRoom(view.roomList.Next())
-		case tcell.KeyUp:
+		case k == tcell.KeyUp:
 			view.SwitchRoom(view.roomList.Previous())
-		case tcell.KeyEnter:
+		case k == tcell.KeyEnter:
 			searchModal := NewFuzzySearchModal(view, 42, 12)
 			view.parent.views.AddPage("fuzzy-search-modal", searchModal, true, true)
 			view.parent.app.SetFocus(searchModal)
+		case c == 'l':
+			view.bareDisplay = !view.bareDisplay
+			view.parent.Render()
 		default:
 			return key
 		}

@@ -37,6 +37,7 @@ func init() {
 
 type ImageMessage struct {
 	BaseMessage
+	Body string
 	Homeserver string
 	FileID     string
 	data       []byte
@@ -45,9 +46,10 @@ type ImageMessage struct {
 }
 
 // NewImageMessage creates a new ImageMessage object with the provided values and the default state.
-func NewImageMessage(matrix ifc.MatrixContainer, id, sender, displayname, msgtype, homeserver, fileID string, data []byte, timestamp time.Time) UIMessage {
+func NewImageMessage(matrix ifc.MatrixContainer, id, sender, displayname, msgtype, body, homeserver, fileID string, data []byte, timestamp time.Time) UIMessage {
 	return &ImageMessage{
 		newBaseMessage(id, sender, displayname, msgtype, timestamp),
+		body,
 		homeserver,
 		fileID,
 		data,
@@ -65,6 +67,10 @@ func (msg *ImageMessage) RegisterMatrix(matrix ifc.MatrixContainer) {
 
 func (msg *ImageMessage) NotificationContent() string {
 	return "Sent an image"
+}
+
+func (msg *ImageMessage) PlainText() string {
+	return fmt.Sprintf("%s: %s", msg.Body, msg.matrix.GetDownloadURL(msg.Homeserver, msg.FileID))
 }
 
 func (msg *ImageMessage) updateData() {
@@ -86,8 +92,13 @@ func (msg *ImageMessage) Path() string {
 // CalculateBuffer generates the internal buffer for this message that consists
 // of the text of this message split into lines at most as wide as the width
 // parameter.
-func (msg *ImageMessage) CalculateBuffer(width int) {
+func (msg *ImageMessage) CalculateBuffer(bare bool, width int) {
 	if width < 2 {
+		return
+	}
+
+	if bare {
+		msg.calculateBufferWithText(bare, tstring.NewTString(msg.PlainText()), width)
 		return
 	}
 
@@ -100,9 +111,10 @@ func (msg *ImageMessage) CalculateBuffer(width int) {
 
 	msg.buffer = image.Render()
 	msg.prevBufferWidth = width
+	msg.prevBareMode = false
 }
 
 // RecalculateBuffer calculates the buffer again with the previously provided width.
 func (msg *ImageMessage) RecalculateBuffer() {
-	msg.CalculateBuffer(msg.prevBufferWidth)
+	msg.CalculateBuffer(msg.prevBareMode, msg.prevBufferWidth)
 }

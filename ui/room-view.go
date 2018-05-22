@@ -147,23 +147,11 @@ func (view *RoomView) Focus(delegate func(p tview.Primitive)) {
 	delegate(view.input)
 }
 
-// Constants defining the size of the room view grid.
-const (
-	UserListBorderWidth   = 1
-	UserListWidth         = 20
-	StaticHorizontalSpace = UserListBorderWidth + UserListWidth
-
-	TopicBarHeight      = 1
-	StatusBarHeight     = 1
-	InputBarHeight      = 1
-	StaticVerticalSpace = TopicBarHeight + StatusBarHeight + InputBarHeight
-)
-
 func (view *RoomView) GetStatus() string {
 	var buf strings.Builder
 
 	if len(view.completions.list) > 0 {
-		if view.completions.textCache != view.input.GetText() || view.completions.time.Add(10*time.Second).Before(time.Now()) {
+		if view.completions.textCache != view.input.GetText() || view.completions.time.Add(10 * time.Second).Before(time.Now()) {
 			view.completions.list = []string{}
 		} else {
 			buf.WriteString(strings.Join(view.completions.list, ", "))
@@ -184,10 +172,22 @@ func (view *RoomView) GetStatus() string {
 }
 
 func (view *RoomView) Draw(screen tcell.Screen) {
-	x, y, width, height := view.GetInnerRect()
+	x, y, width, height := view.GetRect()
 	if width <= 0 || height <= 0 {
 		return
 	}
+
+	// Constants defining the size of the room view grid.
+	const (
+		UserListBorderWidth   = 1
+		UserListWidth         = 20
+		StaticHorizontalSpace = UserListBorderWidth + UserListWidth
+
+		TopicBarHeight      = 1
+		StatusBarHeight     = 1
+		InputBarHeight      = 1
+		StaticVerticalSpace = TopicBarHeight + StatusBarHeight + InputBarHeight
+	)
 
 	// Calculate actual grid based on view rectangle and constants defined above.
 	var (
@@ -202,12 +202,15 @@ func (view *RoomView) Draw(screen tcell.Screen) {
 		statusRow  = contentRow + contentHeight
 		inputRow   = statusRow + StatusBarHeight
 	)
+	if !view.parent.ShowUserList() {
+		contentWidth = width
+	}
 
 	// Update the rectangles of all the children.
 	view.topic.SetRect(x, topicRow, width, TopicBarHeight)
 	view.content.SetRect(x, contentRow, contentWidth, contentHeight)
 	view.status.SetRect(x, statusRow, width, StatusBarHeight)
-	if userListColumn > x {
+	if view.parent.ShowUserList() && userListColumn > x {
 		view.userList.SetRect(userListColumn, contentRow, UserListWidth, contentHeight)
 		view.ulBorder.SetRect(userListBorderColumn, contentRow, UserListBorderWidth, contentHeight)
 	}
@@ -220,8 +223,10 @@ func (view *RoomView) Draw(screen tcell.Screen) {
 	view.status.SetText(view.GetStatus())
 	view.status.Draw(screen)
 	view.input.Draw(screen)
-	view.ulBorder.Draw(screen)
-	view.userList.Draw(screen)
+	if view.parent.ShowUserList() {
+		view.ulBorder.Draw(screen)
+		view.userList.Draw(screen)
+	}
 }
 
 func (view *RoomView) SetCompletions(completions []string) {
