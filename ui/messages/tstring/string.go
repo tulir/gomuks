@@ -67,19 +67,22 @@ func (str TString) Append(data string) TString {
 }
 
 func (str TString) AppendColor(data string, color tcell.Color) TString {
-	newStr := make(TString, len(str)+len(data))
-	copy(newStr, str)
-	for i, char := range data {
-		newStr[i+len(str)] = NewColorCell(char, color)
-	}
-	return newStr
+	return str.AppendCustom(data, func(r rune) Cell {
+		return NewColorCell(r, color)
+	})
 }
 
 func (str TString) AppendStyle(data string, style tcell.Style) TString {
+	return str.AppendCustom(data, func(r rune) Cell {
+		return NewStyleCell(r, style)
+	})
+}
+
+func (str TString) AppendCustom(data string, cellCreator func(rune) Cell) TString {
 	newStr := make(TString, len(str)+len(data))
 	copy(newStr, str)
 	for i, char := range data {
-		newStr[i+len(str)] = NewStyleCell(char, style)
+		newStr[i+len(str)] = cellCreator(char)
 	}
 	return newStr
 }

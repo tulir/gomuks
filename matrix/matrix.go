@@ -254,6 +254,47 @@ func (c *Container) HandleMessage(source EventSource, evt *gomatrix.Event) {
 	}
 }
 
+// HandleMembership is the event handler for the m.room.member state event.
+func (c *Container) HandleMembership(source EventSource, evt *gomatrix.Event) {
+	isLeave := source&EventSourceLeave != 0
+	isTimeline := source&EventSourceTimeline != 0
+	isNonTimelineLeave := isLeave && !isTimeline
+	if !c.config.AuthCache.InitialSyncDone && isNonTimelineLeave {
+		return
+	} else if evt.StateKey != nil && *evt.StateKey == c.config.UserID {
+		c.processOwnMembershipChange(evt)
+	} else if !isTimeline && (!c.config.AuthCache.InitialSyncDone || isLeave) {
+		// We don't care about other users' membership events in the initial sync or chats we've left.
+		return
+	}
+
+	c.HandleMessage(source, evt)
+}
+
+func (c *Container) processOwnMembershipChange(evt *gomatrix.Event) {
+	membership, _ := evt.Content["membership"].(string)
+	prevMembership := "leave"
+	if evt.Unsigned.PrevContent != nil {
+		prevMembership, _ = evt.Unsigned.PrevContent["membership"].(string)
+	}
+	debug.Printf("Processing own membership change: %s->%s in %s", prevMembership, membership, evt.RoomID)
+	if membership == prevMembership {
+		return
+	}
+	room := c.GetRoom(evt.RoomID)
+	switch membership {
+	case "join":
+		c.ui.MainView().AddRoom(room)
+		room.HasLeft = false
+	case "leave":
+		c.ui.MainView().RemoveRoom(room)
+		room.HasLeft = true
+	case "invite":
+		// TODO handle
+		debug.Printf("%s invited the user to %s", evt.Sender, evt.RoomID)
+	}
+}
+
 func (c *Container) parseReadReceipt(evt *gomatrix.Event) (largestTimestampEvent string) {
 	var largestTimestamp int64
 	for eventID, rawContent := range evt.Content {
@@ -366,63 +407,6 @@ func (c *Container) HandleTag(source EventSource, evt *gomatrix.Event) {
 	mainView := c.ui.MainView()
 	room.RawTags = newTags
 	mainView.UpdateTags(room)
-}
-
-func (c *Container) processOwnMembershipChange(evt *gomatrix.Event) {
-	membership, _ := evt.Content["membership"].(string)
-	prevMembership := "leave"
-	if evt.Unsigned.PrevContent != nil {
-		prevMembership, _ = evt.Unsigned.PrevContent["membership"].(string)
-	}
-	debug.Printf("Processing own membership change: %s->%s in %s", prevMembership, membership, evt.RoomID)
-	if membership == prevMembership {
-		return
-	}
-	room := c.GetRoom(evt.RoomID)
-	switch membership {
-	case "join":
-		c.ui.MainView().AddRoom(room)
-		room.HasLeft = false
-	case "leave":
-		c.ui.MainView().RemoveRoom(room)
-		room.HasLeft = true
-	case "invite":
-		// TODO handle
-		debug.Printf("%s invited the user to %s", evt.Sender, evt.RoomID)
-	}
-}
-
-// HandleMembership is the event handler for the m.room.member state event.
-func (c *Container) HandleMembership(source EventSource, evt *gomatrix.Event) {
-	isLeave := source&EventSourceLeave != 0
-	isTimeline := source&EventSourceTimeline != 0
-	isNonTimelineLeave := isLeave && !isTimeline
-	if !c.config.AuthCache.InitialSyncDone && isNonTimelineLeave {
-		return
-	} else if evt.StateKey != nil && *evt.StateKey == c.config.UserID {
-		c.processOwnMembershipChange(evt)
-	} else if !isTimeline && (!c.config.AuthCache.InitialSyncDone || isLeave) {
-		// We don't care about other users' membership events in the initial sync or chats we've left.
-		return
-	}
-
-	mainView := c.ui.MainView()
-	roomView := mainView.GetRoom(evt.RoomID)
-	if roomView == nil {
-		return
-	}
-
-	message := mainView.ParseEvent(roomView, evt)
-	if message != nil {
-		roomView.AddMessage(message, ifc.AppendMessage)
-		roomView.MxRoom().LastReceivedMessage = message.Timestamp()
-		// We don't want notifications at startup.
-		if c.syncer.FirstSyncDone {
-			pushRules := c.PushRules().GetActions(roomView.MxRoom(), evt).Should()
-			mainView.NotifyMessage(roomView.MxRoom(), message, pushRules)
-			c.ui.Render()
-		}
-	}
 }
 
 // HandleTyping is the event handler for the m.typing event.

@@ -44,6 +44,18 @@ var (
 	spacePattern    = regexp.MustCompile(`\s+`)
 )
 
+func matchBoundaryPattern(extract tstring.TString) tstring.TString {
+	matches := boundaryPattern.FindAllStringIndex(extract.String(), -1)
+	if len(matches) > 0 {
+		if match := matches[len(matches)-1]; len(match) >= 2 {
+			if until := match[1]; until < len(extract) {
+				extract = extract[:until]
+			}
+		}
+	}
+	return extract
+}
+
 // CalculateBuffer generates the internal buffer for this message that consists
 // of the text of this message split into lines at most as wide as the width
 // parameter.
@@ -63,24 +75,14 @@ func (msg *BaseTextMessage) calculateBufferWithText(text tstring.TString, width 
 		} else {
 			newlines = 0
 		}
-		// Mostly from tview/textview.go#reindexBuffer()
+		// Adapted from tview/textview.go#reindexBuffer()
 		for len(str) > 0 {
 			extract := str.Truncate(width)
 			if len(extract) < len(str) {
 				if spaces := spacePattern.FindStringIndex(str[len(extract):].String()); spaces != nil && spaces[0] == 0 {
 					extract = str[:len(extract)+spaces[1]]
 				}
-
-				matches := boundaryPattern.FindAllStringIndex(extract.String(), -1)
-				if len(matches) > 0 {
-					match := matches[len(matches)-1]
-					if len(match) >= 2 {
-						until := match[1]
-						if until < len(extract) {
-							extract = extract[:until]
-						}
-					}
-				}
+				extract = matchBoundaryPattern(extract)
 			}
 			msg.buffer = append(msg.buffer, extract)
 			str = str[len(extract):]
