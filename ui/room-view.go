@@ -202,7 +202,7 @@ func (view *RoomView) Draw(screen tcell.Screen) {
 		statusRow  = contentRow + contentHeight
 		inputRow   = statusRow + StatusBarHeight
 	)
-	if !view.parent.ShowUserList() {
+	if view.parent.hideUserList {
 		contentWidth = width
 	}
 
@@ -210,7 +210,7 @@ func (view *RoomView) Draw(screen tcell.Screen) {
 	view.topic.SetRect(x, topicRow, width, TopicBarHeight)
 	view.content.SetRect(x, contentRow, contentWidth, contentHeight)
 	view.status.SetRect(x, statusRow, width, StatusBarHeight)
-	if view.parent.ShowUserList() && userListColumn > x {
+	if !view.parent.hideUserList && userListColumn > x {
 		view.userList.SetRect(userListColumn, contentRow, UserListWidth, contentHeight)
 		view.ulBorder.SetRect(userListBorderColumn, contentRow, UserListBorderWidth, contentHeight)
 	}
@@ -223,7 +223,7 @@ func (view *RoomView) Draw(screen tcell.Screen) {
 	view.status.SetText(view.GetStatus())
 	view.status.Draw(screen)
 	view.input.Draw(screen)
-	if view.parent.ShowUserList() {
+	if !view.parent.hideUserList {
 		view.ulBorder.Draw(screen)
 		view.userList.Draw(screen)
 	}

@@ -29,6 +29,7 @@ type UIMessage interface {
 	RecalculateBuffer()
 	Buffer() []tstring.TString
 	Height() int
+	PlainText() string
 
 	RealSender() string
 	RegisterMatrix(matrix ifc.MatrixContainer)

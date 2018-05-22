@@ -33,6 +33,8 @@ import (
 	"maunium.net/go/gomuks/ui/widget"
 	"maunium.net/go/tcell"
 	"maunium.net/go/tview"
+	"bufio"
+	"os"
 )
 
 type MainView struct {
@@ -51,15 +53,7 @@ type MainView struct {
 
 	hideUserList bool
 	hideRoomList bool
-	bareDisplay  bool
-}
-
-func (view *MainView) ShowRoomList() bool {
-	return !view.bareDisplay && !view.hideRoomList
-}
-
-func (view *MainView) ShowUserList() bool {
-	return !view.bareDisplay && !view.hideUserList
+	bareMessages bool
 }
 
 func (ui *GomuksUI) NewMainView() tview.Primitive {
@@ -88,7 +82,7 @@ func (ui *GomuksUI) NewMainView() tview.Primitive {
 }
 
 func (view *MainView) Draw(screen tcell.Screen) {
-	if !view.ShowRoomList() {
+	if view.hideRoomList {
 		view.roomView.SetRect(view.GetRect())
 		view.roomView.Draw(screen)
 	} else {
@@ -213,6 +207,21 @@ func (view *MainView) HandleCommand(roomView *RoomView, command string, args []s
 	}
 }
 
+func (view *MainView) ShowBare(roomView *RoomView) {
+	_, height := view.parent.app.GetScreen().Size()
+	view.parent.app.Suspend(func() {
+		print("\033[2J\033[0;0H")
+		// We don't know how much space there exactly is. Too few messages looks weird,
+		// and too many messages shouldn't cause any problems, so we just show too many.
+		height *= 2
+		fmt.Println(roomView.MessageView().CapturePlaintext(height))
+		fmt.Println("Press enter to return to normal mode.")
+		reader := bufio.NewReader(os.Stdin)
+		reader.ReadRune()
+		print("\033[2J\033[0;0H")
+	})
+}
+
 func (view *MainView) KeyEventHandler(roomView *RoomView, key *tcell.EventKey) *tcell.EventKey {
 	view.BumpFocus(roomView)
 
@@ -229,8 +238,7 @@ func (view *MainView) KeyEventHandler(roomView *RoomView, key *tcell.EventKey) *
 			view.parent.views.AddPage("fuzzy-search-modal", searchModal, true, true)
 			view.parent.app.SetFocus(searchModal)
 		case c == 'l':
-			view.bareDisplay = !view.bareDisplay
-			view.parent.Render()
+			view.ShowBare(roomView)
 		default:
 			return key
 		}

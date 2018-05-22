@@ -171,7 +171,7 @@ func (view *MessageView) AddMessage(ifcMessage ifc.Message, direction ifc.Messag
 	view.updateWidestSender(message.Sender())
 
 	_, _, width, _ := view.GetRect()
-	bare := view.parent.parent.bareDisplay
+	bare := view.parent.parent.bareMessages
 	if !bare {
 		width -= view.TimestampWidth + TimestampSenderGap + view.widestSender + SenderMessageGap
 	}
@@ -264,7 +264,7 @@ func (view *MessageView) replaceBuffer(original messages.UIMessage, new messages
 
 func (view *MessageView) recalculateBuffers() {
 	_, _, width, height := view.GetRect()
-	bareMode := view.parent.parent.bareDisplay
+	bareMode := view.parent.parent.bareMessages
 	if !bareMode {
 		width -= view.TimestampWidth + TimestampSenderGap + view.widestSender + SenderMessageGap
 	}
@@ -456,6 +456,26 @@ func (view *MessageView) getIndexOffset(screen tcell.Screen, height, messageX in
 	return
 }
 
+func (view *MessageView) CapturePlaintext(height int) string {
+	var buf strings.Builder
+	indexOffset := view.TotalHeight() - view.ScrollOffset - height
+	var prevMessage messages.UIMessage
+	for line := 0; line < height; line++ {
+		index := indexOffset + line
+		if index < 0 {
+			continue
+		}
+
+		meta := view.metaBuffer[index]
+		message, ok := meta.(messages.UIMessage)
+		if ok && message != prevMessage {
+			fmt.Fprintf(&buf, "%s <%s> %s\n", message.FormatTime(), message.Sender(), message.PlainText())
+			prevMessage = message
+		}
+	}
+	return buf.String()
+}
+
 func (view *MessageView) Draw(screen tcell.Screen) {
 	x, y, _, height := view.GetRect()
 	view.recalculateBuffers()
@@ -469,7 +489,7 @@ func (view *MessageView) Draw(screen tcell.Screen) {
 	messageX := usernameX + view.widestSender + SenderMessageGap
 	separatorX := usernameX + view.widestSender + SenderSeparatorGap
 
-	bareMode := view.parent.parent.bareDisplay
+	bareMode := view.parent.parent.bareMessages
 	if bareMode {
 		messageX = 0
 	}
