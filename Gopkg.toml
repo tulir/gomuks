@@ -75,7 +75,7 @@
 
 [[constraint]]
   branch = "master"
-  name = "github.com/evidlo/fuzzysearch"
+  name = "github.com/renstrom/fuzzysearch"
 
 [prune]
   go-tests = true

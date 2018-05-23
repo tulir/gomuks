@@ -21,7 +21,7 @@ import (
 	"sort"
 	"strconv"
 
-	"github.com/evidlo/fuzzysearch/fuzzy"
+	"github.com/renstrom/fuzzysearch/fuzzy"
 	"maunium.net/go/gomuks/debug"
 	"maunium.net/go/gomuks/matrix/rooms"
 	"maunium.net/go/gomuks/ui/widget"
@@ -93,10 +93,10 @@ func (fs *FuzzySearchModal) changeHandler(str string) {
 		sort.Sort(fs.matches)
 		fs.results.Clear()
 		for _, match := range fs.matches {
-			fmt.Fprintf(fs.results, `["%d"]%s[""]%s`, match.Index, match.Target, "\n")
+			fmt.Fprintf(fs.results, `["%d"]%s[""]%s`, match.OriginalIndex, match.Target, "\n")
 		}
 		fs.parent.Render()
-		fs.results.Highlight(strconv.Itoa(fs.matches[0].Index))
+		fs.results.Highlight(strconv.Itoa(fs.matches[0].OriginalIndex))
 		fs.results.ScrollToBeginning()
 	} else {
 		fs.results.Clear()
@@ -116,15 +116,15 @@ func (fs *FuzzySearchModal) keyHandler(event *tcell.EventKey) *tcell.EventKey {
 		// Cycle highlighted area to next match
 		if len(highlights) > 0 {
 			fs.selected = (fs.selected + 1) % len(fs.matches)
-			fs.results.Highlight(strconv.Itoa(fs.matches[fs.selected].Index))
+			fs.results.Highlight(strconv.Itoa(fs.matches[fs.selected].OriginalIndex))
 			fs.results.ScrollToHighlight()
 		}
 		return nil
 	case tcell.KeyEnter:
 		// Switch room to currently selected room
 		if len(highlights) > 0 {
-			debug.Print("Fuzzy Selected Room:", fs.roomList[fs.matches[fs.selected].Index].GetTitle())
-			fs.mainView.SwitchRoom(fs.roomList[fs.matches[fs.selected].Index].Tags()[0].Tag, fs.roomList[fs.matches[fs.selected].Index])
+			debug.Print("Fuzzy Selected Room:", fs.roomList[fs.matches[fs.selected].OriginalIndex].GetTitle())
+			fs.mainView.SwitchRoom(fs.roomList[fs.matches[fs.selected].OriginalIndex].Tags()[0].Tag, fs.roomList[fs.matches[fs.selected].OriginalIndex])
 		}
 		fs.parent.views.RemovePage("fuzzy-search-modal")
 		fs.parent.app.SetFocus(fs.parent.views)
