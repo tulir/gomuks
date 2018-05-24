@@ -491,7 +491,7 @@ func (view *MessageView) Draw(screen tcell.Screen) {
 
 	bareMode := view.parent.parent.bareMessages
 	if bareMode {
-		messageX = 0
+		messageX = x
 	}
 
 	indexOffset := view.getIndexOffset(screen, height, messageX)

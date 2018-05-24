@@ -57,6 +57,7 @@ type MainView struct {
 }
 
 func (ui *GomuksUI) NewMainView() tview.Primitive {
+	prefs := ui.gmx.Config().Preferences
 	mainView := &MainView{
 		Flex:     tview.NewFlex(),
 		roomList: NewRoomList(),
@@ -67,6 +68,10 @@ func (ui *GomuksUI) NewMainView() tview.Primitive {
 		gmx:    ui.gmx,
 		config: ui.gmx.Config(),
 		parent: ui,
+
+		hideUserList: prefs.HideUserList,
+		hideRoomList: prefs.HideRoomList,
+		bareMessages: prefs.BareMessageView,
 	}
 
 	mainView.
@@ -185,6 +190,28 @@ func (view *MainView) HandleCommand(roomView *RoomView, command string, args []s
 		if err == nil {
 			view.RemoveRoom(roomView.Room)
 		}
+	case "/uitoggle":
+		if len(args) == 0 {
+			roomView.AddServiceMessage("Usage: /uitoggle <rooms/users/baremessages>")
+			break
+		}
+		switch args[0] {
+		case "rooms":
+			view.hideRoomList = !view.hideRoomList
+			view.config.Preferences.HideRoomList = view.hideRoomList
+		case "users":
+			view.hideUserList = !view.hideUserList
+			view.config.Preferences.HideUserList = view.hideUserList
+		case "baremessages":
+			view.bareMessages = !view.bareMessages
+			view.config.Preferences.BareMessageView = view.bareMessages
+		default:
+			roomView.AddServiceMessage("Usage: /uitoggle <rooms/users/baremessages>")
+			return
+		}
+		view.parent.Render()
+		view.parent.Render()
+		go view.matrix.SendPreferencesToMatrix()
 	case "/join":
 		if len(args) == 0 {
 			roomView.AddServiceMessage("Usage: /join <room>")

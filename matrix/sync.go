@@ -184,7 +184,7 @@ func (s *GomuksSyncer) GetFilterJSON(userID string) json.RawMessage {
 			},
 		},
 		AccountData: gomatrix.FilterPart{
-			Types: []string{"m.push_rules", "m.direct"},
+			Types: []string{"m.push_rules", "m.direct", "net.maunium.gomuks.preferences"},
 		},
 		Presence: gomatrix.FilterPart{
 			Types: []string{},

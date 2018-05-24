@@ -39,6 +39,7 @@ import (
 	"maunium.net/go/gomuks/matrix/pushrules"
 	"maunium.net/go/gomuks/matrix/rooms"
 	"crypto/tls"
+	"encoding/json"
 )
 
 // Container is a wrapper for a gomatrix Client and some other stuff.
@@ -188,6 +189,7 @@ func (c *Container) OnLogin() {
 	c.syncer.OnEventType("m.direct", c.HandleDirectChatInfo)
 	c.syncer.OnEventType("m.push_rules", c.HandlePushRules)
 	c.syncer.OnEventType("m.tag", c.HandleTag)
+	c.syncer.OnEventType("net.maunium.gomuks.preferences", c.HandlePreferences)
 	c.syncer.InitDoneCallback = func() {
 		c.config.AuthCache.InitialSyncDone = true
 		c.config.SaveAuthCache()
@@ -232,6 +234,24 @@ func (c *Container) Start() {
 				debug.Print("Sync() returned without error")
 			}
 		}
+	}
+}
+
+func (c *Container) HandlePreferences(source EventSource, evt *gomatrix.Event) {
+	orig := c.config.Preferences
+	rt, _ := json.Marshal(&evt.Content)
+	json.Unmarshal(rt, &c.config.Preferences)
+	debug.Print("Updated preferences:", orig, "->", c.config.Preferences)
+	c.ui.HandleNewPreferences()
+}
+
+func (c *Container) SendPreferencesToMatrix() {
+	defer debug.Recover()
+	debug.Print("Sending updated preferences:", c.config.Preferences)
+	u := c.client.BuildURL("user", c.config.UserID, "account_data", "net.maunium.gomuks.preferences")
+	_, err := c.client.MakeRequest("PUT", u, &c.config.Preferences, nil)
+	if err != nil {
+		debug.Print("Failed to update preferences:", err)
 	}
 }
 

@@ -21,14 +21,26 @@ import (
 	"os"
 	"path/filepath"
 
-	"encoding/json"
 	"gopkg.in/yaml.v2"
 	"maunium.net/go/gomatrix"
 	"maunium.net/go/gomuks/debug"
 	"maunium.net/go/gomuks/matrix/pushrules"
 	"maunium.net/go/gomuks/matrix/rooms"
 	"strings"
+	"encoding/json"
 )
+
+type AuthCache struct {
+	NextBatch       string `yaml:"next_batch"`
+	FilterID        string `yaml:"filter_id"`
+	InitialSyncDone bool   `yaml:"initial_sync_done"`
+}
+
+type UserPreferences struct {
+	HideUserList    bool `yaml:"hide_user_list",json:"hide_user_list"`
+	HideRoomList    bool `yaml:"hide_room_list",json:"hide_room_list"`
+	BareMessageView bool `yaml:"bare_message_view",json:"bare_message_view"`
+}
 
 // Config contains the main config of gomuks.
 type Config struct {
@@ -42,14 +54,10 @@ type Config struct {
 	MediaDir   string `yaml:"media_dir"`
 	StateDir   string `yaml:"state_dir"`
 
-	AuthCache struct {
-		NextBatch       string `yaml:"next_batch"`
-		FilterID        string `yaml:"filter_id"`
-		InitialSyncDone bool   `yaml:"initial_sync_done"`
-	} `yaml:"-"`
-
-	Rooms     map[string]*rooms.Room `yaml:"-"`
-	PushRules *pushrules.PushRuleset `yaml:"-"`
+	Preferences UserPreferences        `yaml:"-"`
+	AuthCache   AuthCache              `yaml:"-"`
+	Rooms       map[string]*rooms.Room `yaml:"-"`
+	PushRules   *pushrules.PushRuleset `yaml:"-"`
 
 	nosave bool
 }
@@ -98,29 +106,13 @@ func (config *Config) LoadAll() {
 	config.Load()
 	config.LoadAuthCache()
 	config.LoadPushRules()
+	config.LoadPreferences()
 	config.LoadRooms()
 }
 
 // Load loads the config from config.yaml in the directory given to the config struct.
 func (config *Config) Load() {
-	os.MkdirAll(config.Dir, 0700)
-
-	configPath := filepath.Join(config.Dir, "config.yaml")
-	data, err := ioutil.ReadFile(configPath)
-	if err != nil {
-		if os.IsNotExist(err) {
-			config.CreateCacheDirs()
-			return
-		}
-		debug.Print("Failed to read config from", configPath)
-		panic(err)
-	}
-
-	err = yaml.Unmarshal(data, &config)
-	if err != nil {
-		debug.Print("Failed to parse config at", configPath)
-		panic(err)
-	}
+	config.load("config", config.Dir, "config.yaml", config)
 	config.CreateCacheDirs()
 }
 
@@ -128,109 +120,40 @@ func (config *Config) SaveAll() {
 	config.Save()
 	config.SaveAuthCache()
 	config.SavePushRules()
+	config.SavePreferences()
 	config.SaveRooms()
 }
 
 // Save saves this config to config.yaml in the directory given to the config struct.
 func (config *Config) Save() {
-	if config.nosave {
-		return
-	}
+	config.save("config", config.Dir, "config.yaml", config)
+}
 
-	os.MkdirAll(config.Dir, 0700)
-	data, err := yaml.Marshal(&config)
-	if err != nil {
-		debug.Print("Failed to marshal config")
-		panic(err)
-	}
+func (config *Config) LoadPreferences() {
+	config.load("user preferences", config.CacheDir, "preferences.yaml", &config.Preferences)
+}
 
-	path := filepath.Join(config.Dir, "config.yaml")
-	err = ioutil.WriteFile(path, data, 0600)
-	if err != nil {
-		debug.Print("Failed to write config to", path)
-		panic(err)
-	}
+func (config *Config) SavePreferences() {
+	config.save("user preferences", config.CacheDir, "preferences.yaml", &config.Preferences)
 }
 
 func (config *Config) LoadAuthCache() {
-	os.MkdirAll(config.Dir, 0700)
-
-	configPath := filepath.Join(config.CacheDir, "auth-cache.yaml")
-	data, err := ioutil.ReadFile(configPath)
-	if err != nil {
-		if os.IsNotExist(err) {
-			return
-		}
-		debug.Print("Failed to read auth cache from", configPath)
-		panic(err)
-	}
-
-	err = yaml.Unmarshal(data, &config.AuthCache)
-	if err != nil {
-		debug.Print("Failed to parse auth cache at", configPath)
-		panic(err)
-	}
+	config.load("auth cache", config.CacheDir, "auth-cache.yaml", &config.AuthCache)
 }
 
 func (config *Config) SaveAuthCache() {
-	if config.nosave {
-		return
-	}
-
-	os.MkdirAll(config.CacheDir, 0700)
-	data, err := yaml.Marshal(&config.AuthCache)
-	if err != nil {
-		debug.Print("Failed to marshal auth cache")
-		panic(err)
-	}
-
-	path := filepath.Join(config.CacheDir, "auth-cache.yaml")
-	err = ioutil.WriteFile(path, data, 0600)
-	if err != nil {
-		debug.Print("Failed to write auth cache to", path)
-		panic(err)
-	}
+	config.save("auth cache", config.CacheDir, "auth-cache.yaml", &config.AuthCache)
 }
 
 func (config *Config) LoadPushRules() {
-	os.MkdirAll(config.CacheDir, 0700)
-
-	pushRulesPath := filepath.Join(config.CacheDir, "pushrules.json")
-	data, err := ioutil.ReadFile(pushRulesPath)
-	if err != nil {
-		if os.IsNotExist(err) {
-			return
-		}
-		debug.Print("Failed to read push rules from", pushRulesPath)
-		return
-	}
-
-	config.PushRules = &pushrules.PushRuleset{}
-	err = json.Unmarshal(data, &config.PushRules)
-	if err != nil {
-		debug.Print("Failed to parse push rules at", pushRulesPath)
-		return
-	}
+	config.load("push rules", config.CacheDir, "pushrules.json", &config.PushRules)
 }
 
 func (config *Config) SavePushRules() {
-	if config.nosave || config.PushRules == nil {
+	if config.PushRules == nil {
 		return
 	}
-
-	os.MkdirAll(config.CacheDir, 0700)
-	data, err := json.Marshal(&config.PushRules)
-	if err != nil {
-		debug.Print("Failed to marshal push rules")
-		return
-	}
-
-	path := filepath.Join(config.CacheDir, "pushrules.json")
-	err = ioutil.WriteFile(path, data, 0600)
-	if err != nil {
-		debug.Print("Failed to write config to", path)
-		return
-	}
+	config.save("push rules", config.CacheDir, "pushrules.json", &config.PushRules)
 }
 
 func (config *Config) LoadRooms() {
@@ -269,6 +192,56 @@ func (config *Config) SaveRooms() {
 		if err != nil {
 			debug.Printf("Failed to save room state cache to file %s: %v", path, err)
 		}
+	}
+}
+
+func (config *Config) load(name, dir, file string, target interface{}) {
+	os.MkdirAll(dir, 0700)
+
+	path := filepath.Join(dir, file)
+	data, err := ioutil.ReadFile(path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return
+		}
+		debug.Print("Failed to read", name, "from", path)
+		panic(err)
+	}
+
+	if strings.HasSuffix(file, ".yaml") {
+		err = yaml.Unmarshal(data, target)
+	} else {
+		err = json.Unmarshal(data, target)
+	}
+	if err != nil {
+		debug.Print("Failed to parse", name, "at", path)
+		panic(err)
+	}
+}
+
+func (config *Config) save(name, dir, file string, source interface{}) {
+	if config.nosave {
+		return
+	}
+
+	os.MkdirAll(dir, 0700)
+	var data []byte
+	var err error
+	if strings.HasSuffix(file, ".yaml") {
+		data, err = yaml.Marshal(source)
+	} else {
+		data, err = json.Marshal(source)
+	}
+	if err != nil {
+		debug.Print("Failed to marshal", name)
+		panic(err)
+	}
+
+	path := filepath.Join(dir, file)
+	err = ioutil.WriteFile(path, data, 0600)
+	if err != nil {
+		debug.Print("Failed to write", name, "to", path)
+		panic(err)
 	}
 }
 

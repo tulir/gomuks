@@ -29,6 +29,7 @@ type UIProvider func(gmx Gomuks) GomuksUI
 
 type GomuksUI interface {
 	Render()
+	HandleNewPreferences()
 	OnLogin()
 	OnLogout()
 	MainView() MainView

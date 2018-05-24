@@ -32,6 +32,7 @@ type MatrixContainer interface {
 	Login(user, password string) error
 	Logout()
 
+	SendPreferencesToMatrix()
 	SendMessage(roomID, msgtype, message string) (string, error)
 	SendMarkdownMessage(roomID, msgtype, message string) (string, error)
 	SendTyping(roomID string, typing bool)
