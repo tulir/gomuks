@@ -37,9 +37,9 @@ type AuthCache struct {
 }
 
 type UserPreferences struct {
-	HideUserList    bool `yaml:"hide_user_list",json:"hide_user_list"`
-	HideRoomList    bool `yaml:"hide_room_list",json:"hide_room_list"`
-	BareMessageView bool `yaml:"bare_message_view",json:"bare_message_view"`
+	HideUserList    bool `yaml:"hide_user_list"`
+	HideRoomList    bool `yaml:"hide_room_list"`
+	BareMessageView bool `yaml:"bare_message_view"`
 }
 
 // Config contains the main config of gomuks.
