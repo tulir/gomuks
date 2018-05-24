@@ -158,7 +158,7 @@ type Rank struct {
 	Distance int
 
 	// Location of Target in original list
-	Index int
+	OriginalIndex int
 }
 
 type Ranks []Rank

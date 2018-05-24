@@ -15,12 +15,6 @@
 
 [[projects]]
   branch = "master"
-  name = "github.com/evidlo/fuzzysearch"
-  packages = ["fuzzy"]
-  revision = "f6153b556daf86b90da85818544c8b498640759c"
-
-[[projects]]
-  branch = "master"
   name = "github.com/gdamore/encoding"
   packages = ["."]
   revision = "b23993cbb6353f0e6aa98d0ee318a34728f628b9"
@@ -48,6 +42,12 @@
   packages = ["difflib"]
   revision = "792786c7400a136282c1664665ae0a8db921c6c2"
   version = "v1.0.0"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/renstrom/fuzzysearch"
+  packages = ["fuzzy"]
+  revision = "500e0fce37a81072d9bf4ec1bf5d32f52c807282"
 
 [[projects]]
   branch = "master"
@@ -144,6 +144,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "a206fe41b10601a6e9cf402fc120084d48f589287882674baee54855ad513da1"
+  inputs-digest = "2a15ea883a6ee15a2274160ad22f40976519ca0a2d15c4412c04fb02e9a31223"
   solver-name = "gps-cdcl"
   solver-version = 1
