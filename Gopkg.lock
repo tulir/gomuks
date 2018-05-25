@@ -23,7 +23,7 @@
   branch = "master"
   name = "github.com/lucasb-eyer/go-colorful"
   packages = ["."]
-  revision = "fa0f842f26263fb2ace6d6118309c8481e029fc1"
+  revision = "8abd3beca3a7f5039809449d6013a0254ac22bb1"
 
 [[projects]]
   name = "github.com/mattn/go-runewidth"
@@ -88,7 +88,7 @@
     "html",
     "html/atom"
   ]
-  revision = "9ef9f5bb98a1fdc41f8cf6c250a4404b4085e389"
+  revision = "dfa909b99c79129e1100513e5cd36307665e5723"
 
 [[projects]]
   name = "golang.org/x/text"
@@ -133,7 +133,7 @@
     ".",
     "terminfo"
   ]
-  revision = "e03df2c40d0ab5487a6b3c06a228755cdfec1c46"
+  revision = "9dc7ec911605bc6db5c96f502e6a80494afe4e1b"
 
 [[projects]]
   branch = "master"

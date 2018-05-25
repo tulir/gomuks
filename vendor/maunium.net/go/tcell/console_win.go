@@ -185,7 +185,7 @@ func (s *cScreen) CharacterSet() string {
 }
 
 func (s *cScreen) EnableMouse() {
-	s.setInMode(modeResizeEn | modeMouseEn)
+	s.setInMode(modeResizeEn | modeMouseEn | modeExtndFlg)
 }
 
 func (s *cScreen) DisableMouse() {
@@ -570,8 +570,14 @@ func (s *cScreen) getConsoleInput() error {
 			if krec.ch != 0 {
 				// synthesized key code
 				for krec.repeat > 0 {
-					s.PostEvent(NewEventKey(KeyRune, rune(krec.ch),
-						mod2mask(krec.mod)))
+					// convert shift+tab to backtab
+					if mod2mask(krec.mod) == ModShift && krec.ch == vkTab {
+						s.PostEvent(NewEventKey(KeyBacktab, 0,
+							ModNone))
+					} else {
+						s.PostEvent(NewEventKey(KeyRune, rune(krec.ch),
+							mod2mask(krec.mod)))
+					}
 					krec.repeat--
 				}
 				return nil
@@ -925,6 +931,7 @@ func (s *cScreen) clearScreen(style Style) {
 }
 
 const (
+	modeExtndFlg uint32 = 0x0080
 	modeMouseEn  uint32 = 0x0010
 	modeResizeEn uint32 = 0x0008
 	modeWrapEOL  uint32 = 0x0002
