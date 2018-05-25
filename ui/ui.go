@@ -20,6 +20,7 @@ import (
 	"maunium.net/go/gomuks/interface"
 	"maunium.net/go/tcell"
 	"maunium.net/go/tview"
+	"os"
 )
 
 type View string
@@ -42,6 +43,11 @@ type GomuksUI struct {
 func init() {
 	tview.Styles.PrimitiveBackgroundColor = tcell.ColorDefault
 	tview.Styles.ContrastBackgroundColor = tcell.ColorDarkGreen
+	if tcellDB := os.Getenv("TCELLDB"); len(tcellDB) == 0 {
+		if info, err := os.Stat("/usr/share/tcell/database"); err == nil && info.IsDir() {
+			os.Setenv("TCELLDB", "/usr/share/tcell/database")
+		}
+	}
 }
 
 func NewGomuksUI(gmx ifc.Gomuks) ifc.GomuksUI {

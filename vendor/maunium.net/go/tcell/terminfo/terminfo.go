@@ -872,6 +872,9 @@ func LookupTerminfo(name string) (*Terminfo, error) {
 		}
 	}
 	if t == nil {
+		t, _ = GetDynamic()
+	}
+	if t == nil {
 		return nil, ErrTermNotFound
 	}
 	return t, nil

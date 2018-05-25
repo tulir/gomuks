@@ -133,7 +133,7 @@
     ".",
     "terminfo"
   ]
-  revision = "f24463c4e27934fbad976fdd6c05b1d67c345f5d"
+  revision = "f32e44a866ab0475655e11ede91337d7b562956d"
 
 [[projects]]
   branch = "master"
