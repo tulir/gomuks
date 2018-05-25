@@ -53,6 +53,9 @@ func (or *OrderedRoom) Draw(roomList *RoomList, screen tcell.Screen, x, y, lineW
 	}
 
 	unreadCount := or.UnreadCount()
+
+	widget.WriteLinePadded(screen, tview.AlignLeft, or.GetTitle(), x, y, lineWidth, style)
+
 	if unreadCount > 0 {
 		unreadMessageCount := "99+"
 		if unreadCount < 100 {
@@ -65,8 +68,6 @@ func (or *OrderedRoom) Draw(roomList *RoomList, screen tcell.Screen, x, y, lineW
 		widget.WriteLine(screen, tview.AlignRight, unreadMessageCount, x+lineWidth-7, y, 7, style)
 		lineWidth -= len(unreadMessageCount)
 	}
-
-	widget.WriteLinePadded(screen, tview.AlignLeft, or.GetTitle(), x, y, lineWidth, style)
 }
 
 type TagRoomList struct {
