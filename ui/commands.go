@@ -19,6 +19,7 @@ package ui
 import (
 	"maunium.net/go/gomuks/debug"
 	"strings"
+	"encoding/json"
 )
 
 func cmdMe(cmd *Command) {
@@ -67,6 +68,64 @@ func cmdJoin(cmd *Command) {
 	debug.Print("Join room error:", err)
 	if err == nil {
 		cmd.MainView.AddRoom(room)
+	}
+}
+
+func cmdSendEvent(cmd *Command) {
+	debug.Print(cmd.Command, cmd.Args, len(cmd.Args))
+	if len(cmd.Args) < 3 {
+		cmd.Reply("Usage: /send <room id> <event type> <content>")
+		return
+	}
+	roomID := cmd.Args[0]
+	eventType := cmd.Args[1]
+	rawContent := strings.Join(cmd.Args[2:], "")
+	debug.Print(roomID, eventType, rawContent)
+
+	var content interface{}
+	err := json.Unmarshal([]byte(rawContent), &content)
+	debug.Print(err)
+	if err != nil {
+		cmd.Reply("Failed to parse content: %v", err)
+		return
+	}
+	debug.Print("Sending event to", roomID, eventType, content)
+
+	resp, err := cmd.Matrix.Client().SendMessageEvent(roomID, eventType, content)
+	debug.Print(resp, err)
+	if err != nil {
+		cmd.Reply("Error from server: %v", err)
+	} else {
+		cmd.Reply("Event sent, ID: %s", resp.EventID)
+	}
+}
+
+func cmdSetState(cmd *Command) {
+	if len(cmd.Args) < 4 {
+		cmd.Reply("Usage: /setstate <room id> <event type> <state key/`-`> <content>")
+		return
+	}
+
+	roomID := cmd.Args[0]
+	eventType := cmd.Args[1]
+	stateKey := cmd.Args[2]
+	if stateKey == "-" {
+		stateKey = ""
+	}
+	rawContent := strings.Join(cmd.Args[3:], "")
+
+	var content interface{}
+	err := json.Unmarshal([]byte(rawContent), &content)
+	if err != nil {
+		cmd.Reply("Failed to parse content: %v", err)
+		return
+	}
+	debug.Print("Sending state event to", roomID, eventType, stateKey, content)
+	resp, err := cmd.Matrix.Client().SendStateEvent(roomID, eventType, stateKey, content)
+	if err != nil {
+		cmd.Reply("Error from server: %v", err)
+	} else {
+		cmd.Reply("State event sent, ID: %s", resp.EventID)
 	}
 }
 

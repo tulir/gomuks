@@ -36,10 +36,11 @@ type Command struct {
 	gomuksPointerContainer
 	Handler *CommandProcessor
 
-	Room     *RoomView
-	Command  string
-	Args     []string
-	OrigText string
+	Room        *RoomView
+	Command     string
+	OrigCommand string
+	Args        []string
+	OrigText    string
 }
 
 func (cmd *Command) Reply(message string, args ...interface{}) {
@@ -74,7 +75,9 @@ func NewCommandProcessor(parent *MainView) *CommandProcessor {
 			Gomuks:   parent.gmx,
 		},
 		aliases: map[string]*Alias{
-			"part": {"leave"},
+			"part":  {"leave"},
+			"send":  {"sendevent"},
+			"state": {"setstate"},
 		},
 		commands: map[string]CommandHandler{
 			"unknown-command": cmdUnknownCommand,
@@ -86,6 +89,8 @@ func NewCommandProcessor(parent *MainView) *CommandProcessor {
 			"join":            cmdJoin,
 			"uitoggle":        cmdUIToggle,
 			"logout":          cmdLogout,
+			"sendevent":       cmdSendEvent,
+			"setstate":        cmdSetState,
 		},
 	}
 }
@@ -95,17 +100,16 @@ func (ch *CommandProcessor) ParseCommand(roomView *RoomView, text string) *Comma
 		return nil
 	}
 	text = text[1:]
-	args := strings.SplitN(text, " ", 2)
-	command := strings.ToLower(args[0])
-	args = args[1:]
+	split := strings.SplitN(text, " ", -1)
 	return &Command{
 		gomuksPointerContainer: ch.gomuksPointerContainer,
 		Handler:                ch,
 
-		Room:     roomView,
-		Command:  command,
-		Args:     args,
-		OrigText: text,
+		Room:        roomView,
+		Command:     strings.ToLower(split[0]),
+		OrigCommand: split[0],
+		Args:        split[1:],
+		OrigText:    text,
 	}
 }
 
