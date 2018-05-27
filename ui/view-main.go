@@ -18,7 +18,6 @@ package ui
 
 import (
 	"fmt"
-	"strings"
 	"time"
 	"unicode"
 
@@ -40,9 +39,10 @@ import (
 type MainView struct {
 	*tview.Flex
 
-	roomList *RoomList
-	roomView *tview.Pages
-	rooms    map[string]*RoomView
+	roomList     *RoomList
+	roomView     *tview.Pages
+	rooms        map[string]*RoomView
+	cmdProcessor *CommandProcessor
 
 	lastFocusTime time.Time
 
@@ -73,6 +73,7 @@ func (ui *GomuksUI) NewMainView() tview.Primitive {
 		hideRoomList: prefs.HideRoomList,
 		bareMessages: prefs.BareMessageView,
 	}
+	mainView.cmdProcessor = NewCommandProcessor(mainView)
 
 	mainView.
 		SetDirection(tview.FlexColumn).
@@ -133,10 +134,8 @@ func (view *MainView) InputSubmit(roomView *RoomView, text string) {
 	if len(text) == 0 {
 		return
 	} else if text[0] == '/' {
-		args := strings.SplitN(text, " ", 2)
-		command := strings.ToLower(args[0])
-		args = args[1:]
-		go view.HandleCommand(roomView, command, args)
+		cmd := view.cmdProcessor.ParseCommand(roomView, text)
+		go view.cmdProcessor.HandleCommand(cmd)
 	} else {
 		view.SendMessage(roomView, text)
 	}
@@ -165,72 +164,6 @@ func (view *MainView) sendTempMessage(roomView *RoomView, tempMessage ifc.Messag
 	} else {
 		debug.Print("Event ID received:", eventID)
 		roomView.MessageView().UpdateMessageID(tempMessage, eventID)
-	}
-}
-
-func (view *MainView) HandleCommand(roomView *RoomView, command string, args []string) {
-	defer debug.Recover()
-	debug.Print("Handling command", command, args)
-	switch command {
-	case "/me":
-		text := strings.Join(args, " ")
-		tempMessage := roomView.NewTempMessage("m.emote", text)
-		go view.sendTempMessage(roomView, tempMessage, text)
-		view.parent.Render()
-	case "/quit":
-		view.gmx.Stop()
-	case "/clearcache":
-		view.config.Clear()
-		view.gmx.Stop()
-	case "/panic":
-		panic("This is a test panic.")
-	case "/part", "/leave":
-		err := view.matrix.LeaveRoom(roomView.Room.ID)
-		debug.Print("Leave room error:", err)
-		if err == nil {
-			view.RemoveRoom(roomView.Room)
-		}
-	case "/uitoggle":
-		if len(args) == 0 {
-			roomView.AddServiceMessage("Usage: /uitoggle <rooms/users/baremessages>")
-			break
-		}
-		switch args[0] {
-		case "rooms":
-			view.hideRoomList = !view.hideRoomList
-			view.config.Preferences.HideRoomList = view.hideRoomList
-		case "users":
-			view.hideUserList = !view.hideUserList
-			view.config.Preferences.HideUserList = view.hideUserList
-		case "baremessages":
-			view.bareMessages = !view.bareMessages
-			view.config.Preferences.BareMessageView = view.bareMessages
-		default:
-			roomView.AddServiceMessage("Usage: /uitoggle <rooms/users/baremessages>")
-			return
-		}
-		view.parent.Render()
-		view.parent.Render()
-		go view.matrix.SendPreferencesToMatrix()
-	case "/join":
-		if len(args) == 0 {
-			roomView.AddServiceMessage("Usage: /join <room>")
-			break
-		}
-		identifer := args[0]
-		server := ""
-		if len(args) > 1 {
-			server = args[1]
-		}
-		room, err := view.matrix.JoinRoom(identifer, server)
-		debug.Print("Join room error:", err)
-		if err == nil {
-			view.AddRoom(room)
-		}
-	case "/logout":
-		view.matrix.Logout()
-	default:
-		roomView.AddServiceMessage("Unknown command.")
 	}
 }
 
