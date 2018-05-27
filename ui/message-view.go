@@ -469,7 +469,13 @@ func (view *MessageView) CapturePlaintext(height int) string {
 		meta := view.metaBuffer[index]
 		message, ok := meta.(messages.UIMessage)
 		if ok && message != prevMessage {
-			fmt.Fprintf(&buf, "%s <%s> %s\n", message.FormatTime(), message.Sender(), message.PlainText())
+			var sender string
+			if len(message.Sender()) > 0 {
+				sender = fmt.Sprintf(" <%s>", message.Sender())
+			} else if message.Type() == "m.emote" {
+				sender = fmt.Sprintf(" * %s", message.RealSender())
+			}
+			fmt.Fprintf(&buf, "%s%s %s\n", message.FormatTime(), sender, message.PlainText())
 			prevMessage = message
 		}
 	}

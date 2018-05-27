@@ -58,10 +58,14 @@ func (msg *BaseMessage) calculateBufferWithText(bare bool, text tstring.TString,
 	msg.buffer = []tstring.TString{}
 
 	if bare {
-		text = tstring.
-			NewTString(msg.FormatTime()).
-			AppendTString(tstring.NewColorTString(fmt.Sprintf(" <%s> ", msg.Sender()), msg.SenderColor())).
-			AppendTString(text)
+		newText := tstring.NewTString(msg.FormatTime())
+		if len(msg.Sender()) > 0 {
+			newText = newText.AppendTString(tstring.NewColorTString(fmt.Sprintf(" <%s> ", msg.Sender()), msg.SenderColor()))
+		} else {
+			newText = newText.Append(" ")
+		}
+		newText = newText.AppendTString(text)
+		text = newText
 	}
 
 	forcedLinebreaks := text.Split('\n')
