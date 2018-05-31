@@ -21,6 +21,7 @@ import (
 
 	"github.com/mattn/go-runewidth"
 	"maunium.net/go/tcell"
+	"unicode"
 )
 
 type TString []Cell
@@ -53,17 +54,66 @@ func NewStyleTString(str string, style tcell.Style) TString {
 	return newStr
 }
 
-func (str TString) AppendTString(data TString) TString {
-	return append(str, data...)
+func Join(strings []TString, separator string) TString {
+	if len(strings) == 0 {
+		return NewBlankTString()
+	}
+
+	out := strings[0]
+	strings = strings[1:]
+
+	if len(separator) == 0 {
+		return out.AppendTString(strings...)
+	}
+
+	for _, str := range strings {
+		out = append(out, str.Prepend(separator)...)
+	}
+	return out
+}
+
+func (str TString) AppendTString(dataList ...TString) TString {
+	newStr := str
+	for _, data := range dataList {
+		newStr = append(newStr, data...)
+	}
+	return newStr
+}
+
+func (str TString) PrependTString(data TString) TString {
+	return append(data, str...)
 }
 
 func (str TString) Append(data string) TString {
-	newStr := make(TString, len(str)+len(data))
-	copy(newStr, str)
-	for i, char := range data {
-		newStr[i+len(str)] = NewCell(char)
+	return str.AppendCustom(data, func(r rune) Cell {
+		return NewCell(r)
+	})
+}
+
+func (str TString) TrimSpace() TString {
+	return str.Trim(unicode.IsSpace)
+}
+
+func (str TString) Trim(fn func(rune) bool) TString {
+	return str.TrimLeft(fn).TrimRight(fn)
+}
+
+func (str TString) TrimLeft(fn func(rune) bool) TString {
+	for index, cell := range str {
+		if !fn(cell.Char) {
+			return append(NewBlankTString(), str[index:]...)
+		}
 	}
-	return newStr
+	return NewBlankTString()
+}
+
+func (str TString) TrimRight(fn func(rune) bool) TString {
+	for i := len(str)-1; i >= 0; i-- {
+		if !fn(str[i].Char) {
+			return append(NewBlankTString(), str[:i+1]...)
+		}
+	}
+	return NewBlankTString()
 }
 
 func (str TString) AppendColor(data string, color tcell.Color) TString {
@@ -87,10 +137,47 @@ func (str TString) AppendCustom(data string, cellCreator func(rune) Cell) TStrin
 	return newStr
 }
 
-func (str TString) Colorize(from, length int, color tcell.Color) {
-	for i := from; i < from+length; i++ {
-		str[i].Style = str[i].Style.Foreground(color)
+func (str TString) Prepend(data string) TString {
+	return str.PrependCustom(data, func(r rune) Cell {
+		return NewCell(r)
+	})
+}
+
+func (str TString) PrependColor(data string, color tcell.Color) TString {
+	return str.PrependCustom(data, func(r rune) Cell {
+		return NewColorCell(r, color)
+	})
+}
+
+func (str TString) PrependStyle(data string, style tcell.Style) TString {
+	return str.PrependCustom(data, func(r rune) Cell {
+		return NewStyleCell(r, style)
+	})
+}
+
+func (str TString) PrependCustom(data string, cellCreator func(rune) Cell) TString {
+	newStr := make(TString, len(str)+len(data))
+	copy(newStr[len(data):], str)
+	for i, char := range data {
+		newStr[i] = cellCreator(char)
 	}
+	return newStr
+}
+
+func (str TString) Colorize(from, length int, color tcell.Color) {
+	str.AdjustStyle(from, length, func(style tcell.Style) tcell.Style {
+		return style.Foreground(color)
+	})
+}
+
+func (str TString) AdjustStyle(from, length int, fn func(tcell.Style) tcell.Style) {
+	for i := from; i < from+length; i++ {
+		str[i].Style = fn(str[i].Style)
+	}
+}
+
+func (str TString) AdjustStyleFull(fn func(tcell.Style) tcell.Style) {
+	str.AdjustStyle(0, len(str), fn)
 }
 
 func (str TString) Draw(screen tcell.Screen, x, y int) {

@@ -18,185 +18,240 @@ package parser
 
 import (
 	"fmt"
-	"io"
 	"math"
 	"regexp"
 	"strings"
 
 	"maunium.net/go/gomatrix"
-	"maunium.net/go/gomuks/debug"
-	"maunium.net/go/gomuks/lib/htmlparser"
 	"maunium.net/go/gomuks/matrix/rooms"
 	"maunium.net/go/gomuks/ui/messages/tstring"
 	"maunium.net/go/gomuks/ui/widget"
 	"maunium.net/go/tcell"
+	"golang.org/x/net/html"
 )
 
 var matrixToURL = regexp.MustCompile("^(?:https?://)?(?:www\\.)?matrix\\.to/#/([#@!].*)")
 
-type MatrixHTMLProcessor struct {
-	text tstring.TString
-
-	senderID string
-	sender   string
-	msgtype  string
-
-	indent    string
-	listType  string
-	lineIsNew bool
-	openTags  *TagArray
-
+type htmlParser struct {
 	room *rooms.Room
 }
 
-func (parser *MatrixHTMLProcessor) newline() {
-	if !parser.lineIsNew {
-		parser.text = parser.text.Append("\n" + parser.indent)
-		parser.lineIsNew = true
-	}
+type taggedTString struct {
+	tstring.TString
+	tag string
 }
 
-func (parser *MatrixHTMLProcessor) Preprocess() {
-	if parser.msgtype == "m.emote" {
-		parser.text = tstring.NewColorTString(fmt.Sprintf("* %s ", parser.sender), widget.GetHashColor(parser.senderID))
-	}
+var AdjustStyleBold = func(style tcell.Style) tcell.Style {
+	return style.Bold(true)
 }
 
-func (parser *MatrixHTMLProcessor) HandleText(text string) {
-	style := tcell.StyleDefault
-	for _, tag := range *parser.openTags {
-		switch tag.Tag {
-		case "b", "strong":
-			style = style.Bold(true)
-		case "i", "em":
-			style = style.Italic(true)
-		case "s", "del":
-			style = style.Strikethrough(true)
-		case "u", "ins":
-			style = style.Underline(true)
-		case "a":
-			tag.Text += text
-			return
+var AdjustStyleItalic = func(style tcell.Style) tcell.Style {
+	return style.Italic(true)
+}
+
+var AdjustStyleUnderline = func(style tcell.Style) tcell.Style {
+	return style.Underline(true)
+}
+
+var AdjustStyleStrikethrough = func(style tcell.Style) tcell.Style {
+	return style.Strikethrough(true)
+}
+
+func (parser *htmlParser) listToTString(node *html.Node, stripLinebreak bool) tstring.TString {
+	ordered := node.Data == "ol"
+	taggedChildren := parser.nodeToTaggedTStrings(node.FirstChild, stripLinebreak)
+	paddingLength := 0
+	if ordered {
+		paddingLength = int(math.Floor(math.Log10(float64(len(taggedChildren)))) + 1)
+	}
+	padding := strings.Repeat(" ", paddingLength+2)
+	var children []tstring.TString
+	counter := 1
+	for _, child := range taggedChildren {
+		if child.tag != "li" {
+			continue
 		}
-	}
-
-	if !parser.openTags.Has("pre", "code") {
-		text = strings.Replace(text, "\n", "", -1)
-	}
-	parser.text = parser.text.AppendStyle(text, style)
-	parser.lineIsNew = false
-}
-
-func (parser *MatrixHTMLProcessor) HandleStartTag(tagName string, attrs map[string]string) {
-	tag := &TagWithMeta{Tag: tagName}
-	switch tag.Tag {
-	case "h1", "h2", "h3", "h4", "h5", "h6":
-		length := int(tag.Tag[1] - '0')
-		parser.text = parser.text.Append(strings.Repeat("#", length) + " ")
-		parser.lineIsNew = false
-	case "a":
-		tag.Meta, _ = attrs["href"]
-	case "ol", "ul":
-		parser.listType = tag.Tag
-	case "li":
-		indentSize := 2
-		if parser.listType == "ol" {
-			list := parser.openTags.Get(parser.listType)
-			list.Counter++
-			parser.text = parser.text.Append(fmt.Sprintf("%d. ", list.Counter))
-			indentSize = int(math.Log10(float64(list.Counter))+1) + len(". ")
+		var prefix string
+		if ordered {
+			prefix = fmt.Sprintf("%*d. ", paddingLength, counter)
 		} else {
-			parser.text = parser.text.Append("* ")
+			prefix = "● "
 		}
-		parser.indent += strings.Repeat(" ", indentSize)
-		parser.lineIsNew = false
-	case "blockquote":
-		parser.indent += "> "
-		parser.text = parser.text.Append("> ")
-		parser.lineIsNew = false
+		str := child.TString.Prepend(prefix)
+		counter++
+		parts := str.Split('\n')
+		for i, part := range parts[1:] {
+			parts[i+1] = part.Prepend(padding)
+		}
+		str = tstring.Join(parts, "\n")
+		children = append(children, str)
 	}
-	parser.openTags.PushMeta(tag)
+	return tstring.Join(children, "\n")
 }
 
-func (parser *MatrixHTMLProcessor) HandleSelfClosingTag(tagName string, attrs map[string]string) {
-	if tagName == "br" {
-		parser.newline()
+func (parser *htmlParser) basicFormatToTString(node *html.Node, stripLinebreak bool) tstring.TString {
+	str := parser.nodeToTagAwareTString(node.FirstChild, stripLinebreak)
+	switch node.Data {
+	case "b", "strong":
+		str.AdjustStyleFull(AdjustStyleBold)
+	case "i", "em":
+		str.AdjustStyleFull(AdjustStyleItalic)
+	case "s", "del":
+		str.AdjustStyleFull(AdjustStyleStrikethrough)
+	case "u", "ins":
+		str.AdjustStyleFull(AdjustStyleUnderline)
 	}
+	return str
 }
 
-func (parser *MatrixHTMLProcessor) HandleEndTag(tagName string) {
-	tag := parser.openTags.Pop(tagName)
-	if tag == nil {
-		return
-	}
+func (parser *htmlParser) headerToTString(node *html.Node, stripLinebreak bool) tstring.TString {
+	children := parser.nodeToTStrings(node.FirstChild, stripLinebreak)
+	length := int(node.Data[1] - '0')
+	prefix := strings.Repeat("#", length) + " "
+	return tstring.Join(children, "").Prepend(prefix)
+}
 
-	switch tag.Tag {
-	case "li", "blockquote":
-		indentSize := 2
-		if tag.Tag == "li" && parser.listType == "ol" {
-			list := parser.openTags.Get(parser.listType)
-			indentSize = int(math.Log10(float64(list.Counter))+1) + len(". ")
+func (parser *htmlParser) blockquoteToTString(node *html.Node, stripLinebreak bool) tstring.TString {
+	str := parser.nodeToTagAwareTString(node.FirstChild, stripLinebreak)
+	childrenArr := str.TrimSpace().Split('\n')
+	for index, child := range childrenArr {
+		childrenArr[index] = child.Prepend("> ")
+	}
+	return tstring.Join(childrenArr, "\n")
+}
+
+func (parser *htmlParser) linkToTString(node *html.Node, stripLinebreak bool) tstring.TString {
+	str := parser.nodeToTagAwareTString(node.FirstChild, stripLinebreak)
+	var href string
+	for _, attr := range node.Attr {
+		if attr.Key == "href" {
+			href = attr.Val
+			break
 		}
-		if len(parser.indent) >= indentSize {
-			parser.indent = parser.indent[0 : len(parser.indent)-indentSize]
-		}
-		// TODO this newline is sometimes not good
-		parser.newline()
-	case "a":
-		match := matrixToURL.FindStringSubmatch(tag.Meta)
-		if len(match) == 2 {
-			pillTarget := match[1]
-			if pillTarget[0] == '@' {
-				if member := parser.room.GetMember(pillTarget); member != nil {
-					parser.text = parser.text.AppendColor(member.DisplayName, widget.GetHashColor(member.UserID))
-				} else {
-					parser.text = parser.text.Append(pillTarget)
-				}
-			} else {
-				parser.text = parser.text.Append(pillTarget)
+	}
+	if len(href) == 0 {
+		return str
+	}
+	match := matrixToURL.FindStringSubmatch(href)
+	if len(match) == 2 {
+		pillTarget := match[1]
+		if pillTarget[0] == '@' {
+			if member := parser.room.GetMember(pillTarget); member != nil {
+				return tstring.NewColorTString(member.DisplayName, widget.GetHashColor(member.UserID))
 			}
-		} else {
-			// TODO make text clickable rather than printing URL
-			parser.text = parser.text.Append(fmt.Sprintf("%s (%s)", tag.Text, tag.Meta))
 		}
-		parser.lineIsNew = false
-	case "p", "pre", "ol", "ul", "h1", "h2", "h3", "h4", "h5", "h6", "div":
-		// parser.newline()
+		return tstring.NewTString(pillTarget)
+	}
+	return str.Append(fmt.Sprintf(" (%s)", href))
+}
+
+func (parser *htmlParser) tagToTString(node *html.Node, stripLinebreak bool) tstring.TString {
+	switch node.Data {
+	case "blockquote":
+		return parser.blockquoteToTString(node, stripLinebreak)
+	case "ol", "ul":
+		return parser.listToTString(node, stripLinebreak)
+	case "h1", "h2", "h3", "h4", "h5", "h6":
+		return parser.headerToTString(node, stripLinebreak)
+	case "br":
+		return tstring.NewTString("\n")
+	case "b", "strong", "i", "em", "s", "del", "u", "ins":
+		return parser.basicFormatToTString(node, stripLinebreak)
+	case "a":
+		return parser.linkToTString(node, stripLinebreak)
+	case "p":
+		return parser.nodeToTagAwareTString(node.FirstChild, stripLinebreak).Append("\n")
+	case "pre":
+		return parser.nodeToTString(node.FirstChild, false)
+	default:
+		return parser.nodeToTagAwareTString(node.FirstChild, stripLinebreak)
 	}
 }
 
-func (parser *MatrixHTMLProcessor) ReceiveError(err error) {
-	if err != io.EOF {
-		debug.Print("Unexpected error parsing HTML:", err)
+func (parser *htmlParser) singleNodeToTString(node *html.Node, stripLinebreak bool) taggedTString {
+	switch node.Type {
+	case html.TextNode:
+		if stripLinebreak {
+			node.Data = strings.Replace(node.Data, "\n", "", -1)
+		}
+		return taggedTString{tstring.NewTString(node.Data), "text"}
+	case html.ElementNode:
+		return taggedTString{parser.tagToTString(node, stripLinebreak), node.Data}
+	case html.DocumentNode:
+		return taggedTString{parser.nodeToTagAwareTString(node.FirstChild, stripLinebreak), "html"}
+	default:
+		return taggedTString{tstring.NewBlankTString(), "unknown"}
 	}
 }
 
-func (parser *MatrixHTMLProcessor) Postprocess() {
-	if len(parser.text) > 0 && parser.text[len(parser.text)-1].Char == '\n' {
-		parser.text = parser.text[:len(parser.text)-1]
+func (parser *htmlParser) nodeToTaggedTStrings(node *html.Node, stripLinebreak bool) (strs []taggedTString) {
+	for ; node != nil; node = node.NextSibling {
+		strs = append(strs, parser.singleNodeToTString(node, stripLinebreak))
 	}
+	return
+}
+
+var BlockTags = []string{"p", "h1", "h2", "h3", "h4", "h5", "h6", "ol", "ul", "pre", "blockquote", "div", "hr", "table"}
+
+func (parser *htmlParser) isBlockTag(tag string) bool {
+	for _, blockTag := range BlockTags {
+		if tag == blockTag {
+			return true
+		}
+	}
+	return false
+}
+
+func (parser *htmlParser) nodeToTagAwareTString(node *html.Node, stripLinebreak bool) tstring.TString {
+	strs := parser.nodeToTaggedTStrings(node, stripLinebreak)
+	output := tstring.NewBlankTString()
+	for i, str := range strs {
+		tstr := str.TString
+		curIsBlock := parser.isBlockTag(str.tag)
+		if i > 0 && curIsBlock {
+			tstr = tstr.Prepend("\n")
+		}
+		if curIsBlock && len(strs) < i+1 {
+			tstr = tstr.Append("\n")
+		}
+		output = output.AppendTString(tstr)
+	}
+	return output.TrimSpace()
+}
+
+func (parser *htmlParser) nodeToTStrings(node *html.Node, stripLinebreak bool) (strs []tstring.TString) {
+	for ; node != nil; node = node.NextSibling {
+		strs = append(strs, parser.singleNodeToTString(node, stripLinebreak).TString)
+	}
+	return
+}
+
+func (parser *htmlParser) nodeToTString(node *html.Node, stripLinebreak bool) tstring.TString {
+	return tstring.Join(parser.nodeToTStrings(node, stripLinebreak), "")
+}
+
+func (parser *htmlParser) Parse(htmlData string) tstring.TString {
+	node, _ := html.Parse(strings.NewReader(htmlData))
+	return parser.nodeToTagAwareTString(node, true)
 }
 
 // ParseHTMLMessage parses a HTML-formatted Matrix event into a UIMessage.
 func ParseHTMLMessage(room *rooms.Room, evt *gomatrix.Event, senderDisplayname string) tstring.TString {
 	htmlData, _ := evt.Content["formatted_body"].(string)
 	htmlData = strings.Replace(htmlData, "\t", "    ", -1)
-	msgtype, _ := evt.Content["msgtype"].(string)
 
-	processor := &MatrixHTMLProcessor{
-		room:      room,
-		text:      tstring.NewBlankTString(),
-		msgtype:   msgtype,
-		senderID:  evt.Sender,
-		sender:    senderDisplayname,
-		indent:    "",
-		listType:  "",
-		lineIsNew: true,
-		openTags:  &TagArray{},
+	parser := htmlParser{room}
+	str := parser.Parse(htmlData)
+
+	msgtype, _ := evt.Content["msgtype"].(string)
+	if msgtype == "m.emote" {
+		str = tstring.Join([]tstring.TString{
+			tstring.NewTString("* "),
+			tstring.NewColorTString(senderDisplayname, widget.GetHashColor(evt.Sender)),
+			tstring.NewTString(" "),
+			str,
+		}, "")
 	}
 
-	parser := htmlparser.NewHTMLParserFromString(htmlData, processor)
-	parser.Process()
-
-	return processor.text
+	return str
 }
