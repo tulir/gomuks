@@ -17,19 +17,19 @@
 package messages
 
 import (
-	"regexp"
-	"maunium.net/go/gomuks/ui/messages/tstring"
 	"fmt"
 	"maunium.net/go/gomuks/config"
+	"maunium.net/go/gomuks/ui/messages/tstring"
+	"regexp"
 )
 
 // Regular expressions used to split lines when calculating the buffer.
 //
 // From tview/textview.go
 var (
-	boundaryPattern = regexp.MustCompile(`([[:punct:]]\s*|\s+)`)
+	boundaryPattern     = regexp.MustCompile(`([[:punct:]]\s*|\s+)`)
 	bareBoundaryPattern = regexp.MustCompile(`(\s+)`)
-	spacePattern    = regexp.MustCompile(`\s+`)
+	spacePattern        = regexp.MustCompile(`\s+`)
 )
 
 func matchBoundaryPattern(bare bool, extract tstring.TString) tstring.TString {

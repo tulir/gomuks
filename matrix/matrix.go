@@ -30,6 +30,8 @@ import (
 	"strings"
 	"time"
 
+	"crypto/tls"
+	"encoding/json"
 	"gopkg.in/russross/blackfriday.v2"
 	"maunium.net/go/gomatrix"
 	"maunium.net/go/gomuks/config"
@@ -38,8 +40,6 @@ import (
 	"maunium.net/go/gomuks/lib/bfhtml"
 	"maunium.net/go/gomuks/matrix/pushrules"
 	"maunium.net/go/gomuks/matrix/rooms"
-	"crypto/tls"
-	"encoding/json"
 )
 
 // Container is a wrapper for a gomatrix Client and some other stuff.

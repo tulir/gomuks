@@ -21,9 +21,9 @@ import (
 	"fmt"
 	"time"
 
+	"maunium.net/go/gomuks/config"
 	"maunium.net/go/gomuks/interface"
 	"maunium.net/go/gomuks/ui/messages/tstring"
-	"maunium.net/go/gomuks/config"
 )
 
 func init() {
@@ -40,7 +40,7 @@ type TextMessage struct {
 func NewTextMessage(id, sender, displayname, msgtype, text string, timestamp time.Time) UIMessage {
 	return &TextMessage{
 		BaseMessage: newBaseMessage(id, sender, displayname, msgtype, timestamp),
-		MsgText:         text,
+		MsgText:     text,
 	}
 }
 

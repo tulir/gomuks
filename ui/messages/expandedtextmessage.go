@@ -20,8 +20,8 @@ import (
 	"encoding/gob"
 	"time"
 
-	"maunium.net/go/gomuks/ui/messages/tstring"
 	"maunium.net/go/gomuks/config"
+	"maunium.net/go/gomuks/ui/messages/tstring"
 )
 
 func init() {
@@ -37,7 +37,7 @@ type ExpandedTextMessage struct {
 func NewExpandedTextMessage(id, sender, displayname, msgtype string, text tstring.TString, timestamp time.Time) UIMessage {
 	return &ExpandedTextMessage{
 		BaseMessage: newBaseMessage(id, sender, displayname, msgtype, timestamp),
-		MsgText:         text,
+		MsgText:     text,
 	}
 }
 

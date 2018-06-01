@@ -25,6 +25,7 @@ import (
 	"time"
 
 	"github.com/mattn/go-runewidth"
+	"maunium.net/go/gomuks/config"
 	"maunium.net/go/gomuks/interface"
 	"maunium.net/go/gomuks/lib/util"
 	"maunium.net/go/gomuks/matrix/rooms"
@@ -32,7 +33,6 @@ import (
 	"maunium.net/go/gomuks/ui/widget"
 	"maunium.net/go/tcell"
 	"maunium.net/go/tview"
-	"maunium.net/go/gomuks/config"
 )
 
 type RoomView struct {
@@ -154,7 +154,7 @@ func (view *RoomView) GetStatus() string {
 	var buf strings.Builder
 
 	if len(view.completions.list) > 0 {
-		if view.completions.textCache != view.input.GetText() || view.completions.time.Add(10 * time.Second).Before(time.Now()) {
+		if view.completions.textCache != view.input.GetText() || view.completions.time.Add(10*time.Second).Before(time.Now()) {
 			view.completions.list = []string{}
 		} else {
 			buf.WriteString(strings.Join(view.completions.list, ", "))

@@ -17,11 +17,11 @@
 package ui
 
 import (
-	"maunium.net/go/gomuks/interface"
-	"strings"
+	"fmt"
 	"maunium.net/go/gomuks/config"
 	"maunium.net/go/gomuks/debug"
-	"fmt"
+	"maunium.net/go/gomuks/interface"
+	"strings"
 )
 
 type gomuksPointerContainer struct {

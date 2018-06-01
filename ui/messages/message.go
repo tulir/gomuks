@@ -17,9 +17,9 @@
 package messages
 
 import (
+	"maunium.net/go/gomuks/config"
 	"maunium.net/go/gomuks/interface"
 	"maunium.net/go/gomuks/ui/messages/tstring"
-	"maunium.net/go/gomuks/config"
 )
 
 // UIMessage is a wrapper for the content and metadata of a Matrix message intended to be displayed.

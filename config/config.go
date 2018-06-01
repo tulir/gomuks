@@ -21,13 +21,13 @@ import (
 	"os"
 	"path/filepath"
 
+	"encoding/json"
 	"gopkg.in/yaml.v2"
 	"maunium.net/go/gomatrix"
 	"maunium.net/go/gomuks/debug"
 	"maunium.net/go/gomuks/matrix/pushrules"
 	"maunium.net/go/gomuks/matrix/rooms"
 	"strings"
-	"encoding/json"
 )
 
 type AuthCache struct {

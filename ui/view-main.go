@@ -21,6 +21,7 @@ import (
 	"time"
 	"unicode"
 
+	"bufio"
 	"maunium.net/go/gomatrix"
 	"maunium.net/go/gomuks/config"
 	"maunium.net/go/gomuks/debug"
@@ -32,7 +33,6 @@ import (
 	"maunium.net/go/gomuks/ui/widget"
 	"maunium.net/go/tcell"
 	"maunium.net/go/tview"
-	"bufio"
 	"os"
 )
 

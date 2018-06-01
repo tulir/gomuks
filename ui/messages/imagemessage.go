@@ -24,12 +24,12 @@ import (
 
 	"image/color"
 
+	"maunium.net/go/gomuks/config"
 	"maunium.net/go/gomuks/debug"
 	"maunium.net/go/gomuks/interface"
 	"maunium.net/go/gomuks/lib/ansimage"
 	"maunium.net/go/gomuks/ui/messages/tstring"
 	"maunium.net/go/tcell"
-	"maunium.net/go/gomuks/config"
 )
 
 func init() {
@@ -38,7 +38,7 @@ func init() {
 
 type ImageMessage struct {
 	BaseMessage
-	Body string
+	Body       string
 	Homeserver string
 	FileID     string
 	data       []byte

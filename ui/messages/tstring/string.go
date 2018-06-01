@@ -108,7 +108,7 @@ func (str TString) TrimLeft(fn func(rune) bool) TString {
 }
 
 func (str TString) TrimRight(fn func(rune) bool) TString {
-	for i := len(str)-1; i >= 0; i-- {
+	for i := len(str) - 1; i >= 0; i-- {
 		if !fn(str[i].Char) {
 			return append(NewBlankTString(), str[:i+1]...)
 		}

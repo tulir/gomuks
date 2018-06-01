@@ -22,12 +22,12 @@ import (
 	"regexp"
 	"strings"
 
+	"golang.org/x/net/html"
 	"maunium.net/go/gomatrix"
 	"maunium.net/go/gomuks/matrix/rooms"
 	"maunium.net/go/gomuks/ui/messages/tstring"
 	"maunium.net/go/gomuks/ui/widget"
 	"maunium.net/go/tcell"
-	"golang.org/x/net/html"
 	"strconv"
 )
 
@@ -68,7 +68,7 @@ func (parser *htmlParser) getAttribute(node *html.Node, attribute string) string
 }
 
 func digits(num int) int {
-	return int(math.Floor(math.Log10(float64(num)))+1)
+	return int(math.Floor(math.Log10(float64(num))) + 1)
 }
 
 func (parser *htmlParser) listToTString(node *html.Node, stripLinebreak bool) tstring.TString {

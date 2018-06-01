@@ -24,13 +24,13 @@ import (
 	"strings"
 
 	"github.com/mattn/go-runewidth"
+	"maunium.net/go/gomuks/config"
 	"maunium.net/go/gomuks/debug"
 	"maunium.net/go/gomuks/interface"
 	"maunium.net/go/gomuks/lib/open"
 	"maunium.net/go/gomuks/ui/messages"
 	"maunium.net/go/gomuks/ui/messages/tstring"
 	"maunium.net/go/gomuks/ui/widget"
-	"maunium.net/go/gomuks/config"
 	"maunium.net/go/tcell"
 	"maunium.net/go/tview"
 )

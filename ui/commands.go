@@ -17,9 +17,9 @@
 package ui
 
 import (
+	"encoding/json"
 	"maunium.net/go/gomuks/debug"
 	"strings"
-	"encoding/json"
 )
 
 func cmdMe(cmd *Command) {
