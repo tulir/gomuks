@@ -249,7 +249,7 @@ func (view *MessageView) replaceBuffer(original messages.UIMessage, new messages
 	}
 
 	view.textBuffer = append(append(view.textBuffer[0:start], new.Buffer()...), view.textBuffer[end:]...)
-	if len(new.Buffer()) != end-start+1 {
+	if len(new.Buffer()) != end-start {
 		metaBuffer := view.metaBuffer[0:start]
 		for range new.Buffer() {
 			metaBuffer = append(metaBuffer, new)
@@ -504,6 +504,7 @@ func (view *MessageView) Draw(screen tcell.Screen) {
 
 	if len(view.textBuffer) != len(view.metaBuffer) {
 		debug.Printf("Unexpected text/meta buffer length mismatch: %d != %d.", len(view.textBuffer), len(view.metaBuffer))
+		view.prevMsgCount = 0
 		return
 	}
 

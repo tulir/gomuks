@@ -28,6 +28,7 @@ import (
 	"maunium.net/go/gomuks/ui/widget"
 	"maunium.net/go/tcell"
 	"golang.org/x/net/html"
+	"strconv"
 )
 
 var matrixToURL = regexp.MustCompile("^(?:https?://)?(?:www\\.)?matrix\\.to/#/([#@!].*)")
@@ -57,23 +58,43 @@ var AdjustStyleStrikethrough = func(style tcell.Style) tcell.Style {
 	return style.Strikethrough(true)
 }
 
+func (parser *htmlParser) getAttribute(node *html.Node, attribute string) string {
+	for _, attr := range node.Attr {
+		if attr.Key == attribute {
+			return attr.Val
+		}
+	}
+	return ""
+}
+
+func digits(num int) int {
+	return int(math.Floor(math.Log10(float64(num)))+1)
+}
+
 func (parser *htmlParser) listToTString(node *html.Node, stripLinebreak bool) tstring.TString {
 	ordered := node.Data == "ol"
 	taggedChildren := parser.nodeToTaggedTStrings(node.FirstChild, stripLinebreak)
-	paddingLength := 0
-	if ordered {
-		paddingLength = int(math.Floor(math.Log10(float64(len(taggedChildren)))) + 1)
-	}
-	padding := strings.Repeat(" ", paddingLength+2)
-	var children []tstring.TString
 	counter := 1
+	indentLength := 0
+	if ordered {
+		start := parser.getAttribute(node, "start")
+		if len(start) > 0 {
+			counter, _ = strconv.Atoi(start)
+		}
+
+		longestIndex := (counter - 1) + len(taggedChildren)
+		indentLength = digits(longestIndex)
+	}
+	indent := strings.Repeat(" ", indentLength+2)
+	var children []tstring.TString
 	for _, child := range taggedChildren {
 		if child.tag != "li" {
 			continue
 		}
 		var prefix string
 		if ordered {
-			prefix = fmt.Sprintf("%*d. ", paddingLength, counter)
+			indexPadding := indentLength - digits(counter)
+			prefix = fmt.Sprintf("%d. %s", counter, strings.Repeat(" ", indexPadding))
 		} else {
 			prefix = "● "
 		}
@@ -81,7 +102,7 @@ func (parser *htmlParser) listToTString(node *html.Node, stripLinebreak bool) ts
 		counter++
 		parts := str.Split('\n')
 		for i, part := range parts[1:] {
-			parts[i+1] = part.Prepend(padding)
+			parts[i+1] = part.Prepend(indent)
 		}
 		str = tstring.Join(parts, "\n")
 		children = append(children, str)
@@ -122,13 +143,7 @@ func (parser *htmlParser) blockquoteToTString(node *html.Node, stripLinebreak bo
 
 func (parser *htmlParser) linkToTString(node *html.Node, stripLinebreak bool) tstring.TString {
 	str := parser.nodeToTagAwareTString(node.FirstChild, stripLinebreak)
-	var href string
-	for _, attr := range node.Attr {
-		if attr.Key == "href" {
-			href = attr.Val
-			break
-		}
-	}
+	href := parser.getAttribute(node, "href")
 	if len(href) == 0 {
 		return str
 	}
@@ -205,14 +220,10 @@ func (parser *htmlParser) isBlockTag(tag string) bool {
 func (parser *htmlParser) nodeToTagAwareTString(node *html.Node, stripLinebreak bool) tstring.TString {
 	strs := parser.nodeToTaggedTStrings(node, stripLinebreak)
 	output := tstring.NewBlankTString()
-	for i, str := range strs {
+	for _, str := range strs {
 		tstr := str.TString
-		curIsBlock := parser.isBlockTag(str.tag)
-		if i > 0 && curIsBlock {
-			tstr = tstr.Prepend("\n")
-		}
-		if curIsBlock && len(strs) < i+1 {
-			tstr = tstr.Append("\n")
+		if parser.isBlockTag(str.tag) {
+			tstr = tstr.Prepend("\n").Append("\n")
 		}
 		output = output.AppendTString(tstr)
 	}
