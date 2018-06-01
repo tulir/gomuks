@@ -50,14 +50,9 @@ type MainView struct {
 	gmx    ifc.Gomuks
 	config *config.Config
 	parent *GomuksUI
-
-	hideUserList bool
-	hideRoomList bool
-	bareMessages bool
 }
 
 func (ui *GomuksUI) NewMainView() tview.Primitive {
-	prefs := ui.gmx.Config().Preferences
 	mainView := &MainView{
 		Flex:     tview.NewFlex(),
 		roomList: NewRoomList(),
@@ -68,10 +63,6 @@ func (ui *GomuksUI) NewMainView() tview.Primitive {
 		gmx:    ui.gmx,
 		config: ui.gmx.Config(),
 		parent: ui,
-
-		hideUserList: prefs.HideUserList,
-		hideRoomList: prefs.HideRoomList,
-		bareMessages: prefs.BareMessageView,
 	}
 	mainView.cmdProcessor = NewCommandProcessor(mainView)
 
@@ -88,7 +79,7 @@ func (ui *GomuksUI) NewMainView() tview.Primitive {
 }
 
 func (view *MainView) Draw(screen tcell.Screen) {
-	if view.hideRoomList {
+	if view.config.Preferences.HideRoomList {
 		view.roomView.SetRect(view.GetRect())
 		view.roomView.Draw(screen)
 	} else {

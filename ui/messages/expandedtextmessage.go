@@ -21,6 +21,7 @@ import (
 	"time"
 
 	"maunium.net/go/gomuks/ui/messages/tstring"
+	"maunium.net/go/gomuks/config"
 )
 
 func init() {
@@ -52,11 +53,11 @@ func (msg *ExpandedTextMessage) PlainText() string {
 	return msg.MsgText.String()
 }
 
-func (msg *ExpandedTextMessage) CalculateBuffer(bare bool, width int) {
-	msg.calculateBufferWithText(bare, msg.MsgText, width)
+func (msg *ExpandedTextMessage) CalculateBuffer(prefs config.UserPreferences, width int) {
+	msg.calculateBufferWithText(prefs, msg.MsgText, width)
 }
 
 // RecalculateBuffer calculates the buffer again with the previously provided width.
 func (msg *ExpandedTextMessage) RecalculateBuffer() {
-	msg.CalculateBuffer(msg.prevBareMode, msg.prevBufferWidth)
+	msg.CalculateBuffer(msg.prevPrefs, msg.prevBufferWidth)
 }

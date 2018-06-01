@@ -93,10 +93,6 @@ func (ui *GomuksUI) OnLogout() {
 }
 
 func (ui *GomuksUI) HandleNewPreferences() {
-	prefs := ui.gmx.Config().Preferences
-	ui.mainView.bareMessages = prefs.BareMessageView
-	ui.mainView.hideUserList = prefs.HideUserList
-	ui.mainView.hideRoomList = prefs.HideRoomList
 	ui.Render()
 }
 

@@ -32,6 +32,7 @@ import (
 	"maunium.net/go/gomuks/ui/widget"
 	"maunium.net/go/tcell"
 	"maunium.net/go/tview"
+	"maunium.net/go/gomuks/config"
 )
 
 type RoomView struct {
@@ -46,6 +47,7 @@ type RoomView struct {
 	Room     *rooms.Room
 
 	parent *MainView
+	config *config.Config
 
 	typing []string
 
@@ -66,6 +68,7 @@ func NewRoomView(parent *MainView, room *rooms.Room) *RoomView {
 		input:    widget.NewAdvancedInputField(),
 		Room:     room,
 		parent:   parent,
+		config:   parent.config,
 	}
 	view.content = NewMessageView(view)
 
@@ -202,7 +205,7 @@ func (view *RoomView) Draw(screen tcell.Screen) {
 		statusRow  = contentRow + contentHeight
 		inputRow   = statusRow + StatusBarHeight
 	)
-	if view.parent.hideUserList {
+	if view.config.Preferences.HideUserList {
 		contentWidth = width
 	}
 
@@ -210,7 +213,7 @@ func (view *RoomView) Draw(screen tcell.Screen) {
 	view.topic.SetRect(x, topicRow, width, TopicBarHeight)
 	view.content.SetRect(x, contentRow, contentWidth, contentHeight)
 	view.status.SetRect(x, statusRow, width, StatusBarHeight)
-	if !view.parent.hideUserList && userListColumn > x {
+	if !view.config.Preferences.HideUserList && userListColumn > x {
 		view.userList.SetRect(userListColumn, contentRow, UserListWidth, contentHeight)
 		view.ulBorder.SetRect(userListBorderColumn, contentRow, UserListBorderWidth, contentHeight)
 	}
@@ -223,7 +226,7 @@ func (view *RoomView) Draw(screen tcell.Screen) {
 	view.status.SetText(view.GetStatus())
 	view.status.Draw(screen)
 	view.input.Draw(screen)
-	if !view.parent.hideUserList {
+	if !view.config.Preferences.HideUserList {
 		view.ulBorder.Draw(screen)
 		view.userList.Draw(screen)
 	}

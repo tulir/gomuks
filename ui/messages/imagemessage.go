@@ -29,6 +29,7 @@ import (
 	"maunium.net/go/gomuks/lib/ansimage"
 	"maunium.net/go/gomuks/ui/messages/tstring"
 	"maunium.net/go/tcell"
+	"maunium.net/go/gomuks/config"
 )
 
 func init() {
@@ -92,13 +93,13 @@ func (msg *ImageMessage) Path() string {
 // CalculateBuffer generates the internal buffer for this message that consists
 // of the text of this message split into lines at most as wide as the width
 // parameter.
-func (msg *ImageMessage) CalculateBuffer(bare bool, width int) {
+func (msg *ImageMessage) CalculateBuffer(prefs config.UserPreferences, width int) {
 	if width < 2 {
 		return
 	}
 
-	if bare {
-		msg.calculateBufferWithText(bare, tstring.NewTString(msg.PlainText()), width)
+	if prefs.BareMessageView || prefs.DisableImages {
+		msg.calculateBufferWithText(prefs, tstring.NewTString(msg.PlainText()), width)
 		return
 	}
 
@@ -111,10 +112,10 @@ func (msg *ImageMessage) CalculateBuffer(bare bool, width int) {
 
 	msg.buffer = image.Render()
 	msg.prevBufferWidth = width
-	msg.prevBareMode = false
+	msg.prevPrefs = prefs
 }
 
 // RecalculateBuffer calculates the buffer again with the previously provided width.
 func (msg *ImageMessage) RecalculateBuffer() {
-	msg.CalculateBuffer(msg.prevBareMode, msg.prevBufferWidth)
+	msg.CalculateBuffer(msg.prevPrefs, msg.prevBufferWidth)
 }

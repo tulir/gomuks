@@ -23,6 +23,7 @@ import (
 
 	"maunium.net/go/gomuks/interface"
 	"maunium.net/go/gomuks/ui/messages/tstring"
+	"maunium.net/go/gomuks/config"
 )
 
 func init() {
@@ -84,11 +85,11 @@ func (msg *TextMessage) PlainText() string {
 	return msg.MsgText
 }
 
-func (msg *TextMessage) CalculateBuffer(bare bool, width int) {
-	msg.calculateBufferWithText(bare, msg.getCache(), width)
+func (msg *TextMessage) CalculateBuffer(prefs config.UserPreferences, width int) {
+	msg.calculateBufferWithText(prefs, msg.getCache(), width)
 }
 
 // RecalculateBuffer calculates the buffer again with the previously provided width.
 func (msg *TextMessage) RecalculateBuffer() {
-	msg.CalculateBuffer(msg.prevBareMode, msg.prevBufferWidth)
+	msg.CalculateBuffer(msg.prevPrefs, msg.prevBufferWidth)
 }

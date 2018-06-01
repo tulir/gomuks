@@ -30,6 +30,7 @@ import (
 	"maunium.net/go/gomuks/ui/messages"
 	"maunium.net/go/gomuks/ui/messages/tstring"
 	"maunium.net/go/gomuks/ui/widget"
+	"maunium.net/go/gomuks/config"
 	"maunium.net/go/tcell"
 	"maunium.net/go/tview"
 )
@@ -38,6 +39,7 @@ type MessageView struct {
 	*tview.Box
 
 	parent *RoomView
+	config *config.Config
 
 	ScrollOffset    int
 	MaxSenderWidth  int
@@ -50,7 +52,7 @@ type MessageView struct {
 	prevWidth    int
 	prevHeight   int
 	prevMsgCount int
-	prevBareMode bool
+	prevPrefs    config.UserPreferences
 
 	messageIDs map[string]messages.UIMessage
 	messages   []messages.UIMessage
@@ -63,6 +65,7 @@ func NewMessageView(parent *RoomView) *MessageView {
 	return &MessageView{
 		Box:    tview.NewBox(),
 		parent: parent,
+		config: parent.config,
 
 		MaxSenderWidth: 15,
 		TimestampWidth: len(messages.TimeFormat),
@@ -77,7 +80,6 @@ func NewMessageView(parent *RoomView) *MessageView {
 		prevWidth:    -1,
 		prevHeight:   -1,
 		prevMsgCount: -1,
-		prevBareMode: false,
 	}
 }
 
@@ -171,11 +173,11 @@ func (view *MessageView) AddMessage(ifcMessage ifc.Message, direction ifc.Messag
 	view.updateWidestSender(message.Sender())
 
 	_, _, width, _ := view.GetRect()
-	bare := view.parent.parent.bareMessages
+	bare := view.config.Preferences.BareMessageView
 	if !bare {
 		width -= view.TimestampWidth + TimestampSenderGap + view.widestSender + SenderMessageGap
 	}
-	message.CalculateBuffer(bare, width)
+	message.CalculateBuffer(view.config.Preferences, width)
 
 	if direction == ifc.AppendMessage {
 		if view.ScrollOffset > 0 {
@@ -264,11 +266,13 @@ func (view *MessageView) replaceBuffer(original messages.UIMessage, new messages
 
 func (view *MessageView) recalculateBuffers() {
 	_, _, width, height := view.GetRect()
-	bareMode := view.parent.parent.bareMessages
-	if !bareMode {
+	prefs := view.config.Preferences
+	if !prefs.BareMessageView {
 		width -= view.TimestampWidth + TimestampSenderGap + view.widestSender + SenderMessageGap
 	}
-	recalculateMessageBuffers := width != view.prevWidth || bareMode != view.prevBareMode
+	recalculateMessageBuffers := width != view.prevWidth ||
+		view.prevPrefs.BareMessageView != prefs.BareMessageView ||
+		view.prevPrefs.DisableImages != prefs.DisableImages
 	if recalculateMessageBuffers || len(view.messages) != view.prevMsgCount {
 		view.textBuffer = []tstring.TString{}
 		view.metaBuffer = []ifc.MessageMeta{}
@@ -279,14 +283,14 @@ func (view *MessageView) recalculateBuffers() {
 				break
 			}
 			if recalculateMessageBuffers {
-				message.CalculateBuffer(bareMode, width)
+				message.CalculateBuffer(prefs, width)
 			}
 			view.appendBuffer(message)
 		}
 	}
 	view.prevHeight = height
 	view.prevWidth = width
-	view.prevBareMode = bareMode
+	view.prevPrefs = prefs
 }
 
 func (view *MessageView) handleMessageClick(message ifc.MessageMeta) bool {
@@ -495,7 +499,7 @@ func (view *MessageView) Draw(screen tcell.Screen) {
 	messageX := usernameX + view.widestSender + SenderMessageGap
 	separatorX := usernameX + view.widestSender + SenderSeparatorGap
 
-	bareMode := view.parent.parent.bareMessages
+	bareMode := view.config.Preferences.BareMessageView
 	if bareMode {
 		messageX = x
 	}

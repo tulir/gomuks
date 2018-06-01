@@ -131,21 +131,20 @@ func cmdSetState(cmd *Command) {
 
 func cmdUIToggle(cmd *Command) {
 	if len(cmd.Args) == 0 {
-		cmd.Reply("Usage: /uitoggle <rooms/users/baremessages>")
+		cmd.Reply("Usage: /uitoggle <rooms/users/baremessages/images>")
 		return
 	}
 	switch cmd.Args[0] {
 	case "rooms":
-		cmd.MainView.hideRoomList = !cmd.MainView.hideRoomList
-		cmd.Config.Preferences.HideRoomList = cmd.MainView.hideRoomList
+		cmd.Config.Preferences.HideRoomList = !cmd.Config.Preferences.HideRoomList
 	case "users":
-		cmd.MainView.hideUserList = !cmd.MainView.hideUserList
-		cmd.Config.Preferences.HideUserList = cmd.MainView.hideUserList
+		cmd.Config.Preferences.HideUserList = !cmd.Config.Preferences.HideUserList
 	case "baremessages":
-		cmd.MainView.bareMessages = !cmd.MainView.bareMessages
-		cmd.Config.Preferences.BareMessageView = cmd.MainView.bareMessages
+		cmd.Config.Preferences.BareMessageView = !cmd.Config.Preferences.BareMessageView
+	case "images":
+		cmd.Config.Preferences.DisableImages = !cmd.Config.Preferences.DisableImages
 	default:
-		cmd.Reply("Usage: /uitoggle <rooms/users/baremessages>")
+		cmd.Reply("Usage: /uitoggle <rooms/users/baremessages/images>")
 		return
 	}
 	cmd.UI.Render()

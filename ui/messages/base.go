@@ -24,6 +24,7 @@ import (
 	"maunium.net/go/gomuks/ui/messages/tstring"
 	"maunium.net/go/gomuks/ui/widget"
 	"maunium.net/go/tcell"
+	"maunium.net/go/gomuks/config"
 )
 
 func init() {
@@ -43,7 +44,7 @@ type BaseMessage struct {
 	buffer          []tstring.TString
 	plainBuffer     []tstring.TString
 	prevBufferWidth int
-	prevBareMode    bool
+	prevPrefs    config.UserPreferences
 }
 
 func newBaseMessage(id, sender, displayname, msgtype string, timestamp time.Time) BaseMessage {
@@ -55,7 +56,6 @@ func newBaseMessage(id, sender, displayname, msgtype string, timestamp time.Time
 		MsgType:         msgtype,
 		MsgID:           id,
 		prevBufferWidth: 0,
-		prevBareMode:    false,
 		MsgState:        ifc.MessageStateDefault,
 		MsgIsHighlight:  false,
 		MsgIsService:    false,

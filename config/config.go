@@ -40,6 +40,7 @@ type UserPreferences struct {
 	HideUserList    bool `yaml:"hide_user_list"`
 	HideRoomList    bool `yaml:"hide_room_list"`
 	BareMessageView bool `yaml:"bare_message_view"`
+	DisableImages   bool `yaml:"disable_images"`
 }
 
 // Config contains the main config of gomuks.

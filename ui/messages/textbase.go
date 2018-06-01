@@ -20,6 +20,7 @@ import (
 	"regexp"
 	"maunium.net/go/gomuks/ui/messages/tstring"
 	"fmt"
+	"maunium.net/go/gomuks/config"
 )
 
 // Regular expressions used to split lines when calculating the buffer.
@@ -50,14 +51,14 @@ func matchBoundaryPattern(bare bool, extract tstring.TString) tstring.TString {
 // CalculateBuffer generates the internal buffer for this message that consists
 // of the text of this message split into lines at most as wide as the width
 // parameter.
-func (msg *BaseMessage) calculateBufferWithText(bare bool, text tstring.TString, width int) {
+func (msg *BaseMessage) calculateBufferWithText(prefs config.UserPreferences, text tstring.TString, width int) {
 	if width < 2 {
 		return
 	}
 
 	msg.buffer = []tstring.TString{}
 
-	if bare {
+	if prefs.BareMessageView {
 		newText := tstring.NewTString(msg.FormatTime())
 		if len(msg.Sender()) > 0 {
 			newText = newText.AppendTString(tstring.NewColorTString(fmt.Sprintf(" <%s> ", msg.Sender()), msg.SenderColor()))
@@ -84,12 +85,12 @@ func (msg *BaseMessage) calculateBufferWithText(bare bool, text tstring.TString,
 				if spaces := spacePattern.FindStringIndex(str[len(extract):].String()); spaces != nil && spaces[0] == 0 {
 					extract = str[:len(extract)+spaces[1]]
 				}
-				extract = matchBoundaryPattern(bare, extract)
+				extract = matchBoundaryPattern(prefs.BareMessageView, extract)
 			}
 			msg.buffer = append(msg.buffer, extract)
 			str = str[len(extract):]
 		}
 	}
 	msg.prevBufferWidth = width
-	msg.prevBareMode = bare
+	msg.prevPrefs = prefs
 }
