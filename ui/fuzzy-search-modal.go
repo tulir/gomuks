@@ -60,7 +60,6 @@ func NewFuzzySearchModal(mainView *MainView, width int, height int) *FuzzySearch
 		SetInputCapture(fs.keyHandler)
 
 	fs.results = tview.NewTextView().
-		SetDynamicColors(true).
 		SetRegions(true)
 	fs.results.SetBorderPadding(1, 0, 0, 0)
 
