@@ -53,7 +53,7 @@ func (gt GradientTable) GetInterpolatedColorFor(t float64) colorful.Color {
 var rainbow = GradientTable{
 	{colorful.LinearRgb(1, 0, 0), 0.0},
 	{colorful.LinearRgb(1, 0.5, 0), 0.1},
-	{colorful.LinearRgb(1, 1, 0), 0.2},
+	{colorful.LinearRgb(0.5, 0.5, 0), 0.2}, // Yellow is 0.5, 0.5 instead of 1, 1 to make it readable on light themes
 	{colorful.LinearRgb(0.5, 1, 0), 0.3},
 	{colorful.LinearRgb(0, 1, 0), 0.4},
 	{colorful.LinearRgb(0, 1, 0.5), 0.5},
