@@ -78,6 +78,7 @@ func NewCommandProcessor(parent *MainView) *CommandProcessor {
 			"part":  {"leave"},
 			"send":  {"sendevent"},
 			"state": {"setstate"},
+			"rb":    {"rainbow"},
 		},
 		commands: map[string]CommandHandler{
 			"unknown-command": cmdUnknownCommand,
@@ -91,6 +92,7 @@ func NewCommandProcessor(parent *MainView) *CommandProcessor {
 			"logout":          cmdLogout,
 			"sendevent":       cmdSendEvent,
 			"setstate":        cmdSetState,
+			"rainbow":         cmdRainbow,
 		},
 	}
 }

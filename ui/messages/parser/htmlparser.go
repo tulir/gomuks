@@ -29,6 +29,7 @@ import (
 	"maunium.net/go/gomuks/ui/widget"
 	"maunium.net/go/tcell"
 	"strconv"
+	"github.com/lucasb-eyer/go-colorful"
 )
 
 var matrixToURL = regexp.MustCompile("^(?:https?://)?(?:www\\.)?matrix\\.to/#/([#@!].*)")
@@ -125,6 +126,26 @@ func (parser *htmlParser) basicFormatToTString(node *html.Node, stripLinebreak b
 	return str
 }
 
+func (parser *htmlParser) fontToTString(node *html.Node, stripLinebreak bool) tstring.TString {
+	str := parser.nodeToTagAwareTString(node.FirstChild, stripLinebreak)
+	hex := parser.getAttribute(node, "color")
+	if len(hex) == 0 {
+		return str
+	}
+
+	color, err := colorful.Hex(hex)
+	if err != nil {
+		return str
+	}
+
+	r, g, b := color.RGB255()
+	tcellColor := tcell.NewRGBColor(int32(r), int32(g), int32(b))
+	str.AdjustStyleFull(func(style tcell.Style) tcell.Style {
+		return style.Foreground(tcellColor)
+	})
+	return str
+}
+
 func (parser *htmlParser) headerToTString(node *html.Node, stripLinebreak bool) tstring.TString {
 	children := parser.nodeToTStrings(node.FirstChild, stripLinebreak)
 	length := int(node.Data[1] - '0')
@@ -172,6 +193,8 @@ func (parser *htmlParser) tagToTString(node *html.Node, stripLinebreak bool) tst
 		return tstring.NewTString("\n")
 	case "b", "strong", "i", "em", "s", "del", "u", "ins":
 		return parser.basicFormatToTString(node, stripLinebreak)
+	case "font":
+		return parser.fontToTString(node, stripLinebreak)
 	case "a":
 		return parser.linkToTString(node, stripLinebreak)
 	case "p":

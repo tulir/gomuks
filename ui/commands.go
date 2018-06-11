@@ -20,12 +20,65 @@ import (
 	"encoding/json"
 	"maunium.net/go/gomuks/debug"
 	"strings"
+	"fmt"
+	"github.com/lucasb-eyer/go-colorful"
+	"unicode"
 )
 
 func cmdMe(cmd *Command) {
 	text := strings.Join(cmd.Args, " ")
 	tempMessage := cmd.Room.NewTempMessage("m.emote", text)
 	go cmd.MainView.sendTempMessage(cmd.Room, tempMessage, text)
+	cmd.UI.Render()
+}
+
+// GradientTable from https://github.com/lucasb-eyer/go-colorful/blob/master/doc/gradientgen/gradientgen.go
+type GradientTable []struct {
+	Col colorful.Color
+	Pos float64
+}
+
+func (gt GradientTable) GetInterpolatedColorFor(t float64) colorful.Color {
+	for i := 0; i < len(gt)-1; i++ {
+		c1 := gt[i]
+		c2 := gt[i+1]
+		if c1.Pos <= t && t <= c2.Pos {
+			t := (t - c1.Pos) / (c2.Pos - c1.Pos)
+			return c1.Col.BlendHcl(c2.Col, t).Clamped()
+		}
+	}
+	return gt[len(gt)-1].Col
+}
+
+var rainbow = GradientTable{
+	{colorful.LinearRgb(1, 0, 0), 0.0},
+	{colorful.LinearRgb(1, 0.5, 0), 0.1},
+	{colorful.LinearRgb(1, 1, 0), 0.2},
+	{colorful.LinearRgb(0.5, 1, 0), 0.3},
+	{colorful.LinearRgb(0, 1, 0), 0.4},
+	{colorful.LinearRgb(0, 1, 0.5), 0.5},
+	{colorful.LinearRgb(0, 1, 1), 0.6},
+	{colorful.LinearRgb(0, 0.5, 1), 0.7},
+	{colorful.LinearRgb(0.5, 0, 1), 0.8},
+	{colorful.LinearRgb(1, 0, 1), 0.9},
+	{colorful.LinearRgb(1, 0, 0.5), 1},
+}
+
+// TODO this command definitely belongs in a plugin once we have a plugin system.
+func cmdRainbow(cmd *Command) {
+	text := strings.Join(cmd.Args, " ")
+	var html strings.Builder
+	fmt.Fprint(&html, "**🌈** ")
+	for i, char := range text {
+		if unicode.IsSpace(char) {
+			html.WriteRune(char)
+			continue
+		}
+		color := rainbow.GetInterpolatedColorFor(float64(i)/float64(len(text))).Hex()
+		fmt.Fprintf(&html, "<font color=\"%s\">%c</font>", color, char)
+	}
+	tempMessage := cmd.Room.NewTempMessage("m.text", html.String())
+	go cmd.MainView.sendTempMessage(cmd.Room, tempMessage, html.String())
 	cmd.UI.Render()
 }
 
