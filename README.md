@@ -17,7 +17,7 @@ Matrix room: [#gomuks:maunium.net](https://matrix.to/#/#gomuks:maunium.net)
 
 ## Installation
 Once the client becomes actually usable, I'll start making GitHub releases with
-precompiled executables. For now, you can either compile from source or download
+precompiled executables. For now, you can either download
 a CI build from [dl.maunium.net/programs/gomuks](https://dl.maunium.net/programs/gomuks)
 or compile from source:
 
