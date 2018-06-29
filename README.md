@@ -32,9 +32,13 @@ or compile from source:
 - jump to room - `Alt + Enter`, then `Tab` and `Enter` to navigate and select room
 
 ### Commands
-* `/quit` - Close gomuks
-* `/logout` - Log out, clear caches and go back to the login view
-* `/clearcache` - Clear room state cache and close gomuks
-* `/leave` - Leave the current room
-* `/join <room>` - Join the room with the given room ID or alias
-* `/panic` - Trigger a test panic
+* `help` - Is a known command
+* `me <text>` - Send an emote
+* `quit` - Close gomuks
+* `clearcache` - Clear room state and close gomuks
+* `leave` - Leave the current room
+* `join <room>` - Join the room with the given room ID or alias
+* `toggle <rooms/users/baremessages/images/typingnotif>` - Change user preferences
+* `logout` - Log out, clear caches and go back to the login view
+* `send <room id> <event type> <content>` - Send a custom event
+* `setstate <room id> <event type> <state key/`-`> <content>` - Change room state

@@ -182,9 +182,9 @@ func cmdSetState(cmd *Command) {
 	}
 }
 
-func cmdUIToggle(cmd *Command) {
+func cmdToggle(cmd *Command) {
 	if len(cmd.Args) == 0 {
-		cmd.Reply("Usage: /uitoggle <rooms/users/baremessages/images>")
+		cmd.Reply("Usage: /toggle <rooms/users/baremessages/images/typingnotif>")
 		return
 	}
 	switch cmd.Args[0] {
@@ -196,11 +196,14 @@ func cmdUIToggle(cmd *Command) {
 		cmd.Config.Preferences.BareMessageView = !cmd.Config.Preferences.BareMessageView
 	case "images":
 		cmd.Config.Preferences.DisableImages = !cmd.Config.Preferences.DisableImages
+	case "typingnotif":
+		cmd.Config.Preferences.DisableTypingNotifs = !cmd.Config.Preferences.DisableTypingNotifs
 	default:
-		cmd.Reply("Usage: /uitoggle <rooms/users/baremessages/images>")
+        cmd.Reply("Usage: /toggle <rooms/users/baremessages/images/typingnotif>")
 		return
 	}
-	cmd.UI.Render()
+    // is there a reason this is called twice?
+    // cmd.UI.Render()
 	cmd.UI.Render()
 	go cmd.Matrix.SendPreferencesToMatrix()
 }
