@@ -32,6 +32,7 @@ import (
 
 	"crypto/tls"
 	"encoding/json"
+
 	"gopkg.in/russross/blackfriday.v2"
 	"maunium.net/go/gomatrix"
 	"maunium.net/go/gomuks/config"

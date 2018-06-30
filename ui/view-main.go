@@ -21,7 +21,11 @@ import (
 	"time"
 	"unicode"
 
+	"github.com/kyokomi/emoji"
+
 	"bufio"
+	"os"
+
 	"maunium.net/go/gomatrix"
 	"maunium.net/go/gomuks/config"
 	"maunium.net/go/gomuks/debug"
@@ -33,7 +37,6 @@ import (
 	"maunium.net/go/gomuks/ui/widget"
 	"maunium.net/go/tcell"
 	"maunium.net/go/tview"
-	"os"
 )
 
 type MainView struct {
@@ -143,6 +146,9 @@ func (view *MainView) SendMessage(roomView *RoomView, text string) {
 func (view *MainView) sendTempMessage(roomView *RoomView, tempMessage ifc.Message, text string) {
 	defer debug.Recover()
 	debug.Print("Sending message", tempMessage.Type(), text)
+	if !roomView.config.Preferences.DisableEmojis {
+		text = emoji.Sprint(text)
+	}
 	eventID, err := view.matrix.SendMarkdownMessage(roomView.Room.ID, tempMessage.Type(), text)
 	if err != nil {
 		tempMessage.SetState(ifc.MessageStateFailed)
