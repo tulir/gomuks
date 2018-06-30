@@ -18,10 +18,10 @@ package ui
 
 import (
 	"encoding/json"
-	"maunium.net/go/gomuks/debug"
-	"strings"
 	"fmt"
 	"github.com/lucasb-eyer/go-colorful"
+	"maunium.net/go/gomuks/debug"
+	"strings"
 	"unicode"
 )
 
@@ -74,7 +74,7 @@ func cmdRainbow(cmd *Command) {
 			html.WriteRune(char)
 			continue
 		}
-		color := rainbow.GetInterpolatedColorFor(float64(i)/float64(len(text))).Hex()
+		color := rainbow.GetInterpolatedColorFor(float64(i) / float64(len(text))).Hex()
 		fmt.Fprintf(&html, "<font color=\"%s\">%c</font>", color, char)
 	}
 	tempMessage := cmd.Room.NewTempMessage("m.text", html.String())
