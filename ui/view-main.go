@@ -195,7 +195,7 @@ func (view *MainView) KeyEventHandler(roomView *RoomView, key *tcell.EventKey) *
 		}
     } else if k == tcell.KeyAltDown || k == tcell.KeyCtrlDown {
         view.SwitchRoom(view.roomList.Next())
-    } else if k == tcell.KeyAltUp || k == tcell.KeyCtrlUp
+    } else if k == tcell.KeyAltUp || k == tcell.KeyCtrlUp {
         view.SwitchRoom(view.roomList.Previous())
 	} else if k == tcell.KeyPgUp || k == tcell.KeyPgDn || k == tcell.KeyUp || k == tcell.KeyDown || k == tcell.KeyEnd || k == tcell.KeyHome {
 		msgView := roomView.MessageView()
