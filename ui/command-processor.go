@@ -88,7 +88,7 @@ func NewCommandProcessor(parent *MainView) *CommandProcessor {
 			"clearcache":      cmdClearCache,
 			"leave":           cmdLeave,
 			"join":            cmdJoin,
-			"uitoggle":        cmdUIToggle,
+			"toggle":          cmdToggle,
 			"logout":          cmdLogout,
 			"sendevent":       cmdSendEvent,
 			"setstate":        cmdSetState,
