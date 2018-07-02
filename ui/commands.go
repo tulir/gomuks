@@ -19,10 +19,11 @@ package ui
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/lucasb-eyer/go-colorful"
-	"maunium.net/go/gomuks/debug"
 	"strings"
 	"unicode"
+
+	"github.com/lucasb-eyer/go-colorful"
+	"maunium.net/go/gomuks/debug"
 )
 
 func cmdMe(cmd *Command) {
@@ -184,7 +185,7 @@ func cmdSetState(cmd *Command) {
 
 func cmdToggle(cmd *Command) {
 	if len(cmd.Args) == 0 {
-		cmd.Reply("Usage: /toggle <rooms/users/baremessages/images/typingnotif>")
+		cmd.Reply("Usage: /toggle <rooms/users/baremessages/images/typingnotif/emojis>")
 		return
 	}
 	switch cmd.Args[0] {
@@ -198,8 +199,10 @@ func cmdToggle(cmd *Command) {
 		cmd.Config.Preferences.DisableImages = !cmd.Config.Preferences.DisableImages
 	case "typingnotif":
 		cmd.Config.Preferences.DisableTypingNotifs = !cmd.Config.Preferences.DisableTypingNotifs
+	case "emojis":
+		cmd.Config.Preferences.DisableEmojis = !cmd.Config.Preferences.DisableEmojis
 	default:
-		cmd.Reply("Usage: /toggle <rooms/users/baremessages/images/typingnotif>")
+		cmd.Reply("Usage: /toggle <rooms/users/baremessages/images/typingnotif/emojis>")
 		return
 	}
 	// is there a reason this is called twice?

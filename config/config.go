@@ -22,12 +22,13 @@ import (
 	"path/filepath"
 
 	"encoding/json"
+	"strings"
+
 	"gopkg.in/yaml.v2"
 	"maunium.net/go/gomatrix"
 	"maunium.net/go/gomuks/debug"
 	"maunium.net/go/gomuks/matrix/pushrules"
 	"maunium.net/go/gomuks/matrix/rooms"
-	"strings"
 )
 
 type AuthCache struct {
@@ -42,6 +43,7 @@ type UserPreferences struct {
 	BareMessageView     bool `yaml:"bare_message_view"`
 	DisableImages       bool `yaml:"disable_images"`
 	DisableTypingNotifs bool `yaml:"disable_typing_notifs"`
+	DisableEmojis       bool `yaml:"disable_emojis"`
 }
 
 // Config contains the main config of gomuks.

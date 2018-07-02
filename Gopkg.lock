@@ -20,6 +20,12 @@
   revision = "b23993cbb6353f0e6aa98d0ee318a34728f628b9"
 
 [[projects]]
+  name = "github.com/kyokomi/emoji"
+  packages = ["."]
+  revision = "2e9a9507333f3ee28f3fab88c2c3aba34455d734"
+  version = "v1.5.1"
+
+[[projects]]
   branch = "master"
   name = "github.com/lucasb-eyer/go-colorful"
   packages = ["."]
@@ -144,6 +150,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "2a15ea883a6ee15a2274160ad22f40976519ca0a2d15c4412c04fb02e9a31223"
+  inputs-digest = "6c0a263ebffa1c073f4b67a895832017afeab906b0d88b31da38ae22bc75e1aa"
   solver-name = "gps-cdcl"
   solver-version = 1
