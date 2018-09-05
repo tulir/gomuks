@@ -33,14 +33,14 @@ type MatrixContainer interface {
 	Logout()
 
 	SendPreferencesToMatrix()
-	SendMessage(roomID, msgtype, message string) (string, error)
-	SendMarkdownMessage(roomID, msgtype, message string) (string, error)
+	SendMessage(roomID string, msgtype gomatrix.MessageType, message string) (string, error)
+	SendMarkdownMessage(roomID string, msgtype gomatrix.MessageType, message string) (string, error)
 	SendTyping(roomID string, typing bool)
 	MarkRead(roomID, eventID string)
 	JoinRoom(roomID, server string) (*rooms.Room, error)
 	LeaveRoom(roomID string) error
 
-	GetHistory(roomID, prevBatch string, limit int) ([]gomatrix.Event, string, error)
+	GetHistory(roomID, prevBatch string, limit int) ([]*gomatrix.Event, string, error)
 	GetRoom(roomID string) *rooms.Room
 
 	Download(mxcURL string) ([]byte, string, string, error)

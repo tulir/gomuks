@@ -20,6 +20,7 @@ import (
 	"bytes"
 	"encoding/gob"
 	"fmt"
+	"maunium.net/go/gomatrix"
 	"time"
 
 	"image/color"
@@ -47,7 +48,7 @@ type ImageMessage struct {
 }
 
 // NewImageMessage creates a new ImageMessage object with the provided values and the default state.
-func NewImageMessage(matrix ifc.MatrixContainer, id, sender, displayname, msgtype, body, homeserver, fileID string, data []byte, timestamp time.Time) UIMessage {
+func NewImageMessage(matrix ifc.MatrixContainer, id, sender, displayname string, msgtype gomatrix.MessageType, body, homeserver, fileID string, data []byte, timestamp time.Time) UIMessage {
 	return &ImageMessage{
 		newBaseMessage(id, sender, displayname, msgtype, timestamp),
 		body,

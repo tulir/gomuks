@@ -31,7 +31,7 @@ type ReqCreateRoom struct {
 	Invite          []string               `json:"invite,omitempty"`
 	Invite3PID      []ReqInvite3PID        `json:"invite_3pid,omitempty"`
 	CreationContent map[string]interface{} `json:"creation_content,omitempty"`
-	InitialState    []Event                `json:"initial_state,omitempty"`
+	InitialState    []*Event                `json:"initial_state,omitempty"`
 	Preset          string                 `json:"preset,omitempty"`
 	IsDirect        bool                   `json:"is_direct,omitempty"`
 }
@@ -74,5 +74,9 @@ type ReqUnbanUser struct {
 // ReqTyping is the JSON request for https://matrix.org/docs/spec/client_server/r0.2.0.html#put-matrix-client-r0-rooms-roomid-typing-userid
 type ReqTyping struct {
 	Typing  bool  `json:"typing"`
-	Timeout int64 `json:"timeout"`
+	Timeout int64 `json:"timeout,omitempty"`
+}
+
+type ReqPresence struct {
+	Presence string `json:"presence"`
 }

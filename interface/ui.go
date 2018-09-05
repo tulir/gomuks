@@ -73,8 +73,8 @@ type RoomView interface {
 	SetTyping(users []string)
 	UpdateUserList()
 
-	NewMessage(id, sender, msgtype, text string, timestamp time.Time) Message
-	NewTempMessage(msgtype, text string) Message
+	NewMessage(id, sender string, msgtype gomatrix.MessageType, text string, timestamp time.Time) Message
+	NewTempMessage(msgtype gomatrix.MessageType, text string) Message
 	AddMessage(message Message, direction MessageDirection)
 	AddServiceMessage(message string)
 }
@@ -111,8 +111,8 @@ type Message interface {
 	SetID(id string)
 	ID() string
 
-	SetType(msgtype string)
-	Type() string
+	SetType(msgtype gomatrix.MessageType)
+	Type() gomatrix.MessageType
 
 	NotificationContent() string
 

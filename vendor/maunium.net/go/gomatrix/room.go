@@ -3,7 +3,7 @@ package gomatrix
 // Room represents a single Matrix room.
 type Room struct {
 	ID    string
-	State map[string]map[string]*Event
+	State map[EventType]map[string]*Event
 }
 
 // UpdateState updates the room's current state with the given Event. This will clobber events based
@@ -17,7 +17,7 @@ func (room Room) UpdateState(event *Event) {
 }
 
 // GetStateEvent returns the state event for the given type/state_key combo, or nil.
-func (room Room) GetStateEvent(eventType string, stateKey string) *Event {
+func (room Room) GetStateEvent(eventType EventType, stateKey string) *Event {
 	stateEventMap, _ := room.State[eventType]
 	event, _ := stateEventMap[stateKey]
 	return event
@@ -25,17 +25,11 @@ func (room Room) GetStateEvent(eventType string, stateKey string) *Event {
 
 // GetMembershipState returns the membership state of the given user ID in this room. If there is
 // no entry for this member, 'leave' is returned for consistency with left users.
-func (room Room) GetMembershipState(userID string) string {
-	state := "leave"
-	event := room.GetStateEvent("m.room.member", userID)
+func (room Room) GetMembershipState(userID string) Membership {
+	state := MembershipLeave
+	event := room.GetStateEvent(StateMember, userID)
 	if event != nil {
-		membershipState, found := event.Content["membership"]
-		if found {
-			mState, isString := membershipState.(string)
-			if isString {
-				state = mState
-			}
-		}
+		state = event.Content.Membership
 	}
 	return state
 }
@@ -45,6 +39,6 @@ func NewRoom(roomID string) *Room {
 	// Init the State map and return a pointer to the Room
 	return &Room{
 		ID:    roomID,
-		State: make(map[string]map[string]*Event),
+		State: make(map[EventType]map[string]*Event),
 	}
 }

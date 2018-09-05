@@ -19,6 +19,7 @@ package messages
 import (
 	"encoding/gob"
 	"fmt"
+	"maunium.net/go/gomatrix"
 	"time"
 
 	"maunium.net/go/gomuks/config"
@@ -37,7 +38,7 @@ type TextMessage struct {
 }
 
 // NewTextMessage creates a new UITextMessage object with the provided values and the default state.
-func NewTextMessage(id, sender, displayname, msgtype, text string, timestamp time.Time) UIMessage {
+func NewTextMessage(id, sender, displayname string, msgtype gomatrix.MessageType, text string, timestamp time.Time) UIMessage {
 	return &TextMessage{
 		BaseMessage: newBaseMessage(id, sender, displayname, msgtype, timestamp),
 		MsgText:     text,
@@ -57,7 +58,7 @@ func (msg *TextMessage) getCache() tstring.TString {
 	return msg.cache
 }
 
-func (msg *TextMessage) SetType(msgtype string) {
+func (msg *TextMessage) SetType(msgtype gomatrix.MessageType) {
 	msg.BaseMessage.SetType(msgtype)
 	msg.cache = nil
 }

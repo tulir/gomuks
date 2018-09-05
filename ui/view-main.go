@@ -497,7 +497,7 @@ func (view *MainView) LoadHistory(room string) {
 	}
 	roomView.Room.PrevBatch = prevBatch
 	for _, evt := range history {
-		message := view.ParseEvent(roomView, &evt)
+		message := view.ParseEvent(roomView, evt)
 		if message != nil {
 			roomView.AddMessage(message, ifc.PrependMessage)
 		}

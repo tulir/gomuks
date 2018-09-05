@@ -112,10 +112,7 @@ Outer:
 	}
 
 	// Count up remaining char
-	for len(target) > 0 {
-		target = target[utf8.RuneLen(rune(target[0])):]
-		runeDiff++
-	}
+	runeDiff += utf8.RuneCountInString(target)
 
 	return runeDiff
 }

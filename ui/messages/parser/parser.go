@@ -33,9 +33,9 @@ import (
 
 func ParseEvent(matrix ifc.MatrixContainer, room *rooms.Room, evt *gomatrix.Event) messages.UIMessage {
 	switch evt.Type {
-	case "m.room.message":
+	case gomatrix.EventMessage:
 		return ParseMessage(matrix, room, evt)
-	case "m.room.member":
+	case gomatrix.StateMember:
 		return ParseMembershipEvent(room, evt)
 	}
 	return nil
@@ -53,32 +53,28 @@ func ParseMessage(matrix ifc.MatrixContainer, room *rooms.Room, evt *gomatrix.Ev
 	displayname := evt.Sender
 	member := room.GetMember(evt.Sender)
 	if member != nil {
-		displayname = member.DisplayName
+		displayname = member.Displayname
 	}
-	msgtype, _ := evt.Content["msgtype"].(string)
-	text, _ := evt.Content["body"].(string)
 	ts := unixToTime(evt.Timestamp)
-	switch msgtype {
+	switch evt.Content.MsgType {
 	case "m.text", "m.notice", "m.emote":
-		format, hasFormat := evt.Content["format"].(string)
-		if hasFormat && format == "org.matrix.custom.html" {
+		if evt.Content.Format == gomatrix.FormatHTML {
 			text := ParseHTMLMessage(room, evt, displayname)
-			return messages.NewExpandedTextMessage(evt.ID, evt.Sender, displayname, msgtype, text, ts)
+			return messages.NewExpandedTextMessage(evt.ID, evt.Sender, displayname, evt.Content.MsgType, text, ts)
 		}
-		text = strings.Replace(text, "\t", "    ", -1)
-		return messages.NewTextMessage(evt.ID, evt.Sender, displayname, msgtype, text, ts)
+		evt.Content.Body = strings.Replace(evt.Content.Body, "\t", "    ", -1)
+		return messages.NewTextMessage(evt.ID, evt.Sender, displayname, evt.Content.MsgType, evt.Content.Body, ts)
 	case "m.image":
-		url, _ := evt.Content["url"].(string)
-		data, hs, id, err := matrix.Download(url)
+		data, hs, id, err := matrix.Download(evt.Content.URL)
 		if err != nil {
-			debug.Printf("Failed to download %s: %v", url, err)
+			debug.Printf("Failed to download %s: %v", evt.Content.URL, err)
 		}
-		return messages.NewImageMessage(matrix, evt.ID, evt.Sender, displayname, msgtype, text, hs, id, data, ts)
+		return messages.NewImageMessage(matrix, evt.ID, evt.Sender, displayname, evt.Content.MsgType, evt.Content.Body, hs, id, data, ts)
 	}
 	return nil
 }
 
-func getMembershipChangeMessage(evt *gomatrix.Event, membership, prevMembership, senderDisplayname, displayname, prevDisplayname string) (sender string, text tstring.TString) {
+func getMembershipChangeMessage(evt *gomatrix.Event, membership, prevMembership gomatrix.Membership, senderDisplayname, displayname, prevDisplayname string) (sender string, text tstring.TString) {
 	switch membership {
 	case "invite":
 		sender = "---"
@@ -92,12 +88,11 @@ func getMembershipChangeMessage(evt *gomatrix.Event, membership, prevMembership,
 	case "leave":
 		sender = "<--"
 		if evt.Sender != *evt.StateKey {
-			if prevMembership == "ban" {
+			if prevMembership == gomatrix.MembershipBan {
 				text = tstring.NewColorTString(fmt.Sprintf("%s unbanned %s", senderDisplayname, displayname), tcell.ColorGreen)
 				text.Colorize(len(senderDisplayname)+len(" unbanned "), len(displayname), widget.GetHashColor(*evt.StateKey))
 			} else {
-				reason, _ := evt.Content["reason"].(string)
-				text = tstring.NewColorTString(fmt.Sprintf("%s kicked %s: %s", senderDisplayname, displayname, reason), tcell.ColorRed)
+				text = tstring.NewColorTString(fmt.Sprintf("%s kicked %s: %s", senderDisplayname, displayname, evt.Content.Reason), tcell.ColorRed)
 				text.Colorize(len(senderDisplayname)+len(" kicked "), len(displayname), widget.GetHashColor(*evt.StateKey))
 			}
 			text.Colorize(0, len(senderDisplayname), widget.GetHashColor(evt.Sender))
@@ -109,8 +104,7 @@ func getMembershipChangeMessage(evt *gomatrix.Event, membership, prevMembership,
 			text.Colorize(0, len(displayname), widget.GetHashColor(*evt.StateKey))
 		}
 	case "ban":
-		reason, _ := evt.Content["reason"].(string)
-		text = tstring.NewColorTString(fmt.Sprintf("%s banned %s: %s", senderDisplayname, displayname, reason), tcell.ColorRed)
+		text = tstring.NewColorTString(fmt.Sprintf("%s banned %s: %s", senderDisplayname, displayname, evt.Content.Reason), tcell.ColorRed)
 		text.Colorize(len(senderDisplayname)+len(" banned "), len(displayname), widget.GetHashColor(*evt.StateKey))
 		text.Colorize(0, len(senderDisplayname), widget.GetHashColor(evt.Sender))
 	}
@@ -121,20 +115,20 @@ func getMembershipEventContent(room *rooms.Room, evt *gomatrix.Event) (sender st
 	member := room.GetMember(evt.Sender)
 	senderDisplayname := evt.Sender
 	if member != nil {
-		senderDisplayname = member.DisplayName
+		senderDisplayname = member.Displayname
 	}
 
-	membership, _ := evt.Content["membership"].(string)
-	displayname, _ := evt.Content["displayname"].(string)
+	membership := evt.Content.Membership
+	displayname := evt.Content.Displayname
 	if len(displayname) == 0 {
 		displayname = *evt.StateKey
 	}
 
-	prevMembership := "leave"
+	prevMembership := gomatrix.MembershipLeave
 	prevDisplayname := *evt.StateKey
 	if evt.Unsigned.PrevContent != nil {
-		prevMembership, _ = evt.Unsigned.PrevContent["membership"].(string)
-		prevDisplayname, _ = evt.Unsigned.PrevContent["displayname"].(string)
+		prevMembership = evt.Unsigned.PrevContent.Membership
+		prevDisplayname = evt.Unsigned.PrevContent.Displayname
 		if len(prevDisplayname) == 0 {
 			prevDisplayname = *evt.StateKey
 		}

@@ -19,6 +19,7 @@ package ui
 import (
 	"encoding/json"
 	"fmt"
+	"maunium.net/go/gomatrix"
 	"strings"
 	"unicode"
 
@@ -132,7 +133,7 @@ func cmdSendEvent(cmd *Command) {
 		return
 	}
 	roomID := cmd.Args[0]
-	eventType := cmd.Args[1]
+	eventType := gomatrix.NewEventType(cmd.Args[1])
 	rawContent := strings.Join(cmd.Args[2:], "")
 	debug.Print(roomID, eventType, rawContent)
 
@@ -161,7 +162,7 @@ func cmdSetState(cmd *Command) {
 	}
 
 	roomID := cmd.Args[0]
-	eventType := cmd.Args[1]
+	eventType := gomatrix.NewEventType(cmd.Args[1])
 	stateKey := cmd.Args[2]
 	if stateKey == "-" {
 		stateKey = ""

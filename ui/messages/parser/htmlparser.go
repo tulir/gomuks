@@ -22,6 +22,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/lucasb-eyer/go-colorful"
 	"golang.org/x/net/html"
 	"maunium.net/go/gomatrix"
 	"maunium.net/go/gomuks/matrix/rooms"
@@ -29,7 +30,6 @@ import (
 	"maunium.net/go/gomuks/ui/widget"
 	"maunium.net/go/tcell"
 	"strconv"
-	"github.com/lucasb-eyer/go-colorful"
 )
 
 var matrixToURL = regexp.MustCompile("^(?:https?://)?(?:www\\.)?matrix\\.to/#/([#@!].*)")
@@ -173,7 +173,7 @@ func (parser *htmlParser) linkToTString(node *html.Node, stripLinebreak bool) ts
 		pillTarget := match[1]
 		if pillTarget[0] == '@' {
 			if member := parser.room.GetMember(pillTarget); member != nil {
-				return tstring.NewColorTString(member.DisplayName, widget.GetHashColor(member.UserID))
+				return tstring.NewColorTString(member.Displayname, widget.GetHashColor(pillTarget))
 			}
 		}
 		return tstring.NewTString(pillTarget)
@@ -271,14 +271,13 @@ func (parser *htmlParser) Parse(htmlData string) tstring.TString {
 
 // ParseHTMLMessage parses a HTML-formatted Matrix event into a UIMessage.
 func ParseHTMLMessage(room *rooms.Room, evt *gomatrix.Event, senderDisplayname string) tstring.TString {
-	htmlData, _ := evt.Content["formatted_body"].(string)
+	htmlData := evt.Content.FormattedBody
 	htmlData = strings.Replace(htmlData, "\t", "    ", -1)
 
 	parser := htmlParser{room}
 	str := parser.Parse(htmlData)
 
-	msgtype, _ := evt.Content["msgtype"].(string)
-	if msgtype == "m.emote" {
+	if evt.Content.MsgType == gomatrix.MsgEmote {
 		str = tstring.Join([]tstring.TString{
 			tstring.NewTString("* "),
 			tstring.NewColorTString(senderDisplayname, widget.GetHashColor(evt.Sender)),

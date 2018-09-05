@@ -1,3 +1,7 @@
+# This is a fork of atotto/clipboard
+
+This fork is used for `zyedidia/micro` and has some modifications, namely: support for the primary clipboard on linux and support for an internal clipboard if the system clipboard is not available.
+
 [![Build Status](https://travis-ci.org/atotto/clipboard.svg?branch=master)](https://travis-ci.org/atotto/clipboard) [![Build Status](https://drone.io/github.com/atotto/clipboard/status.png)](https://drone.io/github.com/atotto/clipboard/latest) 
 
 [![GoDoc](https://godoc.org/github.com/atotto/clipboard?status.svg)](http://godoc.org/github.com/atotto/clipboard)

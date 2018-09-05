@@ -18,6 +18,7 @@ package ui
 
 import (
 	"fmt"
+	"maunium.net/go/gomatrix"
 	"path/filepath"
 	"sort"
 	"strconv"
@@ -242,7 +243,7 @@ func (view *RoomView) SetTyping(users []string) {
 	for index, user := range users {
 		member := view.Room.GetMember(user)
 		if member != nil {
-			users[index] = member.DisplayName
+			users[index] = member.Displayname
 		}
 	}
 	view.typing = users
@@ -255,14 +256,14 @@ type completion struct {
 
 func (view *RoomView) autocompleteUser(existingText string) (completions []completion) {
 	textWithoutPrefix := strings.TrimPrefix(existingText, "@")
-	for _, user := range view.Room.GetMembers() {
-		if user.DisplayName == textWithoutPrefix || user.UserID == existingText {
+	for userID, user := range view.Room.GetMembers() {
+		if user.Displayname == textWithoutPrefix || userID == existingText {
 			// Exact match, return that.
-			return []completion{{user.DisplayName, user.UserID}}
+			return []completion{{user.Displayname, userID}}
 		}
 
-		if strings.HasPrefix(user.DisplayName, textWithoutPrefix) || strings.HasPrefix(user.UserID, existingText) {
-			completions = append(completions, completion{user.DisplayName, user.UserID})
+		if strings.HasPrefix(user.Displayname, textWithoutPrefix) || strings.HasPrefix(userID, existingText) {
+			completions = append(completions, completion{user.Displayname, userID})
 		}
 	}
 	return
@@ -330,12 +331,12 @@ func (view *RoomView) MxRoom() *rooms.Room {
 func (view *RoomView) UpdateUserList() {
 	var joined strings.Builder
 	var invited strings.Builder
-	for _, user := range view.Room.GetMembers() {
+	for userID, user := range view.Room.GetMembers() {
 		if user.Membership == "join" {
-			joined.WriteString(widget.AddColor(user.DisplayName, widget.GetHashColorName(user.UserID)))
+			joined.WriteString(widget.AddColor(user.Displayname, widget.GetHashColorName(userID)))
 			joined.WriteRune('\n')
 		} else if user.Membership == "invite" {
-			invited.WriteString(widget.AddColor(user.DisplayName, widget.GetHashColorName(user.UserID)))
+			invited.WriteString(widget.AddColor(user.Displayname, widget.GetHashColorName(userID)))
 			invited.WriteRune('\n')
 		}
 	}
@@ -346,26 +347,26 @@ func (view *RoomView) UpdateUserList() {
 	}
 }
 
-func (view *RoomView) newUIMessage(id, sender, msgtype, text string, timestamp time.Time) messages.UIMessage {
+func (view *RoomView) newUIMessage(id, sender string, msgtype gomatrix.MessageType, text string, timestamp time.Time) messages.UIMessage {
 	member := view.Room.GetMember(sender)
 	displayname := sender
 	if member != nil {
-		displayname = member.DisplayName
+		displayname = member.Displayname
 	}
 	msg := messages.NewTextMessage(id, sender, displayname, msgtype, text, timestamp)
 	return msg
 }
 
-func (view *RoomView) NewMessage(id, sender, msgtype, text string, timestamp time.Time) ifc.Message {
+func (view *RoomView) NewMessage(id, sender string, msgtype gomatrix.MessageType, text string, timestamp time.Time) ifc.Message {
 	return view.newUIMessage(id, sender, msgtype, text, timestamp)
 }
 
-func (view *RoomView) NewTempMessage(msgtype, text string) ifc.Message {
+func (view *RoomView) NewTempMessage(msgtype gomatrix.MessageType, text string) ifc.Message {
 	now := time.Now()
 	id := strconv.FormatInt(now.UnixNano(), 10)
 	sender := ""
-	if ownerMember := view.Room.GetSessionOwner(); ownerMember != nil {
-		sender = ownerMember.DisplayName
+	if ownerMember := view.Room.GetMember(view.Room.GetSessionOwner()); ownerMember != nil {
+		sender = ownerMember.Displayname
 	}
 	message := view.newUIMessage(id, sender, msgtype, text, now)
 	message.SetState(ifc.MessageStateSending)

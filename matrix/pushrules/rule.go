@@ -154,6 +154,5 @@ func (rule *PushRule) matchPattern(room Room, event *gomatrix.Event) bool {
 	if err != nil {
 		return false
 	}
-	text, _ := event.Content["body"].(string)
-	return pattern.MatchString(text)
+	return pattern.MatchString(event.Content.Body)
 }

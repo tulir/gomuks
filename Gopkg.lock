@@ -4,14 +4,14 @@
 [[projects]]
   name = "github.com/davecgh/go-spew"
   packages = ["spew"]
-  revision = "346938d642f2ec3594ed81d874461961cd0faa76"
-  version = "v1.1.0"
+  revision = "8991bc29aa16c548c550c7ff78260e27b9ab7c73"
+  version = "v1.1.1"
 
 [[projects]]
   name = "github.com/disintegration/imaging"
   packages = ["."]
-  revision = "bbcee2f5c9d5e94ca42c8b50ec847fec64a6c134"
-  version = "v1.4.2"
+  revision = "0bd5694c78c9c3d9a3cd06a706a8f3c59296a9ac"
+  version = "v1.5.0"
 
 [[projects]]
   branch = "master"
@@ -26,16 +26,16 @@
   version = "v1.5.1"
 
 [[projects]]
-  branch = "master"
   name = "github.com/lucasb-eyer/go-colorful"
   packages = ["."]
-  revision = "8abd3beca3a7f5039809449d6013a0254ac22bb1"
+  revision = "345fbb3dbcdb252d9985ee899a84963c0fa24c82"
+  version = "v1.0"
 
 [[projects]]
   name = "github.com/mattn/go-runewidth"
   packages = ["."]
-  revision = "9e777a8366cce605130a531d2cd6363d07ad7317"
-  version = "v0.0.2"
+  revision = "ce7b0b5c7b45a81508558cd1dba6bb1e4ddb51bb"
+  version = "v0.0.3"
 
 [[projects]]
   branch = "master"
@@ -50,10 +50,10 @@
   version = "v1.0.0"
 
 [[projects]]
-  branch = "master"
   name = "github.com/renstrom/fuzzysearch"
   packages = ["fuzzy"]
-  revision = "500e0fce37a81072d9bf4ec1bf5d32f52c807282"
+  revision = "b18e754edff4833912ef4dce9eaca885bd3f0de1"
+  version = "v1.0.1"
 
 [[projects]]
   branch = "master"
@@ -64,14 +64,14 @@
 [[projects]]
   name = "github.com/stretchr/testify"
   packages = ["assert"]
-  revision = "12b6f73e6084dad08a7c6e575284b177ecafbc71"
-  version = "v1.2.1"
+  revision = "f35b8ab0b5a2cef36673838d662e249dd9c94686"
+  version = "v1.2.2"
 
 [[projects]]
   branch = "master"
   name = "github.com/zyedidia/clipboard"
   packages = ["."]
-  revision = "4611e809d8b1a3051c11d11f4b610c44df73fa38"
+  revision = "bd31d747117d04b4e25b61f73e1ea4faeea3c56a"
 
 [[projects]]
   branch = "master"
@@ -85,7 +85,7 @@
     "vp8l",
     "webp"
   ]
-  revision = "f315e440302883054d0c2bd85486878cb4f8572c"
+  revision = "c73c2afc3b812cdd6385de5a50616511c4a3d458"
 
 [[projects]]
   branch = "master"
@@ -94,7 +94,7 @@
     "html",
     "html/atom"
   ]
-  revision = "dfa909b99c79129e1100513e5cd36307665e5723"
+  revision = "8a410e7b638dca158bf9e766925842f6651ff828"
 
 [[projects]]
   name = "golang.org/x/text"
@@ -118,7 +118,7 @@
   branch = "v1"
   name = "gopkg.in/toast.v1"
   packages = ["."]
-  revision = "b700e246b8b6d3e13554091e540e1019e26389f1"
+  revision = "0a84660828b24d25b35525c9a1f1f51267f8da91"
 
 [[projects]]
   name = "gopkg.in/yaml.v2"
@@ -130,7 +130,13 @@
   branch = "master"
   name = "maunium.net/go/gomatrix"
   packages = ["."]
-  revision = "b491397f18b90e34ef54b8b3598666564b90b01a"
+  revision = "d651abc3ecb4bbd85a6b17b710632e73ddbbc6aa"
+
+[[projects]]
+  name = "maunium.net/go/maulogger"
+  packages = ["."]
+  revision = "64f0aa33b6c51313e15575257db71dec44fe7988"
+  version = "v1.0"
 
 [[projects]]
   branch = "master"

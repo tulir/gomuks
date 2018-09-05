@@ -18,6 +18,7 @@ package messages
 
 import (
 	"encoding/gob"
+	"maunium.net/go/gomatrix"
 	"time"
 
 	"maunium.net/go/gomuks/config"
@@ -33,7 +34,7 @@ func init() {
 
 type BaseMessage struct {
 	MsgID           string
-	MsgType         string
+	MsgType         gomatrix.MessageType
 	MsgSenderID     string
 	MsgSender       string
 	MsgSenderColor  tcell.Color
@@ -47,7 +48,7 @@ type BaseMessage struct {
 	prevPrefs       config.UserPreferences
 }
 
-func newBaseMessage(id, sender, displayname, msgtype string, timestamp time.Time) BaseMessage {
+func newBaseMessage(id, sender, displayname string, msgtype gomatrix.MessageType, timestamp time.Time) BaseMessage {
 	return BaseMessage{
 		MsgSenderID:     sender,
 		MsgSender:       displayname,
@@ -194,11 +195,11 @@ func (msg *BaseMessage) SetID(id string) {
 	msg.MsgID = id
 }
 
-func (msg *BaseMessage) Type() string {
+func (msg *BaseMessage) Type() gomatrix.MessageType {
 	return msg.MsgType
 }
 
-func (msg *BaseMessage) SetType(msgtype string) {
+func (msg *BaseMessage) SetType(msgtype gomatrix.MessageType) {
 	msg.MsgType = msgtype
 }
 

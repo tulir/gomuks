@@ -22,8 +22,11 @@ func (col Color) RGBA() (r, g, b, a uint32) {
 }
 
 // Constructs a colorful.Color from something implementing color.Color
-func MakeColor(col color.Color) Color {
+func MakeColor(col color.Color) (Color, bool) {
 	r, g, b, a := col.RGBA()
+	if a == 0 {
+		return Color{0, 0, 0}, false
+	}
 
 	// Since color.Color is alpha pre-multiplied, we need to divide the
 	// RGB values by alpha again in order to get back the original RGB.
@@ -34,7 +37,7 @@ func MakeColor(col color.Color) Color {
 	b *= 0xffff
 	b /= a
 
-	return Color{float64(r) / 65535.0, float64(g) / 65535.0, float64(b) / 65535.0}
+	return Color{float64(r) / 65535.0, float64(g) / 65535.0, float64(b) / 65535.0}, true
 }
 
 // Might come in handy sometimes to reduce boilerplate code.

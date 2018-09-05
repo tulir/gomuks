@@ -175,6 +175,8 @@ func (c *Container) PushRules() *pushrules.PushRuleset {
 	return c.config.PushRules
 }
 
+var AccountDataGomuksPreferences = gomatrix.NewEventType("net.maunium.gomuks.preferences")
+
 // OnLogin initializes the syncer and updates the room list.
 func (c *Container) OnLogin() {
 	c.ui.OnLogin()
@@ -183,14 +185,14 @@ func (c *Container) OnLogin() {
 
 	debug.Print("Initializing syncer")
 	c.syncer = NewGomuksSyncer(c.config)
-	c.syncer.OnEventType("m.room.message", c.HandleMessage)
-	c.syncer.OnEventType("m.room.member", c.HandleMembership)
-	c.syncer.OnEventType("m.receipt", c.HandleReadReceipt)
-	c.syncer.OnEventType("m.typing", c.HandleTyping)
-	c.syncer.OnEventType("m.direct", c.HandleDirectChatInfo)
-	c.syncer.OnEventType("m.push_rules", c.HandlePushRules)
-	c.syncer.OnEventType("m.tag", c.HandleTag)
-	c.syncer.OnEventType("net.maunium.gomuks.preferences", c.HandlePreferences)
+	c.syncer.OnEventType(gomatrix.EventMessage, c.HandleMessage)
+	c.syncer.OnEventType(gomatrix.StateMember, c.HandleMembership)
+	c.syncer.OnEventType(gomatrix.EphemeralEventReceipt, c.HandleReadReceipt)
+	c.syncer.OnEventType(gomatrix.EphemeralEventTyping, c.HandleTyping)
+	c.syncer.OnEventType(gomatrix.AccountDataDirectChats, c.HandleDirectChatInfo)
+	c.syncer.OnEventType(gomatrix.AccountDataPushRules, c.HandlePushRules)
+	c.syncer.OnEventType(gomatrix.AccountDataRoomTags, c.HandleTag)
+	c.syncer.OnEventType(AccountDataGomuksPreferences, c.HandlePreferences)
 	c.syncer.InitDoneCallback = func() {
 		c.config.AuthCache.InitialSyncDone = true
 		c.config.SaveAuthCache()
@@ -301,10 +303,10 @@ func (c *Container) HandleMembership(source EventSource, evt *gomatrix.Event) {
 }
 
 func (c *Container) processOwnMembershipChange(evt *gomatrix.Event) {
-	membership, _ := evt.Content["membership"].(string)
-	prevMembership := "leave"
+	membership := evt.Content.Membership
+	prevMembership := gomatrix.MembershipLeave
 	if evt.Unsigned.PrevContent != nil {
-		prevMembership, _ = evt.Unsigned.PrevContent["membership"].(string)
+		prevMembership = evt.Unsigned.PrevContent.Membership
 	}
 	debug.Printf("Processing own membership change: %s->%s in %s", prevMembership, membership, evt.RoomID)
 	if membership == prevMembership {
@@ -326,7 +328,7 @@ func (c *Container) processOwnMembershipChange(evt *gomatrix.Event) {
 
 func (c *Container) parseReadReceipt(evt *gomatrix.Event) (largestTimestampEvent string) {
 	var largestTimestamp int64
-	for eventID, rawContent := range evt.Content {
+	for eventID, rawContent := range evt.Content.Raw {
 		content, ok := rawContent.(map[string]interface{})
 		if !ok {
 			continue
@@ -368,7 +370,7 @@ func (c *Container) HandleReadReceipt(source EventSource, evt *gomatrix.Event) {
 
 func (c *Container) parseDirectChatInfo(evt *gomatrix.Event) map[*rooms.Room]bool {
 	directChats := make(map[*rooms.Room]bool)
-	for _, rawRoomIDList := range evt.Content {
+	for _, rawRoomIDList := range evt.Content.Raw {
 		roomIDList, ok := rawRoomIDList.([]interface{})
 		if !ok {
 			continue
@@ -416,15 +418,12 @@ func (c *Container) HandlePushRules(source EventSource, evt *gomatrix.Event) {
 func (c *Container) HandleTag(source EventSource, evt *gomatrix.Event) {
 	room := c.config.GetRoom(evt.RoomID)
 
-	tags, _ := evt.Content["tags"].(map[string]interface{})
-	newTags := make([]rooms.RoomTag, len(tags))
+	newTags := make([]rooms.RoomTag, len(evt.Content.RoomTags))
 	index := 0
-	for tag, infoifc := range tags {
-		info, _ := infoifc.(map[string]interface{})
+	for tag, info := range evt.Content.RoomTags {
 		order := "0.5"
-		rawOrder, ok := info["order"]
-		if ok {
-			order = fmt.Sprintf("%v", rawOrder)
+		if len(info.Order) > 0 {
+			order = info.Order
 		}
 		newTags[index] = rooms.RoomTag{
 			Tag:   tag,
@@ -440,13 +439,7 @@ func (c *Container) HandleTag(source EventSource, evt *gomatrix.Event) {
 
 // HandleTyping is the event handler for the m.typing event.
 func (c *Container) HandleTyping(source EventSource, evt *gomatrix.Event) {
-	users := evt.Content["user_ids"].([]interface{})
-
-	strUsers := make([]string, len(users))
-	for i, user := range users {
-		strUsers[i] = user.(string)
-	}
-	c.ui.MainView().SetTyping(evt.RoomID, strUsers)
+	c.ui.MainView().SetTyping(evt.RoomID, evt.Content.TypingUserIDs)
 }
 
 func (c *Container) MarkRead(roomID, eventID string) {
@@ -455,11 +448,11 @@ func (c *Container) MarkRead(roomID, eventID string) {
 }
 
 // SendMessage sends a message with the given text to the given room.
-func (c *Container) SendMessage(roomID, msgtype, text string) (string, error) {
+func (c *Container) SendMessage(roomID string, msgtype gomatrix.MessageType, text string) (string, error) {
 	defer debug.Recover()
 	c.SendTyping(roomID, false)
-	resp, err := c.client.SendMessageEvent(roomID, "m.room.message",
-		gomatrix.TextMessage{MsgType: msgtype, Body: text})
+	resp, err := c.client.SendMessageEvent(roomID, gomatrix.EventMessage,
+		gomatrix.Content{MsgType: msgtype, Body: text})
 	if err != nil {
 		return "", err
 	}
@@ -498,7 +491,7 @@ var roomRegex = regexp.MustCompile("\\[.+?]\\(https://matrix.to/#/(#.+?:[^/]+?)\
 //
 // If the given text contains markdown formatting symbols, it will be rendered into HTML before sending.
 // Otherwise, it will be sent as plain text.
-func (c *Container) SendMarkdownMessage(roomID, msgtype, text string) (string, error) {
+func (c *Container) SendMarkdownMessage(roomID string, msgtype gomatrix.MessageType, text string) (string, error) {
 	defer debug.Recover()
 
 	html := c.renderMarkdown(text)
@@ -511,12 +504,12 @@ func (c *Container) SendMarkdownMessage(roomID, msgtype, text string) (string, e
 	text = roomRegex.ReplaceAllString(text, "$1")
 
 	c.SendTyping(roomID, false)
-	resp, err := c.client.SendMessageEvent(roomID, "m.room.message",
-		map[string]interface{}{
-			"msgtype":        msgtype,
-			"body":           text,
-			"format":         "org.matrix.custom.html",
-			"formatted_body": html,
+	resp, err := c.client.SendMessageEvent(roomID, gomatrix.EventMessage,
+		gomatrix.Content{
+			MsgType:       msgtype,
+			Body:          text,
+			Format:        gomatrix.FormatHTML,
+			FormattedBody: html,
 		})
 	if err != nil {
 		return "", err
@@ -567,7 +560,7 @@ func (c *Container) LeaveRoom(roomID string) error {
 }
 
 // GetHistory fetches room history.
-func (c *Container) GetHistory(roomID, prevBatch string, limit int) ([]gomatrix.Event, string, error) {
+func (c *Container) GetHistory(roomID, prevBatch string, limit int) ([]*gomatrix.Event, string, error) {
 	resp, err := c.client.Messages(roomID, prevBatch, "", 'b', limit)
 	if err != nil {
 		return nil, "", err

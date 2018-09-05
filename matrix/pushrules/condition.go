@@ -23,14 +23,13 @@ import (
 
 	"maunium.net/go/gomatrix"
 	"maunium.net/go/gomuks/lib/glob"
-	"maunium.net/go/gomuks/matrix/rooms"
 )
 
 // Room is an interface with the functions that are needed for processing room-specific push conditions
 type Room interface {
-	GetMember(mxid string) *rooms.Member
-	GetMembers() map[string]*rooms.Member
-	GetSessionOwner() *rooms.Member
+	GetMember(mxid string) *gomatrix.Member
+	GetMembers() map[string]*gomatrix.Member
+	GetSessionOwner() string
 }
 
 // PushCondKind is the type of a push condition.
@@ -89,7 +88,7 @@ func (cond *PushCondition) matchValue(room Room, event *gomatrix.Event) bool {
 
 	switch key {
 	case "type":
-		return pattern.MatchString(event.Type)
+		return pattern.MatchString(event.Type.String())
 	case "sender":
 		return pattern.MatchString(event.Sender)
 	case "room_id":
@@ -100,7 +99,7 @@ func (cond *PushCondition) matchValue(room Room, event *gomatrix.Event) bool {
 		}
 		return pattern.MatchString(*event.StateKey)
 	case "content":
-		val, _ := event.Content[subkey].(string)
+		val, _ := event.Content.Raw[subkey].(string)
 		return pattern.MatchString(val)
 	default:
 		return false
@@ -108,12 +107,12 @@ func (cond *PushCondition) matchValue(room Room, event *gomatrix.Event) bool {
 }
 
 func (cond *PushCondition) matchDisplayName(room Room, event *gomatrix.Event) bool {
-	member := room.GetSessionOwner()
-	if member == nil || member.UserID == event.Sender {
+	ownerID := room.GetSessionOwner()
+	if ownerID == event.Sender {
 		return false
 	}
-	text, _ := event.Content["body"].(string)
-	return strings.Contains(text, member.DisplayName)
+	member := room.GetMember(ownerID)
+	return strings.Contains(event.Content.Body, member.Displayname)
 }
 
 func (cond *PushCondition) matchMemberCount(room Room, event *gomatrix.Event) bool {

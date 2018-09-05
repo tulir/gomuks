@@ -51,7 +51,7 @@ type EventHandler func(source EventSource, event *gomatrix.Event)
 // pattern to notify callers about incoming events. See GomuksSyncer.OnEventType for more information.
 type GomuksSyncer struct {
 	Session          SyncerSession
-	listeners        map[string][]EventHandler // event type to listeners array
+	listeners        map[gomatrix.EventType][]EventHandler // event type to listeners array
 	FirstSyncDone    bool
 	InitDoneCallback func()
 }
@@ -60,7 +60,7 @@ type GomuksSyncer struct {
 func NewGomuksSyncer(session SyncerSession) *GomuksSyncer {
 	return &GomuksSyncer{
 		Session:       session,
-		listeners:     make(map[string][]EventHandler),
+		listeners:     make(map[gomatrix.EventType][]EventHandler),
 		FirstSyncDone: false,
 	}
 }
@@ -114,20 +114,11 @@ func (s *GomuksSyncer) processSyncEvents(room *rooms.Room, events []*gomatrix.Ev
 	}
 }
 
-func isState(event *gomatrix.Event) bool {
-	switch event.Type {
-	case "m.room.member", "m.room.name", "m.room.topic", "m.room.aliases", "m.room.canonical_alias":
-		return true
-	default:
-		return false
-	}
-}
-
 func (s *GomuksSyncer) processSyncEvent(room *rooms.Room, event *gomatrix.Event, source EventSource) {
 	if room != nil {
 		event.RoomID = room.ID
 	}
-	if isState(event) {
+	if event.Type.Class == gomatrix.StateEventType {
 		room.UpdateState(event)
 	}
 	s.notifyListeners(source, event)
@@ -135,7 +126,7 @@ func (s *GomuksSyncer) processSyncEvent(room *rooms.Room, event *gomatrix.Event,
 
 // OnEventType allows callers to be notified when there are new events for the given event type.
 // There are no duplicate checks.
-func (s *GomuksSyncer) OnEventType(eventType string, callback EventHandler) {
+func (s *GomuksSyncer) OnEventType(eventType gomatrix.EventType, callback EventHandler) {
 	_, exists := s.listeners[eventType]
 	if !exists {
 		s.listeners[eventType] = []EventHandler{}

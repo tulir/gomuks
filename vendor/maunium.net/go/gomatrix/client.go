@@ -6,13 +6,16 @@ package gomatrix
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
+	"maunium.net/go/maulogger"
 	"net/http"
 	"net/url"
 	"path"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 )
@@ -26,6 +29,7 @@ type Client struct {
 	Client        *http.Client // The underlying HTTP client which will be used to make HTTP requests.
 	Syncer        Syncer       // The thing which can process /sync responses
 	Store         Storer       // The thing which can store rooms/tokens/ids
+	Logger        maulogger.Logger
 
 	// The ?user_id= query parameter for application services. This must be set *prior* to calling a method. If this is empty,
 	// no user_id parameter will be sent.
@@ -39,6 +43,7 @@ type Client struct {
 // HTTPError An HTTP Error response, which may wrap an underlying native Go Error.
 type HTTPError struct {
 	WrappedError error
+	RespError    *RespError
 	Message      string
 	Code         int
 }
@@ -177,6 +182,14 @@ func (cli *Client) StopSync() {
 	cli.incrementSyncingID()
 }
 
+func (cli *Client) LogRequest(req *http.Request, body string) {
+	if cli.Logger == nil {
+		return
+	}
+
+	cli.Logger.Debugfln("%s %s %s", req.Method, req.URL.Path, body)
+}
+
 // MakeRequest makes a JSON HTTP request to the given URL.
 // If "resBody" is not nil, the response body will be json.Unmarshalled into it.
 //
@@ -186,12 +199,14 @@ func (cli *Client) StopSync() {
 func (cli *Client) MakeRequest(method string, httpURL string, reqBody interface{}, resBody interface{}) ([]byte, error) {
 	var req *http.Request
 	var err error
+	logBody := "{}"
 	if reqBody != nil {
 		var jsonStr []byte
 		jsonStr, err = json.Marshal(reqBody)
 		if err != nil {
 			return nil, err
 		}
+		logBody = string(jsonStr)
 		req, err = http.NewRequest(method, httpURL, bytes.NewBuffer(jsonStr))
 	} else {
 		req, err = http.NewRequest(method, httpURL, nil)
@@ -201,6 +216,7 @@ func (cli *Client) MakeRequest(method string, httpURL string, reqBody interface{
 		return nil, err
 	}
 	req.Header.Set("Content-Type", "application/json")
+	cli.LogRequest(req, logBody)
 	res, err := cli.Client.Do(req)
 	if res != nil {
 		defer res.Body.Close()
@@ -211,9 +227,11 @@ func (cli *Client) MakeRequest(method string, httpURL string, reqBody interface{
 	contents, err := ioutil.ReadAll(res.Body)
 	if res.StatusCode/100 != 2 { // not 2xx
 		var wrap error
-		var respErr RespError
-		if _ = json.Unmarshal(contents, &respErr); respErr.ErrCode != "" {
+		respErr := &RespError{}
+		if _ = json.Unmarshal(contents, respErr); respErr.ErrCode != "" {
 			wrap = respErr
+		} else {
+			respErr = nil
 		}
 
 		// If we failed to decode as RespError, don't just drop the HTTP body, include it in the
@@ -227,6 +245,7 @@ func (cli *Client) MakeRequest(method string, httpURL string, reqBody interface{
 			Code:         res.StatusCode,
 			Message:      msg,
 			WrappedError: wrap,
+			RespError:    respErr,
 		}
 	}
 	if err != nil {
@@ -342,7 +361,7 @@ func (cli *Client) RegisterDummy(req *ReqRegister) (*RespRegister, error) {
 		}
 	}
 	if res == nil {
-		return nil, fmt.Errorf("registration failed: does this server support m.login.dummy?")
+		return nil, fmt.Errorf("registration failed: does this server support m.login.dummy? ")
 	}
 	return res, nil
 }
@@ -442,17 +461,38 @@ func (cli *Client) SetAvatarURL(url string) (err error) {
 
 // SendMessageEvent sends a message event into a room. See http://matrix.org/docs/spec/client_server/r0.2.0.html#put-matrix-client-r0-rooms-roomid-send-eventtype-txnid
 // contentJSON should be a pointer to something that can be encoded as JSON using json.Marshal.
-func (cli *Client) SendMessageEvent(roomID string, eventType string, contentJSON interface{}) (resp *RespSendEvent, err error) {
+func (cli *Client) SendMessageEvent(roomID string, eventType EventType, contentJSON interface{}) (resp *RespSendEvent, err error) {
 	txnID := txnID()
-	urlPath := cli.BuildURL("rooms", roomID, "send", eventType, txnID)
+	urlPath := cli.BuildURL("rooms", roomID, "send", eventType.String(), txnID)
+	_, err = cli.MakeRequest("PUT", urlPath, contentJSON, &resp)
+	return
+}
+
+// SendMessageEvent sends a message event into a room. See http://matrix.org/docs/spec/client_server/r0.2.0.html#put-matrix-client-r0-rooms-roomid-send-eventtype-txnid
+// contentJSON should be a pointer to something that can be encoded as JSON using json.Marshal.
+func (cli *Client) SendMassagedMessageEvent(roomID string, eventType EventType, contentJSON interface{}, ts int64) (resp *RespSendEvent, err error) {
+	txnID := txnID()
+	urlPath := cli.BuildURLWithQuery([]string{"rooms", roomID, "send", eventType.String(), txnID}, map[string]string{
+		"ts": strconv.FormatInt(ts, 10),
+	})
 	_, err = cli.MakeRequest("PUT", urlPath, contentJSON, &resp)
 	return
 }
 
 // SendStateEvent sends a state event into a room. See http://matrix.org/docs/spec/client_server/r0.2.0.html#put-matrix-client-r0-rooms-roomid-state-eventtype-statekey
 // contentJSON should be a pointer to something that can be encoded as JSON using json.Marshal.
-func (cli *Client) SendStateEvent(roomID, eventType, stateKey string, contentJSON interface{}) (resp *RespSendEvent, err error) {
-	urlPath := cli.BuildURL("rooms", roomID, "state", eventType, stateKey)
+func (cli *Client) SendStateEvent(roomID string, eventType EventType, stateKey string, contentJSON interface{}) (resp *RespSendEvent, err error) {
+	urlPath := cli.BuildURL("rooms", roomID, "state", eventType.String(), stateKey)
+	_, err = cli.MakeRequest("PUT", urlPath, contentJSON, &resp)
+	return
+}
+
+// SendStateEvent sends a state event into a room. See http://matrix.org/docs/spec/client_server/r0.2.0.html#put-matrix-client-r0-rooms-roomid-state-eventtype-statekey
+// contentJSON should be a pointer to something that can be encoded as JSON using json.Marshal.
+func (cli *Client) SendMassagedStateEvent(roomID string, eventType EventType, stateKey string, contentJSON interface{}, ts int64) (resp *RespSendEvent, err error) {
+	urlPath := cli.BuildURLWithQuery([]string{"rooms", roomID, "state", eventType.String(), stateKey}, map[string]string{
+		"ts": strconv.FormatInt(ts, 10),
+	})
 	_, err = cli.MakeRequest("PUT", urlPath, contentJSON, &resp)
 	return
 }
@@ -460,37 +500,39 @@ func (cli *Client) SendStateEvent(roomID, eventType, stateKey string, contentJSO
 // SendText sends an m.room.message event into the given room with a msgtype of m.text
 // See http://matrix.org/docs/spec/client_server/r0.2.0.html#m-text
 func (cli *Client) SendText(roomID, text string) (*RespSendEvent, error) {
-	return cli.SendMessageEvent(roomID, "m.room.message",
-		TextMessage{"m.text", text})
+	return cli.SendMessageEvent(roomID, EventMessage, Content{
+		MsgType: MsgText,
+		Body:    text,
+	})
 }
 
 // SendImage sends an m.room.message event into the given room with a msgtype of m.image
 // See https://matrix.org/docs/spec/client_server/r0.2.0.html#m-image
 func (cli *Client) SendImage(roomID, body, url string) (*RespSendEvent, error) {
-	return cli.SendMessageEvent(roomID, "m.room.message",
-		ImageMessage{
-			MsgType: "m.image",
-			Body:    body,
-			URL:     url,
-		})
+	return cli.SendMessageEvent(roomID, EventMessage, Content{
+		MsgType: MsgImage,
+		Body:    body,
+		URL:     url,
+	})
 }
 
 // SendVideo sends an m.room.message event into the given room with a msgtype of m.video
 // See https://matrix.org/docs/spec/client_server/r0.2.0.html#m-video
 func (cli *Client) SendVideo(roomID, body, url string) (*RespSendEvent, error) {
-	return cli.SendMessageEvent(roomID, "m.room.message",
-		VideoMessage{
-			MsgType: "m.video",
-			Body:    body,
-			URL:     url,
-		})
+	return cli.SendMessageEvent(roomID, EventMessage, Content{
+		MsgType: MsgVideo,
+		Body:    body,
+		URL:     url,
+	})
 }
 
 // SendNotice sends an m.room.message event into the given room with a msgtype of m.notice
 // See http://matrix.org/docs/spec/client_server/r0.2.0.html#m-notice
 func (cli *Client) SendNotice(roomID, text string) (*RespSendEvent, error) {
-	return cli.SendMessageEvent(roomID, "m.room.message",
-		TextMessage{"m.notice", text})
+	return cli.SendMessageEvent(roomID, EventMessage, Content{
+		MsgType: MsgNotice,
+		Body:    text,
+	})
 }
 
 // RedactEvent redacts the given event. See http://matrix.org/docs/spec/client_server/r0.2.0.html#put-matrix-client-r0-rooms-roomid-redact-eventid-txnid
@@ -569,11 +611,18 @@ func (cli *Client) UserTyping(roomID string, typing bool, timeout int64) (resp *
 	return
 }
 
+func (cli *Client) SetPresence(status string) (err error) {
+	req := ReqPresence{Presence: status}
+	u := cli.BuildURL("presence", cli.UserID, "status")
+	_, err = cli.MakeRequest("PUT", u, req, nil)
+	return
+}
+
 // StateEvent gets a single state event in a room. It will attempt to JSON unmarshal into the given "outContent" struct with
 // the HTTP response body, or return an error.
 // See http://matrix.org/docs/spec/client_server/r0.2.0.html#get-matrix-client-r0-rooms-roomid-state-eventtype-statekey
-func (cli *Client) StateEvent(roomID, eventType, stateKey string, outContent interface{}) (err error) {
-	u := cli.BuildURL("rooms", roomID, "state", eventType, stateKey)
+func (cli *Client) StateEvent(roomID string, eventType EventType, stateKey string, outContent interface{}) (err error) {
+	u := cli.BuildURL("rooms", roomID, "state", eventType.String(), stateKey)
 	_, err = cli.MakeRequest("GET", u, nil, outContent)
 	return
 }
@@ -587,18 +636,48 @@ func (cli *Client) UploadLink(link string) (*RespMediaUpload, error) {
 	if err != nil {
 		return nil, err
 	}
-	return cli.UploadToContentRepo(res.Body, res.Header.Get("Content-Type"), res.ContentLength)
+	return cli.Upload(res.Body, res.Header.Get("Content-Type"), res.ContentLength)
+}
+
+func (cli *Client) Download(mxcURL string) (io.ReadCloser, error) {
+	if !strings.HasPrefix(mxcURL, "mxc://") {
+		return nil, errors.New("invalid Matrix content URL")
+	}
+	parts := strings.Split(mxcURL[len("mxc://"):], "/")
+	if len(parts) != 2 {
+		return nil, errors.New("invalid Matrix content URL")
+	}
+	u := cli.BuildBaseURL("_matrix/media/r0/download", parts[0], parts[1])
+	resp, err := cli.Client.Get(u)
+	if err != nil {
+		return nil, err
+	}
+	return resp.Body, nil
+}
+
+func (cli *Client) DownloadBytes(mxcURL string) ([]byte, error) {
+	resp, err := cli.Download(mxcURL)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Close()
+	return ioutil.ReadAll(resp)
+}
+
+func (cli *Client) UploadBytes(data []byte, contentType string) (*RespMediaUpload, error) {
+	return cli.Upload(bytes.NewReader(data), contentType, int64(len(data)))
 }
 
 // UploadToContentRepo uploads the given bytes to the content repository and returns an MXC URI.
 // See http://matrix.org/docs/spec/client_server/r0.2.0.html#post-matrix-media-r0-upload
-func (cli *Client) UploadToContentRepo(content io.Reader, contentType string, contentLength int64) (*RespMediaUpload, error) {
+func (cli *Client) Upload(content io.Reader, contentType string, contentLength int64) (*RespMediaUpload, error) {
 	req, err := http.NewRequest("POST", cli.BuildBaseURL("_matrix/media/r0/upload"), content)
 	if err != nil {
 		return nil, err
 	}
 	req.Header.Set("Content-Type", contentType)
 	req.ContentLength = contentLength
+	cli.LogRequest(req, fmt.Sprintf("%d bytes", contentLength))
 	res, err := cli.Client.Do(req)
 	if res != nil {
 		defer res.Body.Close()
@@ -663,6 +742,18 @@ func (cli *Client) Messages(roomID, from, to string, dir rune, limit int) (resp 
 
 	urlPath := cli.BuildURLWithQuery([]string{"rooms", roomID, "messages"}, query)
 	_, err = cli.MakeRequest("GET", urlPath, nil, &resp)
+	return
+}
+
+func (cli *Client) GetEvent(roomID, eventID string) (resp *Event, err error) {
+	urlPath := cli.BuildURL("rooms", roomID, "event", eventID)
+	_, err = cli.MakeRequest("GET", urlPath, nil, &resp)
+	return
+}
+
+func (cli *Client) MarkRead(roomID, eventID string) (err error) {
+	urlPath := cli.BuildURL("rooms", roomID, "receipt", "m.read", eventID)
+	_, err = cli.MakeRequest("POST", urlPath, struct{}{}, nil)
 	return
 }
 

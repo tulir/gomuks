@@ -21,19 +21,17 @@ func GetScopedPushRules(client *gomatrix.Client, scope string) (resp *PushRulese
 	return
 }
 
+type contentWithRuleset struct {
+	Ruleset *PushRuleset `json:"global"`
+}
+
 // EventToPushRules converts a m.push_rules event to a PushRuleset by passing the data through JSON.
 func EventToPushRules(event *gomatrix.Event) (*PushRuleset, error) {
-	content, _ := event.Content["global"]
-	raw, err := json.Marshal(content)
+	content := &contentWithRuleset{}
+	err := json.Unmarshal(event.Content.VeryRaw, content)
 	if err != nil {
 		return nil, err
 	}
 
-	ruleset := &PushRuleset{}
-	err = json.Unmarshal(raw, ruleset)
-	if err != nil {
-		return nil, err
-	}
-
-	return ruleset, nil
+	return content.Ruleset, nil
 }

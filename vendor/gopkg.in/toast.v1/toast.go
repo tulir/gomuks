@@ -11,6 +11,7 @@ import (
 	"text/template"
 
 	"github.com/nu7hatch/gouuid"
+	"syscall"
 )
 
 var toastTemplate *template.Template
@@ -347,7 +348,9 @@ func invokeTemporaryScript(content string) error {
 	if err != nil {
 		return err
 	}
-	if err = exec.Command("PowerShell", "-ExecutionPolicy", "Bypass", "-File", file).Run(); err != nil {
+	cmd := exec.Command("PowerShell", "-ExecutionPolicy", "Bypass", "-File", file)
+	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+	if err = cmd.Run(); err != nil {
 		return err
 	}
 	return nil

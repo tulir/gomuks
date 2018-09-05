@@ -18,6 +18,7 @@ package messages
 
 import (
 	"encoding/gob"
+	"maunium.net/go/gomatrix"
 	"time"
 
 	"maunium.net/go/gomuks/config"
@@ -34,7 +35,7 @@ type ExpandedTextMessage struct {
 }
 
 // NewExpandedTextMessage creates a new ExpandedTextMessage object with the provided values and the default state.
-func NewExpandedTextMessage(id, sender, displayname, msgtype string, text tstring.TString, timestamp time.Time) UIMessage {
+func NewExpandedTextMessage(id, sender, displayname string, msgtype gomatrix.MessageType, text tstring.TString, timestamp time.Time) UIMessage {
 	return &ExpandedTextMessage{
 		BaseMessage: newBaseMessage(id, sender, displayname, msgtype, timestamp),
 		MsgText:     text,
