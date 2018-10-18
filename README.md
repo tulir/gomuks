@@ -25,6 +25,20 @@ or compile from source:
 1. Run `go get -u maunium.net/go/gomuks`
 2. gomuks should now be in `$GOPATH/bin/gomuks`
 
+## Developing
+Running `go install` in `$GOPATH/src/maunium.net/go/gomuks` will recompile the project and dependencies into `$GOPATH/bin/gomuks`.
+
+For debugging, use `tail -f /tmp/gomuks-debug.log` and write to it using the methods in the `maunium.net/go/gomuks/debug` package:
+```go
+import (
+	"maunium.net/go/gomuks/debug"
+)
+...
+func Foo() {
+	debug.Print("WHY ISN'T IT WORKING?!?!?")
+}
+```
+
 ## Usage
 - switch rooms - `Ctrl + ↑` `Ctrl + ↓` `Alt + ↑` `Alt + ↓`
 - scroll chat (line) - `↑` `↓`
@@ -41,4 +55,4 @@ or compile from source:
 * `/toggle <rooms/users/baremessages/images/typingnotif>` - Change user preferences
 * `/logout` - Log out, clear caches and go back to the login view
 * `/send <room id> <event type> <content>` - Send a custom event
-* `/setstate <room id> <event type> <state key/`-`> <content>` - Change room state
+* `/setstate <room id> <event type> <state key/-> <content>` - Change room state
