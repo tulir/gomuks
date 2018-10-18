@@ -21,6 +21,7 @@ import (
 	"strings"
 
 	"math"
+
 	"maunium.net/go/gomuks/debug"
 	"maunium.net/go/gomuks/matrix/rooms"
 	"maunium.net/go/tcell"
@@ -311,6 +312,27 @@ func (list *RoomList) Next() (string, *rooms.Room) {
 		return list.selectedTag, trl.Visible()[index-1].Room
 	}
 	return list.Last()
+}
+
+// NextWithActivity Returns next room with activity.
+//
+// Sorted by (in priority):
+//
+// - Highlights
+// - Messages
+// - Other traffic (joins, parts, etc)
+//
+// TODO: Sorting. Now just finds first room with new messages.
+func (list *RoomList) NextWithActivity() (string, *rooms.Room) {
+	for tag, trl := range list.items {
+		for _, room := range trl.All() {
+			if room.HasNewMessages() {
+				return tag, room.Room
+			}
+		}
+	}
+	// No room with activity found
+	return "", nil
 }
 
 func (list *RoomList) index(tag string, room *rooms.Room) int {
