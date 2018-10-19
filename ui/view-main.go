@@ -196,6 +196,46 @@ func (view *MainView) KeyEventHandler(roomView *RoomView, key *tcell.EventKey) *
 			searchModal := NewFuzzySearchModal(view, 42, 12)
 			view.parent.views.AddPage("fuzzy-search-modal", searchModal, true, true)
 			view.parent.app.SetFocus(searchModal)
+		case c == '1':
+			view.SwitchRoom(view.roomList.At(0))
+		case c == '2':
+			view.SwitchRoom(view.roomList.At(1))
+		case c == '3':
+			view.SwitchRoom(view.roomList.At(2))
+		case c == '4':
+			view.SwitchRoom(view.roomList.At(3))
+		case c == '5':
+			view.SwitchRoom(view.roomList.At(4))
+		case c == '6':
+			view.SwitchRoom(view.roomList.At(5))
+		case c == '7':
+			view.SwitchRoom(view.roomList.At(6))
+		case c == '8':
+			view.SwitchRoom(view.roomList.At(7))
+		case c == '9':
+			view.SwitchRoom(view.roomList.At(8))
+		case c == '0':
+			view.SwitchRoom(view.roomList.At(9))
+		case c == 'q':
+			view.SwitchRoom(view.roomList.At(10))
+		case c == 'w':
+			view.SwitchRoom(view.roomList.At(11))
+		case c == 'e':
+			view.SwitchRoom(view.roomList.At(12))
+		case c == 'r':
+			view.SwitchRoom(view.roomList.At(13))
+		case c == 't':
+			view.SwitchRoom(view.roomList.At(14))
+		case c == 'y':
+			view.SwitchRoom(view.roomList.At(15))
+		case c == 'u':
+			view.SwitchRoom(view.roomList.At(16))
+		case c == 'i':
+			view.SwitchRoom(view.roomList.At(17))
+		case c == 'o':
+			view.SwitchRoom(view.roomList.At(18))
+		case c == 'p':
+			view.SwitchRoom(view.roomList.At(19))
 		case c == 'l':
 			view.ShowBare(roomView)
 		default:

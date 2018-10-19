@@ -21,6 +21,7 @@ import (
 	"strings"
 
 	"math"
+
 	"maunium.net/go/gomuks/debug"
 	"maunium.net/go/gomuks/matrix/rooms"
 	"maunium.net/go/tcell"
@@ -311,6 +312,22 @@ func (list *RoomList) Next() (string, *rooms.Room) {
 		return list.selectedTag, trl.Visible()[index-1].Room
 	}
 	return list.Last()
+}
+
+// At returns room at given index from top of the list
+// or none if such room doesn't exist
+func (list *RoomList) At(index int) (string, *rooms.Room) {
+	i := 0
+	for _, tag := range list.tags {
+		trl := list.items[tag]
+		for j := trl.Length() - 1; j >= 0; j-- {
+			if index == i {
+				return tag, trl.rooms[j].Room
+			}
+			i++
+		}
+	}
+	return "", nil
 }
 
 func (list *RoomList) index(tag string, room *rooms.Room) int {
