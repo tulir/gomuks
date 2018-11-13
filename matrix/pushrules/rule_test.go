@@ -19,6 +19,7 @@ package pushrules_test
 import (
 	"github.com/stretchr/testify/assert"
 	"maunium.net/go/gomuks/matrix/pushrules"
+	"maunium.net/go/mautrix"
 	"testing"
 )
 
@@ -31,9 +32,13 @@ func TestPushRule_Match_Conditions(t *testing.T) {
 		Conditions: []*pushrules.PushCondition{cond1, cond2},
 	}
 
-	event := newFakeEvent("m.room.message", map[string]interface{}{
-		"msgtype": "m.emote",
-		"body":    "is testing pushrules",
+	event := newFakeEvent(mautrix.EventMessage, mautrix.Content{
+		Raw: map[string]interface{}{
+			"msgtype": "m.emote",
+			"body": "is testing pushrules",
+		},
+		MsgType: mautrix.MsgEmote,
+		Body:    "is testing pushrules",
 	})
 	assert.True(t, rule.Match(blankTestRoom, event))
 }
@@ -47,9 +52,13 @@ func TestPushRule_Match_Conditions_Disabled(t *testing.T) {
 		Conditions: []*pushrules.PushCondition{cond1, cond2},
 	}
 
-	event := newFakeEvent("m.room.message", map[string]interface{}{
-		"msgtype": "m.emote",
-		"body":    "is testing pushrules",
+	event := newFakeEvent(mautrix.EventMessage, mautrix.Content{
+		Raw: map[string]interface{}{
+			"msgtype": "m.emote",
+			"body": "is testing pushrules",
+		},
+		MsgType: mautrix.MsgEmote,
+		Body:    "is testing pushrules",
 	})
 	assert.False(t, rule.Match(blankTestRoom, event))
 }
@@ -63,9 +72,13 @@ func TestPushRule_Match_Conditions_FailIfOneFails(t *testing.T) {
 		Conditions: []*pushrules.PushCondition{cond1, cond2},
 	}
 
-	event := newFakeEvent("m.room.message", map[string]interface{}{
-		"msgtype": "m.text",
-		"body":    "I'm testing pushrules",
+	event := newFakeEvent(mautrix.EventMessage, mautrix.Content{
+		Raw: map[string]interface{}{
+			"msgtype": "m.text",
+			"body": "I'm testing pushrules",
+		},
+		MsgType: mautrix.MsgText,
+		Body:    "I'm testing pushrules",
 	})
 	assert.False(t, rule.Match(blankTestRoom, event))
 }
@@ -77,9 +90,9 @@ func TestPushRule_Match_Content(t *testing.T) {
 		Pattern: "is testing*",
 	}
 
-	event := newFakeEvent("m.room.message", map[string]interface{}{
-		"msgtype": "m.emote",
-		"body":    "is testing pushrules",
+	event := newFakeEvent(mautrix.EventMessage, mautrix.Content{
+		MsgType: mautrix.MsgEmote,
+		Body:    "is testing pushrules",
 	})
 	assert.True(t, rule.Match(blankTestRoom, event))
 }
@@ -91,9 +104,9 @@ func TestPushRule_Match_Content_Fail(t *testing.T) {
 		Pattern: "is testing*",
 	}
 
-	event := newFakeEvent("m.room.message", map[string]interface{}{
-		"msgtype": "m.emote",
-		"body":    "is not testing pushrules",
+	event := newFakeEvent(mautrix.EventMessage, mautrix.Content{
+		MsgType: mautrix.MsgEmote,
+		Body:    "is not testing pushrules",
 	})
 	assert.False(t, rule.Match(blankTestRoom, event))
 }
@@ -105,9 +118,9 @@ func TestPushRule_Match_Content_ImplicitGlob(t *testing.T) {
 		Pattern: "testing",
 	}
 
-	event := newFakeEvent("m.room.message", map[string]interface{}{
-		"msgtype": "m.emote",
-		"body":    "is not testing pushrules",
+	event := newFakeEvent(mautrix.EventMessage, mautrix.Content{
+		MsgType: mautrix.MsgEmote,
+		Body:    "is not testing pushrules",
 	})
 	assert.True(t, rule.Match(blankTestRoom, event))
 }
@@ -119,9 +132,9 @@ func TestPushRule_Match_Content_IllegalGlob(t *testing.T) {
 		Pattern: "this is not a valid glo[b",
 	}
 
-	event := newFakeEvent("m.room.message", map[string]interface{}{
-		"msgtype": "m.emote",
-		"body":    "this is not a valid glob",
+	event := newFakeEvent(mautrix.EventMessage, mautrix.Content{
+		MsgType: mautrix.MsgEmote,
+		Body:    "this is not a valid glob",
 	})
 	assert.False(t, rule.Match(blankTestRoom, event))
 }
@@ -133,7 +146,7 @@ func TestPushRule_Match_Room(t *testing.T) {
 		RuleID:  "!fakeroom:maunium.net",
 	}
 
-	event := newFakeEvent("m.room.message", map[string]interface{}{})
+	event := newFakeEvent(mautrix.EventMessage, mautrix.Content{})
 	assert.True(t, rule.Match(blankTestRoom, event))
 }
 
@@ -144,7 +157,7 @@ func TestPushRule_Match_Room_Fail(t *testing.T) {
 		RuleID:  "!otherroom:maunium.net",
 	}
 
-	event := newFakeEvent("m.room.message", map[string]interface{}{})
+	event := newFakeEvent(mautrix.EventMessage, mautrix.Content{})
 	assert.False(t, rule.Match(blankTestRoom, event))
 }
 
@@ -155,7 +168,7 @@ func TestPushRule_Match_Sender(t *testing.T) {
 		RuleID:  "@tulir:maunium.net",
 	}
 
-	event := newFakeEvent("m.room.message", map[string]interface{}{})
+	event := newFakeEvent(mautrix.EventMessage, mautrix.Content{})
 	assert.True(t, rule.Match(blankTestRoom, event))
 }
 
@@ -166,7 +179,7 @@ func TestPushRule_Match_Sender_Fail(t *testing.T) {
 		RuleID:  "@someone:matrix.org",
 	}
 
-	event := newFakeEvent("m.room.message", map[string]interface{}{})
+	event := newFakeEvent(mautrix.EventMessage, mautrix.Content{})
 	assert.False(t, rule.Match(blankTestRoom, event))
 }
 
@@ -177,6 +190,6 @@ func TestPushRule_Match_UnknownTypeAlwaysFail(t *testing.T) {
 		RuleID:  "@someone:matrix.org",
 	}
 
-	event := newFakeEvent("m.room.message", map[string]interface{}{})
+	event := newFakeEvent(mautrix.EventMessage, mautrix.Content{})
 	assert.False(t, rule.Match(blankTestRoom, event))
 }

@@ -424,7 +424,7 @@ func (room *Room) GetMember(userID string) *mautrix.Member {
 	return member
 }
 
-// GetSessionOwner returns the Member instance of the user whose session this room was created for.
+// GetSessionOwner returns the ID of the user whose session this room was created for.
 func (room *Room) GetSessionOwner() string {
 	return room.SessionUserID
 }

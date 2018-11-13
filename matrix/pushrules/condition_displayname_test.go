@@ -17,42 +17,43 @@
 package pushrules_test
 
 import (
+	"maunium.net/go/mautrix"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
 
 func TestPushCondition_Match_DisplayName(t *testing.T) {
-	event := newFakeEvent("m.room.message", map[string]interface{}{
-		"msgtype": "m.text",
-		"body":    "tulir: test mention",
+	event := newFakeEvent(mautrix.EventMessage, mautrix.Content{
+		MsgType: mautrix.MsgText,
+		Body:    "tulir: test mention",
 	})
 	event.Sender = "@someone_else:matrix.org"
 	assert.True(t, displaynamePushCondition.Match(displaynameTestRoom, event))
 }
 
 func TestPushCondition_Match_DisplayName_Fail(t *testing.T) {
-	event := newFakeEvent("m.room.message", map[string]interface{}{
-		"msgtype": "m.text",
-		"body":    "not a mention",
+	event := newFakeEvent(mautrix.EventMessage, mautrix.Content{
+		MsgType: mautrix.MsgText,
+		Body:    "not a mention",
 	})
 	event.Sender = "@someone_else:matrix.org"
 	assert.False(t, displaynamePushCondition.Match(displaynameTestRoom, event))
 }
 
 func TestPushCondition_Match_DisplayName_CantHighlightSelf(t *testing.T) {
-	event := newFakeEvent("m.room.message", map[string]interface{}{
-		"msgtype": "m.text",
-		"body":    "tulir: I can't highlight myself",
+	event := newFakeEvent(mautrix.EventMessage, mautrix.Content{
+		MsgType: mautrix.MsgText,
+		Body:    "tulir: I can't highlight myself",
 	})
 	assert.False(t, displaynamePushCondition.Match(displaynameTestRoom, event))
 }
 
 func TestPushCondition_Match_DisplayName_FailsOnEmptyRoom(t *testing.T) {
 	emptyRoom := newFakeRoom(0)
-	event := newFakeEvent("m.room.message", map[string]interface{}{
-		"msgtype": "m.text",
-		"body":    "tulir: this room doesn't have the owner Member available, so it fails.",
+	event := newFakeEvent(mautrix.EventMessage, mautrix.Content{
+		MsgType: mautrix.MsgText,
+		Body:    "tulir: this room doesn't have the owner Member available, so it fails.",
 	})
 	event.Sender = "@someone_else:matrix.org"
 	assert.False(t, displaynamePushCondition.Match(emptyRoom, event))

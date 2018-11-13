@@ -17,6 +17,7 @@
 package pushrules_test
 
 import (
+	"maunium.net/go/mautrix"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -24,9 +25,11 @@ import (
 
 func TestPushCondition_Match_KindEvent_MsgType(t *testing.T) {
 	condition := newMatchPushCondition("content.msgtype", "m.emote")
-	event := newFakeEvent("m.room.message", map[string]interface{}{
-		"msgtype": "m.emote",
-		"body":    "tests gomuks pushconditions",
+	event := newFakeEvent(mautrix.EventMessage, mautrix.Content{
+		Raw: map[string]interface{}{
+			"msgtype": "m.emote",
+			"body": "tests gomuks pushconditions",
+		},
 	})
 	assert.True(t, condition.Match(blankTestRoom, event))
 }
@@ -34,58 +37,60 @@ func TestPushCondition_Match_KindEvent_MsgType(t *testing.T) {
 func TestPushCondition_Match_KindEvent_MsgType_Fail(t *testing.T) {
 	condition := newMatchPushCondition("content.msgtype", "m.emote")
 
-	event := newFakeEvent("m.room.message", map[string]interface{}{
-		"msgtype": "m.text",
-		"body":    "I'm testing gomuks pushconditions",
+	event := newFakeEvent(mautrix.EventMessage, mautrix.Content{
+		Raw: map[string]interface{}{
+			"msgtype": "m.text",
+			"body": "I'm testing gomuks pushconditions",
+		},
 	})
 	assert.False(t, condition.Match(blankTestRoom, event))
 }
 
 func TestPushCondition_Match_KindEvent_EventType(t *testing.T) {
 	condition := newMatchPushCondition("type", "m.room.foo")
-	event := newFakeEvent("m.room.foo", map[string]interface{}{})
+	event := newFakeEvent(mautrix.NewEventType("m.room.foo"), mautrix.Content{})
 	assert.True(t, condition.Match(blankTestRoom, event))
 }
 
 func TestPushCondition_Match_KindEvent_EventType_IllegalGlob(t *testing.T) {
 	condition := newMatchPushCondition("type", "m.room.invalid_glo[b")
-	event := newFakeEvent("m.room.invalid_glob", map[string]interface{}{})
+	event := newFakeEvent(mautrix.NewEventType("m.room.invalid_glob"), mautrix.Content{})
 	assert.False(t, condition.Match(blankTestRoom, event))
 }
 
 func TestPushCondition_Match_KindEvent_Sender_Fail(t *testing.T) {
 	condition := newMatchPushCondition("sender", "@foo:maunium.net")
-	event := newFakeEvent("m.room.foo", map[string]interface{}{})
+	event := newFakeEvent(mautrix.NewEventType("m.room.foo"), mautrix.Content{})
 	assert.False(t, condition.Match(blankTestRoom, event))
 }
 
 func TestPushCondition_Match_KindEvent_RoomID(t *testing.T) {
 	condition := newMatchPushCondition("room_id", "!fakeroom:maunium.net")
-	event := newFakeEvent("", map[string]interface{}{})
+	event := newFakeEvent(mautrix.NewEventType(""), mautrix.Content{})
 	assert.True(t, condition.Match(blankTestRoom, event))
 }
 
 func TestPushCondition_Match_KindEvent_BlankStateKey(t *testing.T) {
 	condition := newMatchPushCondition("state_key", "")
-	event := newFakeEvent("m.room.foo", map[string]interface{}{})
+	event := newFakeEvent(mautrix.NewEventType("m.room.foo"), mautrix.Content{})
 	assert.True(t, condition.Match(blankTestRoom, event))
 }
 
 func TestPushCondition_Match_KindEvent_BlankStateKey_Fail(t *testing.T) {
 	condition := newMatchPushCondition("state_key", "not blank")
-	event := newFakeEvent("m.room.foo", map[string]interface{}{})
+	event := newFakeEvent(mautrix.NewEventType("m.room.foo"), mautrix.Content{})
 	assert.False(t, condition.Match(blankTestRoom, event))
 }
 
 func TestPushCondition_Match_KindEvent_NonBlankStateKey(t *testing.T) {
 	condition := newMatchPushCondition("state_key", "*:maunium.net")
-	event := newFakeEvent("m.room.foo", map[string]interface{}{})
+	event := newFakeEvent(mautrix.NewEventType("m.room.foo"), mautrix.Content{})
 	event.StateKey = &event.Sender
 	assert.True(t, condition.Match(blankTestRoom, event))
 }
 
 func TestPushCondition_Match_KindEvent_UnknownKey(t *testing.T) {
 	condition := newMatchPushCondition("non-existent key", "doesn't affect anything")
-	event := newFakeEvent("m.room.foo", map[string]interface{}{})
+	event := newFakeEvent(mautrix.NewEventType("m.room.foo"), mautrix.Content{})
 	assert.False(t, condition.Match(blankTestRoom, event))
 }

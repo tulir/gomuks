@@ -164,14 +164,14 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:6dd6ac30401547ebcd1c0ee7a08e74e9ae872eba28607309979e9ed9776cee21"
+  digest = "1:f0a9c6bdcbf2bbaa02f4f913b1956cc722daf92bec1715b51e001e53ba93b3a2"
   name = "maunium.net/go/mautrix"
   packages = [
     ".",
     "format",
   ]
   pruneopts = "UT"
-  revision = "e8080dcf484d1db9021d2019fee132ffc9e37e3c"
+  revision = "5012a3c49b63ccb3c72cd01d2fd3442759c3ea3c"
 
 [[projects]]
   branch = "master"

@@ -21,8 +21,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"maunium.net/go/mautrix"
 	"maunium.net/go/gomuks/matrix/rooms"
+	"maunium.net/go/mautrix"
 )
 
 func TestNewRoom_DefaultValues(t *testing.T) {
@@ -34,15 +34,15 @@ func TestNewRoom_DefaultValues(t *testing.T) {
 	assert.Empty(t, room.GetAliases())
 	assert.Empty(t, room.GetCanonicalAlias())
 	assert.Empty(t, room.GetTopic())
-	assert.Nil(t, room.GetSessionOwner())
+	assert.Nil(t, room.GetMember(room.GetSessionOwner()))
 }
 
 func TestRoom_GetCanonicalAlias(t *testing.T) {
 	room := rooms.NewRoom("!test:maunium.net", "@tulir:maunium.net")
 	room.UpdateState(&mautrix.Event{
-		Type: "m.room.canonical_alias",
-		Content: map[string]interface{}{
-			"alias": "#foo:maunium.net",
+		Type: mautrix.StateCanonicalAlias,
+		Content: mautrix.Content{
+			Alias: "#foo:maunium.net",
 		},
 	})
 	assert.Equal(t, "#foo:maunium.net", room.GetCanonicalAlias())
@@ -51,9 +51,9 @@ func TestRoom_GetCanonicalAlias(t *testing.T) {
 func TestRoom_GetTopic(t *testing.T) {
 	room := rooms.NewRoom("!test:maunium.net", "@tulir:maunium.net")
 	room.UpdateState(&mautrix.Event{
-		Type: "m.room.topic",
-		Content: map[string]interface{}{
-			"topic": "test topic",
+		Type: mautrix.StateTopic,
+		Content: mautrix.Content{
+			Topic: "test topic",
 		},
 	})
 	assert.Equal(t, "test topic", room.GetTopic())
@@ -88,18 +88,18 @@ func TestRoom_GetAliases(t *testing.T) {
 
 func addName(room *rooms.Room) {
 	room.UpdateState(&mautrix.Event{
-		Type: "m.room.name",
-		Content: map[string]interface{}{
-			"name": "Test room",
+		Type: mautrix.StateRoomName,
+		Content: mautrix.Content{
+			Name: "Test room",
 		},
 	})
 }
 
 func addCanonicalAlias(room *rooms.Room) {
 	room.UpdateState(&mautrix.Event{
-		Type: "m.room.canonical_alias",
-		Content: map[string]interface{}{
-			"alias": "#foo:maunium.net",
+		Type: mautrix.StateCanonicalAlias,
+		Content: mautrix.Content{
+			Alias: "#foo:maunium.net",
 		},
 	})
 }
@@ -107,19 +107,19 @@ func addCanonicalAlias(room *rooms.Room) {
 func addAliases(room *rooms.Room) {
 	server1 := "maunium.net"
 	room.UpdateState(&mautrix.Event{
-		Type:     "m.room.aliases",
+		Type:    mautrix.StateAliases,
 		StateKey: &server1,
-		Content: map[string]interface{}{
-			"aliases": []interface{}{"#bar:maunium.net", "#test:maunium.net", "#foo:maunium.net"},
+		Content: mautrix.Content{
+			Aliases: []string{"#bar:maunium.net", "#test:maunium.net", "#foo:maunium.net"},
 		},
 	})
 
 	server2 := "matrix.org"
 	room.UpdateState(&mautrix.Event{
-		Type:     "m.room.aliases",
+		Type:    mautrix.StateAliases,
 		StateKey: &server2,
-		Content: map[string]interface{}{
-			"aliases": []interface{}{"#foo:matrix.org", "#test:matrix.org"},
+		Content: mautrix.Content{
+			Aliases: []string{"#foo:matrix.org", "#test:matrix.org"},
 		},
 	})
 }
@@ -127,27 +127,31 @@ func addAliases(room *rooms.Room) {
 func addMembers(room *rooms.Room, count int) {
 	user1 := "@tulir:maunium.net"
 	room.UpdateState(&mautrix.Event{
-		Type:     "m.room.member",
+		Type:     mautrix.StateMember,
 		StateKey: &user1,
-		Content: map[string]interface{}{
-			"displayname": "tulir",
-			"membership":  "join",
+		Content: mautrix.Content{
+			Member: mautrix.Member{
+				Displayname: "tulir",
+				Membership: mautrix.MembershipJoin,
+			},
 		},
 	})
 
 	for i := 1; i < count; i++ {
 		userN := fmt.Sprintf("@user_%d:matrix.org", i+1)
-		content := map[string]interface{}{
-			"membership": "join",
+		content := mautrix.Content{
+			Member: mautrix.Member{
+				Membership: mautrix.MembershipJoin,
+			},
 		}
 		if i%2 == 1 {
-			content["displayname"] = fmt.Sprintf("User #%d", i+1)
+			content.Displayname = fmt.Sprintf("User #%d", i+1)
 		}
 		if i%5 == 0 {
-			content["membership"] = "invite"
+			content.Membership = mautrix.MembershipInvite
 		}
 		room.UpdateState(&mautrix.Event{
-			Type:     "m.room.member",
+			Type:     mautrix.StateMember,
 			StateKey: &userN,
 			Content:  content,
 		})
@@ -168,7 +172,7 @@ func TestRoom_GetMember(t *testing.T) {
 
 	assert.NotNil(t, room.GetMember("@user_2:matrix.org"))
 	assert.NotNil(t, room.GetMember("@tulir:maunium.net"))
-	assert.Equal(t, room.GetMember("@tulir:maunium.net"), room.GetSessionOwner())
+	assert.Equal(t, "@tulir:maunium.net", room.GetSessionOwner())
 }
 
 func TestRoom_GetTitle_ExplicitName(t *testing.T) {

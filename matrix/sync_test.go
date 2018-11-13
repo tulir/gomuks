@@ -20,9 +20,9 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"maunium.net/go/mautrix"
 	"maunium.net/go/gomuks/matrix"
 	"maunium.net/go/gomuks/matrix/rooms"
+	"maunium.net/go/mautrix"
 )
 
 func TestGomuksSyncer_ProcessResponse_Initial(t *testing.T) {
@@ -54,47 +54,47 @@ func TestGomuksSyncer_ProcessResponse(t *testing.T) {
 	}
 	ml := &mockListener{}
 	syncer := matrix.NewGomuksSyncer(mss)
-	syncer.OnEventType("m.room.member", ml.receive)
-	syncer.OnEventType("m.room.message", ml.receive)
+	syncer.OnEventType(mautrix.EventMessage, ml.receive)
+	syncer.OnEventType(mautrix.StateMember, ml.receive)
 	syncer.GetFilterJSON("@tulir:maunium.net")
 
 	joinEvt := &mautrix.Event{
 		ID:       "!join:maunium.net",
-		Type:     "m.room.member",
+		Type:     mautrix.StateMember,
 		Sender:   "@tulir:maunium.net",
 		StateKey: ptr("̣@tulir:maunium.net"),
-		Content: map[string]interface{}{
-			"membership": "join",
+		Content: mautrix.Content{
+			Membership: mautrix.MembershipJoin,
 		},
 	}
 	messageEvt := &mautrix.Event{
 		ID:   "!msg:maunium.net",
-		Type: "m.room.message",
-		Content: map[string]interface{}{
-			"body":    "foo",
-			"msgtype": "m.text",
+		Type: mautrix.EventMessage,
+		Content: mautrix.Content{
+			Body:    "foo",
+			MsgType: mautrix.MsgText,
 		},
 	}
 	unhandledEvt := &mautrix.Event{
 		ID:   "!unhandled:maunium.net",
-		Type: "m.room.unhandled_event",
+		Type: mautrix.EventType{Type: "m.room.unhandled_event"},
 	}
 	inviteEvt := &mautrix.Event{
 		ID:       "!invite:matrix.org",
-		Type:     "m.room.member",
+		Type:     mautrix.StateMember,
 		Sender:   "@you:matrix.org",
 		StateKey: ptr("̣@tulir:maunium.net"),
-		Content: map[string]interface{}{
-			"membership": "invite",
+		Content: mautrix.Content{
+			Membership: mautrix.MembershipInvite,
 		},
 	}
 	leaveEvt := &mautrix.Event{
 		ID:       "!leave:matrix.org",
-		Type:     "m.room.member",
+		Type:     mautrix.StateMember,
 		Sender:   "@you:matrix.org",
 		StateKey: ptr("̣@tulir:maunium.net"),
-		Content: map[string]interface{}{
-			"membership": "leave",
+		Content: mautrix.Content{
+			Membership: mautrix.MembershipLeave,
 		},
 	}
 
@@ -116,8 +116,8 @@ func TestGomuksSyncer_ProcessResponse(t *testing.T) {
 		} `json:"state"`
 		Timeline struct {
 			Events    []*mautrix.Event `json:"events"`
-			Limited   bool              `json:"limited"`
-			PrevBatch string            `json:"prev_batch"`
+			Limited   bool             `json:"limited"`
+			PrevBatch string           `json:"prev_batch"`
 		} `json:"timeline"`
 	}{
 		State: events{Events: []*mautrix.Event{leaveEvt}},
@@ -150,8 +150,8 @@ type events struct {
 
 type timeline struct {
 	Events    []*mautrix.Event `json:"events"`
-	Limited   bool              `json:"limited"`
-	PrevBatch string            `json:"prev_batch"`
+	Limited   bool             `json:"limited"`
+	PrevBatch string           `json:"prev_batch"`
 }
 type join struct {
 	State struct {
@@ -159,8 +159,8 @@ type join struct {
 	} `json:"state"`
 	Timeline struct {
 		Events    []*mautrix.Event `json:"events"`
-		Limited   bool              `json:"limited"`
-		PrevBatch string            `json:"prev_batch"`
+		Limited   bool             `json:"limited"`
+		PrevBatch string           `json:"prev_batch"`
 	} `json:"timeline"`
 	Ephemeral struct {
 		Events []*mautrix.Event `json:"events"`
@@ -190,8 +190,8 @@ func newRespSync() *mautrix.RespSync {
 		} `json:"state"`
 		Timeline struct {
 			Events    []*mautrix.Event `json:"events"`
-			Limited   bool              `json:"limited"`
-			PrevBatch string            `json:"prev_batch"`
+			Limited   bool             `json:"limited"`
+			PrevBatch string           `json:"prev_batch"`
 		} `json:"timeline"`
 		Ephemeral struct {
 			Events []*mautrix.Event `json:"events"`
@@ -211,8 +211,8 @@ func newRespSync() *mautrix.RespSync {
 		} `json:"state"`
 		Timeline struct {
 			Events    []*mautrix.Event `json:"events"`
-			Limited   bool              `json:"limited"`
-			PrevBatch string            `json:"prev_batch"`
+			Limited   bool             `json:"limited"`
+			PrevBatch string           `json:"prev_batch"`
 		} `json:"timeline"`
 	})
 	return resp

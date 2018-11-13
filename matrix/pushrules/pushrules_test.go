@@ -25,18 +25,13 @@ import (
 	"maunium.net/go/gomuks/matrix/pushrules"
 )
 
-var mapExamplePushRules map[string]interface{}
-
-func init() {
-	mapExamplePushRules = make(map[string]interface{})
-	json.Unmarshal([]byte(JSONExamplePushRules), &mapExamplePushRules)
-}
-
 func TestEventToPushRules(t *testing.T) {
 	event := &mautrix.Event{
-		Type:      "m.push_rules",
+		Type:      mautrix.AccountDataPushRules,
 		Timestamp: 1523380910,
-		Content:   mapExamplePushRules,
+		Content:   mautrix.Content{
+			VeryRaw: json.RawMessage(JSONExamplePushRules),
+		},
 	}
 	pushRuleset, err := pushrules.EventToPushRules(event)
 	assert.Nil(t, err)

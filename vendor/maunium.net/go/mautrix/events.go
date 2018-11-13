@@ -200,9 +200,9 @@ type Content struct {
 	PowerLevels
 	Member
 	Aliases []string `json:"aliases,omitempty"`
-	CanonicalAlias
-	RoomName
-	RoomTopic
+	Alias string `json:"alias,omitempty"`
+	Name string `json:"name,omitempty"`
+	Topic string `json:"name,omitempty"`
 
 	RoomTags      Tags     `json:"tags,omitempty"`
 	TypingUserIDs []string `json:"user_ids,omitempty"`
@@ -244,11 +244,6 @@ func (content *Content) UnmarshalMember() (m Member, err error) {
 	return
 }
 
-func (content *Content) UnmarshalCanonicalAlias() (ca CanonicalAlias, err error) {
-	err = json.Unmarshal(content.VeryRaw, &ca)
-	return
-}
-
 func (content *Content) GetInfo() *FileInfo {
 	if content.Info == nil {
 		content.Info = &FileInfo{}
@@ -258,14 +253,6 @@ func (content *Content) GetInfo() *FileInfo {
 
 type Tags map[string]struct {
 	Order json.Number `json:"order"`
-}
-
-type RoomName struct {
-	Name string `json:"name,omitempty"`
-}
-
-type RoomTopic struct {
-	Topic string `json:"topic,omitempty"`
 }
 
 // Membership is an enum specifying the membership state of a room member.
@@ -295,10 +282,6 @@ type ThirdPartyInvite struct {
 		Signatures json.RawMessage `json:"signatures"`
 		MXID       string          `json:"mxid"`
 	}
-}
-
-type CanonicalAlias struct {
-	Alias string `json:"alias,omitempty"`
 }
 
 type PowerLevels struct {

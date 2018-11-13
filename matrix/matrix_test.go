@@ -21,8 +21,8 @@ import (
 	"fmt"
 	"github.com/stretchr/testify/assert"
 	"io/ioutil"
-	"maunium.net/go/mautrix"
 	"maunium.net/go/gomuks/config"
+	"maunium.net/go/mautrix"
 	"net/http"
 	"os"
 	"strings"
@@ -69,7 +69,7 @@ func TestContainer_SendMarkdownMessage_WithMarkdown(t *testing.T) {
 
 		body := parseBody(req)
 		assert.Equal(t, "m.text", body["msgtype"])
-		assert.Equal(t, "**formatted** <u>test</u> _message_", body["body"])
+		assert.Equal(t, "**formatted** test _message_", body["body"])
 		assert.Equal(t, "<strong>formatted</strong> <u>test</u> <em>message</em>", body["formatted_body"])
 		return mockResponse(http.StatusOK, `{"event_id": "!foobar2:example.com"}`), nil
 	})}

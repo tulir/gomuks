@@ -40,13 +40,13 @@ func init() {
 
 	countConditionTestEvent = &mautrix.Event{
 		Sender:    "@tulir:maunium.net",
-		Type:      "m.room.message",
+		Type:      mautrix.EventMessage,
 		Timestamp: 1523791120,
 		ID:        "$123:maunium.net",
 		RoomID:    "!fakeroom:maunium.net",
-		Content: map[string]interface{}{
-			"msgtype": "m.text",
-			"body":    "test",
+		Content: mautrix.Content{
+			MsgType: mautrix.MsgText,
+			Body: "test",
 		},
 	}
 
@@ -56,7 +56,7 @@ func init() {
 	}
 }
 
-func newFakeEvent(evtType string, content map[string]interface{}) *mautrix.Event {
+func newFakeEvent(evtType mautrix.EventType, content mautrix.Content) *mautrix.Event {
 	return &mautrix.Event{
 		Sender:    "@tulir:maunium.net",
 		Type:      evtType,
@@ -86,49 +86,47 @@ func TestPushCondition_Match_InvalidKind(t *testing.T) {
 	condition := &pushrules.PushCondition{
 		Kind: pushrules.PushCondKind("invalid"),
 	}
-	event := newFakeEvent("m.room.foobar", map[string]interface{}{})
+	event := newFakeEvent(mautrix.EventType{Type: "m.room.foobar"}, mautrix.Content{})
 	assert.False(t, condition.Match(blankTestRoom, event))
 }
 
 type FakeRoom struct {
-	members map[string]*rooms.Member
+	members map[string]*mautrix.Member
 	owner   string
 }
 
 func newFakeRoom(memberCount int) *FakeRoom {
 	room := &FakeRoom{
 		owner:   "@tulir:maunium.net",
-		members: make(map[string]*rooms.Member),
+		members: make(map[string]*mautrix.Member),
 	}
 
 	if memberCount >= 1 {
-		room.members["@tulir:maunium.net"] = &rooms.Member{
-			UserID:      "@tulir:maunium.net",
-			Membership:  rooms.MembershipJoin,
-			DisplayName: "tulir",
+		room.members["@tulir:maunium.net"] = &mautrix.Member{
+			Membership:  mautrix.MembershipJoin,
+			Displayname: "tulir",
 		}
 	}
 
 	for i := 0; i < memberCount-1; i++ {
 		mxid := fmt.Sprintf("@extrauser_%d:matrix.org", i)
-		room.members[mxid] = &rooms.Member{
-			UserID:      mxid,
-			Membership:  rooms.MembershipJoin,
-			DisplayName: fmt.Sprintf("Extra User %d", i),
+		room.members[mxid] = &mautrix.Member{
+			Membership:  mautrix.MembershipJoin,
+			Displayname: fmt.Sprintf("Extra User %d", i),
 		}
 	}
 
 	return room
 }
 
-func (fr *FakeRoom) GetMember(mxid string) *rooms.Member {
+func (fr *FakeRoom) GetMember(mxid string) *mautrix.Member {
 	return fr.members[mxid]
 }
 
-func (fr *FakeRoom) GetSessionOwner() *rooms.Member {
-	return fr.members[fr.owner]
+func (fr *FakeRoom) GetSessionOwner() string {
+	return fr.owner
 }
 
-func (fr *FakeRoom) GetMembers() map[string]*rooms.Member {
+func (fr *FakeRoom) GetMembers() map[string]*mautrix.Member {
 	return fr.members
 }

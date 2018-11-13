@@ -112,6 +112,9 @@ func (cond *PushCondition) matchDisplayName(room Room, event *mautrix.Event) boo
 		return false
 	}
 	member := room.GetMember(ownerID)
+	if member == nil {
+		return false
+	}
 	return strings.Contains(event.Content.Body, member.Displayname)
 }
 

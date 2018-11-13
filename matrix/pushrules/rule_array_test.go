@@ -19,6 +19,7 @@ package pushrules_test
 import (
 	"github.com/stretchr/testify/assert"
 	"maunium.net/go/gomuks/matrix/pushrules"
+	"maunium.net/go/mautrix"
 	"testing"
 )
 
@@ -61,9 +62,9 @@ func TestPushRuleArray_GetActions_FirstMatchReturns(t *testing.T) {
 
 	rules := pushrules.PushRuleArray{rule1, rule2, rule3}
 
-	event := newFakeEvent("m.room.message", map[string]interface{}{
-		"msgtype": "m.emote",
-		"body":    "is testing pushrules",
+	event := newFakeEvent(mautrix.EventMessage, mautrix.Content{
+		MsgType: mautrix.MsgEmote,
+		Body:    "is testing pushrules",
 	})
 	assert.Equal(t, rules.GetActions(blankTestRoom, event), actions2)
 }
@@ -107,9 +108,9 @@ func TestPushRuleArray_GetActions_NoMatchesIsNil(t *testing.T) {
 
 	rules := pushrules.PushRuleArray{rule1, rule2, rule3}
 
-	event := newFakeEvent("m.room.message", map[string]interface{}{
-		"msgtype": "m.emote",
-		"body":    "is testing pushrules",
+	event := newFakeEvent(mautrix.EventMessage, mautrix.Content{
+		MsgType: mautrix.MsgEmote,
+		Body:    "is testing pushrules",
 	})
 	assert.Nil(t, rules.GetActions(blankTestRoom, event))
 }
@@ -156,9 +157,9 @@ func TestPushRuleMap_GetActions_RoomRuleExists(t *testing.T) {
 		Type: pushrules.RoomRule,
 	}
 
-	event := newFakeEvent("m.room.message", map[string]interface{}{
-		"msgtype": "m.emote",
-		"body":    "is testing pushrules",
+	event := newFakeEvent(mautrix.EventMessage, mautrix.Content{
+		MsgType: mautrix.MsgEmote,
+		Body:    "is testing pushrules",
 	})
 	assert.Equal(t, rules.GetActions(blankTestRoom, event), actions3)
 }
@@ -194,9 +195,9 @@ func TestPushRuleMap_GetActions_RoomRuleDoesntExist(t *testing.T) {
 		Type: pushrules.RoomRule,
 	}
 
-	event := newFakeEvent("m.room.message", map[string]interface{}{
-		"msgtype": "m.emote",
-		"body":    "is testing pushrules",
+	event := newFakeEvent(mautrix.EventMessage, mautrix.Content{
+		MsgType: mautrix.MsgEmote,
+		Body:    "is testing pushrules",
 	})
 	assert.Nil(t, rules.GetActions(blankTestRoom, event))
 }
@@ -243,9 +244,9 @@ func TestPushRuleMap_GetActions_SenderRuleExists(t *testing.T) {
 		Type: pushrules.SenderRule,
 	}
 
-	event := newFakeEvent("m.room.message", map[string]interface{}{
-		"msgtype": "m.emote",
-		"body":    "is testing pushrules",
+	event := newFakeEvent(mautrix.EventMessage, mautrix.Content{
+		MsgType: mautrix.MsgEmote,
+		Body:    "is testing pushrules",
 	})
 	assert.Equal(t, rules.GetActions(blankTestRoom, event), actions1)
 }
