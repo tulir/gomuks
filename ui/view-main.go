@@ -196,6 +196,8 @@ func (view *MainView) KeyEventHandler(roomView *RoomView, key *tcell.EventKey) *
 			searchModal := NewFuzzySearchModal(view, 42, 12)
 			view.parent.views.AddPage("fuzzy-search-modal", searchModal, true, true)
 			view.parent.app.SetFocus(searchModal)
+		case c == 'a':
+			view.SwitchRoom(view.roomList.NextWithActivity())
 		case c == 'l':
 			view.ShowBare(roomView)
 		default:
