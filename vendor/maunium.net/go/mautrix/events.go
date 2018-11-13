@@ -197,7 +197,7 @@ type Content struct {
 	RelatesTo *RelatesTo      `json:"m.relates_to,omitempty"`
 	Command   *MatchedCommand `json:"m.command,omitempty"`
 
-	PowerLevels
+	*PowerLevels
 	Member
 	Aliases []string `json:"aliases,omitempty"`
 	Alias string `json:"alias,omitempty"`
@@ -232,6 +232,13 @@ func (content *Content) GetRelatesTo() *RelatesTo {
 		content.RelatesTo = &RelatesTo{}
 	}
 	return content.RelatesTo
+}
+
+func (content *Content) GetPowerLevels() *PowerLevels {
+	if content.PowerLevels == nil {
+		content.PowerLevels = &PowerLevels{}
+	}
+	return content.PowerLevels
 }
 
 func (content *Content) UnmarshalPowerLevels() (pl PowerLevels, err error) {
