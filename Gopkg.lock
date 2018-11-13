@@ -164,9 +164,12 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:d23e0bbfa4e45fe847e61fdfd442b24adf9bd3d0b050a846f9ef0f3af4f43c86"
+  digest = "1:6dd6ac30401547ebcd1c0ee7a08e74e9ae872eba28607309979e9ed9776cee21"
   name = "maunium.net/go/mautrix"
-  packages = ["."]
+  packages = [
+    ".",
+    "format",
+  ]
   pruneopts = "UT"
   revision = "e8080dcf484d1db9021d2019fee132ffc9e37e3c"
 
@@ -208,6 +211,7 @@
     "gopkg.in/toast.v1",
     "gopkg.in/yaml.v2",
     "maunium.net/go/mautrix",
+    "maunium.net/go/mautrix/format",
     "maunium.net/go/tcell",
     "maunium.net/go/tview",
   ]

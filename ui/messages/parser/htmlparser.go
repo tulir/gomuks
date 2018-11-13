@@ -43,20 +43,26 @@ type taggedTString struct {
 	tag string
 }
 
-var AdjustStyleBold = func(style tcell.Style) tcell.Style {
+func AdjustStyleBold(style tcell.Style) tcell.Style {
 	return style.Bold(true)
 }
 
-var AdjustStyleItalic = func(style tcell.Style) tcell.Style {
+func AdjustStyleItalic(style tcell.Style) tcell.Style {
 	return style.Italic(true)
 }
 
-var AdjustStyleUnderline = func(style tcell.Style) tcell.Style {
+func AdjustStyleUnderline(style tcell.Style) tcell.Style {
 	return style.Underline(true)
 }
 
-var AdjustStyleStrikethrough = func(style tcell.Style) tcell.Style {
+func AdjustStyleStrikethrough(style tcell.Style) tcell.Style {
 	return style.Strikethrough(true)
+}
+
+func AdjustStyleColor(color tcell.Color) func(tcell.Style) tcell.Style {
+	return func(style tcell.Style) tcell.Style {
+		return style.Foreground(color)
+	}
 }
 
 func (parser *htmlParser) getAttribute(node *html.Node, attribute string) string {
@@ -131,21 +137,26 @@ func (parser *htmlParser) basicFormatToTString(node *html.Node, stripLinebreak b
 
 func (parser *htmlParser) fontToTString(node *html.Node, stripLinebreak bool) tstring.TString {
 	str := parser.nodeToTagAwareTString(node.FirstChild, stripLinebreak)
-	hex := parser.getAttribute(node, "color")
+	hex := parser.getAttribute(node, "data-mx-color")
 	if len(hex) == 0 {
-		return str
+		hex = parser.getAttribute(node, "color")
+		if len(hex) == 0 {
+			return str
+		}
 	}
 
 	color, err := colorful.Hex(hex)
 	if err != nil {
-		return str
+		color2, ok := ColorMap[strings.ToLower(hex)]
+		if !ok {
+			return str
+		}
+		color, _ = colorful.MakeColor(color2)
 	}
 
 	r, g, b := color.RGB255()
 	tcellColor := tcell.NewRGBColor(int32(r), int32(g), int32(b))
-	str.AdjustStyleFull(func(style tcell.Style) tcell.Style {
-		return style.Foreground(tcellColor)
-	})
+	str.AdjustStyleFull(AdjustStyleColor(tcellColor))
 	return str
 }
 

@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"maunium.net/go/mautrix/format"
 	"net/http"
 	"net/url"
 	"os"
@@ -506,6 +507,9 @@ func (c *Container) SendMarkdownMessage(roomID string, msgtype mautrix.MessageTy
 	if html == text {
 		return c.SendMessage(roomID, msgtype, text)
 	}
+	// Oh god this is horrible
+	// but at least /rainbow doesn't put HTML into the plaintext :D
+	text = format.HTMLToText(html)
 
 	// Remove markdown link stuff from plaintext mentions and room links
 	text = mentionRegex.ReplaceAllString(text, "$1")
