@@ -20,7 +20,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"maunium.net/go/gomatrix"
+	"maunium.net/go/mautrix"
 	"maunium.net/go/gomuks/matrix"
 	"maunium.net/go/gomuks/matrix/rooms"
 )
@@ -42,13 +42,13 @@ func TestGomuksSyncer_ProcessResponse(t *testing.T) {
 		userID: "@tulir:maunium.net",
 		rooms: map[string]*rooms.Room{
 			"!foo:maunium.net": {
-				Room: gomatrix.NewRoom("!foo:maunium.net"),
+				Room: mautrix.NewRoom("!foo:maunium.net"),
 			},
 			"!bar:maunium.net": {
-				Room: gomatrix.NewRoom("!bar:maunium.net"),
+				Room: mautrix.NewRoom("!bar:maunium.net"),
 			},
 			"!test:maunium.net": {
-				Room: gomatrix.NewRoom("!test:maunium.net"),
+				Room: mautrix.NewRoom("!test:maunium.net"),
 			},
 		},
 	}
@@ -58,7 +58,7 @@ func TestGomuksSyncer_ProcessResponse(t *testing.T) {
 	syncer.OnEventType("m.room.message", ml.receive)
 	syncer.GetFilterJSON("@tulir:maunium.net")
 
-	joinEvt := &gomatrix.Event{
+	joinEvt := &mautrix.Event{
 		ID:       "!join:maunium.net",
 		Type:     "m.room.member",
 		Sender:   "@tulir:maunium.net",
@@ -67,7 +67,7 @@ func TestGomuksSyncer_ProcessResponse(t *testing.T) {
 			"membership": "join",
 		},
 	}
-	messageEvt := &gomatrix.Event{
+	messageEvt := &mautrix.Event{
 		ID:   "!msg:maunium.net",
 		Type: "m.room.message",
 		Content: map[string]interface{}{
@@ -75,11 +75,11 @@ func TestGomuksSyncer_ProcessResponse(t *testing.T) {
 			"msgtype": "m.text",
 		},
 	}
-	unhandledEvt := &gomatrix.Event{
+	unhandledEvt := &mautrix.Event{
 		ID:   "!unhandled:maunium.net",
 		Type: "m.room.unhandled_event",
 	}
-	inviteEvt := &gomatrix.Event{
+	inviteEvt := &mautrix.Event{
 		ID:       "!invite:matrix.org",
 		Type:     "m.room.member",
 		Sender:   "@you:matrix.org",
@@ -88,7 +88,7 @@ func TestGomuksSyncer_ProcessResponse(t *testing.T) {
 			"membership": "invite",
 		},
 	}
-	leaveEvt := &gomatrix.Event{
+	leaveEvt := &mautrix.Event{
 		ID:       "!leave:matrix.org",
 		Type:     "m.room.member",
 		Sender:   "@you:matrix.org",
@@ -100,27 +100,27 @@ func TestGomuksSyncer_ProcessResponse(t *testing.T) {
 
 	resp := newRespSync()
 	resp.Rooms.Join["!foo:maunium.net"] = join{
-		State:    events{Events: []*gomatrix.Event{joinEvt}},
-		Timeline: timeline{Events: []*gomatrix.Event{messageEvt, unhandledEvt}},
+		State:    events{Events: []*mautrix.Event{joinEvt}},
+		Timeline: timeline{Events: []*mautrix.Event{messageEvt, unhandledEvt}},
 	}
 	resp.Rooms.Invite["!bar:maunium.net"] = struct {
 		State struct {
-			Events []*gomatrix.Event `json:"events"`
+			Events []*mautrix.Event `json:"events"`
 		} `json:"invite_state"`
 	}{
-		State: events{Events: []*gomatrix.Event{inviteEvt}},
+		State: events{Events: []*mautrix.Event{inviteEvt}},
 	}
 	resp.Rooms.Leave["!test:maunium.net"] = struct {
 		State struct {
-			Events []*gomatrix.Event `json:"events"`
+			Events []*mautrix.Event `json:"events"`
 		} `json:"state"`
 		Timeline struct {
-			Events    []*gomatrix.Event `json:"events"`
+			Events    []*mautrix.Event `json:"events"`
 			Limited   bool              `json:"limited"`
 			PrevBatch string            `json:"prev_batch"`
 		} `json:"timeline"`
 	}{
-		State: events{Events: []*gomatrix.Event{leaveEvt}},
+		State: events{Events: []*mautrix.Event{leaveEvt}},
 	}
 
 	syncer.ProcessResponse(resp, "since")
@@ -145,28 +145,28 @@ func (mss *mockSyncerSession) GetUserID() string {
 }
 
 type events struct {
-	Events []*gomatrix.Event `json:"events"`
+	Events []*mautrix.Event `json:"events"`
 }
 
 type timeline struct {
-	Events    []*gomatrix.Event `json:"events"`
+	Events    []*mautrix.Event `json:"events"`
 	Limited   bool              `json:"limited"`
 	PrevBatch string            `json:"prev_batch"`
 }
 type join struct {
 	State struct {
-		Events []*gomatrix.Event `json:"events"`
+		Events []*mautrix.Event `json:"events"`
 	} `json:"state"`
 	Timeline struct {
-		Events    []*gomatrix.Event `json:"events"`
+		Events    []*mautrix.Event `json:"events"`
 		Limited   bool              `json:"limited"`
 		PrevBatch string            `json:"prev_batch"`
 	} `json:"timeline"`
 	Ephemeral struct {
-		Events []*gomatrix.Event `json:"events"`
+		Events []*mautrix.Event `json:"events"`
 	} `json:"ephemeral"`
 	AccountData struct {
-		Events []*gomatrix.Event `json:"events"`
+		Events []*mautrix.Event `json:"events"`
 	} `json:"account_data"`
 }
 
@@ -175,42 +175,42 @@ func ptr(text string) *string {
 }
 
 type mockListener struct {
-	received []*gomatrix.Event
+	received []*mautrix.Event
 }
 
-func (ml *mockListener) receive(source matrix.EventSource, evt *gomatrix.Event) {
+func (ml *mockListener) receive(source matrix.EventSource, evt *mautrix.Event) {
 	ml.received = append(ml.received, evt)
 }
 
-func newRespSync() *gomatrix.RespSync {
-	resp := &gomatrix.RespSync{NextBatch: "123"}
+func newRespSync() *mautrix.RespSync {
+	resp := &mautrix.RespSync{NextBatch: "123"}
 	resp.Rooms.Join = make(map[string]struct {
 		State struct {
-			Events []*gomatrix.Event `json:"events"`
+			Events []*mautrix.Event `json:"events"`
 		} `json:"state"`
 		Timeline struct {
-			Events    []*gomatrix.Event `json:"events"`
+			Events    []*mautrix.Event `json:"events"`
 			Limited   bool              `json:"limited"`
 			PrevBatch string            `json:"prev_batch"`
 		} `json:"timeline"`
 		Ephemeral struct {
-			Events []*gomatrix.Event `json:"events"`
+			Events []*mautrix.Event `json:"events"`
 		} `json:"ephemeral"`
 		AccountData struct {
-			Events []*gomatrix.Event `json:"events"`
+			Events []*mautrix.Event `json:"events"`
 		} `json:"account_data"`
 	})
 	resp.Rooms.Invite = make(map[string]struct {
 		State struct {
-			Events []*gomatrix.Event `json:"events"`
+			Events []*mautrix.Event `json:"events"`
 		} `json:"invite_state"`
 	})
 	resp.Rooms.Leave = make(map[string]struct {
 		State struct {
-			Events []*gomatrix.Event `json:"events"`
+			Events []*mautrix.Event `json:"events"`
 		} `json:"state"`
 		Timeline struct {
-			Events    []*gomatrix.Event `json:"events"`
+			Events    []*mautrix.Event `json:"events"`
 			Limited   bool              `json:"limited"`
 			PrevBatch string            `json:"prev_batch"`
 		} `json:"timeline"`

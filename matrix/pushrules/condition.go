@@ -21,14 +21,14 @@ import (
 	"strconv"
 	"strings"
 
-	"maunium.net/go/gomatrix"
+	"maunium.net/go/mautrix"
 	"maunium.net/go/gomuks/lib/glob"
 )
 
 // Room is an interface with the functions that are needed for processing room-specific push conditions
 type Room interface {
-	GetMember(mxid string) *gomatrix.Member
-	GetMembers() map[string]*gomatrix.Member
+	GetMember(mxid string) *mautrix.Member
+	GetMembers() map[string]*mautrix.Member
 	GetSessionOwner() string
 }
 
@@ -59,7 +59,7 @@ type PushCondition struct {
 var MemberCountFilterRegex = regexp.MustCompile("^(==|[<>]=?)?([0-9]+)$")
 
 // Match checks if this condition is fulfilled for the given event in the given room.
-func (cond *PushCondition) Match(room Room, event *gomatrix.Event) bool {
+func (cond *PushCondition) Match(room Room, event *mautrix.Event) bool {
 	switch cond.Kind {
 	case KindEventMatch:
 		return cond.matchValue(room, event)
@@ -72,7 +72,7 @@ func (cond *PushCondition) Match(room Room, event *gomatrix.Event) bool {
 	}
 }
 
-func (cond *PushCondition) matchValue(room Room, event *gomatrix.Event) bool {
+func (cond *PushCondition) matchValue(room Room, event *mautrix.Event) bool {
 	index := strings.IndexRune(cond.Key, '.')
 	key := cond.Key
 	subkey := ""
@@ -106,7 +106,7 @@ func (cond *PushCondition) matchValue(room Room, event *gomatrix.Event) bool {
 	}
 }
 
-func (cond *PushCondition) matchDisplayName(room Room, event *gomatrix.Event) bool {
+func (cond *PushCondition) matchDisplayName(room Room, event *mautrix.Event) bool {
 	ownerID := room.GetSessionOwner()
 	if ownerID == event.Sender {
 		return false
@@ -115,7 +115,7 @@ func (cond *PushCondition) matchDisplayName(room Room, event *gomatrix.Event) bo
 	return strings.Contains(event.Content.Body, member.Displayname)
 }
 
-func (cond *PushCondition) matchMemberCount(room Room, event *gomatrix.Event) bool {
+func (cond *PushCondition) matchMemberCount(room Room, event *mautrix.Event) bool {
 	group := MemberCountFilterRegex.FindStringSubmatch(cond.MemberCountCondition)
 	if len(group) != 3 {
 		return false

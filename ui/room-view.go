@@ -18,7 +18,7 @@ package ui
 
 import (
 	"fmt"
-	"maunium.net/go/gomatrix"
+	"maunium.net/go/mautrix"
 	"path/filepath"
 	"sort"
 	"strconv"
@@ -347,7 +347,7 @@ func (view *RoomView) UpdateUserList() {
 	}
 }
 
-func (view *RoomView) newUIMessage(id, sender string, msgtype gomatrix.MessageType, text string, timestamp time.Time) messages.UIMessage {
+func (view *RoomView) newUIMessage(id, sender string, msgtype mautrix.MessageType, text string, timestamp time.Time) messages.UIMessage {
 	member := view.Room.GetMember(sender)
 	displayname := sender
 	if member != nil {
@@ -357,11 +357,11 @@ func (view *RoomView) newUIMessage(id, sender string, msgtype gomatrix.MessageTy
 	return msg
 }
 
-func (view *RoomView) NewMessage(id, sender string, msgtype gomatrix.MessageType, text string, timestamp time.Time) ifc.Message {
+func (view *RoomView) NewMessage(id, sender string, msgtype mautrix.MessageType, text string, timestamp time.Time) ifc.Message {
 	return view.newUIMessage(id, sender, msgtype, text, timestamp)
 }
 
-func (view *RoomView) NewTempMessage(msgtype gomatrix.MessageType, text string) ifc.Message {
+func (view *RoomView) NewTempMessage(msgtype mautrix.MessageType, text string) ifc.Message {
 	now := time.Now()
 	id := strconv.FormatInt(now.UnixNano(), 10)
 	sender := ""

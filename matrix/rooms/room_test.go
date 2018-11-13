@@ -21,7 +21,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"maunium.net/go/gomatrix"
+	"maunium.net/go/mautrix"
 	"maunium.net/go/gomuks/matrix/rooms"
 )
 
@@ -39,7 +39,7 @@ func TestNewRoom_DefaultValues(t *testing.T) {
 
 func TestRoom_GetCanonicalAlias(t *testing.T) {
 	room := rooms.NewRoom("!test:maunium.net", "@tulir:maunium.net")
-	room.UpdateState(&gomatrix.Event{
+	room.UpdateState(&mautrix.Event{
 		Type: "m.room.canonical_alias",
 		Content: map[string]interface{}{
 			"alias": "#foo:maunium.net",
@@ -50,7 +50,7 @@ func TestRoom_GetCanonicalAlias(t *testing.T) {
 
 func TestRoom_GetTopic(t *testing.T) {
 	room := rooms.NewRoom("!test:maunium.net", "@tulir:maunium.net")
-	room.UpdateState(&gomatrix.Event{
+	room.UpdateState(&mautrix.Event{
 		Type: "m.room.topic",
 		Content: map[string]interface{}{
 			"topic": "test topic",
@@ -87,7 +87,7 @@ func TestRoom_GetAliases(t *testing.T) {
 }
 
 func addName(room *rooms.Room) {
-	room.UpdateState(&gomatrix.Event{
+	room.UpdateState(&mautrix.Event{
 		Type: "m.room.name",
 		Content: map[string]interface{}{
 			"name": "Test room",
@@ -96,7 +96,7 @@ func addName(room *rooms.Room) {
 }
 
 func addCanonicalAlias(room *rooms.Room) {
-	room.UpdateState(&gomatrix.Event{
+	room.UpdateState(&mautrix.Event{
 		Type: "m.room.canonical_alias",
 		Content: map[string]interface{}{
 			"alias": "#foo:maunium.net",
@@ -106,7 +106,7 @@ func addCanonicalAlias(room *rooms.Room) {
 
 func addAliases(room *rooms.Room) {
 	server1 := "maunium.net"
-	room.UpdateState(&gomatrix.Event{
+	room.UpdateState(&mautrix.Event{
 		Type:     "m.room.aliases",
 		StateKey: &server1,
 		Content: map[string]interface{}{
@@ -115,7 +115,7 @@ func addAliases(room *rooms.Room) {
 	})
 
 	server2 := "matrix.org"
-	room.UpdateState(&gomatrix.Event{
+	room.UpdateState(&mautrix.Event{
 		Type:     "m.room.aliases",
 		StateKey: &server2,
 		Content: map[string]interface{}{
@@ -126,7 +126,7 @@ func addAliases(room *rooms.Room) {
 
 func addMembers(room *rooms.Room, count int) {
 	user1 := "@tulir:maunium.net"
-	room.UpdateState(&gomatrix.Event{
+	room.UpdateState(&mautrix.Event{
 		Type:     "m.room.member",
 		StateKey: &user1,
 		Content: map[string]interface{}{
@@ -146,7 +146,7 @@ func addMembers(room *rooms.Room, count int) {
 		if i%5 == 0 {
 			content["membership"] = "invite"
 		}
-		room.UpdateState(&gomatrix.Event{
+		room.UpdateState(&mautrix.Event{
 			Type:     "m.room.member",
 			StateKey: &userN,
 			Content:  content,

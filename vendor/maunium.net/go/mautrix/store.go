@@ -1,4 +1,4 @@
-package gomatrix
+package mautrix
 
 // Storer is an interface which must be satisfied to store client data.
 //

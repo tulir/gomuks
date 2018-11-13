@@ -63,7 +63,7 @@
 
 [[constraint]]
   branch = "master"
-  name = "maunium.net/go/gomatrix"
+  name = "maunium.net/go/mautrix"
 
 [[constraint]]
   branch = "master"

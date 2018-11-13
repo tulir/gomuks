@@ -34,20 +34,20 @@ import (
 	"encoding/json"
 
 	"gopkg.in/russross/blackfriday.v2"
-	"maunium.net/go/gomatrix"
 	"maunium.net/go/gomuks/config"
 	"maunium.net/go/gomuks/debug"
 	"maunium.net/go/gomuks/interface"
 	"maunium.net/go/gomuks/lib/bfhtml"
 	"maunium.net/go/gomuks/matrix/pushrules"
 	"maunium.net/go/gomuks/matrix/rooms"
+	"maunium.net/go/mautrix"
 )
 
-// Container is a wrapper for a gomatrix Client and some other stuff.
+// Container is a wrapper for a mautrix Client and some other stuff.
 //
 // It is used for all Matrix calls from the UI and Matrix event handlers.
 type Container struct {
-	client  *gomatrix.Client
+	client  *mautrix.Client
 	syncer  *GomuksSyncer
 	gmx     ifc.Gomuks
 	ui      ifc.GomuksUI
@@ -69,12 +69,18 @@ func NewContainer(gmx ifc.Gomuks) *Container {
 	return c
 }
 
-// Client returns the underlying gomatrix Client.
-func (c *Container) Client() *gomatrix.Client {
+// Client returns the underlying mautrix Client.
+func (c *Container) Client() *mautrix.Client {
 	return c.client
 }
 
-// InitClient initializes the gomatrix client and connects to the homeserver specified in the config.
+type mxLogger struct{}
+
+func (log mxLogger) Debugfln(message string, args ...interface{}) {
+	debug.Printf("[Matrix] "+message, args...)
+}
+
+// InitClient initializes the mautrix client and connects to the homeserver specified in the config.
 func (c *Container) InitClient() error {
 	if len(c.config.HS) == 0 {
 		return fmt.Errorf("no homeserver in config")
@@ -92,10 +98,11 @@ func (c *Container) InitClient() error {
 	}
 
 	var err error
-	c.client, err = gomatrix.NewClient(c.config.HS, mxid, accessToken)
+	c.client, err = mautrix.NewClient(c.config.HS, mxid, accessToken)
 	if err != nil {
 		return err
 	}
+	c.client.Logger = mxLogger{}
 
 	allowInsecure := len(os.Getenv("GOMUKS_ALLOW_INSECURE_CONNECTIONS")) > 0
 	if allowInsecure {
@@ -112,14 +119,14 @@ func (c *Container) InitClient() error {
 	return nil
 }
 
-// Initialized returns whether or not the gomatrix client is initialized (see InitClient())
+// Initialized returns whether or not the mautrix client is initialized (see InitClient())
 func (c *Container) Initialized() bool {
 	return c.client != nil
 }
 
 // Login sends a password login request with the given username and password.
 func (c *Container) Login(user, password string) error {
-	resp, err := c.client.Login(&gomatrix.ReqLogin{
+	resp, err := c.client.Login(&mautrix.ReqLogin{
 		Type:                     "m.login.password",
 		User:                     user,
 		Password:                 password,
@@ -175,7 +182,7 @@ func (c *Container) PushRules() *pushrules.PushRuleset {
 	return c.config.PushRules
 }
 
-var AccountDataGomuksPreferences = gomatrix.NewEventType("net.maunium.gomuks.preferences")
+var AccountDataGomuksPreferences = mautrix.NewEventType("net.maunium.gomuks.preferences")
 
 // OnLogin initializes the syncer and updates the room list.
 func (c *Container) OnLogin() {
@@ -185,15 +192,16 @@ func (c *Container) OnLogin() {
 
 	debug.Print("Initializing syncer")
 	c.syncer = NewGomuksSyncer(c.config)
-	c.syncer.OnEventType(gomatrix.EventMessage, c.HandleMessage)
-	c.syncer.OnEventType(gomatrix.StateMember, c.HandleMembership)
-	c.syncer.OnEventType(gomatrix.EphemeralEventReceipt, c.HandleReadReceipt)
-	c.syncer.OnEventType(gomatrix.EphemeralEventTyping, c.HandleTyping)
-	c.syncer.OnEventType(gomatrix.AccountDataDirectChats, c.HandleDirectChatInfo)
-	c.syncer.OnEventType(gomatrix.AccountDataPushRules, c.HandlePushRules)
-	c.syncer.OnEventType(gomatrix.AccountDataRoomTags, c.HandleTag)
+	c.syncer.OnEventType(mautrix.EventMessage, c.HandleMessage)
+	c.syncer.OnEventType(mautrix.StateMember, c.HandleMembership)
+	c.syncer.OnEventType(mautrix.EphemeralEventReceipt, c.HandleReadReceipt)
+	c.syncer.OnEventType(mautrix.EphemeralEventTyping, c.HandleTyping)
+	c.syncer.OnEventType(mautrix.AccountDataDirectChats, c.HandleDirectChatInfo)
+	c.syncer.OnEventType(mautrix.AccountDataPushRules, c.HandlePushRules)
+	c.syncer.OnEventType(mautrix.AccountDataRoomTags, c.HandleTag)
 	c.syncer.OnEventType(AccountDataGomuksPreferences, c.HandlePreferences)
 	c.syncer.InitDoneCallback = func() {
+		debug.Print("Initial sync done")
 		c.config.AuthCache.InitialSyncDone = true
 		c.config.SaveAuthCache()
 		c.ui.MainView().InitialSyncDone()
@@ -227,7 +235,7 @@ func (c *Container) Start() {
 			return
 		default:
 			if err := c.client.Sync(); err != nil {
-				if httpErr, ok := err.(gomatrix.HTTPError); ok && httpErr.Code == http.StatusUnauthorized {
+				if httpErr, ok := err.(mautrix.HTTPError); ok && httpErr.Code == http.StatusUnauthorized {
 					debug.Print("Sync() errored with ", err, " -> logging out")
 					c.Logout()
 				} else {
@@ -240,7 +248,7 @@ func (c *Container) Start() {
 	}
 }
 
-func (c *Container) HandlePreferences(source EventSource, evt *gomatrix.Event) {
+func (c *Container) HandlePreferences(source EventSource, evt *mautrix.Event) {
 	orig := c.config.Preferences
 	rt, _ := json.Marshal(&evt.Content)
 	json.Unmarshal(rt, &c.config.Preferences)
@@ -259,7 +267,7 @@ func (c *Container) SendPreferencesToMatrix() {
 }
 
 // HandleMessage is the event handler for the m.room.message timeline event.
-func (c *Container) HandleMessage(source EventSource, evt *gomatrix.Event) {
+func (c *Container) HandleMessage(source EventSource, evt *mautrix.Event) {
 	if source&EventSourceLeave != 0 {
 		return
 	}
@@ -286,7 +294,7 @@ func (c *Container) HandleMessage(source EventSource, evt *gomatrix.Event) {
 }
 
 // HandleMembership is the event handler for the m.room.member state event.
-func (c *Container) HandleMembership(source EventSource, evt *gomatrix.Event) {
+func (c *Container) HandleMembership(source EventSource, evt *mautrix.Event) {
 	isLeave := source&EventSourceLeave != 0
 	isTimeline := source&EventSourceTimeline != 0
 	isNonTimelineLeave := isLeave && !isTimeline
@@ -302,9 +310,9 @@ func (c *Container) HandleMembership(source EventSource, evt *gomatrix.Event) {
 	c.HandleMessage(source, evt)
 }
 
-func (c *Container) processOwnMembershipChange(evt *gomatrix.Event) {
+func (c *Container) processOwnMembershipChange(evt *mautrix.Event) {
 	membership := evt.Content.Membership
-	prevMembership := gomatrix.MembershipLeave
+	prevMembership := mautrix.MembershipLeave
 	if evt.Unsigned.PrevContent != nil {
 		prevMembership = evt.Unsigned.PrevContent.Membership
 	}
@@ -326,7 +334,7 @@ func (c *Container) processOwnMembershipChange(evt *gomatrix.Event) {
 	}
 }
 
-func (c *Container) parseReadReceipt(evt *gomatrix.Event) (largestTimestampEvent string) {
+func (c *Container) parseReadReceipt(evt *mautrix.Event) (largestTimestampEvent string) {
 	var largestTimestamp int64
 	for eventID, rawContent := range evt.Content.Raw {
 		content, ok := rawContent.(map[string]interface{})
@@ -353,7 +361,7 @@ func (c *Container) parseReadReceipt(evt *gomatrix.Event) (largestTimestampEvent
 	return
 }
 
-func (c *Container) HandleReadReceipt(source EventSource, evt *gomatrix.Event) {
+func (c *Container) HandleReadReceipt(source EventSource, evt *mautrix.Event) {
 	if source&EventSourceLeave != 0 {
 		return
 	}
@@ -368,7 +376,7 @@ func (c *Container) HandleReadReceipt(source EventSource, evt *gomatrix.Event) {
 	c.ui.Render()
 }
 
-func (c *Container) parseDirectChatInfo(evt *gomatrix.Event) map[*rooms.Room]bool {
+func (c *Container) parseDirectChatInfo(evt *mautrix.Event) map[*rooms.Room]bool {
 	directChats := make(map[*rooms.Room]bool)
 	for _, rawRoomIDList := range evt.Content.Raw {
 		roomIDList, ok := rawRoomIDList.([]interface{})
@@ -391,7 +399,7 @@ func (c *Container) parseDirectChatInfo(evt *gomatrix.Event) map[*rooms.Room]boo
 	return directChats
 }
 
-func (c *Container) HandleDirectChatInfo(source EventSource, evt *gomatrix.Event) {
+func (c *Container) HandleDirectChatInfo(source EventSource, evt *mautrix.Event) {
 	directChats := c.parseDirectChatInfo(evt)
 	for _, room := range c.config.Rooms {
 		shouldBeDirect := directChats[room]
@@ -403,7 +411,7 @@ func (c *Container) HandleDirectChatInfo(source EventSource, evt *gomatrix.Event
 }
 
 // HandlePushRules is the event handler for the m.push_rules account data event.
-func (c *Container) HandlePushRules(source EventSource, evt *gomatrix.Event) {
+func (c *Container) HandlePushRules(source EventSource, evt *mautrix.Event) {
 	debug.Print("Received updated push rules")
 	var err error
 	c.config.PushRules, err = pushrules.EventToPushRules(evt)
@@ -415,7 +423,7 @@ func (c *Container) HandlePushRules(source EventSource, evt *gomatrix.Event) {
 }
 
 // HandleTag is the event handler for the m.tag account data event.
-func (c *Container) HandleTag(source EventSource, evt *gomatrix.Event) {
+func (c *Container) HandleTag(source EventSource, evt *mautrix.Event) {
 	room := c.config.GetRoom(evt.RoomID)
 
 	newTags := make([]rooms.RoomTag, len(evt.Content.RoomTags))
@@ -423,7 +431,7 @@ func (c *Container) HandleTag(source EventSource, evt *gomatrix.Event) {
 	for tag, info := range evt.Content.RoomTags {
 		order := "0.5"
 		if len(info.Order) > 0 {
-			order = info.Order
+			order = info.Order.String()
 		}
 		newTags[index] = rooms.RoomTag{
 			Tag:   tag,
@@ -438,7 +446,7 @@ func (c *Container) HandleTag(source EventSource, evt *gomatrix.Event) {
 }
 
 // HandleTyping is the event handler for the m.typing event.
-func (c *Container) HandleTyping(source EventSource, evt *gomatrix.Event) {
+func (c *Container) HandleTyping(source EventSource, evt *mautrix.Event) {
 	c.ui.MainView().SetTyping(evt.RoomID, evt.Content.TypingUserIDs)
 }
 
@@ -448,11 +456,11 @@ func (c *Container) MarkRead(roomID, eventID string) {
 }
 
 // SendMessage sends a message with the given text to the given room.
-func (c *Container) SendMessage(roomID string, msgtype gomatrix.MessageType, text string) (string, error) {
+func (c *Container) SendMessage(roomID string, msgtype mautrix.MessageType, text string) (string, error) {
 	defer debug.Recover()
 	c.SendTyping(roomID, false)
-	resp, err := c.client.SendMessageEvent(roomID, gomatrix.EventMessage,
-		gomatrix.Content{MsgType: msgtype, Body: text})
+	resp, err := c.client.SendMessageEvent(roomID, mautrix.EventMessage,
+		mautrix.Content{MsgType: msgtype, Body: text})
 	if err != nil {
 		return "", err
 	}
@@ -491,7 +499,7 @@ var roomRegex = regexp.MustCompile("\\[.+?]\\(https://matrix.to/#/(#.+?:[^/]+?)\
 //
 // If the given text contains markdown formatting symbols, it will be rendered into HTML before sending.
 // Otherwise, it will be sent as plain text.
-func (c *Container) SendMarkdownMessage(roomID string, msgtype gomatrix.MessageType, text string) (string, error) {
+func (c *Container) SendMarkdownMessage(roomID string, msgtype mautrix.MessageType, text string) (string, error) {
 	defer debug.Recover()
 
 	html := c.renderMarkdown(text)
@@ -504,11 +512,11 @@ func (c *Container) SendMarkdownMessage(roomID string, msgtype gomatrix.MessageT
 	text = roomRegex.ReplaceAllString(text, "$1")
 
 	c.SendTyping(roomID, false)
-	resp, err := c.client.SendMessageEvent(roomID, gomatrix.EventMessage,
-		gomatrix.Content{
+	resp, err := c.client.SendMessageEvent(roomID, mautrix.EventMessage,
+		mautrix.Content{
 			MsgType:       msgtype,
 			Body:          text,
-			Format:        gomatrix.FormatHTML,
+			Format:        mautrix.FormatHTML,
 			FormattedBody: html,
 		})
 	if err != nil {
@@ -560,7 +568,7 @@ func (c *Container) LeaveRoom(roomID string) error {
 }
 
 // GetHistory fetches room history.
-func (c *Container) GetHistory(roomID, prevBatch string, limit int) ([]*gomatrix.Event, string, error) {
+func (c *Container) GetHistory(roomID, prevBatch string, limit int) ([]*mautrix.Event, string, error) {
 	resp, err := c.client.Messages(roomID, prevBatch, "", 'b', limit)
 	if err != nil {
 		return nil, "", err

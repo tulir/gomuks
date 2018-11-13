@@ -4,16 +4,16 @@ import (
 	"encoding/json"
 	"net/url"
 
-	"maunium.net/go/gomatrix"
+	"maunium.net/go/mautrix"
 )
 
 // GetPushRules returns the push notification rules for the global scope.
-func GetPushRules(client *gomatrix.Client) (*PushRuleset, error) {
+func GetPushRules(client *mautrix.Client) (*PushRuleset, error) {
 	return GetScopedPushRules(client, "global")
 }
 
 // GetScopedPushRules returns the push notification rules for the given scope.
-func GetScopedPushRules(client *gomatrix.Client, scope string) (resp *PushRuleset, err error) {
+func GetScopedPushRules(client *mautrix.Client, scope string) (resp *PushRuleset, err error) {
 	u, _ := url.Parse(client.BuildURL("pushrules", scope))
 	// client.BuildURL returns the URL without a trailing slash, but the pushrules endpoint requires the slash.
 	u.Path += "/"
@@ -26,7 +26,7 @@ type contentWithRuleset struct {
 }
 
 // EventToPushRules converts a m.push_rules event to a PushRuleset by passing the data through JSON.
-func EventToPushRules(event *gomatrix.Event) (*PushRuleset, error) {
+func EventToPushRules(event *mautrix.Event) (*PushRuleset, error) {
 	content := &contentWithRuleset{}
 	err := json.Unmarshal(event.Content.VeryRaw, content)
 	if err != nil {

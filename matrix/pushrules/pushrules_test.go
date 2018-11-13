@@ -21,7 +21,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"maunium.net/go/gomatrix"
+	"maunium.net/go/mautrix"
 	"maunium.net/go/gomuks/matrix/pushrules"
 )
 
@@ -33,7 +33,7 @@ func init() {
 }
 
 func TestEventToPushRules(t *testing.T) {
-	event := &gomatrix.Event{
+	event := &mautrix.Event{
 		Type:      "m.push_rules",
 		Timestamp: 1523380910,
 		Content:   mapExamplePushRules,

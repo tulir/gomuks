@@ -21,7 +21,7 @@ import (
 	"fmt"
 	"github.com/stretchr/testify/assert"
 	"io/ioutil"
-	"maunium.net/go/gomatrix"
+	"maunium.net/go/mautrix"
 	"maunium.net/go/gomuks/config"
 	"net/http"
 	"os"
@@ -80,7 +80,7 @@ func TestContainer_SendMarkdownMessage_WithMarkdown(t *testing.T) {
 }
 
 func TestContainer_SendTyping(t *testing.T) {
-	var calls []gomatrix.ReqTyping
+	var calls []mautrix.ReqTyping
 	c := Container{client: mockClient(func(req *http.Request) (*http.Response, error) {
 		if req.Method != http.MethodPut || req.URL.Path != "/_matrix/client/r0/rooms/!foo:example.com/typing/@user:example.com" {
 			return nil, fmt.Errorf("unexpected query: %s %s", req.Method, req.URL.Path)
@@ -91,7 +91,7 @@ func TestContainer_SendTyping(t *testing.T) {
 			return nil, err
 		}
 
-		call := gomatrix.ReqTyping{}
+		call := mautrix.ReqTyping{}
 		err = json.Unmarshal(rawBody, &call)
 		if err != nil {
 			return nil, err
@@ -187,8 +187,8 @@ func TestContainer_GetHistory(t *testing.T) {
 	assert.Equal(t, "456", prevBatch)
 }
 
-func mockClient(fn func(*http.Request) (*http.Response, error)) *gomatrix.Client {
-	client, _ := gomatrix.NewClient("https://example.com", "@user:example.com", "foobar")
+func mockClient(fn func(*http.Request) (*http.Response, error)) *mautrix.Client {
+	client, _ := mautrix.NewClient("https://example.com", "@user:example.com", "foobar")
 	client.Client = &http.Client{Transport: MockRoundTripper{RT: fn}}
 	return client
 }

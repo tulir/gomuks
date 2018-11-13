@@ -17,11 +17,11 @@
 package ui
 
 import (
-	"maunium.net/go/gomatrix"
 	"maunium.net/go/gomuks/config"
 	"maunium.net/go/gomuks/debug"
 	"maunium.net/go/gomuks/interface"
 	"maunium.net/go/gomuks/ui/widget"
+	"maunium.net/go/mautrix"
 	"maunium.net/go/tview"
 )
 
@@ -89,8 +89,8 @@ func (view *LoginView) Login() {
 	debug.Print("Init error:", err)
 	err = view.matrix.Login(mxid, password)
 	if err != nil {
-		if httpErr, ok := err.(gomatrix.HTTPError); ok {
-			if respErr, ok := httpErr.WrappedError.(gomatrix.RespError); ok {
+		if httpErr, ok := err.(mautrix.HTTPError); ok {
+			if respErr, ok := httpErr.WrappedError.(mautrix.RespError); ok {
 				view.Error(respErr.Err)
 			} else {
 				view.Error(httpErr.Message)

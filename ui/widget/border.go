@@ -40,11 +40,11 @@ func (border *Border) Draw(screen tcell.Screen) {
 	x, y, width, height := border.GetRect()
 	if width == 1 {
 		for borderY := y; borderY < y+height; borderY++ {
-			screen.SetContent(x, borderY, tview.GraphicsVertBar, nil, background)
+			screen.SetContent(x, borderY, tview.Borders.Vertical, nil, background)
 		}
 	} else if height == 1 {
 		for borderX := x; borderX < x+width; borderX++ {
-			screen.SetContent(borderX, y, tview.GraphicsHoriBar, nil, background)
+			screen.SetContent(borderX, y, tview.Borders.Horizontal, nil, background)
 		}
 	}
 }

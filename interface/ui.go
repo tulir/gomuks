@@ -19,7 +19,7 @@ package ifc
 import (
 	"time"
 
-	"maunium.net/go/gomatrix"
+	"maunium.net/go/mautrix"
 	"maunium.net/go/gomuks/matrix/pushrules"
 	"maunium.net/go/gomuks/matrix/rooms"
 	"maunium.net/go/tcell"
@@ -50,7 +50,7 @@ type MainView interface {
 	UpdateTags(room *rooms.Room)
 
 	SetTyping(roomID string, users []string)
-	ParseEvent(roomView RoomView, evt *gomatrix.Event) Message
+	ParseEvent(roomView RoomView, evt *mautrix.Event) Message
 
 	NotifyMessage(room *rooms.Room, message Message, should pushrules.PushActionArrayShould)
 	InitialSyncDone()
@@ -73,8 +73,8 @@ type RoomView interface {
 	SetTyping(users []string)
 	UpdateUserList()
 
-	NewMessage(id, sender string, msgtype gomatrix.MessageType, text string, timestamp time.Time) Message
-	NewTempMessage(msgtype gomatrix.MessageType, text string) Message
+	NewMessage(id, sender string, msgtype mautrix.MessageType, text string, timestamp time.Time) Message
+	NewTempMessage(msgtype mautrix.MessageType, text string) Message
 	AddMessage(message Message, direction MessageDirection)
 	AddServiceMessage(message string)
 }
@@ -111,8 +111,8 @@ type Message interface {
 	SetID(id string)
 	ID() string
 
-	SetType(msgtype gomatrix.MessageType)
-	Type() gomatrix.MessageType
+	SetType(msgtype mautrix.MessageType)
+	Type() mautrix.MessageType
 
 	NotificationContent() string
 

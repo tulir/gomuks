@@ -8,7 +8,7 @@
 
 ![Chat Preview](chat-preview.png)
 
-A terminal Matrix client written in Go using [gomatrix](https://github.com/matrix-org/gomatrix) and [tview](https://github.com/rivo/tview).
+A terminal Matrix client written in Go using [mautrix](https://github.com/matrix-org/mautrix) and [tview](https://github.com/rivo/tview).
 
 Basic usage is possible, but expect bugs and missing features.
 

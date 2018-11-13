@@ -14,15 +14,16 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-// Based on https://github.com/matrix-org/gomatrix/blob/master/sync.go
+// Based on https://github.com/matrix-org/mautrix/blob/master/sync.go
 
 package matrix
 
 import (
 	"encoding/json"
+	"maunium.net/go/gomuks/debug"
 	"time"
 
-	"maunium.net/go/gomatrix"
+	"maunium.net/go/mautrix"
 	"maunium.net/go/gomuks/matrix/rooms"
 )
 
@@ -44,14 +45,14 @@ const (
 	EventSourceEphemeral
 )
 
-type EventHandler func(source EventSource, event *gomatrix.Event)
+type EventHandler func(source EventSource, event *mautrix.Event)
 
 // GomuksSyncer is the default syncing implementation. You can either write your own syncer, or selectively
 // replace parts of this default syncer (e.g. the ProcessResponse method). The default syncer uses the observer
 // pattern to notify callers about incoming events. See GomuksSyncer.OnEventType for more information.
 type GomuksSyncer struct {
 	Session          SyncerSession
-	listeners        map[gomatrix.EventType][]EventHandler // event type to listeners array
+	listeners        map[mautrix.EventType][]EventHandler // event type to listeners array
 	FirstSyncDone    bool
 	InitDoneCallback func()
 }
@@ -60,13 +61,14 @@ type GomuksSyncer struct {
 func NewGomuksSyncer(session SyncerSession) *GomuksSyncer {
 	return &GomuksSyncer{
 		Session:       session,
-		listeners:     make(map[gomatrix.EventType][]EventHandler),
+		listeners:     make(map[mautrix.EventType][]EventHandler),
 		FirstSyncDone: false,
 	}
 }
 
 // ProcessResponse processes a Matrix sync response.
-func (s *GomuksSyncer) ProcessResponse(res *gomatrix.RespSync, since string) (err error) {
+func (s *GomuksSyncer) ProcessResponse(res *mautrix.RespSync, since string) (err error) {
+	debug.Print("Received sync response")
 	s.processSyncEvents(nil, res.Presence.Events, EventSourcePresence, false)
 	s.processSyncEvents(nil, res.AccountData.Events, EventSourceAccountData, false)
 
@@ -106,7 +108,7 @@ func (s *GomuksSyncer) ProcessResponse(res *gomatrix.RespSync, since string) (er
 	return
 }
 
-func (s *GomuksSyncer) processSyncEvents(room *rooms.Room, events []*gomatrix.Event, source EventSource, checkStateKey bool) {
+func (s *GomuksSyncer) processSyncEvents(room *rooms.Room, events []*mautrix.Event, source EventSource, checkStateKey bool) {
 	for _, event := range events {
 		if !checkStateKey || event.StateKey != nil {
 			s.processSyncEvent(room, event, source)
@@ -114,11 +116,11 @@ func (s *GomuksSyncer) processSyncEvents(room *rooms.Room, events []*gomatrix.Ev
 	}
 }
 
-func (s *GomuksSyncer) processSyncEvent(room *rooms.Room, event *gomatrix.Event, source EventSource) {
+func (s *GomuksSyncer) processSyncEvent(room *rooms.Room, event *mautrix.Event, source EventSource) {
 	if room != nil {
 		event.RoomID = room.ID
 	}
-	if event.Type.Class == gomatrix.StateEventType {
+	if event.Type.Class == mautrix.StateEventType {
 		room.UpdateState(event)
 	}
 	s.notifyListeners(source, event)
@@ -126,7 +128,7 @@ func (s *GomuksSyncer) processSyncEvent(room *rooms.Room, event *gomatrix.Event,
 
 // OnEventType allows callers to be notified when there are new events for the given event type.
 // There are no duplicate checks.
-func (s *GomuksSyncer) OnEventType(eventType gomatrix.EventType, callback EventHandler) {
+func (s *GomuksSyncer) OnEventType(eventType mautrix.EventType, callback EventHandler) {
 	_, exists := s.listeners[eventType]
 	if !exists {
 		s.listeners[eventType] = []EventHandler{}
@@ -134,7 +136,7 @@ func (s *GomuksSyncer) OnEventType(eventType gomatrix.EventType, callback EventH
 	s.listeners[eventType] = append(s.listeners[eventType], callback)
 }
 
-func (s *GomuksSyncer) notifyListeners(source EventSource, event *gomatrix.Event) {
+func (s *GomuksSyncer) notifyListeners(source EventSource, event *mautrix.Event) {
 	listeners, exists := s.listeners[event.Type]
 	if !exists {
 		return
@@ -145,16 +147,17 @@ func (s *GomuksSyncer) notifyListeners(source EventSource, event *gomatrix.Event
 }
 
 // OnFailedSync always returns a 10 second wait period between failed /syncs, never a fatal error.
-func (s *GomuksSyncer) OnFailedSync(res *gomatrix.RespSync, err error) (time.Duration, error) {
+func (s *GomuksSyncer) OnFailedSync(res *mautrix.RespSync, err error) (time.Duration, error) {
+	debug.Printf("Sync failed: %v", err)
 	return 10 * time.Second, nil
 }
 
 // GetFilterJSON returns a filter with a timeline limit of 50.
 func (s *GomuksSyncer) GetFilterJSON(userID string) json.RawMessage {
-	filter := &gomatrix.Filter{
-		Room: gomatrix.RoomFilter{
+	filter := &mautrix.Filter{
+		Room: mautrix.RoomFilter{
 			IncludeLeave: false,
-			State: gomatrix.FilterPart{
+			State: mautrix.FilterPart{
 				Types: []string{
 					"m.room.member",
 					"m.room.name",
@@ -163,21 +166,21 @@ func (s *GomuksSyncer) GetFilterJSON(userID string) json.RawMessage {
 					"m.room.aliases",
 				},
 			},
-			Timeline: gomatrix.FilterPart{
+			Timeline: mautrix.FilterPart{
 				Types: []string{"m.room.message", "m.room.member"},
 				Limit: 50,
 			},
-			Ephemeral: gomatrix.FilterPart{
+			Ephemeral: mautrix.FilterPart{
 				Types: []string{"m.typing", "m.receipt"},
 			},
-			AccountData: gomatrix.FilterPart{
+			AccountData: mautrix.FilterPart{
 				Types: []string{"m.tag"},
 			},
 		},
-		AccountData: gomatrix.FilterPart{
+		AccountData: mautrix.FilterPart{
 			Types: []string{"m.push_rules", "m.direct", "net.maunium.gomuks.preferences"},
 		},
-		Presence: gomatrix.FilterPart{
+		Presence: mautrix.FilterPart{
 			Types: []string{},
 		},
 	}

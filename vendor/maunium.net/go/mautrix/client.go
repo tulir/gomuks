@@ -1,7 +1,7 @@
-// Package gomatrix implements the Matrix Client-Server API.
+// Package mautrix implements the Matrix Client-Server API.
 //
-// Specification can be found at http://matrix.org/docs/spec/client_server/r0.2.0.html
-package gomatrix
+// Specification can be found at http://matrix.org/docs/spec/client_server/r0.4.0.html
+package mautrix
 
 import (
 	"bytes"
@@ -10,7 +10,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"maunium.net/go/maulogger"
 	"net/http"
 	"net/url"
 	"path"
@@ -19,6 +18,10 @@ import (
 	"sync"
 	"time"
 )
+
+type Logger interface {
+	Debugfln(message string, args ...interface{})
+}
 
 // Client represents a Matrix client.
 type Client struct {
@@ -29,7 +32,7 @@ type Client struct {
 	Client        *http.Client // The underlying HTTP client which will be used to make HTTP requests.
 	Syncer        Syncer       // The thing which can process /sync responses
 	Store         Storer       // The thing which can store rooms/tokens/ids
-	Logger        maulogger.Logger
+	Logger        Logger
 
 	// The ?user_id= query parameter for application services. This must be set *prior* to calling a method. If this is empty,
 	// no user_id parameter will be sent.
@@ -132,7 +135,6 @@ func (cli *Client) Sync() error {
 		filterID = resFilter.FilterID
 		cli.Store.SaveFilterID(cli.UserID, filterID)
 	}
-
 	for {
 		resSync, err := cli.SyncRequest(30000, nextBatch, filterID, false, "")
 		if err != nil {
@@ -337,7 +339,7 @@ func (cli *Client) RegisterGuest(req *ReqRegister) (*RespRegister, *RespUserInte
 //
 // This does not set credentials on the client instance. See SetCredentials() instead.
 //
-// 	res, err := cli.RegisterDummy(&gomatrix.ReqRegister{
+// 	res, err := cli.RegisterDummy(&mautrix.ReqRegister{
 //		Username: "alice",
 //		Password: "wonderland",
 //	})
@@ -544,7 +546,7 @@ func (cli *Client) RedactEvent(roomID, eventID string, req *ReqRedact) (resp *Re
 }
 
 // CreateRoom creates a new Matrix room. See https://matrix.org/docs/spec/client_server/r0.2.0.html#post-matrix-client-r0-createroom
-//  resp, err := cli.CreateRoom(&gomatrix.ReqCreateRoom{
+//  resp, err := cli.CreateRoom(&mautrix.ReqCreateRoom{
 //  	Preset: "public_chat",
 //  })
 //  fmt.Println("Room:", resp.RoomID)

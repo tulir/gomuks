@@ -24,10 +24,10 @@ import (
 
 	"github.com/lucasb-eyer/go-colorful"
 	"golang.org/x/net/html"
-	"maunium.net/go/gomatrix"
 	"maunium.net/go/gomuks/matrix/rooms"
 	"maunium.net/go/gomuks/ui/messages/tstring"
 	"maunium.net/go/gomuks/ui/widget"
+	"maunium.net/go/mautrix"
 	"maunium.net/go/tcell"
 	"strconv"
 )
@@ -69,6 +69,9 @@ func (parser *htmlParser) getAttribute(node *html.Node, attribute string) string
 }
 
 func digits(num int) int {
+	if num <= 0 {
+		return 0
+	}
 	return int(math.Floor(math.Log10(float64(num))) + 1)
 }
 
@@ -270,14 +273,14 @@ func (parser *htmlParser) Parse(htmlData string) tstring.TString {
 }
 
 // ParseHTMLMessage parses a HTML-formatted Matrix event into a UIMessage.
-func ParseHTMLMessage(room *rooms.Room, evt *gomatrix.Event, senderDisplayname string) tstring.TString {
+func ParseHTMLMessage(room *rooms.Room, evt *mautrix.Event, senderDisplayname string) tstring.TString {
 	htmlData := evt.Content.FormattedBody
 	htmlData = strings.Replace(htmlData, "\t", "    ", -1)
 
 	parser := htmlParser{room}
 	str := parser.Parse(htmlData)
 
-	if evt.Content.MsgType == gomatrix.MsgEmote {
+	if evt.Content.MsgType == mautrix.MsgEmote {
 		str = tstring.Join([]tstring.TString{
 			tstring.NewTString("* "),
 			tstring.NewColorTString(senderDisplayname, widget.GetHashColor(evt.Sender)),

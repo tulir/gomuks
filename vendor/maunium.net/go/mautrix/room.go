@@ -1,4 +1,4 @@
-package gomatrix
+package mautrix
 
 // Room represents a single Matrix room.
 type Room struct {

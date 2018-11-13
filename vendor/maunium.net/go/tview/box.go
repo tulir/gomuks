@@ -32,6 +32,9 @@ type Box struct {
 	// The color of the border.
 	borderColor tcell.Color
 
+	// The style attributes of the border.
+	borderAttributes tcell.AttrMask
+
 	// The title. Only visible if there is a border, too.
 	title string
 
@@ -47,10 +50,6 @@ type Box struct {
 
 	// Whether or not this box has focus.
 	hasFocus bool
-
-	// If set to true, the inner rect of this box will be within the screen at the
-	// last time the box was drawn.
-	clampToScreen bool
 
 	// An optional capture function which receives a key event and returns the
 	// event to be forwarded to the primitive's default input handler (nil if
@@ -78,7 +77,6 @@ func NewBox() *Box {
 		borderColor:     Styles.BorderColor,
 		titleColor:      Styles.TitleColor,
 		titleAlign:      AlignCenter,
-		clampToScreen:   true,
 	}
 	b.focus = b
 	return b
@@ -121,6 +119,7 @@ func (b *Box) SetRect(x, y, width, height int) {
 	b.y = y
 	b.width = width
 	b.height = height
+	b.innerX = -1 // Mark inner rect as uninitialized.
 }
 
 // SetDrawFunc sets a callback function which is invoked after the box primitive
@@ -273,6 +272,15 @@ func (b *Box) SetBorderColor(color tcell.Color) *Box {
 	return b
 }
 
+// SetBorderAttributes sets the border's style attributes. You can combine
+// different attributes using bitmask operations:
+//
+//   box.SetBorderAttributes(tcell.AttrUnderline | tcell.AttrBold)
+func (b *Box) SetBorderAttributes(attr tcell.AttrMask) *Box {
+	b.borderAttributes = attr
+	return b
+}
+
 // SetTitle sets the box's title.
 func (b *Box) SetTitle(title string) *Box {
 	b.title = title
@@ -319,30 +327,30 @@ func (b *Box) Draw(screen tcell.Screen) {
 
 	// Draw border.
 	if b.border && b.width >= 2 && b.height >= 2 {
-		border := background.Foreground(b.borderColor)
+		border := background.Foreground(b.borderColor) | tcell.Style(b.borderAttributes)
 		var vertical, horizontal, topLeft, topRight, bottomLeft, bottomRight rune
 		if b.focus.HasFocus() {
-			vertical = GraphicsDbVertBar
-			horizontal = GraphicsDbHorBar
-			topLeft = GraphicsDbTopLeftCorner
-			topRight = GraphicsDbTopRightCorner
-			bottomLeft = GraphicsDbBottomLeftCorner
-			bottomRight = GraphicsDbBottomRightCorner
+			horizontal = Borders.HorizontalFocus
+			vertical = Borders.VerticalFocus
+			topLeft = Borders.TopLeftFocus
+			topRight = Borders.TopRightFocus
+			bottomLeft = Borders.BottomLeftFocus
+			bottomRight = Borders.BottomRightFocus
 		} else {
-			vertical = GraphicsHoriBar
-			horizontal = GraphicsVertBar
-			topLeft = GraphicsTopLeftCorner
-			topRight = GraphicsTopRightCorner
-			bottomLeft = GraphicsBottomLeftCorner
-			bottomRight = GraphicsBottomRightCorner
+			horizontal = Borders.Horizontal
+			vertical = Borders.Vertical
+			topLeft = Borders.TopLeft
+			topRight = Borders.TopRight
+			bottomLeft = Borders.BottomLeft
+			bottomRight = Borders.BottomRight
 		}
 		for x := b.x + 1; x < b.x+b.width-1; x++ {
-			screen.SetContent(x, b.y, vertical, nil, border)
-			screen.SetContent(x, b.y+b.height-1, vertical, nil, border)
+			screen.SetContent(x, b.y, horizontal, nil, border)
+			screen.SetContent(x, b.y+b.height-1, horizontal, nil, border)
 		}
 		for y := b.y + 1; y < b.y+b.height-1; y++ {
-			screen.SetContent(b.x, y, horizontal, nil, border)
-			screen.SetContent(b.x+b.width-1, y, horizontal, nil, border)
+			screen.SetContent(b.x, y, vertical, nil, border)
+			screen.SetContent(b.x+b.width-1, y, vertical, nil, border)
 		}
 		screen.SetContent(b.x, b.y, topLeft, nil, border)
 		screen.SetContent(b.x+b.width-1, b.y, topRight, nil, border)
@@ -351,11 +359,11 @@ func (b *Box) Draw(screen tcell.Screen) {
 
 		// Draw title.
 		if b.title != "" && b.width >= 4 {
-			_, printed := Print(screen, b.title, b.x+1, b.y, b.width-2, b.titleAlign, b.titleColor)
-			if StringWidth(b.title)-printed > 0 && printed > 0 {
+			printed, _ := Print(screen, b.title, b.x+1, b.y, b.width-2, b.titleAlign, b.titleColor)
+			if len(b.title)-printed > 0 && printed > 0 {
 				_, _, style, _ := screen.GetContent(b.x+b.width-2, b.y)
 				fg, _, _ := style.Decompose()
-				Print(screen, string(GraphicsEllipsis), b.x+b.width-2, b.y, 1, AlignLeft, fg)
+				Print(screen, string(SemigraphicsHorizontalEllipsis), b.x+b.width-2, b.y, 1, AlignLeft, fg)
 			}
 		}
 	}
@@ -370,22 +378,20 @@ func (b *Box) Draw(screen tcell.Screen) {
 	}
 
 	// Clamp inner rect to screen.
-	if b.clampToScreen {
-		width, height := screen.Size()
-		if b.innerX < 0 {
-			b.innerWidth += b.innerX
-			b.innerX = 0
-		}
-		if b.innerX+b.innerWidth >= width {
-			b.innerWidth = width - b.innerX
-		}
-		if b.innerY+b.innerHeight >= height {
-			b.innerHeight = height - b.innerY
-		}
-		if b.innerY < 0 {
-			b.innerHeight += b.innerY
-			b.innerY = 0
-		}
+	width, height := screen.Size()
+	if b.innerX < 0 {
+		b.innerWidth += b.innerX
+		b.innerX = 0
+	}
+	if b.innerX+b.innerWidth >= width {
+		b.innerWidth = width - b.innerX
+	}
+	if b.innerY+b.innerHeight >= height {
+		b.innerHeight = height - b.innerY
+	}
+	if b.innerY < 0 {
+		b.innerHeight += b.innerY
+		b.innerY = 0
 	}
 }
 

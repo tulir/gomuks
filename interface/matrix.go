@@ -17,12 +17,12 @@
 package ifc
 
 import (
-	"maunium.net/go/gomatrix"
+	"maunium.net/go/mautrix"
 	"maunium.net/go/gomuks/matrix/rooms"
 )
 
 type MatrixContainer interface {
-	Client() *gomatrix.Client
+	Client() *mautrix.Client
 	InitClient() error
 	Initialized() bool
 
@@ -33,14 +33,14 @@ type MatrixContainer interface {
 	Logout()
 
 	SendPreferencesToMatrix()
-	SendMessage(roomID string, msgtype gomatrix.MessageType, message string) (string, error)
-	SendMarkdownMessage(roomID string, msgtype gomatrix.MessageType, message string) (string, error)
+	SendMessage(roomID string, msgtype mautrix.MessageType, message string) (string, error)
+	SendMarkdownMessage(roomID string, msgtype mautrix.MessageType, message string) (string, error)
 	SendTyping(roomID string, typing bool)
 	MarkRead(roomID, eventID string)
 	JoinRoom(roomID, server string) (*rooms.Room, error)
 	LeaveRoom(roomID string) error
 
-	GetHistory(roomID, prevBatch string, limit int) ([]*gomatrix.Event, string, error)
+	GetHistory(roomID, prevBatch string, limit int) ([]*mautrix.Event, string, error)
 	GetRoom(roomID string) *rooms.Room
 
 	Download(mxcURL string) ([]byte, string, string, error)

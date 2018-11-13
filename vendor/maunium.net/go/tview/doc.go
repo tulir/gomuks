@@ -7,10 +7,12 @@ Widgets
 
 The package implements the following widgets:
 
-  - TextView: Scrollable windows that display multi-colored text. Text may also
+  - TextView: A scrollable window that display multi-colored text. Text may also
     be highlighted.
-  - Table: Scrollable display of tabular data. Table cells, rows, or columns may
-    also be highlighted.
+  - Table: A scrollable display of tabular data. Table cells, rows, or columns
+    may also be highlighted.
+  - TreeView: A scrollable display for hierarchical data. Tree nodes can be
+    highlighted, collapsed, expanded, and more.
   - List: A navigable text list with optional keyboard shortcuts.
   - InputField: One-line input fields to enter text.
   - DropDown: Drop-down selection fields.
@@ -83,7 +85,7 @@ tag is as follows:
 
   [<foreground>:<background>:<flags>]
 
-Each of the three fields can be left blank and trailing fields can be ommitted.
+Each of the three fields can be left blank and trailing fields can be omitted.
 (Empty square brackets "[]", however, are not considered color tags.) Colors
 that are not specified will be left unchanged. A field with just a dash ("-")
 means "reset to default".
@@ -134,6 +136,27 @@ feel of the primitives to your preferred style.
 Unicode Support
 
 This package supports unicode characters including wide characters.
+
+Concurrency
+
+Many functions in this package are not thread-safe. For many applications, this
+may not be an issue: If your code makes changes in response to key events, it
+will execute in the main goroutine and thus will not cause any race conditions.
+
+If you access your primitives from other goroutines, however, you will need to
+synchronize execution. The easiest way to do this is to call
+Application.QueueUpdate() or Application.QueueUpdateDraw() (see the function
+documentation for details):
+
+  go func() {
+    app.QueueUpdateDraw(func() {
+      table.SetCellSimple(0, 0, "Foo bar")
+    })
+  }()
+
+One exception to this is the io.Writer interface implemented by TextView. You
+can safely write to a TextView from any goroutine. See the TextView
+documentation for details.
 
 Type Hierarchy
 

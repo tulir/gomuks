@@ -28,7 +28,6 @@ type cScreen struct {
 	in         syscall.Handle
 	out        syscall.Handle
 	cancelflag syscall.Handle
-	title      syscall.Handle
 	scandone   chan struct{}
 	evch       chan Event
 	quit       chan struct{}

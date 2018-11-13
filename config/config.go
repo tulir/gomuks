@@ -25,7 +25,7 @@ import (
 	"strings"
 
 	"gopkg.in/yaml.v2"
-	"maunium.net/go/gomatrix"
+	"maunium.net/go/mautrix"
 	"maunium.net/go/gomuks/debug"
 	"maunium.net/go/gomuks/matrix/pushrules"
 	"maunium.net/go/gomuks/matrix/rooms"
@@ -289,12 +289,12 @@ func (config *Config) PutRoom(room *rooms.Room) {
 	room.Save(config.getRoomCachePath(room))
 }
 
-func (config *Config) SaveRoom(room *gomatrix.Room) {
+func (config *Config) SaveRoom(room *mautrix.Room) {
 	gmxRoom := config.GetRoom(room.ID)
 	gmxRoom.Room = room
 	gmxRoom.Save(config.getRoomCachePath(gmxRoom))
 }
 
-func (config *Config) LoadRoom(roomID string) *gomatrix.Room {
+func (config *Config) LoadRoom(roomID string) *mautrix.Room {
 	return config.GetRoom(roomID).Room
 }

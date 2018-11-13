@@ -1,4 +1,5 @@
-package gomatrix
+// Copyright 2018 Tulir Asokan
+package mautrix
 
 import (
 	"fmt"

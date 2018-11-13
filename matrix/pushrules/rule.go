@@ -18,7 +18,7 @@ package pushrules
 
 import (
 	"encoding/gob"
-	"maunium.net/go/gomatrix"
+	"maunium.net/go/mautrix"
 	"maunium.net/go/gomuks/lib/glob"
 )
 
@@ -28,7 +28,7 @@ func init() {
 }
 
 type PushRuleCollection interface {
-	GetActions(room Room, event *gomatrix.Event) PushActionArray
+	GetActions(room Room, event *mautrix.Event) PushActionArray
 }
 
 type PushRuleArray []*PushRule
@@ -40,7 +40,7 @@ func (rules PushRuleArray) SetType(typ PushRuleType) PushRuleArray {
 	return rules
 }
 
-func (rules PushRuleArray) GetActions(room Room, event *gomatrix.Event) PushActionArray {
+func (rules PushRuleArray) GetActions(room Room, event *mautrix.Event) PushActionArray {
 	for _, rule := range rules {
 		if !rule.Match(room, event) {
 			continue
@@ -67,7 +67,7 @@ func (rules PushRuleArray) SetTypeAndMap(typ PushRuleType) PushRuleMap {
 	return data
 }
 
-func (ruleMap PushRuleMap) GetActions(room Room, event *gomatrix.Event) PushActionArray {
+func (ruleMap PushRuleMap) GetActions(room Room, event *mautrix.Event) PushActionArray {
 	var rule *PushRule
 	var found bool
 	switch ruleMap.Type {
@@ -122,7 +122,7 @@ type PushRule struct {
 	Pattern string `json:"pattern,omitempty"`
 }
 
-func (rule *PushRule) Match(room Room, event *gomatrix.Event) bool {
+func (rule *PushRule) Match(room Room, event *mautrix.Event) bool {
 	if !rule.Enabled {
 		return false
 	}
@@ -140,7 +140,7 @@ func (rule *PushRule) Match(room Room, event *gomatrix.Event) bool {
 	}
 }
 
-func (rule *PushRule) matchConditions(room Room, event *gomatrix.Event) bool {
+func (rule *PushRule) matchConditions(room Room, event *mautrix.Event) bool {
 	for _, cond := range rule.Conditions {
 		if !cond.Match(room, event) {
 			return false
@@ -149,7 +149,7 @@ func (rule *PushRule) matchConditions(room Room, event *gomatrix.Event) bool {
 	return true
 }
 
-func (rule *PushRule) matchPattern(room Room, event *gomatrix.Event) bool {
+func (rule *PushRule) matchPattern(room Room, event *mautrix.Event) bool {
 	pattern, err := glob.Compile(rule.Pattern)
 	if err != nil {
 		return false

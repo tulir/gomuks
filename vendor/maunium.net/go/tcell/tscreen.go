@@ -444,8 +444,8 @@ func (t *tScreen) ResetTitle() {
 func (t *tScreen) Fini() {
 	t.Lock()
 	defer t.Unlock()
-	
-	ti := t.ti	
+
+	ti := t.ti
 	t.cells.Resize(0, 0)
 	t.TPuts(ti.ShowCursor)
 	t.TPuts(ti.AttrOff)
@@ -467,7 +467,7 @@ func (t *tScreen) Fini() {
 	default:
 		close(t.quit)
 	}
-	
+
 	t.termioFini()
 }
 

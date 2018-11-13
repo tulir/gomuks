@@ -18,24 +18,28 @@ package parser
 
 import (
 	"fmt"
+	"html"
 	"strings"
 	"time"
 
-	"maunium.net/go/gomatrix"
 	"maunium.net/go/gomuks/debug"
 	"maunium.net/go/gomuks/interface"
 	"maunium.net/go/gomuks/matrix/rooms"
 	"maunium.net/go/gomuks/ui/messages"
 	"maunium.net/go/gomuks/ui/messages/tstring"
 	"maunium.net/go/gomuks/ui/widget"
+	"maunium.net/go/mautrix"
 	"maunium.net/go/tcell"
 )
 
-func ParseEvent(matrix ifc.MatrixContainer, room *rooms.Room, evt *gomatrix.Event) messages.UIMessage {
+func ParseEvent(matrix ifc.MatrixContainer, room *rooms.Room, evt *mautrix.Event) messages.UIMessage {
 	switch evt.Type {
-	case gomatrix.EventMessage:
+	case mautrix.EventSticker:
+		evt.Content.MsgType = mautrix.MsgImage
+		fallthrough
+	case mautrix.EventMessage:
 		return ParseMessage(matrix, room, evt)
-	case gomatrix.StateMember:
+	case mautrix.StateMember:
 		return ParseMembershipEvent(room, evt)
 	}
 	return nil
@@ -49,16 +53,27 @@ func unixToTime(unix int64) time.Time {
 	return timestamp
 }
 
-func ParseMessage(matrix ifc.MatrixContainer, room *rooms.Room, evt *gomatrix.Event) messages.UIMessage {
+func ParseMessage(matrix ifc.MatrixContainer, room *rooms.Room, evt *mautrix.Event) messages.UIMessage {
 	displayname := evt.Sender
 	member := room.GetMember(evt.Sender)
 	if member != nil {
 		displayname = member.Displayname
 	}
+	if len(evt.Content.GetReplyTo()) > 0 {
+		evt.Content.RemoveReplyFallback()
+		replyToEvt, _ := matrix.Client().GetEvent(room.ID, evt.Content.GetReplyTo())
+		replyToEvt.Content.RemoveReplyFallback()
+		if len(replyToEvt.Content.FormattedBody) == 0 {
+			replyToEvt.Content.FormattedBody = html.EscapeString(replyToEvt.Content.Body)
+		}
+		evt.Content.FormattedBody = fmt.Sprintf(
+			"In reply to <a href='https://matrix.to/#/%[1]s'>%[1]s</a><blockquote>%[2]s</blockquote><br/>%[3]s",
+			replyToEvt.Sender, replyToEvt.Content.FormattedBody, evt.Content.FormattedBody)
+	}
 	ts := unixToTime(evt.Timestamp)
 	switch evt.Content.MsgType {
 	case "m.text", "m.notice", "m.emote":
-		if evt.Content.Format == gomatrix.FormatHTML {
+		if evt.Content.Format == mautrix.FormatHTML {
 			text := ParseHTMLMessage(room, evt, displayname)
 			return messages.NewExpandedTextMessage(evt.ID, evt.Sender, displayname, evt.Content.MsgType, text, ts)
 		}
@@ -74,7 +89,7 @@ func ParseMessage(matrix ifc.MatrixContainer, room *rooms.Room, evt *gomatrix.Ev
 	return nil
 }
 
-func getMembershipChangeMessage(evt *gomatrix.Event, membership, prevMembership gomatrix.Membership, senderDisplayname, displayname, prevDisplayname string) (sender string, text tstring.TString) {
+func getMembershipChangeMessage(evt *mautrix.Event, membership, prevMembership mautrix.Membership, senderDisplayname, displayname, prevDisplayname string) (sender string, text tstring.TString) {
 	switch membership {
 	case "invite":
 		sender = "---"
@@ -88,7 +103,7 @@ func getMembershipChangeMessage(evt *gomatrix.Event, membership, prevMembership 
 	case "leave":
 		sender = "<--"
 		if evt.Sender != *evt.StateKey {
-			if prevMembership == gomatrix.MembershipBan {
+			if prevMembership == mautrix.MembershipBan {
 				text = tstring.NewColorTString(fmt.Sprintf("%s unbanned %s", senderDisplayname, displayname), tcell.ColorGreen)
 				text.Colorize(len(senderDisplayname)+len(" unbanned "), len(displayname), widget.GetHashColor(*evt.StateKey))
 			} else {
@@ -111,7 +126,7 @@ func getMembershipChangeMessage(evt *gomatrix.Event, membership, prevMembership 
 	return
 }
 
-func getMembershipEventContent(room *rooms.Room, evt *gomatrix.Event) (sender string, text tstring.TString) {
+func getMembershipEventContent(room *rooms.Room, evt *mautrix.Event) (sender string, text tstring.TString) {
 	member := room.GetMember(evt.Sender)
 	senderDisplayname := evt.Sender
 	if member != nil {
@@ -124,7 +139,7 @@ func getMembershipEventContent(room *rooms.Room, evt *gomatrix.Event) (sender st
 		displayname = *evt.StateKey
 	}
 
-	prevMembership := gomatrix.MembershipLeave
+	prevMembership := mautrix.MembershipLeave
 	prevDisplayname := *evt.StateKey
 	if evt.Unsigned.PrevContent != nil {
 		prevMembership = evt.Unsigned.PrevContent.Membership
@@ -146,7 +161,7 @@ func getMembershipEventContent(room *rooms.Room, evt *gomatrix.Event) (sender st
 	return
 }
 
-func ParseMembershipEvent(room *rooms.Room, evt *gomatrix.Event) messages.UIMessage {
+func ParseMembershipEvent(room *rooms.Room, evt *mautrix.Event) messages.UIMessage {
 	displayname, text := getMembershipEventContent(room, evt)
 	if len(text) == 0 {
 		return nil

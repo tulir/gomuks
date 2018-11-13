@@ -21,7 +21,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"maunium.net/go/gomatrix"
+	"maunium.net/go/mautrix"
 	"maunium.net/go/gomuks/matrix/pushrules"
 	"maunium.net/go/gomuks/matrix/rooms"
 )
@@ -30,7 +30,7 @@ var (
 	blankTestRoom       *rooms.Room
 	displaynameTestRoom pushrules.Room
 
-	countConditionTestEvent *gomatrix.Event
+	countConditionTestEvent *mautrix.Event
 
 	displaynamePushCondition *pushrules.PushCondition
 )
@@ -38,7 +38,7 @@ var (
 func init() {
 	blankTestRoom = rooms.NewRoom("!fakeroom:maunium.net", "@tulir:maunium.net")
 
-	countConditionTestEvent = &gomatrix.Event{
+	countConditionTestEvent = &mautrix.Event{
 		Sender:    "@tulir:maunium.net",
 		Type:      "m.room.message",
 		Timestamp: 1523791120,
@@ -56,8 +56,8 @@ func init() {
 	}
 }
 
-func newFakeEvent(evtType string, content map[string]interface{}) *gomatrix.Event {
-	return &gomatrix.Event{
+func newFakeEvent(evtType string, content map[string]interface{}) *mautrix.Event {
+	return &mautrix.Event{
 		Sender:    "@tulir:maunium.net",
 		Type:      evtType,
 		Timestamp: 1523791120,

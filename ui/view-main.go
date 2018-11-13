@@ -26,7 +26,7 @@ import (
 	"bufio"
 	"os"
 
-	"maunium.net/go/gomatrix"
+	"maunium.net/go/mautrix"
 	"maunium.net/go/gomuks/config"
 	"maunium.net/go/gomuks/debug"
 	"maunium.net/go/gomuks/interface"
@@ -152,8 +152,8 @@ func (view *MainView) sendTempMessage(roomView *RoomView, tempMessage ifc.Messag
 	eventID, err := view.matrix.SendMarkdownMessage(roomView.Room.ID, tempMessage.Type(), text)
 	if err != nil {
 		tempMessage.SetState(ifc.MessageStateFailed)
-		if httpErr, ok := err.(gomatrix.HTTPError); ok {
-			if respErr, ok := httpErr.WrappedError.(gomatrix.RespError); ok {
+		if httpErr, ok := err.(mautrix.HTTPError); ok {
+			if respErr, ok := httpErr.WrappedError.(mautrix.RespError); ok {
 				// Show shorter version if available
 				err = respErr
 			}
@@ -510,6 +510,6 @@ func (view *MainView) LoadHistory(room string) {
 	view.parent.Render()
 }
 
-func (view *MainView) ParseEvent(roomView ifc.RoomView, evt *gomatrix.Event) ifc.Message {
+func (view *MainView) ParseEvent(roomView ifc.RoomView, evt *mautrix.Event) ifc.Message {
 	return parser.ParseEvent(view.matrix, roomView.MxRoom(), evt)
 }

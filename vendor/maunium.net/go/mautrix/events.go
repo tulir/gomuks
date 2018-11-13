@@ -1,4 +1,5 @@
-package gomatrix
+// Copyright 2018 Tulir Asokan
+package mautrix
 
 import (
 	"encoding/json"
@@ -101,7 +102,7 @@ var (
 // Ephemeral events
 var (
 	EphemeralEventReceipt = EventType{"m.receipt", EphemeralEventType}
-	EphemeralEventTyping  = EventType{"m.receipt", EphemeralEventType}
+	EphemeralEventTyping  = EventType{"m.typing", EphemeralEventType}
 )
 
 // Account data events
@@ -165,6 +166,17 @@ type Unsigned struct {
 	PrevSender    string   `json:"prev_sender,omitempty"`
 	ReplacesState string   `json:"replaces_state,omitempty"`
 	Age           int64    `json:"age,omitempty"`
+
+	PassiveCommand map[string]*MatchedPassiveCommand `json:"m.passive_command,omitempty"`
+}
+
+type MatchedPassiveCommand struct {
+	// Matched  string     `json:"matched"`
+	// Value    string     `json:"value"`
+	Captured [][]string `json:"captured"`
+
+	BackCompatCommand   string            `json:"command"`
+	BackCompatArguments map[string]string `json:"arguments"`
 }
 
 type Content struct {
@@ -182,7 +194,8 @@ type Content struct {
 	// Membership key for easy access in m.room.member events
 	Membership Membership `json:"membership,omitempty"`
 
-	RelatesTo *RelatesTo `json:"m.relates_to,omitempty"`
+	RelatesTo *RelatesTo      `json:"m.relates_to,omitempty"`
+	Command   *MatchedCommand `json:"m.command,omitempty"`
 
 	PowerLevels
 	Member
@@ -197,12 +210,28 @@ type Content struct {
 
 type serializableContent Content
 
+var DisableFancyEventParsing = false
+
 func (content *Content) UnmarshalJSON(data []byte) error {
 	content.VeryRaw = data
-	if err := json.Unmarshal(data, &content.Raw); err != nil {
+	if err := json.Unmarshal(data, &content.Raw); err != nil || DisableFancyEventParsing {
 		return err
 	}
 	return json.Unmarshal(data, (*serializableContent)(content))
+}
+
+func (content *Content) GetCommand() *MatchedCommand {
+	if content.Command == nil {
+		content.Command = &MatchedCommand{}
+	}
+	return content.Command
+}
+
+func (content *Content) GetRelatesTo() *RelatesTo {
+	if content.RelatesTo == nil {
+		content.RelatesTo = &RelatesTo{}
+	}
+	return content.RelatesTo
 }
 
 func (content *Content) UnmarshalPowerLevels() (pl PowerLevels, err error) {
@@ -228,7 +257,7 @@ func (content *Content) GetInfo() *FileInfo {
 }
 
 type Tags map[string]struct {
-	Order string `json:"order"`
+	Order json.Number `json:"order"`
 }
 
 type RoomName struct {
@@ -410,4 +439,10 @@ type InReplyTo struct {
 	EventID string `json:"event_id,omitempty"`
 	// Not required, just for future-proofing
 	RoomID string `json:"room_id,omitempty"`
+}
+
+type MatchedCommand struct {
+	Target    string            `json:"target"`
+	Matched   string            `json:"matched"`
+	Arguments map[string]string `json:"arguments"`
 }

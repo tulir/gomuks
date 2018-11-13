@@ -31,7 +31,7 @@ type textViewIndex struct {
 // TextView is a box which displays text. It implements the io.Writer interface
 // so you can stream text to it. This does not trigger a redraw automatically
 // but if a handler is installed via SetChangedFunc(), you can cause it to be
-// redrawn.
+// redrawn. (See SetChangedFunc() for more details.)
 //
 // Navigation
 //
@@ -103,6 +103,10 @@ type TextView struct {
 	// during re-indexing. Set to -1 if there is no current highlight.
 	fromHighlight, toHighlight int
 
+	// The screen space column of the highlight in its first line. Set to -1 if
+	// there is no current highlight.
+	posHighlight int
+
 	// A set of region IDs that are currently highlighted.
 	highlights map[string]struct{}
 
@@ -170,6 +174,7 @@ func NewTextView() *TextView {
 		align:         AlignLeft,
 		wrap:          true,
 		textColor:     Styles.PrimaryTextColor,
+		regions:       false,
 		dynamicColors: false,
 	}
 }
@@ -255,8 +260,20 @@ func (t *TextView) SetRegions(regions bool) *TextView {
 }
 
 // SetChangedFunc sets a handler function which is called when the text of the
-// text view has changed. This is typically used to cause the application to
-// redraw the screen.
+// text view has changed. This is useful when text is written to this io.Writer
+// in a separate goroutine. This does not automatically cause the screen to be
+// refreshed so you may want to use the "changed" handler to redraw the screen.
+//
+// Note that to avoid race conditions or deadlocks, there are a few rules you
+// should follow:
+//
+//   - You can call Application.Draw() from this handler.
+//   - You can call TextView.HasFocus() from this handler.
+//   - During the execution of this handler, access to any other variables from
+//     this primitive or any other primitive should be queued using
+//     Application.QueueUpdate().
+//
+// See package description for details on dealing with concurrency.
 func (t *TextView) SetChangedFunc(handler func()) *TextView {
 	t.changed = handler
 	return t
@@ -267,6 +284,16 @@ func (t *TextView) SetChangedFunc(handler func()) *TextView {
 // handler.
 func (t *TextView) SetDoneFunc(handler func(key tcell.Key)) *TextView {
 	t.done = handler
+	return t
+}
+
+// ScrollTo scrolls to the specified row and column (both starting with 0).
+func (t *TextView) ScrollTo(row, column int) *TextView {
+	if !t.scrollable {
+		return t
+	}
+	t.lineOffset = row
+	t.columnOffset = column
 	return t
 }
 
@@ -292,6 +319,12 @@ func (t *TextView) ScrollToEnd() *TextView {
 	t.trackEnd = true
 	t.columnOffset = 0
 	return t
+}
+
+// GetScrollOffset returns the number of rows and columns that are skipped at
+// the top left corner when the text view has been scrolled.
+func (t *TextView) GetScrollOffset() (row, column int) {
+	return t.lineOffset, t.columnOffset
 }
 
 // Clear removes all text from the buffer.
@@ -420,13 +453,33 @@ func (t *TextView) GetRegionText(regionID string) string {
 	return escapePattern.ReplaceAllString(buffer.String(), `[$1$2]`)
 }
 
+// Focus is called when this primitive receives focus.
+func (t *TextView) Focus(delegate func(p Primitive)) {
+	// Implemented here with locking because this is used by layout primitives.
+	t.Lock()
+	defer t.Unlock()
+	t.hasFocus = true
+}
+
+// HasFocus returns whether or not this primitive has focus.
+func (t *TextView) HasFocus() bool {
+	// Implemented here with locking because this may be used in the "changed"
+	// callback.
+	t.Lock()
+	defer t.Unlock()
+	return t.hasFocus
+}
+
 // Write lets us implement the io.Writer interface. Tab characters will be
 // replaced with TabSize space characters. A "\n" or "\r\n" will be interpreted
 // as a new line.
 func (t *TextView) Write(p []byte) (n int, err error) {
 	// Notify at the end.
-	if t.changed != nil {
-		defer t.changed()
+	t.Lock()
+	changed := t.changed
+	t.Unlock()
+	if changed != nil {
+		defer changed() // Deadlocks may occur if we lock here.
 	}
 
 	t.Lock()
@@ -492,7 +545,7 @@ func (t *TextView) reindexBuffer(width int) {
 		return // Nothing has changed. We can still use the current index.
 	}
 	t.index = nil
-	t.fromHighlight, t.toHighlight = -1, -1
+	t.fromHighlight, t.toHighlight, t.posHighlight = -1, -1, -1
 
 	// If there's no space, there's no index.
 	if width < 1 {
@@ -511,8 +564,9 @@ func (t *TextView) reindexBuffer(width int) {
 			colorTags       [][]string
 			escapeIndices   [][]int
 		)
+		strippedStr := str
 		if t.dynamicColors {
-			colorTagIndices, colorTags, escapeIndices, str, _ = decomposeString(str)
+			colorTagIndices, colorTags, escapeIndices, strippedStr, _ = decomposeString(str)
 		}
 
 		// Find all regions in this line. Then remove them.
@@ -523,13 +577,11 @@ func (t *TextView) reindexBuffer(width int) {
 		if t.regions {
 			regionIndices = regionPattern.FindAllStringIndex(str, -1)
 			regions = regionPattern.FindAllStringSubmatch(str, -1)
-			str = regionPattern.ReplaceAllString(str, "")
-			if !t.dynamicColors {
-				// We haven't detected escape tags yet. Do it now.
-				escapeIndices = escapePattern.FindAllStringIndex(str, -1)
-				str = escapePattern.ReplaceAllString(str, "[$1$2]")
-			}
+			strippedStr = regionPattern.ReplaceAllString(strippedStr, "")
 		}
+
+		// We don't need the original string anymore for now.
+		str = strippedStr
 
 		// Split the line if required.
 		var splitLines []string
@@ -574,15 +626,53 @@ func (t *TextView) reindexBuffer(width int) {
 
 			// Shift original position with tags.
 			lineLength := len(splitLine)
+			remainingLength := lineLength
+			tagEnd := originalPos
+			totalTagLength := 0
 			for {
-				if colorPos < len(colorTagIndices) && colorTagIndices[colorPos][0] <= originalPos+lineLength {
+				// Which tag comes next?
+				nextTag := make([][3]int, 0, 3)
+				if colorPos < len(colorTagIndices) {
+					nextTag = append(nextTag, [3]int{colorTagIndices[colorPos][0], colorTagIndices[colorPos][1], 0}) // 0 = color tag.
+				}
+				if regionPos < len(regionIndices) {
+					nextTag = append(nextTag, [3]int{regionIndices[regionPos][0], regionIndices[regionPos][1], 1}) // 1 = region tag.
+				}
+				if escapePos < len(escapeIndices) {
+					nextTag = append(nextTag, [3]int{escapeIndices[escapePos][0], escapeIndices[escapePos][1], 2}) // 2 = escape tag.
+				}
+				minPos := -1
+				tagIndex := -1
+				for index, pair := range nextTag {
+					if minPos < 0 || pair[0] < minPos {
+						minPos = pair[0]
+						tagIndex = index
+					}
+				}
+
+				// Is the next tag in range?
+				if tagIndex < 0 || minPos >= tagEnd+remainingLength {
+					break // No. We're done with this line.
+				}
+
+				// Advance.
+				strippedTagStart := nextTag[tagIndex][0] - originalPos - totalTagLength
+				tagEnd = nextTag[tagIndex][1]
+				tagLength := tagEnd - nextTag[tagIndex][0]
+				if nextTag[tagIndex][2] == 2 {
+					tagLength = 1
+				}
+				totalTagLength += tagLength
+				remainingLength = lineLength - (tagEnd - originalPos - totalTagLength)
+
+				// Process the tag.
+				switch nextTag[tagIndex][2] {
+				case 0:
 					// Process color tags.
-					originalPos += colorTagIndices[colorPos][1] - colorTagIndices[colorPos][0]
 					foregroundColor, backgroundColor, attributes = styleFromTag(foregroundColor, backgroundColor, attributes, colorTags[colorPos])
 					colorPos++
-				} else if regionPos < len(regionIndices) && regionIndices[regionPos][0] <= originalPos+lineLength {
+				case 1:
 					// Process region tags.
-					originalPos += regionIndices[regionPos][1] - regionIndices[regionPos][0]
 					regionID = regions[regionPos][1]
 					_, highlighted = t.highlights[regionID]
 
@@ -591,23 +681,21 @@ func (t *TextView) reindexBuffer(width int) {
 						line := len(t.index)
 						if t.fromHighlight < 0 {
 							t.fromHighlight, t.toHighlight = line, line
+							t.posHighlight = runewidth.StringWidth(splitLine[:strippedTagStart])
 						} else if line > t.toHighlight {
 							t.toHighlight = line
 						}
 					}
 
 					regionPos++
-				} else if escapePos < len(escapeIndices) && escapeIndices[escapePos][0] <= originalPos+lineLength {
+				case 2:
 					// Process escape tags.
-					originalPos++
 					escapePos++
-				} else {
-					break
 				}
 			}
 
 			// Advance to next line.
-			originalPos += lineLength
+			originalPos += lineLength + totalTagLength
 
 			// Append this line.
 			line.NextPos = originalPos
@@ -649,7 +737,7 @@ func (t *TextView) Draw(screen tcell.Screen) {
 	t.pageSize = height
 
 	// If the width has changed, we need to reindex.
-	if width != t.lastWidth {
+	if width != t.lastWidth && t.wrap {
 		t.index = nil
 	}
 	t.lastWidth = width
@@ -671,6 +759,16 @@ func (t *TextView) Draw(screen tcell.Screen) {
 		} else {
 			// No, let's move to the start of the highlights.
 			t.lineOffset = t.fromHighlight
+		}
+
+		// If the highlight is too far to the right, move it to the middle.
+		if t.posHighlight-t.columnOffset > 3*width/4 {
+			t.columnOffset = t.posHighlight - width/2
+		}
+
+		// If the highlight is off-screen on the left, move it on-screen.
+		if t.posHighlight-t.columnOffset < 0 {
+			t.columnOffset = t.posHighlight - width/4
 		}
 	}
 	t.scrollToHighlights = false
@@ -737,8 +835,9 @@ func (t *TextView) Draw(screen tcell.Screen) {
 			colorTags       [][]string
 			escapeIndices   [][]int
 		)
+		strippedText := text
 		if t.dynamicColors {
-			colorTagIndices, colorTags, escapeIndices, _, _ = decomposeString(text)
+			colorTagIndices, colorTags, escapeIndices, strippedText, _ = decomposeString(text)
 		}
 
 		// Get regions.
@@ -749,8 +848,10 @@ func (t *TextView) Draw(screen tcell.Screen) {
 		if t.regions {
 			regionIndices = regionPattern.FindAllStringIndex(text, -1)
 			regions = regionPattern.FindAllStringSubmatch(text, -1)
+			strippedText = regionPattern.ReplaceAllString(strippedText, "")
 			if !t.dynamicColors {
 				escapeIndices = escapePattern.FindAllStringIndex(text, -1)
+				strippedText = string(escapePattern.ReplaceAllString(strippedText, "[$1$2]"))
 			}
 		}
 
@@ -769,11 +870,29 @@ func (t *TextView) Draw(screen tcell.Screen) {
 		}
 
 		// Print the line.
-		var currentTag, currentRegion, currentEscapeTag, skipped, runeSeqWidth int
-		runeSequence := make([]rune, 0, 10)
-		flush := func() {
-			if len(runeSequence) == 0 {
-				return
+		var colorPos, regionPos, escapePos, tagOffset, skipped int
+		iterateString(strippedText, func(main rune, comb []rune, textPos, textWidth, screenPos, screenWidth int) bool {
+			// Process tags.
+			for {
+				if colorPos < len(colorTags) && textPos+tagOffset >= colorTagIndices[colorPos][0] && textPos+tagOffset < colorTagIndices[colorPos][1] {
+					// Get the color.
+					foregroundColor, backgroundColor, attributes = styleFromTag(foregroundColor, backgroundColor, attributes, colorTags[colorPos])
+					tagOffset += colorTagIndices[colorPos][1] - colorTagIndices[colorPos][0]
+					colorPos++
+				} else if regionPos < len(regionIndices) && textPos+tagOffset >= regionIndices[regionPos][0] && textPos+tagOffset < regionIndices[regionPos][1] {
+					// Get the region.
+					regionID = regions[regionPos][1]
+					tagOffset += regionIndices[regionPos][1] - regionIndices[regionPos][0]
+					regionPos++
+				} else {
+					break
+				}
+			}
+
+			// Skip the second-to-last character of an escape tag.
+			if escapePos < len(escapeIndices) && textPos+tagOffset == escapeIndices[escapePos][1]-2 {
+				tagOffset++
+				escapePos++
 			}
 
 			// Mix the existing style with the new style.
@@ -803,87 +922,30 @@ func (t *TextView) Draw(screen tcell.Screen) {
 				style = style.Background(fg).Foreground(bg)
 			}
 
-			// Draw the character.
-			var comb []rune
-			if len(runeSequence) > 1 {
-				// Allocate space for the combining characters only when necessary.
-				comb = make([]rune, len(runeSequence)-1)
-				copy(comb, runeSequence[1:])
-			}
-			for offset := 0; offset < runeSeqWidth; offset++ {
-				screen.SetContent(x+posX+offset, y+line-t.lineOffset, runeSequence[0], comb, style)
-			}
-
-			// Advance.
-			posX += runeSeqWidth
-			runeSequence = runeSequence[:0]
-			runeSeqWidth = 0
-		}
-		for pos, ch := range text {
-			// Get the color.
-			if currentTag < len(colorTags) && pos >= colorTagIndices[currentTag][0] && pos < colorTagIndices[currentTag][1] {
-				flush()
-				if pos == colorTagIndices[currentTag][1]-1 {
-					foregroundColor, backgroundColor, attributes = styleFromTag(foregroundColor, backgroundColor, attributes, colorTags[currentTag])
-					currentTag++
-				}
-				continue
-			}
-
-			// Get the region.
-			if currentRegion < len(regionIndices) && pos >= regionIndices[currentRegion][0] && pos < regionIndices[currentRegion][1] {
-				flush()
-				if pos == regionIndices[currentRegion][1]-1 {
-					regionID = regions[currentRegion][1]
-					currentRegion++
-				}
-				continue
-			}
-
-			// Skip the second-to-last character of an escape tag.
-			if currentEscapeTag < len(escapeIndices) && pos >= escapeIndices[currentEscapeTag][0] && pos < escapeIndices[currentEscapeTag][1] {
-				flush()
-				if pos == escapeIndices[currentEscapeTag][1]-1 {
-					currentEscapeTag++
-				} else if pos == escapeIndices[currentEscapeTag][1]-2 {
-					continue
-				}
-			}
-
-			// Determine the width of this rune.
-			chWidth := runewidth.RuneWidth(ch)
-			if chWidth == 0 {
-				// If this is not a modifier, we treat it as a space character.
-				if len(runeSequence) == 0 {
-					ch = ' '
-					chWidth = 1
-				} else {
-					runeSequence = append(runeSequence, ch)
-					continue
-				}
-			}
-
 			// Skip to the right.
 			if !t.wrap && skipped < skip {
-				skipped += chWidth
-				continue
+				skipped += screenWidth
+				return false
 			}
 
 			// Stop at the right border.
-			if posX+runeSeqWidth+chWidth > width {
-				break
+			if posX+screenWidth > width {
+				return true
 			}
 
-			// Flush the rune sequence.
-			flush()
+			// Draw the character.
+			for offset := screenWidth - 1; offset >= 0; offset-- {
+				if offset == 0 {
+					screen.SetContent(x+posX+offset, y+line-t.lineOffset, main, comb, style)
+				} else {
+					screen.SetContent(x+posX+offset, y+line-t.lineOffset, ' ', nil, style)
+				}
+			}
 
-			// Queue this rune.
-			runeSequence = append(runeSequence, ch)
-			runeSeqWidth += chWidth
-		}
-		if posX+runeSeqWidth <= width {
-			flush()
-		}
+			// Advance.
+			posX += screenWidth
+			return false
+		})
 	}
 
 	// If this view is not scrollable, we'll purge the buffer of lines that have

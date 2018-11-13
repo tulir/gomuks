@@ -2,79 +2,104 @@
 
 
 [[projects]]
+  digest = "1:ffe9824d294da03b391f44e1ae8281281b4afc1bdaa9588c9097785e3af10cec"
   name = "github.com/davecgh/go-spew"
   packages = ["spew"]
+  pruneopts = "UT"
   revision = "8991bc29aa16c548c550c7ff78260e27b9ab7c73"
   version = "v1.1.1"
 
 [[projects]]
+  digest = "1:2694597a20d303502ad1b7f1cc688977c7dc34da732ccf4d27e98b552cceed5b"
   name = "github.com/disintegration/imaging"
   packages = ["."]
+  pruneopts = "UT"
   revision = "0bd5694c78c9c3d9a3cd06a706a8f3c59296a9ac"
   version = "v1.5.0"
 
 [[projects]]
   branch = "master"
+  digest = "1:40d0056c1b1f503c366ba441df92a82b5a2654d6f3747b1689a611eb5c9ce0a2"
   name = "github.com/gdamore/encoding"
   packages = ["."]
+  pruneopts = "UT"
   revision = "b23993cbb6353f0e6aa98d0ee318a34728f628b9"
 
 [[projects]]
+  digest = "1:f4bd9b6cfcbaafa94259861747781022d8f06ff3c88aafe49a815ac02609bc96"
   name = "github.com/kyokomi/emoji"
   packages = ["."]
+  pruneopts = "UT"
   revision = "2e9a9507333f3ee28f3fab88c2c3aba34455d734"
   version = "v1.5.1"
 
 [[projects]]
+  digest = "1:c65a16ac77d0b1aefc7009cabb6ac5ad05def02025f5be85f450c03f52cc6f86"
   name = "github.com/lucasb-eyer/go-colorful"
   packages = ["."]
+  pruneopts = "UT"
   revision = "345fbb3dbcdb252d9985ee899a84963c0fa24c82"
   version = "v1.0"
 
 [[projects]]
+  digest = "1:cdb899c199f907ac9fb50495ec71212c95cb5b0e0a8ee0800da0238036091033"
   name = "github.com/mattn/go-runewidth"
   packages = ["."]
+  pruneopts = "UT"
   revision = "ce7b0b5c7b45a81508558cd1dba6bb1e4ddb51bb"
   version = "v0.0.3"
 
 [[projects]]
   branch = "master"
+  digest = "1:0e1e5f960c58fdc677212fcc70e55042a0084d367623e51afbdb568963832f5d"
   name = "github.com/nu7hatch/gouuid"
   packages = ["."]
+  pruneopts = "UT"
   revision = "179d4d0c4d8d407a32af483c2354df1d2c91e6c3"
 
 [[projects]]
+  digest = "1:0028cb19b2e4c3112225cd871870f2d9cf49b9b4276531f03438a88e94be86fe"
   name = "github.com/pmezard/go-difflib"
   packages = ["difflib"]
+  pruneopts = "UT"
   revision = "792786c7400a136282c1664665ae0a8db921c6c2"
   version = "v1.0.0"
 
 [[projects]]
+  branch = "master"
+  digest = "1:3fd3d634f6815f19ac4b2c5e16d28ec9aa4584d0bba25d1ee6c424d813cca22a"
   name = "github.com/renstrom/fuzzysearch"
   packages = ["fuzzy"]
+  pruneopts = "UT"
   revision = "b18e754edff4833912ef4dce9eaca885bd3f0de1"
-  version = "v1.0.1"
 
 [[projects]]
   branch = "master"
+  digest = "1:def689e73e9252f6f7fe66834a76751a41b767e03daab299e607e7226c58a855"
   name = "github.com/shurcooL/sanitized_anchor_name"
   packages = ["."]
+  pruneopts = "UT"
   revision = "86672fcb3f950f35f2e675df2240550f2a50762f"
 
 [[projects]]
+  digest = "1:18752d0b95816a1b777505a97f71c7467a8445b8ffb55631a7bf779f6ba4fa83"
   name = "github.com/stretchr/testify"
   packages = ["assert"]
+  pruneopts = "UT"
   revision = "f35b8ab0b5a2cef36673838d662e249dd9c94686"
   version = "v1.2.2"
 
 [[projects]]
   branch = "master"
+  digest = "1:22738a5261588086d75acb3c792f7c931d30fd32e351117e9e046331135f5297"
   name = "github.com/zyedidia/clipboard"
   packages = ["."]
+  pruneopts = "UT"
   revision = "bd31d747117d04b4e25b61f73e1ea4faeea3c56a"
 
 [[projects]]
   branch = "master"
+  digest = "1:441333ba1f7f3074035297647244e3d1ce3665e4e7c5054b3a8b138463f8ff58"
   name = "golang.org/x/image"
   packages = [
     "bmp",
@@ -83,79 +108,108 @@
     "tiff/lzw",
     "vp8",
     "vp8l",
-    "webp"
+    "webp",
   ]
-  revision = "c73c2afc3b812cdd6385de5a50616511c4a3d458"
+  pruneopts = "UT"
+  revision = "249dc8530c0efc2766606a940c1c50b434b2f1cd"
 
 [[projects]]
   branch = "master"
+  digest = "1:1a1ecfa7b54ca3f7a0115ab5c578d7d6a5d8b605839c549e80260468c42f8be7"
   name = "golang.org/x/net"
   packages = [
     "html",
-    "html/atom"
+    "html/atom",
   ]
-  revision = "8a410e7b638dca158bf9e766925842f6651ff828"
+  pruneopts = "UT"
+  revision = "88d92db4c548972d942ac2a3531a8a9a34c82ca6"
 
 [[projects]]
+  digest = "1:37672ad5821719e2df8509c2edd4ba5ae192463237c73c3a2d24ef8b2bc9e36f"
   name = "golang.org/x/text"
   packages = [
     "encoding",
     "encoding/internal/identifier",
     "internal/gen",
     "transform",
-    "unicode/cldr"
+    "unicode/cldr",
   ]
+  pruneopts = "UT"
   revision = "f21a4dfb5e38f5895301dc265a8def02365cc3d0"
   version = "v0.3.0"
 
 [[projects]]
+  digest = "1:2ee0f15eb0fb04f918db7c2dcf39745f40d69f798ef171610a730e8a56aaa4fd"
   name = "gopkg.in/russross/blackfriday.v2"
   packages = ["."]
-  revision = "cadec560ec52d93835bf2f15bd794700d3a2473b"
-  version = "v2.0.0"
+  pruneopts = "UT"
+  revision = "d3b5b032dc8e8927d31a5071b56e14c89f045135"
+  version = "v2.0.1"
 
 [[projects]]
   branch = "v1"
+  digest = "1:b71ccd8615521db4ea2f9381f55780a1312654f5d8431d2e58eca51c74110de2"
   name = "gopkg.in/toast.v1"
   packages = ["."]
+  pruneopts = "UT"
   revision = "0a84660828b24d25b35525c9a1f1f51267f8da91"
 
 [[projects]]
+  digest = "1:342378ac4dcb378a5448dd723f0784ae519383532f5e70ade24132c4c8693202"
   name = "gopkg.in/yaml.v2"
   packages = ["."]
+  pruneopts = "UT"
   revision = "5420a8b6744d3b0345ab293f6fcba19c978f1183"
   version = "v2.2.1"
 
 [[projects]]
   branch = "master"
-  name = "maunium.net/go/gomatrix"
+  digest = "1:d23e0bbfa4e45fe847e61fdfd442b24adf9bd3d0b050a846f9ef0f3af4f43c86"
+  name = "maunium.net/go/mautrix"
   packages = ["."]
-  revision = "d651abc3ecb4bbd85a6b17b710632e73ddbbc6aa"
-
-[[projects]]
-  name = "maunium.net/go/maulogger"
-  packages = ["."]
-  revision = "64f0aa33b6c51313e15575257db71dec44fe7988"
-  version = "v1.0"
+  pruneopts = "UT"
+  revision = "e8080dcf484d1db9021d2019fee132ffc9e37e3c"
 
 [[projects]]
   branch = "master"
+  digest = "1:28d6d6123ce29c9b0b5d393af0085f1454a9d93d70b4c9893efe6cff025702b9"
   name = "maunium.net/go/tcell"
   packages = [
     ".",
-    "terminfo"
+    "terminfo",
   ]
-  revision = "f32e44a866ab0475655e11ede91337d7b562956d"
+  pruneopts = "UT"
+  revision = "a62189e4543d731b94ae0d3b659d1853975ea657"
 
 [[projects]]
   branch = "master"
+  digest = "1:b4c2e264221b6afa98aec4e0a097f3775cb014eebac8a6f49d33c53b237b77af"
   name = "maunium.net/go/tview"
   packages = ["."]
-  revision = "8b261597bbdb95dcaef03854aaa0cc192f56b1ff"
+  pruneopts = "UT"
+  revision = "dae31f32cda75339f5ec2a64411ef3ec1862ef5e"
 
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "6c0a263ebffa1c073f4b67a895832017afeab906b0d88b31da38ae22bc75e1aa"
+  input-imports = [
+    "github.com/disintegration/imaging",
+    "github.com/kyokomi/emoji",
+    "github.com/lucasb-eyer/go-colorful",
+    "github.com/mattn/go-runewidth",
+    "github.com/renstrom/fuzzysearch/fuzzy",
+    "github.com/stretchr/testify/assert",
+    "github.com/zyedidia/clipboard",
+    "golang.org/x/image/bmp",
+    "golang.org/x/image/tiff",
+    "golang.org/x/image/webp",
+    "golang.org/x/net/html",
+    "gopkg.in/russross/blackfriday.v2",
+    "gopkg.in/toast.v1",
+    "gopkg.in/yaml.v2",
+    "maunium.net/go/mautrix",
+    "maunium.net/go/tcell",
+    "maunium.net/go/tview",
+  ]
   solver-name = "gps-cdcl"
   solver-version = 1
