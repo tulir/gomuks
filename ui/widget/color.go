@@ -60,8 +60,8 @@ func GetHashColorName(s string) string {
 		return "yellow"
 	default:
 		h := fnv.New32a()
-		h.Write([]byte(s))
-		return colorNames[int(h.Sum32())%len(colorNames)]
+		_, _ = h.Write([]byte(s))
+		return colorNames[h.Sum32()%uint32(len(colorNames))]
 	}
 }
 
