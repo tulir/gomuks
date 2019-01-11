@@ -14,6 +14,6 @@ require (
 	gopkg.in/check.v1 v1.0.0-20180628173108-788fd7840127 // indirect
 	gopkg.in/yaml.v2 v2.2.2
 	maunium.net/go/mautrix v0.1.0-alpha.2
-	maunium.net/go/tcell v0.0.0-20190111212645-703b3f6ecec9
-	maunium.net/go/tview v0.0.0-20190111212720-d6aa1eac1b9a
+	maunium.net/go/tcell v0.0.0-20190111223412-5e74142cb009
+	maunium.net/go/tview v0.0.0-20190111223510-de38190b095b
 )

@@ -27,9 +27,11 @@ cp target/$PROJECT_NAME-linux-amd64 deb/usr/bin/gomuks
 git clone https://github.com/tulir/tcell.git .tmp/tcell
 mkdir -p deb/usr/share/tcell/
 rm -rf deb/usr/share/tcell/database
-cp -r .tmp.tcell/terminfo/database deb/usr/share/tcell
+cp -r .tmp/tcell/terminfo/database deb/usr/share/tcell
 
 sed -i.bak -E 's/(Version: [0-9]+\.[0-9]+\.[0-9]+\-[0-9]+)/\1+'$SHORTHEAD'/' deb/DEBIAN/control
+chmod -R -s deb/DEBIAN
+chmod -R 0755 deb/DEBIAN
 dpkg-deb --build deb 'target/'$PROJECT_NAME'_linux_amd64.deb'
 mv -f deb/DEBIAN/control.bak deb/DEBIAN/control
 
