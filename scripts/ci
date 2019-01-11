@@ -1,10 +1,12 @@
 #!/bin/bash
-source /etc/environment
-mkdir -p .tmp.gopath
-mkdir -p target/
-export GOPATH=$(pwd)/.tmp.gopath
+mkdir -p ../.gopath
+mkdir -p target
+mkdir -p .tmp
+export GOPATH=$(dirname $(pwd))/.gopath
 export SHORTHEAD=${HEAD:0:7}
 export VERSION=$(awk '/^Version:/ { print $2 }' deb/DEBIAN/control | sed -E 's/\-[0-9]+$//')
+
+export CGO_ENABLED=0
 
 echo "Compiling for linux/amd64"
 go build -o "target/$PROJECT_NAME-linux-amd64"
@@ -22,7 +24,7 @@ mkdir -p deb/usr/bin/
 
 cp target/$PROJECT_NAME-linux-amd64 deb/usr/bin/gomuks
 
-git clone https://github.com/tulir/tcell.git .tmp.tcell
+git clone https://github.com/tulir/tcell.git .tmp/tcell
 mkdir -p deb/usr/share/tcell/
 rm -rf deb/usr/share/tcell/database
 cp -r .tmp.tcell/terminfo/database deb/usr/share/tcell
