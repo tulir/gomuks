@@ -456,7 +456,7 @@ func (list *RoomList) Draw(screen tcell.Screen) {
 	for _, tag := range list.tags {
 		trl := list.items[tag]
 		tagDisplayName := list.GetTagDisplayName(tag)
-		if len(tagDisplayName) == 0 {
+		if trl == nil || len(tagDisplayName) == 0 {
 			continue
 		}
 

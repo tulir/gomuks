@@ -39,6 +39,8 @@ func ParseEvent(matrix ifc.MatrixContainer, room *rooms.Room, evt *mautrix.Event
 		fallthrough
 	case mautrix.EventMessage:
 		return ParseMessage(matrix, room, evt)
+	case mautrix.StateTopic, mautrix.StateRoomName, mautrix.StateAliases, mautrix.StateCanonicalAlias:
+		return ParseStateEvent(matrix, room, evt)
 	case mautrix.StateMember:
 		return ParseMembershipEvent(room, evt)
 	}
@@ -51,6 +53,45 @@ func unixToTime(unix int64) time.Time {
 		timestamp = time.Unix(unix/1000, unix%1000*1000)
 	}
 	return timestamp
+}
+
+func ParseStateEvent(matrix ifc.MatrixContainer, room *rooms.Room, evt *mautrix.Event) messages.UIMessage {
+	displayname := evt.Sender
+	member := room.GetMember(evt.Sender)
+	if member != nil {
+		displayname = member.Displayname
+	}
+	text := tstring.NewColorTString(displayname, widget.GetHashColor(evt.Sender))
+	switch evt.Type {
+	case mautrix.StateTopic:
+		if len(evt.Content.Topic) == 0 {
+			text = text.AppendColor(" removed the topic.", tcell.ColorGreen)
+		} else {
+			text = text.AppendColor(" changed the topic to ", tcell.ColorGreen).
+				AppendStyle(evt.Content.Topic, tcell.StyleDefault.Underline(true)).
+				AppendColor(".", tcell.ColorGreen)
+		}
+	case mautrix.StateRoomName:
+		if len(evt.Content.Name) == 0 {
+			text = text.AppendColor(" removed the room name.", tcell.ColorGreen)
+		} else {
+			text = text.AppendColor(" changed the room name to ", tcell.ColorGreen).
+				AppendStyle(evt.Content.Name, tcell.StyleDefault.Underline(true)).
+				AppendColor(".", tcell.ColorGreen)
+		}
+	case mautrix.StateCanonicalAlias:
+		if len(evt.Content.Alias) == 0 {
+			text = text.AppendColor(" removed the main address of the room.", tcell.ColorGreen)
+		} else {
+			text = text.AppendColor(" changed the main address of the room to ", tcell.ColorGreen).
+				AppendStyle(evt.Content.Alias, tcell.StyleDefault.Underline(true)).
+				AppendColor(".", tcell.ColorGreen)
+		}
+	case mautrix.StateAliases:
+		text = ParseAliasEvent(evt, displayname)
+	}
+	ts := unixToTime(evt.Timestamp)
+	return messages.NewExpandedTextMessage(evt.ID, evt.Sender, displayname, mautrix.MessageType(evt.Type.Type), text, ts)
 }
 
 func ParseMessage(matrix ifc.MatrixContainer, room *rooms.Room, evt *mautrix.Event) messages.UIMessage {
@@ -153,10 +194,12 @@ func getMembershipEventContent(room *rooms.Room, evt *mautrix.Event) (sender str
 		sender, text = getMembershipChangeMessage(evt, membership, prevMembership, senderDisplayname, displayname, prevDisplayname)
 	} else if displayname != prevDisplayname {
 		sender = "---"
-		text = tstring.NewColorTString(fmt.Sprintf("%s changed their display name to %s.", prevDisplayname, displayname), tcell.ColorGreen)
 		color := widget.GetHashColor(*evt.StateKey)
-		text.Colorize(0, len(prevDisplayname), color)
-		text.Colorize(len(prevDisplayname)+len(" changed their display name to "), len(displayname), color)
+		text = tstring.NewBlankTString().
+			AppendColor(prevDisplayname, color).
+			AppendColor(" changed their display name to ", tcell.ColorGreen).
+			AppendColor(displayname, color).
+			AppendColor(".", tcell.ColorGreen)
 	}
 	return
 }
@@ -169,4 +212,67 @@ func ParseMembershipEvent(room *rooms.Room, evt *mautrix.Event) messages.UIMessa
 
 	ts := unixToTime(evt.Timestamp)
 	return messages.NewExpandedTextMessage(evt.ID, evt.Sender, displayname, "m.room.member", text, ts)
+}
+
+func ParseAliasEvent(evt *mautrix.Event, displayname string) tstring.TString {
+	var prevAliases []string
+	if evt.Unsigned.PrevContent != nil {
+		prevAliases = evt.Unsigned.PrevContent.Aliases
+	}
+	aliases := evt.Content.Aliases
+	var added, removed []tstring.TString
+Outer1:
+	for _, oldAlias := range prevAliases {
+		for _, newAlias := range aliases {
+			if oldAlias == newAlias {
+				continue Outer1
+			}
+		}
+		removed = append(removed, tstring.NewStyleTString(oldAlias, tcell.StyleDefault.Foreground(widget.GetHashColor(oldAlias)).Underline(true)))
+	}
+Outer2:
+	for _, newAlias := range aliases {
+		for _, oldAlias := range prevAliases {
+			if oldAlias == newAlias {
+				continue Outer2
+			}
+		}
+		added = append(added, tstring.NewStyleTString(newAlias, tcell.StyleDefault.Foreground(widget.GetHashColor(newAlias)).Underline(true)))
+	}
+	var addedStr, removedStr tstring.TString
+	if len(added) == 1 {
+		addedStr = added[0]
+	} else if len(added) > 1 {
+		addedStr = tstring.
+			Join(added[:len(added)-1], ", ").
+			Append(" and ").
+			AppendTString(added[len(added)-1])
+	}
+	if len(removed) == 1 {
+		removedStr = removed[0]
+	} else if len(removed) > 1 {
+		removedStr = tstring.
+			Join(removed[:len(removed)-1], ", ").
+			Append(" and ").
+			AppendTString(removed[len(removed)-1])
+	}
+	text := tstring.NewBlankTString()
+	if len(addedStr) > 0 && len(removedStr) > 0 {
+		text = text.AppendColor(fmt.Sprintf("%s added ", displayname), tcell.ColorGreen).
+			AppendTString(addedStr).
+			AppendColor(" and removed ", tcell.ColorGreen).
+			AppendTString(removedStr).
+			AppendColor(" as addresses for this room.", tcell.ColorGreen)
+	} else if len(addedStr) > 0 {
+		text = text.AppendColor(fmt.Sprintf("%s added ", displayname), tcell.ColorGreen).
+			AppendTString(addedStr).
+			AppendColor(" as addresses for this room.", tcell.ColorGreen)
+	} else if len(removedStr) > 0 {
+		text = text.AppendColor(fmt.Sprintf("%s removed ", displayname), tcell.ColorGreen).
+			AppendTString(removedStr).
+			AppendColor(" as addresses for this room.", tcell.ColorGreen)
+	} else {
+		return nil
+	}
+	return text
 }

@@ -20,6 +20,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"maunium.net/go/mautrix"
+	"maunium.net/go/mautrix/format"
 	"strings"
 	"unicode"
 
@@ -79,7 +80,7 @@ func cmdRainbow(cmd *Command) {
 		color := rainbow.GetInterpolatedColorFor(float64(i) / float64(len(text))).Hex()
 		fmt.Fprintf(&html, "<font color=\"%s\">%c</font>", color, char)
 	}
-	tempMessage := cmd.Room.NewTempMessage("m.text", html.String())
+	tempMessage := cmd.Room.NewTempMessage("m.text", format.HTMLToText(html.String()))
 	go cmd.MainView.sendTempMessage(cmd.Room, tempMessage, html.String())
 	cmd.UI.Render()
 }

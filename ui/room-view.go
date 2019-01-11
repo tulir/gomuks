@@ -357,10 +357,6 @@ func (view *RoomView) newUIMessage(id, sender string, msgtype mautrix.MessageTyp
 	return msg
 }
 
-func (view *RoomView) NewMessage(id, sender string, msgtype mautrix.MessageType, text string, timestamp time.Time) ifc.Message {
-	return view.newUIMessage(id, sender, msgtype, text, timestamp)
-}
-
 func (view *RoomView) NewTempMessage(msgtype mautrix.MessageType, text string) ifc.Message {
 	now := time.Now()
 	id := strconv.FormatInt(now.UnixNano(), 10)
@@ -375,7 +371,7 @@ func (view *RoomView) NewTempMessage(msgtype mautrix.MessageType, text string) i
 }
 
 func (view *RoomView) AddServiceMessage(text string) {
-	message := view.newUIMessage("", "*", "gomuks.service", text, time.Now())
+	message := view.newUIMessage(view.parent.matrix.Client().TxnID(), "*", "gomuks.service", text, time.Now())
 	message.SetIsService(true)
 	view.AddMessage(message, ifc.AppendMessage)
 }

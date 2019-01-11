@@ -73,7 +73,6 @@ type RoomView interface {
 	SetTyping(users []string)
 	UpdateUserList()
 
-	NewMessage(id, sender string, msgtype mautrix.MessageType, text string, timestamp time.Time) Message
 	NewTempMessage(msgtype mautrix.MessageType, text string) Message
 	AddMessage(message Message, direction MessageDirection)
 	AddServiceMessage(message string)

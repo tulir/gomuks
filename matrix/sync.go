@@ -23,8 +23,8 @@ import (
 	"maunium.net/go/gomuks/debug"
 	"time"
 
-	"maunium.net/go/mautrix"
 	"maunium.net/go/gomuks/matrix/rooms"
+	"maunium.net/go/mautrix"
 )
 
 type SyncerSession interface {
@@ -167,7 +167,14 @@ func (s *GomuksSyncer) GetFilterJSON(userID string) json.RawMessage {
 				},
 			},
 			Timeline: mautrix.FilterPart{
-				Types: []string{"m.room.message", "m.room.member"},
+				Types: []string{
+					"m.room.message",
+					"m.room.member",
+					"m.room.name",
+					"m.room.topic",
+					"m.room.canonical_alias",
+					"m.room.aliases",
+				},
 				Limit: 50,
 			},
 			Ephemeral: mautrix.FilterPart{
