@@ -1,16 +1,19 @@
 #!/bin/bash
 source /etc/environment
-mkdir -p .tmp/src/maunium.net/go
-ln -s ../../../../ .tmp/src/maunium.net/go/gomuks
+mkdir -p .tmp.gopath
 mkdir -p target/
-export GOPATH=$(pwd)/.tmp
+export GOPATH=$(pwd)/.tmp.gopath
 export SHORTHEAD=${HEAD:0:7}
 export VERSION=$(awk '/^Version:/ { print $2 }' deb/DEBIAN/control | sed -E 's/\-[0-9]+$//')
 
 echo "Compiling for linux/amd64"
 go build -o "target/$PROJECT_NAME-linux-amd64"
+echo "Compiling for linux/386"
+GOARCH=386 go build -o "target/$PROJECT_NAME-linux-386"
 echo "Compiling for linux/arm"
 GOARCH=arm go build -o "target/$PROJECT_NAME-linux-arm"
+echo "Compiling for linux/arm64"
+GOARCH=arm64 go build -o "target/$PROJECT_NAME-linux-arm64"
 echo "Compiling for darwin/amd64"
 GOOS=darwin go build -o "target/$PROJECT_NAME-darwin-amd64"
 
@@ -19,10 +22,10 @@ mkdir -p deb/usr/bin/
 
 cp target/$PROJECT_NAME-linux-amd64 deb/usr/bin/gomuks
 
-go get -u maunium.net/go/tcell
+git clone https://github.com/tulir/tcell.git .tmp.tcell
 mkdir -p deb/usr/share/tcell/
 rm -rf deb/usr/share/tcell/database
-cp -r $GOPATH/src/maunium.net/go/tcell/terminfo/database deb/usr/share/tcell
+cp -r .tmp.tcell/terminfo/database deb/usr/share/tcell
 
 sed -i.bak -E 's/(Version: [0-9]+\.[0-9]+\.[0-9]+\-[0-9]+)/\1+'$SHORTHEAD'/' deb/DEBIAN/control
 dpkg-deb --build deb 'target/'$PROJECT_NAME'_linux_amd64.deb'
