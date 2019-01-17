@@ -1,27 +1,28 @@
 // gomuks - A terminal Matrix client written in Go.
-// Copyright (C) 2018 Tulir Asokan
+// Copyright (C) 2019 Tulir Asokan
 //
 // This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
+// it under the terms of the GNU Affero General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+// GNU Affero General Public License for more details.
 //
-// You should have received a copy of the GNU General Public License
-// along with this program.  If not, see <http://www.gnu.org/licenses/>.
+// You should have received a copy of the GNU Affero General Public License
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 package matrix
 
 import (
 	"bytes"
+	"crypto/tls"
+	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
-	"maunium.net/go/mautrix/format"
 	"net/http"
 	"net/url"
 	"os"
@@ -31,17 +32,17 @@ import (
 	"strings"
 	"time"
 
-	"crypto/tls"
-	"encoding/json"
-
 	"github.com/russross/blackfriday/v2"
+
+	"maunium.net/go/mautrix"
+	"maunium.net/go/mautrix/format"
+
 	"maunium.net/go/gomuks/config"
 	"maunium.net/go/gomuks/debug"
 	"maunium.net/go/gomuks/interface"
 	"maunium.net/go/gomuks/lib/bfhtml"
 	"maunium.net/go/gomuks/matrix/pushrules"
 	"maunium.net/go/gomuks/matrix/rooms"
-	"maunium.net/go/mautrix"
 )
 
 // Container is a wrapper for a mautrix Client and some other stuff.

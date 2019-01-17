@@ -17,3 +17,9 @@ require (
 	maunium.net/go/tcell v0.0.0-20190111223412-5e74142cb009
 	maunium.net/go/tview v0.0.0-20190111223510-de38190b095b
 )
+
+replace maunium.net/go/tcell => ../../Go/tcell
+
+replace maunium.net/go/tview => ../../Go/tview
+
+replace maunium.net/go/mautrix => ../mautrix-go
