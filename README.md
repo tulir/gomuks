@@ -21,13 +21,13 @@ precompiled executables. For now, you can either download
 a CI build from [dl.maunium.net/programs/gomuks](https://dl.maunium.net/programs/gomuks)
 or compile from source:
 
-0. Install [Go](https://golang.org/) 1.10 or higher
-1. Run `go get -u maunium.net/go/gomuks`
-2. gomuks should now be in `$GOPATH/bin/gomuks`
+0. Install [Go](https://golang.org/) 1.11 or higher
+1. Clone the repo: `git clone https://github.com/tulir/gomuks.git && cd gomuks`
+2. Build: `go build`
+
+Simply pull changes (`git pull`) and run `go build` again to update.
 
 ## Developing
-Running `go install` in `$GOPATH/src/maunium.net/go/gomuks` will recompile the project and dependencies into `$GOPATH/bin/gomuks`.
-
 For debugging, use `tail -f /tmp/gomuks-debug.log` and write to it using the methods in the `maunium.net/go/gomuks/debug` package:
 ```go
 import (
