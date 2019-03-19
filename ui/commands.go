@@ -146,7 +146,7 @@ func cmdSendEvent(cmd *Command) {
 	}
 	roomID := cmd.Args[0]
 	eventType := mautrix.NewEventType(cmd.Args[1])
-	rawContent := strings.Join(cmd.Args[2:], "")
+	rawContent := strings.Join(cmd.Args[2:], " ")
 	debug.Print(roomID, eventType, rawContent)
 
 	var content interface{}
@@ -188,7 +188,7 @@ func cmdSetState(cmd *Command) {
 	if stateKey == "-" {
 		stateKey = ""
 	}
-	rawContent := strings.Join(cmd.Args[3:], "")
+	rawContent := strings.Join(cmd.Args[3:], " ")
 
 	var content interface{}
 	err := json.Unmarshal([]byte(rawContent), &content)
