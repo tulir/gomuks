@@ -167,6 +167,15 @@ func cmdSendEvent(cmd *Command) {
 	}
 }
 
+func cmdMSetState(cmd *Command) {
+	if len(cmd.Args) < 2 {
+		cmd.Reply("Usage: /msetstate <event type> <state key> <content>")
+		return
+	}
+	cmd.Args = append([]string{cmd.Room.MxRoom().ID},cmd.Args...)
+	cmdSetState(cmd)
+}
+
 func cmdSetState(cmd *Command) {
 	if len(cmd.Args) < 4 {
 		cmd.Reply("Usage: /setstate <room id> <event type> <state key/`-`> <content>")

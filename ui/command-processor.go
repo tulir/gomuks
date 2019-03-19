@@ -80,6 +80,7 @@ func NewCommandProcessor(parent *MainView) *CommandProcessor {
 			"send":  {"sendevent"},
 			"msend": {"msendevent"},
 			"state": {"setstate"},
+			"mstate":{"msetstate"},
 			"rb":    {"rainbow"},
 		},
 		commands: map[string]CommandHandler{
@@ -95,6 +96,7 @@ func NewCommandProcessor(parent *MainView) *CommandProcessor {
 			"sendevent":       cmdSendEvent,
 			"msendevent":      cmdMSendEvent,
 			"setstate":        cmdSetState,
+			"msetstate":       cmdMSetState,
 			"rainbow":         cmdRainbow,
 		},
 	}
