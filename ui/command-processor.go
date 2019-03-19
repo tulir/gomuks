@@ -91,6 +91,9 @@ func NewCommandProcessor(parent *MainView) *CommandProcessor {
 			"clearcache":      cmdClearCache,
 			"leave":           cmdLeave,
 			"join":            cmdJoin,
+			"kick":            cmdKick,
+			"ban":             cmdBan,
+			"unban":           cmdUnban,
 			"toggle":          cmdToggle,
 			"logout":          cmdLogout,
 			"sendevent":       cmdSendEvent,
@@ -98,6 +101,7 @@ func NewCommandProcessor(parent *MainView) *CommandProcessor {
 			"setstate":        cmdSetState,
 			"msetstate":       cmdMSetState,
 			"rainbow":         cmdRainbow,
+			"invite":          cmdInvite,
 		},
 	}
 }
