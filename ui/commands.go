@@ -129,6 +129,15 @@ func cmdJoin(cmd *Command) {
 	}
 }
 
+func cmdMSendEvent(cmd *Command) {
+	if len(cmd.Args) < 2 {
+		cmd.Reply("Usage: /msend <event type> <content>")
+		return
+	}
+	cmd.Args = append([]string{cmd.Room.MxRoom().ID},cmd.Args...)
+	cmdSendEvent(cmd)
+}
+
 func cmdSendEvent(cmd *Command) {
 	debug.Print(cmd.Command, cmd.Args, len(cmd.Args))
 	if len(cmd.Args) < 3 {

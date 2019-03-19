@@ -78,6 +78,7 @@ func NewCommandProcessor(parent *MainView) *CommandProcessor {
 		aliases: map[string]*Alias{
 			"part":  {"leave"},
 			"send":  {"sendevent"},
+			"msend": {"msendevent"},
 			"state": {"setstate"},
 			"rb":    {"rainbow"},
 		},
@@ -92,6 +93,7 @@ func NewCommandProcessor(parent *MainView) *CommandProcessor {
 			"toggle":          cmdToggle,
 			"logout":          cmdLogout,
 			"sendevent":       cmdSendEvent,
+			"msendevent":      cmdMSendEvent,
 			"setstate":        cmdSetState,
 			"rainbow":         cmdRainbow,
 		},
