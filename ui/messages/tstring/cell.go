@@ -18,6 +18,7 @@ package tstring
 
 import (
 	"github.com/mattn/go-runewidth"
+	"maunium.net/go/mauview"
 
 	"maunium.net/go/tcell"
 )
@@ -43,7 +44,7 @@ func (cell Cell) RuneWidth() int {
 	return runewidth.RuneWidth(cell.Char)
 }
 
-func (cell Cell) Draw(screen tcell.Screen, x, y int) (chWidth int) {
+func (cell Cell) Draw(screen mauview.Screen, x, y int) (chWidth int) {
 	chWidth = cell.RuneWidth()
 	for runeWidthOffset := 0; runeWidthOffset < chWidth; runeWidthOffset++ {
 		screen.SetContent(x+runeWidthOffset, y, cell.Char, nil, cell.Style)

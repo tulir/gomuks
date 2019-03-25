@@ -26,9 +26,10 @@ import (
 
 	"github.com/mattn/go-runewidth"
 
+	"maunium.net/go/mauview"
+
 	"maunium.net/go/mautrix"
 	"maunium.net/go/tcell"
-	"maunium.net/go/tview"
 
 	"maunium.net/go/gomuks/config"
 	"maunium.net/go/gomuks/interface"
@@ -39,15 +40,22 @@ import (
 )
 
 type RoomView struct {
-	*tview.Box
-
-	topic    *tview.TextView
+	topic    *mauview.TextView
 	content  *MessageView
-	status   *tview.TextView
-	userList *tview.TextView
+	status   *mauview.TextField
+	userList *mauview.TextView
 	ulBorder *widget.Border
-	input    *widget.AdvancedInputField
+	input    *mauview.InputArea
 	Room     *rooms.Room
+
+	topicScreen    *mauview.ProxyScreen
+	contentScreen  *mauview.ProxyScreen
+	statusScreen   *mauview.ProxyScreen
+	inputScreen    *mauview.ProxyScreen
+	ulBorderScreen *mauview.ProxyScreen
+	ulScreen       *mauview.ProxyScreen
+
+	prevScreen mauview.Screen
 
 	parent *MainView
 	config *config.Config
@@ -63,27 +71,34 @@ type RoomView struct {
 
 func NewRoomView(parent *MainView, room *rooms.Room) *RoomView {
 	view := &RoomView{
-		Box:      tview.NewBox(),
-		topic:    tview.NewTextView(),
-		status:   tview.NewTextView(),
-		userList: tview.NewTextView(),
+		topic:    mauview.NewTextView(),
+		status:   mauview.NewTextField(),
+		userList: mauview.NewTextView(),
 		ulBorder: widget.NewBorder(),
-		input:    widget.NewAdvancedInputField(),
+		input:    mauview.NewInputArea(),
 		Room:     room,
+
+		topicScreen: &mauview.ProxyScreen{OffsetX: 0, OffsetY: 0, Height: TopicBarHeight},
+		contentScreen: &mauview.ProxyScreen{OffsetX: 0, OffsetY: StatusBarHeight},
+		statusScreen: &mauview.ProxyScreen{OffsetX: 0, Height: StatusBarHeight},
+		inputScreen: &mauview.ProxyScreen{OffsetX: 0},
+		ulBorderScreen: &mauview.ProxyScreen{OffsetY: StatusBarHeight, Width: UserListBorderWidth},
+		ulScreen: &mauview.ProxyScreen{OffsetY: StatusBarHeight, Width: UserListWidth},
+
 		parent:   parent,
 		config:   parent.config,
 	}
 	view.content = NewMessageView(view)
 
 	view.input.
-		SetFieldBackgroundColor(tcell.ColorDefault).
+		SetBackgroundColor(tcell.ColorDefault).
 		SetPlaceholder("Send a message...").
-		SetPlaceholderExtColor(tcell.ColorGray).
+		SetPlaceholderTextColor(tcell.ColorGray).
 		SetTabCompleteFunc(view.InputTabComplete)
 
 	view.topic.
 		SetText(strings.Replace(room.GetTopic(), "\n", " ", -1)).
-		SetBackgroundColor(tcell.ColorDarkGreen)
+		SetTextColor(tcell.ColorDarkGreen)
 
 	view.status.SetBackgroundColor(tcell.ColorDimGray)
 
@@ -106,26 +121,13 @@ func (view *RoomView) LoadHistory(matrix ifc.MatrixContainer, dir string) (int, 
 	return view.MessageView().LoadHistory(matrix, view.logPath(dir))
 }
 
-func (view *RoomView) SetInputCapture(fn func(room *RoomView, event *tcell.EventKey) *tcell.EventKey) *RoomView {
-	view.input.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
-		return fn(view, event)
-	})
-	return view
-}
-
-func (view *RoomView) SetMouseCapture(fn func(room *RoomView, event *tcell.EventMouse) *tcell.EventMouse) *RoomView {
-	view.input.SetMouseCapture(func(event *tcell.EventMouse) *tcell.EventMouse {
-		return fn(view, event)
-	})
-	return view
-}
-
 func (view *RoomView) SetInputSubmitFunc(fn func(room *RoomView, text string)) *RoomView {
-	view.input.SetDoneFunc(func(key tcell.Key) {
+	// FIXME
+	/*view.input.SetDoneFunc(func(key tcell.Key) {
 		if key == tcell.KeyEnter {
 			fn(view, view.input.GetText())
 		}
-	})
+	})*/
 	return view
 }
 
@@ -137,7 +139,7 @@ func (view *RoomView) SetInputChangedFunc(fn func(room *RoomView, text string)) 
 }
 
 func (view *RoomView) SetInputText(newText string) *RoomView {
-	view.input.SetText(newText)
+	view.input.SetTextAndMoveCursor(newText)
 	return view
 }
 
@@ -145,12 +147,12 @@ func (view *RoomView) GetInputText() string {
 	return view.input.GetText()
 }
 
-func (view *RoomView) GetInputField() *widget.AdvancedInputField {
-	return view.input
+func (view *RoomView) Focus() {
+	view.input.Focus()
 }
 
-func (view *RoomView) Focus(delegate func(p tview.Primitive)) {
-	delegate(view.input)
+func (view *RoomView) Blur() {
+	view.input.Blur()
 }
 
 func (view *RoomView) GetStatus() string {
@@ -169,7 +171,7 @@ func (view *RoomView) GetStatus() string {
 		buf.WriteString("Typing: " + view.typing[0])
 		buf.WriteString(" - ")
 	} else if len(view.typing) > 1 {
-		fmt.Fprintf(&buf,
+		_, _ = fmt.Fprintf(&buf,
 			"Typing: %s and %s - ",
 			strings.Join(view.typing[:len(view.typing)-1], ", "), view.typing[len(view.typing)-1])
 	}
@@ -177,62 +179,89 @@ func (view *RoomView) GetStatus() string {
 	return strings.TrimSuffix(buf.String(), " - ")
 }
 
-func (view *RoomView) Draw(screen tcell.Screen) {
-	x, y, width, height := view.GetRect()
+// Constants defining the size of the room view grid.
+const (
+	UserListBorderWidth   = 1
+	UserListWidth         = 20
+	StaticHorizontalSpace = UserListBorderWidth + UserListWidth
+
+	TopicBarHeight      = 1
+	StatusBarHeight     = 1
+	InputBarHeight      = 1
+	StaticVerticalSpace = TopicBarHeight + StatusBarHeight + InputBarHeight
+
+	MaxInputHeight
+)
+
+func (view *RoomView) Draw(screen mauview.Screen) {
+	width, height := screen.Size()
 	if width <= 0 || height <= 0 {
 		return
 	}
-
-	// Constants defining the size of the room view grid.
-	const (
-		UserListBorderWidth   = 1
-		UserListWidth         = 20
-		StaticHorizontalSpace = UserListBorderWidth + UserListWidth
-
-		TopicBarHeight      = 1
-		StatusBarHeight     = 1
-		InputBarHeight      = 1
-		StaticVerticalSpace = TopicBarHeight + StatusBarHeight + InputBarHeight
-	)
 
 	// Calculate actual grid based on view rectangle and constants defined above.
 	var (
 		contentHeight = height - StaticVerticalSpace
 		contentWidth  = width - StaticHorizontalSpace
-
-		userListBorderColumn = x + contentWidth
-		userListColumn       = userListBorderColumn + UserListBorderWidth
-
-		topicRow   = y
-		contentRow = topicRow + TopicBarHeight
-		statusRow  = contentRow + contentHeight
-		inputRow   = statusRow + StatusBarHeight
 	)
 	if view.config.Preferences.HideUserList {
 		contentWidth = width
 	}
 
-	// Update the rectangles of all the children.
-	view.topic.SetRect(x, topicRow, width, TopicBarHeight)
-	view.content.SetRect(x, contentRow, contentWidth, contentHeight)
-	view.status.SetRect(x, statusRow, width, StatusBarHeight)
-	if !view.config.Preferences.HideUserList && userListColumn > x {
-		view.userList.SetRect(userListColumn, contentRow, UserListWidth, contentHeight)
-		view.ulBorder.SetRect(userListBorderColumn, contentRow, UserListBorderWidth, contentHeight)
+	if view.prevScreen != screen {
+		view.topicScreen.Parent = screen
+		view.contentScreen.Parent = screen
+		view.statusScreen.Parent = screen
+		view.inputScreen.Parent = screen
+		view.ulBorderScreen.Parent = screen
+		view.ulScreen.Parent = screen
+		view.prevScreen = screen
 	}
-	view.input.SetRect(x, inputRow, width, InputBarHeight)
+
+	view.input.PrepareDraw(width)
+	inputHeight := view.input.GetTextHeight()
+	if inputHeight > MaxInputHeight {
+		inputHeight = MaxInputHeight
+	} else if inputHeight < 1 {
+		inputHeight = 1
+	}
+	contentHeight -= inputHeight
+
+	view.topicScreen.Width = width
+	view.contentScreen.Width = contentWidth
+	view.contentScreen.Height = contentHeight
+	view.statusScreen.OffsetY = view.contentScreen.YEnd()
+	view.statusScreen.Width = width
+	view.inputScreen.Width = width
+	view.inputScreen.OffsetY = view.statusScreen.YEnd()
+	view.inputScreen.Height = inputHeight
+	view.ulBorderScreen.OffsetX = view.contentScreen.XEnd()
+	view.ulBorderScreen.Height = contentHeight
+	view.ulScreen.OffsetX = view.ulBorderScreen.XEnd()
+	view.ulScreen.Height = contentHeight
 
 	// Draw everything
-	view.Box.Draw(screen)
-	view.topic.Draw(screen)
-	view.content.Draw(screen)
+	view.topic.Draw(view.topicScreen)
+	view.content.Draw(view.contentScreen)
 	view.status.SetText(view.GetStatus())
-	view.status.Draw(screen)
-	view.input.Draw(screen)
+	view.status.Draw(view.statusScreen)
+	view.input.Draw(view.inputScreen)
 	if !view.config.Preferences.HideUserList {
-		view.ulBorder.Draw(screen)
-		view.userList.Draw(screen)
+		view.ulBorder.Draw(view.ulBorderScreen)
+		view.userList.Draw(view.ulScreen)
 	}
+}
+
+func (view *RoomView) OnKeyEvent(event mauview.KeyEvent) bool {
+	return view.input.OnKeyEvent(event)
+}
+
+func (view *RoomView) OnPasteEvent(event mauview.PasteEvent) bool {
+	return view.input.OnPasteEvent(event)
+}
+
+func (view *RoomView) OnMouseEvent(event mauview.MouseEvent) bool {
+	return view.content.OnMouseEvent(event)
 }
 
 func (view *RoomView) SetCompletions(completions []string) {

@@ -23,19 +23,18 @@ import (
 
 	"github.com/lithammer/fuzzysearch/fuzzy"
 
+	"maunium.net/go/mauview"
 	"maunium.net/go/tcell"
-	"maunium.net/go/tview"
 
 	"maunium.net/go/gomuks/debug"
 	"maunium.net/go/gomuks/matrix/rooms"
-	"maunium.net/go/gomuks/ui/widget"
 )
 
 type FuzzySearchModal struct {
-	tview.Primitive
+	mauview.Component
 
-	search  *tview.InputField
-	results *tview.TextView
+	search  *mauview.InputField
+	results *mauview.TextView
 
 	matches  fuzzy.Ranks
 	selected int
@@ -43,39 +42,39 @@ type FuzzySearchModal struct {
 	roomList   []*rooms.Room
 	roomTitles []string
 
-	parent   *GomuksUI
-	mainView *MainView
+	parent *MainView
 }
 
 func NewFuzzySearchModal(mainView *MainView, width int, height int) *FuzzySearchModal {
 	fs := &FuzzySearchModal{
-		parent:   mainView.parent,
-		mainView: mainView,
+		parent: mainView,
 	}
 
 	fs.InitList(mainView.rooms)
 
-	fs.search = tview.NewInputField().
-		SetLabel("Room: ")
-	fs.search.
-		SetChangedFunc(fs.changeHandler).
-		SetInputCapture(fs.keyHandler)
+	fs.search = mauview.NewInputField().SetChangedFunc(fs.changeHandler)
+	wrappedSearch := mauview.NewBox(fs.search).SetKeyCaptureFunc(fs.keyHandler)
+	searchLabel := mauview.NewTextField().SetText("Room")
+	combinedSearch := mauview.NewFlex().
+		SetDirection(mauview.FlexColumn).
+		AddFixedComponent(searchLabel, 5).
+		AddProportionalComponent(wrappedSearch, 1)
 
-	fs.results = tview.NewTextView().
-		SetRegions(true)
-	fs.results.SetBorderPadding(1, 0, 0, 0)
+	fs.results = mauview.NewTextView().SetRegions(true)
 
 	// Flex widget containing input box and results
-	container := tview.NewFlex().
-		SetDirection(tview.FlexRow).
-		AddItem(fs.search, 1, 0, true).
-		AddItem(fs.results, 0, 1, false)
-	container.
+	container := mauview.NewBox(mauview.NewFlex().
+		SetDirection(mauview.FlexRow).
+		AddFixedComponent(combinedSearch, 1).
+		AddProportionalComponent(fs.results, 1)).
 		SetBorder(true).
-		SetBorderPadding(1, 1, 1, 1).
-		SetTitle("Quick Room Switcher")
+		SetTitle("Quick Room Switcher").
+		SetBlurCaptureFunc(func() bool {
+			fs.parent.HideModal()
+			return true
+		})
 
-	fs.Primitive = widget.TransparentCenter(width, height, container)
+	fs.Component = mauview.Center(container, width, height)
 
 	return fs
 }
@@ -96,7 +95,7 @@ func (fs *FuzzySearchModal) changeHandler(str string) {
 		for _, match := range fs.matches {
 			fmt.Fprintf(fs.results, `["%d"]%s[""]%s`, match.OriginalIndex, match.Target, "\n")
 		}
-		fs.parent.Render()
+		fs.parent.parent.Render()
 		fs.results.Highlight(strconv.Itoa(fs.matches[0].OriginalIndex))
 		fs.results.ScrollToBeginning()
 	} else {
@@ -105,13 +104,12 @@ func (fs *FuzzySearchModal) changeHandler(str string) {
 	}
 }
 
-func (fs *FuzzySearchModal) keyHandler(event *tcell.EventKey) *tcell.EventKey {
+func (fs *FuzzySearchModal) keyHandler(event mauview.KeyEvent) mauview.KeyEvent {
 	highlights := fs.results.GetHighlights()
 	switch event.Key() {
 	case tcell.KeyEsc:
 		// Close room finder
-		fs.parent.views.RemovePage("fuzzy-search-modal")
-		fs.parent.app.SetFocus(fs.parent.views)
+		fs.parent.HideModal()
 		return nil
 	case tcell.KeyTab:
 		// Cycle highlighted area to next match
@@ -125,10 +123,9 @@ func (fs *FuzzySearchModal) keyHandler(event *tcell.EventKey) *tcell.EventKey {
 		// Switch room to currently selected room
 		if len(highlights) > 0 {
 			debug.Print("Fuzzy Selected Room:", fs.roomList[fs.matches[fs.selected].OriginalIndex].GetTitle())
-			fs.mainView.SwitchRoom(fs.roomList[fs.matches[fs.selected].OriginalIndex].Tags()[0].Tag, fs.roomList[fs.matches[fs.selected].OriginalIndex])
+			fs.parent.SwitchRoom(fs.roomList[fs.matches[fs.selected].OriginalIndex].Tags()[0].Tag, fs.roomList[fs.matches[fs.selected].OriginalIndex])
 		}
-		fs.parent.views.RemovePage("fuzzy-search-modal")
-		fs.parent.app.SetFocus(fs.parent.views)
+		fs.parent.HideModal()
 		fs.results.Clear()
 		fs.search.SetText("")
 		return nil

@@ -18,28 +18,31 @@ package widget
 
 import (
 	"fmt"
-	"github.com/mattn/go-runewidth"
-	"maunium.net/go/tcell"
-	"maunium.net/go/tview"
 	"strconv"
+
+	"github.com/mattn/go-runewidth"
+
+	"maunium.net/go/mauview"
+	"maunium.net/go/tcell"
 )
 
-func WriteLineSimple(screen tcell.Screen, line string, x, y int) {
-	WriteLine(screen, tview.AlignLeft, line, x, y, 1<<30, tcell.StyleDefault)
+func WriteLineSimple(screen mauview.Screen, line string, x, y int) {
+	WriteLine(screen, mauview.AlignLeft, line, x, y, 1<<30, tcell.StyleDefault)
 }
 
-func WriteLineSimpleColor(screen tcell.Screen, line string, x, y int, color tcell.Color) {
-	WriteLine(screen, tview.AlignLeft, line, x, y, 1<<30, tcell.StyleDefault.Foreground(color))
+func WriteLineSimpleColor(screen mauview.Screen, line string, x, y int, color tcell.Color) {
+	WriteLine(screen, mauview.AlignLeft, line, x, y, 1<<30, tcell.StyleDefault.Foreground(color))
 }
 
-func WriteLineColor(screen tcell.Screen, align int, line string, x, y, maxWidth int, color tcell.Color) {
+func WriteLineColor(screen mauview.Screen, align int, line string, x, y, maxWidth int, color tcell.Color) {
 	WriteLine(screen, align, line, x, y, maxWidth, tcell.StyleDefault.Foreground(color))
 }
 
-func WriteLine(screen tcell.Screen, align int, line string, x, y, maxWidth int, style tcell.Style) {
+func WriteLine(screen mauview.Screen, align int, line string, x, y, maxWidth int, style tcell.Style) {
 	offsetX := 0
-	if align == tview.AlignRight {
-		offsetX = maxWidth - runewidth.StringWidth(line)
+	if align == mauview.AlignRight {
+		// TODO is mauview.StringWidth correct here?
+		offsetX = maxWidth - mauview.StringWidth(line)
 	}
 	if offsetX < 0 {
 		offsetX = 0
@@ -60,12 +63,12 @@ func WriteLine(screen tcell.Screen, align int, line string, x, y, maxWidth int, 
 	}
 }
 
-func WriteLinePadded(screen tcell.Screen, align int, line string, x, y, maxWidth int, style tcell.Style) {
+func WriteLinePadded(screen mauview.Screen, align int, line string, x, y, maxWidth int, style tcell.Style) {
 	padding := strconv.Itoa(maxWidth)
-	if align == tview.AlignRight {
+	if align == mauview.AlignRight {
 		line = fmt.Sprintf("%"+padding+"s", line)
 	} else {
 		line = fmt.Sprintf("%-"+padding+"s", line)
 	}
-	WriteLine(screen, tview.AlignLeft, line, x, y, maxWidth, style)
+	WriteLine(screen, mauview.AlignLeft, line, x, y, maxWidth, style)
 }

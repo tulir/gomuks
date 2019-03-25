@@ -19,8 +19,8 @@ package ui
 import (
 	"os"
 
+	"maunium.net/go/mauview"
 	"maunium.net/go/tcell"
-	"maunium.net/go/tview"
 
 	"maunium.net/go/gomuks/interface"
 )
@@ -34,17 +34,18 @@ const (
 )
 
 type GomuksUI struct {
-	gmx   ifc.Gomuks
-	app   *tview.Application
-	views *tview.Pages
+	gmx ifc.Gomuks
+	app *mauview.Application
 
 	mainView  *MainView
 	loginView *LoginView
+
+	views map[View]mauview.Component
 }
 
 func init() {
-	tview.Styles.PrimitiveBackgroundColor = tcell.ColorDefault
-	tview.Styles.ContrastBackgroundColor = tcell.ColorDarkGreen
+	mauview.Styles.PrimitiveBackgroundColor = tcell.ColorDefault
+	mauview.Styles.ContrastBackgroundColor = tcell.ColorDarkGreen
 	if tcellDB := os.Getenv("TCELLDB"); len(tcellDB) == 0 {
 		if info, err := os.Stat("/usr/share/tcell/database"); err == nil && info.IsDir() {
 			os.Setenv("TCELLDB", "/usr/share/tcell/database")
@@ -54,20 +55,22 @@ func init() {
 
 func NewGomuksUI(gmx ifc.Gomuks) ifc.GomuksUI {
 	ui := &GomuksUI{
-		gmx:   gmx,
-		app:   tview.NewApplication(),
-		views: tview.NewPages(),
+		gmx: gmx,
+		app: mauview.NewApplication(),
 	}
-	ui.views.SetChangedFunc(ui.Render)
 	return ui
 }
 
 func (ui *GomuksUI) Init() {
-	ui.app.SetRoot(ui.InitViews(), true)
+	ui.views = map[View]mauview.Component{
+		ViewLogin: ui.NewLoginView(),
+		ViewMain:  ui.NewMainView(),
+	}
+	ui.app.Root = ui.views[ViewLogin]
 }
 
 func (ui *GomuksUI) Start() error {
-	return ui.app.Run()
+	return ui.app.Start()
 }
 
 func (ui *GomuksUI) Stop() {
@@ -75,23 +78,21 @@ func (ui *GomuksUI) Stop() {
 }
 
 func (ui *GomuksUI) Finish() {
-	if ui.app.GetScreen() != nil {
-		ui.app.GetScreen().Fini()
+	if ui.app.Screen() != nil {
+		ui.app.Screen().Fini()
 	}
 }
 
 func (ui *GomuksUI) Render() {
-	ui.app.Draw()
+	ui.app.Redraw()
 }
 
 func (ui *GomuksUI) OnLogin() {
 	ui.SetView(ViewMain)
-	ui.app.SetFocus(ui.mainView)
 }
 
 func (ui *GomuksUI) OnLogout() {
 	ui.SetView(ViewLogin)
-	ui.app.SetFocus(ui.loginView)
 }
 
 func (ui *GomuksUI) HandleNewPreferences() {
@@ -99,13 +100,11 @@ func (ui *GomuksUI) HandleNewPreferences() {
 }
 
 func (ui *GomuksUI) SetView(name View) {
-	ui.views.SwitchToPage(string(name))
-}
-
-func (ui *GomuksUI) InitViews() tview.Primitive {
-	ui.views.AddPage(string(ViewLogin), ui.NewLoginView(), true, true)
-	ui.views.AddPage(string(ViewMain), ui.NewMainView(), true, false)
-	return ui.views
+	ui.app.Root = ui.views[name]
+	focusable, ok := ui.app.Root.(mauview.Focusable)
+	if ok {
+		focusable.Focus()
+	}
 }
 
 func (ui *GomuksUI) MainView() ifc.MainView {

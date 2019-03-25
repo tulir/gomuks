@@ -17,8 +17,8 @@
 package widget
 
 import (
+	"maunium.net/go/mauview"
 	"maunium.net/go/tcell"
-	"maunium.net/go/tview"
 )
 
 // Border is a simple tview widget that renders a horizontal or vertical bar.
@@ -27,24 +27,37 @@ import (
 // If the height is 1, the bar will be horizontal.
 // If the width nor the height are 1, nothing will be rendered.
 type Border struct {
-	*tview.Box
+	Style tcell.Style
 }
 
 // NewBorder wraps a new tview Box into a new Border.
 func NewBorder() *Border {
-	return &Border{tview.NewBox()}
+	return &Border{
+		Style: tcell.StyleDefault.Foreground(mauview.Styles.BorderColor),
+	}
 }
 
-func (border *Border) Draw(screen tcell.Screen) {
-	background := tcell.StyleDefault.Background(border.GetBackgroundColor()).Foreground(border.GetBorderColor())
-	x, y, width, height := border.GetRect()
+func (border *Border) Draw(screen mauview.Screen) {
+	width, height := screen.Size()
 	if width == 1 {
-		for borderY := y; borderY < y+height; borderY++ {
-			screen.SetContent(x, borderY, tview.Borders.Vertical, nil, background)
+		for borderY := 0; borderY < height; borderY++ {
+			screen.SetContent(0, borderY, mauview.Borders.Vertical, nil, border.Style)
 		}
 	} else if height == 1 {
-		for borderX := x; borderX < x+width; borderX++ {
-			screen.SetContent(borderX, y, tview.Borders.Horizontal, nil, background)
+		for borderX := 0; borderX < width; borderX++ {
+			screen.SetContent(borderX, 0, mauview.Borders.Horizontal, nil, border.Style)
 		}
 	}
+}
+
+func (border *Border) OnKeyEvent(event mauview.KeyEvent) bool {
+	return false
+}
+
+func (border *Border) OnPasteEvent(event mauview.PasteEvent) bool {
+	return false
+}
+
+func (border *Border) OnMouseEvent(event mauview.MouseEvent) bool {
+	return false
 }

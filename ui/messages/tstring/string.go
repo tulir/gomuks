@@ -21,6 +21,7 @@ import (
 	"unicode"
 
 	"github.com/mattn/go-runewidth"
+	"maunium.net/go/mauview"
 
 	"maunium.net/go/tcell"
 )
@@ -181,7 +182,7 @@ func (str TString) AdjustStyleFull(fn func(tcell.Style) tcell.Style) {
 	str.AdjustStyle(0, len(str), fn)
 }
 
-func (str TString) Draw(screen tcell.Screen, x, y int) {
+func (str TString) Draw(screen mauview.Screen, x, y int) {
 	offsetX := 0
 	for _, cell := range str {
 		offsetX += cell.Draw(screen, x+offsetX, y)

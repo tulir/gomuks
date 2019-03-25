@@ -21,15 +21,15 @@ import (
 	"regexp"
 	"strings"
 
+	"maunium.net/go/mauview"
 	"maunium.net/go/tcell"
-	"maunium.net/go/tview"
 
 	"maunium.net/go/gomuks/debug"
 	"maunium.net/go/gomuks/matrix/rooms"
 )
 
 type RoomList struct {
-	*tview.Box
+	parent *MainView
 
 	// The list of tags in display order.
 	tags []string
@@ -40,6 +40,8 @@ type RoomList struct {
 	selectedTag string
 
 	scrollOffset int
+	height       int
+	width        int
 
 	// The item main text color.
 	mainTextColor tcell.Color
@@ -49,9 +51,10 @@ type RoomList struct {
 	selectedBackgroundColor tcell.Color
 }
 
-func NewRoomList() *RoomList {
+func NewRoomList(parent *MainView) *RoomList {
 	list := &RoomList{
-		Box:   tview.NewBox(),
+		parent: parent,
+
 		items: make(map[string]*TagRoomList),
 		tags:  []string{"m.favourite", "net.maunium.gomuks.fake.direct", "", "m.lowpriority"},
 
@@ -182,11 +185,10 @@ func (list *RoomList) SetSelected(tag string, room *rooms.Room) {
 	list.selected = room
 	list.selectedTag = tag
 	pos := list.index(tag, room)
-	_, _, _, height := list.GetRect()
 	if pos <= list.scrollOffset {
 		list.scrollOffset = pos - 1
-	} else if pos >= list.scrollOffset+height {
-		list.scrollOffset = pos - height + 1
+	} else if pos >= list.scrollOffset+list.height {
+		list.scrollOffset = pos - list.height + 1
 	}
 	if list.scrollOffset < 0 {
 		list.scrollOffset = 0
@@ -208,10 +210,9 @@ func (list *RoomList) SelectedRoom() *rooms.Room {
 
 func (list *RoomList) AddScrollOffset(offset int) {
 	list.scrollOffset += offset
-	_, _, _, viewHeight := list.GetRect()
 	contentHeight := list.ContentHeight()
-	if list.scrollOffset > contentHeight-viewHeight {
-		list.scrollOffset = contentHeight - viewHeight
+	if list.scrollOffset > contentHeight-list.height {
+		list.scrollOffset = contentHeight - list.height
 	}
 	if list.scrollOffset < 0 {
 		list.scrollOffset = 0
@@ -372,10 +373,39 @@ func (list *RoomList) ContentHeight() (height int) {
 	return
 }
 
-func (list *RoomList) HandleClick(column, line int, mod bool) (string, *rooms.Room) {
+func (list *RoomList) OnKeyEvent(event mauview.KeyEvent) bool {
+	return false
+}
+
+func (list *RoomList) OnPasteEvent(event mauview.PasteEvent) bool {
+	return false
+}
+
+func (list *RoomList) OnMouseEvent(event mauview.MouseEvent) bool {
+	switch event.Buttons() {
+	case tcell.WheelUp:
+		list.AddScrollOffset(-WheelScrollOffsetDiff)
+	case tcell.WheelDown:
+		list.AddScrollOffset(WheelScrollOffsetDiff)
+	case tcell.Button1:
+		x, y := event.Position()
+		return list.clickRoom(y, x, event.Modifiers() == tcell.ModCtrl)
+	}
+	return false
+}
+
+func (list *RoomList) Focus() {
+
+}
+
+func (list *RoomList) Blur() {
+
+}
+
+func (list *RoomList) clickRoom(line, column int, mod bool) bool {
 	line += list.scrollOffset
 	if line < 0 {
-		return "", nil
+		return false
 	}
 	for _, tag := range list.tags {
 		trl := list.items[tag]
@@ -391,7 +421,8 @@ func (list *RoomList) HandleClick(column, line int, mod bool) (string, *rooms.Ro
 		if line < 0 {
 			break
 		} else if line < trl.Length() {
-			return tag, trl.Visible()[trl.Length()-1-line].Room
+			list.parent.SwitchRoom(tag, trl.Visible()[trl.Length()-1-line].Room)
+			return true
 		}
 
 		// Tag items
@@ -405,10 +436,9 @@ func (list *RoomList) HandleClick(column, line int, mod bool) (string, *rooms.Ro
 				if mod {
 					diff = 100
 				}
-				_, _, width, _ := list.GetRect()
 				if column <= 6 && hasLess {
 					trl.maxShown -= diff
-				} else if column >= width-6 && hasMore {
+				} else if column >= list.width-6 && hasMore {
 					trl.maxShown += diff
 				}
 				if trl.maxShown < 10 {
@@ -420,9 +450,8 @@ func (list *RoomList) HandleClick(column, line int, mod bool) (string, *rooms.Ro
 		// Tag footer
 		line--
 	}
-	return "", nil
+	return false
 }
-
 var nsRegex = regexp.MustCompile("^[a-z]\\.[a-z](?:\\.[a-z])*$")
 
 func (list *RoomList) GetTagDisplayName(tag string) string {
@@ -445,11 +474,10 @@ func (list *RoomList) GetTagDisplayName(tag string) string {
 }
 
 // Draw draws this primitive onto the screen.
-func (list *RoomList) Draw(screen tcell.Screen) {
-	list.Box.Draw(screen)
-
-	x, y, width, height := list.GetRect()
-	yLimit := y + height
+func (list *RoomList) Draw(screen mauview.Screen) {
+	list.width, list.height = screen.Size()
+	y := 0
+	yLimit := y + list.height
 	y -= list.scrollOffset
 
 	// Draw the list items.
@@ -464,8 +492,7 @@ func (list *RoomList) Draw(screen tcell.Screen) {
 		if y+renderHeight >= yLimit {
 			renderHeight = yLimit - y
 		}
-		trl.SetRect(x, y, width, renderHeight)
-		trl.Draw(screen)
+		trl.Draw(mauview.NewProxyScreen(screen, 0, y, list.width, renderHeight))
 		y += renderHeight
 		if y >= yLimit {
 			break

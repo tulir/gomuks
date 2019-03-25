@@ -102,14 +102,24 @@ func ParseMessage(matrix ifc.MatrixContainer, room *rooms.Room, evt *mautrix.Eve
 	}
 	if len(evt.Content.GetReplyTo()) > 0 {
 		evt.Content.RemoveReplyFallback()
-		replyToEvt, _ := matrix.Client().GetEvent(room.ID, evt.Content.GetReplyTo())
-		replyToEvt.Content.RemoveReplyFallback()
-		if len(replyToEvt.Content.FormattedBody) == 0 {
-			replyToEvt.Content.FormattedBody = html.EscapeString(replyToEvt.Content.Body)
+		roomID := evt.Content.RelatesTo.InReplyTo.RoomID
+		if len(roomID) == 0 {
+			roomID = room.ID
 		}
-		evt.Content.FormattedBody = fmt.Sprintf(
-			"In reply to <a href='https://matrix.to/#/%[1]s'>%[1]s</a><blockquote>%[2]s</blockquote><br/>%[3]s",
-			replyToEvt.Sender, replyToEvt.Content.FormattedBody, evt.Content.FormattedBody)
+		replyToEvt, _ := matrix.Client().GetEvent(roomID, evt.Content.GetReplyTo())
+		if replyToEvt != nil {
+			replyToEvt.Content.RemoveReplyFallback()
+			if len(replyToEvt.Content.FormattedBody) == 0 {
+				replyToEvt.Content.FormattedBody = html.EscapeString(replyToEvt.Content.Body)
+			}
+			evt.Content.FormattedBody = fmt.Sprintf(
+				"In reply to <a href='https://matrix.to/#/%[1]s'>%[1]s</a><blockquote>%[2]s</blockquote><br/>%[3]s",
+				replyToEvt.Sender, replyToEvt.Content.FormattedBody, evt.Content.FormattedBody)
+		} else {
+			evt.Content.FormattedBody = fmt.Sprintf(
+				"In reply to unknown event https://matrix.to/#/%[1]s/%[2]s<br/>%[3]s",
+				roomID, evt.Content.GetReplyTo(), evt.Content.FormattedBody)
+		}
 	}
 	ts := unixToTime(evt.Timestamp)
 	switch evt.Content.MsgType {

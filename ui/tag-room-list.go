@@ -21,8 +21,8 @@ import (
 	"strconv"
 	"strings"
 
+	"maunium.net/go/mauview"
 	"maunium.net/go/tcell"
-	"maunium.net/go/tview"
 
 	"maunium.net/go/gomuks/matrix/rooms"
 	"maunium.net/go/gomuks/ui/widget"
@@ -44,7 +44,7 @@ func NewDefaultOrderedRoom(room *rooms.Room) *OrderedRoom {
 	return NewOrderedRoom("0.5", room)
 }
 
-func (or *OrderedRoom) Draw(roomList *RoomList, screen tcell.Screen, x, y, lineWidth int, isSelected bool) {
+func (or *OrderedRoom) Draw(roomList *RoomList, screen mauview.Screen, x, y, lineWidth int, isSelected bool) {
 	style := tcell.StyleDefault.
 		Foreground(roomList.mainTextColor).
 		Bold(or.HasNewMessages())
@@ -56,7 +56,7 @@ func (or *OrderedRoom) Draw(roomList *RoomList, screen tcell.Screen, x, y, lineW
 
 	unreadCount := or.UnreadCount()
 
-	widget.WriteLinePadded(screen, tview.AlignLeft, or.GetTitle(), x, y, lineWidth, style)
+	widget.WriteLinePadded(screen, mauview.AlignLeft, or.GetTitle(), x, y, lineWidth, style)
 
 	if unreadCount > 0 {
 		unreadMessageCount := "99+"
@@ -67,13 +67,13 @@ func (or *OrderedRoom) Draw(roomList *RoomList, screen tcell.Screen, x, y, lineW
 			unreadMessageCount += "!"
 		}
 		unreadMessageCount = fmt.Sprintf("(%s)", unreadMessageCount)
-		widget.WriteLine(screen, tview.AlignRight, unreadMessageCount, x+lineWidth-7, y, 7, style)
+		widget.WriteLine(screen, mauview.AlignRight, unreadMessageCount, x+lineWidth-7, y, 7, style)
 		lineWidth -= len(unreadMessageCount)
 	}
 }
 
 type TagRoomList struct {
-	*tview.Box
+	mauview.NoopEventHandler
 	rooms       []*OrderedRoom
 	maxShown    int
 	name        string
@@ -83,7 +83,6 @@ type TagRoomList struct {
 
 func NewTagRoomList(parent *RoomList, name string, rooms ...*OrderedRoom) *TagRoomList {
 	return &TagRoomList{
-		Box:         tview.NewBox(),
 		maxShown:    10,
 		rooms:       rooms,
 		name:        name,
@@ -246,41 +245,40 @@ func (trl *TagRoomList) RenderHeight() int {
 	return height
 }
 
-func (trl *TagRoomList) DrawHeader(screen tcell.Screen) {
-	x, y, width, _ := trl.GetRect()
+func (trl *TagRoomList) DrawHeader(screen mauview.Screen) {
+	width, _ := screen.Size()
 	roomCount := strconv.Itoa(trl.TotalLength())
 
 	// Draw tag name
 	displayNameWidth := width - 1 - len(roomCount)
-	widget.WriteLine(screen, tview.AlignLeft, trl.displayname, x, y, displayNameWidth, TagDisplayNameStyle)
+	widget.WriteLine(screen, mauview.AlignLeft, trl.displayname, 0, 0, displayNameWidth, TagDisplayNameStyle)
 
 	// Draw tag room count
-	roomCountX := x + len(trl.displayname) + 1
+	roomCountX := len(trl.displayname) + 1
 	roomCountWidth := width - 2 - len(trl.displayname)
-	widget.WriteLine(screen, tview.AlignLeft, roomCount, roomCountX, y, roomCountWidth, TagRoomCountStyle)
+	widget.WriteLine(screen, mauview.AlignLeft, roomCount, roomCountX, 0, roomCountWidth, TagRoomCountStyle)
 }
 
-func (trl *TagRoomList) Draw(screen tcell.Screen) {
+func (trl *TagRoomList) Draw(screen mauview.Screen) {
 	if len(trl.displayname) == 0 {
 		return
 	}
 
 	trl.DrawHeader(screen)
 
-	x, y, width, height := trl.GetRect()
-	yLimit := y + height
+	width, height := screen.Size()
 
 	items := trl.Visible()
 
 	if trl.IsCollapsed() {
-		screen.SetCell(x+width-1, y, tcell.StyleDefault, '▶')
+		screen.SetCell(width-1, 0, tcell.StyleDefault, '▶')
 		return
 	}
-	screen.SetCell(x+width-1, y, tcell.StyleDefault, '▼')
+	screen.SetCell(width-1, 0, tcell.StyleDefault, '▼')
 
-	offsetY := 1
+	y := 1
 	for i := trl.Length() - 1; i >= 0; i-- {
-		if y+offsetY >= yLimit {
+		if y >= height {
 			return
 		}
 
@@ -288,18 +286,18 @@ func (trl *TagRoomList) Draw(screen tcell.Screen) {
 
 		lineWidth := width
 		isSelected := trl.name == trl.parent.selectedTag && item.Room == trl.parent.selected
-		item.Draw(trl.parent, screen, x, y+offsetY, lineWidth, isSelected)
-		offsetY++
+		item.Draw(trl.parent, screen, 0, y, lineWidth, isSelected)
+		y++
 	}
 	hasLess := trl.maxShown > 10
 	hasMore := trl.HasInvisibleRooms()
-	if (hasLess || hasMore) && y+offsetY < yLimit {
+	if (hasLess || hasMore) && y < height {
 		if hasMore {
-			widget.WriteLine(screen, tview.AlignRight, "More ↓", x, y+offsetY, width, tcell.StyleDefault)
+			widget.WriteLine(screen, mauview.AlignRight, "More ↓", 0, y, width, tcell.StyleDefault)
 		}
 		if hasLess {
-			widget.WriteLine(screen, tview.AlignLeft, "↑ Less", x, y+offsetY, width, tcell.StyleDefault)
+			widget.WriteLine(screen, mauview.AlignLeft, "↑ Less", 0, y, width, tcell.StyleDefault)
 		}
-		offsetY++
+		y++
 	}
 }

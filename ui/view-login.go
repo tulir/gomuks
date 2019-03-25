@@ -17,66 +17,97 @@
 package ui
 
 import (
+	"maunium.net/go/tcell"
+
 	"maunium.net/go/mautrix"
-	"maunium.net/go/tview"
+	"maunium.net/go/mauview"
 
 	"maunium.net/go/gomuks/config"
 	"maunium.net/go/gomuks/debug"
 	"maunium.net/go/gomuks/interface"
-	"maunium.net/go/gomuks/ui/widget"
 )
 
 type LoginView struct {
-	*tview.Form
+	*mauview.Form
 
-	homeserver *widget.AdvancedInputField
-	username   *widget.AdvancedInputField
-	password   *widget.AdvancedInputField
-	error      *widget.FormTextView
+	container *mauview.Centerer
+
+	homeserverLabel *mauview.TextField
+	usernameLabel   *mauview.TextField
+	passwordLabel   *mauview.TextField
+
+	homeserver *mauview.InputField
+	username   *mauview.InputField
+	password   *mauview.InputField
+	error      *mauview.TextField
+
+	loginButton *mauview.Button
+	quitButton  *mauview.Button
 
 	matrix ifc.MatrixContainer
 	config *config.Config
 	parent *GomuksUI
 }
 
-func (ui *GomuksUI) NewLoginView() tview.Primitive {
+func (ui *GomuksUI) NewLoginView() mauview.Component {
 	view := &LoginView{
-		Form: tview.NewForm(),
+		Form: mauview.NewForm(),
 
-		homeserver: widget.NewAdvancedInputField(),
-		username:   widget.NewAdvancedInputField(),
-		password:   widget.NewAdvancedInputField(),
+		usernameLabel:   mauview.NewTextField().SetText("Username"),
+		passwordLabel:   mauview.NewTextField().SetText("Password"),
+		homeserverLabel: mauview.NewTextField().SetText("Homeserver"),
+
+		username:   mauview.NewInputField(),
+		password:   mauview.NewInputField(),
+		homeserver: mauview.NewInputField(),
+
+		loginButton: mauview.NewButton("Login"),
+		quitButton:  mauview.NewButton("Quit"),
 
 		matrix: ui.gmx.Matrix(),
 		config: ui.gmx.Config(),
 		parent: ui,
 	}
+
 	hs := ui.gmx.Config().HS
-	if len(hs) == 0 {
-		hs = "https://matrix.org"
-	}
-	view.homeserver.SetLabel("Homeserver").SetText(hs).SetFieldWidth(30)
-	view.username.SetLabel("Username").SetText(ui.gmx.Config().UserID).SetFieldWidth(30)
-	view.password.SetLabel("Password").SetMaskCharacter('*').SetFieldWidth(30)
+	view.homeserver.SetText(hs)
+	view.username.SetText(ui.gmx.Config().UserID)
+	view.password.SetMaskCharacter('*')
 
-	view.
-		AddFormItem(view.homeserver).AddFormItem(view.username).AddFormItem(view.password).
-		AddButton("Log in", view.Login).
-		AddButton("Quit", ui.gmx.Stop).
-		SetButtonsAlign(tview.AlignCenter).
-		SetBorder(true).SetTitle("Log in to Matrix")
+	view.quitButton.SetOnClick(ui.gmx.Stop).SetBackgroundColor(tcell.ColorBlue)
+	view.loginButton.SetOnClick(view.Login).SetBackgroundColor(tcell.ColorBlue)
 
+	view.SetColumns([]int{1, 10, 1, 9, 1, 9, 1, 10, 1})
+	view.SetRows([]int{1, 1, 1, 1, 1, 1, 1, 1, 1, 1})
+	view.AddFormItem(view.username, 3, 1, 5, 1).
+		AddFormItem(view.password, 3, 3, 5, 1).
+		AddFormItem(view.homeserver, 3, 5, 5, 1).
+		AddFormItem(view.loginButton, 5, 7, 3, 1).
+		AddFormItem(view.quitButton, 1, 7, 3, 1).
+		AddComponent(view.usernameLabel, 1, 1, 1, 1).
+		AddComponent(view.passwordLabel, 1, 3, 1, 1).
+		AddComponent(view.homeserverLabel, 1, 5, 1, 1)
 	ui.loginView = view
 
-	return widget.Center(45, 13, ui.loginView)
+	view.container = mauview.Center(mauview.NewBox(view).SetTitle("Log in to Matrix"), 45, 13)
+	return view.container
 }
 
 func (view *LoginView) Error(err string) {
+	if len(err) == 0 {
+		debug.Print("Hiding error")
+		view.RemoveComponent(view.error)
+		view.error = nil
+		return
+	}
+	debug.Print("Showing error", err)
 	if view.error == nil {
-		view.error = &widget.FormTextView{TextView: tview.NewTextView()}
-		view.AddFormItem(view.error)
+		view.error = mauview.NewTextField().SetTextColor(tcell.ColorRed)
+		view.AddComponent(view.error, 1, 9, 7, 1)
 	}
 	view.error.SetText(err)
+
+	view.parent.Render()
 }
 
 func (view *LoginView) Login() {
@@ -91,8 +122,8 @@ func (view *LoginView) Login() {
 	err = view.matrix.Login(mxid, password)
 	if err != nil {
 		if httpErr, ok := err.(mautrix.HTTPError); ok {
-			if respErr, ok := httpErr.WrappedError.(mautrix.RespError); ok {
-				view.Error(respErr.Err)
+			if httpErr.RespError != nil {
+				view.Error(httpErr.RespError.Err)
 			} else {
 				view.Error(httpErr.Message)
 			}

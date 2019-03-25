@@ -26,8 +26,8 @@ import (
 	"github.com/kyokomi/emoji"
 
 	"maunium.net/go/mautrix"
+	"maunium.net/go/mauview"
 	"maunium.net/go/tcell"
-	"maunium.net/go/tview"
 
 	"maunium.net/go/gomuks/config"
 	"maunium.net/go/gomuks/debug"
@@ -40,12 +40,16 @@ import (
 )
 
 type MainView struct {
-	*tview.Flex
+	flex *mauview.Flex
 
 	roomList     *RoomList
-	roomView     *tview.Pages
+	roomView     *mauview.Box
+	currentRoom  *RoomView
 	rooms        map[string]*RoomView
 	cmdProcessor *CommandProcessor
+	focused      mauview.Focusable
+
+	modal mauview.Component
 
 	lastFocusTime time.Time
 
@@ -55,11 +59,10 @@ type MainView struct {
 	parent *GomuksUI
 }
 
-func (ui *GomuksUI) NewMainView() tview.Primitive {
+func (ui *GomuksUI) NewMainView() mauview.Component {
 	mainView := &MainView{
-		Flex:     tview.NewFlex(),
-		roomList: NewRoomList(),
-		roomView: tview.NewPages(),
+		flex:     mauview.NewFlex().SetDirection(mauview.FlexColumn),
+		roomView: mauview.NewBox(nil).SetBorder(false),
 		rooms:    make(map[string]*RoomView),
 
 		matrix: ui.gmx.Matrix(),
@@ -67,13 +70,13 @@ func (ui *GomuksUI) NewMainView() tview.Primitive {
 		config: ui.gmx.Config(),
 		parent: ui,
 	}
+	mainView.roomList = NewRoomList(mainView)
 	mainView.cmdProcessor = NewCommandProcessor(mainView)
 
-	mainView.
-		SetDirection(tview.FlexColumn).
-		AddItem(mainView.roomList, 25, 0, false).
-		AddItem(widget.NewBorder(), 1, 0, false).
-		AddItem(mainView.roomView, 0, 1, true)
+	mainView.flex.
+		AddFixedComponent(mainView.roomList, 25).
+		AddFixedComponent(widget.NewBorder(), 1).
+		AddProportionalComponent(mainView.roomView, 1)
 	mainView.BumpFocus(nil)
 
 	ui.mainView = mainView
@@ -81,18 +84,37 @@ func (ui *GomuksUI) NewMainView() tview.Primitive {
 	return mainView
 }
 
-func (view *MainView) Draw(screen tcell.Screen) {
+func (view *MainView) ShowModal(modal mauview.Component) {
+	view.modal = modal
+	var ok bool
+	view.focused, ok = modal.(mauview.Focusable)
+	if !ok {
+		view.focused = nil
+	}
+}
+
+func (view *MainView) HideModal() {
+	view.modal = nil
+	view.focused = view.roomView
+}
+
+func (view *MainView) Draw(screen mauview.Screen) {
 	if view.config.Preferences.HideRoomList {
-		view.roomView.SetRect(view.GetRect())
 		view.roomView.Draw(screen)
 	} else {
-		view.Flex.Draw(screen)
+		view.flex.Draw(screen)
+	}
+
+	if view.modal != nil {
+		view.modal.Draw(screen)
 	}
 }
 
 func (view *MainView) BumpFocus(roomView *RoomView) {
-	view.lastFocusTime = time.Now()
-	view.MarkRead(roomView)
+	if roomView != nil {
+		view.lastFocusTime = time.Now()
+		view.MarkRead(roomView)
+	}
 }
 
 func (view *MainView) MarkRead(roomView *RoomView) {
@@ -167,7 +189,10 @@ func (view *MainView) sendTempMessage(roomView *RoomView, tempMessage ifc.Messag
 }
 
 func (view *MainView) ShowBare(roomView *RoomView) {
-	_, height := view.parent.app.GetScreen().Size()
+	if roomView == nil {
+		return
+	}
+	_, height := view.parent.app.Screen().Size()
 	view.parent.app.Suspend(func() {
 		print("\033[2J\033[0;0H")
 		// We don't know how much space there exactly is. Too few messages looks weird,
@@ -181,37 +206,54 @@ func (view *MainView) ShowBare(roomView *RoomView) {
 	})
 }
 
-func (view *MainView) KeyEventHandler(roomView *RoomView, key *tcell.EventKey) *tcell.EventKey {
-	view.BumpFocus(roomView)
+func (view *MainView) OnKeyEvent(event mauview.KeyEvent) bool {
+	view.BumpFocus(view.currentRoom)
 
-	k := key.Key()
-	c := key.Rune()
-	if key.Modifiers() == tcell.ModCtrl || key.Modifiers() == tcell.ModAlt {
+	if view.modal != nil {
+		return view.modal.OnKeyEvent(event)
+	}
+
+	k := event.Key()
+	c := event.Rune()
+	if event.Modifiers() == tcell.ModCtrl || event.Modifiers() == tcell.ModAlt {
 		switch {
 		case k == tcell.KeyDown:
 			view.SwitchRoom(view.roomList.Next())
 		case k == tcell.KeyUp:
 			view.SwitchRoom(view.roomList.Previous())
 		case k == tcell.KeyEnter:
-			searchModal := NewFuzzySearchModal(view, 42, 12)
-			view.parent.views.AddPage("fuzzy-search-modal", searchModal, true, true)
-			view.parent.app.SetFocus(searchModal)
+			view.ShowModal(NewFuzzySearchModal(view, 42, 12))
+		case k == tcell.KeyHome:
+			msgView := view.currentRoom.MessageView()
+			msgView.AddScrollOffset(msgView.TotalHeight())
+		case k == tcell.KeyEnd:
+			msgView := view.currentRoom.MessageView()
+			msgView.AddScrollOffset(-msgView.TotalHeight())
+		case k == tcell.KeyCtrlN:
+			return view.flex.OnKeyEvent(tcell.NewEventKey(tcell.KeyEnter, '\n', event.Modifiers()))
 		case c == 'a':
 			view.SwitchRoom(view.roomList.NextWithActivity())
 		case c == 'l':
-			view.ShowBare(roomView)
+			view.ShowBare(view.currentRoom)
 		default:
-			return key
+			goto defaultHandler
 		}
+		return true
 	} else if k == tcell.KeyAltDown || k == tcell.KeyCtrlDown {
 		view.SwitchRoom(view.roomList.Next())
+		return true
 	} else if k == tcell.KeyAltUp || k == tcell.KeyCtrlUp {
 		view.SwitchRoom(view.roomList.Previous())
-	} else if k == tcell.KeyPgUp || k == tcell.KeyPgDn || k == tcell.KeyUp || k == tcell.KeyDown || k == tcell.KeyEnd || k == tcell.KeyHome {
-		msgView := roomView.MessageView()
+		return true
+	} else if view.currentRoom != nil &&
+		(k == tcell.KeyPgUp || k == tcell.KeyPgDn ||
+			k == tcell.KeyUp || k == tcell.KeyDown ||
+			k == tcell.KeyEnd || k == tcell.KeyHome) {
+		// TODO these should be in the RoomView key handler
+		msgView := view.currentRoom.MessageView()
 
 		if msgView.IsAtTop() && (k == tcell.KeyPgUp || k == tcell.KeyUp) {
-			go view.LoadHistory(roomView.Room.ID)
+			go view.LoadHistory(view.currentRoom.Room.ID)
 		}
 
 		switch k {
@@ -219,80 +261,72 @@ func (view *MainView) KeyEventHandler(roomView *RoomView, key *tcell.EventKey) *
 			msgView.AddScrollOffset(msgView.Height() / 2)
 		case tcell.KeyPgDn:
 			msgView.AddScrollOffset(-msgView.Height() / 2)
-		case tcell.KeyUp:
-			msgView.AddScrollOffset(1)
-		case tcell.KeyDown:
-			msgView.AddScrollOffset(-1)
-		case tcell.KeyHome:
-			msgView.AddScrollOffset(msgView.TotalHeight())
-		case tcell.KeyEnd:
-			msgView.AddScrollOffset(-msgView.TotalHeight())
+		default:
+			goto defaultHandler
 		}
-	} else {
-		return key
+		return true
+	} else if k == tcell.KeyEnter {
+		view.InputSubmit(view.currentRoom, view.currentRoom.input.GetText())
+		return true
 	}
-	return nil
+defaultHandler:
+	if view.config.Preferences.HideRoomList {
+		debug.Print("Key event going to default handler (direct to roomview)", event)
+		return view.roomView.OnKeyEvent(event)
+	}
+	debug.Print("Key event going to default handler (flex)", event)
+	return view.flex.OnKeyEvent(event)
 }
 
 const WheelScrollOffsetDiff = 3
 
-func isInArea(x, y int, p tview.Primitive) bool {
-	rx, ry, rw, rh := p.GetRect()
-	return x >= rx && y >= ry && x < rx+rw && y < ry+rh
-}
-
-func (view *MainView) MouseEventHandler(roomView *RoomView, event *tcell.EventMouse) *tcell.EventMouse {
-	if event.Buttons() == tcell.ButtonNone || event.HasMotion() {
-		return event
+func (view *MainView) OnMouseEvent(event mauview.MouseEvent) bool {
+	if view.config.Preferences.HideRoomList {
+		return view.roomView.OnMouseEvent(event)
 	}
-	view.BumpFocus(roomView)
+	return view.flex.OnMouseEvent(event)
+	/*if event.Buttons() == tcell.ButtonNone || event.HasMotion() {
+		return false
+	}
 
-	msgView := roomView.MessageView()
+	view.BumpFocus(view.currentRoom)
+
 	x, y := event.Position()
 
 	switch {
-	case isInArea(x, y, msgView):
-		mx, my, _, _ := msgView.GetRect()
-		switch event.Buttons() {
-		case tcell.WheelUp:
-			if msgView.IsAtTop() {
-				go view.LoadHistory(roomView.Room.ID)
-			} else {
-				msgView.AddScrollOffset(WheelScrollOffsetDiff)
-
-				view.parent.Render()
-			}
-		case tcell.WheelDown:
-			msgView.AddScrollOffset(-WheelScrollOffsetDiff)
-			view.parent.Render()
-			view.MarkRead(roomView)
-		default:
-			if msgView.HandleClick(x-mx, y-my, event.Buttons()) {
-				view.parent.Render()
-			}
-		}
-	case isInArea(x, y, view.roomList):
-		switch event.Buttons() {
-		case tcell.WheelUp:
-			view.roomList.AddScrollOffset(-WheelScrollOffsetDiff)
-			view.parent.Render()
-		case tcell.WheelDown:
-			view.roomList.AddScrollOffset(WheelScrollOffsetDiff)
-			view.parent.Render()
-		case tcell.Button1:
-			_, rly, _, _ := msgView.GetRect()
-			line := y - rly + 1
-			switchToTag, switchToRoom := view.roomList.HandleClick(x, line, event.Modifiers() == tcell.ModCtrl)
-			if switchToRoom != nil {
-				view.SwitchRoom(switchToTag, switchToRoom)
-			} else {
-				view.parent.Render()
-			}
-		}
+	case x >= 27:
+		view.roomView.OnMouseEvent(mauview.OffsetMouseEvent(event, -27, 0))
+		view.roomView.Focus()
+		view.focused = view.roomView
+	case x <= 25:
+		view.roomList.OnMouseEvent(event)
+		view.roomList.Focus()
+		view.focused = view.roomList
 	default:
 		debug.Print("Unhandled mouse event:", event.Buttons(), event.Modifiers(), x, y)
 	}
-	return event
+	return false*/
+}
+
+func (view *MainView) OnPasteEvent(event mauview.PasteEvent) bool {
+	if view.modal != nil {
+		return view.modal.OnPasteEvent(event)
+	} else if view.config.Preferences.HideRoomList {
+		return view.roomView.OnPasteEvent(event)
+	}
+	return view.flex.OnPasteEvent(event)
+}
+
+func (view *MainView) Focus() {
+	if view.focused != nil {
+		view.focused.Focus()
+	}
+}
+
+func (view *MainView) Blur() {
+	if view.focused != nil {
+		view.focused.Blur()
+	}
 }
 
 func (view *MainView) SwitchRoom(tag string, room *rooms.Room) {
@@ -300,27 +334,17 @@ func (view *MainView) SwitchRoom(tag string, room *rooms.Room) {
 		return
 	}
 
-	view.roomView.SwitchToPage(room.ID)
 	roomView := view.rooms[room.ID]
 	if roomView == nil {
 		debug.Print("Tried to switch to non-nil room with nil roomView!")
 		debug.Print(tag, room)
 		return
 	}
+	view.roomView.SetInnerComponent(roomView)
+	view.currentRoom = roomView
 	view.MarkRead(roomView)
 	view.roomList.SetSelected(tag, room)
-	view.parent.app.SetFocus(view)
 	view.parent.Render()
-}
-
-func (view *MainView) Focus(delegate func(p tview.Primitive)) {
-	room := view.roomList.SelectedRoom()
-	if room != nil {
-		roomView, ok := view.rooms[room.ID]
-		if ok {
-			delegate(roomView)
-		}
-	}
 }
 
 func (view *MainView) SaveAllHistory() {
@@ -333,14 +357,11 @@ func (view *MainView) SaveAllHistory() {
 }
 
 func (view *MainView) addRoomPage(room *rooms.Room) {
-	if !view.roomView.HasPage(room.ID) {
+	if _, ok := view.rooms[room.ID]; !ok {
 		roomView := NewRoomView(view, room).
 			SetInputSubmitFunc(view.InputSubmit).
-			SetInputChangedFunc(view.InputChanged).
-			SetInputCapture(view.KeyEventHandler).
-			SetMouseCapture(view.MouseEventHandler)
+			SetInputChangedFunc(view.InputChanged)
 		view.rooms[room.ID] = roomView
-		view.roomView.AddPage(room.ID, roomView, true, false)
 		roomView.UpdateUserList()
 
 		_, err := roomView.LoadHistory(view.matrix, view.config.HistoryDir)
@@ -387,7 +408,6 @@ func (view *MainView) RemoveRoom(room *rooms.Room) {
 	view.roomList.Remove(room)
 	view.SwitchRoom(view.roomList.Selected())
 
-	view.roomView.RemovePage(room.ID)
 	delete(view.rooms, room.ID)
 
 	view.parent.Render()
@@ -395,7 +415,6 @@ func (view *MainView) RemoveRoom(room *rooms.Room) {
 
 func (view *MainView) SetRooms(rooms map[string]*rooms.Room) {
 	view.roomList.Clear()
-	view.roomView.Clear()
 	view.rooms = make(map[string]*RoomView)
 	for _, room := range rooms {
 		if room.HasLeft {
