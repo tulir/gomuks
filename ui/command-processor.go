@@ -78,7 +78,9 @@ func NewCommandProcessor(parent *MainView) *CommandProcessor {
 		aliases: map[string]*Alias{
 			"part":  {"leave"},
 			"send":  {"sendevent"},
+			"msend": {"msendevent"},
 			"state": {"setstate"},
+			"mstate":{"msetstate"},
 			"rb":    {"rainbow"},
 		},
 		commands: map[string]CommandHandler{
@@ -89,11 +91,17 @@ func NewCommandProcessor(parent *MainView) *CommandProcessor {
 			"clearcache":      cmdClearCache,
 			"leave":           cmdLeave,
 			"join":            cmdJoin,
+			"kick":            cmdKick,
+			"ban":             cmdBan,
+			"unban":           cmdUnban,
 			"toggle":          cmdToggle,
 			"logout":          cmdLogout,
 			"sendevent":       cmdSendEvent,
+			"msendevent":      cmdMSendEvent,
 			"setstate":        cmdSetState,
+			"msetstate":       cmdMSetState,
 			"rainbow":         cmdRainbow,
+			"invite":          cmdInvite,
 		},
 	}
 }

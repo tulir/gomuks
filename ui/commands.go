@@ -112,6 +112,64 @@ func cmdLeave(cmd *Command) {
 	}
 }
 
+func cmdInvite(cmd *Command) {
+	if len(cmd.Args) != 1 {
+		cmd.Reply("Usage: /invite <user id>")
+		return
+	}
+	_, err := cmd.Matrix.Client().InviteUser(cmd.Room.MxRoom().ID, &mautrix.ReqInviteUser{cmd.Args[0]})
+	if err != nil {
+		debug.Print("Error in invite call:", err)
+		cmd.Reply("Failed to invite user:", err)
+	}
+}
+
+func cmdBan(cmd *Command) {
+	if len(cmd.Args) < 1 {
+		cmd.Reply("Usage: /ban <user> <optional:reason>")
+		return
+	}
+	reason := "you are the weakest link, goodbye!"
+	if len(cmd.Args) >= 2 {
+		reason = strings.Join(cmd.Args[1:]," ")
+	}
+	_, err := cmd.Matrix.Client().BanUser(cmd.Room.MxRoom().ID, &mautrix.ReqBanUser{reason,cmd.Args[0]})
+	if err != nil {
+		debug.Print("Error in ban call:", err)
+		cmd.Reply("Failed to ban user:", err)
+	}
+
+}
+
+func cmdUnban(cmd *Command) {
+	if len(cmd.Args) != 1 {
+		cmd.Reply("Usage: /unban <user>")
+		return
+	}
+	_, err := cmd.Matrix.Client().UnbanUser(cmd.Room.MxRoom().ID, &mautrix.ReqUnbanUser{cmd.Args[0]})
+	if err != nil {
+		debug.Print("Error in unban call:", err)
+		cmd.Reply("Failed to unban user:", err)
+	}
+}
+
+func cmdKick(cmd *Command) {
+	if len(cmd.Args) < 1 {
+		cmd.Reply("Usage: /kick <user> <optional:reason>")
+		return
+	}
+	reason := "you are the weakest link, goodbye!"
+	if len(cmd.Args) >= 2 {
+		reason = strings.Join(cmd.Args[1:]," ")
+	}
+	_, err := cmd.Matrix.Client().KickUser(cmd.Room.MxRoom().ID, &mautrix.ReqKickUser{reason,cmd.Args[0]})
+	if err != nil {
+		debug.Print("Error in kick call:", err)
+		debug.Print("Failed to kick user:", err)
+	}
+
+}
+
 func cmdJoin(cmd *Command) {
 	if len(cmd.Args) == 0 {
 		cmd.Reply("Usage: /join <room>")
@@ -129,6 +187,15 @@ func cmdJoin(cmd *Command) {
 	}
 }
 
+func cmdMSendEvent(cmd *Command) {
+	if len(cmd.Args) < 2 {
+		cmd.Reply("Usage: /msend <event type> <content>")
+		return
+	}
+	cmd.Args = append([]string{cmd.Room.MxRoom().ID},cmd.Args...)
+	cmdSendEvent(cmd)
+}
+
 func cmdSendEvent(cmd *Command) {
 	debug.Print(cmd.Command, cmd.Args, len(cmd.Args))
 	if len(cmd.Args) < 3 {
@@ -137,7 +204,7 @@ func cmdSendEvent(cmd *Command) {
 	}
 	roomID := cmd.Args[0]
 	eventType := mautrix.NewEventType(cmd.Args[1])
-	rawContent := strings.Join(cmd.Args[2:], "")
+	rawContent := strings.Join(cmd.Args[2:], " ")
 	debug.Print(roomID, eventType, rawContent)
 
 	var content interface{}
@@ -158,6 +225,15 @@ func cmdSendEvent(cmd *Command) {
 	}
 }
 
+func cmdMSetState(cmd *Command) {
+	if len(cmd.Args) < 2 {
+		cmd.Reply("Usage: /msetstate <event type> <state key> <content>")
+		return
+	}
+	cmd.Args = append([]string{cmd.Room.MxRoom().ID},cmd.Args...)
+	cmdSetState(cmd)
+}
+
 func cmdSetState(cmd *Command) {
 	if len(cmd.Args) < 4 {
 		cmd.Reply("Usage: /setstate <room id> <event type> <state key/`-`> <content>")
@@ -170,7 +246,7 @@ func cmdSetState(cmd *Command) {
 	if stateKey == "-" {
 		stateKey = ""
 	}
-	rawContent := strings.Join(cmd.Args[3:], "")
+	rawContent := strings.Join(cmd.Args[3:], " ")
 
 	var content interface{}
 	err := json.Unmarshal([]byte(rawContent), &content)
