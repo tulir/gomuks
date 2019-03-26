@@ -48,11 +48,12 @@ const (
 )
 
 func (es EventSource) String() string {
-	if es == EventSourcePresence {
+	switch {
+	case es == EventSourcePresence:
 		return "presence"
-	} else if es == EventSourceAccountData {
-		return "account data"
-	} else if es & EventSourceJoin != 0 {
+	case es == EventSourceAccountData:
+		return "user account data"
+	case es&EventSourceJoin != 0:
 		es -= EventSourceJoin
 		switch es {
 		case EventSourceState:
@@ -64,13 +65,13 @@ func (es EventSource) String() string {
 		case EventSourceAccountData:
 			return "room account data (joined)"
 		}
-	} else if es & EventSourceInvite != 0 {
+	case es&EventSourceInvite != 0:
 		es -= EventSourceInvite
 		switch es {
 		case EventSourceState:
 			return "invited state"
 		}
-	} else if es & EventSourceLeave != 0 {
+	case es&EventSourceLeave != 0:
 		es -= EventSourceLeave
 		switch es {
 		case EventSourceState:
@@ -106,15 +107,15 @@ func NewGomuksSyncer(session SyncerSession) *GomuksSyncer {
 // ProcessResponse processes a Matrix sync response.
 func (s *GomuksSyncer) ProcessResponse(res *mautrix.RespSync, since string) (err error) {
 	debug.Print("Received sync response")
-	s.processSyncEvents(nil, res.Presence.Events, EventSourcePresence, false)
-	s.processSyncEvents(nil, res.AccountData.Events, EventSourceAccountData, false)
+	s.processSyncEvents(nil, res.Presence.Events, EventSourcePresence)
+	s.processSyncEvents(nil, res.AccountData.Events, EventSourceAccountData)
 
 	for roomID, roomData := range res.Rooms.Join {
 		room := s.Session.GetRoom(roomID)
-		s.processSyncEvents(room, roomData.State.Events, EventSourceJoin|EventSourceState, false)
-		s.processSyncEvents(room, roomData.Timeline.Events, EventSourceJoin|EventSourceTimeline, false)
-		s.processSyncEvents(room, roomData.Ephemeral.Events, EventSourceJoin|EventSourceEphemeral, false)
-		s.processSyncEvents(room, roomData.AccountData.Events, EventSourceJoin|EventSourceAccountData, false)
+		s.processSyncEvents(room, roomData.State.Events, EventSourceJoin|EventSourceState)
+		s.processSyncEvents(room, roomData.Timeline.Events, EventSourceJoin|EventSourceTimeline)
+		s.processSyncEvents(room, roomData.Ephemeral.Events, EventSourceJoin|EventSourceEphemeral)
+		s.processSyncEvents(room, roomData.AccountData.Events, EventSourceJoin|EventSourceAccountData)
 
 		if len(room.PrevBatch) == 0 {
 			room.PrevBatch = roomData.Timeline.PrevBatch
@@ -123,14 +124,14 @@ func (s *GomuksSyncer) ProcessResponse(res *mautrix.RespSync, since string) (err
 
 	for roomID, roomData := range res.Rooms.Invite {
 		room := s.Session.GetRoom(roomID)
-		s.processSyncEvents(room, roomData.State.Events, EventSourceInvite|EventSourceState, false)
+		s.processSyncEvents(room, roomData.State.Events, EventSourceInvite|EventSourceState)
 	}
 
 	for roomID, roomData := range res.Rooms.Leave {
 		room := s.Session.GetRoom(roomID)
 		room.HasLeft = true
-		s.processSyncEvents(room, roomData.State.Events, EventSourceLeave|EventSourceState, true)
-		s.processSyncEvents(room, roomData.Timeline.Events, EventSourceLeave|EventSourceTimeline, false)
+		s.processSyncEvents(room, roomData.State.Events, EventSourceLeave|EventSourceState)
+		s.processSyncEvents(room, roomData.Timeline.Events, EventSourceLeave|EventSourceTimeline)
 
 		if len(room.PrevBatch) == 0 {
 			room.PrevBatch = roomData.Timeline.PrevBatch
@@ -145,11 +146,9 @@ func (s *GomuksSyncer) ProcessResponse(res *mautrix.RespSync, since string) (err
 	return
 }
 
-func (s *GomuksSyncer) processSyncEvents(room *rooms.Room, events []*mautrix.Event, source EventSource, checkStateKey bool) {
+func (s *GomuksSyncer) processSyncEvents(room *rooms.Room, events []*mautrix.Event, source EventSource) {
 	for _, event := range events {
-		if !checkStateKey || event.StateKey != nil {
-			s.processSyncEvent(room, event, source)
-		}
+		s.processSyncEvent(room, event, source)
 	}
 }
 
