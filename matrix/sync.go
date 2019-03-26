@@ -120,9 +120,9 @@ func (s *GomuksSyncer) processSyncEvents(room *rooms.Room, events []*mautrix.Eve
 func (s *GomuksSyncer) processSyncEvent(room *rooms.Room, event *mautrix.Event, source EventSource) {
 	if room != nil {
 		event.RoomID = room.ID
-	}
-	if event.Type.Class == mautrix.StateEventType {
-		room.UpdateState(event)
+		if source&EventSourceState != 0 {
+			room.UpdateState(event)
+		}
 	}
 	s.notifyListeners(source, event)
 }
@@ -138,6 +138,12 @@ func (s *GomuksSyncer) OnEventType(eventType mautrix.EventType, callback EventHa
 }
 
 func (s *GomuksSyncer) notifyListeners(source EventSource, event *mautrix.Event) {
+	if event.Type.IsState() && source&EventSourceState == 0 ||
+		event.Type.IsAccountData() && source&EventSourceAccountData == 0 ||
+		event.Type.IsEphemeral() && source&EventSourceEphemeral == 0 {
+		debug.Printf("Event of type %s received from mismatching source %s: %v.", event.Type, source, event)
+		return
+	}
 	listeners, exists := s.listeners[event.Type]
 	if !exists {
 		return
