@@ -61,9 +61,15 @@ func AdjustStyleStrikethrough(style tcell.Style) tcell.Style {
 	return style.Strikethrough(true)
 }
 
-func AdjustStyleColor(color tcell.Color) func(tcell.Style) tcell.Style {
+func AdjustStyleTextColor(color tcell.Color) func(tcell.Style) tcell.Style {
 	return func(style tcell.Style) tcell.Style {
 		return style.Foreground(color)
+	}
+}
+
+func AdjustStyleBackgroundColor(color tcell.Color) func(tcell.Style) tcell.Style {
+	return func(style tcell.Style) tcell.Style {
+		return style.Background(color)
 	}
 }
 
@@ -137,28 +143,38 @@ func (parser *htmlParser) basicFormatToTString(node *html.Node, stripLinebreak b
 	return str
 }
 
+func (parser *htmlParser) parseColor(node *html.Node, mainName, altName string) (color tcell.Color, ok bool) {
+	hex := parser.getAttribute(node, mainName)
+	if len(hex) == 0 {
+		hex = parser.getAttribute(node, altName)
+		if len(hex) == 0 {
+			return
+		}
+	}
+
+	cful, err := colorful.Hex(hex)
+	if err != nil {
+		color2, found := ColorMap[strings.ToLower(hex)]
+		if !found {
+			return
+		}
+		cful, _ = colorful.MakeColor(color2)
+	}
+
+	r, g, b := cful.RGB255()
+	return tcell.NewRGBColor(int32(r), int32(g), int32(b)), true
+}
+
 func (parser *htmlParser) fontToTString(node *html.Node, stripLinebreak bool) tstring.TString {
 	str := parser.nodeToTagAwareTString(node.FirstChild, stripLinebreak)
-	hex := parser.getAttribute(node, "data-mx-color")
-	if len(hex) == 0 {
-		hex = parser.getAttribute(node, "color")
-		if len(hex) == 0 {
-			return str
-		}
+	fgColor, ok := parser.parseColor(node, "data-mx-color", "color")
+	if ok {
+		str.AdjustStyleFull(AdjustStyleTextColor(fgColor))
 	}
-
-	color, err := colorful.Hex(hex)
-	if err != nil {
-		color2, ok := ColorMap[strings.ToLower(hex)]
-		if !ok {
-			return str
-		}
-		color, _ = colorful.MakeColor(color2)
+	bgColor, ok := parser.parseColor(node, "data-mx-bg-color", "background-color")
+	if ok {
+		str.AdjustStyleFull(AdjustStyleBackgroundColor(bgColor))
 	}
-
-	r, g, b := color.RGB255()
-	tcellColor := tcell.NewRGBColor(int32(r), int32(g), int32(b))
-	str.AdjustStyleFull(AdjustStyleColor(tcellColor))
 	return str
 }
 

@@ -20,6 +20,7 @@ package matrix
 
 import (
 	"encoding/json"
+	"fmt"
 	"time"
 
 	"maunium.net/go/mautrix"
@@ -45,6 +46,41 @@ const (
 	EventSourceState
 	EventSourceEphemeral
 )
+
+func (es EventSource) String() string {
+	if es == EventSourcePresence {
+		return "presence"
+	} else if es == EventSourceAccountData {
+		return "account data"
+	} else if es & EventSourceJoin != 0 {
+		es -= EventSourceJoin
+		switch es {
+		case EventSourceState:
+			return "joined state"
+		case EventSourceTimeline:
+			return "joined timeline"
+		case EventSourceEphemeral:
+			return "room ephemeral (joined)"
+		case EventSourceAccountData:
+			return "room account data (joined)"
+		}
+	} else if es & EventSourceInvite != 0 {
+		es -= EventSourceInvite
+		switch es {
+		case EventSourceState:
+			return "invited state"
+		}
+	} else if es & EventSourceLeave != 0 {
+		es -= EventSourceLeave
+		switch es {
+		case EventSourceState:
+			return "left state"
+		case EventSourceTimeline:
+			return "left timeline"
+		}
+	}
+	return fmt.Sprintf("unknown (%d)", es)
+}
 
 type EventHandler func(source EventSource, event *mautrix.Event)
 
@@ -120,7 +156,7 @@ func (s *GomuksSyncer) processSyncEvents(room *rooms.Room, events []*mautrix.Eve
 func (s *GomuksSyncer) processSyncEvent(room *rooms.Room, event *mautrix.Event, source EventSource) {
 	if room != nil {
 		event.RoomID = room.ID
-		if source&EventSourceState != 0 {
+		if source&EventSourceState != 0 || (source&EventSourceTimeline != 0 && event.Type.IsState() && event.StateKey != nil) {
 			room.UpdateState(event)
 		}
 	}
@@ -138,10 +174,11 @@ func (s *GomuksSyncer) OnEventType(eventType mautrix.EventType, callback EventHa
 }
 
 func (s *GomuksSyncer) notifyListeners(source EventSource, event *mautrix.Event) {
-	if event.Type.IsState() && source&EventSourceState == 0 ||
-		event.Type.IsAccountData() && source&EventSourceAccountData == 0 ||
-		event.Type.IsEphemeral() && source&EventSourceEphemeral == 0 {
-		debug.Printf("Event of type %s received from mismatching source %s: %v.", event.Type, source, event)
+	if (event.Type.IsState() && source&EventSourceState == 0 && event.StateKey == nil) ||
+		(event.Type.IsAccountData() && source&EventSourceAccountData == 0) ||
+		(event.Type.IsEphemeral() && source&EventSourceEphemeral == 0) {
+		evtJson, _ := json.Marshal(event)
+		debug.Printf("Event of type %s received from mismatching source %s: %s", event.Type.String(), source.String(), string(evtJson))
 		return
 	}
 	listeners, exists := s.listeners[event.Type]

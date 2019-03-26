@@ -210,8 +210,6 @@ func (view *RoomView) Draw(screen mauview.Screen) {
 		view.prevScreen = screen
 	}
 
-	debug.Print(screen)
-
 	view.input.PrepareDraw(width)
 	inputHeight := view.input.GetTextHeight()
 	if inputHeight > MaxInputHeight {
@@ -255,6 +253,7 @@ func (view *RoomView) OnKeyEvent(event mauview.KeyEvent) bool {
 }
 
 func (view *RoomView) OnPasteEvent(event mauview.PasteEvent) bool {
+	debug.Print("PASTE EVENT", event)
 	return view.input.OnPasteEvent(event)
 }
 
@@ -322,6 +321,7 @@ func (view *RoomView) autocompleteRoom(existingText string) (completions []compl
 }
 
 func (view *RoomView) InputTabComplete(text string, cursorOffset int) {
+	debug.Print("Tab completing", cursorOffset, text)
 	str := runewidth.Truncate(text, cursorOffset, "")
 	word := findWordToTabComplete(str)
 	startIndex := len(str) - len(word)

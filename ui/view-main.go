@@ -155,7 +155,6 @@ func (view *MainView) InputSubmit(roomView *RoomView, text string) {
 		cmd := view.cmdProcessor.ParseCommand(roomView, text)
 		go view.cmdProcessor.HandleCommand(cmd)
 	} else {
-		debug.Print(text)
 		view.SendMessage(roomView, text)
 	}
 	roomView.SetInputText("")

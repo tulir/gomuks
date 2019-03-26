@@ -20,8 +20,8 @@ import "os/exec"
 
 func Send(title, text string, critical, sound bool) error {
 	args := []string{"-a", "gomuks"}
-	if critical {
-		args = append(args, "-u", "critical")
+	if !critical {
+		args = append(args, "-u", "low")
 	}
 	// 	if iconPath {
 	// 		args = append(args, "-i", iconPath)
