@@ -26,6 +26,8 @@ import (
 
 	"github.com/mattn/go-runewidth"
 
+	"maunium.net/go/gomuks/debug"
+
 	"maunium.net/go/mauview"
 
 	"maunium.net/go/mautrix"
@@ -78,15 +80,15 @@ func NewRoomView(parent *MainView, room *rooms.Room) *RoomView {
 		input:    mauview.NewInputArea(),
 		Room:     room,
 
-		topicScreen: &mauview.ProxyScreen{OffsetX: 0, OffsetY: 0, Height: TopicBarHeight},
-		contentScreen: &mauview.ProxyScreen{OffsetX: 0, OffsetY: StatusBarHeight},
-		statusScreen: &mauview.ProxyScreen{OffsetX: 0, Height: StatusBarHeight},
-		inputScreen: &mauview.ProxyScreen{OffsetX: 0},
+		topicScreen:    &mauview.ProxyScreen{OffsetX: 0, OffsetY: 0, Height: TopicBarHeight},
+		contentScreen:  &mauview.ProxyScreen{OffsetX: 0, OffsetY: StatusBarHeight},
+		statusScreen:   &mauview.ProxyScreen{OffsetX: 0, Height: StatusBarHeight},
+		inputScreen:    &mauview.ProxyScreen{OffsetX: 0},
 		ulBorderScreen: &mauview.ProxyScreen{OffsetY: StatusBarHeight, Width: UserListBorderWidth},
-		ulScreen: &mauview.ProxyScreen{OffsetY: StatusBarHeight, Width: UserListWidth},
+		ulScreen:       &mauview.ProxyScreen{OffsetY: StatusBarHeight, Width: UserListWidth},
 
-		parent:   parent,
-		config:   parent.config,
+		parent: parent,
+		config: parent.config,
 	}
 	view.content = NewMessageView(view)
 
@@ -98,7 +100,8 @@ func NewRoomView(parent *MainView, room *rooms.Room) *RoomView {
 
 	view.topic.
 		SetText(strings.Replace(room.GetTopic(), "\n", " ", -1)).
-		SetTextColor(tcell.ColorDarkGreen)
+		SetTextColor(tcell.ColorWhite).
+		SetBackgroundColor(tcell.ColorDarkGreen)
 
 	view.status.SetBackgroundColor(tcell.ColorDimGray)
 
@@ -185,27 +188,16 @@ const (
 	UserListWidth         = 20
 	StaticHorizontalSpace = UserListBorderWidth + UserListWidth
 
-	TopicBarHeight      = 1
-	StatusBarHeight     = 1
-	InputBarHeight      = 1
-	StaticVerticalSpace = TopicBarHeight + StatusBarHeight + InputBarHeight
+	TopicBarHeight  = 1
+	StatusBarHeight = 1
 
-	MaxInputHeight
+	MaxInputHeight = 5
 )
 
 func (view *RoomView) Draw(screen mauview.Screen) {
 	width, height := screen.Size()
 	if width <= 0 || height <= 0 {
 		return
-	}
-
-	// Calculate actual grid based on view rectangle and constants defined above.
-	var (
-		contentHeight = height - StaticVerticalSpace
-		contentWidth  = width - StaticHorizontalSpace
-	)
-	if view.config.Preferences.HideUserList {
-		contentWidth = width
 	}
 
 	if view.prevScreen != screen {
@@ -218,6 +210,8 @@ func (view *RoomView) Draw(screen mauview.Screen) {
 		view.prevScreen = screen
 	}
 
+	debug.Print(screen)
+
 	view.input.PrepareDraw(width)
 	inputHeight := view.input.GetTextHeight()
 	if inputHeight > MaxInputHeight {
@@ -225,7 +219,11 @@ func (view *RoomView) Draw(screen mauview.Screen) {
 	} else if inputHeight < 1 {
 		inputHeight = 1
 	}
-	contentHeight -= inputHeight
+	contentHeight := height - inputHeight - TopicBarHeight - StatusBarHeight
+	contentWidth := width - StaticHorizontalSpace
+	if view.config.Preferences.HideUserList {
+		contentWidth = width
+	}
 
 	view.topicScreen.Width = width
 	view.contentScreen.Width = contentWidth
@@ -261,7 +259,15 @@ func (view *RoomView) OnPasteEvent(event mauview.PasteEvent) bool {
 }
 
 func (view *RoomView) OnMouseEvent(event mauview.MouseEvent) bool {
-	return view.content.OnMouseEvent(event)
+	switch {
+	case view.contentScreen.IsInArea(event.Position()):
+		return view.content.OnMouseEvent(view.contentScreen.OffsetMouseEvent(event))
+	case view.topicScreen.IsInArea(event.Position()):
+		return view.topic.OnMouseEvent(view.topicScreen.OffsetMouseEvent(event))
+	case view.inputScreen.IsInArea(event.Position()):
+		return view.input.OnMouseEvent(view.inputScreen.OffsetMouseEvent(event))
+	}
+	return false
 }
 
 func (view *RoomView) SetCompletions(completions []string) {

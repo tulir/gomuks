@@ -155,6 +155,7 @@ func (view *MainView) InputSubmit(roomView *RoomView, text string) {
 		cmd := view.cmdProcessor.ParseCommand(roomView, text)
 		go view.cmdProcessor.HandleCommand(cmd)
 	} else {
+		debug.Print(text)
 		view.SendMessage(roomView, text)
 	}
 	roomView.SetInputText("")
@@ -175,7 +176,7 @@ func (view *MainView) sendTempMessage(roomView *RoomView, tempMessage ifc.Messag
 	if err != nil {
 		tempMessage.SetState(ifc.MessageStateFailed)
 		if httpErr, ok := err.(mautrix.HTTPError); ok {
-			if respErr, ok := httpErr.WrappedError.(mautrix.RespError); ok {
+			if respErr := httpErr.RespError; respErr != nil {
 				// Show shorter version if available
 				err = respErr
 			}

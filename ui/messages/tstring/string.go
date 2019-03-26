@@ -183,9 +183,8 @@ func (str TString) AdjustStyleFull(fn func(tcell.Style) tcell.Style) {
 }
 
 func (str TString) Draw(screen mauview.Screen, x, y int) {
-	offsetX := 0
 	for _, cell := range str {
-		offsetX += cell.Draw(screen, x+offsetX, y)
+		x += cell.Draw(screen, x, y)
 	}
 }
 
