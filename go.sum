@@ -45,7 +45,11 @@ maunium.net/go/mautrix v0.1.0-alpha.3 h1:kBz7M63hRetQnAnYK+gVmuSxsmZesX6xERphVgE
 maunium.net/go/mautrix v0.1.0-alpha.3/go.mod h1:GTVu6WDHR+98DKOrYetWsXorvUeKQV3jsSWO6ScbuFI=
 maunium.net/go/mautrix v0.1.0-alpha.3.0.20190326200501-48bbec641543 h1:72ljaoFWWT5TlRnLlEyB9xqSnDrUeWCYSD0LMaX7FZo=
 maunium.net/go/mautrix v0.1.0-alpha.3.0.20190326200501-48bbec641543/go.mod h1:hpKYWY2m61ql7Dxslkg59VgB9BtpvONQ1kjIQSCfs3k=
+maunium.net/go/mautrix v0.1.0-alpha.3.0.20190328212757-5794ed367481 h1:6eg4gVj5BNlqT50C+gyw73lzXOnbkGa2ECIyj+iuLZQ=
+maunium.net/go/mautrix v0.1.0-alpha.3.0.20190328212757-5794ed367481/go.mod h1:hpKYWY2m61ql7Dxslkg59VgB9BtpvONQ1kjIQSCfs3k=
 maunium.net/go/mauview v0.0.0-20190325223341-4c387be4b686 h1:kFgijToFPbMQGIMElizZGPQsffu+ZqO0olORXnfj1g4=
 maunium.net/go/mauview v0.0.0-20190325223341-4c387be4b686/go.mod h1:Uw1CaNoCs9id/rKBF3Eg9KhhFVg+3akJTebZomFKW+4=
 maunium.net/go/tcell v0.0.0-20190111223412-5e74142cb009 h1:4lojuJmNSun1nUB67m3DGg+RkYg1MUO6aUxgKQU5iZk=
 maunium.net/go/tcell v0.0.0-20190111223412-5e74142cb009/go.mod h1:U+akxk8CP6vAWV74r2NOqEMMHw6kPGWTyvjzCtemxtM=
+maunium.net/go/tcell v0.0.0-20190328213459-e9a7513fc499 h1:NSyOvGspo7cNeVYQAjnKjw6SJQVvYNsimsy2j9F+dSM=
+maunium.net/go/tcell v0.0.0-20190328213459-e9a7513fc499/go.mod h1:U+akxk8CP6vAWV74r2NOqEMMHw6kPGWTyvjzCtemxtM=
