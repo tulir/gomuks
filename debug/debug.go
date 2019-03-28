@@ -82,13 +82,14 @@ const Oops = ` __________
       \  (XX)\_______
          (__)\       )\/\
           U  ||----W |
-             ||     ||`
+             ||     ||
+
+A fatal error has occurred.
+
+`
 
 func PrettyPanic(panic interface{}) {
-	fmt.Println(Oops)
-	fmt.Println("")
-	fmt.Println("A fatal error has occurred.")
-	fmt.Println("")
+	fmt.Print(Oops)
 	traceFile := fmt.Sprintf("/tmp/gomuks-panic-%s.txt", time.Now().Format("2006-01-02--15-04-05"))
 
 	var buf bytes.Buffer

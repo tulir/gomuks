@@ -559,5 +559,4 @@ func (view *MessageView) Draw(screen mauview.Screen) {
 
 		text.Draw(screen, messageX, line)
 	}
-	debug.Print(screen)
 }

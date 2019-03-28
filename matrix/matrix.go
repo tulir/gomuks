@@ -29,10 +29,7 @@ import (
 	"path"
 	"path/filepath"
 	"regexp"
-	"strings"
 	"time"
-
-	"github.com/russross/blackfriday/v2"
 
 	"maunium.net/go/mautrix"
 	"maunium.net/go/mautrix/format"
@@ -472,21 +469,6 @@ func (c *Container) SendMessage(roomID string, msgtype mautrix.MessageType, text
 	return resp.EventID, nil
 }
 
-func (c *Container) renderMarkdown(text string) string {
-	renderer := blackfriday.NewHTMLRenderer(blackfriday.HTMLRendererParameters{
-		Flags: blackfriday.UseXHTML,
-	})
-
-	return strings.ReplaceAll(string(blackfriday.Run([]byte(text),
-		blackfriday.WithExtensions(blackfriday.NoIntraEmphasis|
-			blackfriday.Tables|
-			blackfriday.FencedCode|
-			blackfriday.Strikethrough|
-			blackfriday.SpaceHeadings|
-			blackfriday.DefinitionLists),
-		blackfriday.WithRenderer(renderer))), "\n", "")
-}
-
 var mentionRegex = regexp.MustCompile("\\[(.+?)]\\(https://matrix.to/#/@.+?:.+?\\)")
 var roomRegex = regexp.MustCompile("\\[.+?]\\(https://matrix.to/#/(#.+?:[^/]+?)\\)")
 
@@ -497,26 +479,15 @@ var roomRegex = regexp.MustCompile("\\[.+?]\\(https://matrix.to/#/(#.+?:[^/]+?)\
 func (c *Container) SendMarkdownMessage(roomID string, msgtype mautrix.MessageType, text string) (string, error) {
 	defer debug.Recover()
 
-	html := c.renderMarkdown(text)
-	if html == text {
-		return c.SendMessage(roomID, msgtype, text)
-	}
-	// Oh god this is horrible
-	// but at least /rainbow doesn't put HTML into the plaintext :D
-	text = format.HTMLToText(html)
+	content := format.RenderMarkdown(text)
+	content.MsgType = msgtype
 
 	// Remove markdown link stuff from plaintext mentions and room links
-	text = mentionRegex.ReplaceAllString(text, "$1")
-	text = roomRegex.ReplaceAllString(text, "$1")
+	content.Body = mentionRegex.ReplaceAllString(content.Body, "$1")
+	content.Body = roomRegex.ReplaceAllString(content.Body, "$1")
 
 	c.SendTyping(roomID, false)
-	resp, err := c.client.SendMessageEvent(roomID, mautrix.EventMessage,
-		mautrix.Content{
-			MsgType:       msgtype,
-			Body:          text,
-			Format:        mautrix.FormatHTML,
-			FormattedBody: html,
-		})
+	resp, err := c.client.SendMessageEvent(roomID, mautrix.EventMessage, content)
 	if err != nil {
 		return "", err
 	}

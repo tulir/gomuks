@@ -90,6 +90,8 @@ func (view *MainView) ShowModal(modal mauview.Component) {
 	view.focused, ok = modal.(mauview.Focusable)
 	if !ok {
 		view.focused = nil
+	} else {
+		view.focused.Focus()
 	}
 }
 
@@ -281,6 +283,9 @@ defaultHandler:
 const WheelScrollOffsetDiff = 3
 
 func (view *MainView) OnMouseEvent(event mauview.MouseEvent) bool {
+	if view.modal != nil {
+		return view.modal.OnMouseEvent(event)
+	}
 	if view.config.Preferences.HideRoomList {
 		return view.roomView.OnMouseEvent(event)
 	}

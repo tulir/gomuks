@@ -11,9 +11,9 @@ require (
 	github.com/russross/blackfriday/v2 v2.0.1
 	github.com/shurcooL/sanitized_anchor_name v1.0.0 // indirect
 	golang.org/x/image v0.0.0-20190321063152-3fc05d484e9f
-	golang.org/x/net v0.0.0-20190326090315-15845e8f865b
+	golang.org/x/net v0.0.0-20190327214358-63eda1eb0650
 	gopkg.in/yaml.v2 v2.2.2
-	maunium.net/go/mautrix v0.1.0-alpha.3.0.20190326200501-48bbec641543
+	maunium.net/go/mautrix v0.1.0-alpha.3.0.20190328212757-5794ed367481
 	maunium.net/go/mauview v0.0.0-20190325223341-4c387be4b686
 	maunium.net/go/tcell v0.0.0-20190111223412-5e74142cb009
 )
