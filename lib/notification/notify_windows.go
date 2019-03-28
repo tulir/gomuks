@@ -16,13 +16,14 @@
 
 package notification
 
-import "gopkg.in/toast.v1"
-
+import (
+	"gopkg.in/toast.v1"
+)
 func Send(title, text string, critical, sound bool) error {
 	notification := toast.Notification{
 		AppID:    "gomuks",
 		Title:    title,
-		Message:  message,
+		Message:  text,
 		Audio:    toast.Silent,
 		Duration: toast.Short,
 		// 		Icon: ...,
