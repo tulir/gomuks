@@ -101,7 +101,29 @@ func cmdUnknownCommand(cmd *Command) {
 }
 
 func cmdHelp(cmd *Command) {
-	cmd.Reply("Known command. Don't try \"/help\" for help.")
+	cmd.Reply(`/help - Show the temporary help message.
+
+/quit       - Quit gomuks.
+/clearcache - Clear cache and quit gomuks.
+/logout     - Log out of Matrix.
+
+/me <message>      - Send an emote message.
+/rainbow <message> - Send a rainbow message (markdown not supported).
+
+/join <room address> - Join a room.
+/leave               - Leave the current room.
+
+/invite <user id>        - Invite a user.
+/kick <user id> [reason] - Kick a user.
+/ban <user id> [reason]  - Ban a user.
+/unban <user id>         - Unban a user.
+
+/send     <room id> <type>         <json> - Send a custom event to the given room.
+/msend              <type>         <json> - Send a custom event to the current room.
+/setstate <room id> <type> <key/-> <json> - Send a custom event to the given room.
+/msetstate          <type> <key/-> <json> - Send a custom event to the current room.
+
+/toggle <thing> - Temporary command to toggle various UI features.`)
 }
 
 func cmdLeave(cmd *Command) {
@@ -126,14 +148,14 @@ func cmdInvite(cmd *Command) {
 
 func cmdBan(cmd *Command) {
 	if len(cmd.Args) < 1 {
-		cmd.Reply("Usage: /ban <user> <optional:reason>")
+		cmd.Reply("Usage: /ban <user> [reason]")
 		return
 	}
 	reason := "you are the weakest link, goodbye!"
 	if len(cmd.Args) >= 2 {
-		reason = strings.Join(cmd.Args[1:]," ")
+		reason = strings.Join(cmd.Args[1:], " ")
 	}
-	_, err := cmd.Matrix.Client().BanUser(cmd.Room.MxRoom().ID, &mautrix.ReqBanUser{reason,cmd.Args[0]})
+	_, err := cmd.Matrix.Client().BanUser(cmd.Room.MxRoom().ID, &mautrix.ReqBanUser{reason, cmd.Args[0]})
 	if err != nil {
 		debug.Print("Error in ban call:", err)
 		cmd.Reply("Failed to ban user:", err)
@@ -155,14 +177,14 @@ func cmdUnban(cmd *Command) {
 
 func cmdKick(cmd *Command) {
 	if len(cmd.Args) < 1 {
-		cmd.Reply("Usage: /kick <user> <optional:reason>")
+		cmd.Reply("Usage: /kick <user> [reason]")
 		return
 	}
 	reason := "you are the weakest link, goodbye!"
 	if len(cmd.Args) >= 2 {
-		reason = strings.Join(cmd.Args[1:]," ")
+		reason = strings.Join(cmd.Args[1:], " ")
 	}
-	_, err := cmd.Matrix.Client().KickUser(cmd.Room.MxRoom().ID, &mautrix.ReqKickUser{reason,cmd.Args[0]})
+	_, err := cmd.Matrix.Client().KickUser(cmd.Room.MxRoom().ID, &mautrix.ReqKickUser{reason, cmd.Args[0]})
 	if err != nil {
 		debug.Print("Error in kick call:", err)
 		debug.Print("Failed to kick user:", err)
@@ -192,7 +214,7 @@ func cmdMSendEvent(cmd *Command) {
 		cmd.Reply("Usage: /msend <event type> <content>")
 		return
 	}
-	cmd.Args = append([]string{cmd.Room.MxRoom().ID},cmd.Args...)
+	cmd.Args = append([]string{cmd.Room.MxRoom().ID}, cmd.Args...)
 	cmdSendEvent(cmd)
 }
 
@@ -230,7 +252,7 @@ func cmdMSetState(cmd *Command) {
 		cmd.Reply("Usage: /msetstate <event type> <state key> <content>")
 		return
 	}
-	cmd.Args = append([]string{cmd.Room.MxRoom().ID},cmd.Args...)
+	cmd.Args = append([]string{cmd.Room.MxRoom().ID}, cmd.Args...)
 	cmdSetState(cmd)
 }
 

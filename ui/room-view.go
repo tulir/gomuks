@@ -24,6 +24,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/kyokomi/emoji"
 	"github.com/mattn/go-runewidth"
 
 	"maunium.net/go/gomuks/debug"
@@ -56,6 +57,8 @@ type RoomView struct {
 	inputScreen    *mauview.ProxyScreen
 	ulBorderScreen *mauview.ProxyScreen
 	ulScreen       *mauview.ProxyScreen
+
+	inputSubmitFunc func(room *RoomView, text string)
 
 	prevScreen mauview.Screen
 
@@ -125,12 +128,7 @@ func (view *RoomView) LoadHistory(matrix ifc.MatrixContainer, dir string) (int, 
 }
 
 func (view *RoomView) SetInputSubmitFunc(fn func(room *RoomView, text string)) *RoomView {
-	// FIXME
-	/*view.input.SetDoneFunc(func(key tcell.Key) {
-		if key == tcell.KeyEnter {
-			fn(view, view.input.GetText())
-		}
-	})*/
+	view.inputSubmitFunc = fn
 	return view
 }
 
@@ -249,11 +247,27 @@ func (view *RoomView) Draw(screen mauview.Screen) {
 }
 
 func (view *RoomView) OnKeyEvent(event mauview.KeyEvent) bool {
+	msgView := view.MessageView()
+	switch event.Key() {
+	case tcell.KeyPgUp:
+		if msgView.IsAtTop() {
+			go view.parent.LoadHistory(view.Room.ID)
+		}
+		msgView.AddScrollOffset(+msgView.Height() / 2)
+		return true
+	case tcell.KeyPgDn:
+		msgView.AddScrollOffset(-msgView.Height() / 2)
+		return true
+	case tcell.KeyEnter:
+		if event.Modifiers() & tcell.ModShift == 0 && event.Modifiers() & tcell.ModCtrl == 0 && view.inputSubmitFunc != nil {
+			view.inputSubmitFunc(view, view.input.GetText())
+			return true
+		}
+	}
 	return view.input.OnKeyEvent(event)
 }
 
 func (view *RoomView) OnPasteEvent(event mauview.PasteEvent) bool {
-	debug.Print("PASTE EVENT", event)
 	return view.input.OnPasteEvent(event)
 }
 
@@ -320,6 +334,20 @@ func (view *RoomView) autocompleteRoom(existingText string) (completions []compl
 	return
 }
 
+func (view *RoomView) autocompleteEmoji(word string) (completions []string) {
+	if len(word) == 0 || word[0] != ':' {
+		return
+	}
+	for name, value := range emoji.CodeMap() {
+		if name == word {
+			return []string{value}
+		} else if strings.HasPrefix(name, word) {
+			completions = append(completions, name)
+		}
+	}
+	return
+}
+
 func (view *RoomView) InputTabComplete(text string, cursorOffset int) {
 	debug.Print("Tab completing", cursorOffset, text)
 	str := runewidth.Truncate(text, cursorOffset, "")
@@ -343,6 +371,8 @@ func (view *RoomView) InputTabComplete(text string, cursorOffset int) {
 			strCompletions = append(strCompletions, completion.displayName)
 		}
 	}
+
+	strCompletions = append(strCompletions, view.autocompleteEmoji(word)...)
 
 	if len(strCompletions) > 0 {
 		strCompletion = util.LongestCommonPrefix(strCompletions)

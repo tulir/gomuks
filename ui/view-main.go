@@ -231,58 +231,30 @@ func (view *MainView) OnKeyEvent(event mauview.KeyEvent) bool {
 		case k == tcell.KeyEnd:
 			msgView := view.currentRoom.MessageView()
 			msgView.AddScrollOffset(-msgView.TotalHeight())
-		case k == tcell.KeyCtrlN:
-			return view.flex.OnKeyEvent(tcell.NewEventKey(tcell.KeyEnter, '\n', event.Modifiers()))
+		case c == 'n' || k == tcell.KeyCtrlN:
+			return view.flex.OnKeyEvent(tcell.NewEventKey(tcell.KeyEnter, '\n', event.Modifiers()|tcell.ModShift))
 		case c == 'a':
 			view.SwitchRoom(view.roomList.NextWithActivity())
-		case c == 'l':
+		case c == 'l' || k == tcell.KeyCtrlL:
 			view.ShowBare(view.currentRoom)
 		default:
 			goto defaultHandler
 		}
 		return true
-	} else if k == tcell.KeyAltDown || k == tcell.KeyCtrlDown {
-		view.SwitchRoom(view.roomList.Next())
-		return true
-	} else if k == tcell.KeyAltUp || k == tcell.KeyCtrlUp {
-		view.SwitchRoom(view.roomList.Previous())
-		return true
-	} else if view.currentRoom != nil &&
-		(k == tcell.KeyPgUp || k == tcell.KeyPgDn ||
-			k == tcell.KeyUp || k == tcell.KeyDown ||
-			k == tcell.KeyEnd || k == tcell.KeyHome) {
-		// TODO these should be in the RoomView key handler
-		msgView := view.currentRoom.MessageView()
-
-		if msgView.IsAtTop() && (k == tcell.KeyPgUp || k == tcell.KeyUp) {
-			go view.LoadHistory(view.currentRoom.Room.ID)
-		}
-
-		switch k {
-		case tcell.KeyPgUp:
-			msgView.AddScrollOffset(msgView.Height() / 2)
-		case tcell.KeyPgDn:
-			msgView.AddScrollOffset(-msgView.Height() / 2)
-		default:
-			goto defaultHandler
-		}
-		return true
-	} else if k == tcell.KeyEnter {
-		view.InputSubmit(view.currentRoom, view.currentRoom.input.GetText())
-		return true
 	}
 defaultHandler:
 	if view.config.Preferences.HideRoomList {
-		debug.Print("Key event going to default handler (direct to roomview)", event)
 		return view.roomView.OnKeyEvent(event)
 	}
-	debug.Print("Key event going to default handler (flex)", event)
 	return view.flex.OnKeyEvent(event)
 }
 
 const WheelScrollOffsetDiff = 3
 
 func (view *MainView) OnMouseEvent(event mauview.MouseEvent) bool {
+	if event.HasMotion() {
+		return false
+	}
 	if view.modal != nil {
 		return view.modal.OnMouseEvent(event)
 	}
@@ -290,27 +262,6 @@ func (view *MainView) OnMouseEvent(event mauview.MouseEvent) bool {
 		return view.roomView.OnMouseEvent(event)
 	}
 	return view.flex.OnMouseEvent(event)
-	/*if event.Buttons() == tcell.ButtonNone || event.HasMotion() {
-		return false
-	}
-
-	view.BumpFocus(view.currentRoom)
-
-	x, y := event.Position()
-
-	switch {
-	case x >= 27:
-		view.roomView.OnMouseEvent(mauview.OffsetMouseEvent(event, -27, 0))
-		view.roomView.Focus()
-		view.focused = view.roomView
-	case x <= 25:
-		view.roomList.OnMouseEvent(event)
-		view.roomList.Focus()
-		view.focused = view.roomList
-	default:
-		debug.Print("Unhandled mouse event:", event.Buttons(), event.Modifiers(), x, y)
-	}
-	return false*/
 }
 
 func (view *MainView) OnPasteEvent(event mauview.PasteEvent) bool {

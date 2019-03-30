@@ -382,6 +382,9 @@ func (list *RoomList) OnPasteEvent(event mauview.PasteEvent) bool {
 }
 
 func (list *RoomList) OnMouseEvent(event mauview.MouseEvent) bool {
+	if event.HasMotion() {
+		return false
+	}
 	switch event.Buttons() {
 	case tcell.WheelUp:
 		list.AddScrollOffset(-WheelScrollOffsetDiff)
@@ -411,7 +414,7 @@ func (list *RoomList) clickRoom(line, column int, mod bool) bool {
 		trl := list.items[tag]
 		if line--; line == -1 {
 			trl.ToggleCollapse()
-			break
+			return true
 		}
 
 		if trl.IsCollapsed() {
