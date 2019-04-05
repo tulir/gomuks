@@ -46,7 +46,6 @@ type MainView interface {
 	AddRoom(room *rooms.Room)
 	RemoveRoom(room *rooms.Room)
 	SetRooms(rooms map[string]*rooms.Room)
-	SaveAllHistory()
 
 	UpdateTags(room *rooms.Room)
 
@@ -67,8 +66,6 @@ const (
 
 type RoomView interface {
 	MxRoom() *rooms.Room
-	SaveHistory(dir string) error
-	LoadHistory(matrix MatrixContainer, dir string) (int, error)
 
 	SetCompletions(completions []string)
 	SetTyping(users []string)

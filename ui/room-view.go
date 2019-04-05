@@ -119,14 +119,6 @@ func (view *RoomView) logPath(dir string) string {
 	return filepath.Join(dir, fmt.Sprintf("%s.gmxlog", view.Room.ID))
 }
 
-func (view *RoomView) SaveHistory(dir string) error {
-	return view.MessageView().SaveHistory(view.logPath(dir))
-}
-
-func (view *RoomView) LoadHistory(matrix ifc.MatrixContainer, dir string) (int, error) {
-	return view.MessageView().LoadHistory(matrix, view.logPath(dir))
-}
-
 func (view *RoomView) SetInputSubmitFunc(fn func(room *RoomView, text string)) *RoomView {
 	view.inputSubmitFunc = fn
 	return view

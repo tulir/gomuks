@@ -122,9 +122,12 @@ func (view *MainView) BumpFocus(roomView *RoomView) {
 func (view *MainView) MarkRead(roomView *RoomView) {
 	if roomView != nil && roomView.Room.HasNewMessages() && roomView.MessageView().ScrollOffset == 0 {
 		msgList := roomView.MessageView().messages
-		msg := msgList[len(msgList)-1]
-		roomView.Room.MarkRead(msg.ID())
-		view.matrix.MarkRead(roomView.Room.ID, msg.ID())
+		if len(msgList) > 0 {
+			msg := msgList[len(msgList)-1]
+			if roomView.Room.MarkRead(msg.ID()) {
+				view.matrix.MarkRead(roomView.Room.ID, msg.ID())
+			}
+		}
 	}
 }
 
@@ -301,14 +304,8 @@ func (view *MainView) SwitchRoom(tag string, room *rooms.Room) {
 	view.MarkRead(roomView)
 	view.roomList.SetSelected(tag, room)
 	view.parent.Render()
-}
-
-func (view *MainView) SaveAllHistory() {
-	for _, room := range view.rooms {
-		err := room.SaveHistory(view.config.HistoryDir)
-		if err != nil {
-			debug.Printf("Failed to save history of %s: %v", room.Room.GetTitle(), err)
-		}
+	if len(roomView.MessageView().messages) == 0 {
+		go view.LoadHistory(room.ID)
 	}
 }
 
@@ -320,10 +317,11 @@ func (view *MainView) addRoomPage(room *rooms.Room) {
 		view.rooms[room.ID] = roomView
 		roomView.UpdateUserList()
 
-		_, err := roomView.LoadHistory(view.matrix, view.config.HistoryDir)
+		// FIXME
+		/*_, err := roomView.LoadHistory(view.matrix, view.config.HistoryDir)
 		if err != nil {
 			debug.Printf("Failed to load history of %s: %v", roomView.Room.GetTitle(), err)
-		}
+		}*/
 	}
 }
 
@@ -465,24 +463,23 @@ func (view *MainView) LoadHistory(room string) {
 		return
 	}
 
-	debug.Print("Fetching history for", room, "starting from", batch)
-	history, prevBatch, err := view.matrix.GetHistory(roomView.Room.ID, batch, 50)
+	history, err := view.matrix.GetHistory(roomView.Room, 50)
 	if err != nil {
 		roomView.AddServiceMessage("Failed to fetch history")
 		debug.Print("Failed to fetch history for", roomView.Room.ID, err)
 		return
 	}
-	roomView.Room.PrevBatch = prevBatch
 	for _, evt := range history {
 		message := view.ParseEvent(roomView, evt)
 		if message != nil {
 			roomView.AddMessage(message, ifc.PrependMessage)
 		}
 	}
-	err = roomView.SaveHistory(view.config.HistoryDir)
+	// TODO?
+	/*err = roomView.SaveHistory(view.config.HistoryDir)
 	if err != nil {
 		debug.Printf("Failed to save history of %s: %v", roomView.Room.GetTitle(), err)
-	}
+	}*/
 	view.config.PutRoom(roomView.Room)
 	view.parent.Render()
 }

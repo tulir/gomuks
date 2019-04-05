@@ -11,6 +11,7 @@ require (
 	github.com/nu7hatch/gouuid v0.0.0-20131221200532-179d4d0c4d8d // indirect
 	github.com/russross/blackfriday/v2 v2.0.1
 	github.com/shurcooL/sanitized_anchor_name v1.0.0 // indirect
+	go.etcd.io/bbolt v1.3.2
 	golang.org/x/image v0.0.0-20190321063152-3fc05d484e9f
 	golang.org/x/net v0.0.0-20190327214358-63eda1eb0650
 	gopkg.in/toast.v1 v1.0.0-20180812000517-0a84660828b2

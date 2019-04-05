@@ -17,10 +17,8 @@
 package ui
 
 import (
-	"encoding/gob"
 	"fmt"
 	"math"
-	"os"
 	"strings"
 
 	"github.com/mattn/go-runewidth"
@@ -82,55 +80,6 @@ func NewMessageView(parent *RoomView) *MessageView {
 		prevHeight:   -1,
 		prevMsgCount: -1,
 	}
-}
-
-func (view *MessageView) SaveHistory(path string) error {
-	file, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE, 0600)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-
-	enc := gob.NewEncoder(file)
-	err = enc.Encode(view.messages)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (view *MessageView) LoadHistory(matrix ifc.MatrixContainer, path string) (int, error) {
-	file, err := os.OpenFile(path, os.O_RDONLY, 0600)
-	if err != nil {
-		if os.IsNotExist(err) {
-			return 0, nil
-		}
-		return -1, err
-	}
-	defer file.Close()
-
-	var msgs []messages.UIMessage
-
-	dec := gob.NewDecoder(file)
-	err = dec.Decode(&msgs)
-	if err != nil {
-		return -1, err
-	}
-
-	view.messages = make([]messages.UIMessage, len(msgs))
-	indexOffset := 0
-	for index, message := range msgs {
-		if message != nil {
-			view.messages[index-indexOffset] = message
-			view.updateWidestSender(message.Sender())
-			message.RegisterMatrix(matrix)
-		} else {
-			indexOffset++
-		}
-	}
-
-	return len(view.messages), nil
 }
 
 func (view *MessageView) updateWidestSender(sender string) {

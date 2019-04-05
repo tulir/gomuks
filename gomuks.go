@@ -61,8 +61,8 @@ func NewGomuks(uiProvider ifc.UIProvider) *Gomuks {
 // Save saves the active session and message history.
 func (gmx *Gomuks) Save() {
 	gmx.config.SaveAll()
-	debug.Print("Saving history...")
-	gmx.ui.MainView().SaveAllHistory()
+	//debug.Print("Saving history...")
+	//gmx.ui.MainView().SaveAllHistory()
 }
 
 // StartAutosave calls Save() every minute until it receives a stop signal

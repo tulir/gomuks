@@ -106,7 +106,7 @@ func ParseMessage(matrix ifc.MatrixContainer, room *rooms.Room, evt *mautrix.Eve
 		if len(roomID) == 0 {
 			roomID = room.ID
 		}
-		replyToEvt, _ := matrix.Client().GetEvent(roomID, evt.Content.GetReplyTo())
+		replyToEvt, _ := matrix.GetEvent(room, evt.Content.GetReplyTo())
 		if replyToEvt != nil {
 			replyToEvt.Content.RemoveReplyFallback()
 			if len(replyToEvt.Content.FormattedBody) == 0 {

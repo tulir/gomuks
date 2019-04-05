@@ -50,6 +50,7 @@ type Container struct {
 	gmx     ifc.Gomuks
 	ui      ifc.GomuksUI
 	config  *config.Config
+	history *HistoryManager
 	running bool
 	stop    chan bool
 
@@ -101,6 +102,11 @@ func (c *Container) InitClient() error {
 		return err
 	}
 	c.client.Logger = mxLogger{}
+
+	c.history, err = NewHistoryManager(c.config.HistoryPath)
+	if err != nil {
+		return err
+	}
 
 	allowInsecure := len(os.Getenv("GOMUKS_ALLOW_INSECURE_CONNECTIONS")) > 0
 	if allowInsecure {
@@ -158,6 +164,11 @@ func (c *Container) Stop() {
 		debug.Print("Stopping Matrix container...")
 		c.stop <- true
 		c.client.StopSync()
+		debug.Print("Closing history manager...")
+		err := c.history.Close()
+		if err != nil {
+			debug.Print("Error closing history manager:", err)
+		}
 	}
 }
 
@@ -279,6 +290,11 @@ func (c *Container) HandleMessage(source EventSource, evt *mautrix.Event) {
 	if roomView == nil {
 		debug.Printf("Failed to handle event %v: No room view found.", evt)
 		return
+	}
+
+	err := c.history.Append(roomView.MxRoom(), []*mautrix.Event{evt})
+	if err != nil {
+		debug.Printf("Failed to add event %s to history: %v", evt.ID, err)
 	}
 
 	message := mainView.ParseEvent(roomView, evt)
@@ -537,12 +553,42 @@ func (c *Container) LeaveRoom(roomID string) error {
 }
 
 // GetHistory fetches room history.
-func (c *Container) GetHistory(roomID, prevBatch string, limit int) ([]*mautrix.Event, string, error) {
-	resp, err := c.client.Messages(roomID, prevBatch, "", 'b', limit)
+func (c *Container) GetHistory(room *rooms.Room, limit int) ([]*mautrix.Event, error) {
+	events, err := c.history.Load(room, limit)
 	if err != nil {
-		return nil, "", err
+		return nil, err
 	}
-	return resp.Chunk, resp.End, nil
+	if len(events) > 0 {
+		debug.Printf("Loaded %d events for %s from local cache", len(events), room.ID)
+		return events, nil
+	}
+	resp, err := c.client.Messages(room.ID, room.PrevBatch, "", 'b', limit)
+	if err != nil {
+		return nil, err
+	}
+	if len(resp.Chunk) > 0 {
+		err = c.history.Prepend(room, resp.Chunk)
+		if err != nil {
+			return nil, err
+		}
+	}
+	room.PrevBatch = resp.End
+	debug.Printf("Loaded %d events for %s from server from %s to %s", len(resp.Chunk), room.ID, resp.Start, resp.End)
+	return resp.Chunk, nil
+}
+
+func (c *Container) GetEvent(room *rooms.Room, eventID string) (*mautrix.Event, error) {
+	event, err := c.history.Get(room, eventID)
+	if event != nil || err != nil {
+		debug.Printf("Found event %s in local cache", eventID)
+		return event, err
+	}
+	event, err = c.client.GetEvent(room.ID, eventID)
+	if err != nil {
+		return nil, err
+	}
+	debug.Printf("Loaded event %s from server", eventID)
+	return event, nil
 }
 
 // GetRoom gets the room instance stored in the session.

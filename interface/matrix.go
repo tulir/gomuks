@@ -41,7 +41,8 @@ type MatrixContainer interface {
 	JoinRoom(roomID, server string) (*rooms.Room, error)
 	LeaveRoom(roomID string) error
 
-	GetHistory(roomID, prevBatch string, limit int) ([]*mautrix.Event, string, error)
+	GetHistory(room *rooms.Room, limit int) ([]*mautrix.Event, error)
+	GetEvent(room *rooms.Room, eventID string) (*mautrix.Event, error)
 	GetRoom(roomID string) *rooms.Room
 
 	Download(mxcURL string) ([]byte, string, string, error)

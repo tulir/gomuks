@@ -53,11 +53,11 @@ type Config struct {
 	AccessToken string `yaml:"access_token"`
 	HS          string `yaml:"homeserver"`
 
-	Dir        string `yaml:"-"`
-	CacheDir   string `yaml:"cache_dir"`
-	HistoryDir string `yaml:"history_dir"`
-	MediaDir   string `yaml:"media_dir"`
-	StateDir   string `yaml:"state_dir"`
+	Dir         string `yaml:"-"`
+	CacheDir    string `yaml:"cache_dir"`
+	HistoryPath string `yaml:"history_path"`
+	MediaDir    string `yaml:"media_dir"`
+	StateDir    string `yaml:"state_dir"`
 
 	Preferences UserPreferences        `yaml:"-"`
 	AuthCache   AuthCache              `yaml:"-"`
@@ -70,11 +70,11 @@ type Config struct {
 // NewConfig creates a config that loads data from the given directory.
 func NewConfig(configDir, cacheDir string) *Config {
 	return &Config{
-		Dir:        configDir,
-		CacheDir:   cacheDir,
-		HistoryDir: filepath.Join(cacheDir, "history"),
-		StateDir:   filepath.Join(cacheDir, "state"),
-		MediaDir:   filepath.Join(cacheDir, "media"),
+		Dir:         configDir,
+		CacheDir:    cacheDir,
+		HistoryPath: filepath.Join(cacheDir, "history.db"),
+		StateDir:    filepath.Join(cacheDir, "state"),
+		MediaDir:    filepath.Join(cacheDir, "media"),
 
 		Rooms: make(map[string]*rooms.Room),
 	}
@@ -82,7 +82,7 @@ func NewConfig(configDir, cacheDir string) *Config {
 
 // Clear clears the session cache and removes all history.
 func (config *Config) Clear() {
-	os.RemoveAll(config.HistoryDir)
+	os.Remove(config.HistoryPath)
 	os.RemoveAll(config.StateDir)
 	os.RemoveAll(config.MediaDir)
 	os.RemoveAll(config.CacheDir)
@@ -91,7 +91,6 @@ func (config *Config) Clear() {
 
 func (config *Config) CreateCacheDirs() {
 	os.MkdirAll(config.CacheDir, 0700)
-	os.MkdirAll(config.HistoryDir, 0700)
 	os.MkdirAll(config.StateDir, 0700)
 	os.MkdirAll(config.MediaDir, 0700)
 }

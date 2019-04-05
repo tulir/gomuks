@@ -113,10 +113,10 @@ func cmdHelp(cmd *Command) {
 /join <room address> - Join a room.
 /leave               - Leave the current room.
 
-/invite <user id>        - Invite a user.
-/kick <user id> [reason] - Kick a user.
-/ban <user id> [reason]  - Ban a user.
-/unban <user id>         - Unban a user.
+/invite <user id>          - Invite a user.
+/kick   <user id> [reason] - Kick a user.
+/ban    <user id> [reason] - Ban a user.
+/unban  <user id>          - Unban a user.
 
 /send     <room id> <type>         <json> - Send a custom event to the given room.
 /msend              <type>         <json> - Send a custom event to the current room.

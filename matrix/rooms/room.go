@@ -57,6 +57,7 @@ type UnreadMessage struct {
 	Highlight bool
 }
 
+
 // Room represents a single Matrix room.
 type Room struct {
 	*mautrix.Room
@@ -74,6 +75,7 @@ type Room struct {
 	UnreadMessages   []UnreadMessage
 	unreadCountCache *int
 	highlightCache   *bool
+	lastMarkedRead   string
 	// Whether or not this room is marked as a direct chat.
 	IsDirect bool
 
@@ -142,7 +144,11 @@ func (room *Room) Save(path string) error {
 }
 
 // MarkRead clears the new message statuses on this room.
-func (room *Room) MarkRead(eventID string) {
+func (room *Room) MarkRead(eventID string) bool {
+	if room.lastMarkedRead == eventID {
+		return false
+	}
+	room.lastMarkedRead = eventID
 	readToIndex := -1
 	for index, unreadMessage := range room.UnreadMessages {
 		if unreadMessage.EventID == eventID {
@@ -154,6 +160,7 @@ func (room *Room) MarkRead(eventID string) {
 		room.highlightCache = nil
 		room.unreadCountCache = nil
 	}
+	return true
 }
 
 func (room *Room) UnreadCount() int {
