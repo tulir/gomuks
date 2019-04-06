@@ -87,9 +87,11 @@ func (ui *GomuksUI) NewLoginView() mauview.Component {
 		AddComponent(view.usernameLabel, 1, 1, 1, 1).
 		AddComponent(view.passwordLabel, 1, 3, 1, 1).
 		AddComponent(view.homeserverLabel, 1, 5, 1, 1)
+	view.FocusNextItem()
 	ui.loginView = view
 
 	view.container = mauview.Center(mauview.NewBox(view).SetTitle("Log in to Matrix"), 45, 13)
+	view.container.SetAlwaysFocusChild(true)
 	return view.container
 }
 

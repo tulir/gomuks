@@ -66,7 +66,7 @@ func (ui *GomuksUI) Init() {
 		ViewLogin: ui.NewLoginView(),
 		ViewMain:  ui.NewMainView(),
 	}
-	ui.app.Root = ui.views[ViewLogin]
+	ui.SetView(ViewLogin)
 }
 
 func (ui *GomuksUI) Start() error {
