@@ -281,7 +281,7 @@ func (c *Container) SendPreferencesToMatrix() {
 
 // HandleMessage is the event handler for the m.room.message timeline event.
 func (c *Container) HandleMessage(source EventSource, evt *mautrix.Event) {
-	if source&EventSourceLeave != 0 {
+	if source&EventSourceLeave != 0 || source&EventSourceState != 0 {
 		return
 	}
 	mainView := c.ui.MainView()
