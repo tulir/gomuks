@@ -98,6 +98,7 @@ func (config *Config) CreateCacheDirs() {
 func (config *Config) DeleteSession() {
 	config.AuthCache.NextBatch = ""
 	config.AuthCache.InitialSyncDone = false
+	config.AccessToken = ""
 	config.Rooms = make(map[string]*rooms.Room)
 	config.PushRules = nil
 

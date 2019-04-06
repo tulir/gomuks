@@ -19,7 +19,6 @@ package main
 import (
 	"os"
 	"os/signal"
-	"path/filepath"
 	"syscall"
 	"time"
 
@@ -39,9 +38,7 @@ type Gomuks struct {
 
 // NewGomuks creates a new Gomuks instance with everything initialized,
 // but does not start it.
-func NewGomuks(uiProvider ifc.UIProvider) *Gomuks {
-	configDir := filepath.Join(os.Getenv("HOME"), ".config/gomuks")
-	cacheDir := filepath.Join(os.Getenv("HOME"), ".cache/gomuks")
+func NewGomuks(uiProvider ifc.UIProvider, configDir, cacheDir string) *Gomuks {
 	gmx := &Gomuks{
 		stop: make(chan bool, 1),
 	}

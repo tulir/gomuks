@@ -17,8 +17,11 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
+	"runtime"
 	"time"
 
 	"maunium.net/go/gomuks/debug"
@@ -34,11 +37,58 @@ func main() {
 	enableDebug := len(os.Getenv("DEBUG")) > 0
 	debug.RecoverPrettyPanic = !enableDebug
 
-	gmx := NewGomuks(MainUIProvider)
+	configDir, err := UserConfigDir()
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "Failed to get config directory:", err)
+		os.Exit(3)
+	}
+	cacheDir, err := UserCacheDir()
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "Failed to get cache directory:", err)
+		os.Exit(3)
+	}
+
+	gmx := NewGomuks(MainUIProvider, configDir, cacheDir)
 	gmx.Start()
 
 	// We use os.Exit() everywhere, so exiting by returning from Start() shouldn't happen.
 	time.Sleep(5 * time.Second)
 	fmt.Println("Unexpected exit by return from gmx.Start().")
 	os.Exit(2)
+}
+
+func UserCacheDir() (dir string, err error) {
+	dir = os.Getenv("GOMUKS_CACHE_HOME")
+	if dir == "" {
+		dir, err = os.UserCacheDir()
+		dir = filepath.Join(dir, "gomuks")
+	}
+	return
+}
+
+func UserConfigDir() (dir string, err error) {
+	dir = os.Getenv("GOMUKS_CONFIG_HOME")
+	if dir != "" {
+		return
+	}
+	if runtime.GOOS == "windows" {
+		dir = os.Getenv("AppData")
+		if dir == "" {
+			err = errors.New("%AppData% is not defined")
+		}
+	} else {
+		dir = os.Getenv("XDG_CONFIG_HOME")
+		if dir == "" {
+			dir = os.Getenv("HOME")
+			if dir == "" {
+				err = errors.New("neither $XDG_CONFIG_HOME nor $HOME are defined")
+			} else if runtime.GOOS == "darwin" {
+				dir = filepath.Join(dir, "Library", "Application Support")
+			} else {
+				dir = filepath.Join(dir, ".config")
+			}
+		}
+	}
+	dir = filepath.Join(dir, "gomuks")
+	return
 }
