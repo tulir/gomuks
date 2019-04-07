@@ -27,7 +27,6 @@ type UIMessage interface {
 	ifc.Message
 
 	CalculateBuffer(preferences config.UserPreferences, width int)
-	RecalculateBuffer()
 	Buffer() []tstring.TString
 	Height() int
 	PlainText() string

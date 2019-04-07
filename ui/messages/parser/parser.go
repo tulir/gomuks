@@ -125,8 +125,7 @@ func ParseMessage(matrix ifc.MatrixContainer, room *rooms.Room, evt *mautrix.Eve
 	switch evt.Content.MsgType {
 	case "m.text", "m.notice", "m.emote":
 		if evt.Content.Format == mautrix.FormatHTML {
-			text := ParseHTMLMessage(room, evt, displayname)
-			return messages.NewExpandedTextMessage(evt.ID, evt.Sender, displayname, evt.Content.MsgType, text, ts)
+			return messages.NewHTMLMessage(evt.ID, evt.Sender, displayname, evt.Content.MsgType, ParseHTMLMessage(room, evt, displayname), ts)
 		}
 		evt.Content.Body = strings.Replace(evt.Content.Body, "\t", "    ", -1)
 		return messages.NewTextMessage(evt.ID, evt.Sender, displayname, evt.Content.MsgType, evt.Content.Body, ts)

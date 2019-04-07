@@ -26,11 +26,11 @@ import (
 	"github.com/lucasb-eyer/go-colorful"
 	"golang.org/x/net/html"
 
+	"maunium.net/go/gomuks/ui/messages"
 	"maunium.net/go/mautrix"
 	"maunium.net/go/tcell"
 
 	"maunium.net/go/gomuks/matrix/rooms"
-	"maunium.net/go/gomuks/ui/messages/tstring"
 	"maunium.net/go/gomuks/ui/widget"
 )
 
@@ -38,11 +38,6 @@ var matrixToURL = regexp.MustCompile("^(?:https?://)?(?:www\\.)?matrix\\.to/#/([
 
 type htmlParser struct {
 	room *rooms.Room
-}
-
-type taggedTString struct {
-	tstring.TString
-	tag string
 }
 
 func AdjustStyleBold(style tcell.Style) tcell.Style {
@@ -89,9 +84,9 @@ func digits(num int) int {
 	return int(math.Floor(math.Log10(float64(num))) + 1)
 }
 
-func (parser *htmlParser) listToTString(node *html.Node, stripLinebreak bool) tstring.TString {
+func (parser *htmlParser) listToTString(node *html.Node, stripLinebreak bool) *messages.HTMLEntity {
 	ordered := node.Data == "ol"
-	taggedChildren := parser.nodeToTaggedTStrings(node.FirstChild, stripLinebreak)
+	listItems := parser.nodeToEntities(node.FirstChild, stripLinebreak)
 	counter := 1
 	indentLength := 0
 	if ordered {
@@ -100,13 +95,12 @@ func (parser *htmlParser) listToTString(node *html.Node, stripLinebreak bool) ts
 			counter, _ = strconv.Atoi(start)
 		}
 
-		longestIndex := (counter - 1) + len(taggedChildren)
+		longestIndex := (counter - 1) + len(listItems)
 		indentLength = digits(longestIndex)
 	}
-	indent := strings.Repeat(" ", indentLength+2)
-	var children []tstring.TString
-	for _, child := range taggedChildren {
-		if child.tag != "li" {
+	var children []*messages.HTMLEntity
+	for _, child := range listItems {
+		if child.Tag != "li" {
 			continue
 		}
 		var prefix string
@@ -116,31 +110,47 @@ func (parser *htmlParser) listToTString(node *html.Node, stripLinebreak bool) ts
 		} else {
 			prefix = "● "
 		}
-		str := child.TString.Prepend(prefix)
+		child.Text = prefix + child.Text
+		child.Block = true
+		child.Indent = indentLength + 2
+		children = append(children, child)
 		counter++
-		parts := str.Split('\n')
-		for i, part := range parts[1:] {
-			parts[i+1] = part.Prepend(indent)
-		}
-		str = tstring.Join(parts, "\n")
-		children = append(children, str)
 	}
-	return tstring.Join(children, "\n")
+	return &messages.HTMLEntity{
+		Tag:      node.Data,
+		Text:     "",
+		Style:    tcell.StyleDefault,
+		Children: children,
+		Block:    true,
+		Indent:   0,
+	}
 }
 
-func (parser *htmlParser) basicFormatToTString(node *html.Node, stripLinebreak bool) tstring.TString {
-	str := parser.nodeToTagAwareTString(node.FirstChild, stripLinebreak)
+func (parser *htmlParser) basicFormatToEntity(node *html.Node, stripLinebreak bool) *messages.HTMLEntity {
+	entity := &messages.HTMLEntity{
+		Tag:      node.Data,
+		Children: parser.nodeToEntities(node.FirstChild, stripLinebreak),
+	}
 	switch node.Data {
 	case "b", "strong":
-		str.AdjustStyleFull(AdjustStyleBold)
+		entity.AdjustStyle(AdjustStyleBold)
 	case "i", "em":
-		str.AdjustStyleFull(AdjustStyleItalic)
+		entity.AdjustStyle(AdjustStyleItalic)
 	case "s", "del":
-		str.AdjustStyleFull(AdjustStyleStrikethrough)
+		entity.AdjustStyle(AdjustStyleStrikethrough)
 	case "u", "ins":
-		str.AdjustStyleFull(AdjustStyleUnderline)
+		entity.AdjustStyle(AdjustStyleUnderline)
+	case "font":
+		fgColor, ok := parser.parseColor(node, "data-mx-color", "color")
+		if ok {
+			entity.AdjustStyle(AdjustStyleTextColor(fgColor))
+		}
+		bgColor, ok := parser.parseColor(node, "data-mx-bg-color", "background-color")
+		if ok {
+			entity.AdjustStyle(AdjustStyleBackgroundColor(bgColor))
+		}
 	}
-	return str
+	return entity
 }
 
 func (parser *htmlParser) parseColor(node *html.Node, mainName, altName string) (color tcell.Color, ok bool) {
@@ -165,98 +175,112 @@ func (parser *htmlParser) parseColor(node *html.Node, mainName, altName string) 
 	return tcell.NewRGBColor(int32(r), int32(g), int32(b)), true
 }
 
-func (parser *htmlParser) fontToTString(node *html.Node, stripLinebreak bool) tstring.TString {
-	str := parser.nodeToTagAwareTString(node.FirstChild, stripLinebreak)
-	fgColor, ok := parser.parseColor(node, "data-mx-color", "color")
-	if ok {
-		str.AdjustStyleFull(AdjustStyleTextColor(fgColor))
-	}
-	bgColor, ok := parser.parseColor(node, "data-mx-bg-color", "background-color")
-	if ok {
-		str.AdjustStyleFull(AdjustStyleBackgroundColor(bgColor))
-	}
-	return str
-}
-
-func (parser *htmlParser) headerToTString(node *html.Node, stripLinebreak bool) tstring.TString {
-	children := parser.nodeToTStrings(node.FirstChild, stripLinebreak)
+func (parser *htmlParser) headerToEntity(node *html.Node, stripLinebreak bool) *messages.HTMLEntity {
 	length := int(node.Data[1] - '0')
 	prefix := strings.Repeat("#", length) + " "
-	return tstring.Join(children, "").Prepend(prefix)
+	return (&messages.HTMLEntity{
+		Tag:      node.Data,
+		Text:     prefix,
+		Children: parser.nodeToEntities(node.FirstChild, stripLinebreak),
+	}).AdjustStyle(AdjustStyleBold)
 }
 
-func (parser *htmlParser) blockquoteToTString(node *html.Node, stripLinebreak bool) tstring.TString {
-	str := parser.nodeToTagAwareTString(node.FirstChild, stripLinebreak)
-	childrenArr := str.TrimSpace().Split('\n')
-	for index, child := range childrenArr {
-		childrenArr[index] = child.Prepend("> ")
+func (parser *htmlParser) blockquoteToEntity(node *html.Node, stripLinebreak bool) *messages.HTMLEntity {
+	return &messages.HTMLEntity{
+		Tag:      "blockquote",
+		Text:     ">",
+		Children: parser.nodeToEntities(node.FirstChild, stripLinebreak),
+		Block:    true,
+		Indent:   2,
 	}
-	return tstring.Join(childrenArr, "\n")
 }
 
-func (parser *htmlParser) linkToTString(node *html.Node, stripLinebreak bool) tstring.TString {
-	str := parser.nodeToTagAwareTString(node.FirstChild, stripLinebreak)
+func (parser *htmlParser) linkToEntity(node *html.Node, stripLinebreak bool) *messages.HTMLEntity {
+	entity := &messages.HTMLEntity{
+		Tag:      "a",
+		Children: parser.nodeToEntities(node.FirstChild, stripLinebreak),
+	}
 	href := parser.getAttribute(node, "href")
 	if len(href) == 0 {
-		return str
+		return entity
 	}
 	match := matrixToURL.FindStringSubmatch(href)
 	if len(match) == 2 {
+		entity.Children = nil
 		pillTarget := match[1]
+		entity.Text = pillTarget
 		if pillTarget[0] == '@' {
 			if member := parser.room.GetMember(pillTarget); member != nil {
-				return tstring.NewColorTString(member.Displayname, widget.GetHashColor(pillTarget))
+				entity.Text = member.Displayname
+				entity.Style = entity.Style.Foreground(widget.GetHashColor(pillTarget))
 			}
 		}
-		return tstring.NewTString(pillTarget)
 	}
-	return str.Append(fmt.Sprintf(" (%s)", href))
+	// TODO add click action for links
+	return entity
 }
 
-func (parser *htmlParser) tagToTString(node *html.Node, stripLinebreak bool) tstring.TString {
+func (parser *htmlParser) codeblockToEntity(node *html.Node) *messages.HTMLEntity {
+	return &messages.HTMLEntity{
+		Tag:      "pre",
+		Children: parser.nodeToEntities(node.FirstChild, false),
+		Block:    true,
+	}
+}
+
+func (parser *htmlParser) tagNodeToEntity(node *html.Node, stripLinebreak bool) *messages.HTMLEntity {
 	switch node.Data {
 	case "blockquote":
-		return parser.blockquoteToTString(node, stripLinebreak)
+		return parser.blockquoteToEntity(node, stripLinebreak)
 	case "ol", "ul":
 		return parser.listToTString(node, stripLinebreak)
 	case "h1", "h2", "h3", "h4", "h5", "h6":
-		return parser.headerToTString(node, stripLinebreak)
+		return parser.headerToEntity(node, stripLinebreak)
 	case "br":
-		return tstring.NewTString("\n")
-	case "b", "strong", "i", "em", "s", "del", "u", "ins":
-		return parser.basicFormatToTString(node, stripLinebreak)
-	case "font":
-		return parser.fontToTString(node, stripLinebreak)
+		return &messages.HTMLEntity{Tag: "br", Block: true}
+	case "b", "strong", "i", "em", "s", "del", "u", "ins", "font":
+		return parser.basicFormatToEntity(node, stripLinebreak)
 	case "a":
-		return parser.linkToTString(node, stripLinebreak)
-	case "p":
-		return parser.nodeToTagAwareTString(node.FirstChild, stripLinebreak).Append("\n")
+		return parser.linkToEntity(node, stripLinebreak)
 	case "pre":
-		return parser.nodeToTString(node.FirstChild, false)
+		return parser.codeblockToEntity(node)
 	default:
-		return parser.nodeToTagAwareTString(node.FirstChild, stripLinebreak)
+		return &messages.HTMLEntity{
+			Tag:      node.Data,
+			Children: parser.nodeToEntities(node.FirstChild, stripLinebreak),
+			Block:    parser.isBlockTag(node.Data),
+		}
 	}
 }
 
-func (parser *htmlParser) singleNodeToTString(node *html.Node, stripLinebreak bool) taggedTString {
+func (parser *htmlParser) singleNodeToEntity(node *html.Node, stripLinebreak bool) *messages.HTMLEntity {
 	switch node.Type {
 	case html.TextNode:
 		if stripLinebreak {
 			node.Data = strings.Replace(node.Data, "\n", "", -1)
 		}
-		return taggedTString{tstring.NewTString(node.Data), "text"}
+		return &messages.HTMLEntity{
+			Tag:  "text",
+			Text: node.Data,
+		}
 	case html.ElementNode:
-		return taggedTString{parser.tagToTString(node, stripLinebreak), node.Data}
+		return parser.tagNodeToEntity(node, stripLinebreak)
 	case html.DocumentNode:
-		return taggedTString{parser.nodeToTagAwareTString(node.FirstChild, stripLinebreak), "html"}
+		return &messages.HTMLEntity{
+			Tag:      "html",
+			Children: parser.nodeToEntities(node.FirstChild, stripLinebreak),
+			Block:    true,
+		}
 	default:
-		return taggedTString{tstring.NewBlankTString(), "unknown"}
+		return nil
 	}
 }
 
-func (parser *htmlParser) nodeToTaggedTStrings(node *html.Node, stripLinebreak bool) (strs []taggedTString) {
+func (parser *htmlParser) nodeToEntities(node *html.Node, stripLinebreak bool) (entities []*messages.HTMLEntity) {
 	for ; node != nil; node = node.NextSibling {
-		strs = append(strs, parser.singleNodeToTString(node, stripLinebreak))
+		if entity := parser.singleNodeToEntity(node, stripLinebreak); entity != nil {
+			entities = append(entities, entity)
+		}
 	}
 	return
 }
@@ -272,51 +296,31 @@ func (parser *htmlParser) isBlockTag(tag string) bool {
 	return false
 }
 
-func (parser *htmlParser) nodeToTagAwareTString(node *html.Node, stripLinebreak bool) tstring.TString {
-	strs := parser.nodeToTaggedTStrings(node, stripLinebreak)
-	output := tstring.NewBlankTString()
-	for _, str := range strs {
-		tstr := str.TString
-		if parser.isBlockTag(str.tag) {
-			tstr = tstr.Prepend("\n").Append("\n")
-		}
-		output = output.AppendTString(tstr)
-	}
-	return output.TrimSpace()
-}
-
-func (parser *htmlParser) nodeToTStrings(node *html.Node, stripLinebreak bool) (strs []tstring.TString) {
-	for ; node != nil; node = node.NextSibling {
-		strs = append(strs, parser.singleNodeToTString(node, stripLinebreak).TString)
-	}
-	return
-}
-
-func (parser *htmlParser) nodeToTString(node *html.Node, stripLinebreak bool) tstring.TString {
-	return tstring.Join(parser.nodeToTStrings(node, stripLinebreak), "")
-}
-
-func (parser *htmlParser) Parse(htmlData string) tstring.TString {
+func (parser *htmlParser) Parse(htmlData string) *messages.HTMLEntity {
 	node, _ := html.Parse(strings.NewReader(htmlData))
-	return parser.nodeToTagAwareTString(node, true)
+	return parser.singleNodeToEntity(node, true)
 }
 
 // ParseHTMLMessage parses a HTML-formatted Matrix event into a UIMessage.
-func ParseHTMLMessage(room *rooms.Room, evt *mautrix.Event, senderDisplayname string) tstring.TString {
+func ParseHTMLMessage(room *rooms.Room, evt *mautrix.Event, senderDisplayname string) *messages.HTMLEntity {
 	htmlData := evt.Content.FormattedBody
 	htmlData = strings.Replace(htmlData, "\t", "    ", -1)
 
 	parser := htmlParser{room}
-	str := parser.Parse(htmlData)
+	root := parser.Parse(htmlData)
+	root.Block = false
 
 	if evt.Content.MsgType == mautrix.MsgEmote {
-		str = tstring.Join([]tstring.TString{
-			tstring.NewTString("* "),
-			tstring.NewColorTString(senderDisplayname, widget.GetHashColor(evt.Sender)),
-			tstring.NewTString(" "),
-			str,
-		}, "")
+		root = &messages.HTMLEntity{
+			Tag: "emote",
+			Children: []*messages.HTMLEntity{
+				{Text: "* "},
+				{Text: senderDisplayname, Style: tcell.StyleDefault.Foreground(widget.GetHashColor(evt.Sender))},
+				{Text: " "},
+				root,
+			},
+		}
 	}
 
-	return str
+	return root
 }

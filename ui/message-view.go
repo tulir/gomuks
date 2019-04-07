@@ -504,6 +504,14 @@ func (view *MessageView) Draw(screen mauview.Screen) {
 					meta.SenderColor())
 			}
 			prevMeta = meta
+			htmlMessage, ok := meta.(*messages.HTMLMessage)
+			if ok {
+				htmlMessage.Draw(mauview.NewProxyScreen(screen, 0, line, view.width, htmlMessage.Height()))
+				if ok {
+					line += htmlMessage.Height()
+					continue
+				}
+			}
 		}
 
 		text.Draw(screen, messageX, line)
