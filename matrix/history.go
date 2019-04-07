@@ -48,7 +48,11 @@ func NewHistoryManager(dbPath string) (*HistoryManager, error) {
 		historyEndPtr:  make(map[*rooms.Room]uint64),
 		historyLoadPtr: make(map[*rooms.Room]uint64),
 	}
-	db, err := bolt.Open(dbPath, 0600, nil)
+	db, err := bolt.Open(dbPath, 0600, &bolt.Options{
+		Timeout: 1,
+		NoGrowSync: false,
+		FreelistType: bolt.FreelistArrayType,
+	})
 	if err != nil {
 		return nil, err
 	}
