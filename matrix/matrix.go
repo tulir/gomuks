@@ -262,9 +262,15 @@ func (c *Container) Start() {
 }
 
 func (c *Container) HandlePreferences(source EventSource, evt *mautrix.Event) {
+	if source&EventSourceAccountData == 0 {
+		return
+	}
 	orig := c.config.Preferences
-	rt, _ := json.Marshal(&evt.Content)
-	json.Unmarshal(rt, &c.config.Preferences)
+	err := json.Unmarshal(evt.Content.VeryRaw, &c.config.Preferences)
+	if err != nil {
+		debug.Print("Failed to parse updated preferences:", err)
+		return
+	}
 	debug.Print("Updated preferences:", orig, "->", c.config.Preferences)
 	c.ui.HandleNewPreferences()
 }
