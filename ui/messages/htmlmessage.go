@@ -65,7 +65,6 @@ func (hw *HTMLMessage) CalculateBuffer(preferences config.UserPreferences, width
 	// TODO account for bare messages in initial startX
 	startX := 0
 	hw.Root.calculateBuffer(width, startX, preferences.BareMessageView)
-	//debug.Print(hw.Root.String())
 }
 
 func (hw *HTMLMessage) Height() int {
@@ -73,10 +72,12 @@ func (hw *HTMLMessage) Height() int {
 }
 
 func (hw *HTMLMessage) PlainText() string {
+	// FIXME
 	return "Plaintext unavailable"
 }
 
 func (hw *HTMLMessage) NotificationContent() string {
+	// FIXME
 	return "Notification content unavailable"
 }
 
@@ -212,20 +213,12 @@ func (he *HTMLEntity) calculateBuffer(width, startX int, bare bool) int {
 	return 0
 }
 
-// Regular expressions used to split lines when calculating the buffer.
-/*var (
-	boundaryPattern     = regexp.MustCompile(`([[:punct:]]\s*|\s+)`)
-	bareBoundaryPattern = regexp.MustCompile(`(\s+)`)
-	spacePattern        = regexp.MustCompile(`\s+`)
-)*/
-
 func trim(extract, full string, bare bool) (string, bool) {
 	if len(extract) == len(full) {
 		return extract, true
 	}
 	if spaces := spacePattern.FindStringIndex(full[len(extract):]); spaces != nil && spaces[0] == 0 {
 		extract = full[:len(extract)+spaces[1]]
-		//return extract, true
 	}
 	regex := boundaryPattern
 	if bare {
