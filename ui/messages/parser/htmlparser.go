@@ -23,6 +23,9 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/alecthomas/chroma"
+	"github.com/alecthomas/chroma/lexers"
+	"github.com/alecthomas/chroma/styles"
 	"github.com/lucasb-eyer/go-colorful"
 	"golang.org/x/net/html"
 
@@ -216,16 +219,100 @@ func (parser *htmlParser) linkToEntity(node *html.Node, stripLinebreak bool) *me
 			}
 		}
 	}
-	// TODO add click action for links
+	// TODO add click action and underline on hover for links
 	return entity
 }
 
-func (parser *htmlParser) codeblockToEntity(node *html.Node) *messages.HTMLEntity {
+func (parser *htmlParser) imageToEntity(node *html.Node) *messages.HTMLEntity {
+	alt := parser.getAttribute(node, "alt")
+	if len(alt) == 0 {
+		alt = parser.getAttribute(node, "title")
+		if len(alt) == 0 {
+			alt = "[inline image]"
+		}
+	}
+	entity := &messages.HTMLEntity{
+		Tag:  "img",
+		Text: alt,
+	}
+	// TODO add click action and underline on hover for inline images
+	return entity
+}
+
+func colourToColor(colour chroma.Colour) tcell.Color {
+	if !colour.IsSet() {
+		return tcell.ColorDefault
+	}
+	return tcell.NewRGBColor(int32(colour.Red()), int32(colour.Green()), int32(colour.Blue()))
+}
+
+func styleEntryToStyle(se chroma.StyleEntry) tcell.Style {
+	return tcell.StyleDefault.
+		Bold(se.Bold == chroma.Yes).
+		Italic(se.Italic == chroma.Yes).
+		Underline(se.Underline == chroma.Yes).
+		Foreground(colourToColor(se.Colour)).
+		Background(colourToColor(se.Background))
+}
+
+func (parser *htmlParser) syntaxHighlight(text, language string) *messages.HTMLEntity {
+	lexer := lexers.Get(language)
+	if lexer == nil {
+		return nil
+	}
+	iter, err := lexer.Tokenise(nil, text)
+	if err != nil {
+		return nil
+	}
+	style := styles.SolarizedDark
+	tokens := iter.Tokens()
+	children := make([]*messages.HTMLEntity, len(tokens))
+	for i, token := range tokens {
+		if token.Value == "\n" {
+			children[i] = &messages.HTMLEntity{Block: true, Tag: "br"}
+		} else {
+			children[i] = &messages.HTMLEntity{
+				Tag:   token.Type.String(),
+				Text:  token.Value,
+				Style: styleEntryToStyle(style.Get(token.Type)),
+
+				DefaultHeight: 1,
+			}
+		}
+	}
 	return &messages.HTMLEntity{
 		Tag:      "pre",
-		Children: parser.nodeToEntities(node.FirstChild, false),
 		Block:    true,
+		Children: children,
 	}
+}
+
+func (parser *htmlParser) codeblockToEntity(node *html.Node) *messages.HTMLEntity {
+	entity := &messages.HTMLEntity{
+		Tag:   "pre",
+		Block: true,
+	}
+	// TODO allow disabling syntax highlighting
+	if node.FirstChild.Type == html.ElementNode && node.FirstChild.Data == "code" {
+		text := (&messages.HTMLEntity{
+			Children: parser.nodeToEntities(node.FirstChild.FirstChild, false),
+		}).PlainText()
+		attr := parser.getAttribute(node.FirstChild, "class")
+		var lang string
+		for _, class := range strings.Split(attr, " ") {
+			if strings.HasPrefix(class, "language-") {
+				lang = class[len("language-"):]
+				break
+			}
+		}
+		if len(lang) != 0 {
+			if parsed := parser.syntaxHighlight(text, lang); parsed != nil {
+				return parsed
+			}
+		}
+	}
+	entity.Children = parser.nodeToEntities(node.FirstChild, false)
+	return entity
 }
 
 func (parser *htmlParser) tagNodeToEntity(node *html.Node, stripLinebreak bool) *messages.HTMLEntity {
@@ -242,6 +329,8 @@ func (parser *htmlParser) tagNodeToEntity(node *html.Node, stripLinebreak bool) 
 		return parser.basicFormatToEntity(node, stripLinebreak)
 	case "a":
 		return parser.linkToEntity(node, stripLinebreak)
+	case "img":
+		return parser.imageToEntity(node)
 	case "pre":
 		return parser.codeblockToEntity(node)
 	default:

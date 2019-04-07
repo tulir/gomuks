@@ -3,6 +3,7 @@ module maunium.net/go/gomuks
 go 1.12
 
 require (
+	github.com/alecthomas/chroma v0.6.3
 	github.com/disintegration/imaging v1.6.0
 	github.com/kyokomi/emoji v2.1.0+incompatible
 	github.com/lithammer/fuzzysearch v1.0.2

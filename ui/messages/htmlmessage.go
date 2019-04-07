@@ -72,23 +72,23 @@ func (hw *HTMLMessage) Height() int {
 }
 
 func (hw *HTMLMessage) PlainText() string {
-	// FIXME
-	return "Plaintext unavailable"
+	return hw.Root.PlainText()
 }
 
 func (hw *HTMLMessage) NotificationContent() string {
-	// FIXME
-	return "Notification content unavailable"
+	return hw.Root.PlainText()
 }
 
 type HTMLEntity struct {
 	// Permanent variables
-	Tag      string
-	Text     string
-	Style    tcell.Style
-	Children []*HTMLEntity
-	Block    bool
-	Indent   int
+	Tag       string
+	Text      string
+	Style     tcell.Style
+	Children  []*HTMLEntity
+	Block     bool
+	Indent    int
+
+	DefaultHeight int
 
 	// Non-permanent variables (calculated buffer data)
 	buffer    []string
@@ -130,8 +130,9 @@ func (he *HTMLEntity) Draw(screen mauview.Screen) {
 func (he *HTMLEntity) String() string {
 	var buf strings.Builder
 	buf.WriteString("&HTMLEntity{\n")
-	_, _ = fmt.Fprintf(&buf, `    Tag="%s", Style=%d, Block=%t, Indent=%d, startX=%d, height=%d,\n`,
+	_, _ = fmt.Fprintf(&buf, `    Tag="%s", Style=%d, Block=%t, Indent=%d, startX=%d, height=%d,`,
 		he.Tag, he.Style, he.Block, he.Indent, he.startX, he.height)
+	buf.WriteRune('\n')
 	_, _ = fmt.Fprintf(&buf, `    Buffer=["%s"]`, strings.Join(he.buffer, "\", \""))
 	if len(he.Text) > 0 {
 		buf.WriteString(",\n")
@@ -147,6 +148,27 @@ func (he *HTMLEntity) String() string {
 		buf.WriteString("\n    },")
 	}
 	buf.WriteString("\n},\n")
+	return buf.String()
+}
+
+func (he *HTMLEntity) PlainText() string {
+	if len(he.Children) == 0 {
+		return he.Text
+	}
+	var buf strings.Builder
+	buf.WriteString(he.Text)
+	newlined := false
+	for _, child := range he.Children {
+		if child.Block && !newlined {
+			buf.WriteRune('\n')
+		}
+		newlined = false
+		buf.WriteString(child.PlainText())
+		if child.Block {
+			buf.WriteRune('\n')
+			newlined = true
+		}
+	}
 	return buf.String()
 }
 
@@ -178,6 +200,7 @@ func (he *HTMLEntity) calculateBuffer(width, startX int, bare bool) int {
 		text := he.Text
 		textStartX := he.startX
 		for {
+			// TODO add option no wrap and character wrap options
 			extract := runewidth.Truncate(text, width-textStartX, "")
 			extract, wordWrapped := trim(extract, text, bare)
 			if !wordWrapped && textStartX > 0 {
@@ -210,7 +233,10 @@ func (he *HTMLEntity) calculateBuffer(width, startX int, bare bool) int {
 			textStartX = 0
 		}
 	}
-	return 0
+	if len(he.Text) == 0 && len(he.Children) == 0 {
+		he.height = he.DefaultHeight
+	}
+	return he.startX
 }
 
 func trim(extract, full string, bare bool) (string, bool) {
