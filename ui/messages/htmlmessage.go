@@ -18,25 +18,27 @@ package messages
 
 import (
 	"fmt"
+	"math"
 	"strings"
 	"time"
 
 	"github.com/mattn/go-runewidth"
 
-	"maunium.net/go/gomuks/config"
-	"maunium.net/go/gomuks/ui/widget"
 	"maunium.net/go/mautrix"
 	"maunium.net/go/mauview"
 	"maunium.net/go/tcell"
+
+	"maunium.net/go/gomuks/config"
+	"maunium.net/go/gomuks/ui/widget"
 )
 
 type HTMLMessage struct {
 	BaseMessage
 
-	Root *HTMLEntity
+	Root HTMLEntity
 }
 
-func NewHTMLMessage(id, sender, displayname string, msgtype mautrix.MessageType, root *HTMLEntity, timestamp time.Time) UIMessage {
+func NewHTMLMessage(id, sender, displayname string, msgtype mautrix.MessageType, root HTMLEntity, timestamp time.Time) UIMessage {
 	return &HTMLMessage{
 		BaseMessage: newBaseMessage(id, sender, displayname, msgtype, timestamp),
 		Root:        root,
@@ -68,7 +70,7 @@ func (hw *HTMLMessage) CalculateBuffer(preferences config.UserPreferences, width
 }
 
 func (hw *HTMLMessage) Height() int {
-	return hw.Root.height
+	return hw.Root.Height()
 }
 
 func (hw *HTMLMessage) PlainText() string {
@@ -79,14 +81,106 @@ func (hw *HTMLMessage) NotificationContent() string {
 	return hw.Root.PlainText()
 }
 
-type HTMLEntity struct {
+type AdjustStyleFunc func(tcell.Style) tcell.Style
+
+type HTMLEntity interface {
+	AdjustStyle(AdjustStyleFunc) HTMLEntity
+	Draw(screen mauview.Screen)
+	IsBlock() bool
+	GetTag() string
+	PlainText() string
+	String() string
+	Height() int
+
+	calculateBuffer(width, startX int, bare bool) int
+	getStartX() int
+}
+
+type BlockquoteEntity struct {
+	*BaseHTMLEntity
+}
+
+func NewBlockquoteEntity(children []HTMLEntity) *BlockquoteEntity {
+	return &BlockquoteEntity{&BaseHTMLEntity{
+		Tag:      "blockquote",
+		Children: children,
+		Block:    true,
+		Indent:   2,
+	}}
+}
+
+func (be *BlockquoteEntity) Draw(screen mauview.Screen) {
+	be.BaseHTMLEntity.Draw(screen)
+	for y := 0; y < be.height; y++ {
+		screen.SetContent(0, y, '>', nil, be.Style)
+	}
+}
+
+func (be *BlockquoteEntity) String() string {
+	return fmt.Sprintf("&BlockquoteEntity{%s},\n", be.BaseHTMLEntity)
+}
+
+type ListEntity struct {
+	*BaseHTMLEntity
+	Ordered bool
+	Start   int
+}
+
+func digits(num int) int {
+	if num <= 0 {
+		return 0
+	}
+	return int(math.Floor(math.Log10(float64(num))) + 1)
+}
+
+func NewListEntity(ordered bool, start int, children []HTMLEntity) *ListEntity {
+	entity := &ListEntity{
+		BaseHTMLEntity: &BaseHTMLEntity{
+			Tag:      "ul",
+			Children: children,
+			Block:    true,
+			Indent:   2,
+		},
+		Ordered: ordered,
+		Start:   start,
+	}
+	if ordered {
+		entity.Tag = "ol"
+		entity.Indent += digits(start + len(children) - 1)
+	}
+	return entity
+}
+
+func (le *ListEntity) Draw(screen mauview.Screen) {
+	width, _ := screen.Size()
+
+	proxyScreen := &mauview.ProxyScreen{Parent: screen, OffsetX: le.Indent, Width: width - le.Indent}
+	for i, entity := range le.Children {
+		proxyScreen.Height = entity.Height()
+		if le.Ordered {
+			number := le.Start + i
+			line := fmt.Sprintf("%d. %s", number, strings.Repeat(" ", le.Indent-2-digits(number)))
+			widget.WriteLine(screen, mauview.AlignLeft, line, 0, proxyScreen.OffsetY, le.Indent, le.Style)
+		} else {
+			screen.SetContent(0, proxyScreen.OffsetY, '●', nil, le.Style)
+		}
+		entity.Draw(proxyScreen)
+		proxyScreen.OffsetY += entity.Height()
+	}
+}
+
+func (le *ListEntity) String() string {
+	return fmt.Sprintf("&ListEntity{Ordered=%t, Start=%d, Base=%s},\n", le.Ordered, le.Start, le.BaseHTMLEntity)
+}
+
+type BaseHTMLEntity struct {
 	// Permanent variables
-	Tag       string
-	Text      string
-	Style     tcell.Style
-	Children  []*HTMLEntity
-	Block     bool
-	Indent    int
+	Tag      string
+	Text     string
+	Style    tcell.Style
+	Children []HTMLEntity
+	Block    bool
+	Indent   int
 
 	DefaultHeight int
 
@@ -97,7 +191,22 @@ type HTMLEntity struct {
 	height    int
 }
 
-func (he *HTMLEntity) AdjustStyle(fn func(tcell.Style) tcell.Style) *HTMLEntity {
+func NewHTMLTextEntity(text string) *BaseHTMLEntity {
+	return &BaseHTMLEntity{
+		Tag:  "text",
+		Text: text,
+	}
+}
+
+func NewHTMLEntity(tag string, children []HTMLEntity, block bool) *BaseHTMLEntity {
+	return &BaseHTMLEntity{
+		Tag:      tag,
+		Children: children,
+		Block:    block,
+	}
+}
+
+func (he *BaseHTMLEntity) AdjustStyle(fn AdjustStyleFunc) HTMLEntity {
 	for _, child := range he.Children {
 		child.AdjustStyle(fn)
 	}
@@ -105,7 +214,23 @@ func (he *HTMLEntity) AdjustStyle(fn func(tcell.Style) tcell.Style) *HTMLEntity 
 	return he
 }
 
-func (he *HTMLEntity) Draw(screen mauview.Screen) {
+func (he *BaseHTMLEntity) IsBlock() bool {
+	return he.Block
+}
+
+func (he *BaseHTMLEntity) GetTag() string {
+	return he.Tag
+}
+
+func (he *BaseHTMLEntity) Height() int {
+	return he.height
+}
+
+func (he *BaseHTMLEntity) getStartX() int {
+	return he.startX
+}
+
+func (he *BaseHTMLEntity) Draw(screen mauview.Screen) {
 	width, _ := screen.Size()
 	if len(he.buffer) > 0 {
 		x := he.startX
@@ -117,19 +242,19 @@ func (he *HTMLEntity) Draw(screen mauview.Screen) {
 	if len(he.Children) > 0 {
 		proxyScreen := &mauview.ProxyScreen{Parent: screen, OffsetX: he.Indent, Width: width - he.Indent}
 		for i, entity := range he.Children {
-			if i != 0 && entity.startX == 0 {
+			if i != 0 && entity.getStartX() == 0 {
 				proxyScreen.OffsetY++
 			}
-			proxyScreen.Height = entity.height
+			proxyScreen.Height = entity.Height()
 			entity.Draw(proxyScreen)
-			proxyScreen.OffsetY += entity.height - 1
+			proxyScreen.OffsetY += entity.Height() - 1
 		}
 	}
 }
 
-func (he *HTMLEntity) String() string {
+func (he *BaseHTMLEntity) String() string {
 	var buf strings.Builder
-	buf.WriteString("&HTMLEntity{\n")
+	buf.WriteString("&BaseHTMLEntity{\n")
 	_, _ = fmt.Fprintf(&buf, `    Tag="%s", Style=%d, Block=%t, Indent=%d, startX=%d, height=%d,`,
 		he.Tag, he.Style, he.Block, he.Indent, he.startX, he.height)
 	buf.WriteRune('\n')
@@ -151,7 +276,7 @@ func (he *HTMLEntity) String() string {
 	return buf.String()
 }
 
-func (he *HTMLEntity) PlainText() string {
+func (he *BaseHTMLEntity) PlainText() string {
 	if len(he.Children) == 0 {
 		return he.Text
 	}
@@ -159,12 +284,12 @@ func (he *HTMLEntity) PlainText() string {
 	buf.WriteString(he.Text)
 	newlined := false
 	for _, child := range he.Children {
-		if child.Block && !newlined {
+		if child.IsBlock() && !newlined {
 			buf.WriteRune('\n')
 		}
 		newlined = false
 		buf.WriteString(child.PlainText())
-		if child.Block {
+		if child.IsBlock() {
 			buf.WriteRune('\n')
 			newlined = true
 		}
@@ -172,7 +297,7 @@ func (he *HTMLEntity) PlainText() string {
 	return buf.String()
 }
 
-func (he *HTMLEntity) calculateBuffer(width, startX int, bare bool) int {
+func (he *BaseHTMLEntity) calculateBuffer(width, startX int, bare bool) int {
 	he.startX = startX
 	if he.Block {
 		he.startX = 0
@@ -181,11 +306,11 @@ func (he *HTMLEntity) calculateBuffer(width, startX int, bare bool) int {
 	if len(he.Children) > 0 {
 		childStartX := he.startX
 		for _, entity := range he.Children {
-			if entity.Block || childStartX == 0 || he.height == 0 {
+			if entity.IsBlock() || childStartX == 0 || he.height == 0 {
 				he.height++
 			}
 			childStartX = entity.calculateBuffer(width-he.Indent, childStartX, bare)
-			he.height += entity.height - 1
+			he.height += entity.Height() - 1
 		}
 		if len(he.Text) == 0 && !he.Block {
 			return childStartX
