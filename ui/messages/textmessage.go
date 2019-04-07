@@ -90,8 +90,3 @@ func (msg *TextMessage) PlainText() string {
 func (msg *TextMessage) CalculateBuffer(prefs config.UserPreferences, width int) {
 	msg.calculateBufferWithText(prefs, msg.getCache(), width)
 }
-
-// RecalculateBuffer calculates the buffer again with the previously provided width.
-func (msg *TextMessage) RecalculateBuffer() {
-	msg.CalculateBuffer(msg.prevPrefs, msg.prevBufferWidth)
-}

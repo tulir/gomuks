@@ -58,8 +58,3 @@ func (msg *ExpandedTextMessage) PlainText() string {
 func (msg *ExpandedTextMessage) CalculateBuffer(prefs config.UserPreferences, width int) {
 	msg.calculateBufferWithText(prefs, msg.MsgText, width)
 }
-
-// RecalculateBuffer calculates the buffer again with the previously provided width.
-func (msg *ExpandedTextMessage) RecalculateBuffer() {
-	msg.CalculateBuffer(msg.prevPrefs, msg.prevBufferWidth)
-}

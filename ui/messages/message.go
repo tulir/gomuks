@@ -19,7 +19,7 @@ package messages
 import (
 	"maunium.net/go/gomuks/config"
 	"maunium.net/go/gomuks/interface"
-	"maunium.net/go/gomuks/ui/messages/tstring"
+	"maunium.net/go/mauview"
 )
 
 // UIMessage is a wrapper for the content and metadata of a Matrix message intended to be displayed.
@@ -27,7 +27,7 @@ type UIMessage interface {
 	ifc.Message
 
 	CalculateBuffer(preferences config.UserPreferences, width int)
-	Buffer() []tstring.TString
+	Draw(screen mauview.Screen)
 	Height() int
 	PlainText() string
 

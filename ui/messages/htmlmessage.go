@@ -17,6 +17,8 @@
 package messages
 
 import (
+	"fmt"
+	"strings"
 	"time"
 
 	"github.com/mattn/go-runewidth"
@@ -57,9 +59,13 @@ func (hw *HTMLMessage) OnPasteEvent(event mauview.PasteEvent) bool {
 }
 
 func (hw *HTMLMessage) CalculateBuffer(preferences config.UserPreferences, width int) {
+	if width <= 0 {
+		panic("Negative width in CalculateBuffer")
+	}
 	// TODO account for bare messages in initial startX
 	startX := 0
 	hw.Root.calculateBuffer(width, startX, preferences.BareMessageView)
+	//debug.Print(hw.Root.String())
 }
 
 func (hw *HTMLMessage) Height() int {
@@ -109,8 +115,8 @@ func (he *HTMLEntity) Draw(screen mauview.Screen) {
 	}
 	if len(he.Children) > 0 {
 		proxyScreen := &mauview.ProxyScreen{Parent: screen, OffsetX: he.Indent, Width: width - he.Indent}
-		for _, entity := range he.Children {
-			if entity.Block {
+		for i, entity := range he.Children {
+			if i != 0 && entity.startX == 0 {
 				proxyScreen.OffsetY++
 			}
 			proxyScreen.Height = entity.height
@@ -120,38 +126,87 @@ func (he *HTMLEntity) Draw(screen mauview.Screen) {
 	}
 }
 
-func (he *HTMLEntity) calculateBuffer(width, startX int, bare bool) int {
+func (he *HTMLEntity) String() string {
+	var buf strings.Builder
+	buf.WriteString("&HTMLEntity{\n")
+	_, _ = fmt.Fprintf(&buf, `    Tag="%s", Style=%d, Block=%t, Indent=%d, startX=%d, height=%d,\n`,
+		he.Tag, he.Style, he.Block, he.Indent, he.startX, he.height)
+	_, _ = fmt.Fprintf(&buf, `    Buffer=["%s"]`, strings.Join(he.buffer, "\", \""))
+	if len(he.Text) > 0 {
+		buf.WriteString(",\n")
+		_, _ = fmt.Fprintf(&buf, `    Text="%s"`, he.Text)
+	}
 	if len(he.Children) > 0 {
-		childStartX := 0
+		buf.WriteString(",\n")
+		buf.WriteString("    Children={")
+		for _, child := range he.Children {
+			buf.WriteString("\n        ")
+			buf.WriteString(strings.Join(strings.Split(strings.TrimRight(child.String(), "\n"), "\n"), "\n        "))
+		}
+		buf.WriteString("\n    },")
+	}
+	buf.WriteString("\n},\n")
+	return buf.String()
+}
+
+func (he *HTMLEntity) calculateBuffer(width, startX int, bare bool) int {
+	he.startX = startX
+	if he.Block {
+		he.startX = 0
+	}
+	he.height = 0
+	if len(he.Children) > 0 {
+		childStartX := he.startX
 		for _, entity := range he.Children {
+			if entity.Block || childStartX == 0 || he.height == 0 {
+				he.height++
+			}
 			childStartX = entity.calculateBuffer(width-he.Indent, childStartX, bare)
 			he.height += entity.height - 1
 		}
-	}
-	if len(he.Text) > 0 && width != he.prevWidth {
-		he.prevWidth = width
-		he.buffer = make([]string, 0, 1)
-		text := he.Text
-		if !he.Block {
-			he.startX = startX
-		} else {
-			startX = 0
+		if len(he.Text) == 0 && !he.Block {
+			return childStartX
 		}
+	}
+	if len(he.Text) > 0 {
+		he.prevWidth = width
+		if he.buffer == nil {
+			he.buffer = []string{}
+		}
+		bufPtr := 0
+		text := he.Text
+		textStartX := he.startX
 		for {
-			extract := runewidth.Truncate(text, width-startX, "")
-			extract = trim(extract, text, bare)
-			he.buffer = append(he.buffer, extract)
+			extract := runewidth.Truncate(text, width-textStartX, "")
+			extract, wordWrapped := trim(extract, text, bare)
+			if !wordWrapped && textStartX > 0 {
+				if bufPtr < len(he.buffer) {
+					he.buffer[bufPtr] = ""
+				} else {
+					he.buffer = append(he.buffer, "")
+				}
+				bufPtr++
+				textStartX = 0
+				continue
+			}
+			if bufPtr < len(he.buffer) {
+				he.buffer[bufPtr] = extract
+			} else {
+				he.buffer = append(he.buffer, extract)
+			}
+			bufPtr++
 			text = text[len(extract):]
-			startX = 0
 			if len(text) == 0 {
+				he.buffer = he.buffer[:bufPtr]
 				he.height += len(he.buffer)
 				// This entity is over, return the startX for the next entity
 				if he.Block {
 					// ...except if it's a block entity
 					return 0
 				}
-				return runewidth.StringWidth(extract)
+				return textStartX + runewidth.StringWidth(extract)
 			}
+			textStartX = 0
 		}
 	}
 	return 0
@@ -164,12 +219,13 @@ func (he *HTMLEntity) calculateBuffer(width, startX int, bare bool) int {
 	spacePattern        = regexp.MustCompile(`\s+`)
 )*/
 
-func trim(extract, full string, bare bool) string {
+func trim(extract, full string, bare bool) (string, bool) {
 	if len(extract) == len(full) {
-		return extract
+		return extract, true
 	}
 	if spaces := spacePattern.FindStringIndex(full[len(extract):]); spaces != nil && spaces[0] == 0 {
 		extract = full[:len(extract)+spaces[1]]
+		//return extract, true
 	}
 	regex := boundaryPattern
 	if bare {
@@ -180,8 +236,9 @@ func trim(extract, full string, bare bool) string {
 		if match := matches[len(matches)-1]; len(match) >= 2 {
 			if until := match[1]; until < len(extract) {
 				extract = extract[:until]
+				return extract, true
 			}
 		}
 	}
-	return extract
+	return extract, len(extract) > 0 && extract[len(extract)-1] == ' '
 }

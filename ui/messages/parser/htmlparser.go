@@ -266,6 +266,9 @@ func (parser *htmlParser) singleNodeToEntity(node *html.Node, stripLinebreak boo
 	case html.ElementNode:
 		return parser.tagNodeToEntity(node, stripLinebreak)
 	case html.DocumentNode:
+		if node.FirstChild.Data == "html" && node.FirstChild.NextSibling == nil {
+			return parser.singleNodeToEntity(node.FirstChild, stripLinebreak)
+		}
 		return &messages.HTMLEntity{
 			Tag:      "html",
 			Children: parser.nodeToEntities(node.FirstChild, stripLinebreak),
