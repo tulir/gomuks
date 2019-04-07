@@ -21,9 +21,9 @@ import (
 	"time"
 
 	"maunium.net/go/mautrix"
+	"maunium.net/go/mauview"
 	"maunium.net/go/tcell"
 
-	"maunium.net/go/gomuks/config"
 	"maunium.net/go/gomuks/interface"
 	"maunium.net/go/gomuks/ui/messages/tstring"
 	"maunium.net/go/gomuks/ui/widget"
@@ -34,33 +34,30 @@ func init() {
 }
 
 type BaseMessage struct {
-	MsgID           string
-	MsgType         mautrix.MessageType
-	MsgSenderID     string
-	MsgSender       string
-	MsgSenderColor  tcell.Color
-	MsgTimestamp    time.Time
-	MsgState        ifc.MessageState
-	MsgIsHighlight  bool
-	MsgIsService    bool
-	buffer          []tstring.TString
-	plainBuffer     []tstring.TString
-	prevBufferWidth int
-	prevPrefs       config.UserPreferences
+	MsgID          string
+	MsgType        mautrix.MessageType
+	MsgSenderID    string
+	MsgSender      string
+	MsgSenderColor tcell.Color
+	MsgTimestamp   time.Time
+	MsgState       ifc.MessageState
+	MsgIsHighlight bool
+	MsgIsService   bool
+	buffer         []tstring.TString
+	plainBuffer    []tstring.TString
 }
 
 func newBaseMessage(id, sender, displayname string, msgtype mautrix.MessageType, timestamp time.Time) BaseMessage {
 	return BaseMessage{
-		MsgSenderID:     sender,
-		MsgSender:       displayname,
-		MsgTimestamp:    timestamp,
-		MsgSenderColor:  widget.GetHashColor(sender),
-		MsgType:         msgtype,
-		MsgID:           id,
-		prevBufferWidth: 0,
-		MsgState:        ifc.MessageStateDefault,
-		MsgIsHighlight:  false,
-		MsgIsService:    false,
+		MsgSenderID:    sender,
+		MsgSender:      displayname,
+		MsgTimestamp:   timestamp,
+		MsgSenderColor: widget.GetHashColor(sender),
+		MsgType:        msgtype,
+		MsgID:          id,
+		MsgState:       ifc.MessageStateDefault,
+		MsgIsHighlight: false,
+		MsgIsService:   false,
 	}
 }
 
@@ -226,4 +223,10 @@ func (msg *BaseMessage) IsService() bool {
 
 func (msg *BaseMessage) SetIsService(isService bool) {
 	msg.MsgIsService = isService
+}
+
+func (msg *BaseMessage) Draw(screen mauview.Screen) {
+	for y, line := range msg.buffer {
+		line.Draw(screen, 0, y)
+	}
 }

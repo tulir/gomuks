@@ -76,12 +76,12 @@ func NewCommandProcessor(parent *MainView) *CommandProcessor {
 			Gomuks:   parent.gmx,
 		},
 		aliases: map[string]*Alias{
-			"part":  {"leave"},
-			"send":  {"sendevent"},
-			"msend": {"msendevent"},
-			"state": {"setstate"},
-			"mstate":{"msetstate"},
-			"rb":    {"rainbow"},
+			"part":   {"leave"},
+			"send":   {"sendevent"},
+			"msend":  {"msendevent"},
+			"state":  {"setstate"},
+			"mstate": {"msetstate"},
+			"rb":     {"rainbow"},
 		},
 		commands: map[string]CommandHandler{
 			"unknown-command": cmdUnknownCommand,
@@ -102,6 +102,7 @@ func NewCommandProcessor(parent *MainView) *CommandProcessor {
 			"msetstate":       cmdMSetState,
 			"rainbow":         cmdRainbow,
 			"invite":          cmdInvite,
+			"hprof":           cmdHeapProfile,
 		},
 	}
 }

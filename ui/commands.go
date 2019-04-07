@@ -19,6 +19,9 @@ package ui
 import (
 	"encoding/json"
 	"fmt"
+	"os"
+	"runtime"
+	"runtime/pprof"
 	"strings"
 	"unicode"
 
@@ -67,6 +70,18 @@ var rainbow = GradientTable{
 	{colorful.LinearRgb(0.5, 0, 1), 0.8},
 	{colorful.LinearRgb(1, 0, 1), 0.9},
 	{colorful.LinearRgb(1, 0, 0.5), 1},
+}
+
+func cmdHeapProfile(cmd *Command) {
+	runtime.GC()
+	memProfile, err := os.Create("gomuks.prof")
+	if err != nil {
+		debug.Print(err)
+	}
+	defer memProfile.Close()
+	if err := pprof.WriteHeapProfile(memProfile); err != nil {
+		debug.Print(err)
+	}
 }
 
 // TODO this command definitely belongs in a plugin once we have a plugin system.

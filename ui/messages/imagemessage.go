@@ -112,11 +112,4 @@ func (msg *ImageMessage) CalculateBuffer(prefs config.UserPreferences, width int
 	}
 
 	msg.buffer = image.Render()
-	msg.prevBufferWidth = width
-	msg.prevPrefs = prefs
-}
-
-// RecalculateBuffer calculates the buffer again with the previously provided width.
-func (msg *ImageMessage) RecalculateBuffer() {
-	msg.CalculateBuffer(msg.prevPrefs, msg.prevBufferWidth)
 }

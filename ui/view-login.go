@@ -74,8 +74,8 @@ func (ui *GomuksUI) NewLoginView() mauview.Component {
 	view.username.SetText(ui.gmx.Config().UserID)
 	view.password.SetMaskCharacter('*')
 
-	view.quitButton.SetOnClick(ui.gmx.Stop).SetBackgroundColor(tcell.ColorBlue)
-	view.loginButton.SetOnClick(view.Login).SetBackgroundColor(tcell.ColorBlue)
+	view.quitButton.SetOnClick(ui.gmx.Stop).SetBackgroundColor(tcell.ColorDarkCyan)
+	view.loginButton.SetOnClick(view.Login).SetBackgroundColor(tcell.ColorDarkCyan)
 
 	view.SetColumns([]int{1, 10, 1, 9, 1, 9, 1, 10, 1})
 	view.SetRows([]int{1, 1, 1, 1, 1, 1, 1, 1, 1, 1})

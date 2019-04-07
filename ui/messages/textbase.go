@@ -92,6 +92,4 @@ func (msg *BaseMessage) calculateBufferWithText(prefs config.UserPreferences, te
 			str = str[len(extract):]
 		}
 	}
-	msg.prevBufferWidth = width
-	msg.prevPrefs = prefs
 }

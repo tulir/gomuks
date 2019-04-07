@@ -113,7 +113,7 @@ func ParseMessage(matrix ifc.MatrixContainer, room *rooms.Room, evt *mautrix.Eve
 				replyToEvt.Content.FormattedBody = html.EscapeString(replyToEvt.Content.Body)
 			}
 			evt.Content.FormattedBody = fmt.Sprintf(
-				"In reply to <a href='https://matrix.to/#/%[1]s'>%[1]s</a><blockquote>%[2]s</blockquote><br/>%[3]s",
+				"In reply to <a href='https://matrix.to/#/%[1]s'>%[1]s</a><blockquote>%[2]s</blockquote><br/><br/>%[3]s",
 				replyToEvt.Sender, replyToEvt.Content.FormattedBody, evt.Content.FormattedBody)
 		} else {
 			evt.Content.FormattedBody = fmt.Sprintf(
@@ -125,8 +125,7 @@ func ParseMessage(matrix ifc.MatrixContainer, room *rooms.Room, evt *mautrix.Eve
 	switch evt.Content.MsgType {
 	case "m.text", "m.notice", "m.emote":
 		if evt.Content.Format == mautrix.FormatHTML {
-			text := ParseHTMLMessage(room, evt, displayname)
-			return messages.NewExpandedTextMessage(evt.ID, evt.Sender, displayname, evt.Content.MsgType, text, ts)
+			return messages.NewHTMLMessage(evt.ID, evt.Sender, displayname, evt.Content.MsgType, ParseHTMLMessage(room, evt, displayname), ts)
 		}
 		evt.Content.Body = strings.Replace(evt.Content.Body, "\t", "    ", -1)
 		return messages.NewTextMessage(evt.ID, evt.Sender, displayname, evt.Content.MsgType, evt.Content.Body, ts)

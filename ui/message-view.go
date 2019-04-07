@@ -75,6 +75,7 @@ func NewMessageView(parent *RoomView) *MessageView {
 		textBuffer: make([]tstring.TString, 0),
 		metaBuffer: make([]ifc.MessageMeta, 0),
 
+		width:        80,
 		widestSender: 5,
 		prevWidth:    -1,
 		prevHeight:   -1,
@@ -159,8 +160,8 @@ func (view *MessageView) appendBuffer(message messages.UIMessage) {
 		}
 	}
 
-	view.textBuffer = append(view.textBuffer, message.Buffer()...)
-	for range message.Buffer() {
+	for i := 0; i < message.Height(); i++ {
+		view.textBuffer = append(view.textBuffer, nil)
 		view.metaBuffer = append(view.metaBuffer, message)
 	}
 	view.prevMsgCount++
@@ -200,10 +201,15 @@ func (view *MessageView) replaceBuffer(original messages.UIMessage, new messages
 		end++
 	}
 
-	view.textBuffer = append(append(view.textBuffer[0:start], new.Buffer()...), view.textBuffer[end:]...)
-	if len(new.Buffer()) != end-start {
+	if new.Height() == 0 {
+		new.CalculateBuffer(view.prevPrefs, view.prevWidth)
+	}
+
+	textBuf := make([]tstring.TString, new.Height())
+	view.textBuffer = append(append(view.textBuffer[0:start], textBuf...), view.textBuffer[end:]...)
+	if new.Height() != end-start {
 		metaBuffer := view.metaBuffer[0:start]
-		for range new.Buffer() {
+		for i := 0; i < new.Height(); i++ {
 			metaBuffer = append(metaBuffer, new)
 		}
 		view.metaBuffer = append(metaBuffer, view.metaBuffer[end:]...)
@@ -497,15 +503,30 @@ func (view *MessageView) Draw(screen mauview.Screen) {
 			if len(meta.FormatTime()) > 0 {
 				widget.WriteLineSimpleColor(screen, meta.FormatTime(), 0, line, meta.TimestampColor())
 			}
-			if !bareMode && (prevMeta == nil || meta.Sender() != prevMeta.Sender()) {
-				widget.WriteLineColor(
-					screen, mauview.AlignRight, meta.Sender(),
-					usernameX, line, view.widestSender,
-					meta.SenderColor())
-			}
+			// TODO hiding senders might not be that nice after all, maybe an option? (disabled for now)
+			//if !bareMode && (prevMeta == nil || meta.Sender() != prevMeta.Sender()) {
+			widget.WriteLineColor(
+				screen, mauview.AlignRight, meta.Sender(),
+				usernameX, line, view.widestSender,
+				meta.SenderColor())
+			//}
 			prevMeta = meta
 		}
 
-		text.Draw(screen, messageX, line)
+		message, ok := meta.(messages.UIMessage)
+		if ok {
+			for i := index - 1; i >= 0 && view.metaBuffer[i] == meta; i-- {
+				line--
+			}
+			message.Draw(mauview.NewProxyScreen(screen, messageX, line, view.width-messageX, message.Height()))
+			if !bareMode {
+				for i := line; i < line+message.Height(); i++ {
+					screen.SetContent(separatorX, i, borderChar, nil, borderStyle)
+				}
+			}
+			line += message.Height() - 1
+		} else {
+			text.Draw(screen, messageX, line)
+		}
 	}
 }
