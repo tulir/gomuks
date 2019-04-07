@@ -173,6 +173,17 @@ func (le *ListEntity) String() string {
 	return fmt.Sprintf("&ListEntity{Ordered=%t, Start=%d, Base=%s},\n", le.Ordered, le.Start, le.BaseHTMLEntity)
 }
 
+type BreakEntity struct {
+	*BaseHTMLEntity
+}
+
+func NewBreakEntity() *BreakEntity {
+	return &BreakEntity{&BaseHTMLEntity{
+		Tag:   "br",
+		Block: true,
+	}}
+}
+
 type BaseHTMLEntity struct {
 	// Permanent variables
 	Tag      string
@@ -230,28 +241,6 @@ func (he *BaseHTMLEntity) getStartX() int {
 	return he.startX
 }
 
-func (he *BaseHTMLEntity) Draw(screen mauview.Screen) {
-	width, _ := screen.Size()
-	if len(he.buffer) > 0 {
-		x := he.startX
-		for y, line := range he.buffer {
-			widget.WriteLine(screen, mauview.AlignLeft, line, x, y, width, he.Style)
-			x = 0
-		}
-	}
-	if len(he.Children) > 0 {
-		proxyScreen := &mauview.ProxyScreen{Parent: screen, OffsetX: he.Indent, Width: width - he.Indent}
-		for i, entity := range he.Children {
-			if i != 0 && entity.getStartX() == 0 {
-				proxyScreen.OffsetY++
-			}
-			proxyScreen.Height = entity.Height()
-			entity.Draw(proxyScreen)
-			proxyScreen.OffsetY += entity.Height() - 1
-		}
-	}
-}
-
 func (he *BaseHTMLEntity) String() string {
 	var buf strings.Builder
 	buf.WriteString("&BaseHTMLEntity{\n")
@@ -297,6 +286,34 @@ func (he *BaseHTMLEntity) PlainText() string {
 	return buf.String()
 }
 
+func (he *BaseHTMLEntity) Draw(screen mauview.Screen) {
+	width, _ := screen.Size()
+	if len(he.buffer) > 0 {
+		x := he.startX
+		for y, line := range he.buffer {
+			widget.WriteLine(screen, mauview.AlignLeft, line, x, y, width, he.Style)
+			x = 0
+		}
+	}
+	if len(he.Children) > 0 {
+		prevBreak := false
+		proxyScreen := &mauview.ProxyScreen{Parent: screen, OffsetX: he.Indent, Width: width - he.Indent}
+		for i, entity := range he.Children {
+			if i != 0 && entity.getStartX() == 0 {
+				proxyScreen.OffsetY++
+			}
+			proxyScreen.Height = entity.Height()
+			entity.Draw(proxyScreen)
+			proxyScreen.OffsetY += entity.Height() - 1
+			_, isBreak := entity.(*BreakEntity)
+			if prevBreak && isBreak {
+				proxyScreen.OffsetY++
+			}
+			prevBreak = isBreak
+		}
+	}
+}
+
 func (he *BaseHTMLEntity) calculateBuffer(width, startX int, bare bool) int {
 	he.startX = startX
 	if he.Block {
@@ -305,12 +322,18 @@ func (he *BaseHTMLEntity) calculateBuffer(width, startX int, bare bool) int {
 	he.height = 0
 	if len(he.Children) > 0 {
 		childStartX := he.startX
+		prevBreak := false
 		for _, entity := range he.Children {
 			if entity.IsBlock() || childStartX == 0 || he.height == 0 {
 				he.height++
 			}
 			childStartX = entity.calculateBuffer(width-he.Indent, childStartX, bare)
 			he.height += entity.Height() - 1
+			_, isBreak := entity.(*BreakEntity)
+			if prevBreak && isBreak {
+				he.height++
+			}
+			prevBreak = isBreak
 		}
 		if len(he.Text) == 0 && !he.Block {
 			return childStartX

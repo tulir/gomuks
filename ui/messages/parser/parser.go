@@ -113,7 +113,7 @@ func ParseMessage(matrix ifc.MatrixContainer, room *rooms.Room, evt *mautrix.Eve
 				replyToEvt.Content.FormattedBody = html.EscapeString(replyToEvt.Content.Body)
 			}
 			evt.Content.FormattedBody = fmt.Sprintf(
-				"In reply to <a href='https://matrix.to/#/%[1]s'>%[1]s</a><blockquote>%[2]s</blockquote><br/>%[3]s",
+				"In reply to <a href='https://matrix.to/#/%[1]s'>%[1]s</a><blockquote>%[2]s</blockquote><br/><br/>%[3]s",
 				replyToEvt.Sender, replyToEvt.Content.FormattedBody, evt.Content.FormattedBody)
 		} else {
 			evt.Content.FormattedBody = fmt.Sprintf(

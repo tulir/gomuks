@@ -289,7 +289,7 @@ func (parser *htmlParser) tagNodeToEntity(node *html.Node, stripLinebreak bool) 
 	case "h1", "h2", "h3", "h4", "h5", "h6":
 		return parser.headerToEntity(node, stripLinebreak)
 	case "br":
-		return &messages.BaseHTMLEntity{Tag: "br", Block: true}
+		return messages.NewBreakEntity()
 	case "b", "strong", "i", "em", "s", "del", "u", "ins", "font":
 		return parser.basicFormatToEntity(node, stripLinebreak)
 	case "a":

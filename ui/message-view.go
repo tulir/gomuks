@@ -503,12 +503,13 @@ func (view *MessageView) Draw(screen mauview.Screen) {
 			if len(meta.FormatTime()) > 0 {
 				widget.WriteLineSimpleColor(screen, meta.FormatTime(), 0, line, meta.TimestampColor())
 			}
-			if !bareMode && (prevMeta == nil || meta.Sender() != prevMeta.Sender()) {
-				widget.WriteLineColor(
-					screen, mauview.AlignRight, meta.Sender(),
-					usernameX, line, view.widestSender,
-					meta.SenderColor())
-			}
+			// TODO hiding senders might not be that nice after all, maybe an option? (disabled for now)
+			//if !bareMode && (prevMeta == nil || meta.Sender() != prevMeta.Sender()) {
+			widget.WriteLineColor(
+				screen, mauview.AlignRight, meta.Sender(),
+				usernameX, line, view.widestSender,
+				meta.SenderColor())
+			//}
 			prevMeta = meta
 		}
 
