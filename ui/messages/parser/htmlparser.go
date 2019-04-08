@@ -39,6 +39,8 @@ var matrixToURL = regexp.MustCompile("^(?:https?://)?(?:www\\.)?matrix\\.to/#/([
 
 type htmlParser struct {
 	room *rooms.Room
+
+	keepLinebreak bool
 }
 
 func AdjustStyleBold(style tcell.Style) tcell.Style {
@@ -78,8 +80,8 @@ func (parser *htmlParser) getAttribute(node *html.Node, attribute string) string
 	return ""
 }
 
-func (parser *htmlParser) listToEntity(node *html.Node, stripLinebreak bool) messages.HTMLEntity {
-	children := parser.nodeToEntities(node.FirstChild, stripLinebreak)
+func (parser *htmlParser) listToEntity(node *html.Node) messages.HTMLEntity {
+	children := parser.nodeToEntities(node.FirstChild)
 	ordered := node.Data == "ol"
 	start := 1
 	if ordered {
@@ -100,10 +102,10 @@ func (parser *htmlParser) listToEntity(node *html.Node, stripLinebreak bool) mes
 	return messages.NewListEntity(ordered, start, listItems)
 }
 
-func (parser *htmlParser) basicFormatToEntity(node *html.Node, stripLinebreak bool) messages.HTMLEntity {
+func (parser *htmlParser) basicFormatToEntity(node *html.Node) messages.HTMLEntity {
 	entity := &messages.BaseHTMLEntity{
 		Tag:      node.Data,
-		Children: parser.nodeToEntities(node.FirstChild, stripLinebreak),
+		Children: parser.nodeToEntities(node.FirstChild),
 	}
 	switch node.Data {
 	case "b", "strong":
@@ -149,24 +151,24 @@ func (parser *htmlParser) parseColor(node *html.Node, mainName, altName string) 
 	return tcell.NewRGBColor(int32(r), int32(g), int32(b)), true
 }
 
-func (parser *htmlParser) headerToEntity(node *html.Node, stripLinebreak bool) messages.HTMLEntity {
+func (parser *htmlParser) headerToEntity(node *html.Node) messages.HTMLEntity {
 	length := int(node.Data[1] - '0')
 	prefix := strings.Repeat("#", length) + " "
 	return (&messages.BaseHTMLEntity{
 		Tag:      node.Data,
 		Text:     prefix,
-		Children: parser.nodeToEntities(node.FirstChild, stripLinebreak),
+		Children: parser.nodeToEntities(node.FirstChild),
 	}).AdjustStyle(AdjustStyleBold)
 }
 
-func (parser *htmlParser) blockquoteToEntity(node *html.Node, stripLinebreak bool) messages.HTMLEntity {
-	return messages.NewBlockquoteEntity(parser.nodeToEntities(node.FirstChild, stripLinebreak))
+func (parser *htmlParser) blockquoteToEntity(node *html.Node) messages.HTMLEntity {
+	return messages.NewBlockquoteEntity(parser.nodeToEntities(node.FirstChild))
 }
 
-func (parser *htmlParser) linkToEntity(node *html.Node, stripLinebreak bool) messages.HTMLEntity {
+func (parser *htmlParser) linkToEntity(node *html.Node) messages.HTMLEntity {
 	entity := &messages.BaseHTMLEntity{
 		Tag:      "a",
-		Children: parser.nodeToEntities(node.FirstChild, stripLinebreak),
+		Children: parser.nodeToEntities(node.FirstChild),
 	}
 	href := parser.getAttribute(node, "href")
 	if len(href) == 0 {
@@ -263,26 +265,28 @@ func (parser *htmlParser) codeblockToEntity(node *html.Node) messages.HTMLEntity
 			}
 		}
 	}
+	parser.keepLinebreak = true
 	text := (&messages.BaseHTMLEntity{
-		Children: parser.nodeToEntities(node.FirstChild, false),
+		Children: parser.nodeToEntities(node.FirstChild),
 	}).PlainText()
+	parser.keepLinebreak = false
 	return parser.syntaxHighlight(text, lang)
 }
 
-func (parser *htmlParser) tagNodeToEntity(node *html.Node, stripLinebreak bool) messages.HTMLEntity {
+func (parser *htmlParser) tagNodeToEntity(node *html.Node) messages.HTMLEntity {
 	switch node.Data {
 	case "blockquote":
-		return parser.blockquoteToEntity(node, stripLinebreak)
+		return parser.blockquoteToEntity(node)
 	case "ol", "ul":
-		return parser.listToEntity(node, stripLinebreak)
+		return parser.listToEntity(node)
 	case "h1", "h2", "h3", "h4", "h5", "h6":
-		return parser.headerToEntity(node, stripLinebreak)
+		return parser.headerToEntity(node)
 	case "br":
 		return messages.NewBreakEntity()
 	case "b", "strong", "i", "em", "s", "del", "u", "ins", "font":
-		return parser.basicFormatToEntity(node, stripLinebreak)
+		return parser.basicFormatToEntity(node)
 	case "a":
-		return parser.linkToEntity(node, stripLinebreak)
+		return parser.linkToEntity(node)
 	case "img":
 		return parser.imageToEntity(node)
 	case "pre":
@@ -290,16 +294,16 @@ func (parser *htmlParser) tagNodeToEntity(node *html.Node, stripLinebreak bool) 
 	default:
 		return &messages.BaseHTMLEntity{
 			Tag:      node.Data,
-			Children: parser.nodeToEntities(node.FirstChild, stripLinebreak),
+			Children: parser.nodeToEntities(node.FirstChild),
 			Block:    parser.isBlockTag(node.Data),
 		}
 	}
 }
 
-func (parser *htmlParser) singleNodeToEntity(node *html.Node, stripLinebreak bool) messages.HTMLEntity {
+func (parser *htmlParser) singleNodeToEntity(node *html.Node) messages.HTMLEntity {
 	switch node.Type {
 	case html.TextNode:
-		if stripLinebreak {
+		if !parser.keepLinebreak {
 			node.Data = strings.ReplaceAll(node.Data, "\n", "")
 		}
 		return &messages.BaseHTMLEntity{
@@ -307,14 +311,14 @@ func (parser *htmlParser) singleNodeToEntity(node *html.Node, stripLinebreak boo
 			Text: node.Data,
 		}
 	case html.ElementNode:
-		return parser.tagNodeToEntity(node, stripLinebreak)
+		return parser.tagNodeToEntity(node)
 	case html.DocumentNode:
 		if node.FirstChild.Data == "html" && node.FirstChild.NextSibling == nil {
-			return parser.singleNodeToEntity(node.FirstChild, stripLinebreak)
+			return parser.singleNodeToEntity(node.FirstChild)
 		}
 		return &messages.BaseHTMLEntity{
 			Tag:      "html",
-			Children: parser.nodeToEntities(node.FirstChild, stripLinebreak),
+			Children: parser.nodeToEntities(node.FirstChild),
 			Block:    true,
 		}
 	default:
@@ -322,9 +326,9 @@ func (parser *htmlParser) singleNodeToEntity(node *html.Node, stripLinebreak boo
 	}
 }
 
-func (parser *htmlParser) nodeToEntities(node *html.Node, stripLinebreak bool) (entities []messages.HTMLEntity) {
+func (parser *htmlParser) nodeToEntities(node *html.Node) (entities []messages.HTMLEntity) {
 	for ; node != nil; node = node.NextSibling {
-		if entity := parser.singleNodeToEntity(node, stripLinebreak); entity != nil {
+		if entity := parser.singleNodeToEntity(node); entity != nil {
 			entities = append(entities, entity)
 		}
 	}
@@ -344,7 +348,7 @@ func (parser *htmlParser) isBlockTag(tag string) bool {
 
 func (parser *htmlParser) Parse(htmlData string) messages.HTMLEntity {
 	node, _ := html.Parse(strings.NewReader(htmlData))
-	return parser.singleNodeToEntity(node, true)
+	return parser.singleNodeToEntity(node)
 }
 
 // ParseHTMLMessage parses a HTML-formatted Matrix event into a UIMessage.
@@ -352,7 +356,7 @@ func ParseHTMLMessage(room *rooms.Room, evt *mautrix.Event, senderDisplayname st
 	htmlData := evt.Content.FormattedBody
 	htmlData = strings.Replace(htmlData, "\t", "    ", -1)
 
-	parser := htmlParser{room}
+	parser := htmlParser{room: room}
 	root := parser.Parse(htmlData)
 	root.(*messages.BaseHTMLEntity).Block = false
 
