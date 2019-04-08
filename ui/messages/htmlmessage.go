@@ -36,6 +36,10 @@ type HTMLMessage struct {
 	BaseMessage
 
 	Root HTMLEntity
+
+	FocusedBackground tcell.Color
+
+	focused bool
 }
 
 func NewHTMLMessage(id, sender, displayname string, msgtype mautrix.MessageType, root HTMLEntity, timestamp time.Time) UIMessage {
@@ -45,7 +49,19 @@ func NewHTMLMessage(id, sender, displayname string, msgtype mautrix.MessageType,
 	}
 }
 func (hw *HTMLMessage) Draw(screen mauview.Screen) {
+	if hw.focused {
+		screen.SetStyle(tcell.StyleDefault.Background(hw.FocusedBackground))
+	}
+	screen.Clear()
 	hw.Root.Draw(screen)
+}
+
+func (hw *HTMLMessage) Focus() {
+	hw.focused = true
+}
+
+func (hw *HTMLMessage) Blur() {
+	hw.focused = false
 }
 
 func (hw *HTMLMessage) OnKeyEvent(event mauview.KeyEvent) bool {
@@ -154,7 +170,7 @@ func NewListEntity(ordered bool, start int, children []HTMLEntity) *ListEntity {
 func (le *ListEntity) Draw(screen mauview.Screen) {
 	width, _ := screen.Size()
 
-	proxyScreen := &mauview.ProxyScreen{Parent: screen, OffsetX: le.Indent, Width: width - le.Indent}
+	proxyScreen := &mauview.ProxyScreen{Parent: screen, OffsetX: le.Indent, Width: width - le.Indent, Style: le.Style}
 	for i, entity := range le.Children {
 		proxyScreen.Height = entity.Height()
 		if le.Ordered {
@@ -165,12 +181,38 @@ func (le *ListEntity) Draw(screen mauview.Screen) {
 			screen.SetContent(0, proxyScreen.OffsetY, '●', nil, le.Style)
 		}
 		entity.Draw(proxyScreen)
+		proxyScreen.SetStyle(le.Style)
 		proxyScreen.OffsetY += entity.Height()
 	}
 }
 
 func (le *ListEntity) String() string {
 	return fmt.Sprintf("&ListEntity{Ordered=%t, Start=%d, Base=%s},\n", le.Ordered, le.Start, le.BaseHTMLEntity)
+}
+
+type CodeBlockEntity struct {
+	*BaseHTMLEntity
+	Background tcell.Style
+}
+
+func NewCodeBlockEntity(children []HTMLEntity, background tcell.Style) *CodeBlockEntity {
+	return &CodeBlockEntity{
+		BaseHTMLEntity: &BaseHTMLEntity{
+			Tag:      "pre",
+			Block:    true,
+			Children: children,
+		},
+		Background: background,
+	}
+}
+
+func (ce *CodeBlockEntity) Draw(screen mauview.Screen) {
+	screen.Fill(' ', ce.Background)
+	ce.BaseHTMLEntity.Draw(screen)
+}
+
+func (ce *CodeBlockEntity) AdjustStyle(fn AdjustStyleFunc) HTMLEntity {
+	return ce
 }
 
 type BreakEntity struct {
@@ -297,13 +339,14 @@ func (he *BaseHTMLEntity) Draw(screen mauview.Screen) {
 	}
 	if len(he.Children) > 0 {
 		prevBreak := false
-		proxyScreen := &mauview.ProxyScreen{Parent: screen, OffsetX: he.Indent, Width: width - he.Indent}
+		proxyScreen := &mauview.ProxyScreen{Parent: screen, OffsetX: he.Indent, Width: width - he.Indent, Style: he.Style}
 		for i, entity := range he.Children {
 			if i != 0 && entity.getStartX() == 0 {
 				proxyScreen.OffsetY++
 			}
 			proxyScreen.Height = entity.Height()
 			entity.Draw(proxyScreen)
+			proxyScreen.SetStyle(he.Style)
 			proxyScreen.OffsetY += entity.Height() - 1
 			_, isBreak := entity.(*BreakEntity)
 			if prevBreak && isBreak {

@@ -221,7 +221,7 @@ func styleEntryToStyle(se chroma.StyleEntry) tcell.Style {
 }
 
 func (parser *htmlParser) syntaxHighlight(text, language string) messages.HTMLEntity {
-	lexer := lexers.Get(language)
+	lexer := lexers.Get(strings.ToLower(language))
 	if lexer == nil {
 		return nil
 	}
@@ -229,7 +229,9 @@ func (parser *htmlParser) syntaxHighlight(text, language string) messages.HTMLEn
 	if err != nil {
 		return nil
 	}
+	// TODO allow changing theme
 	style := styles.SolarizedDark
+
 	tokens := iter.Tokens()
 	children := make([]messages.HTMLEntity, len(tokens))
 	for i, token := range tokens {
@@ -245,39 +247,26 @@ func (parser *htmlParser) syntaxHighlight(text, language string) messages.HTMLEn
 			}
 		}
 	}
-	return &messages.BaseHTMLEntity{
-		Tag:      "pre",
-		Block:    true,
-		Children: children,
-	}
+	return messages.NewCodeBlockEntity(children, styleEntryToStyle(style.Get(chroma.Background)))
 }
 
 func (parser *htmlParser) codeblockToEntity(node *html.Node) messages.HTMLEntity {
-	entity := &messages.BaseHTMLEntity{
-		Tag:   "pre",
-		Block: true,
-	}
+	lang := "plaintext"
 	// TODO allow disabling syntax highlighting
 	if node.FirstChild.Type == html.ElementNode && node.FirstChild.Data == "code" {
-		text := (&messages.BaseHTMLEntity{
-			Children: parser.nodeToEntities(node.FirstChild.FirstChild, false),
-		}).PlainText()
-		attr := parser.getAttribute(node.FirstChild, "class")
-		var lang string
+		node = node.FirstChild
+		attr := parser.getAttribute(node, "class")
 		for _, class := range strings.Split(attr, " ") {
 			if strings.HasPrefix(class, "language-") {
 				lang = class[len("language-"):]
 				break
 			}
 		}
-		if len(lang) != 0 {
-			if parsed := parser.syntaxHighlight(text, lang); parsed != nil {
-				return parsed
-			}
-		}
 	}
-	entity.Children = parser.nodeToEntities(node.FirstChild, false)
-	return entity
+	text := (&messages.BaseHTMLEntity{
+		Children: parser.nodeToEntities(node.FirstChild, false),
+	}).PlainText()
+	return parser.syntaxHighlight(text, lang)
 }
 
 func (parser *htmlParser) tagNodeToEntity(node *html.Node, stripLinebreak bool) messages.HTMLEntity {
@@ -311,7 +300,7 @@ func (parser *htmlParser) singleNodeToEntity(node *html.Node, stripLinebreak boo
 	switch node.Type {
 	case html.TextNode:
 		if stripLinebreak {
-			node.Data = strings.Replace(node.Data, "\n", "", -1)
+			node.Data = strings.ReplaceAll(node.Data, "\n", "")
 		}
 		return &messages.BaseHTMLEntity{
 			Tag:  "text",
@@ -372,7 +361,7 @@ func ParseHTMLMessage(room *rooms.Room, evt *mautrix.Event, senderDisplayname st
 			Tag: "emote",
 			Children: []messages.HTMLEntity{
 				messages.NewHTMLTextEntity("* "),
-				messages.NewHTMLTextEntity("* ").AdjustStyle(AdjustStyleTextColor(widget.GetHashColor(evt.Sender))),
+				messages.NewHTMLTextEntity(senderDisplayname).AdjustStyle(AdjustStyleTextColor(widget.GetHashColor(evt.Sender))),
 				messages.NewHTMLTextEntity(" "),
 				root,
 			},

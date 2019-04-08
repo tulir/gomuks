@@ -474,29 +474,25 @@ func (view *MessageView) Draw(screen mauview.Screen) {
 	scrollBarHeight, scrollBarPos := view.calculateScrollBar(view.height)
 
 	var prevMeta ifc.MessageMeta
-	firstLine := true
-	skippedLines := 0
 
-	for line := 0; line < view.height; line++ {
-		index := indexOffset + line
-		if index < 0 {
-			skippedLines++
-			continue
-		} else if index >= view.TotalHeight() {
-			break
-		}
-
-		showScrollbar := line-skippedLines >= scrollBarPos-scrollBarHeight && line-skippedLines < scrollBarPos
-		isTop := firstLine && view.ScrollOffset+view.height >= view.TotalHeight()
+	viewStart := 0
+	if indexOffset < 0 {
+		viewStart = -indexOffset
+	}
+	for line := viewStart; line < view.height; line++ {
+		showScrollbar := line-viewStart >= scrollBarPos-scrollBarHeight && line-viewStart < scrollBarPos
+		isTop := line == viewStart && view.ScrollOffset+view.height >= view.TotalHeight()
 		isBottom := line == view.height-1 && view.ScrollOffset == 0
 
 		borderChar, borderStyle := getScrollbarStyle(showScrollbar, isTop, isBottom)
 
-		firstLine = false
-
 		if !bareMode {
 			screen.SetContent(separatorX, line, borderChar, nil, borderStyle)
 		}
+	}
+
+	for line := viewStart; line < view.height && indexOffset+line < view.TotalHeight(); line++ {
+		index := indexOffset + line
 
 		text, meta := view.textBuffer[index], view.metaBuffer[index]
 		if meta != prevMeta {
@@ -519,11 +515,6 @@ func (view *MessageView) Draw(screen mauview.Screen) {
 				line--
 			}
 			message.Draw(mauview.NewProxyScreen(screen, messageX, line, view.width-messageX, message.Height()))
-			if !bareMode {
-				for i := line; i < line+message.Height(); i++ {
-					screen.SetContent(separatorX, i, borderChar, nil, borderStyle)
-				}
-			}
 			line += message.Height() - 1
 		} else {
 			text.Draw(screen, messageX, line)
