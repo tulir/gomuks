@@ -150,10 +150,10 @@ func cmdInvite(cmd *Command) {
 		cmd.Reply("Usage: /invite <user id>")
 		return
 	}
-	_, err := cmd.Matrix.Client().InviteUser(cmd.Room.MxRoom().ID, &mautrix.ReqInviteUser{cmd.Args[0]})
+	_, err := cmd.Matrix.Client().InviteUser(cmd.Room.MxRoom().ID, &mautrix.ReqInviteUser{UserID: cmd.Args[0]})
 	if err != nil {
 		debug.Print("Error in invite call:", err)
-		cmd.Reply("Failed to invite user:", err)
+		cmd.Reply("Failed to invite user: %v", err)
 	}
 }
 
@@ -166,10 +166,10 @@ func cmdBan(cmd *Command) {
 	if len(cmd.Args) >= 2 {
 		reason = strings.Join(cmd.Args[1:], " ")
 	}
-	_, err := cmd.Matrix.Client().BanUser(cmd.Room.MxRoom().ID, &mautrix.ReqBanUser{reason, cmd.Args[0]})
+	_, err := cmd.Matrix.Client().BanUser(cmd.Room.MxRoom().ID, &mautrix.ReqBanUser{Reason: reason, UserID: cmd.Args[0]})
 	if err != nil {
 		debug.Print("Error in ban call:", err)
-		cmd.Reply("Failed to ban user:", err)
+		cmd.Reply("Failed to ban user: %v", err)
 	}
 
 }
@@ -179,10 +179,10 @@ func cmdUnban(cmd *Command) {
 		cmd.Reply("Usage: /unban <user>")
 		return
 	}
-	_, err := cmd.Matrix.Client().UnbanUser(cmd.Room.MxRoom().ID, &mautrix.ReqUnbanUser{cmd.Args[0]})
+	_, err := cmd.Matrix.Client().UnbanUser(cmd.Room.MxRoom().ID, &mautrix.ReqUnbanUser{UserID: cmd.Args[0]})
 	if err != nil {
 		debug.Print("Error in unban call:", err)
-		cmd.Reply("Failed to unban user:", err)
+		cmd.Reply("Failed to unban user: %v", err)
 	}
 }
 
@@ -195,7 +195,7 @@ func cmdKick(cmd *Command) {
 	if len(cmd.Args) >= 2 {
 		reason = strings.Join(cmd.Args[1:], " ")
 	}
-	_, err := cmd.Matrix.Client().KickUser(cmd.Room.MxRoom().ID, &mautrix.ReqKickUser{reason, cmd.Args[0]})
+	_, err := cmd.Matrix.Client().KickUser(cmd.Room.MxRoom().ID, &mautrix.ReqKickUser{Reason: reason, UserID: cmd.Args[0]})
 	if err != nil {
 		debug.Print("Error in kick call:", err)
 		debug.Print("Failed to kick user:", err)

@@ -10,6 +10,7 @@ require (
 	github.com/lucasb-eyer/go-colorful v1.0.1
 	github.com/mattn/go-runewidth v0.0.4
 	github.com/nu7hatch/gouuid v0.0.0-20131221200532-179d4d0c4d8d // indirect
+	github.com/russross/blackfriday/v2 v2.0.1
 	github.com/shurcooL/sanitized_anchor_name v1.0.0 // indirect
 	go.etcd.io/bbolt v1.3.2
 	golang.org/x/crypto v0.0.0-20190404164418-38d8ce5564a5 // indirect
