@@ -386,6 +386,7 @@ func (view *MainView) NotifyMessage(room *rooms.Room, message ifc.Message, shoul
 	}
 
 	// TODO this should probably happen somewhere else
+	//      (actually it's probably completely broken now)
 	message.SetIsHighlight(should.Highlight)
 }
 

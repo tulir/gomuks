@@ -39,8 +39,6 @@ func NewExpandedTextMessage(event *mautrix.Event, displayname string, text tstri
 	}
 }
 
-var ZeroTime = time.Time{}
-
 func NewDateChangeMessage(text string) UIMessage {
 	midnight := time.Now()
 	midnight = time.Date(midnight.Year(), midnight.Month(), midnight.Day(),
