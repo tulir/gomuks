@@ -18,7 +18,7 @@ require (
 	golang.org/x/sys v0.0.0-20190405154228-4b34438f7a67 // indirect
 	gopkg.in/toast.v1 v1.0.0-20180812000517-0a84660828b2 // indirect
 	gopkg.in/yaml.v2 v2.2.2
-	maunium.net/go/mautrix v0.1.0-alpha.3.0.20190328212757-5794ed367481
+	maunium.net/go/mautrix v0.1.0-alpha.3.0.20190409232906-0ad616f68d2c
 	maunium.net/go/mauview v0.0.0-20190406150001-ad4a4e562f9e
 	maunium.net/go/tcell v0.0.0-20190406145848-d520315b0ddb
 )
