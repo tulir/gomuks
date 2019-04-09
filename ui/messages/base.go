@@ -192,11 +192,18 @@ func (msg *BaseMessage) FormatDate() string {
 }
 
 func (msg *BaseMessage) ID() string {
+	if len(msg.MsgID) == 0 {
+		return msg.MsgTxnID
+	}
 	return msg.MsgID
 }
 
 func (msg *BaseMessage) SetID(id string) {
 	msg.MsgID = id
+}
+
+func (msg *BaseMessage) TxnID() string {
+	return msg.MsgTxnID
 }
 
 func (msg *BaseMessage) Type() mautrix.MessageType {
@@ -217,14 +224,6 @@ func (msg *BaseMessage) IsHighlight() bool {
 
 func (msg *BaseMessage) SetIsHighlight(isHighlight bool) {
 	msg.MsgIsHighlight = isHighlight
-}
-
-func (msg *BaseMessage) IsService() bool {
-	return msg.MsgIsService
-}
-
-func (msg *BaseMessage) SetIsService(isService bool) {
-	msg.MsgIsService = isService
 }
 
 func (msg *BaseMessage) Source() json.RawMessage {

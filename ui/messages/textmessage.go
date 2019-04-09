@@ -18,6 +18,7 @@ package messages
 
 import (
 	"fmt"
+	"time"
 
 	"maunium.net/go/mautrix"
 
@@ -39,6 +40,18 @@ func NewTextMessage(event *mautrix.Event, displayname string, text string) UIMes
 	}
 }
 
+func NewServiceMessage(text string) UIMessage {
+	return &TextMessage{
+		BaseMessage: BaseMessage{
+			MsgSenderID:    "*",
+			MsgSender:      "*",
+			MsgTimestamp:   time.Now(),
+			MsgIsService:   true,
+		},
+		MsgText: text,
+	}
+}
+
 func (msg *TextMessage) getCache() tstring.TString {
 	if msg.cache == nil {
 		switch msg.MsgType {
@@ -54,11 +67,6 @@ func (msg *TextMessage) getCache() tstring.TString {
 
 func (msg *TextMessage) SetIsHighlight(isHighlight bool) {
 	msg.BaseMessage.SetIsHighlight(isHighlight)
-	msg.cache = nil
-}
-
-func (msg *TextMessage) SetIsService(isService bool) {
-	msg.BaseMessage.SetIsService(isService)
 	msg.cache = nil
 }
 

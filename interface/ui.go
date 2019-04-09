@@ -53,14 +53,6 @@ type MainView interface {
 	InitialSyncDone()
 }
 
-type MessageDirection int
-
-const (
-	AppendMessage MessageDirection = iota
-	PrependMessage
-	IgnoreMessage
-)
-
 type RoomView interface {
 	MxRoom() *rooms.Room
 
@@ -69,8 +61,7 @@ type RoomView interface {
 	UpdateUserList()
 
 	ParseEvent(evt *mautrix.Event) Message
-	AppendMessage(message Message)
-	MarkMessageFailed(message Message)
+	AddMessage(message Message)
 	AddServiceMessage(message string)
 }
 
@@ -81,4 +72,8 @@ type Message interface {
 	Timestamp() time.Time
 	NotificationSenderName() string
 	NotificationContent() string
+
+	SetState(state mautrix.OutgoingEventState)
+	SetIsHighlight(highlight bool)
+	SetID(id string)
 }

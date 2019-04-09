@@ -29,7 +29,6 @@ import (
 	"maunium.net/go/gomuks/ui/messages/html"
 	"maunium.net/go/gomuks/ui/messages/tstring"
 	"maunium.net/go/gomuks/ui/widget"
-	htmlp "maunium.net/go/gomuks/ui/messages/html"
 )
 
 func ParseEvent(matrix ifc.MatrixContainer, room *rooms.Room, evt *mautrix.Event) UIMessage {

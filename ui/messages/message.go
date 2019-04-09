@@ -19,6 +19,7 @@ package messages
 import (
 	"maunium.net/go/gomuks/config"
 	"maunium.net/go/gomuks/interface"
+	"maunium.net/go/mautrix"
 	"maunium.net/go/mauview"
 	"maunium.net/go/tcell"
 )
@@ -27,6 +28,7 @@ import (
 type UIMessage interface {
 	ifc.Message
 
+	Type() mautrix.MessageType
 	Sender() string
 	SenderColor() tcell.Color
 	TextColor() tcell.Color

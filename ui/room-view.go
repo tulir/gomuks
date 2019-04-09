@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"path/filepath"
 	"sort"
-	"strconv"
 	"strings"
 	"time"
 
@@ -251,7 +250,7 @@ func (view *RoomView) OnKeyEvent(event mauview.KeyEvent) bool {
 		msgView.AddScrollOffset(-msgView.Height() / 2)
 		return true
 	case tcell.KeyEnter:
-		if event.Modifiers() & tcell.ModShift == 0 && event.Modifiers() & tcell.ModCtrl == 0 && view.inputSubmitFunc != nil {
+		if event.Modifiers()&tcell.ModShift == 0 && event.Modifiers()&tcell.ModCtrl == 0 && view.inputSubmitFunc != nil {
 			view.inputSubmitFunc(view, view.input.GetText())
 			return true
 		}
@@ -379,6 +378,44 @@ func (view *RoomView) InputTabComplete(text string, cursorOffset int) {
 	view.SetCompletions(strCompletions)
 }
 
+func (view *RoomView) InputSubmit(text string) {
+	if len(text) == 0 {
+		return
+	} else if cmd := view.parent.cmdProcessor.ParseCommand(view, text); cmd != nil {
+		go view.parent.cmdProcessor.HandleCommand(cmd)
+	} else {
+		go view.SendMessage(mautrix.MsgText, text)
+	}
+	view.SetInputText("")
+}
+
+func (view *RoomView) SendMessage(msgtype mautrix.MessageType, text string) {
+	defer debug.Recover()
+	debug.Print("Sending message", msgtype, text, "to", view.Room.ID)
+	if !view.config.Preferences.DisableEmojis {
+		text = emoji.Sprint(text)
+	}
+	evt := view.parent.matrix.PrepareMarkdownMessage(view.Room.ID, msgtype, text)
+	msg := view.ParseEvent(evt)
+	view.AddMessage(msg)
+	eventID, err := view.parent.matrix.SendEvent(evt)
+	if err != nil {
+		msg.SetState(mautrix.EventStateSendFail)
+		// Show shorter version if available
+		if httpErr, ok := err.(mautrix.HTTPError); ok {
+			err = httpErr
+			if respErr := httpErr.RespError; respErr != nil {
+				err = respErr
+			}
+		}
+		view.AddServiceMessage(fmt.Sprintf("Failed to send message: %v", err))
+		view.parent.parent.Render()
+	} else {
+		debug.Print("Event ID received:", eventID)
+		//view.MessageView().UpdateMessageID(msg, eventID)
+	}
+}
+
 func (view *RoomView) MessageView() *MessageView {
 	return view.content
 }
@@ -406,37 +443,12 @@ func (view *RoomView) UpdateUserList() {
 	}
 }
 
-func (view *RoomView) newUIMessage(id, sender string, msgtype mautrix.MessageType, text string, timestamp time.Time) messages.UIMessage {
-	member := view.Room.GetMember(sender)
-	displayname := sender
-	if member != nil {
-		displayname = member.Displayname
-	}
-	msg := messages.NewTextMessage(id, sender, displayname, msgtype, text, timestamp)
-	return msg
-}
-
-func (view *RoomView) NewTempMessage(msgtype mautrix.MessageType, text string) ifc.Message {
-	now := time.Now()
-	id := strconv.FormatInt(now.UnixNano(), 10)
-	sender := ""
-	if ownerMember := view.Room.GetMember(view.Room.GetSessionOwner()); ownerMember != nil {
-		sender = ownerMember.Displayname
-	}
-	message := view.newUIMessage(id, sender, msgtype, text, now)
-	message.SetState(ifc.MessageStateSending)
-	view.AddMessage(message, ifc.AppendMessage)
-	return message
-}
-
 func (view *RoomView) AddServiceMessage(text string) {
-	message := view.newUIMessage(view.parent.matrix.Client().TxnID(), "*", "gomuks.service", text, time.Now())
-	message.SetIsService(true)
-	view.AddMessage(message, ifc.AppendMessage)
+	view.content.AddMessage(messages.NewServiceMessage(text), AppendMessage)
 }
 
-func (view *RoomView) AddMessage(message ifc.Message, direction ifc.MessageDirection) {
-	view.content.AddMessage(message, direction)
+func (view *RoomView) AddMessage(message ifc.Message) {
+	view.content.AddMessage(message, AppendMessage)
 }
 
 func (view *RoomView) ParseEvent(evt *mautrix.Event) ifc.Message {

@@ -34,8 +34,8 @@ type MatrixContainer interface {
 	Logout()
 
 	SendPreferencesToMatrix()
-	SendMessage(roomID string, msgtype mautrix.MessageType, message string) (string, error)
-	SendMarkdownMessage(roomID string, msgtype mautrix.MessageType, message string) (string, error)
+	PrepareMarkdownMessage(roomID string, msgtype mautrix.MessageType, message string) *mautrix.Event
+	SendEvent(event *mautrix.Event) (string, error)
 	SendTyping(roomID string, typing bool)
 	MarkRead(roomID, eventID string)
 	JoinRoom(roomID, server string) (*rooms.Room, error)

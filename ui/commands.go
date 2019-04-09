@@ -27,16 +27,13 @@ import (
 
 	"github.com/lucasb-eyer/go-colorful"
 
-	"maunium.net/go/mautrix"
-	"maunium.net/go/mautrix/format"
-
 	"maunium.net/go/gomuks/debug"
+	"maunium.net/go/mautrix"
 )
 
 func cmdMe(cmd *Command) {
 	text := strings.Join(cmd.Args, " ")
-	tempMessage := cmd.Room.NewTempMessage("m.emote", text)
-	go cmd.MainView.sendTempMessage(cmd.Room, tempMessage, text)
+	go cmd.Room.SendMessage(mautrix.MsgEmote, text)
 	cmd.UI.Render()
 }
 
@@ -97,8 +94,7 @@ func cmdRainbow(cmd *Command) {
 		color := rainbow.GetInterpolatedColorFor(float64(i) / float64(len(text))).Hex()
 		fmt.Fprintf(&html, "<font color=\"%s\">%c</font>", color, char)
 	}
-	tempMessage := cmd.Room.NewTempMessage("m.text", format.HTMLToText(html.String()))
-	go cmd.MainView.sendTempMessage(cmd.Room, tempMessage, html.String())
+	go cmd.Room.SendMessage("m.text", html.String())
 	cmd.UI.Render()
 }
 

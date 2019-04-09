@@ -89,7 +89,7 @@ func (view *MessageView) updateWidestSender(sender string) {
 	}
 }
 
-func (view *MessageView) UpdateMessageID(ifcMessage ifc.Message, newID string) {
+/*func (view *MessageView) UpdateMessageID(ifcMessage ifc.Message, newID string) {
 	message, ok := ifcMessage.(messages.UIMessage)
 	if !ok {
 		debug.Print("[Warning] Passed non-UIMessage ifc.Message object to UpdateMessageID().")
@@ -99,9 +99,17 @@ func (view *MessageView) UpdateMessageID(ifcMessage ifc.Message, newID string) {
 	delete(view.messageIDs, message.ID())
 	message.SetID(newID)
 	view.messageIDs[message.ID()] = message
-}
+}*/
 
-func (view *MessageView) AddMessage(ifcMessage ifc.Message, direction ifc.MessageDirection) {
+type MessageDirection int
+
+const (
+	AppendMessage MessageDirection = iota
+	PrependMessage
+	IgnoreMessage
+)
+
+func (view *MessageView) AddMessage(ifcMessage ifc.Message, direction MessageDirection) {
 	if ifcMessage == nil {
 		return
 	}
@@ -117,11 +125,11 @@ func (view *MessageView) AddMessage(ifcMessage ifc.Message, direction ifc.Messag
 	var messageExists bool
 	if oldMsg, messageExists = view.messageIDs[message.ID()]; messageExists {
 		view.replaceMessage(oldMsg, message)
-		direction = ifc.IgnoreMessage
+		direction = IgnoreMessage
 	} else if oldMsg, messageExists = view.messageIDs[message.TxnID()]; messageExists {
 		view.replaceMessage(oldMsg, message)
 		delete(view.messageIDs, message.TxnID())
-		direction = ifc.IgnoreMessage
+		direction = IgnoreMessage
 	}
 
 	view.updateWidestSender(message.Sender())
@@ -133,13 +141,13 @@ func (view *MessageView) AddMessage(ifcMessage ifc.Message, direction ifc.Messag
 	}
 	message.CalculateBuffer(view.config.Preferences, width)
 
-	if direction == ifc.AppendMessage {
+	if direction == AppendMessage {
 		if view.ScrollOffset > 0 {
 			view.ScrollOffset += message.Height()
 		}
 		view.messages = append(view.messages, message)
 		view.appendBuffer(message)
-	} else if direction == ifc.PrependMessage {
+	} else if direction == PrependMessage {
 		view.messages = append([]messages.UIMessage{message}, view.messages...)
 	} else if oldMsg != nil {
 		view.replaceBuffer(oldMsg, message)

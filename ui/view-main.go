@@ -23,9 +23,6 @@ import (
 	"time"
 	"unicode"
 
-	"github.com/kyokomi/emoji"
-
-	"maunium.net/go/mautrix"
 	"maunium.net/go/mauview"
 	"maunium.net/go/tcell"
 
@@ -152,45 +149,6 @@ func findWordToTabComplete(text string) string {
 	return output
 }
 
-func (view *MainView) InputSubmit(roomView *RoomView, text string) {
-	if len(text) == 0 {
-		return
-	} else if text[0] == '/' {
-		cmd := view.cmdProcessor.ParseCommand(roomView, text)
-		go view.cmdProcessor.HandleCommand(cmd)
-	} else {
-		view.SendMessage(roomView, text)
-	}
-	roomView.SetInputText("")
-}
-
-func (view *MainView) SendMessage(roomView *RoomView, text string) {
-	go view.goSendMessage(roomView, text)
-}
-
-func (view *MainView) goSendMessage(roomView *RoomView, text string) {
-	defer debug.Recover()
-	debug.Print("Sending message", tempMessage.Type(), text)
-	if !roomView.config.Preferences.DisableEmojis {
-		text = emoji.Sprint(text)
-	}
-	eventID, err := view.matrix.SendMarkdownMessage(roomView.Room.ID, tempMessage.Type(), text)
-	if err != nil {
-		tempMessage.SetState(ifc.MessageStateFailed)
-		if httpErr, ok := err.(mautrix.HTTPError); ok {
-			if respErr := httpErr.RespError; respErr != nil {
-				// Show shorter version if available
-				err = respErr
-			}
-		}
-		roomView.AddServiceMessage(fmt.Sprintf("Failed to send message: %v", err))
-		view.parent.Render()
-	} else {
-		debug.Print("Event ID received:", eventID)
-		roomView.MessageView().UpdateMessageID(tempMessage, eventID)
-	}
-}
-
 func (view *MainView) ShowBare(roomView *RoomView) {
 	if roomView == nil {
 		return
@@ -204,7 +162,7 @@ func (view *MainView) ShowBare(roomView *RoomView) {
 		fmt.Println(roomView.MessageView().CapturePlaintext(height))
 		fmt.Println("Press enter to return to normal mode.")
 		reader := bufio.NewReader(os.Stdin)
-		reader.ReadRune()
+		_, _, _ = reader.ReadRune()
 		print("\033[2J\033[0;0H")
 	})
 }
@@ -310,7 +268,6 @@ func (view *MainView) SwitchRoom(tag string, room *rooms.Room) {
 func (view *MainView) addRoomPage(room *rooms.Room) {
 	if _, ok := view.rooms[room.ID]; !ok {
 		roomView := NewRoomView(view, room).
-			SetInputSubmitFunc(view.InputSubmit).
 			SetInputChangedFunc(view.InputChanged)
 		view.rooms[room.ID] = roomView
 		roomView.UpdateUserList()
@@ -428,8 +385,8 @@ func (view *MainView) NotifyMessage(room *rooms.Room, message ifc.Message, shoul
 		sendNotification(room, message.NotificationSenderName(), message.NotificationContent(), should.Highlight, shouldPlaySound)
 	}
 
-	// TODO Make sure this happens somewhere else
-	//message.SetIsHighlight(should.Highlight)
+	// TODO this should probably happen somewhere else
+	message.SetIsHighlight(should.Highlight)
 }
 
 func (view *MainView) InitialSyncDone() {
@@ -443,15 +400,16 @@ func (view *MainView) InitialSyncDone() {
 func (view *MainView) LoadHistory(room string) {
 	defer debug.Recover()
 	roomView := view.rooms[room]
+	msgView := roomView.MessageView()
 
 	batch := roomView.Room.PrevBatch
 	lockTime := time.Now().Unix() + 1
 
 	roomView.Room.LockHistory()
-	roomView.MessageView().LoadingMessages = true
+	msgView.LoadingMessages = true
 	defer func() {
 		roomView.Room.UnlockHistory()
-		roomView.MessageView().LoadingMessages = false
+		msgView.LoadingMessages = false
 	}()
 
 	// There's no clean way to try to lock a mutex, so we just check if we still
@@ -468,16 +426,9 @@ func (view *MainView) LoadHistory(room string) {
 		return
 	}
 	for _, evt := range history {
-		message := roomView.ParseEvent(evt)
-		if message != nil {
-			roomView.AddMessage(message, ifc.PrependMessage)
+		if message := roomView.ParseEvent(evt); message != nil {
+			msgView.AddMessage(message, PrependMessage)
 		}
 	}
-	// TODO?
-	/*err = roomView.SaveHistory(view.config.HistoryDir)
-	if err != nil {
-		debug.Printf("Failed to save history of %s: %v", roomView.Room.GetTitle(), err)
-	}*/
-	view.config.PutRoom(roomView.Room)
 	view.parent.Render()
 }
