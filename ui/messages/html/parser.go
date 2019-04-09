@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-package parser
+package html
 
 import (
 	"regexp"
@@ -31,7 +31,6 @@ import (
 	"maunium.net/go/tcell"
 
 	"maunium.net/go/gomuks/matrix/rooms"
-	"maunium.net/go/gomuks/ui/messages"
 	"maunium.net/go/gomuks/ui/widget"
 )
 
@@ -80,7 +79,7 @@ func (parser *htmlParser) getAttribute(node *html.Node, attribute string) string
 	return ""
 }
 
-func (parser *htmlParser) listToEntity(node *html.Node) messages.HTMLEntity {
+func (parser *htmlParser) listToEntity(node *html.Node) Entity {
 	children := parser.nodeToEntities(node.FirstChild)
 	ordered := node.Data == "ol"
 	start := 1
@@ -99,11 +98,11 @@ func (parser *htmlParser) listToEntity(node *html.Node) messages.HTMLEntity {
 			listItems = append(listItems, child)
 		}
 	}
-	return messages.NewListEntity(ordered, start, listItems)
+	return NewListEntity(ordered, start, listItems)
 }
 
-func (parser *htmlParser) basicFormatToEntity(node *html.Node) messages.HTMLEntity {
-	entity := &messages.BaseHTMLEntity{
+func (parser *htmlParser) basicFormatToEntity(node *html.Node) Entity {
+	entity := &BaseEntity{
 		Tag:      node.Data,
 		Children: parser.nodeToEntities(node.FirstChild),
 	}
@@ -140,7 +139,7 @@ func (parser *htmlParser) parseColor(node *html.Node, mainName, altName string) 
 
 	cful, err := colorful.Hex(hex)
 	if err != nil {
-		color2, found := ColorMap[strings.ToLower(hex)]
+		color2, found := colorMap[strings.ToLower(hex)]
 		if !found {
 			return
 		}
@@ -151,22 +150,22 @@ func (parser *htmlParser) parseColor(node *html.Node, mainName, altName string) 
 	return tcell.NewRGBColor(int32(r), int32(g), int32(b)), true
 }
 
-func (parser *htmlParser) headerToEntity(node *html.Node) messages.HTMLEntity {
+func (parser *htmlParser) headerToEntity(node *html.Node) Entity {
 	length := int(node.Data[1] - '0')
 	prefix := strings.Repeat("#", length) + " "
-	return (&messages.BaseHTMLEntity{
+	return (&BaseEntity{
 		Tag:      node.Data,
 		Text:     prefix,
 		Children: parser.nodeToEntities(node.FirstChild),
 	}).AdjustStyle(AdjustStyleBold)
 }
 
-func (parser *htmlParser) blockquoteToEntity(node *html.Node) messages.HTMLEntity {
-	return messages.NewBlockquoteEntity(parser.nodeToEntities(node.FirstChild))
+func (parser *htmlParser) blockquoteToEntity(node *html.Node) Entity {
+	return NewBlockquoteEntity(parser.nodeToEntities(node.FirstChild))
 }
 
-func (parser *htmlParser) linkToEntity(node *html.Node) messages.HTMLEntity {
-	entity := &messages.BaseHTMLEntity{
+func (parser *htmlParser) linkToEntity(node *html.Node) Entity {
+	entity := &BaseEntity{
 		Tag:      "a",
 		Children: parser.nodeToEntities(node.FirstChild),
 	}
@@ -190,7 +189,7 @@ func (parser *htmlParser) linkToEntity(node *html.Node) messages.HTMLEntity {
 	return entity
 }
 
-func (parser *htmlParser) imageToEntity(node *html.Node) messages.HTMLEntity {
+func (parser *htmlParser) imageToEntity(node *html.Node) Entity {
 	alt := parser.getAttribute(node, "alt")
 	if len(alt) == 0 {
 		alt = parser.getAttribute(node, "title")
@@ -198,7 +197,7 @@ func (parser *htmlParser) imageToEntity(node *html.Node) messages.HTMLEntity {
 			alt = "[inline image]"
 		}
 	}
-	entity := &messages.BaseHTMLEntity{
+	entity := &BaseEntity{
 		Tag:  "img",
 		Text: alt,
 	}
@@ -222,7 +221,7 @@ func styleEntryToStyle(se chroma.StyleEntry) tcell.Style {
 		Background(colourToColor(se.Background))
 }
 
-func (parser *htmlParser) syntaxHighlight(text, language string) messages.HTMLEntity {
+func (parser *htmlParser) syntaxHighlight(text, language string) Entity {
 	lexer := lexers.Get(strings.ToLower(language))
 	if lexer == nil {
 		return nil
@@ -235,12 +234,12 @@ func (parser *htmlParser) syntaxHighlight(text, language string) messages.HTMLEn
 	style := styles.SolarizedDark
 
 	tokens := iter.Tokens()
-	children := make([]messages.HTMLEntity, len(tokens))
+	children := make([]Entity, len(tokens))
 	for i, token := range tokens {
 		if token.Value == "\n" {
-			children[i] = &messages.BaseHTMLEntity{Block: true, Tag: "br"}
+			children[i] = &BaseEntity{Block: true, Tag: "br"}
 		} else {
-			children[i] = &messages.BaseHTMLEntity{
+			children[i] = &BaseEntity{
 				Tag:   token.Type.String(),
 				Text:  token.Value,
 				Style: styleEntryToStyle(style.Get(token.Type)),
@@ -249,10 +248,10 @@ func (parser *htmlParser) syntaxHighlight(text, language string) messages.HTMLEn
 			}
 		}
 	}
-	return messages.NewCodeBlockEntity(children, styleEntryToStyle(style.Get(chroma.Background)))
+	return NewCodeBlockEntity(children, styleEntryToStyle(style.Get(chroma.Background)))
 }
 
-func (parser *htmlParser) codeblockToEntity(node *html.Node) messages.HTMLEntity {
+func (parser *htmlParser) codeblockToEntity(node *html.Node) Entity {
 	lang := "plaintext"
 	// TODO allow disabling syntax highlighting
 	if node.FirstChild.Type == html.ElementNode && node.FirstChild.Data == "code" {
@@ -266,14 +265,14 @@ func (parser *htmlParser) codeblockToEntity(node *html.Node) messages.HTMLEntity
 		}
 	}
 	parser.keepLinebreak = true
-	text := (&messages.BaseHTMLEntity{
+	text := (&BaseEntity{
 		Children: parser.nodeToEntities(node.FirstChild),
 	}).PlainText()
 	parser.keepLinebreak = false
 	return parser.syntaxHighlight(text, lang)
 }
 
-func (parser *htmlParser) tagNodeToEntity(node *html.Node) messages.HTMLEntity {
+func (parser *htmlParser) tagNodeToEntity(node *html.Node) Entity {
 	switch node.Data {
 	case "blockquote":
 		return parser.blockquoteToEntity(node)
@@ -282,7 +281,7 @@ func (parser *htmlParser) tagNodeToEntity(node *html.Node) messages.HTMLEntity {
 	case "h1", "h2", "h3", "h4", "h5", "h6":
 		return parser.headerToEntity(node)
 	case "br":
-		return messages.NewBreakEntity()
+		return NewBreakEntity()
 	case "b", "strong", "i", "em", "s", "del", "u", "ins", "font":
 		return parser.basicFormatToEntity(node)
 	case "a":
@@ -292,7 +291,7 @@ func (parser *htmlParser) tagNodeToEntity(node *html.Node) messages.HTMLEntity {
 	case "pre":
 		return parser.codeblockToEntity(node)
 	default:
-		return &messages.BaseHTMLEntity{
+		return &BaseEntity{
 			Tag:      node.Data,
 			Children: parser.nodeToEntities(node.FirstChild),
 			Block:    parser.isBlockTag(node.Data),
@@ -300,13 +299,13 @@ func (parser *htmlParser) tagNodeToEntity(node *html.Node) messages.HTMLEntity {
 	}
 }
 
-func (parser *htmlParser) singleNodeToEntity(node *html.Node) messages.HTMLEntity {
+func (parser *htmlParser) singleNodeToEntity(node *html.Node) Entity {
 	switch node.Type {
 	case html.TextNode:
 		if !parser.keepLinebreak {
 			node.Data = strings.ReplaceAll(node.Data, "\n", "")
 		}
-		return &messages.BaseHTMLEntity{
+		return &BaseEntity{
 			Tag:  "text",
 			Text: node.Data,
 		}
@@ -316,7 +315,7 @@ func (parser *htmlParser) singleNodeToEntity(node *html.Node) messages.HTMLEntit
 		if node.FirstChild.Data == "html" && node.FirstChild.NextSibling == nil {
 			return parser.singleNodeToEntity(node.FirstChild)
 		}
-		return &messages.BaseHTMLEntity{
+		return &BaseEntity{
 			Tag:      "html",
 			Children: parser.nodeToEntities(node.FirstChild),
 			Block:    true,
@@ -326,7 +325,7 @@ func (parser *htmlParser) singleNodeToEntity(node *html.Node) messages.HTMLEntit
 	}
 }
 
-func (parser *htmlParser) nodeToEntities(node *html.Node) (entities []messages.HTMLEntity) {
+func (parser *htmlParser) nodeToEntities(node *html.Node) (entities []Entity) {
 	for ; node != nil; node = node.NextSibling {
 		if entity := parser.singleNodeToEntity(node); entity != nil {
 			entities = append(entities, entity)
@@ -346,27 +345,32 @@ func (parser *htmlParser) isBlockTag(tag string) bool {
 	return false
 }
 
-func (parser *htmlParser) Parse(htmlData string) messages.HTMLEntity {
+func (parser *htmlParser) Parse(htmlData string) Entity {
 	node, _ := html.Parse(strings.NewReader(htmlData))
 	return parser.singleNodeToEntity(node)
 }
 
-// ParseHTMLMessage parses a HTML-formatted Matrix event into a UIMessage.
-func ParseHTMLMessage(room *rooms.Room, evt *mautrix.Event, senderDisplayname string) messages.HTMLEntity {
+const TabLength = 4
+
+// Parse parses a HTML-formatted Matrix event into a UIMessage.
+func Parse(room *rooms.Room, evt *mautrix.Event, senderDisplayname string) Entity {
 	htmlData := evt.Content.FormattedBody
-	htmlData = strings.Replace(htmlData, "\t", "    ", -1)
+	if evt.Content.Format != mautrix.FormatHTML {
+		htmlData = strings.ReplaceAll(html.EscapeString(evt.Content.Body), "\n", "<br/>")
+	}
+	htmlData = strings.Replace(htmlData, "\t", strings.Repeat(" ", TabLength), -1)
 
 	parser := htmlParser{room: room}
 	root := parser.Parse(htmlData)
-	root.(*messages.BaseHTMLEntity).Block = false
+	root.(*BaseEntity).Block = false
 
 	if evt.Content.MsgType == mautrix.MsgEmote {
-		root = &messages.BaseHTMLEntity{
+		root = &BaseEntity{
 			Tag: "emote",
-			Children: []messages.HTMLEntity{
-				messages.NewHTMLTextEntity("* "),
-				messages.NewHTMLTextEntity(senderDisplayname).AdjustStyle(AdjustStyleTextColor(widget.GetHashColor(evt.Sender))),
-				messages.NewHTMLTextEntity(" "),
+			Children: []Entity{
+				NewTextEntity("* "),
+				NewTextEntity(senderDisplayname).AdjustStyle(AdjustStyleTextColor(widget.GetHashColor(evt.Sender))),
+				NewTextEntity(" "),
 				root,
 			},
 		}

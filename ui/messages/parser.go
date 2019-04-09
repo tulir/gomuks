@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-package parser
+package messages
 
 import (
 	"fmt"
@@ -22,17 +22,18 @@ import (
 	"strings"
 	"time"
 
+	"maunium.net/go/mautrix"
+	"maunium.net/go/tcell"
+
 	"maunium.net/go/gomuks/debug"
 	"maunium.net/go/gomuks/interface"
 	"maunium.net/go/gomuks/matrix/rooms"
-	"maunium.net/go/gomuks/ui/messages"
 	"maunium.net/go/gomuks/ui/messages/tstring"
 	"maunium.net/go/gomuks/ui/widget"
-	"maunium.net/go/mautrix"
-	"maunium.net/go/tcell"
+	htmlp "maunium.net/go/gomuks/ui/messages/html"
 )
 
-func ParseEvent(matrix ifc.MatrixContainer, room *rooms.Room, evt *mautrix.Event) messages.UIMessage {
+func ParseEvent(matrix ifc.MatrixContainer, room *rooms.Room, evt *mautrix.Event) UIMessage {
 	switch evt.Type {
 	case mautrix.EventSticker:
 		evt.Content.MsgType = mautrix.MsgImage
@@ -55,7 +56,7 @@ func unixToTime(unix int64) time.Time {
 	return timestamp
 }
 
-func ParseStateEvent(matrix ifc.MatrixContainer, room *rooms.Room, evt *mautrix.Event) messages.UIMessage {
+func ParseStateEvent(matrix ifc.MatrixContainer, room *rooms.Room, evt *mautrix.Event) UIMessage {
 	displayname := evt.Sender
 	member := room.GetMember(evt.Sender)
 	if member != nil {
@@ -91,10 +92,10 @@ func ParseStateEvent(matrix ifc.MatrixContainer, room *rooms.Room, evt *mautrix.
 		text = ParseAliasEvent(evt, displayname)
 	}
 	ts := unixToTime(evt.Timestamp)
-	return messages.NewExpandedTextMessage(evt.ID, evt.Sender, displayname, mautrix.MessageType(evt.Type.Type), text, ts)
+	return NewExpandedTextMessage(evt.ID, evt.Sender, displayname, mautrix.MessageType(evt.Type.Type), text, ts)
 }
 
-func ParseMessage(matrix ifc.MatrixContainer, room *rooms.Room, evt *mautrix.Event) messages.UIMessage {
+func ParseMessage(matrix ifc.MatrixContainer, room *rooms.Room, evt *mautrix.Event) UIMessage {
 	displayname := evt.Sender
 	member := room.GetMember(evt.Sender)
 	if member != nil {
@@ -125,16 +126,16 @@ func ParseMessage(matrix ifc.MatrixContainer, room *rooms.Room, evt *mautrix.Eve
 	switch evt.Content.MsgType {
 	case "m.text", "m.notice", "m.emote":
 		if evt.Content.Format == mautrix.FormatHTML {
-			return messages.NewHTMLMessage(evt.ID, evt.Sender, displayname, evt.Content.MsgType, ParseHTMLMessage(room, evt, displayname), ts)
+			return NewHTMLMessage(evt, displayname, htmlp.Parse(room, evt, displayname))
 		}
 		evt.Content.Body = strings.Replace(evt.Content.Body, "\t", "    ", -1)
-		return messages.NewTextMessage(evt.ID, evt.Sender, displayname, evt.Content.MsgType, evt.Content.Body, ts)
+		return NewTextMessage(evt.ID, evt.Sender, displayname, evt.Content.MsgType, evt.Content.Body, ts)
 	case "m.image":
 		data, hs, id, err := matrix.Download(evt.Content.URL)
 		if err != nil {
 			debug.Printf("Failed to download %s: %v", evt.Content.URL, err)
 		}
-		return messages.NewImageMessage(matrix, evt.ID, evt.Sender, displayname, evt.Content.MsgType, evt.Content.Body, hs, id, data, ts)
+		return NewImageMessage(matrix, evt.ID, evt.Sender, displayname, evt.Content.MsgType, evt.Content.Body, hs, id, data, ts)
 	}
 	return nil
 }
@@ -213,14 +214,14 @@ func getMembershipEventContent(room *rooms.Room, evt *mautrix.Event) (sender str
 	return
 }
 
-func ParseMembershipEvent(room *rooms.Room, evt *mautrix.Event) messages.UIMessage {
+func ParseMembershipEvent(room *rooms.Room, evt *mautrix.Event) UIMessage {
 	displayname, text := getMembershipEventContent(room, evt)
 	if len(text) == 0 {
 		return nil
 	}
 
 	ts := unixToTime(evt.Timestamp)
-	return messages.NewExpandedTextMessage(evt.ID, evt.Sender, displayname, "m.room.member", text, ts)
+	return NewExpandedTextMessage(evt.ID, evt.Sender, displayname, "m.room.member", text, ts)
 }
 
 func ParseAliasEvent(evt *mautrix.Event, displayname string) tstring.TString {

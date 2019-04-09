@@ -1,11 +1,11 @@
 // From https://github.com/golang/image/blob/master/colornames/colornames.go
-package parser
+package html
 
 import (
 	"image/color"
 )
 
-var ColorMap = map[string]color.RGBA{
+var colorMap = map[string]color.RGBA{
 	"aliceblue":            {0xf0, 0xf8, 0xff, 0xff}, // rgb(240, 248, 255)
 	"antiquewhite":         {0xfa, 0xeb, 0xd7, 0xff}, // rgb(250, 235, 215)
 	"aqua":                 {0x00, 0xff, 0xff, 0xff}, // rgb(0, 255, 255)
