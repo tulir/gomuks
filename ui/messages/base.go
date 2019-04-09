@@ -17,7 +17,7 @@
 package messages
 
 import (
-	"encoding/gob"
+	"encoding/json"
 	"time"
 
 	"maunium.net/go/mautrix"
@@ -29,36 +29,49 @@ import (
 	"maunium.net/go/gomuks/ui/widget"
 )
 
-func init() {
-	gob.Register(&BaseMessage{})
-}
-
 type BaseMessage struct {
 	MsgID          string
+	MsgTxnID       string
 	MsgType        mautrix.MessageType
 	MsgSenderID    string
 	MsgSender      string
 	MsgSenderColor tcell.Color
 	MsgTimestamp   time.Time
-	MsgState       ifc.MessageState
+	MsgState       mautrix.OutgoingEventState
 	MsgIsHighlight bool
 	MsgIsService   bool
+	MsgSource      json.RawMessage
 	buffer         []tstring.TString
 	plainBuffer    []tstring.TString
 }
 
-func newBaseMessage(id, sender, displayname string, msgtype mautrix.MessageType, timestamp time.Time) BaseMessage {
+func newBaseMessage(event *mautrix.Event, displayname string) BaseMessage {
+	msgtype := event.Content.MsgType
+	if len(msgtype) == 0 {
+		msgtype = mautrix.MessageType(event.Type.String())
+	}
+
 	return BaseMessage{
-		MsgSenderID:    sender,
+		MsgSenderID:    event.Sender,
 		MsgSender:      displayname,
-		MsgTimestamp:   timestamp,
-		MsgSenderColor: widget.GetHashColor(sender),
+		MsgTimestamp:   unixToTime(event.Timestamp),
+		MsgSenderColor: widget.GetHashColor(event.Sender),
 		MsgType:        msgtype,
-		MsgID:          id,
-		MsgState:       ifc.MessageStateDefault,
+		MsgID:          event.ID,
+		MsgTxnID:       event.Unsigned.TransactionID,
+		MsgState:       event.Unsigned.OutgoingState,
 		MsgIsHighlight: false,
 		MsgIsService:   false,
+		MsgSource:      event.Content.VeryRaw,
 	}
+}
+
+func unixToTime(unix int64) time.Time {
+	timestamp := time.Now()
+	if unix != 0 {
+		timestamp = time.Unix(unix/1000, unix%1000*1000)
+	}
+	return timestamp
 }
 
 func (msg *BaseMessage) RegisterMatrix(matrix ifc.MatrixContainer) {}
@@ -71,9 +84,9 @@ func (msg *BaseMessage) RegisterMatrix(matrix ifc.MatrixContainer) {}
 // In any other case, the sender is the display name of the user who sent the message.
 func (msg *BaseMessage) Sender() string {
 	switch msg.MsgState {
-	case ifc.MessageStateSending:
+	case mautrix.EventStateLocalEcho:
 		return "Sending..."
-	case ifc.MessageStateFailed:
+	case mautrix.EventStateSendFail:
 		return "Error"
 	}
 	switch msg.MsgType {
@@ -93,13 +106,17 @@ func (msg *BaseMessage) RealSender() string {
 	return msg.MsgSender
 }
 
+func (msg *BaseMessage) NotificationSenderName() string {
+	return msg.MsgSender
+}
+
 func (msg *BaseMessage) getStateSpecificColor() tcell.Color {
 	switch msg.MsgState {
-	case ifc.MessageStateSending:
+	case mautrix.EventStateLocalEcho:
 		return tcell.ColorGray
-	case ifc.MessageStateFailed:
+	case mautrix.EventStateSendFail:
 		return tcell.ColorRed
-	case ifc.MessageStateDefault:
+	case mautrix.EventStateDefault:
 		fallthrough
 	default:
 		return tcell.ColorDefault
@@ -154,17 +171,6 @@ func (msg *BaseMessage) TimestampColor() tcell.Color {
 	return msg.getStateSpecificColor()
 }
 
-// Buffer returns the computed text buffer.
-//
-// The buffer contains the text of the message split into lines with a maximum
-// width of whatever was provided to CalculateBuffer().
-//
-// N.B. This will NOT automatically calculate the buffer if it hasn't been
-//      calculated already, as that requires the target width.
-func (msg *BaseMessage) Buffer() []tstring.TString {
-	return msg.buffer
-}
-
 // Height returns the number of rows in the computed buffer (see Buffer()).
 func (msg *BaseMessage) Height() int {
 	return len(msg.buffer)
@@ -197,15 +203,11 @@ func (msg *BaseMessage) Type() mautrix.MessageType {
 	return msg.MsgType
 }
 
-func (msg *BaseMessage) SetType(msgtype mautrix.MessageType) {
-	msg.MsgType = msgtype
-}
-
-func (msg *BaseMessage) State() ifc.MessageState {
+func (msg *BaseMessage) State() mautrix.OutgoingEventState {
 	return msg.MsgState
 }
 
-func (msg *BaseMessage) SetState(state ifc.MessageState) {
+func (msg *BaseMessage) SetState(state mautrix.OutgoingEventState) {
 	msg.MsgState = state
 }
 
@@ -223,6 +225,10 @@ func (msg *BaseMessage) IsService() bool {
 
 func (msg *BaseMessage) SetIsService(isService bool) {
 	msg.MsgIsService = isService
+}
+
+func (msg *BaseMessage) Source() json.RawMessage {
+	return msg.MsgSource
 }
 
 func (msg *BaseMessage) Draw(screen mauview.Screen) {

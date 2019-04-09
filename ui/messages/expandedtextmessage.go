@@ -17,18 +17,11 @@
 package messages
 
 import (
-	"encoding/gob"
-	"time"
-
 	"maunium.net/go/mautrix"
 
 	"maunium.net/go/gomuks/config"
 	"maunium.net/go/gomuks/ui/messages/tstring"
 )
-
-func init() {
-	gob.Register(&ExpandedTextMessage{})
-}
 
 type ExpandedTextMessage struct {
 	BaseMessage
@@ -36,9 +29,9 @@ type ExpandedTextMessage struct {
 }
 
 // NewExpandedTextMessage creates a new ExpandedTextMessage object with the provided values and the default state.
-func NewExpandedTextMessage(id, sender, displayname string, msgtype mautrix.MessageType, text tstring.TString, timestamp time.Time) UIMessage {
+func NewExpandedTextMessage(event *mautrix.Event, displayname string, text tstring.TString) UIMessage {
 	return &ExpandedTextMessage{
-		BaseMessage: newBaseMessage(id, sender, displayname, msgtype, timestamp),
+		BaseMessage: newBaseMessage(event, displayname),
 		MsgText:     text,
 	}
 }

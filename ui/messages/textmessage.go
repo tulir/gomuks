@@ -17,20 +17,13 @@
 package messages
 
 import (
-	"encoding/gob"
 	"fmt"
-	"time"
 
 	"maunium.net/go/mautrix"
 
 	"maunium.net/go/gomuks/config"
-	"maunium.net/go/gomuks/interface"
 	"maunium.net/go/gomuks/ui/messages/tstring"
 )
-
-func init() {
-	gob.Register(&TextMessage{})
-}
 
 type TextMessage struct {
 	BaseMessage
@@ -39,9 +32,9 @@ type TextMessage struct {
 }
 
 // NewTextMessage creates a new UITextMessage object with the provided values and the default state.
-func NewTextMessage(id, sender, displayname string, msgtype mautrix.MessageType, text string, timestamp time.Time) UIMessage {
+func NewTextMessage(event *mautrix.Event, displayname string, text string) UIMessage {
 	return &TextMessage{
-		BaseMessage: newBaseMessage(id, sender, displayname, msgtype, timestamp),
+		BaseMessage: newBaseMessage(event, displayname),
 		MsgText:     text,
 	}
 }
@@ -57,16 +50,6 @@ func (msg *TextMessage) getCache() tstring.TString {
 		}
 	}
 	return msg.cache
-}
-
-func (msg *TextMessage) SetType(msgtype mautrix.MessageType) {
-	msg.BaseMessage.SetType(msgtype)
-	msg.cache = nil
-}
-
-func (msg *TextMessage) SetState(state ifc.MessageState) {
-	msg.BaseMessage.SetState(state)
-	msg.cache = nil
 }
 
 func (msg *TextMessage) SetIsHighlight(isHighlight bool) {

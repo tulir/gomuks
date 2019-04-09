@@ -438,3 +438,7 @@ func (view *RoomView) AddServiceMessage(text string) {
 func (view *RoomView) AddMessage(message ifc.Message, direction ifc.MessageDirection) {
 	view.content.AddMessage(message, direction)
 }
+
+func (view *RoomView) ParseEvent(evt *mautrix.Event) ifc.Message {
+	return messages.ParseEvent(view.parent.matrix, view.Room, evt)
+}

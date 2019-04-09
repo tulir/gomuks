@@ -17,13 +17,12 @@
 package messages
 
 import (
-	"maunium.net/go/gomuks/ui/messages/html"
-
 	"maunium.net/go/mautrix"
 	"maunium.net/go/mauview"
 	"maunium.net/go/tcell"
 
 	"maunium.net/go/gomuks/config"
+	"maunium.net/go/gomuks/ui/messages/html"
 )
 
 type HTMLMessage struct {
@@ -36,7 +35,7 @@ type HTMLMessage struct {
 
 func NewHTMLMessage(event *mautrix.Event, displayname string, root html.Entity) UIMessage {
 	return &HTMLMessage{
-		BaseMessage: newBaseMessage(event.ID, event.Sender, displayname, event.Content.MsgType, unixToTime(event.Timestamp)),
+		BaseMessage: newBaseMessage(event, displayname),
 		Root:        root,
 	}
 }

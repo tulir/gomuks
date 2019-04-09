@@ -18,9 +18,7 @@ package messages
 
 import (
 	"fmt"
-	"html"
 	"strings"
-	"time"
 
 	"maunium.net/go/mautrix"
 	"maunium.net/go/tcell"
@@ -28,12 +26,33 @@ import (
 	"maunium.net/go/gomuks/debug"
 	"maunium.net/go/gomuks/interface"
 	"maunium.net/go/gomuks/matrix/rooms"
+	"maunium.net/go/gomuks/ui/messages/html"
 	"maunium.net/go/gomuks/ui/messages/tstring"
 	"maunium.net/go/gomuks/ui/widget"
 	htmlp "maunium.net/go/gomuks/ui/messages/html"
 )
 
 func ParseEvent(matrix ifc.MatrixContainer, room *rooms.Room, evt *mautrix.Event) UIMessage {
+	msg := directParseEvent(matrix, room, evt)
+	if msg == nil {
+		return nil
+	}
+	if len(evt.Content.GetReplyTo()) > 0 {
+		roomID := evt.Content.RelatesTo.InReplyTo.RoomID
+		if len(roomID) == 0 {
+			roomID = room.ID
+		}
+		replyToEvt, _ := matrix.GetEvent(room, evt.Content.GetReplyTo())
+		if replyToEvt != nil {
+			// TODO add reply header
+		} else {
+			// TODO add unknown reply header
+		}
+	}
+	return msg
+}
+
+func directParseEvent(matrix ifc.MatrixContainer, room *rooms.Room, evt *mautrix.Event) UIMessage {
 	switch evt.Type {
 	case mautrix.EventSticker:
 		evt.Content.MsgType = mautrix.MsgImage
@@ -46,14 +65,6 @@ func ParseEvent(matrix ifc.MatrixContainer, room *rooms.Room, evt *mautrix.Event
 		return ParseMembershipEvent(room, evt)
 	}
 	return nil
-}
-
-func unixToTime(unix int64) time.Time {
-	timestamp := time.Now()
-	if unix != 0 {
-		timestamp = time.Unix(unix/1000, unix%1000*1000)
-	}
-	return timestamp
 }
 
 func ParseStateEvent(matrix ifc.MatrixContainer, room *rooms.Room, evt *mautrix.Event) UIMessage {
@@ -91,8 +102,7 @@ func ParseStateEvent(matrix ifc.MatrixContainer, room *rooms.Room, evt *mautrix.
 	case mautrix.StateAliases:
 		text = ParseAliasEvent(evt, displayname)
 	}
-	ts := unixToTime(evt.Timestamp)
-	return NewExpandedTextMessage(evt.ID, evt.Sender, displayname, mautrix.MessageType(evt.Type.Type), text, ts)
+	return NewExpandedTextMessage(evt, displayname, text)
 }
 
 func ParseMessage(matrix ifc.MatrixContainer, room *rooms.Room, evt *mautrix.Event) UIMessage {
@@ -103,39 +113,20 @@ func ParseMessage(matrix ifc.MatrixContainer, room *rooms.Room, evt *mautrix.Eve
 	}
 	if len(evt.Content.GetReplyTo()) > 0 {
 		evt.Content.RemoveReplyFallback()
-		roomID := evt.Content.RelatesTo.InReplyTo.RoomID
-		if len(roomID) == 0 {
-			roomID = room.ID
-		}
-		replyToEvt, _ := matrix.GetEvent(room, evt.Content.GetReplyTo())
-		if replyToEvt != nil {
-			replyToEvt.Content.RemoveReplyFallback()
-			if len(replyToEvt.Content.FormattedBody) == 0 {
-				replyToEvt.Content.FormattedBody = html.EscapeString(replyToEvt.Content.Body)
-			}
-			evt.Content.FormattedBody = fmt.Sprintf(
-				"In reply to <a href='https://matrix.to/#/%[1]s'>%[1]s</a><blockquote>%[2]s</blockquote><br/><br/>%[3]s",
-				replyToEvt.Sender, replyToEvt.Content.FormattedBody, evt.Content.FormattedBody)
-		} else {
-			evt.Content.FormattedBody = fmt.Sprintf(
-				"In reply to unknown event https://matrix.to/#/%[1]s/%[2]s<br/>%[3]s",
-				roomID, evt.Content.GetReplyTo(), evt.Content.FormattedBody)
-		}
 	}
-	ts := unixToTime(evt.Timestamp)
 	switch evt.Content.MsgType {
 	case "m.text", "m.notice", "m.emote":
 		if evt.Content.Format == mautrix.FormatHTML {
-			return NewHTMLMessage(evt, displayname, htmlp.Parse(room, evt, displayname))
+			return NewHTMLMessage(evt, displayname, html.Parse(room, evt, displayname))
 		}
 		evt.Content.Body = strings.Replace(evt.Content.Body, "\t", "    ", -1)
-		return NewTextMessage(evt.ID, evt.Sender, displayname, evt.Content.MsgType, evt.Content.Body, ts)
+		return NewTextMessage(evt, displayname, evt.Content.Body)
 	case "m.image":
 		data, hs, id, err := matrix.Download(evt.Content.URL)
 		if err != nil {
 			debug.Printf("Failed to download %s: %v", evt.Content.URL, err)
 		}
-		return NewImageMessage(matrix, evt.ID, evt.Sender, displayname, evt.Content.MsgType, evt.Content.Body, hs, id, data, ts)
+		return NewImageMessage(matrix, evt, displayname, evt.Content.Body, hs, id, data)
 	}
 	return nil
 }
@@ -220,8 +211,7 @@ func ParseMembershipEvent(room *rooms.Room, evt *mautrix.Event) UIMessage {
 		return nil
 	}
 
-	ts := unixToTime(evt.Timestamp)
-	return NewExpandedTextMessage(evt.ID, evt.Sender, displayname, "m.room.member", text, ts)
+	return NewExpandedTextMessage(evt, displayname, text)
 }
 
 func ParseAliasEvent(evt *mautrix.Event, displayname string) tstring.TString {

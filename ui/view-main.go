@@ -35,7 +35,6 @@ import (
 	"maunium.net/go/gomuks/lib/notification"
 	"maunium.net/go/gomuks/matrix/pushrules"
 	"maunium.net/go/gomuks/matrix/rooms"
-	"maunium.net/go/gomuks/ui/messages"
 	"maunium.net/go/gomuks/ui/widget"
 )
 
@@ -166,11 +165,10 @@ func (view *MainView) InputSubmit(roomView *RoomView, text string) {
 }
 
 func (view *MainView) SendMessage(roomView *RoomView, text string) {
-	tempMessage := roomView.NewTempMessage("m.text", text)
-	go view.sendTempMessage(roomView, tempMessage, text)
+	go view.goSendMessage(roomView, text)
 }
 
-func (view *MainView) sendTempMessage(roomView *RoomView, tempMessage ifc.Message, text string) {
+func (view *MainView) goSendMessage(roomView *RoomView, text string) {
 	defer debug.Recover()
 	debug.Print("Sending message", tempMessage.Type(), text)
 	if !roomView.config.Preferences.DisableEmojis {
@@ -317,11 +315,10 @@ func (view *MainView) addRoomPage(room *rooms.Room) {
 		view.rooms[room.ID] = roomView
 		roomView.UpdateUserList()
 
-		// FIXME
-		/*_, err := roomView.LoadHistory(view.matrix, view.config.HistoryDir)
-		if err != nil {
-			debug.Printf("Failed to load history of %s: %v", roomView.Room.GetTitle(), err)
-		}*/
+		// TODO make sure this works
+		if len(roomView.MessageView().messages) == 0 {
+			go view.LoadHistory(room.ID)
+		}
 	}
 }
 
@@ -428,10 +425,11 @@ func (view *MainView) NotifyMessage(room *rooms.Room, message ifc.Message, shoul
 	if shouldNotify && !recentlyFocused {
 		// Push rules say notify and the terminal is not focused, send desktop notification.
 		shouldPlaySound := should.PlaySound && should.SoundName == "default"
-		sendNotification(room, message.Sender(), message.NotificationContent(), should.Highlight, shouldPlaySound)
+		sendNotification(room, message.NotificationSenderName(), message.NotificationContent(), should.Highlight, shouldPlaySound)
 	}
 
-	message.SetIsHighlight(should.Highlight)
+	// TODO Make sure this happens somewhere else
+	//message.SetIsHighlight(should.Highlight)
 }
 
 func (view *MainView) InitialSyncDone() {
@@ -470,7 +468,7 @@ func (view *MainView) LoadHistory(room string) {
 		return
 	}
 	for _, evt := range history {
-		message := view.ParseEvent(roomView, evt)
+		message := roomView.ParseEvent(evt)
 		if message != nil {
 			roomView.AddMessage(message, ifc.PrependMessage)
 		}
@@ -482,8 +480,4 @@ func (view *MainView) LoadHistory(room string) {
 	}*/
 	view.config.PutRoom(roomView.Room)
 	view.parent.Render()
-}
-
-func (view *MainView) ParseEvent(roomView ifc.RoomView, evt *mautrix.Event) ifc.Message {
-	return messages.ParseEvent(view.matrix, roomView.MxRoom(), evt)
 }

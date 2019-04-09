@@ -20,11 +20,19 @@ import (
 	"maunium.net/go/gomuks/config"
 	"maunium.net/go/gomuks/interface"
 	"maunium.net/go/mauview"
+	"maunium.net/go/tcell"
 )
 
 // UIMessage is a wrapper for the content and metadata of a Matrix message intended to be displayed.
 type UIMessage interface {
 	ifc.Message
+
+	Sender() string
+	SenderColor() tcell.Color
+	TextColor() tcell.Color
+	TimestampColor() tcell.Color
+	FormatTime() string
+	FormatDate() string
 
 	CalculateBuffer(preferences config.UserPreferences, width int)
 	Draw(screen mauview.Screen)

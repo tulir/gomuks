@@ -303,6 +303,7 @@ func (c *Container) HandleMessage(source EventSource, evt *mautrix.Event) {
 		debug.Printf("Failed to add event %s to history: %v", evt.ID, err)
 	}
 
+	// TODO switch to roomView.AddEvent
 	message := mainView.ParseEvent(roomView, evt)
 	if message != nil {
 		roomView.AddMessage(message, ifc.AppendMessage)
@@ -494,10 +495,7 @@ func (c *Container) SendMessage(roomID string, msgtype mautrix.MessageType, text
 var mentionRegex = regexp.MustCompile("\\[(.+?)]\\(https://matrix.to/#/@.+?:.+?\\)")
 var roomRegex = regexp.MustCompile("\\[.+?]\\(https://matrix.to/#/(#.+?:[^/]+?)\\)")
 
-// SendMarkdownMessage sends a message with the given text to the given room.
-//
-// If the given text contains markdown formatting symbols, it will be rendered into HTML before sending.
-// Otherwise, it will be sent as plain text.
+// SendMarkdownMessage sends a message with the given markdown text to the given room.
 func (c *Container) SendMarkdownMessage(roomID string, msgtype mautrix.MessageType, text string) (string, error) {
 	defer debug.Recover()
 
@@ -509,8 +507,23 @@ func (c *Container) SendMarkdownMessage(roomID string, msgtype mautrix.MessageTy
 	content.Body = roomRegex.ReplaceAllString(content.Body, "$1")
 
 	c.SendTyping(roomID, false)
-	resp, err := c.client.SendMessageEvent(roomID, mautrix.EventMessage, content)
+	roomView := c.ui.MainView().GetRoom(roomID)
+	txnID := c.client.TxnID()
+	localEcho := roomView.ParseEvent(&mautrix.Event{
+		Sender:    c.config.UserID,
+		Type:      mautrix.EventMessage,
+		Timestamp: time.Now().UnixNano() / 1e6,
+		RoomID:    roomID,
+		Content:   content,
+		Unsigned: mautrix.Unsigned{
+			TransactionID: txnID,
+			OutgoingState: mautrix.EventStateLocalEcho,
+		},
+	})
+	roomView.AppendMessage(localEcho)
+	resp, err := c.client.SendMessageEvent(roomID, mautrix.EventMessage, content, mautrix.ReqSendEvent{TransactionID: txnID})
 	if err != nil {
+		roomView.MarkMessageFailed(localEcho, err)
 		return "", err
 	}
 	return resp.EventID, nil

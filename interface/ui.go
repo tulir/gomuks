@@ -19,11 +19,9 @@ package ifc
 import (
 	"time"
 
-	"maunium.net/go/mautrix"
-	"maunium.net/go/tcell"
-
 	"maunium.net/go/gomuks/matrix/pushrules"
 	"maunium.net/go/gomuks/matrix/rooms"
+	"maunium.net/go/mautrix"
 )
 
 type UIProvider func(gmx Gomuks) GomuksUI
@@ -50,7 +48,6 @@ type MainView interface {
 	UpdateTags(room *rooms.Room)
 
 	SetTyping(roomID string, users []string)
-	ParseEvent(roomView RoomView, evt *mautrix.Event) Message
 
 	NotifyMessage(room *rooms.Room, message Message, should pushrules.PushActionArrayShould)
 	InitialSyncDone()
@@ -71,50 +68,17 @@ type RoomView interface {
 	SetTyping(users []string)
 	UpdateUserList()
 
-	NewTempMessage(msgtype mautrix.MessageType, text string) Message
-	AddMessage(message Message, direction MessageDirection)
+	ParseEvent(evt *mautrix.Event) Message
+	AppendMessage(message Message)
+	MarkMessageFailed(message Message)
 	AddServiceMessage(message string)
 }
 
-type MessageMeta interface {
-	Sender() string
-	SenderColor() tcell.Color
-	TextColor() tcell.Color
-	TimestampColor() tcell.Color
-	Timestamp() time.Time
-	FormatTime() string
-	FormatDate() string
-}
-
-// MessageState is an enum to specify if a Message is being sent, failed to send or was successfully sent.
-type MessageState int
-
-// Allowed MessageStates.
-const (
-	MessageStateSending MessageState = iota
-	MessageStateDefault
-	MessageStateFailed
-)
-
 type Message interface {
-	MessageMeta
-
-	SetIsHighlight(isHighlight bool)
-	IsHighlight() bool
-
-	SetIsService(isService bool)
-	IsService() bool
-
-	SetID(id string)
 	ID() string
-
-	SetType(msgtype mautrix.MessageType)
-	Type() mautrix.MessageType
-
-	NotificationContent() string
-
-	SetState(state MessageState)
-	State() MessageState
-
+	TxnID() string
 	SenderID() string
+	Timestamp() time.Time
+	NotificationSenderName() string
+	NotificationContent() string
 }

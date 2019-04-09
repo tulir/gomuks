@@ -18,10 +18,8 @@ package messages
 
 import (
 	"bytes"
-	"encoding/gob"
 	"fmt"
 	"image/color"
-	"time"
 
 	"maunium.net/go/mautrix"
 	"maunium.net/go/tcell"
@@ -32,10 +30,6 @@ import (
 	"maunium.net/go/gomuks/lib/ansimage"
 	"maunium.net/go/gomuks/ui/messages/tstring"
 )
-
-func init() {
-	gob.Register(&ImageMessage{})
-}
 
 type ImageMessage struct {
 	BaseMessage
@@ -48,9 +42,9 @@ type ImageMessage struct {
 }
 
 // NewImageMessage creates a new ImageMessage object with the provided values and the default state.
-func NewImageMessage(matrix ifc.MatrixContainer, id, sender, displayname string, msgtype mautrix.MessageType, body, homeserver, fileID string, data []byte, timestamp time.Time) UIMessage {
+func NewImageMessage(matrix ifc.MatrixContainer, event *mautrix.Event, displayname string, body, homeserver, fileID string, data []byte) UIMessage {
 	return &ImageMessage{
-		newBaseMessage(id, sender, displayname, msgtype, timestamp),
+		newBaseMessage(event, displayname),
 		body,
 		homeserver,
 		fileID,
