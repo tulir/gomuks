@@ -35,6 +35,7 @@ type UIMessage interface {
 	TimestampColor() tcell.Color
 	FormatTime() string
 	FormatDate() string
+	SameDate(message UIMessage) bool
 
 	CalculateBuffer(preferences config.UserPreferences, width int)
 	Draw(screen mauview.Screen)

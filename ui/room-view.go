@@ -57,8 +57,6 @@ type RoomView struct {
 	ulBorderScreen *mauview.ProxyScreen
 	ulScreen       *mauview.ProxyScreen
 
-	inputSubmitFunc func(room *RoomView, text string)
-
 	prevScreen mauview.Screen
 
 	parent *MainView
@@ -116,11 +114,6 @@ func NewRoomView(parent *MainView, room *rooms.Room) *RoomView {
 
 func (view *RoomView) logPath(dir string) string {
 	return filepath.Join(dir, fmt.Sprintf("%s.gmxlog", view.Room.ID))
-}
-
-func (view *RoomView) SetInputSubmitFunc(fn func(room *RoomView, text string)) *RoomView {
-	view.inputSubmitFunc = fn
-	return view
 }
 
 func (view *RoomView) SetInputChangedFunc(fn func(room *RoomView, text string)) *RoomView {
@@ -250,8 +243,8 @@ func (view *RoomView) OnKeyEvent(event mauview.KeyEvent) bool {
 		msgView.AddScrollOffset(-msgView.Height() / 2)
 		return true
 	case tcell.KeyEnter:
-		if event.Modifiers()&tcell.ModShift == 0 && event.Modifiers()&tcell.ModCtrl == 0 && view.inputSubmitFunc != nil {
-			view.inputSubmitFunc(view, view.input.GetText())
+		if event.Modifiers()&tcell.ModShift == 0 && event.Modifiers()&tcell.ModCtrl == 0 {
+			view.InputSubmit(view.input.GetText())
 			return true
 		}
 	}

@@ -17,7 +17,10 @@
 package messages
 
 import (
+	"time"
+
 	"maunium.net/go/mautrix"
+	"maunium.net/go/tcell"
 
 	"maunium.net/go/gomuks/config"
 	"maunium.net/go/gomuks/ui/messages/tstring"
@@ -33,6 +36,24 @@ func NewExpandedTextMessage(event *mautrix.Event, displayname string, text tstri
 	return &ExpandedTextMessage{
 		BaseMessage: newBaseMessage(event, displayname),
 		MsgText:     text,
+	}
+}
+
+var ZeroTime = time.Time{}
+
+func NewDateChangeMessage(text string) UIMessage {
+	midnight := time.Now()
+	midnight = time.Date(midnight.Year(), midnight.Month(), midnight.Day(),
+		0, 0, 0, 0,
+		midnight.Location())
+	return &ExpandedTextMessage{
+		BaseMessage: BaseMessage{
+			MsgSenderID:  "*",
+			MsgSender:    "*",
+			MsgTimestamp: midnight,
+			MsgIsService: true,
+		},
+		MsgText: tstring.NewColorTString(text, tcell.ColorGreen),
 	}
 }
 

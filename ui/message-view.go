@@ -120,7 +120,6 @@ func (view *MessageView) AddMessage(ifcMessage ifc.Message, direction MessageDir
 		return
 	}
 
-
 	var oldMsg messages.UIMessage
 	var messageExists bool
 	if oldMsg, messageExists = view.messageIDs[message.ID()]; messageExists {
@@ -141,14 +140,30 @@ func (view *MessageView) AddMessage(ifcMessage ifc.Message, direction MessageDir
 	}
 	message.CalculateBuffer(view.config.Preferences, width)
 
+	makeDateChange := func() messages.UIMessage {
+		dateChange := messages.NewDateChangeMessage(
+			fmt.Sprintf("Date changed to %s", message.FormatDate()))
+		dateChange.CalculateBuffer(view.config.Preferences, width)
+		view.appendBuffer(dateChange)
+		return dateChange
+	}
+
 	if direction == AppendMessage {
 		if view.ScrollOffset > 0 {
 			view.ScrollOffset += message.Height()
 		}
-		view.messages = append(view.messages, message)
+		if len(view.messages) > 0 && !view.messages[len(view.messages)-1].SameDate(message) {
+			view.messages = append(view.messages, makeDateChange(), message)
+		} else {
+			view.messages = append(view.messages, message)
+		}
 		view.appendBuffer(message)
 	} else if direction == PrependMessage {
-		view.messages = append([]messages.UIMessage{message}, view.messages...)
+		if len(view.messages) > 0 && !view.messages[0].SameDate(message) {
+			view.messages = append([]messages.UIMessage{message, makeDateChange()}, view.messages...)
+		} else {
+			view.messages = append([]messages.UIMessage{message}, view.messages...)
+		}
 	} else if oldMsg != nil {
 		view.replaceBuffer(oldMsg, message)
 	} else {
@@ -156,21 +171,12 @@ func (view *MessageView) AddMessage(ifcMessage ifc.Message, direction MessageDir
 		debug.PrintStack()
 	}
 
-	view.messageIDs[message.ID()] = message
+	if len(message.ID()) > 0 {
+		view.messageIDs[message.ID()] = message
+	}
 }
 
 func (view *MessageView) appendBuffer(message messages.UIMessage) {
-	if len(view.msgBuffer) > 0 {
-		prevMeta := view.msgBuffer[len(view.msgBuffer)-1]
-		if prevMeta != nil && prevMeta.FormatDate() != message.FormatDate() {
-			/* FIXME view.textBuffer = append(view.textBuffer, tstring.NewColorTString(
-				fmt.Sprintf("Date changed to %s", message.FormatDate()),
-				tcell.ColorGreen))
-			view.msgBuffer = append(view.msgBuffer, &messages.BasicMeta{
-				BTimestampColor: tcell.ColorDefault, BTextColor: tcell.ColorGreen})*/
-		}
-	}
-
 	for i := 0; i < message.Height(); i++ {
 		view.msgBuffer = append(view.msgBuffer, message)
 	}
@@ -178,7 +184,9 @@ func (view *MessageView) appendBuffer(message messages.UIMessage) {
 }
 
 func (view *MessageView) replaceMessage(original messages.UIMessage, new messages.UIMessage) {
-	view.messageIDs[new.ID()] = new
+	if len(new.ID()) > 0 {
+		view.messageIDs[new.ID()] = new
+	}
 	for index, msg := range view.messages {
 		if msg == original {
 			view.messages[index] = new

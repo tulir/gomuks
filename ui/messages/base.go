@@ -191,6 +191,12 @@ func (msg *BaseMessage) FormatDate() string {
 	return msg.MsgTimestamp.Format(DateFormat)
 }
 
+func (msg *BaseMessage) SameDate(message UIMessage) bool {
+	year1, month1, day1 := msg.Timestamp().Date()
+	year2, month2, day2 := message.Timestamp().Date()
+	return day1 == day2 && month1 == month2 && year1 == year2
+}
+
 func (msg *BaseMessage) ID() string {
 	if len(msg.MsgID) == 0 {
 		return msg.MsgTxnID
