@@ -92,6 +92,7 @@ func (msg *ImageMessage) CalculateBuffer(prefs config.UserPreferences, width int
 	if width < 2 {
 		return
 	}
+	msg.CalculateReplyBuffer(prefs, width)
 
 	if prefs.BareMessageView || prefs.DisableImages {
 		msg.calculateBufferWithText(prefs, tstring.NewTString(msg.PlainText()), width)

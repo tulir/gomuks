@@ -70,5 +70,6 @@ func (msg *ExpandedTextMessage) PlainText() string {
 }
 
 func (msg *ExpandedTextMessage) CalculateBuffer(prefs config.UserPreferences, width int) {
+	msg.CalculateReplyBuffer(prefs, width)
 	msg.calculateBufferWithText(prefs, msg.MsgText, width)
 }

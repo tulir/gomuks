@@ -37,6 +37,7 @@ type UIMessage interface {
 	FormatDate() string
 	SameDate(message UIMessage) bool
 
+	SetReplyTo(message UIMessage)
 	CalculateBuffer(preferences config.UserPreferences, width int)
 	Draw(screen mauview.Screen)
 	Height() int

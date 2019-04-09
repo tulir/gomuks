@@ -79,5 +79,6 @@ func (msg *TextMessage) PlainText() string {
 }
 
 func (msg *TextMessage) CalculateBuffer(prefs config.UserPreferences, width int) {
+	msg.CalculateReplyBuffer(prefs, width)
 	msg.calculateBufferWithText(prefs, msg.getCache(), width)
 }

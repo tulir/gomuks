@@ -41,6 +41,7 @@ func NewHTMLMessage(event *mautrix.Event, displayname string, root html.Entity) 
 }
 
 func (hw *HTMLMessage) Draw(screen mauview.Screen) {
+	screen = hw.DrawReply(screen)
 	if hw.focused {
 		screen.SetStyle(tcell.StyleDefault.Background(hw.FocusedBg))
 	}
@@ -69,16 +70,17 @@ func (hw *HTMLMessage) OnPasteEvent(event mauview.PasteEvent) bool {
 }
 
 func (hw *HTMLMessage) CalculateBuffer(preferences config.UserPreferences, width int) {
-	if width <= 0 {
-		panic("Negative width in CalculateBuffer")
+	if width < 2 {
+		return
 	}
+	hw.CalculateReplyBuffer(preferences, width)
 	// TODO account for bare messages in initial startX
 	startX := 0
 	hw.Root.CalculateBuffer(width, startX, preferences.BareMessageView)
 }
 
 func (hw *HTMLMessage) Height() int {
-	return hw.Root.Height()
+	return hw.ReplyHeight() + hw.Root.Height()
 }
 
 func (hw *HTMLMessage) PlainText() string {

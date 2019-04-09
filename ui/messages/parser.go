@@ -37,13 +37,18 @@ func ParseEvent(matrix ifc.MatrixContainer, room *rooms.Room, evt *mautrix.Event
 		return nil
 	}
 	if len(evt.Content.GetReplyTo()) > 0 {
-		roomID := evt.Content.RelatesTo.InReplyTo.RoomID
-		if len(roomID) == 0 {
-			roomID = room.ID
+		replyToRoom := room
+		if len(evt.Content.RelatesTo.InReplyTo.RoomID) > 0 {
+			replyToRoom = matrix.GetRoom(evt.Content.RelatesTo.InReplyTo.RoomID)
 		}
-		replyToEvt, _ := matrix.GetEvent(room, evt.Content.GetReplyTo())
+		replyToEvt, _ := matrix.GetEvent(replyToRoom, evt.Content.GetReplyTo())
 		if replyToEvt != nil {
-			// TODO add reply header
+			replyToMsg := directParseEvent(matrix, replyToRoom, replyToEvt)
+			if replyToMsg != nil {
+				msg.SetReplyTo(replyToMsg)
+			} else {
+				// TODO add unrenderable reply header
+			}
 		} else {
 			// TODO add unknown reply header
 		}

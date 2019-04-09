@@ -20,6 +20,7 @@ import (
 	"encoding/json"
 	"time"
 
+	"maunium.net/go/gomuks/config"
 	"maunium.net/go/mautrix"
 	"maunium.net/go/mauview"
 	"maunium.net/go/tcell"
@@ -41,6 +42,7 @@ type BaseMessage struct {
 	MsgIsHighlight bool
 	MsgIsService   bool
 	MsgSource      json.RawMessage
+	ReplyTo        UIMessage
 	buffer         []tstring.TString
 	plainBuffer    []tstring.TString
 }
@@ -171,9 +173,16 @@ func (msg *BaseMessage) TimestampColor() tcell.Color {
 	return msg.getStateSpecificColor()
 }
 
+func (msg *BaseMessage) ReplyHeight() int {
+	if msg.ReplyTo != nil {
+		return 2 + msg.ReplyTo.Height()
+	}
+	return 0
+}
+
 // Height returns the number of rows in the computed buffer (see Buffer()).
 func (msg *BaseMessage) Height() int {
-	return len(msg.buffer)
+	return msg.ReplyHeight() + len(msg.buffer)
 }
 
 // Timestamp returns the full timestamp when the message was sent.
@@ -236,8 +245,36 @@ func (msg *BaseMessage) Source() json.RawMessage {
 	return msg.MsgSource
 }
 
+func (msg *BaseMessage) SetReplyTo(event UIMessage) {
+	msg.ReplyTo = event
+}
+
 func (msg *BaseMessage) Draw(screen mauview.Screen) {
+	screen = msg.DrawReply(screen)
 	for y, line := range msg.buffer {
 		line.Draw(screen, 0, y)
 	}
+}
+
+func (msg *BaseMessage) CalculateReplyBuffer(preferences config.UserPreferences, width int) {
+	if msg.ReplyTo == nil {
+		return
+	}
+	msg.ReplyTo.CalculateBuffer(preferences, width-1)
+}
+
+func (msg *BaseMessage) DrawReply(screen mauview.Screen) mauview.Screen {
+	if msg.ReplyTo == nil {
+		return screen
+	}
+	width, height := screen.Size()
+	replyHeight := msg.ReplyTo.Height()
+	widget.WriteLineSimpleColor(screen, "In reply to", 0, 0, tcell.ColorGreen)
+	widget.WriteLineSimpleColor(screen, msg.ReplyTo.RealSender(), len("In reply to "), 0, msg.ReplyTo.SenderColor())
+	for y := 1; y < 1+replyHeight; y++ {
+		screen.SetCell(0, y, tcell.StyleDefault, '▋')
+	}
+	replyScreen := mauview.NewProxyScreen(screen, 1, 1, width-1, replyHeight)
+	msg.ReplyTo.Draw(replyScreen)
+	return mauview.NewProxyScreen(screen, 0, replyHeight+2, width, height-replyHeight-2)
 }
