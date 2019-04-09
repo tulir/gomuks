@@ -89,18 +89,6 @@ func (view *MessageView) updateWidestSender(sender string) {
 	}
 }
 
-/*func (view *MessageView) UpdateMessageID(ifcMessage ifc.Message, newID string) {
-	message, ok := ifcMessage.(messages.UIMessage)
-	if !ok {
-		debug.Print("[Warning] Passed non-UIMessage ifc.Message object to UpdateMessageID().")
-		debug.PrintStack()
-		return
-	}
-	delete(view.messageIDs, message.ID())
-	message.SetID(newID)
-	view.messageIDs[message.ID()] = message
-}*/
-
 type MessageDirection int
 
 const (
