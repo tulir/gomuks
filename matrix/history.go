@@ -185,7 +185,7 @@ func (hm *HistoryManager) Load(room *rooms.Room, num int) (events []*mautrix.Eve
 		}
 		ptrStart, ok := hm.historyLoadPtr[room]
 		if !ok {
-			ptrStart = stream.Sequence()
+			ptrStart = stream.Sequence() + 1
 		}
 		c := stream.Cursor()
 		k, v := c.Seek(itob(ptrStart - uint64(num)))
