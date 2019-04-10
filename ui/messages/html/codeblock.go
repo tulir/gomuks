@@ -48,7 +48,7 @@ func (ce *CodeBlockEntity) Clone() Entity {
 
 func (ce *CodeBlockEntity) Draw(screen mauview.Screen) {
 	screen.Fill(' ', ce.Background)
-	ce.BaseEntity.Draw(screen)
+	ce.ContainerEntity.Draw(screen)
 }
 
 func (ce *CodeBlockEntity) AdjustStyle(fn AdjustStyleFunc) Entity {

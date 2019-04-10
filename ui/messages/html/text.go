@@ -70,6 +70,10 @@ func (te *TextEntity) Draw(screen mauview.Screen) {
 
 func (te *TextEntity) CalculateBuffer(width, startX int, bare bool) int {
 	te.BaseEntity.CalculateBuffer(width, startX, bare)
+	if len(te.Text) == 0 {
+		return te.startX
+	}
+	te.height = 0
 	te.prevWidth = width
 	if te.buffer == nil {
 		te.buffer = []string{}
