@@ -170,6 +170,9 @@ func (msg *BaseMessage) TextColor() tcell.Color {
 //
 // However, other messages are the default color instead of a color stored in the struct.
 func (msg *BaseMessage) TimestampColor() tcell.Color {
+	if msg.MsgIsService {
+		return tcell.ColorGray
+	}
 	return msg.getStateSpecificColor()
 }
 

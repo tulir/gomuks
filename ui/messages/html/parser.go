@@ -305,6 +305,9 @@ func (parser *htmlParser) singleNodeToEntity(node *html.Node) Entity {
 		if !parser.keepLinebreak {
 			node.Data = strings.ReplaceAll(node.Data, "\n", "")
 		}
+		if len(node.Data) == 0 {
+			return nil
+		}
 		return &BaseEntity{
 			Tag:  "text",
 			Text: node.Data,
@@ -347,6 +350,13 @@ func (parser *htmlParser) isBlockTag(tag string) bool {
 
 func (parser *htmlParser) Parse(htmlData string) Entity {
 	node, _ := html.Parse(strings.NewReader(htmlData))
+	bodyNode := node.FirstChild.FirstChild
+	for bodyNode != nil && (bodyNode.Type != html.ElementNode || bodyNode.Data != "body") {
+		bodyNode = bodyNode.NextSibling
+	}
+	if bodyNode != nil {
+		return parser.singleNodeToEntity(bodyNode)
+	}
 	return parser.singleNodeToEntity(node)
 }
 
@@ -362,7 +372,15 @@ func Parse(room *rooms.Room, evt *mautrix.Event, senderDisplayname string) Entit
 
 	parser := htmlParser{room: room}
 	root := parser.Parse(htmlData)
-	root.(*BaseEntity).Block = false
+	beRoot := root.(*BaseEntity)
+	beRoot.Block = false
+	if len(beRoot.Children) > 0 {
+		beChild, ok := beRoot.Children[0].(*BaseEntity)
+		if ok && beChild.Tag == "p" {
+			// Hacky fix for m.emote
+			beChild.Block = false
+		}
+	}
 
 	if evt.Content.MsgType == mautrix.MsgEmote {
 		root = &BaseEntity{
