@@ -17,39 +17,40 @@
 package html
 
 import (
+	"strings"
+
 	"maunium.net/go/mauview"
-	"maunium.net/go/tcell"
 )
 
-type CodeBlockEntity struct {
+type HorizontalLineEntity struct {
 	*BaseEntity
-	Background tcell.Style
 }
 
-func NewCodeBlockEntity(children []Entity, background tcell.Style) *CodeBlockEntity {
-	return &CodeBlockEntity{
-		BaseEntity: &BaseEntity{
-			Tag:      "pre",
-			Block:    true,
-			Children: children,
-		},
-		Background: background,
+const HorizontalLineChar = '━'
+
+func NewHorizontalLineEntity() *HorizontalLineEntity {
+	return &HorizontalLineEntity{&BaseEntity{
+		Tag:           "hr",
+		Block:         true,
+		DefaultHeight: 1,
+	}}
+}
+
+func (he *HorizontalLineEntity) Clone() Entity {
+	return NewHorizontalLineEntity()
+}
+
+func (he *HorizontalLineEntity) Draw(screen mauview.Screen) {
+	width, _ := screen.Size()
+	for x := 0; x < width; x++ {
+		screen.SetContent(x, 0, HorizontalLineChar, nil, he.Style)
 	}
 }
 
-func (ce *CodeBlockEntity) Clone() Entity {
-	return &CodeBlockEntity{
-		BaseEntity: ce.BaseEntity.Clone().(*BaseEntity),
-		Background: ce.Background,
-	}
+func (he *HorizontalLineEntity) PlainText() string {
+	return strings.Repeat(string(HorizontalLineChar), 5)
 }
 
-func (ce *CodeBlockEntity) Draw(screen mauview.Screen) {
-	screen.Fill(' ', ce.Background)
-	ce.BaseEntity.Draw(screen)
-}
-
-func (ce *CodeBlockEntity) AdjustStyle(fn AdjustStyleFunc) Entity {
-	// Don't allow adjusting code block style.
-	return ce
+func (he *HorizontalLineEntity) String() string {
+	return "&html.HorizontalLineEntity{},\n"
 }

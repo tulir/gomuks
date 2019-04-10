@@ -56,6 +56,14 @@ func NewListEntity(ordered bool, start int, children []Entity) *ListEntity {
 	return entity
 }
 
+func (le *ListEntity) Clone() Entity {
+	return &ListEntity{
+		BaseEntity: le.BaseEntity.Clone().(*BaseEntity),
+		Ordered:    le.Ordered,
+		Start:      le.Start,
+	}
+}
+
 func (le *ListEntity) Draw(screen mauview.Screen) {
 	width, _ := screen.Size()
 
@@ -73,6 +81,31 @@ func (le *ListEntity) Draw(screen mauview.Screen) {
 		proxyScreen.SetStyle(le.Style)
 		proxyScreen.OffsetY += entity.Height()
 	}
+}
+
+func (le *ListEntity) PlainText() string {
+	if len(le.Children) == 0 {
+		return ""
+	}
+	var buf strings.Builder
+	for i, child := range le.Children {
+		indent := strings.Repeat(" ", le.Indent)
+		if le.Ordered {
+			number := le.Start + i
+			_, _ = fmt.Fprintf(&buf, "%d. %s", number, strings.Repeat(" ", le.Indent-2-digits(number)))
+		} else {
+			buf.WriteString("● ")
+		}
+		for j, row := range strings.Split(child.PlainText(), "\n") {
+			if j != 0 {
+				buf.WriteRune('\n')
+				buf.WriteString(indent)
+			}
+			buf.WriteString(row)
+		}
+		buf.WriteRune('\n')
+	}
+	return strings.TrimSpace(buf.String())
 }
 
 func (le *ListEntity) String() string {

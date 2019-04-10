@@ -111,7 +111,7 @@ func (parser *htmlParser) basicFormatToEntity(node *html.Node) Entity {
 		entity.AdjustStyle(AdjustStyleBold)
 	case "i", "em":
 		entity.AdjustStyle(AdjustStyleItalic)
-	case "s", "del":
+	case "s", "del", "strike":
 		entity.AdjustStyle(AdjustStyleStrikethrough)
 	case "u", "ins":
 		entity.AdjustStyle(AdjustStyleUnderline)
@@ -237,7 +237,7 @@ func (parser *htmlParser) syntaxHighlight(text, language string) Entity {
 	children := make([]Entity, len(tokens))
 	for i, token := range tokens {
 		if token.Value == "\n" {
-			children[i] = &BaseEntity{Block: true, Tag: "br"}
+			children[i] = NewBreakEntity()
 		} else {
 			children[i] = &BaseEntity{
 				Tag:   token.Type.String(),
@@ -282,7 +282,7 @@ func (parser *htmlParser) tagNodeToEntity(node *html.Node) Entity {
 		return parser.headerToEntity(node)
 	case "br":
 		return NewBreakEntity()
-	case "b", "strong", "i", "em", "s", "del", "u", "ins", "font":
+	case "b", "strong", "i", "em", "s", "strike", "del", "u", "ins", "font":
 		return parser.basicFormatToEntity(node)
 	case "a":
 		return parser.linkToEntity(node)
@@ -290,6 +290,10 @@ func (parser *htmlParser) tagNodeToEntity(node *html.Node) Entity {
 		return parser.imageToEntity(node)
 	case "pre":
 		return parser.codeblockToEntity(node)
+	case "hr":
+		return NewHorizontalLineEntity()
+	case "mx-reply":
+		return nil
 	default:
 		return &BaseEntity{
 			Tag:      node.Data,

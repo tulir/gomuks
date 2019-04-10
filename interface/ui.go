@@ -61,6 +61,7 @@ type RoomView interface {
 	UpdateUserList()
 
 	ParseEvent(evt *mautrix.Event) Message
+	GetEvent(eventID string) Message
 	AddMessage(message Message)
 	AddServiceMessage(message string)
 }

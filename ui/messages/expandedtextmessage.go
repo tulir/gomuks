@@ -55,6 +55,14 @@ func NewDateChangeMessage(text string) UIMessage {
 	}
 }
 
+
+func (msg *ExpandedTextMessage) Clone() UIMessage {
+	return &ExpandedTextMessage{
+		BaseMessage: msg.BaseMessage.clone(),
+		MsgText:     msg.MsgText.Clone(),
+	}
+}
+
 func (msg *ExpandedTextMessage) GenerateText() tstring.TString {
 	return msg.MsgText
 }

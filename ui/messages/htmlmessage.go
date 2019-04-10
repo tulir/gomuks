@@ -40,6 +40,14 @@ func NewHTMLMessage(event *mautrix.Event, displayname string, root html.Entity) 
 	}
 }
 
+func (hw *HTMLMessage) Clone() UIMessage {
+	return &HTMLMessage{
+		BaseMessage: hw.BaseMessage.clone(),
+		Root:        hw.Root.Clone(),
+		FocusedBg:   hw.FocusedBg,
+	}
+}
+
 func (hw *HTMLMessage) Draw(screen mauview.Screen) {
 	screen = hw.DrawReply(screen)
 	if hw.focused {

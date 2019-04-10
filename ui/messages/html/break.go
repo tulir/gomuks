@@ -26,3 +26,15 @@ func NewBreakEntity() *BreakEntity {
 		Block: true,
 	}}
 }
+
+func (be *BreakEntity) Clone() Entity {
+	return NewBreakEntity()
+}
+
+func (be *BreakEntity) PlainText() string {
+	return "\n"
+}
+
+func (be *BreakEntity) String() string {
+	return "&html.BreakEntity{},\n"
+}

@@ -165,17 +165,20 @@ func (he *BaseEntity) PlainText() string {
 	buf.WriteString(he.Text)
 	newlined := false
 	for _, child := range he.Children {
-		if child.IsBlock() && !newlined {
+		text := child.PlainText()
+		if !strings.HasPrefix(text, "\n") && child.IsBlock() && !newlined {
 			buf.WriteRune('\n')
 		}
 		newlined = false
-		buf.WriteString(child.PlainText())
+		buf.WriteString(text)
 		if child.IsBlock() {
-			buf.WriteRune('\n')
+			if !strings.HasSuffix(text, "\n") {
+				buf.WriteRune('\n')
+			}
 			newlined = true
 		}
 	}
-	return buf.String()
+	return strings.TrimSpace(buf.String())
 }
 
 // Draw draws this entity onto the given mauview Screen.

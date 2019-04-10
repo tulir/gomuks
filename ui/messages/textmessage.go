@@ -43,12 +43,19 @@ func NewTextMessage(event *mautrix.Event, displayname string, text string) UIMes
 func NewServiceMessage(text string) UIMessage {
 	return &TextMessage{
 		BaseMessage: BaseMessage{
-			MsgSenderID:    "*",
-			MsgSender:      "*",
-			MsgTimestamp:   time.Now(),
-			MsgIsService:   true,
+			MsgSenderID:  "*",
+			MsgSender:    "*",
+			MsgTimestamp: time.Now(),
+			MsgIsService: true,
 		},
 		MsgText: text,
+	}
+}
+
+func (msg *TextMessage) Clone() UIMessage {
+	return &TextMessage{
+		BaseMessage: msg.BaseMessage.clone(),
+		MsgText:     msg.MsgText,
 	}
 }
 

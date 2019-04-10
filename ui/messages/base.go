@@ -44,7 +44,6 @@ type BaseMessage struct {
 	MsgSource      json.RawMessage
 	ReplyTo        UIMessage
 	buffer         []tstring.TString
-	plainBuffer    []tstring.TString
 }
 
 func newBaseMessage(event *mautrix.Event, displayname string) BaseMessage {
@@ -257,6 +256,12 @@ func (msg *BaseMessage) Draw(screen mauview.Screen) {
 	for y, line := range msg.buffer {
 		line.Draw(screen, 0, y)
 	}
+}
+
+func (msg *BaseMessage) clone() BaseMessage {
+	clone := *msg
+	clone.buffer = nil
+	return clone
 }
 
 func (msg *BaseMessage) CalculateReplyBuffer(preferences config.UserPreferences, width int) {

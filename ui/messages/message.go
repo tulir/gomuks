@@ -43,6 +43,8 @@ type UIMessage interface {
 	Height() int
 	PlainText() string
 
+	Clone() UIMessage
+
 	RealSender() string
 	RegisterMatrix(matrix ifc.MatrixContainer)
 }

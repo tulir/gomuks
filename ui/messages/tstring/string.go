@@ -21,6 +21,7 @@ import (
 	"unicode"
 
 	"github.com/mattn/go-runewidth"
+
 	"maunium.net/go/mauview"
 
 	"maunium.net/go/tcell"
@@ -29,11 +30,11 @@ import (
 type TString []Cell
 
 func NewBlankTString() TString {
-	return make([]Cell, 0)
+	return make(TString, 0)
 }
 
 func NewTString(str string) TString {
-	newStr := make([]Cell, len(str))
+	newStr := make(TString, len(str))
 	for i, char := range str {
 		newStr[i] = NewCell(char)
 	}
@@ -41,7 +42,7 @@ func NewTString(str string) TString {
 }
 
 func NewColorTString(str string, color tcell.Color) TString {
-	newStr := make([]Cell, len(str))
+	newStr := make(TString, len(str))
 	for i, char := range str {
 		newStr[i] = NewColorCell(char, color)
 	}
@@ -49,7 +50,7 @@ func NewColorTString(str string, color tcell.Color) TString {
 }
 
 func NewStyleTString(str string, style tcell.Style) TString {
-	newStr := make([]Cell, len(str))
+	newStr := make(TString, len(str))
 	for i, char := range str {
 		newStr[i] = NewStyleCell(char, style)
 	}
@@ -72,6 +73,12 @@ func Join(strings []TString, separator string) TString {
 		out = append(out, str.Prepend(separator)...)
 	}
 	return out
+}
+
+func (str TString) Clone() TString {
+	newStr := make(TString, len(str))
+	copy(newStr, str)
+	return newStr
 }
 
 func (str TString) AppendTString(dataList ...TString) TString {

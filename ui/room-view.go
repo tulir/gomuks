@@ -445,5 +445,13 @@ func (view *RoomView) AddMessage(message ifc.Message) {
 }
 
 func (view *RoomView) ParseEvent(evt *mautrix.Event) ifc.Message {
-	return messages.ParseEvent(view.parent.matrix, view.Room, evt)
+	return messages.ParseEvent(view.parent.matrix, view.parent, view.Room, evt)
+}
+
+func (view *RoomView) GetEvent(eventID string) ifc.Message {
+	message, ok := view.content.messageIDs[eventID]
+	if !ok {
+		return nil
+	}
+	return message
 }

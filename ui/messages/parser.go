@@ -31,7 +31,18 @@ import (
 	"maunium.net/go/gomuks/ui/widget"
 )
 
-func ParseEvent(matrix ifc.MatrixContainer, room *rooms.Room, evt *mautrix.Event) UIMessage {
+func getCachedEvent(mainView ifc.MainView, roomID, eventID string) UIMessage {
+	if roomView := mainView.GetRoom(roomID); roomView != nil {
+		if replyToIfcMsg := roomView.GetEvent(eventID); replyToIfcMsg != nil {
+			if replyToMsg, ok := replyToIfcMsg.(UIMessage); ok && replyToMsg != nil {
+				return replyToMsg
+			}
+		}
+	}
+	return nil
+}
+
+func ParseEvent(matrix ifc.MatrixContainer, mainView ifc.MainView, room *rooms.Room, evt *mautrix.Event) UIMessage {
 	msg := directParseEvent(matrix, room, evt)
 	if msg == nil {
 		return nil
@@ -41,10 +52,14 @@ func ParseEvent(matrix ifc.MatrixContainer, room *rooms.Room, evt *mautrix.Event
 		if len(evt.Content.RelatesTo.InReplyTo.RoomID) > 0 {
 			replyToRoom = matrix.GetRoom(evt.Content.RelatesTo.InReplyTo.RoomID)
 		}
-		replyToEvt, _ := matrix.GetEvent(replyToRoom, evt.Content.GetReplyTo())
-		if replyToEvt != nil {
-			replyToMsg := directParseEvent(matrix, replyToRoom, replyToEvt)
-			if replyToMsg != nil {
+
+		if replyToMsg := getCachedEvent(mainView, replyToRoom.ID, evt.Content.GetReplyTo()); replyToMsg != nil {
+			debug.Print("Cloning cached UIMessage", replyToMsg)
+			replyToMsg = replyToMsg.Clone()
+			replyToMsg.SetReplyTo(nil)
+			msg.SetReplyTo(replyToMsg)
+		} else if replyToEvt, _ := matrix.GetEvent(replyToRoom, evt.Content.GetReplyTo()); replyToEvt != nil {
+			if replyToMsg := directParseEvent(matrix, replyToRoom, replyToEvt); replyToMsg != nil {
 				msg.SetReplyTo(replyToMsg)
 			} else {
 				// TODO add unrenderable reply header
@@ -68,6 +83,7 @@ func directParseEvent(matrix ifc.MatrixContainer, room *rooms.Room, evt *mautrix
 	case mautrix.StateMember:
 		return ParseMembershipEvent(room, evt)
 	}
+
 	return nil
 }
 

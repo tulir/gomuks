@@ -257,7 +257,7 @@ func (view *MessageView) handleMessageClick(message messages.UIMessage) bool {
 	case *messages.ImageMessage:
 		open.Open(message.Path())
 	case messages.UIMessage:
-		debug.Print("Message clicked:", message.NotificationContent())
+		debug.Print("Message clicked:", message)
 	}
 	return false
 }

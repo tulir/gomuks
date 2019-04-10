@@ -18,6 +18,7 @@ package html
 
 import (
 	"fmt"
+	"strings"
 
 	"maunium.net/go/mauview"
 )
@@ -37,11 +38,42 @@ func NewBlockquoteEntity(children []Entity) *BlockquoteEntity {
 	}}
 }
 
+func (be *BlockquoteEntity) Clone() Entity {
+	return &BlockquoteEntity{BaseEntity: be.BaseEntity.Clone().(*BaseEntity)}
+}
+
 func (be *BlockquoteEntity) Draw(screen mauview.Screen) {
 	be.BaseEntity.Draw(screen)
 	for y := 0; y < be.height; y++ {
 		screen.SetContent(0, y, BlockQuoteChar, nil, be.Style)
 	}
+}
+
+func (be *BlockquoteEntity) PlainText() string {
+	if len(be.Children) == 0 {
+		return ""
+	}
+	var buf strings.Builder
+	newlined := false
+	for i, child := range be.Children {
+		if i != 0 && child.IsBlock() && !newlined {
+			buf.WriteRune('\n')
+		}
+		newlined = false
+		for i, row := range strings.Split(child.PlainText(), "\n") {
+			if i != 0 {
+				buf.WriteRune('\n')
+			}
+			buf.WriteRune('>')
+			buf.WriteRune(' ')
+			buf.WriteString(row)
+		}
+		if child.IsBlock() {
+			buf.WriteRune('\n')
+			newlined = true
+		}
+	}
+	return strings.TrimSpace(buf.String())
 }
 
 func (be *BlockquoteEntity) String() string {

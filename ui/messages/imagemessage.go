@@ -53,6 +53,19 @@ func NewImageMessage(matrix ifc.MatrixContainer, event *mautrix.Event, displayna
 	}
 }
 
+func (msg *ImageMessage) Clone() UIMessage {
+	data := make([]byte, len(msg.data))
+	copy(data, msg.data)
+	return &ImageMessage{
+		BaseMessage: msg.BaseMessage.clone(),
+		Body:        msg.Body,
+		Homeserver:  msg.Homeserver,
+		FileID:      msg.FileID,
+		data:        data,
+		matrix:      msg.matrix,
+	}
+}
+
 func (msg *ImageMessage) RegisterMatrix(matrix ifc.MatrixContainer) {
 	msg.matrix = matrix
 
