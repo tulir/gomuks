@@ -54,7 +54,6 @@ func ParseEvent(matrix ifc.MatrixContainer, mainView ifc.MainView, room *rooms.R
 		}
 
 		if replyToMsg := getCachedEvent(mainView, replyToRoom.ID, evt.Content.GetReplyTo()); replyToMsg != nil {
-			debug.Print("Cloning cached UIMessage", replyToMsg)
 			replyToMsg = replyToMsg.Clone()
 			replyToMsg.SetReplyTo(nil)
 			msg.SetReplyTo(replyToMsg)

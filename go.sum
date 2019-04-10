@@ -56,6 +56,7 @@ golang.org/x/sys v0.0.0-20190215142949-d0b11bdaac8a/go.mod h1:STP8DvDyc/dI5b8T5h
 golang.org/x/sys v0.0.0-20190322080309-f49334f85ddc/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
 golang.org/x/sys v0.0.0-20190403152447-81d4e9dc473e/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
 golang.org/x/sys v0.0.0-20190405154228-4b34438f7a67/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
+golang.org/x/sys v0.0.0-20190410170021-cc4d4f50624c/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
 golang.org/x/text v0.3.0 h1:g61tztE5qeGQ89tm6NTjjM9VPIm088od1l6aSorWRWg=
 golang.org/x/text v0.3.0/go.mod h1:NqM8EUOU14njkJ3fqMW+pc6Ldnwhi/IjpwHt7yyuwOQ=
 gopkg.in/DATA-DOG/go-sqlmock.v1 v1.3.0/go.mod h1:OdE7CF6DbADk7lN8LIKRzRJTTZXIjtWgA5THM5lhBAw=
@@ -68,6 +69,8 @@ maunium.net/go/mautrix v0.1.0-alpha.3 h1:kBz7M63hRetQnAnYK+gVmuSxsmZesX6xERphVgE
 maunium.net/go/mautrix v0.1.0-alpha.3/go.mod h1:GTVu6WDHR+98DKOrYetWsXorvUeKQV3jsSWO6ScbuFI=
 maunium.net/go/mautrix v0.1.0-alpha.3.0.20190328212757-5794ed367481 h1:6eg4gVj5BNlqT50C+gyw73lzXOnbkGa2ECIyj+iuLZQ=
 maunium.net/go/mautrix v0.1.0-alpha.3.0.20190328212757-5794ed367481/go.mod h1:hpKYWY2m61ql7Dxslkg59VgB9BtpvONQ1kjIQSCfs3k=
+maunium.net/go/mautrix v0.1.0-alpha.3.0.20190410141755-dd6ea25c39fb h1:clgnMWBV+BRS/1rkji90s1it7NhliN6hd1wIFO9kvuU=
+maunium.net/go/mautrix v0.1.0-alpha.3.0.20190410141755-dd6ea25c39fb/go.mod h1:hpKYWY2m61ql7Dxslkg59VgB9BtpvONQ1kjIQSCfs3k=
 maunium.net/go/mauview v0.0.0-20190406150001-ad4a4e562f9e h1:7hqfdhZy0nYv1UA6phpXBL2d+YG6rnUIAe0AFH5rPU0=
 maunium.net/go/mauview v0.0.0-20190406150001-ad4a4e562f9e/go.mod h1:muSK5TsdnPzn76mY0FKKznanZ6ae23kRS4v6MFub99c=
 maunium.net/go/tcell v0.0.0-20190406145848-d520315b0ddb h1:Lg/XEIQoM5/dB0dsbZLTaoHy38QQPVQDkQfngBXf3So=

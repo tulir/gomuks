@@ -102,8 +102,10 @@ func (parser *htmlParser) listToEntity(node *html.Node) Entity {
 }
 
 func (parser *htmlParser) basicFormatToEntity(node *html.Node) Entity {
-	entity := &BaseEntity{
-		Tag:      node.Data,
+	entity := &ContainerEntity{
+		BaseEntity: &BaseEntity{
+			Tag: node.Data,
+		},
 		Children: parser.nodeToEntities(node.FirstChild),
 	}
 	switch node.Data {
@@ -151,12 +153,14 @@ func (parser *htmlParser) parseColor(node *html.Node, mainName, altName string) 
 }
 
 func (parser *htmlParser) headerToEntity(node *html.Node) Entity {
-	length := int(node.Data[1] - '0')
-	prefix := strings.Repeat("#", length) + " "
-	return (&BaseEntity{
-		Tag:      node.Data,
-		Text:     prefix,
-		Children: parser.nodeToEntities(node.FirstChild),
+	return (&ContainerEntity{
+		BaseEntity: &BaseEntity{
+			Tag: node.Data,
+		},
+		Children: append(
+			[]Entity{NewTextEntity(strings.Repeat("#", int(node.Data[1]-'0')) + " ")},
+			parser.nodeToEntities(node.FirstChild)...
+		),
 	}).AdjustStyle(AdjustStyleBold)
 }
 
@@ -164,29 +168,36 @@ func (parser *htmlParser) blockquoteToEntity(node *html.Node) Entity {
 	return NewBlockquoteEntity(parser.nodeToEntities(node.FirstChild))
 }
 
-func (parser *htmlParser) linkToEntity(node *html.Node) Entity {
-	entity := &BaseEntity{
-		Tag:      "a",
+func (parser *htmlParser) linkToEntity(node *html.Node) (entity Entity) {
+	entity = &ContainerEntity{
+		BaseEntity: &BaseEntity{
+			Tag: "a",
+		},
 		Children: parser.nodeToEntities(node.FirstChild),
 	}
 	href := parser.getAttribute(node, "href")
 	if len(href) == 0 {
-		return entity
+		return
 	}
 	match := matrixToURL.FindStringSubmatch(href)
 	if len(match) == 2 {
-		entity.Children = nil
 		pillTarget := match[1]
-		entity.Text = pillTarget
+		textEntity := &TextEntity{
+			BaseEntity: &BaseEntity{
+				Tag: "a",
+			},
+			Text: pillTarget,
+		}
 		if pillTarget[0] == '@' {
 			if member := parser.room.GetMember(pillTarget); member != nil {
-				entity.Text = member.Displayname
-				entity.Style = entity.Style.Foreground(widget.GetHashColor(pillTarget))
+				textEntity.Text = member.Displayname
+				textEntity.Style = textEntity.Style.Foreground(widget.GetHashColor(pillTarget))
 			}
 		}
+		entity = textEntity
 	}
 	// TODO add click action and underline on hover for links
-	return entity
+	return
 }
 
 func (parser *htmlParser) imageToEntity(node *html.Node) Entity {
@@ -197,8 +208,10 @@ func (parser *htmlParser) imageToEntity(node *html.Node) Entity {
 			alt = "[inline image]"
 		}
 	}
-	entity := &BaseEntity{
-		Tag:  "img",
+	entity := &TextEntity{
+		BaseEntity: &BaseEntity{
+			Tag: "img",
+		},
 		Text: alt,
 	}
 	// TODO add click action and underline on hover for inline images
@@ -239,12 +252,13 @@ func (parser *htmlParser) syntaxHighlight(text, language string) Entity {
 		if token.Value == "\n" {
 			children[i] = NewBreakEntity()
 		} else {
-			children[i] = &BaseEntity{
-				Tag:   token.Type.String(),
-				Text:  token.Value,
-				Style: styleEntryToStyle(style.Get(token.Type)),
-
-				DefaultHeight: 1,
+			children[i] = &TextEntity{
+				BaseEntity: &BaseEntity{
+					Tag:           token.Type.String(),
+					Style:         styleEntryToStyle(style.Get(token.Type)),
+					DefaultHeight: 1,
+				},
+				Text: token.Value,
 			}
 		}
 	}
@@ -265,7 +279,7 @@ func (parser *htmlParser) codeblockToEntity(node *html.Node) Entity {
 		}
 	}
 	parser.keepLinebreak = true
-	text := (&BaseEntity{
+	text := (&ContainerEntity{
 		Children: parser.nodeToEntities(node.FirstChild),
 	}).PlainText()
 	parser.keepLinebreak = false
@@ -295,10 +309,12 @@ func (parser *htmlParser) tagNodeToEntity(node *html.Node) Entity {
 	case "mx-reply":
 		return nil
 	default:
-		return &BaseEntity{
-			Tag:      node.Data,
+		return &ContainerEntity{
+			BaseEntity: &BaseEntity{
+				Tag:   node.Data,
+				Block: parser.isBlockTag(node.Data),
+			},
 			Children: parser.nodeToEntities(node.FirstChild),
-			Block:    parser.isBlockTag(node.Data),
 		}
 	}
 }
@@ -312,20 +328,19 @@ func (parser *htmlParser) singleNodeToEntity(node *html.Node) Entity {
 		if len(node.Data) == 0 {
 			return nil
 		}
-		return &BaseEntity{
-			Tag:  "text",
-			Text: node.Data,
-		}
+		return NewTextEntity(node.Data)
 	case html.ElementNode:
 		return parser.tagNodeToEntity(node)
 	case html.DocumentNode:
 		if node.FirstChild.Data == "html" && node.FirstChild.NextSibling == nil {
 			return parser.singleNodeToEntity(node.FirstChild)
 		}
-		return &BaseEntity{
-			Tag:      "html",
+		return &ContainerEntity{
+			BaseEntity: &BaseEntity{
+				Tag:   "html",
+				Block: true,
+			},
 			Children: parser.nodeToEntities(node.FirstChild),
-			Block:    true,
 		}
 	default:
 		return nil
@@ -376,10 +391,10 @@ func Parse(room *rooms.Room, evt *mautrix.Event, senderDisplayname string) Entit
 
 	parser := htmlParser{room: room}
 	root := parser.Parse(htmlData)
-	beRoot := root.(*BaseEntity)
+	beRoot := root.(*ContainerEntity)
 	beRoot.Block = false
 	if len(beRoot.Children) > 0 {
-		beChild, ok := beRoot.Children[0].(*BaseEntity)
+		beChild, ok := beRoot.Children[0].(*ContainerEntity)
 		if ok && beChild.Tag == "p" {
 			// Hacky fix for m.emote
 			beChild.Block = false
@@ -387,8 +402,10 @@ func Parse(room *rooms.Room, evt *mautrix.Event, senderDisplayname string) Entit
 	}
 
 	if evt.Content.MsgType == mautrix.MsgEmote {
-		root = &BaseEntity{
-			Tag: "emote",
+		root = &ContainerEntity{
+			BaseEntity: &BaseEntity{
+				Tag: "emote",
+			},
 			Children: []Entity{
 				NewTextEntity("* "),
 				NewTextEntity(senderDisplayname).AdjustStyle(AdjustStyleTextColor(widget.GetHashColor(evt.Sender))),

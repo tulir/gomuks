@@ -22,15 +22,17 @@ import (
 )
 
 type CodeBlockEntity struct {
-	*BaseEntity
+	*ContainerEntity
 	Background tcell.Style
 }
 
 func NewCodeBlockEntity(children []Entity, background tcell.Style) *CodeBlockEntity {
 	return &CodeBlockEntity{
-		BaseEntity: &BaseEntity{
-			Tag:      "pre",
-			Block:    true,
+		ContainerEntity: &ContainerEntity{
+			BaseEntity: &BaseEntity{
+				Tag:   "pre",
+				Block: true,
+			},
 			Children: children,
 		},
 		Background: background,
@@ -39,8 +41,8 @@ func NewCodeBlockEntity(children []Entity, background tcell.Style) *CodeBlockEnt
 
 func (ce *CodeBlockEntity) Clone() Entity {
 	return &CodeBlockEntity{
-		BaseEntity: ce.BaseEntity.Clone().(*BaseEntity),
-		Background: ce.Background,
+		ContainerEntity: ce.ContainerEntity.Clone().(*ContainerEntity),
+		Background:      ce.Background,
 	}
 }
 

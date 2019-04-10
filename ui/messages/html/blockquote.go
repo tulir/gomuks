@@ -24,26 +24,28 @@ import (
 )
 
 type BlockquoteEntity struct {
-	*BaseEntity
+	*ContainerEntity
 }
 
 const BlockQuoteChar = '>'
 
 func NewBlockquoteEntity(children []Entity) *BlockquoteEntity {
-	return &BlockquoteEntity{&BaseEntity{
-		Tag:      "blockquote",
+	return &BlockquoteEntity{&ContainerEntity{
+		BaseEntity: &BaseEntity{
+			Tag:   "blockquote",
+			Block: true,
+		},
 		Children: children,
-		Block:    true,
 		Indent:   2,
 	}}
 }
 
 func (be *BlockquoteEntity) Clone() Entity {
-	return &BlockquoteEntity{BaseEntity: be.BaseEntity.Clone().(*BaseEntity)}
+	return &BlockquoteEntity{ContainerEntity: be.ContainerEntity.Clone().(*ContainerEntity)}
 }
 
 func (be *BlockquoteEntity) Draw(screen mauview.Screen) {
-	be.BaseEntity.Draw(screen)
+	be.ContainerEntity.Draw(screen)
 	for y := 0; y < be.height; y++ {
 		screen.SetContent(0, y, BlockQuoteChar, nil, be.Style)
 	}

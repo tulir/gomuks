@@ -26,7 +26,7 @@ import (
 )
 
 type ListEntity struct {
-	*BaseEntity
+	*ContainerEntity
 	Ordered bool
 	Start   int
 }
@@ -40,11 +40,13 @@ func digits(num int) int {
 
 func NewListEntity(ordered bool, start int, children []Entity) *ListEntity {
 	entity := &ListEntity{
-		BaseEntity: &BaseEntity{
-			Tag:      "ul",
+		ContainerEntity: &ContainerEntity{
+			BaseEntity: &BaseEntity{
+				Tag:    "ul",
+				Block:  true,
+			},
+			Indent: 2,
 			Children: children,
-			Block:    true,
-			Indent:   2,
 		},
 		Ordered: ordered,
 		Start:   start,
@@ -58,7 +60,7 @@ func NewListEntity(ordered bool, start int, children []Entity) *ListEntity {
 
 func (le *ListEntity) Clone() Entity {
 	return &ListEntity{
-		BaseEntity: le.BaseEntity.Clone().(*BaseEntity),
+		ContainerEntity: le.ContainerEntity.Clone().(*ContainerEntity),
 		Ordered:    le.Ordered,
 		Start:      le.Start,
 	}
