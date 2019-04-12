@@ -17,6 +17,9 @@
 package messages
 
 import (
+	"fmt"
+	"strings"
+
 	"maunium.net/go/mautrix"
 	"maunium.net/go/mauview"
 	"maunium.net/go/tcell"
@@ -97,4 +100,11 @@ func (hw *HTMLMessage) PlainText() string {
 
 func (hw *HTMLMessage) NotificationContent() string {
 	return hw.Root.PlainText()
+}
+
+func (hw *HTMLMessage) String() string {
+	return fmt.Sprintf("&messages.HTMLMessage{\n" +
+		"    Base=%s,\n" +
+		"    Root=||\n%s\n" +
+		"}", strings.ReplaceAll(hw.BaseMessage.String(), "\n", "\n    "), hw.Root.String())
 }

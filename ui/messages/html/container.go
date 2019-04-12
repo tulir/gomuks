@@ -84,12 +84,13 @@ func (ce *ContainerEntity) String() string {
 		return fmt.Sprintf(`&html.ContainerEntity{Base=%s, Indent=%d, Children=[]}`, ce.BaseEntity, ce.Indent)
 	}
 	var buf strings.Builder
-	_, _ = fmt.Fprintf(&buf, `&html.ContainerEntity{Base=%s, Indent=%d, Children=[`, ce.BaseEntity, ce.Indent)
+	_, _ = fmt.Fprintf(&buf, `&html.ContainerEntity{Base=%s,
+                      Indent=%d, Children=[`, ce.BaseEntity, ce.Indent)
 	for _, child := range ce.Children {
 		buf.WriteString("\n    ")
 		buf.WriteString(strings.Join(strings.Split(strings.TrimRight(child.String(), "\n"), "\n"), "\n    "))
 	}
-	buf.WriteString("\n]}\n,")
+	buf.WriteString("\n]},")
 	return buf.String()
 }
 

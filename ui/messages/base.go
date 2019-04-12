@@ -18,6 +18,7 @@ package messages
 
 import (
 	"encoding/json"
+	"fmt"
 	"time"
 
 	"maunium.net/go/gomuks/config"
@@ -285,4 +286,18 @@ func (msg *BaseMessage) DrawReply(screen mauview.Screen) mauview.Screen {
 	replyScreen := mauview.NewProxyScreen(screen, 1, 1, width-1, replyHeight)
 	msg.ReplyTo.Draw(replyScreen)
 	return mauview.NewProxyScreen(screen, 0, replyHeight+2, width, height-replyHeight-2)
+}
+
+func (msg *BaseMessage) String() string {
+	return fmt.Sprintf(`&messages.BaseMessage{
+    ID="%s", TxnID="%s",
+    Type="%s", Timestamp=%s,
+    Sender={ID="%s", Name="%s", Color=#%X},
+    IsService=%t, IsHighlight=%t,
+}`,
+		msg.MsgID, msg.MsgTxnID,
+		msg.MsgType, msg.MsgTimestamp.String(),
+		msg.MsgSenderID, msg.MsgSender, msg.MsgSenderColor.Hex(),
+		msg.MsgIsService, msg.MsgIsHighlight,
+	)
 }
