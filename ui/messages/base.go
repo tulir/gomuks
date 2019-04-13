@@ -178,7 +178,7 @@ func (msg *BaseMessage) TimestampColor() tcell.Color {
 
 func (msg *BaseMessage) ReplyHeight() int {
 	if msg.ReplyTo != nil {
-		return 2 + msg.ReplyTo.Height()
+		return 1 + msg.ReplyTo.Height()
 	}
 	return 0
 }
@@ -278,14 +278,14 @@ func (msg *BaseMessage) DrawReply(screen mauview.Screen) mauview.Screen {
 	}
 	width, height := screen.Size()
 	replyHeight := msg.ReplyTo.Height()
-	widget.WriteLineSimpleColor(screen, "In reply to", 0, 0, tcell.ColorGreen)
-	widget.WriteLineSimpleColor(screen, msg.ReplyTo.RealSender(), len("In reply to "), 0, msg.ReplyTo.SenderColor())
-	for y := 1; y < 1+replyHeight; y++ {
-		screen.SetCell(0, y, tcell.StyleDefault, '▋')
+	widget.WriteLineSimpleColor(screen, "In reply to", 1, 0, tcell.ColorGreen)
+	widget.WriteLineSimpleColor(screen, msg.ReplyTo.RealSender(), 13, 0, msg.ReplyTo.SenderColor())
+	for y := 0; y < 1+replyHeight; y++ {
+		screen.SetCell(0, y, tcell.StyleDefault, '▊')
 	}
 	replyScreen := mauview.NewProxyScreen(screen, 1, 1, width-1, replyHeight)
 	msg.ReplyTo.Draw(replyScreen)
-	return mauview.NewProxyScreen(screen, 0, replyHeight+2, width, height-replyHeight-2)
+	return mauview.NewProxyScreen(screen, 0, replyHeight+1, width, height-replyHeight-1)
 }
 
 func (msg *BaseMessage) String() string {

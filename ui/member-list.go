@@ -22,11 +22,12 @@ import (
 
 	"github.com/mattn/go-runewidth"
 
-	"maunium.net/go/gomuks/debug"
-	"maunium.net/go/gomuks/ui/widget"
 	"maunium.net/go/mautrix"
 	"maunium.net/go/mauview"
 	"maunium.net/go/tcell"
+
+	"maunium.net/go/gomuks/debug"
+	"maunium.net/go/gomuks/ui/widget"
 )
 
 type MemberList struct {
@@ -50,14 +51,11 @@ func (rml roomMemberList) Len() int {
 	return len(rml)
 }
 
-func (rml roomMemberList) lessMembership(i, j int) bool {
-	return rml[j].Membership == "invite" && rml[i].Membership == "join"
-}
-
 func (rml roomMemberList) Less(i, j int) bool {
-	return rml.lessMembership(i, j) ||
-		rml[i].PowerLevel > rml[j].PowerLevel ||
-		strings.Compare(rml[i].Displayname, rml[j].Displayname) < 0
+	if rml[i].PowerLevel != rml[j].PowerLevel {
+		return rml[i].PowerLevel > rml[j].PowerLevel
+	}
+	return strings.Compare(strings.ToLower(rml[i].Displayname), strings.ToLower(rml[j].Displayname)) < 0
 }
 
 func (rml roomMemberList) Swap(i, j int) {
@@ -67,7 +65,6 @@ func (rml roomMemberList) Swap(i, j int) {
 func (ml *MemberList) Update(data map[string]*mautrix.Member, levels *mautrix.PowerLevels) *MemberList {
 	ml.list = make(roomMemberList, len(data))
 	i := 0
-	debug.Print(levels)
 	for userID, member := range data {
 		ml.list[i] = &memberListItem{
 			Member:     *member,
@@ -84,10 +81,11 @@ func (ml *MemberList) Update(data map[string]*mautrix.Member, levels *mautrix.Po
 func (ml *MemberList) Draw(screen mauview.Screen) {
 	width, _ := screen.Size()
 	for y, member := range ml.list {
+		debug.Print(member.UserID, member.Displayname, member.Membership, member.PowerLevel)
 		if member.Membership == "invite" {
 			widget.WriteLineSimpleColor(screen, member.Displayname, 1, y, member.Color)
 			screen.SetCell(0, y, tcell.StyleDefault, '(')
-			if sw := runewidth.StringWidth(member.Displayname); sw < width {
+			if sw := runewidth.StringWidth(member.Displayname); sw < width-1 {
 				screen.SetCell(sw+1, y, tcell.StyleDefault, ')')
 			} else {
 				screen.SetCell(width-1, y, tcell.StyleDefault, ')')
