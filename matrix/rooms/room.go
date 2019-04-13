@@ -399,10 +399,14 @@ func (room *Room) createMemberCache() map[string]*mautrix.Member {
 	if events != nil {
 		for userID, event := range events {
 			member := &event.Content.Member
+			member.Membership = event.Content.Membership
+			if len(member.Displayname) == 0 {
+				member.Displayname = userID
+			}
 			if room.firstMemberCache == nil && userID != room.SessionUserID {
 				room.firstMemberCache = member
 			}
-			if member.Membership != "leave" {
+			if member.Membership == mautrix.MembershipJoin || member.Membership == mautrix.MembershipInvite {
 				cache[userID] = member
 			}
 		}

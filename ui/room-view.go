@@ -45,7 +45,7 @@ type RoomView struct {
 	topic    *mauview.TextView
 	content  *MessageView
 	status   *mauview.TextField
-	userList *mauview.TextView
+	userList *MemberList
 	ulBorder *widget.Border
 	input    *mauview.InputArea
 	Room     *rooms.Room
@@ -75,7 +75,7 @@ func NewRoomView(parent *MainView, room *rooms.Room) *RoomView {
 	view := &RoomView{
 		topic:    mauview.NewTextView(),
 		status:   mauview.NewTextField(),
-		userList: mauview.NewTextView(),
+		userList: NewMemberList(),
 		ulBorder: widget.NewBorder(),
 		input:    mauview.NewInputArea(),
 		Room:     room,
@@ -104,10 +104,6 @@ func NewRoomView(parent *MainView, room *rooms.Room) *RoomView {
 		SetBackgroundColor(tcell.ColorDarkGreen)
 
 	view.status.SetBackgroundColor(tcell.ColorDimGray)
-
-	view.userList.
-		SetDynamicColors(true).
-		SetWrap(false)
 
 	return view
 }
@@ -418,22 +414,11 @@ func (view *RoomView) MxRoom() *rooms.Room {
 }
 
 func (view *RoomView) UpdateUserList() {
-	var joined strings.Builder
-	var invited strings.Builder
-	for userID, user := range view.Room.GetMembers() {
-		if user.Membership == "join" {
-			joined.WriteString(widget.AddColor(user.Displayname, widget.GetHashColorName(userID)))
-			joined.WriteRune('\n')
-		} else if user.Membership == "invite" {
-			invited.WriteString(widget.AddColor(user.Displayname, widget.GetHashColorName(userID)))
-			invited.WriteRune('\n')
-		}
+	pls := &mautrix.PowerLevels{}
+	if plEvent := view.Room.GetStateEvent(mautrix.StatePowerLevels, ""); plEvent != nil {
+		pls = plEvent.Content.GetPowerLevels()
 	}
-	view.userList.Clear()
-	fmt.Fprintf(view.userList, "%s\n", joined.String())
-	if invited.Len() > 0 {
-		fmt.Fprintf(view.userList, "\nInvited:\n%s", invited.String())
-	}
+	view.userList.Update(view.Room.GetMembers(), pls)
 }
 
 func (view *RoomView) AddServiceMessage(text string) {
