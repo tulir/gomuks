@@ -26,7 +26,6 @@ import (
 	"maunium.net/go/mauview"
 	"maunium.net/go/tcell"
 
-	"maunium.net/go/gomuks/debug"
 	"maunium.net/go/gomuks/ui/widget"
 )
 
@@ -81,7 +80,6 @@ func (ml *MemberList) Update(data map[string]*mautrix.Member, levels *mautrix.Po
 func (ml *MemberList) Draw(screen mauview.Screen) {
 	width, _ := screen.Size()
 	for y, member := range ml.list {
-		debug.Print(member.UserID, member.Displayname, member.Membership, member.PowerLevel)
 		if member.Membership == "invite" {
 			widget.WriteLineSimpleColor(screen, member.Displayname, 1, y, member.Color)
 			screen.SetCell(0, y, tcell.StyleDefault, '(')

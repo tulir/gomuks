@@ -168,8 +168,8 @@ func (parser *htmlParser) blockquoteToEntity(node *html.Node) Entity {
 	return NewBlockquoteEntity(parser.nodeToEntities(node.FirstChild))
 }
 
-func (parser *htmlParser) linkToEntity(node *html.Node) (entity Entity) {
-	entity = &ContainerEntity{
+func (parser *htmlParser) linkToEntity(node *html.Node) Entity {
+	entity := &ContainerEntity{
 		BaseEntity: &BaseEntity{
 			Tag: "a",
 		},
@@ -177,27 +177,27 @@ func (parser *htmlParser) linkToEntity(node *html.Node) (entity Entity) {
 	}
 	href := parser.getAttribute(node, "href")
 	if len(href) == 0 {
-		return
+		return entity
 	}
 	match := matrixToURL.FindStringSubmatch(href)
 	if len(match) == 2 {
 		pillTarget := match[1]
-		textEntity := &TextEntity{
-			BaseEntity: &BaseEntity{
-				Tag: "a",
-			},
-			Text: pillTarget,
-		}
+		text := NewTextEntity(pillTarget)
 		if pillTarget[0] == '@' {
 			if member := parser.room.GetMember(pillTarget); member != nil {
-				textEntity.Text = member.Displayname
-				textEntity.Style = textEntity.Style.Foreground(widget.GetHashColor(pillTarget))
+				text.Text = member.Displayname
+				text.Style = text.Style.Foreground(widget.GetHashColor(pillTarget))
 			}
+			entity.Children = []Entity{text}
+			/*} else if slash := strings.IndexRune(pillTarget, '/'); slash != -1 {
+			room := pillTarget[:slash]
+			event := pillTarget[slash+1:]*/
+		} else if pillTarget[0] == '#' {
+			entity.Children = []Entity{text}
 		}
-		entity = textEntity
 	}
 	// TODO add click action and underline on hover for links
-	return
+	return entity
 }
 
 func (parser *htmlParser) imageToEntity(node *html.Node) Entity {
