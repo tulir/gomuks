@@ -63,6 +63,7 @@ func Initialize() {
 			if OnRecover != nil {
 				OnRecover()
 			}
+			_, _ = fmt.Fprintf(os.Stderr, "Potential deadlock detected. See %s/deadlock.log for more information.", LogDirectory)
 			os.Exit(88)
 		}
 		_, err = fmt.Fprintf(deadlocks, "======================= Debug init @ %s =======================\n", time.Now().Format("2006-01-02 15:04:05"))
