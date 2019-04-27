@@ -20,7 +20,8 @@ import (
 	"math"
 	"regexp"
 	"strings"
-	"sync"
+
+	sync "github.com/sasha-s/go-deadlock"
 
 	"maunium.net/go/mauview"
 	"maunium.net/go/tcell"
@@ -483,6 +484,7 @@ func (list *RoomList) clickRoom(line, column int, mod bool) bool {
 	}
 	return false
 }
+
 var nsRegex = regexp.MustCompile("^[a-z]\\.[a-z](?:\\.[a-z])*$")
 
 func (list *RoomList) GetTagDisplayName(tag string) string {

@@ -21,8 +21,9 @@ import (
 	"fmt"
 	"os"
 	"sort"
-	"sync"
 	"time"
+
+	sync "github.com/sasha-s/go-deadlock"
 
 	"maunium.net/go/mautrix"
 
@@ -450,7 +451,7 @@ func (room *Room) GetSessionOwner() string {
 // NewRoom creates a new Room with the given ID
 func NewRoom(roomID, owner string) *Room {
 	return &Room{
-		Room: mautrix.NewRoom(roomID),
+		Room:          mautrix.NewRoom(roomID),
 		SessionUserID: owner,
 	}
 }

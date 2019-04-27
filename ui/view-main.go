@@ -20,10 +20,11 @@ import (
 	"bufio"
 	"fmt"
 	"os"
-	"sync"
 	"sync/atomic"
 	"time"
 	"unicode"
+
+	sync "github.com/sasha-s/go-deadlock"
 
 	"maunium.net/go/mauview"
 	"maunium.net/go/tcell"

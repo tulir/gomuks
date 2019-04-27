@@ -20,10 +20,10 @@ import (
 	"fmt"
 	"math"
 	"strings"
-	"sync"
 	"sync/atomic"
 
 	"github.com/mattn/go-runewidth"
+	sync "github.com/sasha-s/go-deadlock"
 
 	"maunium.net/go/mauview"
 	"maunium.net/go/tcell"

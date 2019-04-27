@@ -20,8 +20,8 @@ import (
 	"bytes"
 	"encoding/binary"
 	"encoding/gob"
-	"sync"
 
+	sync "github.com/sasha-s/go-deadlock"
 	bolt "go.etcd.io/bbolt"
 
 	"maunium.net/go/gomuks/matrix/rooms"
@@ -49,8 +49,8 @@ func NewHistoryManager(dbPath string) (*HistoryManager, error) {
 		historyLoadPtr: make(map[*rooms.Room]uint64),
 	}
 	db, err := bolt.Open(dbPath, 0600, &bolt.Options{
-		Timeout: 1,
-		NoGrowSync: false,
+		Timeout:      1,
+		NoGrowSync:   false,
 		FreelistType: bolt.FreelistArrayType,
 	})
 	if err != nil {

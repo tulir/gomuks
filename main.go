@@ -22,6 +22,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"time"
 
 	"maunium.net/go/gomuks/debug"
@@ -32,10 +33,20 @@ import (
 var MainUIProvider ifc.UIProvider = ui.NewGomuksUI
 
 func main() {
+	debugDir := os.Getenv("DEBUG_DIR")
+	if len(debugDir) > 0 {
+		debug.LogDirectory = debugDir
+	}
+	debugLevel := strings.ToLower(os.Getenv("DEBUG"))
+	if debugLevel != "0" && debugLevel != "f" && debugLevel != "false" {
+		debug.WriteLogs = true
+	}
+	if debugLevel == "1" || debugLevel == "t" || debugLevel == "true" {
+		debug.RecoverPrettyPanic = false
+		debug.DeadlockDetection = true
+	}
+	debug.Initialize()
 	defer debug.Recover()
-
-	enableDebug := len(os.Getenv("DEBUG")) > 0
-	debug.RecoverPrettyPanic = !enableDebug
 
 	configDir, err := UserConfigDir()
 	if err != nil {
