@@ -438,11 +438,11 @@ func (list *RoomList) clickRoom(line, column int, mod bool) bool {
 		return false
 	}
 	list.RLock()
-	defer list.RUnlock()
 	for _, tag := range list.tags {
 		trl := list.items[tag]
 		if line--; line == -1 {
 			trl.ToggleCollapse()
+			list.RUnlock()
 			return true
 		}
 
@@ -453,7 +453,9 @@ func (list *RoomList) clickRoom(line, column int, mod bool) bool {
 		if line < 0 {
 			break
 		} else if line < trl.Length() {
-			list.parent.SwitchRoom(tag, trl.Visible()[trl.Length()-1-line].Room)
+			switchToRoom := trl.Visible()[trl.Length()-1-line].Room
+			list.RUnlock()
+			list.parent.SwitchRoom(tag, switchToRoom)
 			return true
 		}
 
@@ -482,6 +484,7 @@ func (list *RoomList) clickRoom(line, column int, mod bool) bool {
 		// Tag footer
 		line--
 	}
+	list.RUnlock()
 	return false
 }
 
