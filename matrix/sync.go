@@ -107,6 +107,8 @@ func NewGomuksSyncer(session SyncerSession) *GomuksSyncer {
 // ProcessResponse processes a Matrix sync response.
 func (s *GomuksSyncer) ProcessResponse(res *mautrix.RespSync, since string) (err error) {
 	debug.Print("Received sync response")
+//	dat, _ := json.MarshalIndent(res, "", "  ")
+//	debug.Print(string(dat))
 	s.processSyncEvents(nil, res.Presence.Events, EventSourcePresence)
 	s.processSyncEvents(nil, res.AccountData.Events, EventSourceAccountData)
 

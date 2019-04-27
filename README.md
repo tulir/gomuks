@@ -21,7 +21,7 @@ precompiled executables. For now, you can either download
 a CI build from [dl.maunium.net/programs/gomuks](https://dl.maunium.net/programs/gomuks)
 or compile from source:
 
-0. Install [Go](https://golang.org/) 1.11 or higher
+0. Install [Go](https://golang.org/) 1.12 or higher
 1. Clone the repo: `git clone https://github.com/tulir/gomuks.git && cd gomuks`
 2. Build: `go build`
 

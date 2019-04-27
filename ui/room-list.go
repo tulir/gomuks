@@ -20,6 +20,7 @@ import (
 	"math"
 	"regexp"
 	"strings"
+	"sync"
 
 	"maunium.net/go/mauview"
 	"maunium.net/go/tcell"
@@ -29,6 +30,8 @@ import (
 )
 
 type RoomList struct {
+	sync.RWMutex
+
 	parent *MainView
 
 	// The list of tags in display order.
@@ -71,6 +74,8 @@ func NewRoomList(parent *MainView) *RoomList {
 }
 
 func (list *RoomList) Contains(roomID string) bool {
+	list.RLock()
+	defer list.RUnlock()
 	for _, trl := range list.items {
 		for _, room := range trl.All() {
 			if room.ID == roomID {
@@ -88,8 +93,8 @@ func (list *RoomList) Add(room *rooms.Room) {
 	}
 }
 
-func (list *RoomList) CheckTag(tag string) {
-	index := list.IndexTag(tag)
+func (list *RoomList) checkTag(tag string) {
+	index := list.indexTag(tag)
 
 	trl, ok := list.items[tag]
 
@@ -107,6 +112,8 @@ func (list *RoomList) CheckTag(tag string) {
 }
 
 func (list *RoomList) AddToTag(tag rooms.RoomTag, room *rooms.Room) {
+	list.Lock()
+	defer list.Unlock()
 	trl, ok := list.items[tag.Tag]
 	if !ok {
 		list.items[tag.Tag] = NewTagRoomList(list, tag.Tag, NewDefaultOrderedRoom(room))
@@ -114,7 +121,7 @@ func (list *RoomList) AddToTag(tag rooms.RoomTag, room *rooms.Room) {
 	}
 
 	trl.Insert(tag.Order, room)
-	list.CheckTag(tag.Tag)
+	list.checkTag(tag.Tag)
 }
 
 func (list *RoomList) Remove(room *rooms.Room) {
@@ -124,6 +131,8 @@ func (list *RoomList) Remove(room *rooms.Room) {
 }
 
 func (list *RoomList) RemoveFromTag(tag string, room *rooms.Room) {
+	list.Lock()
+	defer list.Unlock()
 	trl, ok := list.items[tag]
 	if !ok {
 		return
@@ -158,10 +167,12 @@ func (list *RoomList) RemoveFromTag(tag string, room *rooms.Room) {
 			list.selectedTag = ""
 		}
 	}
-	list.CheckTag(tag)
+	list.checkTag(tag)
 }
 
 func (list *RoomList) Bump(room *rooms.Room) {
+	list.RLock()
+	defer list.RUnlock()
 	for _, tag := range room.Tags() {
 		trl, ok := list.items[tag.Tag]
 		if !ok {
@@ -172,6 +183,8 @@ func (list *RoomList) Bump(room *rooms.Room) {
 }
 
 func (list *RoomList) Clear() {
+	list.Lock()
+	defer list.Unlock()
 	list.items = make(map[string]*TagRoomList)
 	list.tags = []string{"m.favourite", "net.maunium.gomuks.fake.direct", "", "m.lowpriority"}
 	for _, tag := range list.tags {
@@ -220,6 +233,8 @@ func (list *RoomList) AddScrollOffset(offset int) {
 }
 
 func (list *RoomList) First() (string, *rooms.Room) {
+	list.RLock()
+	defer list.RUnlock()
 	for _, tag := range list.tags {
 		trl := list.items[tag]
 		if trl.HasVisibleRooms() {
@@ -230,6 +245,8 @@ func (list *RoomList) First() (string, *rooms.Room) {
 }
 
 func (list *RoomList) Last() (string, *rooms.Room) {
+	list.RLock()
+	defer list.RUnlock()
 	for tagIndex := len(list.tags) - 1; tagIndex >= 0; tagIndex-- {
 		tag := list.tags[tagIndex]
 		trl := list.items[tag]
@@ -240,7 +257,7 @@ func (list *RoomList) Last() (string, *rooms.Room) {
 	return "", nil
 }
 
-func (list *RoomList) IndexTag(tag string) int {
+func (list *RoomList) indexTag(tag string) int {
 	for index, entry := range list.tags {
 		if tag == entry {
 			return index
@@ -250,6 +267,8 @@ func (list *RoomList) IndexTag(tag string) int {
 }
 
 func (list *RoomList) Previous() (string, *rooms.Room) {
+	list.RLock()
+	defer list.RUnlock()
 	if len(list.items) == 0 {
 		return "", nil
 	} else if list.selected == nil {
@@ -266,7 +285,7 @@ func (list *RoomList) Previous() (string, *rooms.Room) {
 	}
 
 	if index == trl.Length()-1 {
-		tagIndex := list.IndexTag(list.selectedTag)
+		tagIndex := list.indexTag(list.selectedTag)
 		tagIndex--
 		for ; tagIndex >= 0; tagIndex-- {
 			prevTag := list.tags[tagIndex]
@@ -283,6 +302,8 @@ func (list *RoomList) Previous() (string, *rooms.Room) {
 }
 
 func (list *RoomList) Next() (string, *rooms.Room) {
+	list.RLock()
+	defer list.RUnlock()
 	if len(list.items) == 0 {
 		return "", nil
 	} else if list.selected == nil {
@@ -299,7 +320,7 @@ func (list *RoomList) Next() (string, *rooms.Room) {
 	}
 
 	if index == 0 {
-		tagIndex := list.IndexTag(list.selectedTag)
+		tagIndex := list.indexTag(list.selectedTag)
 		tagIndex++
 		for ; tagIndex < len(list.tags); tagIndex++ {
 			nextTag := list.tags[tagIndex]
@@ -325,6 +346,8 @@ func (list *RoomList) Next() (string, *rooms.Room) {
 //
 // TODO: Sorting. Now just finds first room with new messages.
 func (list *RoomList) NextWithActivity() (string, *rooms.Room) {
+	list.RLock()
+	defer list.RUnlock()
 	for tag, trl := range list.items {
 		for _, room := range trl.All() {
 			if room.HasNewMessages() {
@@ -337,7 +360,7 @@ func (list *RoomList) NextWithActivity() (string, *rooms.Room) {
 }
 
 func (list *RoomList) index(tag string, room *rooms.Room) int {
-	tagIndex := list.IndexTag(tag)
+	tagIndex := list.indexTag(tag)
 	if tagIndex == -1 {
 		return -1
 	}
@@ -358,6 +381,7 @@ func (list *RoomList) index(tag string, room *rooms.Room) int {
 	if tagIndex > 0 {
 		for i := 0; i < tagIndex; i++ {
 			prevTag := list.tags[i]
+
 			prevTRL := list.items[prevTag]
 			localIndex += prevTRL.RenderHeight()
 		}
@@ -367,9 +391,11 @@ func (list *RoomList) index(tag string, room *rooms.Room) int {
 }
 
 func (list *RoomList) ContentHeight() (height int) {
+	list.RLock()
 	for _, tag := range list.tags {
 		height += list.items[tag].RenderHeight()
 	}
+	list.RUnlock()
 	return
 }
 
@@ -410,6 +436,8 @@ func (list *RoomList) clickRoom(line, column int, mod bool) bool {
 	if line < 0 {
 		return false
 	}
+	list.RLock()
+	defer list.RUnlock()
 	for _, tag := range list.tags {
 		trl := list.items[tag]
 		if line--; line == -1 {
@@ -484,6 +512,7 @@ func (list *RoomList) Draw(screen mauview.Screen) {
 	y -= list.scrollOffset
 
 	// Draw the list items.
+	list.RLock()
 	for _, tag := range list.tags {
 		trl := list.items[tag]
 		tagDisplayName := list.GetTagDisplayName(tag)
@@ -501,4 +530,5 @@ func (list *RoomList) Draw(screen mauview.Screen) {
 			break
 		}
 	}
+	list.RUnlock()
 }

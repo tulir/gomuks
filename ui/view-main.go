@@ -20,6 +20,8 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"sync"
+	"sync/atomic"
 	"time"
 	"unicode"
 
@@ -42,6 +44,7 @@ type MainView struct {
 	roomView     *mauview.Box
 	currentRoom  *RoomView
 	rooms        map[string]*RoomView
+	roomsLock    sync.RWMutex
 	cmdProcessor *CommandProcessor
 	focused      mauview.Focusable
 
@@ -245,13 +248,17 @@ func (view *MainView) Blur() {
 }
 
 func (view *MainView) SwitchRoom(tag string, room *rooms.Room) {
+	view.switchRoom(tag, room, true)
+}
+
+func (view *MainView) switchRoom(tag string, room *rooms.Room, lock bool) {
 	if room == nil {
 		return
 	}
 
-	roomView := view.rooms[room.ID]
-	if roomView == nil {
-		debug.Print("Tried to switch to non-nil room with nil roomView!")
+	roomView, ok := view.getRoomView(room.ID, lock)
+	if !ok {
+		debug.Print("Tried to switch to room with nonexistent roomView!")
 		debug.Print(tag, room)
 		return
 	}
@@ -265,7 +272,7 @@ func (view *MainView) SwitchRoom(tag string, room *rooms.Room) {
 	}
 }
 
-func (view *MainView) addRoomPage(room *rooms.Room) {
+func (view *MainView) addRoomPage(room *rooms.Room) *RoomView {
 	if _, ok := view.rooms[room.ID]; !ok {
 		roomView := NewRoomView(view, room).
 			SetInputChangedFunc(view.InputChanged)
@@ -276,53 +283,73 @@ func (view *MainView) addRoomPage(room *rooms.Room) {
 		if len(roomView.MessageView().messages) == 0 {
 			go view.LoadHistory(room.ID)
 		}
+		return roomView
 	}
+	return nil
 }
 
 func (view *MainView) GetRoom(roomID string) ifc.RoomView {
-	room, ok := view.rooms[roomID]
+	room, ok := view.getRoomView(roomID, true)
 	if !ok {
-		view.AddRoom(view.matrix.GetRoom(roomID))
-		room, ok := view.rooms[roomID]
-		if !ok {
-			return nil
-		}
-		return room
+		return view.addRoom(view.matrix.GetRoom(roomID))
 	}
 	return room
 }
 
+func (view *MainView) getRoomView(roomID string, lock bool) (room *RoomView, ok bool) {
+	if lock {
+		view.roomsLock.RLock()
+		room, ok = view.rooms[roomID]
+		view.roomsLock.RUnlock()
+	} else {
+		room, ok = view.rooms[roomID]
+	}
+	return room, ok
+}
+
 func (view *MainView) AddRoom(room *rooms.Room) {
-	if view.roomList.Contains(room.ID) {
-		debug.Print("Add aborted (room exists)", room.ID, room.GetTitle())
-		return
-	}
-	debug.Print("Adding", room.ID, room.GetTitle())
-	view.roomList.Add(room)
-	view.addRoomPage(room)
-	if !view.roomList.HasSelected() {
-		view.SwitchRoom(view.roomList.First())
-	}
+	view.addRoom(room)
 }
 
 func (view *MainView) RemoveRoom(room *rooms.Room) {
-	roomView := view.GetRoom(room.ID)
-	if roomView == nil {
+	view.roomsLock.Lock()
+	_, ok := view.getRoomView(room.ID, false)
+	if !ok {
+		view.roomsLock.Unlock()
 		debug.Print("Remove aborted (not found)", room.ID, room.GetTitle())
 		return
 	}
 	debug.Print("Removing", room.ID, room.GetTitle())
 
 	view.roomList.Remove(room)
-	view.SwitchRoom(view.roomList.Selected())
-
+	t, r := view.roomList.Selected()
+	view.switchRoom(t, r, false)
 	delete(view.rooms, room.ID)
+	view.roomsLock.Unlock()
 
 	view.parent.Render()
 }
 
+func (view *MainView) addRoom(room *rooms.Room) *RoomView {
+	if view.roomList.Contains(room.ID) {
+		debug.Print("Add aborted (room exists)", room.ID, room.GetTitle())
+		return nil
+	}
+	debug.Print("Adding", room.ID, room.GetTitle())
+	view.roomList.Add(room)
+	view.roomsLock.Lock()
+	roomView := view.addRoomPage(room)
+	if !view.roomList.HasSelected() {
+		t, r := view.roomList.First()
+		view.switchRoom(t, r, false)
+	}
+	view.roomsLock.Unlock()
+	return roomView
+}
+
 func (view *MainView) SetRooms(rooms map[string]*rooms.Room) {
 	view.roomList.Clear()
+	view.roomsLock.Lock()
 	view.rooms = make(map[string]*RoomView)
 	for _, room := range rooms {
 		if room.HasLeft {
@@ -331,7 +358,9 @@ func (view *MainView) SetRooms(rooms map[string]*rooms.Room) {
 		view.roomList.Add(room)
 		view.addRoomPage(room)
 	}
-	view.SwitchRoom(view.roomList.First())
+	t, r := view.roomList.First()
+	view.switchRoom(t, r, false)
+	view.roomsLock.Unlock()
 }
 
 func (view *MainView) UpdateTags(room *rooms.Room) {
@@ -342,8 +371,8 @@ func (view *MainView) UpdateTags(room *rooms.Room) {
 	view.roomList.Add(room)
 }
 
-func (view *MainView) SetTyping(room string, users []string) {
-	roomView, ok := view.rooms[room]
+func (view *MainView) SetTyping(roomID string, users []string) {
+	roomView, ok := view.getRoomView(roomID, true)
 	if ok {
 		roomView.SetTyping(users)
 		view.parent.Render()
@@ -392,33 +421,27 @@ func (view *MainView) NotifyMessage(room *rooms.Room, message ifc.Message, shoul
 
 func (view *MainView) InitialSyncDone() {
 	view.roomList.Clear()
+	view.roomsLock.RLock()
 	for _, room := range view.rooms {
 		view.roomList.Add(room.Room)
 		room.UpdateUserList()
 	}
+	view.roomsLock.RUnlock()
 }
 
-func (view *MainView) LoadHistory(room string) {
+func (view *MainView) LoadHistory(roomID string) {
 	defer debug.Recover()
-	roomView := view.rooms[room]
-	msgView := roomView.MessageView()
-
-	batch := roomView.Room.PrevBatch
-	lockTime := time.Now().Unix() + 1
-
-	roomView.Room.LockHistory()
-	msgView.LoadingMessages = true
-	defer func() {
-		roomView.Room.UnlockHistory()
-		msgView.LoadingMessages = false
-	}()
-
-	// There's no clean way to try to lock a mutex, so we just check if we still
-	// want to continue after we get the lock. This function should always be ran
-	// in a goroutine, so the blocking doesn't matter.
-	if time.Now().Unix() >= lockTime || batch != roomView.Room.PrevBatch {
+	roomView, ok := view.getRoomView(roomID, true)
+	if !ok {
 		return
 	}
+	msgView := roomView.MessageView()
+
+	if !atomic.CompareAndSwapInt32(&msgView.loadingMessages, 0, 1) {
+		// Locked
+		return
+	}
+	defer atomic.StoreInt32(&msgView.loadingMessages, 0)
 
 	history, err := view.matrix.GetHistory(roomView.Room, 50)
 	if err != nil {

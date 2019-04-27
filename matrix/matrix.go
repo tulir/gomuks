@@ -178,8 +178,10 @@ func (c *Container) UpdatePushRules() {
 	resp, err := pushrules.GetPushRules(c.client)
 	if err != nil {
 		debug.Print("Failed to fetch push rules:", err)
+		c.config.PushRules = &pushrules.PushRuleset{}
+	} else {
+		c.config.PushRules = resp
 	}
-	c.config.PushRules = resp
 	c.config.SavePushRules()
 }
 

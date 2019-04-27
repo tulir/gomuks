@@ -95,7 +95,7 @@ func PrettyPanic(panic interface{}) {
 	var buf bytes.Buffer
 	fmt.Fprintln(&buf, panic)
 	buf.Write(debug.Stack())
-	err := ioutil.WriteFile(traceFile, buf.Bytes(), 0644)
+	err := ioutil.WriteFile(traceFile, buf.Bytes(), 0640)
 
 	if err != nil {
 		fmt.Println("Saving the stack trace to", traceFile, "failed:")

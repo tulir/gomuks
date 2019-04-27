@@ -20,6 +20,8 @@ import (
 	"fmt"
 	"math"
 	"strings"
+	"sync"
+	"sync/atomic"
 
 	"github.com/mattn/go-runewidth"
 
@@ -43,20 +45,24 @@ type MessageView struct {
 	DateFormat      string
 	TimestampFormat string
 	TimestampWidth  int
-	LoadingMessages bool
 
-	widestSender int
-	width        int
-	height       int
-	prevWidth    int
-	prevHeight   int
-	prevMsgCount int
-	prevPrefs    config.UserPreferences
+	// Used for locking
+	loadingMessages int32
 
-	messageIDs map[string]messages.UIMessage
-	messages   []messages.UIMessage
+	_widestSender uint32
+	_width        uint32
+	_height       uint32
+	_prevWidth    uint32
+	_prevHeight   uint32
+	prevMsgCount  int
+	prevPrefs     config.UserPreferences
 
-	msgBuffer []messages.UIMessage
+	messageIDLock sync.RWMutex
+	messageIDs    map[string]messages.UIMessage
+	messagesLock  sync.RWMutex
+	messages      []messages.UIMessage
+	msgBufferLock sync.RWMutex
+	msgBuffer     []messages.UIMessage
 }
 
 func NewMessageView(parent *RoomView) *MessageView {
@@ -72,19 +78,20 @@ func NewMessageView(parent *RoomView) *MessageView {
 		messageIDs: make(map[string]messages.UIMessage),
 		msgBuffer:  make([]messages.UIMessage, 0),
 
-		width:        80,
-		widestSender: 5,
-		prevWidth:    -1,
-		prevHeight:   -1,
-		prevMsgCount: -1,
+		_width:        80,
+		_widestSender: 5,
+		_prevWidth:    0,
+		_prevHeight:   0,
+		prevMsgCount:  -1,
 	}
 }
 
 func (view *MessageView) updateWidestSender(sender string) {
-	if len(sender) > view.widestSender {
-		view.widestSender = len(sender)
-		if view.widestSender > view.MaxSenderWidth {
-			view.widestSender = view.MaxSenderWidth
+	if len(sender) > int(view._widestSender) {
+		if len(sender) > view.MaxSenderWidth {
+			atomic.StoreUint32(&view._widestSender, uint32(view.MaxSenderWidth))
+		} else {
+			atomic.StoreUint32(&view._widestSender, uint32(len(sender)))
 		}
 	}
 }
@@ -109,22 +116,21 @@ func (view *MessageView) AddMessage(ifcMessage ifc.Message, direction MessageDir
 	}
 
 	var oldMsg messages.UIMessage
-	var messageExists bool
-	if oldMsg, messageExists = view.messageIDs[message.ID()]; messageExists {
+	if oldMsg = view.getMessageByID(message.ID()); oldMsg != nil {
 		view.replaceMessage(oldMsg, message)
 		direction = IgnoreMessage
-	} else if oldMsg, messageExists = view.messageIDs[message.TxnID()]; messageExists {
+	} else if oldMsg = view.getMessageByID(message.TxnID()); oldMsg != nil {
 		view.replaceMessage(oldMsg, message)
-		delete(view.messageIDs, message.TxnID())
+		view.deleteMessageID(message.TxnID())
 		direction = IgnoreMessage
 	}
 
 	view.updateWidestSender(message.Sender())
 
-	width := view.width
+	width := view.width()
 	bare := view.config.Preferences.BareMessageView
 	if !bare {
-		width -= view.TimestampWidth + TimestampSenderGap + view.widestSender + SenderMessageGap
+		width -= view.TimestampWidth + TimestampSenderGap + view.widestSender() + SenderMessageGap
 	}
 	message.CalculateBuffer(view.config.Preferences, width)
 
@@ -140,18 +146,22 @@ func (view *MessageView) AddMessage(ifcMessage ifc.Message, direction MessageDir
 		if view.ScrollOffset > 0 {
 			view.ScrollOffset += message.Height()
 		}
+		view.messagesLock.Lock()
 		if len(view.messages) > 0 && !view.messages[len(view.messages)-1].SameDate(message) {
 			view.messages = append(view.messages, makeDateChange(), message)
 		} else {
 			view.messages = append(view.messages, message)
 		}
+		view.messagesLock.Unlock()
 		view.appendBuffer(message)
 	} else if direction == PrependMessage {
+		view.messagesLock.Lock()
 		if len(view.messages) > 0 && !view.messages[0].SameDate(message) {
 			view.messages = append([]messages.UIMessage{message, makeDateChange()}, view.messages...)
 		} else {
 			view.messages = append([]messages.UIMessage{message}, view.messages...)
 		}
+		view.messagesLock.Unlock()
 	} else if oldMsg != nil {
 		view.replaceBuffer(oldMsg, message)
 	} else {
@@ -160,31 +170,62 @@ func (view *MessageView) AddMessage(ifcMessage ifc.Message, direction MessageDir
 	}
 
 	if len(message.ID()) > 0 {
-		view.messageIDs[message.ID()] = message
+		view.setMessageID(message)
 	}
 }
 
+func (view *MessageView) replaceMessage(original messages.UIMessage, new messages.UIMessage) {
+	if len(new.ID()) > 0 {
+		view.setMessageID(new)
+	}
+	view.messagesLock.Lock()
+	for index, msg := range view.messages {
+		if msg == original {
+			view.messages[index] = new
+		}
+	}
+	view.messagesLock.Unlock()
+}
+
+func (view *MessageView) getMessageByID(id string) messages.UIMessage {
+	view.messageIDLock.RLock()
+	defer view.messageIDLock.RUnlock()
+	msg, ok := view.messageIDs[id]
+	if !ok {
+		return nil
+	}
+	return msg
+}
+
+func (view *MessageView) deleteMessageID(id string) {
+	view.messageIDLock.Lock()
+	delete(view.messageIDs, id)
+	view.messageIDLock.Unlock()
+}
+
+func (view *MessageView) setMessageID(message messages.UIMessage) {
+	view.messageIDLock.Lock()
+	view.messageIDs[message.ID()] = message
+	view.messageIDLock.Unlock()
+}
+
 func (view *MessageView) appendBuffer(message messages.UIMessage) {
+	view.msgBufferLock.Lock()
+	view.appendBufferUnlocked(message)
+	view.msgBufferLock.Unlock()
+}
+
+func (view *MessageView) appendBufferUnlocked(message messages.UIMessage) {
 	for i := 0; i < message.Height(); i++ {
 		view.msgBuffer = append(view.msgBuffer, message)
 	}
 	view.prevMsgCount++
 }
 
-func (view *MessageView) replaceMessage(original messages.UIMessage, new messages.UIMessage) {
-	if len(new.ID()) > 0 {
-		view.messageIDs[new.ID()] = new
-	}
-	for index, msg := range view.messages {
-		if msg == original {
-			view.messages[index] = new
-		}
-	}
-}
-
 func (view *MessageView) replaceBuffer(original messages.UIMessage, new messages.UIMessage) {
 	start := -1
 	end := -1
+	view.msgBufferLock.RLock()
 	for index, meta := range view.msgBuffer {
 		if meta == original {
 			if start == -1 {
@@ -195,6 +236,7 @@ func (view *MessageView) replaceBuffer(original messages.UIMessage, new messages
 			break
 		}
 	}
+	view.msgBufferLock.RUnlock()
 
 	if start == -1 {
 		debug.Print("Called replaceBuffer() with message that was not in the buffer:", original)
@@ -208,9 +250,10 @@ func (view *MessageView) replaceBuffer(original messages.UIMessage, new messages
 	}
 
 	if new.Height() == 0 {
-		new.CalculateBuffer(view.prevPrefs, view.prevWidth)
+		new.CalculateBuffer(view.prevPrefs, view.prevWidth())
 	}
 
+	view.msgBufferLock.Lock()
 	if new.Height() != end-start {
 		metaBuffer := view.msgBuffer[0:start]
 		for i := 0; i < new.Height(); i++ {
@@ -222,17 +265,20 @@ func (view *MessageView) replaceBuffer(original messages.UIMessage, new messages
 			view.msgBuffer[i] = new
 		}
 	}
+	view.msgBufferLock.Unlock()
 }
 
 func (view *MessageView) recalculateBuffers() {
 	prefs := view.config.Preferences
-	recalculateMessageBuffers := view.width != view.prevWidth ||
+	recalculateMessageBuffers := view.width() != view.prevWidth() ||
 		view.prevPrefs.BareMessageView != prefs.BareMessageView ||
 		view.prevPrefs.DisableImages != prefs.DisableImages
+	view.messagesLock.RLock()
+	view.msgBufferLock.Lock()
 	if recalculateMessageBuffers || len(view.messages) != view.prevMsgCount {
-		width := view.width
+		width := view.width()
 		if !prefs.BareMessageView {
-			width -= view.TimestampWidth + TimestampSenderGap + view.widestSender + SenderMessageGap
+			width -= view.TimestampWidth + TimestampSenderGap + view.widestSender() + SenderMessageGap
 		}
 		view.msgBuffer = []messages.UIMessage{}
 		view.prevMsgCount = 0
@@ -244,11 +290,12 @@ func (view *MessageView) recalculateBuffers() {
 			if recalculateMessageBuffers {
 				message.CalculateBuffer(prefs, width)
 			}
-			view.appendBuffer(message)
+			view.appendBufferUnlocked(message)
 		}
 	}
-	view.prevHeight = view.height
-	view.prevWidth = view.width
+	view.msgBufferLock.Unlock()
+	view.messagesLock.RUnlock()
+	view.updatePrevSize()
 	view.prevPrefs = prefs
 }
 
@@ -309,19 +356,21 @@ func (view *MessageView) OnMouseEvent(event mauview.MouseEvent) bool {
 		return true
 	case tcell.Button1:
 		x, y := event.Position()
-		line := view.TotalHeight() - view.ScrollOffset - view.height + y
+		line := view.TotalHeight() - view.ScrollOffset - view.Height() + y
 		if line < 0 || line >= view.TotalHeight() {
 			return false
 		}
 
+		view.msgBufferLock.RLock()
 		message := view.msgBuffer[line]
 		var prevMessage messages.UIMessage
 		if y != 0 && line > 0 {
 			prevMessage = view.msgBuffer[line-1]
 		}
+		view.msgBufferLock.RUnlock()
 
 		usernameX := view.TimestampWidth + TimestampSenderGap
-		messageX := usernameX + view.widestSender + SenderMessageGap
+		messageX := usernameX + view.widestSender() + SenderMessageGap
 
 		if x >= messageX {
 			return view.handleMessageClick(message)
@@ -336,30 +385,59 @@ const PaddingAtTop = 5
 
 func (view *MessageView) AddScrollOffset(diff int) {
 	totalHeight := view.TotalHeight()
-	if diff >= 0 && view.ScrollOffset+diff >= totalHeight-view.height+PaddingAtTop {
-		view.ScrollOffset = totalHeight - view.height + PaddingAtTop
+	height := view.Height()
+	if diff >= 0 && view.ScrollOffset+diff >= totalHeight-height+PaddingAtTop {
+		view.ScrollOffset = totalHeight - height + PaddingAtTop
 	} else {
 		view.ScrollOffset += diff
 	}
 
-	if view.ScrollOffset > totalHeight-view.height+PaddingAtTop {
-		view.ScrollOffset = totalHeight - view.height + PaddingAtTop
+	if view.ScrollOffset > totalHeight-height+PaddingAtTop {
+		view.ScrollOffset = totalHeight - height + PaddingAtTop
 	}
 	if view.ScrollOffset < 0 {
 		view.ScrollOffset = 0
 	}
 }
 
+func (view *MessageView) setSize(width, height int) {
+	atomic.StoreUint32(&view._width, uint32(width))
+	atomic.StoreUint32(&view._height, uint32(height))
+}
+
+func (view *MessageView) updatePrevSize() {
+	atomic.StoreUint32(&view._prevWidth, atomic.LoadUint32(&view._width))
+	atomic.StoreUint32(&view._prevHeight, atomic.LoadUint32(&view._height))
+}
+
+func (view *MessageView) prevHeight() int {
+	return int(atomic.LoadUint32(&view._prevHeight))
+}
+
+func (view *MessageView) prevWidth() int {
+	return int(atomic.LoadUint32(&view._prevWidth))
+}
+
+func (view *MessageView) widestSender() int {
+	return int(atomic.LoadUint32(&view._widestSender))
+}
+
 func (view *MessageView) Height() int {
-	return view.height
+	return int(atomic.LoadUint32(&view._height))
+}
+
+func (view *MessageView) width() int {
+	return int(atomic.LoadUint32(&view._width))
 }
 
 func (view *MessageView) TotalHeight() int {
+	view.msgBufferLock.RLock()
+	defer view.msgBufferLock.RUnlock()
 	return len(view.msgBuffer)
 }
 
 func (view *MessageView) IsAtTop() bool {
-	return view.ScrollOffset >= len(view.msgBuffer)-view.height+PaddingAtTop
+	return view.ScrollOffset >= view.TotalHeight()-view.Height()+PaddingAtTop
 }
 
 const (
@@ -407,7 +485,7 @@ func (view *MessageView) getIndexOffset(screen mauview.Screen, height, messageX 
 	indexOffset = view.TotalHeight() - view.ScrollOffset - height
 	if indexOffset <= -PaddingAtTop {
 		message := "Scroll up to load more messages."
-		if view.LoadingMessages {
+		if atomic.LoadInt32(&view.loadingMessages) == 1 {
 			message = "Loading more messages..."
 		}
 		widget.WriteLineSimpleColor(screen, message, messageX, 0, tcell.ColorGreen)
@@ -419,6 +497,7 @@ func (view *MessageView) CapturePlaintext(height int) string {
 	var buf strings.Builder
 	indexOffset := view.TotalHeight() - view.ScrollOffset - height
 	var prevMessage messages.UIMessage
+	view.msgBufferLock.RLock()
 	for line := 0; line < height; line++ {
 		index := indexOffset + line
 		if index < 0 {
@@ -438,27 +517,29 @@ func (view *MessageView) CapturePlaintext(height int) string {
 			prevMessage = message
 		}
 	}
+	view.msgBufferLock.RUnlock()
 	return buf.String()
 }
 
 func (view *MessageView) Draw(screen mauview.Screen) {
-	view.width, view.height = screen.Size()
+	view.setSize(screen.Size())
 	view.recalculateBuffers()
 
+	height := view.Height()
 	if view.TotalHeight() == 0 {
-		widget.WriteLineSimple(screen, "It's quite empty in here.", 0, view.height)
+		widget.WriteLineSimple(screen, "It's quite empty in here.", 0, height)
 		return
 	}
 
 	usernameX := view.TimestampWidth + TimestampSenderGap
-	messageX := usernameX + view.widestSender + SenderMessageGap
+	messageX := usernameX + view.widestSender() + SenderMessageGap
 
 	bareMode := view.config.Preferences.BareMessageView
 	if bareMode {
 		messageX = 0
 	}
 
-	indexOffset := view.getIndexOffset(screen, view.height, messageX)
+	indexOffset := view.getIndexOffset(screen, height, messageX)
 
 	viewStart := 0
 	if indexOffset < 0 {
@@ -466,13 +547,13 @@ func (view *MessageView) Draw(screen mauview.Screen) {
 	}
 
 	if !bareMode {
-		separatorX := usernameX + view.widestSender + SenderSeparatorGap
-		scrollBarHeight, scrollBarPos := view.calculateScrollBar(view.height)
+		separatorX := usernameX + view.widestSender() + SenderSeparatorGap
+		scrollBarHeight, scrollBarPos := view.calculateScrollBar(height)
 
-		for line := viewStart; line < view.height; line++ {
+		for line := viewStart; line < height; line++ {
 			showScrollbar := line-viewStart >= scrollBarPos-scrollBarHeight && line-viewStart < scrollBarPos
-			isTop := line == viewStart && view.ScrollOffset+view.height >= view.TotalHeight()
-			isBottom := line == view.height-1 && view.ScrollOffset == 0
+			isTop := line == viewStart && view.ScrollOffset+height >= view.TotalHeight()
+			isBottom := line == height-1 && view.ScrollOffset == 0
 
 			borderChar, borderStyle := getScrollbarStyle(showScrollbar, isTop, isBottom)
 
@@ -481,7 +562,8 @@ func (view *MessageView) Draw(screen mauview.Screen) {
 	}
 
 	var prevMsg messages.UIMessage
-	for line := viewStart; line < view.height && indexOffset+line < view.TotalHeight(); line++ {
+	view.msgBufferLock.RLock()
+	for line := viewStart; line < height && indexOffset+line < len(view.msgBuffer); line++ {
 		index := indexOffset + line
 
 		msg := view.msgBuffer[index]
@@ -493,7 +575,7 @@ func (view *MessageView) Draw(screen mauview.Screen) {
 			//if !bareMode && (prevMsg == nil || meta.Sender() != prevMsg.Sender()) {
 			widget.WriteLineColor(
 				screen, mauview.AlignRight, msg.Sender(),
-				usernameX, line, view.widestSender,
+				usernameX, line, view.widestSender(),
 				msg.SenderColor())
 			//}
 			prevMsg = msg
@@ -502,7 +584,8 @@ func (view *MessageView) Draw(screen mauview.Screen) {
 		for i := index - 1; i >= 0 && view.msgBuffer[i] == msg; i-- {
 			line--
 		}
-		msg.Draw(mauview.NewProxyScreen(screen, messageX, line, view.width-messageX, msg.Height()))
+		msg.Draw(mauview.NewProxyScreen(screen, messageX, line, view.width()-messageX, msg.Height()))
 		line += msg.Height() - 1
 	}
+	view.msgBufferLock.RUnlock()
 }

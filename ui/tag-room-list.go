@@ -277,7 +277,7 @@ func (trl *TagRoomList) Draw(screen mauview.Screen) {
 	screen.SetCell(width-1, 0, tcell.StyleDefault, '▼')
 
 	y := 1
-	for i := trl.Length() - 1; i >= 0; i-- {
+	for i := len(items) - 1; i >= 0; i-- {
 		if y >= height {
 			return
 		}

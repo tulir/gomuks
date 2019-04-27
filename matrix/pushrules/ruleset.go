@@ -75,7 +75,7 @@ func (rs *PushRuleset) MarshalJSON() ([]byte, error) {
 
 // DefaultPushActions is the value returned if none of the rule
 // collections in a Ruleset match the event given to GetActions()
-var DefaultPushActions = make(PushActionArray, 0)
+var DefaultPushActions = PushActionArray{&PushAction{Action: ActionDontNotify}}
 
 // GetActions matches the given event against all of the push rule
 // collections in this push ruleset in the order of priority as
@@ -85,6 +85,9 @@ func (rs *PushRuleset) GetActions(room Room, event *mautrix.Event) (match PushAc
 	arrays := []PushRuleCollection{rs.Override, rs.Content, rs.Room, rs.Sender, rs.Underride}
 	// Loop until one of the push rule collections matches the room/event combo.
 	for _, pra := range arrays {
+		if pra == nil {
+			continue
+		}
 		if match = pra.GetActions(room, event); match != nil {
 			// Match found, return it.
 			return
