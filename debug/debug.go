@@ -50,9 +50,9 @@ func Initialize() {
 		if err != nil {
 			panic(err)
 		}
+		_, _ = fmt.Fprintf(writer, "======================= Debug init @ %s =======================\n", time.Now().Format("2006-01-02 15:04:05"))
 	}
 
-	_, _ = fmt.Fprintf(writer, "======================= Debug init @ %s =======================\n", time.Now().Format("2006-01-02 15:04:05"))
 	if DeadlockDetection {
 		deadlocks, err := os.OpenFile(filepath.Join(LogDirectory, "deadlock.log"), os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0640)
 		if err != nil {
