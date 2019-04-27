@@ -28,25 +28,36 @@ or compile from source:
 Simply pull changes (`git pull`) and run `go build` again to update.
 
 ## Developing
-For debugging, use `tail -f /tmp/gomuks-debug.log` and write to it using the methods in the `maunium.net/go/gomuks/debug` package:
+Set `DEBUG=1` to enable partial deadlock detection and to write panics to stdout instead of a file.
+
+To build and run with [race detection](https://golang.org/doc/articles/race_detector.html),
+use `go install -race` and set `GORACE='history_size=7 log_path=/tmp/gomuks/race.log'`
+when starting gomuks, then check `/tmp/gomuks/race.log.<pid>`. Note that race detection
+will use a lot of extra resources.
+
+For debugging, use `tail -f /tmp/gomuks/debug.log` and write to it using the
+methods in the `maunium.net/go/gomuks/debug` package:
 ```go
+package foo
+
 import (
 	"maunium.net/go/gomuks/debug"
 )
-...
+
 func Foo() {
 	debug.Print("WHY ISN'T IT WORKING?!?!?")
+	debug.PrintStack()
 }
 ```
 
 ## Usage
 - switch rooms - `Ctrl + ↑` `Ctrl + ↓` `Alt + ↑` `Alt + ↓`
-- scroll chat (line) - `↑` `↓`
+- ~~scroll chat (line) - `↑` `↓`~~
 - scroll chat (page) - `PgUp` `PgDown`
 - jump to room - `Alt + Enter`, then `Tab` and `Enter` to navigate and select room
 
 ### Commands
-* `/help` - Is a known command
+* `/help` - View command list
 * `/me <text>` - Send an emote
 * `/quit` - Close gomuks
 * `/clearcache` - Clear room state and close gomuks
@@ -56,3 +67,5 @@ func Foo() {
 * `/logout` - Log out, clear caches and go back to the login view
 * `/send <room id> <event type> <content>` - Send a custom event
 * `/setstate <room id> <event type> <state key/-> <content>` - Change room state
+* `/msend <event type> <content>` - Send a custom event to the current room
+* `/msetstate <event type> <state key/-> <content>` - Change room state in the current room
