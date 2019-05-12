@@ -323,7 +323,7 @@ func (parser *htmlParser) singleNodeToEntity(node *html.Node) Entity {
 	switch node.Type {
 	case html.TextNode:
 		if !parser.keepLinebreak {
-			node.Data = strings.ReplaceAll(node.Data, "\n", "")
+			node.Data = strings.Replace(node.Data, "\n", "", -1)
 		}
 		if len(node.Data) == 0 {
 			return nil
@@ -385,7 +385,7 @@ const TabLength = 4
 func Parse(room *rooms.Room, evt *mautrix.Event, senderDisplayname string) Entity {
 	htmlData := evt.Content.FormattedBody
 	if evt.Content.Format != mautrix.FormatHTML {
-		htmlData = strings.ReplaceAll(html.EscapeString(evt.Content.Body), "\n", "<br/>")
+		htmlData = strings.Replace(html.EscapeString(evt.Content.Body), "\n", "<br/>", -1)
 	}
 	htmlData = strings.Replace(htmlData, "\t", strings.Repeat(" ", TabLength), -1)
 

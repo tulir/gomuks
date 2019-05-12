@@ -106,5 +106,5 @@ func (hw *HTMLMessage) String() string {
 	return fmt.Sprintf("&messages.HTMLMessage{\n" +
 		"    Base=%s,\n" +
 		"    Root=||\n%s\n" +
-		"}", strings.ReplaceAll(hw.BaseMessage.String(), "\n", "\n    "), hw.Root.String())
+		"}", strings.Replace(hw.BaseMessage.String(), "\n", "\n    ", -1), hw.Root.String())
 }
