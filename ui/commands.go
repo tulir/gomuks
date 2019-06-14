@@ -27,8 +27,9 @@ import (
 
 	"github.com/lucasb-eyer/go-colorful"
 
-	"maunium.net/go/gomuks/debug"
 	"maunium.net/go/mautrix"
+
+	"maunium.net/go/gomuks/debug"
 )
 
 func cmdMe(cmd *Command) {
@@ -122,6 +123,7 @@ func cmdHelp(cmd *Command) {
 /rainbow <message> - Send a rainbow message (markdown not supported).
 
 /create [room name]  - Create a room.
+/pm <user id> <...>  - Create a private chat with the given user(s).
 /join <room address> - Join a room.
 /leave               - Leave the current room.
 
@@ -201,13 +203,28 @@ func cmdKick(cmd *Command) {
 		debug.Print("Error in kick call:", err)
 		debug.Print("Failed to kick user:", err)
 	}
-
 }
 
 func cmdCreateRoom(cmd *Command) {
 	req := &mautrix.ReqCreateRoom{}
 	if len(cmd.Args) > 0 {
 		req.Name = strings.Join(cmd.Args, " ")
+	}
+	room, err := cmd.Matrix.CreateRoom(req)
+	if err != nil {
+		cmd.Reply("Failed to create room:", err)
+		return
+	}
+	cmd.MainView.SwitchRoom("", room)
+}
+
+func cmdPrivateMessage(cmd *Command) {
+	if len(cmd.Args) == 0 {
+		cmd.Reply("Usage: /pm <user id> [more user ids...]")
+	}
+	req := &mautrix.ReqCreateRoom{
+		Preset: "trusted_private_chat",
+		Invite: cmd.Args,
 	}
 	room, err := cmd.Matrix.CreateRoom(req)
 	if err != nil {
