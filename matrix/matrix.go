@@ -538,6 +538,16 @@ func (c *Container) SendTyping(roomID string, typing bool) {
 	}
 }
 
+// CreateRoom attempts to create a new room and join the user.
+func (c *Container) CreateRoom(req *mautrix.ReqCreateRoom) (*rooms.Room, error) {
+	resp, err := c.client.CreateRoom(req)
+	if err != nil {
+		return nil, err
+	}
+	room := c.GetRoom(resp.RoomID)
+	return room, nil
+}
+
 // JoinRoom makes the current user try to join the given room.
 func (c *Container) JoinRoom(roomID, server string) (*rooms.Room, error) {
 	resp, err := c.client.JoinRoom(roomID, server, nil)

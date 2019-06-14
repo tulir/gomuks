@@ -121,6 +121,7 @@ func cmdHelp(cmd *Command) {
 /me <message>      - Send an emote message.
 /rainbow <message> - Send a rainbow message (markdown not supported).
 
+/create <Room Name> <RoomAlias> - Create a room with associated alias. (Alias must not contain spaces.)
 /join <room address> - Join a room.
 /leave               - Leave the current room.
 
@@ -201,6 +202,33 @@ func cmdKick(cmd *Command) {
 		debug.Print("Failed to kick user:", err)
 	}
 
+}
+
+func cmdCreateRoom(cmd *Command) {
+	if len(cmd.Args) < 2 {
+		cmd.Reply("Usage: /create <Room Name> <RoomAlias> (Alias must not contain spaces.)")
+		return
+	}
+	// Get room name as one string from cmd.Args
+	roomName := ""
+	for i, v := range cmd.Args {
+		if i == len(cmd.Args)-1 {
+			break
+		}
+		roomName += fmt.Sprintf("%s ", v)
+	}
+	last := len(cmd.Args) - 1 // last arg for room alias
+	// Build the ReqCreateRoom Struct
+	// https://godoc.org/maunium.net/go/mautrix#ReqCreateRoom
+	req := &mautrix.ReqCreateRoom{
+		Name:          strings.TrimSpace(roomName),
+		RoomAliasName: cmd.Args[last],
+	}
+	_, err := cmd.Matrix.Client().CreateRoom(req)
+	debug.Print("Create room error:", err)
+	if err == nil {
+		cmd.Reply("The room has been created.")
+	}
 }
 
 func cmdJoin(cmd *Command) {

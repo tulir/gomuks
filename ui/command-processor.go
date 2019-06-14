@@ -90,6 +90,7 @@ func NewCommandProcessor(parent *MainView) *CommandProcessor {
 			"quit":            cmdQuit,
 			"clearcache":      cmdClearCache,
 			"leave":           cmdLeave,
+			"create":          cmdCreateRoom,
 			"join":            cmdJoin,
 			"kick":            cmdKick,
 			"ban":             cmdBan,
