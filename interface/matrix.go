@@ -40,6 +40,7 @@ type MatrixContainer interface {
 	MarkRead(roomID, eventID string)
 	JoinRoom(roomID, server string) (*rooms.Room, error)
 	LeaveRoom(roomID string) error
+	CreateRoom(req *mautrix.ReqCreateRoom) (*rooms.Room, error)
 
 	GetHistory(room *rooms.Room, limit int) ([]*mautrix.Event, error)
 	GetEvent(room *rooms.Room, eventID string) (*mautrix.Event, error)
