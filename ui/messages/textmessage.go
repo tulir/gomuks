@@ -20,72 +20,82 @@ import (
 	"fmt"
 	"time"
 
+	ifc "maunium.net/go/gomuks/interface"
 	"maunium.net/go/mautrix"
+	"maunium.net/go/mauview"
 
 	"maunium.net/go/gomuks/config"
 	"maunium.net/go/gomuks/ui/messages/tstring"
 )
 
 type TextMessage struct {
-	BaseMessage
-	cache   tstring.TString
-	MsgText string
+	cache  tstring.TString
+	buffer []tstring.TString
+	Text   string
 }
 
 // NewTextMessage creates a new UITextMessage object with the provided values and the default state.
-func NewTextMessage(event *mautrix.Event, displayname string, text string) UIMessage {
-	return &TextMessage{
-		BaseMessage: newBaseMessage(event, displayname),
-		MsgText:     text,
-	}
+func NewTextMessage(event *mautrix.Event, displayname string, text string) *UIMessage {
+	return newUIMessage(event, displayname, &TextMessage{
+		Text: text,
+	})
 }
 
-func NewServiceMessage(text string) UIMessage {
-	return &TextMessage{
-		BaseMessage: BaseMessage{
-			MsgSenderID:  "*",
-			MsgSender:    "*",
-			MsgTimestamp: time.Now(),
-			MsgIsService: true,
+func NewServiceMessage(text string) *UIMessage {
+	return &UIMessage{
+		SenderID:   "*",
+		SenderName: "*",
+		Timestamp:  time.Now(),
+		IsService:  true,
+		Renderer: &TextMessage{
+			Text: text,
 		},
-		MsgText: text,
 	}
 }
 
-func (msg *TextMessage) Clone() UIMessage {
+func (msg *TextMessage) Clone() MessageRenderer {
 	return &TextMessage{
-		BaseMessage: msg.BaseMessage.clone(),
-		MsgText:     msg.MsgText,
+		Text: msg.Text,
 	}
 }
 
-func (msg *TextMessage) getCache() tstring.TString {
+func (msg *TextMessage) getCache(uiMsg *UIMessage) tstring.TString {
 	if msg.cache == nil {
-		switch msg.MsgType {
+		switch uiMsg.Type {
 		case "m.emote":
-			msg.cache = tstring.NewColorTString(fmt.Sprintf("* %s %s", msg.MsgSender, msg.MsgText), msg.TextColor())
-			msg.cache.Colorize(0, len(msg.MsgSender)+2, msg.SenderColor())
+			msg.cache = tstring.NewColorTString(fmt.Sprintf("* %s %s", uiMsg.SenderName, msg.Text), uiMsg.TextColor())
+			msg.cache.Colorize(0, len(uiMsg.SenderName)+2, uiMsg.SenderColor())
 		default:
-			msg.cache = tstring.NewColorTString(msg.MsgText, msg.TextColor())
+			msg.cache = tstring.NewColorTString(msg.Text, uiMsg.TextColor())
 		}
 	}
 	return msg.cache
 }
 
-func (msg *TextMessage) SetIsHighlight(isHighlight bool) {
-	msg.BaseMessage.SetIsHighlight(isHighlight)
-	msg.cache = nil
-}
-
 func (msg *TextMessage) NotificationContent() string {
-	return msg.MsgText
+	return msg.Text
 }
 
 func (msg *TextMessage) PlainText() string {
-	return msg.MsgText
+	return msg.Text
 }
 
-func (msg *TextMessage) CalculateBuffer(prefs config.UserPreferences, width int) {
-	msg.CalculateReplyBuffer(prefs, width)
-	msg.calculateBufferWithText(prefs, msg.getCache(), width)
+func (msg *TextMessage) String() string {
+	return fmt.Sprintf(`&messages.TextMessage{Text="%s"}`, msg.Text)
 }
+
+func (msg *TextMessage) CalculateBuffer(prefs config.UserPreferences, width int, uiMsg *UIMessage) {
+	msg.buffer = calculateBufferWithText(prefs, msg.getCache(uiMsg), width, uiMsg)
+}
+
+func (msg *TextMessage) Height() int {
+	return len(msg.buffer)
+}
+
+func (msg *TextMessage) Draw(screen mauview.Screen) {
+	for y, line := range msg.buffer {
+		line.Draw(screen, 0, y)
+	}
+}
+
+func (msg *TextMessage) RegisterMatrix(matrix ifc.MatrixContainer) {}

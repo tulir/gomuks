@@ -86,26 +86,26 @@ func cmdHeapProfile(cmd *Command) {
 func cmdRainbow(cmd *Command) {
 	text := strings.Join(cmd.Args, " ")
 	var html strings.Builder
-	fmt.Fprint(&html, "**🌈** ")
+	_, _ = fmt.Fprint(&html, "**🌈** ")
 	for i, char := range text {
 		if unicode.IsSpace(char) {
 			html.WriteRune(char)
 			continue
 		}
 		color := rainbow.GetInterpolatedColorFor(float64(i) / float64(len(text))).Hex()
-		fmt.Fprintf(&html, "<font color=\"%s\">%c</font>", color, char)
+		_, _ = fmt.Fprintf(&html, "<font color=\"%s\">%c</font>", color, char)
 	}
 	go cmd.Room.SendMessage("m.text", html.String())
 	cmd.UI.Render()
 }
 
 func cmdQuit(cmd *Command) {
-	cmd.Gomuks.Stop()
+	cmd.Gomuks.Stop(true)
 }
 
 func cmdClearCache(cmd *Command) {
 	cmd.Config.Clear()
-	cmd.Gomuks.Stop()
+	cmd.Gomuks.Stop(false)
 }
 
 func cmdUnknownCommand(cmd *Command) {

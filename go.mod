@@ -14,6 +14,7 @@ require (
 	github.com/mattn/go-runewidth v0.0.4
 	github.com/nu7hatch/gouuid v0.0.0-20131221200532-179d4d0c4d8d // indirect
 	github.com/petermattis/goid v0.0.0-20180202154549-b0b1615b78e5 // indirect
+	github.com/pkg/errors v0.8.1
 	github.com/sasha-s/go-deadlock v0.2.0
 	github.com/stretchr/testify v1.3.0
 	go.etcd.io/bbolt v1.3.2
@@ -24,9 +25,15 @@ require (
 	gopkg.in/russross/blackfriday.v2 v2.0.1
 	gopkg.in/toast.v1 v1.0.0-20180812000517-0a84660828b2
 	gopkg.in/yaml.v2 v2.2.2
-	maunium.net/go/mautrix v0.1.0-alpha.3.0.20190606153009-ca5d9535b6cc
+	maunium.net/go/mautrix v0.1.0-alpha.3.0.20190607192515-d505052a02ac
 	maunium.net/go/mauview v0.0.0-20190606152754-de9e0a754a5d
 	maunium.net/go/tcell v0.0.0-20190606152714-9a88fc07b3ed
 )
 
 replace gopkg.in/russross/blackfriday.v2 => github.com/russross/blackfriday/v2 v2.0.1
+
+replace (
+	maunium.net/go/mautrix => ../mautrix-go
+	maunium.net/go/mauview => ../../Go/mauview
+	maunium.net/go/tcell => ../../Go/tcell
+)

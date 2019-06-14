@@ -25,6 +25,7 @@ import (
 	"github.com/mattn/go-runewidth"
 	sync "github.com/sasha-s/go-deadlock"
 
+	"maunium.net/go/mautrix"
 	"maunium.net/go/mauview"
 	"maunium.net/go/tcell"
 
@@ -58,11 +59,13 @@ type MessageView struct {
 	prevPrefs     config.UserPreferences
 
 	messageIDLock sync.RWMutex
-	messageIDs    map[string]messages.UIMessage
+	messageIDs    map[string]*messages.UIMessage
 	messagesLock  sync.RWMutex
-	messages      []messages.UIMessage
+	messages      []*messages.UIMessage
 	msgBufferLock sync.RWMutex
-	msgBuffer     []messages.UIMessage
+	msgBuffer     []*messages.UIMessage
+
+	initialHistoryLoaded bool
 }
 
 func NewMessageView(parent *RoomView) *MessageView {
@@ -74,9 +77,9 @@ func NewMessageView(parent *RoomView) *MessageView {
 		TimestampWidth: len(messages.TimeFormat),
 		ScrollOffset:   0,
 
-		messages:   make([]messages.UIMessage, 0),
-		messageIDs: make(map[string]messages.UIMessage),
-		msgBuffer:  make([]messages.UIMessage, 0),
+		messages:   make([]*messages.UIMessage, 0),
+		messageIDs: make(map[string]*messages.UIMessage),
+		msgBuffer:  make([]*messages.UIMessage, 0),
 
 		_width:        80,
 		_widestSender: 5,
@@ -108,20 +111,22 @@ func (view *MessageView) AddMessage(ifcMessage ifc.Message, direction MessageDir
 	if ifcMessage == nil {
 		return
 	}
-	message, ok := ifcMessage.(messages.UIMessage)
-	if !ok {
+	message, ok := ifcMessage.(*messages.UIMessage)
+	if !ok || message == nil {
 		debug.Print("[Warning] Passed non-UIMessage ifc.Message object to AddMessage().")
 		debug.PrintStack()
 		return
 	}
 
-	var oldMsg messages.UIMessage
-	if oldMsg = view.getMessageByID(message.ID()); oldMsg != nil {
+	var oldMsg *messages.UIMessage
+	if oldMsg = view.getMessageByID(message.EventID); oldMsg != nil {
 		view.replaceMessage(oldMsg, message)
 		direction = IgnoreMessage
-	} else if oldMsg = view.getMessageByID(message.TxnID()); oldMsg != nil {
+	} else if oldMsg = view.getMessageByID(message.TxnID); oldMsg != nil {
 		view.replaceMessage(oldMsg, message)
-		view.deleteMessageID(message.TxnID())
+		view.deleteMessageID(message.TxnID)
+		direction = IgnoreMessage
+	} else if oldMsg = view.getMessageByID(message.Relation.EventID); oldMsg != nil {
 		direction = IgnoreMessage
 	}
 
@@ -134,7 +139,7 @@ func (view *MessageView) AddMessage(ifcMessage ifc.Message, direction MessageDir
 	}
 	message.CalculateBuffer(view.config.Preferences, width)
 
-	makeDateChange := func() messages.UIMessage {
+	makeDateChange := func() *messages.UIMessage {
 		dateChange := messages.NewDateChangeMessage(
 			fmt.Sprintf("Date changed to %s", message.FormatDate()))
 		dateChange.CalculateBuffer(view.config.Preferences, width)
@@ -157,9 +162,9 @@ func (view *MessageView) AddMessage(ifcMessage ifc.Message, direction MessageDir
 	} else if direction == PrependMessage {
 		view.messagesLock.Lock()
 		if len(view.messages) > 0 && !view.messages[0].SameDate(message) {
-			view.messages = append([]messages.UIMessage{message, makeDateChange()}, view.messages...)
+			view.messages = append([]*messages.UIMessage{message, makeDateChange()}, view.messages...)
 		} else {
-			view.messages = append([]messages.UIMessage{message}, view.messages...)
+			view.messages = append([]*messages.UIMessage{message}, view.messages...)
 		}
 		view.messagesLock.Unlock()
 	} else if oldMsg != nil {
@@ -174,7 +179,7 @@ func (view *MessageView) AddMessage(ifcMessage ifc.Message, direction MessageDir
 	}
 }
 
-func (view *MessageView) replaceMessage(original messages.UIMessage, new messages.UIMessage) {
+func (view *MessageView) replaceMessage(original *messages.UIMessage, new *messages.UIMessage) {
 	if len(new.ID()) > 0 {
 		view.setMessageID(new)
 	}
@@ -187,7 +192,10 @@ func (view *MessageView) replaceMessage(original messages.UIMessage, new message
 	view.messagesLock.Unlock()
 }
 
-func (view *MessageView) getMessageByID(id string) messages.UIMessage {
+func (view *MessageView) getMessageByID(id string) *messages.UIMessage {
+	if id == "" {
+		return nil
+	}
 	view.messageIDLock.RLock()
 	defer view.messageIDLock.RUnlock()
 	msg, ok := view.messageIDs[id]
@@ -198,31 +206,37 @@ func (view *MessageView) getMessageByID(id string) messages.UIMessage {
 }
 
 func (view *MessageView) deleteMessageID(id string) {
+	if id == "" {
+		return
+	}
 	view.messageIDLock.Lock()
 	delete(view.messageIDs, id)
 	view.messageIDLock.Unlock()
 }
 
-func (view *MessageView) setMessageID(message messages.UIMessage) {
+func (view *MessageView) setMessageID(message *messages.UIMessage) {
+	if message.ID() == "" {
+		return
+	}
 	view.messageIDLock.Lock()
 	view.messageIDs[message.ID()] = message
 	view.messageIDLock.Unlock()
 }
 
-func (view *MessageView) appendBuffer(message messages.UIMessage) {
+func (view *MessageView) appendBuffer(message *messages.UIMessage) {
 	view.msgBufferLock.Lock()
 	view.appendBufferUnlocked(message)
 	view.msgBufferLock.Unlock()
 }
 
-func (view *MessageView) appendBufferUnlocked(message messages.UIMessage) {
+func (view *MessageView) appendBufferUnlocked(message *messages.UIMessage) {
 	for i := 0; i < message.Height(); i++ {
 		view.msgBuffer = append(view.msgBuffer, message)
 	}
 	view.prevMsgCount++
 }
 
-func (view *MessageView) replaceBuffer(original messages.UIMessage, new messages.UIMessage) {
+func (view *MessageView) replaceBuffer(original *messages.UIMessage, new *messages.UIMessage) {
 	start := -1
 	end := -1
 	view.msgBufferLock.RLock()
@@ -240,7 +254,7 @@ func (view *MessageView) replaceBuffer(original messages.UIMessage, new messages
 
 	if start == -1 {
 		debug.Print("Called replaceBuffer() with message that was not in the buffer:", original)
-		debug.PrintStack()
+		//debug.PrintStack()
 		view.appendBuffer(new)
 		return
 	}
@@ -280,7 +294,7 @@ func (view *MessageView) recalculateBuffers() {
 		if !prefs.BareMessageView {
 			width -= view.TimestampWidth + TimestampSenderGap + view.widestSender() + SenderMessageGap
 		}
-		view.msgBuffer = []messages.UIMessage{}
+		view.msgBuffer = []*messages.UIMessage{}
 		view.prevMsgCount = 0
 		for i, message := range view.messages {
 			if message == nil {
@@ -299,17 +313,17 @@ func (view *MessageView) recalculateBuffers() {
 	view.prevPrefs = prefs
 }
 
-func (view *MessageView) handleMessageClick(message messages.UIMessage) bool {
-	switch message := message.(type) {
+func (view *MessageView) handleMessageClick(message *messages.UIMessage) bool {
+	switch msg := message.Renderer.(type) {
 	case *messages.ImageMessage:
-		open.Open(message.Path())
-	case messages.UIMessage:
+		open.Open(msg.Path())
+	default:
 		debug.Print("Message clicked:", message)
 	}
 	return false
 }
 
-func (view *MessageView) handleUsernameClick(message messages.UIMessage, prevMessage messages.UIMessage) bool {
+func (view *MessageView) handleUsernameClick(message *messages.UIMessage, prevMessage *messages.UIMessage) bool {
 	if prevMessage != nil && prevMessage.Sender() == message.Sender() {
 		return false
 	}
@@ -317,7 +331,7 @@ func (view *MessageView) handleUsernameClick(message messages.UIMessage, prevMes
 	if len(message.Sender()) == 0 {
 		return false
 	}
-	sender := fmt.Sprintf("[%s](https://matrix.to/#/%s)", message.Sender(), message.SenderID())
+	sender := fmt.Sprintf("[%s](https://matrix.to/#/%s)", message.Sender(), message.SenderID)
 
 	cursorPos := view.parent.input.GetCursorOffset()
 	text := view.parent.input.GetText()
@@ -363,7 +377,7 @@ func (view *MessageView) OnMouseEvent(event mauview.MouseEvent) bool {
 
 		view.msgBufferLock.RLock()
 		message := view.msgBuffer[line]
-		var prevMessage messages.UIMessage
+		var prevMessage *messages.UIMessage
 		if y != 0 && line > 0 {
 			prevMessage = view.msgBuffer[line-1]
 		}
@@ -496,7 +510,7 @@ func (view *MessageView) getIndexOffset(screen mauview.Screen, height, messageX 
 func (view *MessageView) CapturePlaintext(height int) string {
 	var buf strings.Builder
 	indexOffset := view.TotalHeight() - view.ScrollOffset - height
-	var prevMessage messages.UIMessage
+	var prevMessage *messages.UIMessage
 	view.msgBufferLock.RLock()
 	for line := 0; line < height; line++ {
 		index := indexOffset + line
@@ -504,14 +518,13 @@ func (view *MessageView) CapturePlaintext(height int) string {
 			continue
 		}
 
-		meta := view.msgBuffer[index]
-		message, ok := meta.(messages.UIMessage)
-		if ok && message != prevMessage {
+		message := view.msgBuffer[index]
+		if message != prevMessage {
 			var sender string
 			if len(message.Sender()) > 0 {
 				sender = fmt.Sprintf(" <%s>", message.Sender())
-			} else if message.Type() == "m.emote" {
-				sender = fmt.Sprintf(" * %s", message.RealSender())
+			} else if message.Type == mautrix.MsgEmote {
+				sender = fmt.Sprintf(" * %s", message.SenderName)
 			}
 			fmt.Fprintf(&buf, "%s%s %s\n", message.FormatTime(), sender, message.PlainText())
 			prevMessage = message
@@ -561,7 +574,7 @@ func (view *MessageView) Draw(screen mauview.Screen) {
 		}
 	}
 
-	var prevMsg messages.UIMessage
+	var prevMsg *messages.UIMessage
 	view.msgBufferLock.RLock()
 	for line := viewStart; line < height && indexOffset+line < len(view.msgBuffer); line++ {
 		index := indexOffset + line

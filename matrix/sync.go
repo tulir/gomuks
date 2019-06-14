@@ -107,8 +107,6 @@ func NewGomuksSyncer(session SyncerSession) *GomuksSyncer {
 // ProcessResponse processes a Matrix sync response.
 func (s *GomuksSyncer) ProcessResponse(res *mautrix.RespSync, since string) (err error) {
 	debug.Print("Received sync response")
-//	dat, _ := json.MarshalIndent(res, "", "  ")
-//	debug.Print(string(dat))
 	s.processSyncEvents(nil, res.Presence.Events, EventSourcePresence)
 	s.processSyncEvents(nil, res.AccountData.Events, EventSourceAccountData)
 
@@ -215,6 +213,10 @@ func (s *GomuksSyncer) GetFilterJSON(userID string) json.RawMessage {
 			Timeline: mautrix.FilterPart{
 				Types: []string{
 					"m.room.message",
+					"m.room.encrypted",
+					"m.sticker",
+					"m.reaction",
+
 					"m.room.member",
 					"m.room.name",
 					"m.room.topic",

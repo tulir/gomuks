@@ -53,15 +53,19 @@ type Config struct {
 	AccessToken string `yaml:"access_token"`
 	HS          string `yaml:"homeserver"`
 
-	Dir         string `yaml:"-"`
-	CacheDir    string `yaml:"cache_dir"`
-	HistoryPath string `yaml:"history_path"`
-	MediaDir    string `yaml:"media_dir"`
-	StateDir    string `yaml:"state_dir"`
+	RoomCacheSize int   `yaml:"room_cache_size"`
+	RoomCacheAge  int64 `yaml:"room_cache_age"`
+
+	Dir          string `yaml:"-"`
+	CacheDir     string `yaml:"cache_dir"`
+	HistoryPath  string `yaml:"history_path"`
+	RoomListPath string `yaml:"room_list_path"`
+	MediaDir     string `yaml:"media_dir"`
+	StateDir     string `yaml:"state_dir"`
 
 	Preferences UserPreferences        `yaml:"-"`
 	AuthCache   AuthCache              `yaml:"-"`
-	Rooms       map[string]*rooms.Room `yaml:"-"`
+	Rooms       *rooms.RoomCache       `yaml:"-"`
 	PushRules   *pushrules.PushRuleset `yaml:"-"`
 
 	nosave bool
@@ -70,36 +74,39 @@ type Config struct {
 // NewConfig creates a config that loads data from the given directory.
 func NewConfig(configDir, cacheDir string) *Config {
 	return &Config{
-		Dir:         configDir,
-		CacheDir:    cacheDir,
-		HistoryPath: filepath.Join(cacheDir, "history.db"),
-		StateDir:    filepath.Join(cacheDir, "state"),
-		MediaDir:    filepath.Join(cacheDir, "media"),
+		Dir:          configDir,
+		CacheDir:     cacheDir,
+		HistoryPath:  filepath.Join(cacheDir, "history.db"),
+		RoomListPath: filepath.Join(cacheDir, "rooms.gob.gz"),
+		StateDir:     filepath.Join(cacheDir, "state"),
+		MediaDir:     filepath.Join(cacheDir, "media"),
 
-		Rooms: make(map[string]*rooms.Room),
+		RoomCacheSize: 32,
+		RoomCacheAge:  1 * 60,
 	}
 }
 
 // Clear clears the session cache and removes all history.
 func (config *Config) Clear() {
-	os.Remove(config.HistoryPath)
-	os.RemoveAll(config.StateDir)
-	os.RemoveAll(config.MediaDir)
-	os.RemoveAll(config.CacheDir)
+	_ = os.Remove(config.HistoryPath)
+	_ = os.Remove(config.RoomListPath)
+	_ = os.RemoveAll(config.StateDir)
+	_ = os.RemoveAll(config.MediaDir)
+	_ = os.RemoveAll(config.CacheDir)
 	config.nosave = true
 }
 
 func (config *Config) CreateCacheDirs() {
-	os.MkdirAll(config.CacheDir, 0700)
-	os.MkdirAll(config.StateDir, 0700)
-	os.MkdirAll(config.MediaDir, 0700)
+	_ = os.MkdirAll(config.CacheDir, 0700)
+	_ = os.MkdirAll(config.StateDir, 0700)
+	_ = os.MkdirAll(config.MediaDir, 0700)
 }
 
 func (config *Config) DeleteSession() {
 	config.AuthCache.NextBatch = ""
 	config.AuthCache.InitialSyncDone = false
 	config.AccessToken = ""
-	config.Rooms = make(map[string]*rooms.Room)
+	config.Rooms = rooms.NewRoomCache(config.RoomListPath, config.StateDir, config.RoomCacheSize, config.RoomCacheAge, config.GetUserID)
 	config.PushRules = nil
 
 	config.Clear()
@@ -109,10 +116,14 @@ func (config *Config) DeleteSession() {
 
 func (config *Config) LoadAll() {
 	config.Load()
+	config.Rooms = rooms.NewRoomCache(config.RoomListPath, config.StateDir, config.RoomCacheSize, config.RoomCacheAge, config.GetUserID)
 	config.LoadAuthCache()
 	config.LoadPushRules()
 	config.LoadPreferences()
-	config.LoadRooms()
+	err := config.Rooms.LoadList()
+	if err != nil {
+		panic(err)
+	}
 }
 
 // Load loads the config from config.yaml in the directory given to the config struct.
@@ -126,7 +137,11 @@ func (config *Config) SaveAll() {
 	config.SaveAuthCache()
 	config.SavePushRules()
 	config.SavePreferences()
-	config.SaveRooms()
+	err := config.Rooms.SaveList()
+	if err != nil {
+		panic(err)
+	}
+	config.Rooms.SaveLoadedRooms()
 }
 
 // Save saves this config to config.yaml in the directory given to the config struct.
@@ -161,47 +176,12 @@ func (config *Config) SavePushRules() {
 	config.save("push rules", config.CacheDir, "pushrules.json", &config.PushRules)
 }
 
-func (config *Config) LoadRooms() {
-	os.MkdirAll(config.StateDir, 0700)
-
-	roomFiles, err := ioutil.ReadDir(config.StateDir)
+func (config *Config) load(name, dir, file string, target interface{}) {
+	err := os.MkdirAll(dir, 0700)
 	if err != nil {
-		debug.Print("Failed to list rooms state caches in", config.StateDir)
+		debug.Print("Failed to create", dir)
 		panic(err)
 	}
-
-	for _, roomFile := range roomFiles {
-		if roomFile.IsDir() || !strings.HasSuffix(roomFile.Name(), ".gmxstate") {
-			continue
-		}
-		path := filepath.Join(config.StateDir, roomFile.Name())
-		room := &rooms.Room{}
-		err = room.Load(path)
-		if err != nil {
-			debug.Printf("Failed to load room state cache from %s: %v", path, err)
-			continue
-		}
-		config.Rooms[room.ID] = room
-	}
-}
-
-func (config *Config) SaveRooms() {
-	if config.nosave {
-		return
-	}
-
-	os.MkdirAll(config.StateDir, 0700)
-	for _, room := range config.Rooms {
-		path := config.getRoomCachePath(room)
-		err := room.Save(path)
-		if err != nil {
-			debug.Printf("Failed to save room state cache to file %s: %v", path, err)
-		}
-	}
-}
-
-func (config *Config) load(name, dir, file string, target interface{}) {
-	os.MkdirAll(dir, 0700)
 
 	path := filepath.Join(dir, file)
 	data, err := ioutil.ReadFile(path)
@@ -229,9 +209,12 @@ func (config *Config) save(name, dir, file string, source interface{}) {
 		return
 	}
 
-	os.MkdirAll(dir, 0700)
+	err := os.MkdirAll(dir, 0700)
+	if err != nil {
+		debug.Print("Failed to create", dir)
+		panic(err)
+	}
 	var data []byte
-	var err error
 	if strings.HasSuffix(file, ".yaml") {
 		data, err = yaml.Marshal(source)
 	} else {
@@ -272,30 +255,14 @@ func (config *Config) LoadNextBatch(_ string) string {
 	return config.AuthCache.NextBatch
 }
 
-func (config *Config) GetRoom(roomID string) *rooms.Room {
-	room, _ := config.Rooms[roomID]
-	if room == nil {
-		room = rooms.NewRoom(roomID, config.UserID)
-		config.Rooms[room.ID] = room
-	}
-	return room
-}
-
-func (config *Config) getRoomCachePath(room *rooms.Room) string {
-	return filepath.Join(config.StateDir, room.ID+".gmxstate")
-}
-
-func (config *Config) PutRoom(room *rooms.Room) {
-	config.Rooms[room.ID] = room
-	room.Save(config.getRoomCachePath(room))
-}
-
 func (config *Config) SaveRoom(room *mautrix.Room) {
-	gmxRoom := config.GetRoom(room.ID)
-	gmxRoom.Room = room
-	gmxRoom.Save(config.getRoomCachePath(gmxRoom))
+	panic("SaveRoom is not supported")
 }
 
 func (config *Config) LoadRoom(roomID string) *mautrix.Room {
-	return config.GetRoom(roomID).Room
+	panic("LoadRoom is not supported")
+}
+
+func (config *Config) GetRoom(roomID string) *rooms.Room {
+	return config.Rooms.GetOrCreate(roomID)
 }

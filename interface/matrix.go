@@ -45,6 +45,7 @@ type MatrixContainer interface {
 	GetHistory(room *rooms.Room, limit int) ([]*mautrix.Event, error)
 	GetEvent(room *rooms.Room, eventID string) (*mautrix.Event, error)
 	GetRoom(roomID string) *rooms.Room
+	GetOrCreateRoom(roomID string) *rooms.Room
 
 	Download(mxcURL string) ([]byte, string, string, error)
 	GetDownloadURL(homeserver, fileID string) string

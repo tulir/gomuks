@@ -18,6 +18,7 @@ package matrix
 
 import (
 	"bytes"
+	"compress/gzip"
 	"encoding/binary"
 	"encoding/gob"
 
@@ -27,6 +28,10 @@ import (
 	"maunium.net/go/gomuks/matrix/rooms"
 	"maunium.net/go/mautrix"
 )
+
+func init() {
+	gob.Register(&mautrix.Event{})
+}
 
 type HistoryManager struct {
 	sync.Mutex
@@ -226,13 +231,27 @@ func btoi(b []byte) uint64 {
 
 func marshalEvent(event *mautrix.Event) ([]byte, error) {
 	var buf bytes.Buffer
-	err := gob.NewEncoder(&buf).Encode(event)
-	return buf.Bytes(), err
+	enc := gzip.NewWriter(&buf)
+	if err := gob.NewEncoder(enc).Encode(event); err != nil {
+		_ = enc.Close()
+		return nil, err
+	} else if err := enc.Close(); err != nil {
+		return nil, err
+	}
+	return buf.Bytes(), nil
 }
 
 func unmarshalEvent(data []byte) (*mautrix.Event, error) {
 	event := &mautrix.Event{}
-	return event, gob.NewDecoder(bytes.NewReader(data)).Decode(event)
+	if cmpReader, err := gzip.NewReader(bytes.NewReader(data)); err != nil {
+		return nil, err
+	} else if err := gob.NewDecoder(cmpReader).Decode(event); err != nil {
+		_ = cmpReader.Close()
+		return nil, err
+	} else if err := cmpReader.Close(); err != nil {
+		return nil, err
+	}
+	return event, nil
 }
 
 func put(streams, eventIDs *bolt.Bucket, event *mautrix.Event, key uint64) error {

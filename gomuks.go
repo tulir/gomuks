@@ -81,13 +81,15 @@ func (gmx *Gomuks) StartAutosave() {
 
 // Stop stops the Matrix syncer, the tview app and the autosave goroutine,
 // then saves everything and calls os.Exit(0).
-func (gmx *Gomuks) Stop() {
+func (gmx *Gomuks) Stop(save bool) {
 	debug.Print("Disconnecting from Matrix...")
 	gmx.matrix.Stop()
 	debug.Print("Cleaning up UI...")
 	gmx.ui.Stop()
 	gmx.stop <- true
-	gmx.Save()
+	if save {
+		gmx.Save()
+	}
 	os.Exit(0)
 }
 
@@ -102,7 +104,7 @@ func (gmx *Gomuks) Start() {
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
 	go func() {
 		<-c
-		gmx.Stop()
+		gmx.Stop(true)
 	}()
 
 	go gmx.StartAutosave()

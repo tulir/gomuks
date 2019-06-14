@@ -17,9 +17,12 @@
 package messages
 
 import (
+	"fmt"
 	"time"
 
+	ifc "maunium.net/go/gomuks/interface"
 	"maunium.net/go/mautrix"
+	"maunium.net/go/mauview"
 	"maunium.net/go/tcell"
 
 	"maunium.net/go/gomuks/config"
@@ -27,55 +30,63 @@ import (
 )
 
 type ExpandedTextMessage struct {
-	BaseMessage
-	MsgText tstring.TString
+	Text   tstring.TString
+	buffer []tstring.TString
 }
 
 // NewExpandedTextMessage creates a new ExpandedTextMessage object with the provided values and the default state.
-func NewExpandedTextMessage(event *mautrix.Event, displayname string, text tstring.TString) UIMessage {
-	return &ExpandedTextMessage{
-		BaseMessage: newBaseMessage(event, displayname),
-		MsgText:     text,
-	}
+func NewExpandedTextMessage(event *mautrix.Event, displayname string, text tstring.TString) *UIMessage {
+	return newUIMessage(event, displayname, &ExpandedTextMessage{
+		Text: text,
+	})
 }
 
-func NewDateChangeMessage(text string) UIMessage {
+func NewDateChangeMessage(text string) *UIMessage {
 	midnight := time.Now()
 	midnight = time.Date(midnight.Year(), midnight.Month(), midnight.Day(),
 		0, 0, 0, 0,
 		midnight.Location())
-	return &ExpandedTextMessage{
-		BaseMessage: BaseMessage{
-			MsgSenderID:  "*",
-			MsgSender:    "*",
-			MsgTimestamp: midnight,
-			MsgIsService: true,
+	return &UIMessage{
+		SenderID:   "*",
+		SenderName: "*",
+		Timestamp:  midnight,
+		IsService:  true,
+		Renderer: &ExpandedTextMessage{
+			Text: tstring.NewColorTString(text, tcell.ColorGreen),
 		},
-		MsgText: tstring.NewColorTString(text, tcell.ColorGreen),
 	}
 }
 
-
-func (msg *ExpandedTextMessage) Clone() UIMessage {
+func (msg *ExpandedTextMessage) Clone() MessageRenderer {
 	return &ExpandedTextMessage{
-		BaseMessage: msg.BaseMessage.clone(),
-		MsgText:     msg.MsgText.Clone(),
+		Text: msg.Text.Clone(),
 	}
-}
-
-func (msg *ExpandedTextMessage) GenerateText() tstring.TString {
-	return msg.MsgText
 }
 
 func (msg *ExpandedTextMessage) NotificationContent() string {
-	return msg.MsgText.String()
+	return msg.Text.String()
 }
 
 func (msg *ExpandedTextMessage) PlainText() string {
-	return msg.MsgText.String()
+	return msg.Text.String()
 }
 
-func (msg *ExpandedTextMessage) CalculateBuffer(prefs config.UserPreferences, width int) {
-	msg.CalculateReplyBuffer(prefs, width)
-	msg.calculateBufferWithText(prefs, msg.MsgText, width)
+func (msg *ExpandedTextMessage) String() string {
+	return fmt.Sprintf(`&messages.ExpandedTextMessage{Text="%s"}`, msg.Text.String())
 }
+
+func (msg *ExpandedTextMessage) CalculateBuffer(prefs config.UserPreferences, width int, uiMsg *UIMessage) {
+	msg.buffer = calculateBufferWithText(prefs, msg.Text, width, uiMsg)
+}
+
+func (msg *ExpandedTextMessage) Height() int {
+	return len(msg.buffer)
+}
+
+func (msg *ExpandedTextMessage) Draw(screen mauview.Screen) {
+	for y, line := range msg.buffer {
+		line.Draw(screen, 0, y)
+	}
+}
+
+func (msg *ExpandedTextMessage) RegisterMatrix(matrix ifc.MatrixContainer) {}

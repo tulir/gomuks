@@ -27,5 +27,5 @@ type Gomuks interface {
 	Config() *config.Config
 
 	Start()
-	Stop()
+	Stop(save bool)
 }

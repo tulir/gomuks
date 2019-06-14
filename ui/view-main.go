@@ -26,6 +26,7 @@ import (
 
 	sync "github.com/sasha-s/go-deadlock"
 
+	"maunium.net/go/gomuks/ui/messages"
 	"maunium.net/go/mauview"
 	"maunium.net/go/tcell"
 
@@ -256,6 +257,7 @@ func (view *MainView) switchRoom(tag string, room *rooms.Room, lock bool) {
 	if room == nil {
 		return
 	}
+	room.Load()
 
 	roomView, ok := view.getRoomView(room.ID, lock)
 	if !ok {
@@ -263,12 +265,15 @@ func (view *MainView) switchRoom(tag string, room *rooms.Room, lock bool) {
 		debug.Print(tag, room)
 		return
 	}
+	roomView.Update()
 	view.roomView.SetInnerComponent(roomView)
 	view.currentRoom = roomView
 	view.MarkRead(roomView)
 	view.roomList.SetSelected(tag, room)
 	view.parent.Render()
-	if len(roomView.MessageView().messages) == 0 {
+
+	if msgView := roomView.MessageView(); len(msgView.messages) < 20 && !msgView.initialHistoryLoaded {
+		msgView.initialHistoryLoaded = true
 		go view.LoadHistory(room.ID)
 	}
 }
@@ -278,12 +283,6 @@ func (view *MainView) addRoomPage(room *rooms.Room) *RoomView {
 		roomView := NewRoomView(view, room).
 			SetInputChangedFunc(view.InputChanged)
 		view.rooms[room.ID] = roomView
-		roomView.UpdateUserList()
-
-		// TODO make sure this works
-		if len(roomView.MessageView().messages) == 0 {
-			go view.LoadHistory(room.ID)
-		}
 		return roomView
 	}
 	return nil
@@ -292,7 +291,7 @@ func (view *MainView) addRoomPage(room *rooms.Room) *RoomView {
 func (view *MainView) GetRoom(roomID string) ifc.RoomView {
 	room, ok := view.getRoomView(roomID, true)
 	if !ok {
-		return view.addRoom(view.matrix.GetRoom(roomID))
+		return view.addRoom(view.matrix.GetOrCreateRoom(roomID))
 	}
 	return room
 }
@@ -348,11 +347,11 @@ func (view *MainView) addRoom(room *rooms.Room) *RoomView {
 	return roomView
 }
 
-func (view *MainView) SetRooms(rooms map[string]*rooms.Room) {
+func (view *MainView) SetRooms(rooms *rooms.RoomCache) {
 	view.roomList.Clear()
 	view.roomsLock.Lock()
 	view.rooms = make(map[string]*RoomView)
-	for _, room := range rooms {
+	for _, room := range rooms.Map {
 		if room.HasLeft {
 			continue
 		}
@@ -390,7 +389,8 @@ func sendNotification(room *rooms.Room, sender, text string, critical, sound boo
 
 func (view *MainView) NotifyMessage(room *rooms.Room, message ifc.Message, should pushrules.PushActionArrayShould) {
 	view.roomList.Bump(room)
-	if message.SenderID() == view.config.UserID {
+	uiMsg, ok := message.(*messages.UIMessage)
+	if ok && uiMsg.SenderID == view.config.UserID {
 		return
 	}
 	// Whether or not the room where the message came is the currently shown room.
@@ -418,16 +418,6 @@ func (view *MainView) NotifyMessage(room *rooms.Room, message ifc.Message, shoul
 	// TODO this should probably happen somewhere else
 	//      (actually it's probably completely broken now)
 	message.SetIsHighlight(should.Highlight)
-}
-
-func (view *MainView) InitialSyncDone() {
-	view.roomList.Clear()
-	view.roomsLock.RLock()
-	for _, room := range view.rooms {
-		view.roomList.Add(room.Room)
-		room.UpdateUserList()
-	}
-	view.roomsLock.RUnlock()
 }
 
 func (view *MainView) LoadHistory(roomID string) {

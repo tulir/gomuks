@@ -204,6 +204,9 @@ func (c *Container) OnLogin() {
 	debug.Print("Initializing syncer")
 	c.syncer = NewGomuksSyncer(c.config)
 	c.syncer.OnEventType(mautrix.EventMessage, c.HandleMessage)
+	// Just pass encrypted events as messages, they'll show up with an encryption unsupported message.
+	c.syncer.OnEventType(mautrix.EventEncrypted, c.HandleMessage)
+	c.syncer.OnEventType(mautrix.EventSticker, c.HandleMessage)
 	c.syncer.OnEventType(mautrix.StateAliases, c.HandleMessage)
 	c.syncer.OnEventType(mautrix.StateCanonicalAlias, c.HandleMessage)
 	c.syncer.OnEventType(mautrix.StateTopic, c.HandleMessage)
@@ -219,7 +222,7 @@ func (c *Container) OnLogin() {
 		debug.Print("Initial sync done")
 		c.config.AuthCache.InitialSyncDone = true
 		c.config.SaveAuthCache()
-		c.ui.MainView().InitialSyncDone()
+		c.ui.MainView().SetRooms(c.config.Rooms)
 		c.ui.Render()
 	}
 	c.client.Syncer = c.syncer
@@ -274,7 +277,9 @@ func (c *Container) HandlePreferences(source EventSource, evt *mautrix.Event) {
 		return
 	}
 	debug.Print("Updated preferences:", orig, "->", c.config.Preferences)
-	c.ui.HandleNewPreferences()
+	if c.config.AuthCache.InitialSyncDone {
+		c.ui.HandleNewPreferences()
+	}
 }
 
 func (c *Container) SendPreferencesToMatrix() {
@@ -292,6 +297,17 @@ func (c *Container) HandleMessage(source EventSource, evt *mautrix.Event) {
 	if source&EventSourceLeave != 0 || source&EventSourceState != 0 {
 		return
 	}
+	room := c.GetOrCreateRoom(evt.RoomID)
+
+	err := c.history.Append(room, []*mautrix.Event{evt})
+	if err != nil {
+		debug.Printf("Failed to add event %s to history: %v", evt.ID, err)
+	}
+
+	if !c.config.AuthCache.InitialSyncDone {
+		return
+	}
+
 	mainView := c.ui.MainView()
 
 	roomView := mainView.GetRoom(evt.RoomID)
@@ -300,16 +316,11 @@ func (c *Container) HandleMessage(source EventSource, evt *mautrix.Event) {
 		return
 	}
 
-	err := c.history.Append(roomView.MxRoom(), []*mautrix.Event{evt})
-	if err != nil {
-		debug.Printf("Failed to add event %s to history: %v", evt.ID, err)
-	}
-
 	// TODO switch to roomView.AddEvent
 	message := roomView.ParseEvent(evt)
 	if message != nil {
 		roomView.AddMessage(message)
-		roomView.MxRoom().LastReceivedMessage = message.Timestamp()
+		roomView.MxRoom().LastReceivedMessage = message.Time()
 		if c.syncer.FirstSyncDone {
 			pushRules := c.PushRules().GetActions(roomView.MxRoom(), evt).Should()
 			mainView.NotifyMessage(roomView.MxRoom(), message, pushRules)
@@ -350,11 +361,16 @@ func (c *Container) processOwnMembershipChange(evt *mautrix.Event) {
 	room := c.GetRoom(evt.RoomID)
 	switch membership {
 	case "join":
-		c.ui.MainView().AddRoom(room)
+		if c.config.AuthCache.InitialSyncDone {
+			c.ui.MainView().AddRoom(room)
+		}
 		room.HasLeft = false
 	case "leave":
-		c.ui.MainView().RemoveRoom(room)
+		if c.config.AuthCache.InitialSyncDone {
+			c.ui.MainView().RemoveRoom(room)
+		}
 		room.HasLeft = true
+		room.Unload()
 	case "invite":
 		// TODO handle
 		debug.Printf("%s invited the user to %s", evt.Sender, evt.RoomID)
@@ -399,8 +415,12 @@ func (c *Container) HandleReadReceipt(source EventSource, evt *mautrix.Event) {
 	}
 
 	room := c.GetRoom(evt.RoomID)
-	room.MarkRead(lastReadEvent)
-	c.ui.Render()
+	if room != nil {
+		room.MarkRead(lastReadEvent)
+		if c.config.AuthCache.InitialSyncDone {
+			c.ui.Render()
+		}
+	}
 }
 
 func (c *Container) parseDirectChatInfo(evt *mautrix.Event) map[*rooms.Room]bool {
@@ -428,11 +448,13 @@ func (c *Container) parseDirectChatInfo(evt *mautrix.Event) map[*rooms.Room]bool
 
 func (c *Container) HandleDirectChatInfo(source EventSource, evt *mautrix.Event) {
 	directChats := c.parseDirectChatInfo(evt)
-	for _, room := range c.config.Rooms {
+	for _, room := range c.config.Rooms.Map {
 		shouldBeDirect := directChats[room]
 		if shouldBeDirect != room.IsDirect {
 			room.IsDirect = shouldBeDirect
-			c.ui.MainView().UpdateTags(room)
+			if c.config.AuthCache.InitialSyncDone {
+				c.ui.MainView().UpdateTags(room)
+			}
 		}
 	}
 }
@@ -466,14 +488,19 @@ func (c *Container) HandleTag(source EventSource, evt *mautrix.Event) {
 		}
 		index++
 	}
-
-	mainView := c.ui.MainView()
 	room.RawTags = newTags
-	mainView.UpdateTags(room)
+
+	if c.config.AuthCache.InitialSyncDone {
+		mainView := c.ui.MainView()
+		mainView.UpdateTags(room)
+	}
 }
 
 // HandleTyping is the event handler for the m.typing event.
 func (c *Container) HandleTyping(source EventSource, evt *mautrix.Event) {
+	if !c.config.AuthCache.InitialSyncDone {
+		return
+	}
 	c.ui.MainView().SetTyping(evt.RoomID, evt.Content.TypingUserIDs)
 }
 
@@ -544,7 +571,7 @@ func (c *Container) CreateRoom(req *mautrix.ReqCreateRoom) (*rooms.Room, error) 
 	if err != nil {
 		return nil, err
 	}
-	room := c.GetRoom(resp.RoomID)
+	room := c.GetOrCreateRoom(resp.RoomID)
 	return room, nil
 }
 
@@ -557,7 +584,6 @@ func (c *Container) JoinRoom(roomID, server string) (*rooms.Room, error) {
 
 	room := c.GetRoom(resp.RoomID)
 	room.HasLeft = false
-
 	return room, nil
 }
 
@@ -568,8 +594,9 @@ func (c *Container) LeaveRoom(roomID string) error {
 		return err
 	}
 
-	room := c.GetRoom(roomID)
-	room.HasLeft = true
+	node := c.GetOrCreateRoom(roomID)
+	node.HasLeft = true
+	node.Unload()
 	return nil
 }
 
@@ -593,9 +620,9 @@ func (c *Container) GetHistory(room *rooms.Room, limit int) ([]*mautrix.Event, e
 			return nil, err
 		}
 	}
-	room.PrevBatch = resp.End
-	c.config.PutRoom(room)
 	debug.Printf("Loaded %d events for %s from server from %s to %s", len(resp.Chunk), room.ID, resp.Start, resp.End)
+	room.PrevBatch = resp.End
+	c.config.Rooms.Put(room)
 	return resp.Chunk, nil
 }
 
@@ -613,9 +640,14 @@ func (c *Container) GetEvent(room *rooms.Room, eventID string) (*mautrix.Event, 
 	return event, nil
 }
 
+// GetOrCreateRoom gets the room instance stored in the session.
+func (c *Container) GetOrCreateRoom(roomID string) *rooms.Room {
+	return c.config.Rooms.GetOrCreate(roomID)
+}
+
 // GetRoom gets the room instance stored in the session.
 func (c *Container) GetRoom(roomID string) *rooms.Room {
-	return c.config.GetRoom(roomID)
+	return c.config.Rooms.Get(roomID)
 }
 
 var mxcRegex = regexp.MustCompile("mxc://(.+)/(.+)")
@@ -642,7 +674,7 @@ func (c *Container) Download(mxcURL string) (data []byte, hs, id string, err err
 		}
 	}
 
-	data, err = c.download(hs, id, cacheFile)
+	//FIXME data, err = c.download(hs, id, cacheFile)
 	return
 }
 

@@ -27,44 +27,60 @@ import (
 	"maunium.net/go/tcell"
 
 	"maunium.net/go/gomuks/interface"
-	"maunium.net/go/gomuks/ui/messages/tstring"
 	"maunium.net/go/gomuks/ui/widget"
 )
 
-type BaseMessage struct {
-	MsgID          string
-	MsgTxnID       string
-	MsgType        mautrix.MessageType
-	MsgSenderID    string
-	MsgSender      string
-	MsgSenderColor tcell.Color
-	MsgTimestamp   time.Time
-	MsgState       mautrix.OutgoingEventState
-	MsgIsHighlight bool
-	MsgIsService   bool
-	MsgSource      json.RawMessage
-	ReplyTo        UIMessage
-	buffer         []tstring.TString
+type MessageRenderer interface {
+	Draw(screen mauview.Screen)
+	NotificationContent() string
+	PlainText() string
+	CalculateBuffer(prefs config.UserPreferences, width int, msg *UIMessage)
+	RegisterMatrix(matrix ifc.MatrixContainer)
+	Height() int
+	Clone() MessageRenderer
+	String() string
 }
 
-func newBaseMessage(event *mautrix.Event, displayname string) BaseMessage {
+type UIMessage struct {
+	EventID            string
+	TxnID              string
+	Relation           mautrix.RelatesTo
+	Type               mautrix.MessageType
+	SenderID           string
+	SenderName         string
+	DefaultSenderColor tcell.Color
+	Timestamp          time.Time
+	State              mautrix.OutgoingEventState
+	IsHighlight        bool
+	IsService          bool
+	Source             json.RawMessage
+	ReplyTo            *UIMessage
+	Renderer           MessageRenderer
+}
+
+const DateFormat = "January _2, 2006"
+const TimeFormat = "15:04:05"
+
+func newUIMessage(event *mautrix.Event, displayname string, renderer MessageRenderer) *UIMessage {
 	msgtype := event.Content.MsgType
 	if len(msgtype) == 0 {
 		msgtype = mautrix.MessageType(event.Type.String())
 	}
 
-	return BaseMessage{
-		MsgSenderID:    event.Sender,
-		MsgSender:      displayname,
-		MsgTimestamp:   unixToTime(event.Timestamp),
-		MsgSenderColor: widget.GetHashColor(event.Sender),
-		MsgType:        msgtype,
-		MsgID:          event.ID,
-		MsgTxnID:       event.Unsigned.TransactionID,
-		MsgState:       event.Unsigned.OutgoingState,
-		MsgIsHighlight: false,
-		MsgIsService:   false,
-		MsgSource:      event.Content.VeryRaw,
+	return &UIMessage{
+		SenderID:           event.Sender,
+		SenderName:         displayname,
+		Timestamp:          unixToTime(event.Timestamp),
+		DefaultSenderColor: widget.GetHashColor(event.Sender),
+		Type:               msgtype,
+		EventID:            event.ID,
+		TxnID:              event.Unsigned.TransactionID,
+		Relation:           *event.Content.GetRelatesTo(),
+		State:              event.Unsigned.OutgoingState,
+		IsHighlight:        false,
+		IsService:          false,
+		Source:             event.Content.VeryRaw,
+		Renderer:           renderer,
 	}
 }
 
@@ -76,44 +92,38 @@ func unixToTime(unix int64) time.Time {
 	return timestamp
 }
 
-func (msg *BaseMessage) RegisterMatrix(matrix ifc.MatrixContainer) {}
-
 // Sender gets the string that should be displayed as the sender of this message.
 //
 // If the message is being sent, the sender is "Sending...".
 // If sending has failed, the sender is "Error".
 // If the message is an emote, the sender is blank.
 // In any other case, the sender is the display name of the user who sent the message.
-func (msg *BaseMessage) Sender() string {
-	switch msg.MsgState {
+func (msg *UIMessage) Sender() string {
+	switch msg.State {
 	case mautrix.EventStateLocalEcho:
 		return "Sending..."
 	case mautrix.EventStateSendFail:
 		return "Error"
 	}
-	switch msg.MsgType {
+	switch msg.Type {
 	case "m.emote":
 		// Emotes don't show a separate sender, it's included in the buffer.
 		return ""
 	default:
-		return msg.MsgSender
+		return msg.SenderName
 	}
 }
 
-func (msg *BaseMessage) SenderID() string {
-	return msg.MsgSenderID
+func (msg *UIMessage) NotificationSenderName() string {
+	return msg.SenderName
 }
 
-func (msg *BaseMessage) RealSender() string {
-	return msg.MsgSender
+func (msg *UIMessage) NotificationContent() string {
+	return msg.Renderer.NotificationContent()
 }
 
-func (msg *BaseMessage) NotificationSenderName() string {
-	return msg.MsgSender
-}
-
-func (msg *BaseMessage) getStateSpecificColor() tcell.Color {
-	switch msg.MsgState {
+func (msg *UIMessage) getStateSpecificColor() tcell.Color {
+	switch msg.State {
 	case mautrix.EventStateLocalEcho:
 		return tcell.ColorGray
 	case mautrix.EventStateSendFail:
@@ -132,31 +142,31 @@ func (msg *BaseMessage) getStateSpecificColor() tcell.Color {
 //
 // In any other case, the color is whatever is specified in the Message struct.
 // Usually that means it is the hash-based color of the sender (see ui/widget/color.go)
-func (msg *BaseMessage) SenderColor() tcell.Color {
+func (msg *UIMessage) SenderColor() tcell.Color {
 	stateColor := msg.getStateSpecificColor()
 	switch {
 	case stateColor != tcell.ColorDefault:
 		return stateColor
-	case msg.MsgType == "m.room.member":
-		return widget.GetHashColor(msg.MsgSender)
-	case msg.MsgIsService:
+	case msg.Type == "m.room.member":
+		return widget.GetHashColor(msg.SenderName)
+	case msg.IsService:
 		return tcell.ColorGray
 	default:
-		return msg.MsgSenderColor
+		return msg.DefaultSenderColor
 	}
 }
 
 // TextColor returns the color the actual content of the message should be shown in.
-func (msg *BaseMessage) TextColor() tcell.Color {
+func (msg *UIMessage) TextColor() tcell.Color {
 	stateColor := msg.getStateSpecificColor()
 	switch {
 	case stateColor != tcell.ColorDefault:
 		return stateColor
-	case msg.MsgIsService, msg.MsgType == "m.notice":
+	case msg.IsService, msg.Type == "m.notice":
 		return tcell.ColorGray
-	case msg.MsgIsHighlight:
+	case msg.IsHighlight:
 		return tcell.ColorYellow
-	case msg.MsgType == "m.room.member":
+	case msg.Type == "m.room.member":
 		return tcell.ColorGreen
 	default:
 		return tcell.ColorDefault
@@ -169,14 +179,14 @@ func (msg *BaseMessage) TextColor() tcell.Color {
 // gray and red respectively.
 //
 // However, other messages are the default color instead of a color stored in the struct.
-func (msg *BaseMessage) TimestampColor() tcell.Color {
-	if msg.MsgIsService {
+func (msg *UIMessage) TimestampColor() tcell.Color {
+	if msg.IsService {
 		return tcell.ColorGray
 	}
 	return msg.getStateSpecificColor()
 }
 
-func (msg *BaseMessage) ReplyHeight() int {
+func (msg *UIMessage) ReplyHeight() int {
 	if msg.ReplyTo != nil {
 		return 1 + msg.ReplyTo.Height()
 	}
@@ -184,102 +194,76 @@ func (msg *BaseMessage) ReplyHeight() int {
 }
 
 // Height returns the number of rows in the computed buffer (see Buffer()).
-func (msg *BaseMessage) Height() int {
-	return msg.ReplyHeight() + len(msg.buffer)
+func (msg *UIMessage) Height() int {
+	return msg.ReplyHeight() + msg.Renderer.Height()
 }
 
-// Timestamp returns the full timestamp when the message was sent.
-func (msg *BaseMessage) Timestamp() time.Time {
-	return msg.MsgTimestamp
+func (msg *UIMessage) Time() time.Time {
+	return msg.Timestamp
 }
 
 // FormatTime returns the formatted time when the message was sent.
-func (msg *BaseMessage) FormatTime() string {
-	return msg.MsgTimestamp.Format(TimeFormat)
+func (msg *UIMessage) FormatTime() string {
+	return msg.Timestamp.Format(TimeFormat)
 }
 
 // FormatDate returns the formatted date when the message was sent.
-func (msg *BaseMessage) FormatDate() string {
-	return msg.MsgTimestamp.Format(DateFormat)
+func (msg *UIMessage) FormatDate() string {
+	return msg.Timestamp.Format(DateFormat)
 }
 
-func (msg *BaseMessage) SameDate(message UIMessage) bool {
-	year1, month1, day1 := msg.Timestamp().Date()
-	year2, month2, day2 := message.Timestamp().Date()
+func (msg *UIMessage) SameDate(message *UIMessage) bool {
+	year1, month1, day1 := msg.Timestamp.Date()
+	year2, month2, day2 := message.Timestamp.Date()
 	return day1 == day2 && month1 == month2 && year1 == year2
 }
 
-func (msg *BaseMessage) ID() string {
-	if len(msg.MsgID) == 0 {
-		return msg.MsgTxnID
+func (msg *UIMessage) ID() string {
+	if len(msg.EventID) == 0 {
+		return msg.TxnID
 	}
-	return msg.MsgID
+	return msg.EventID
 }
 
-func (msg *BaseMessage) SetID(id string) {
-	msg.MsgID = id
+func (msg *UIMessage) SetID(id string) {
+	msg.EventID = id
 }
 
-func (msg *BaseMessage) TxnID() string {
-	return msg.MsgTxnID
+func (msg *UIMessage) SetIsHighlight(isHighlight bool) {
+	// TODO Textmessage cache needs to be cleared
+	msg.IsHighlight = isHighlight
 }
 
-func (msg *BaseMessage) Type() mautrix.MessageType {
-	return msg.MsgType
-}
-
-func (msg *BaseMessage) State() mautrix.OutgoingEventState {
-	return msg.MsgState
-}
-
-func (msg *BaseMessage) SetState(state mautrix.OutgoingEventState) {
-	msg.MsgState = state
-}
-
-func (msg *BaseMessage) IsHighlight() bool {
-	return msg.MsgIsHighlight
-}
-
-func (msg *BaseMessage) SetIsHighlight(isHighlight bool) {
-	msg.MsgIsHighlight = isHighlight
-}
-
-func (msg *BaseMessage) Source() json.RawMessage {
-	return msg.MsgSource
-}
-
-func (msg *BaseMessage) SetReplyTo(event UIMessage) {
-	msg.ReplyTo = event
-}
-
-func (msg *BaseMessage) Draw(screen mauview.Screen) {
+func (msg *UIMessage) Draw(screen mauview.Screen) {
 	screen = msg.DrawReply(screen)
-	for y, line := range msg.buffer {
-		line.Draw(screen, 0, y)
-	}
+	msg.Renderer.Draw(screen)
 }
 
-func (msg *BaseMessage) clone() BaseMessage {
+func (msg *UIMessage) Clone() *UIMessage {
 	clone := *msg
-	clone.buffer = nil
-	return clone
+	clone.Renderer = clone.Renderer.Clone()
+	return &clone
 }
 
-func (msg *BaseMessage) CalculateReplyBuffer(preferences config.UserPreferences, width int) {
+func (msg *UIMessage) CalculateReplyBuffer(preferences config.UserPreferences, width int) {
 	if msg.ReplyTo == nil {
 		return
 	}
 	msg.ReplyTo.CalculateBuffer(preferences, width-1)
 }
 
-func (msg *BaseMessage) DrawReply(screen mauview.Screen) mauview.Screen {
+func (msg *UIMessage) CalculateBuffer(preferences config.UserPreferences, width int) {
+	msg.Renderer.CalculateBuffer(preferences, width-1, msg)
+}
+
+func (msg *UIMessage) DrawReply(screen mauview.Screen) mauview.Screen {
 	if msg.ReplyTo == nil {
 		return screen
 	}
 	width, height := screen.Size()
 	replyHeight := msg.ReplyTo.Height()
 	widget.WriteLineSimpleColor(screen, "In reply to", 1, 0, tcell.ColorGreen)
-	widget.WriteLineSimpleColor(screen, msg.ReplyTo.RealSender(), 13, 0, msg.ReplyTo.SenderColor())
+	widget.WriteLineSimpleColor(screen, msg.ReplyTo.SenderName, 13, 0, msg.ReplyTo.SenderColor())
 	for y := 0; y < 1+replyHeight; y++ {
 		screen.SetCell(0, y, tcell.StyleDefault, '▊')
 	}
@@ -288,16 +272,21 @@ func (msg *BaseMessage) DrawReply(screen mauview.Screen) mauview.Screen {
 	return mauview.NewProxyScreen(screen, 0, replyHeight+1, width, height-replyHeight-1)
 }
 
-func (msg *BaseMessage) String() string {
-	return fmt.Sprintf(`&messages.BaseMessage{
+func (msg *UIMessage) String() string {
+	return fmt.Sprintf(`&messages.UIMessage{
     ID="%s", TxnID="%s",
     Type="%s", Timestamp=%s,
     Sender={ID="%s", Name="%s", Color=#%X},
     IsService=%t, IsHighlight=%t,
+    Renderer=%s,
 }`,
-		msg.MsgID, msg.MsgTxnID,
-		msg.MsgType, msg.MsgTimestamp.String(),
-		msg.MsgSenderID, msg.MsgSender, msg.MsgSenderColor.Hex(),
-		msg.MsgIsService, msg.MsgIsHighlight,
+		msg.EventID, msg.TxnID,
+		msg.Type, msg.Timestamp.String(),
+		msg.SenderID, msg.SenderName, msg.DefaultSenderColor.Hex(),
+		msg.IsService, msg.IsHighlight, msg.Renderer.String(),
 	)
+}
+
+func (msg *UIMessage) PlainText() string {
+	return msg.Renderer.PlainText()
 }
