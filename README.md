@@ -8,7 +8,7 @@
 
 ![Chat Preview](chat-preview.png)
 
-A terminal Matrix client written in Go using [mautrix](https://github.com/matrix-org/mautrix) and [tview](https://github.com/rivo/tview).
+A terminal Matrix client written in Go using [mautrix](https://github.com/tulir/mautrix-go) and [mauview](https://github.com/tulir/mauview).
 
 Basic usage is possible, but expect bugs and missing features.
 
@@ -62,6 +62,7 @@ func Foo() {
 * `/quit` - Close gomuks
 * `/clearcache` - Clear room state and close gomuks
 * `/leave` - Leave the current room
+* `/create <room name>` - Create a new Matrix room.
 * `/join <room>` - Join the room with the given room ID or alias
 * `/toggle <rooms/users/baremessages/images/typingnotif>` - Change user preferences
 * `/logout` - Log out, clear caches and go back to the login view
