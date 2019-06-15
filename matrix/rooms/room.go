@@ -115,10 +115,11 @@ type Room struct {
 	cache *RoomCache
 	// Lock for state and other room stuff.
 	lock sync.RWMutex
-	// Function to call when room state is unloaded.
-	onUnload func() bool
-	// Function to call when room state is loaded.
-	onLoad func() bool
+	// Pre/post un/load hooks
+	preUnload  func() bool
+	preLoad    func() bool
+	postUnload func()
+	postLoad   func()
 	// Whether or not the room state has changed
 	changed bool
 
@@ -143,7 +144,7 @@ func (room *Room) Load() {
 	if room.Loaded() {
 		return
 	}
-	if room.onLoad != nil && !room.onLoad() {
+	if room.preLoad != nil && !room.preLoad() {
 		return
 	}
 	room.lock.Lock()
@@ -178,6 +179,9 @@ func (room *Room) load() {
 		debug.Print("Failed to decode room state:", err)
 	}
 	room.changed = false
+	if room.postLoad != nil {
+		room.postLoad()
+	}
 }
 
 func (room *Room) Touch() {
@@ -185,7 +189,7 @@ func (room *Room) Touch() {
 }
 
 func (room *Room) Unload() bool {
-	if room.onUnload != nil && !room.onUnload() {
+	if room.preUnload != nil && !room.preUnload() {
 		return false
 	}
 	debug.Print("Unloading", room.ID)
@@ -196,15 +200,26 @@ func (room *Room) Unload() bool {
 	room.canonicalAliasCache = ""
 	room.firstMemberCache = nil
 	room.secondMemberCache = nil
+	if room.postUnload != nil {
+		room.postUnload()
+	}
 	return true
 }
 
-func (room *Room) SetOnUnload(fn func() bool) {
-	room.onUnload = fn
+func (room *Room) SetPreUnload(fn func() bool) {
+	room.preUnload = fn
 }
 
-func (room *Room) SetOnLoad(fn func() bool) {
-	room.onLoad = fn
+func (room *Room) SetPreLoad(fn func() bool) {
+	room.preLoad = fn
+}
+
+func (room *Room) SetPostUnload(fn func()) {
+	room.postUnload = fn
+}
+
+func (room *Room) SetPostLoad(fn func()) {
+	room.postLoad = fn
 }
 
 func (room *Room) Save() {

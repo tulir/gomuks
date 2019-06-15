@@ -93,17 +93,14 @@ func NewRoomView(parent *MainView, room *rooms.Room) *RoomView {
 		config: parent.config,
 	}
 	view.content = NewMessageView(view)
-	view.Room.SetOnUnload(func() bool {
+	view.Room.SetPreUnload(func() bool {
 		if view.parent.currentRoom == view {
 			return false
 		}
 		view.content.Unload()
 		return true
 	})
-	view.Room.SetOnLoad(func() bool {
-		view.loadTyping()
-		return true
-	})
+	view.Room.SetPostLoad(view.loadTyping)
 
 	view.input.
 		SetBackgroundColor(tcell.ColorDefault).
