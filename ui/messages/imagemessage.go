@@ -19,6 +19,7 @@ package messages
 import (
 	"bytes"
 	"fmt"
+	"image"
 	"image/color"
 
 	"maunium.net/go/mautrix"
@@ -100,11 +101,13 @@ func (msg *ImageMessage) Path() string {
 
 // CalculateBuffer generates the internal buffer for this message that consists
 // of the text of this message split into lines at most as wide as the width
-// parameter.
+// parameter. If the message width is larger than the width of the buffer
+// the message is scaled to one third the buffer width.
 func (msg *ImageMessage) CalculateBuffer(prefs config.UserPreferences, width int) {
 	if width < 2 {
 		return
 	}
+
 	msg.CalculateReplyBuffer(prefs, width)
 
 	if prefs.BareMessageView || prefs.DisableImages {
@@ -112,12 +115,21 @@ func (msg *ImageMessage) CalculateBuffer(prefs config.UserPreferences, width int
 		return
 	}
 
-	image, err := ansimage.NewScaledFromReader(bytes.NewReader(msg.data), 0, width, color.Black)
+	img, _, err := image.DecodeConfig(bytes.NewReader(msg.data))
+	if err != nil {
+		debug.Print("Image could not be decoded:", err)
+	}
+	imgWidth := img.Width
+	if img.Width > width {
+		imgWidth = width / 3
+	}
+
+	ansImage, err := ansimage.NewScaledFromReader(bytes.NewReader(msg.data), 0, imgWidth, color.Black)
 	if err != nil {
 		msg.buffer = []tstring.TString{tstring.NewColorTString("Failed to display image", tcell.ColorRed)}
 		debug.Print("Failed to display image:", err)
 		return
 	}
 
-	msg.buffer = image.Render()
+	msg.buffer = ansImage.Render()
 }
