@@ -315,7 +315,7 @@ func (c *Container) HandleMessage(source EventSource, evt *mautrix.Event) {
 		debug.Printf("Failed to add event %s to history: %v", evt.ID, err)
 	}
 
-	if !c.config.AuthCache.InitialSyncDone || !room.Loaded() {
+	if !c.config.AuthCache.InitialSyncDone {
 		room.LastReceivedMessage = time.Unix(evt.Timestamp/1000, evt.Timestamp%1000*1000)
 		return
 	}
@@ -326,6 +326,17 @@ func (c *Container) HandleMessage(source EventSource, evt *mautrix.Event) {
 	if roomView == nil {
 		debug.Printf("Failed to handle event %v: No room view found.", evt)
 		return
+	}
+
+	if !room.Loaded() {
+		pushRules := c.PushRules().GetActions(room, evt).Should()
+		shouldNotify := pushRules.Notify || !pushRules.NotifySpecified
+		if !shouldNotify {
+			room.LastReceivedMessage = time.Unix(evt.Timestamp/1000, evt.Timestamp%1000*1000)
+			room.AddUnread(evt.ID, shouldNotify, pushRules.Highlight)
+			mainView.Bump(room)
+			return
+		}
 	}
 
 	// TODO switch to roomView.AddEvent

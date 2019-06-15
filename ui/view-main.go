@@ -387,8 +387,12 @@ func sendNotification(room *rooms.Room, sender, text string, critical, sound boo
 	notification.Send(sender, text, critical, sound)
 }
 
-func (view *MainView) NotifyMessage(room *rooms.Room, message ifc.Message, should pushrules.PushActionArrayShould) {
+func (view *MainView) Bump(room *rooms.Room) {
 	view.roomList.Bump(room)
+}
+
+func (view *MainView) NotifyMessage(room *rooms.Room, message ifc.Message, should pushrules.PushActionArrayShould) {
+	view.Bump(room)
 	uiMsg, ok := message.(*messages.UIMessage)
 	if ok && uiMsg.SenderID == view.config.UserID {
 		return

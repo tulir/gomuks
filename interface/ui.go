@@ -44,6 +44,7 @@ type MainView interface {
 	AddRoom(room *rooms.Room)
 	RemoveRoom(room *rooms.Room)
 	SetRooms(rooms *rooms.RoomCache)
+	Bump(room *rooms.Room)
 
 	UpdateTags(room *rooms.Room)
 
