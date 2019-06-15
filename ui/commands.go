@@ -19,10 +19,12 @@ package ui
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 	"runtime"
 	dbg "runtime/debug"
 	"runtime/pprof"
+	"runtime/trace"
 	"strconv"
 	"strings"
 	"time"
@@ -92,38 +94,37 @@ func cmdHeapProfile(cmd *Command) {
 	}
 }
 
-func cmdCPUProfile(cmd *Command) {
+func runTimedProfile(cmd *Command, start func(writer io.Writer) error, stop func(), task, file string) {
 	if len(cmd.Args) == 0 {
-		cmd.Reply("Usage: /cprof <seconds>")
-		return
-	}
-	dur, err := strconv.Atoi(cmd.Args[0])
-	if err != nil || dur < 0 {
-		cmd.Reply("Usage: /cprof <seconds>")
-		return
-	}
-	cpuProfile, err := os.Create("gomuks.cpu.prof")
-	if err != nil {
-		debug.Print("Failed to open gomuks.cpu.prof:", err)
-		return
-	}
-	err = pprof.StartCPUProfile(cpuProfile)
-	if err != nil {
+		cmd.Reply("Usage: /%s <seconds>", cmd.Command)
+	} else if dur, err := strconv.Atoi(cmd.Args[0]); err != nil || dur < 0 {
+		cmd.Reply("Usage: /%s <seconds>", cmd.Command)
+	} else if cpuProfile, err := os.Create(file); err != nil {
+		debug.Printf("Failed to open %s: %v", file, err)
+	} else if err = start(cpuProfile); err != nil {
 		_ = cpuProfile.Close()
-		debug.Print("CPU profile error:", err)
-		return
-	}
-	cmd.Reply("Started CPU profiling for %d seconds", dur)
-	go func() {
-		time.Sleep(time.Duration(dur) * time.Second)
-		pprof.StopCPUProfile()
-		cmd.Reply("CPU profiling finished.")
+		debug.Print(task, "error:", err)
+	} else {
+		cmd.Reply("Started %s for %d seconds", task, dur)
+		go func() {
+			time.Sleep(time.Duration(dur) * time.Second)
+			stop()
+			cmd.Reply("%s finished.", task)
 
-		err := cpuProfile.Close()
-		if err != nil {
-			debug.Print("Failed to close gomuks.cpu.prof:", err)
-		}
-	}()
+			err := cpuProfile.Close()
+			if err != nil {
+				debug.Print("Failed to close gomuks.cpu.prof:", err)
+			}
+		}()
+	}
+}
+
+func cmdCPUProfile(cmd *Command) {
+	runTimedProfile(cmd, pprof.StartCPUProfile, pprof.StopCPUProfile, "CPU profiling", "gomuks.cpu.prof")
+}
+
+func cmdTrace(cmd *Command) {
+	runTimedProfile(cmd, trace.Start, trace.Stop, "Call tracing", "gomuks.trace")
 }
 
 // TODO this command definitely belongs in a plugin once we have a plugin system.

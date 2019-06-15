@@ -34,8 +34,6 @@ import (
 func init() {
 	gob.Register(map[string]interface{}{})
 	gob.Register([]interface{}{})
-	gob.Register(&Room{})
-	gob.Register(0)
 }
 
 type RoomNameSource int
