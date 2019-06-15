@@ -115,6 +115,12 @@ type Room struct {
 	cache *RoomCache
 	// Lock for state and other room stuff.
 	lock sync.RWMutex
+	// Function to call when room state is unloaded.
+	onUnload func() bool
+	// Function to call when room state is loaded.
+	onLoad func() bool
+	// Whether or not the room state has changed
+	changed bool
 
 	// Room state cache linked list.
 	prev  *Room
@@ -133,10 +139,13 @@ func (room *Room) Loaded() bool {
 }
 
 func (room *Room) Load() {
+	room.cache.TouchNode(room)
 	if room.Loaded() {
 		return
 	}
-	room.cache.TouchNode(room)
+	if room.onLoad != nil && !room.onLoad() {
+		return
+	}
 	room.lock.Lock()
 	room.load()
 	room.lock.Unlock()
@@ -146,7 +155,7 @@ func (room *Room) load() {
 	if room.Loaded() {
 		return
 	}
-	debug.Print("Loading state for room", room.ID)
+	debug.Print("Loading state for room", room.ID, "from disk")
 	room.state = make(map[mautrix.EventType]map[string]*mautrix.Event)
 	file, err := os.OpenFile(room.path, os.O_RDONLY, 0600)
 	if err != nil {
@@ -168,9 +177,17 @@ func (room *Room) load() {
 	if err = dec.Decode(&room.state); err != nil {
 		debug.Print("Failed to decode room state:", err)
 	}
+	room.changed = false
 }
 
-func (room *Room) Unload() {
+func (room *Room) Touch() {
+	room.cache.TouchNode(room)
+}
+
+func (room *Room) Unload() bool {
+	if room.onUnload != nil && !room.onUnload() {
+		return false
+	}
 	debug.Print("Unloading", room.ID)
 	room.Save()
 	room.state = nil
@@ -179,14 +196,27 @@ func (room *Room) Unload() {
 	room.canonicalAliasCache = ""
 	room.firstMemberCache = nil
 	room.secondMemberCache = nil
+	return true
+}
+
+func (room *Room) SetOnUnload(fn func() bool) {
+	room.onUnload = fn
+}
+
+func (room *Room) SetOnLoad(fn func() bool) {
+	room.onLoad = fn
 }
 
 func (room *Room) Save() {
 	if !room.Loaded() {
-		debug.Print("Failed to save room state: room not loaded")
+		debug.Print("Failed to save room", room.ID, "state: room not loaded")
 		return
 	}
-	debug.Print("Saving state for room", room.ID)
+	if !room.changed {
+		debug.Print("Not saving", room.ID, "as state hasn't changed")
+		return
+	}
+	debug.Print("Saving state for room", room.ID, "to disk")
 	file, err := os.OpenFile(room.path, os.O_WRONLY|os.O_CREATE, 0600)
 	if err != nil {
 		debug.Print("Failed to open room state file for writing:", err)
@@ -298,40 +328,51 @@ func (room *Room) UpdateState(event *mautrix.Event) {
 	room.Load()
 	room.lock.Lock()
 	defer room.lock.Unlock()
+	room.changed = true
 	_, exists := room.state[event.Type]
 	if !exists {
 		room.state[event.Type] = make(map[string]*mautrix.Event)
 	}
 	switch event.Type {
 	case mautrix.StateRoomName:
-		room.NameCache = ""
+		room.NameCache = event.Content.Name
+		room.nameCacheSource = ExplicitRoomName
 	case mautrix.StateCanonicalAlias:
 		if room.nameCacheSource <= CanonicalAliasRoomName {
-			room.NameCache = ""
+			room.NameCache = event.Content.Alias
+			room.nameCacheSource = CanonicalAliasRoomName
 		}
-		room.canonicalAliasCache = ""
+		room.canonicalAliasCache = event.Content.Alias
 	case mautrix.StateAliases:
 		if room.nameCacheSource <= AliasRoomName {
 			room.NameCache = ""
 		}
 		room.aliasesCache = nil
 	case mautrix.StateMember:
-		room.memberCache = nil
-		room.firstMemberCache = nil
-		room.secondMemberCache = nil
+		if room.memberCache != nil {
+			userID := event.GetStateKey()
+			if event.Content.Membership == mautrix.MembershipLeave || event.Content.Membership == mautrix.MembershipBan {
+				delete(room.memberCache, userID)
+			} else if event.Content.Membership == mautrix.MembershipInvite || event.Content.Membership == mautrix.MembershipJoin {
+				member := room.eventToMember(userID, &event.Content)
+				existingMember, ok := room.memberCache[userID]
+				if ok {
+					*existingMember = *member
+				} else {
+					room.memberCache[userID] = member
+					room.updateNthMemberCache(userID, member)
+				}
+			}
+		}
 		if room.nameCacheSource <= MemberRoomName {
 			room.NameCache = ""
 		}
 	case mautrix.StateTopic:
-		room.topicCache = ""
+		room.topicCache = event.Content.Topic
 	}
 
-	stateKey := ""
-	if event.StateKey != nil {
-		stateKey = *event.StateKey
-	}
 	if event.Type != mautrix.StateMember {
-		debug.Printf("Updating state %s#%s for %s", event.Type, stateKey, room.ID)
+		debug.Printf("Updating state %s#%s for %s", event.Type.String(), event.GetStateKey(), room.ID)
 	}
 
 	if event.StateKey == nil {
@@ -477,6 +518,25 @@ func (room *Room) GetTitle() string {
 	return room.NameCache
 }
 
+func (room *Room) eventToMember(userID string, content *mautrix.Content) *mautrix.Member {
+	member := &content.Member
+	member.Membership = content.Membership
+	if len(member.Displayname) == 0 {
+		member.Displayname = userID
+	}
+	return member
+}
+
+func (room *Room) updateNthMemberCache(userID string, member *mautrix.Member) {
+	if userID != room.SessionUserID {
+		if room.firstMemberCache == nil {
+			room.firstMemberCache = member
+		} else if room.secondMemberCache == nil {
+			room.secondMemberCache = member
+		}
+	}
+}
+
 // createMemberCache caches all member events into a easily processable MXID -> *Member map.
 func (room *Room) createMemberCache() map[string]*mautrix.Member {
 	if len(room.memberCache) > 0 {
@@ -489,20 +549,10 @@ func (room *Room) createMemberCache() map[string]*mautrix.Member {
 	room.secondMemberCache = nil
 	if events != nil {
 		for userID, event := range events {
-			member := &event.Content.Member
-			member.Membership = event.Content.Membership
-			if len(member.Displayname) == 0 {
-				member.Displayname = userID
-			}
-			if userID != room.SessionUserID {
-				if room.firstMemberCache == nil {
-					room.firstMemberCache = member
-				} else if room.secondMemberCache == nil {
-					room.secondMemberCache = member
-				}
-			}
+			member := room.eventToMember(userID, &event.Content)
 			if member.Membership == mautrix.MembershipJoin || member.Membership == mautrix.MembershipInvite {
 				cache[userID] = member
+				room.updateNthMemberCache(userID, member)
 			}
 		}
 	}

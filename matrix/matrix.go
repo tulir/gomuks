@@ -221,7 +221,15 @@ func (c *Container) OnLogin() {
 	c.syncer.InitDoneCallback = func() {
 		debug.Print("Initial sync done")
 		c.config.AuthCache.InitialSyncDone = true
-		c.config.SaveAuthCache()
+		debug.Print("Updating title caches")
+		for _, room := range c.config.Rooms.Map {
+			room.GetTitle()
+		}
+		debug.Print("Cleaning cached rooms from memory")
+		c.config.Rooms.ForceClean()
+		debug.Print("Saving all data")
+		c.config.SaveAll()
+		debug.Print("Adding rooms to UI")
 		c.ui.MainView().SetRooms(c.config.Rooms)
 		c.ui.Render()
 	}
@@ -294,17 +302,21 @@ func (c *Container) SendPreferencesToMatrix() {
 
 // HandleMessage is the event handler for the m.room.message timeline event.
 func (c *Container) HandleMessage(source EventSource, evt *mautrix.Event) {
-	if source&EventSourceLeave != 0 || source&EventSourceState != 0 {
+	room := c.GetOrCreateRoom(evt.RoomID)
+	if source&EventSourceLeave != 0 {
+		room.HasLeft = true
+		return
+	} else if source&EventSourceState != 0 {
 		return
 	}
-	room := c.GetOrCreateRoom(evt.RoomID)
 
 	err := c.history.Append(room, []*mautrix.Event{evt})
 	if err != nil {
 		debug.Printf("Failed to add event %s to history: %v", evt.ID, err)
 	}
 
-	if !c.config.AuthCache.InitialSyncDone {
+	if !c.config.AuthCache.InitialSyncDone || !room.Loaded() {
+		room.LastReceivedMessage = time.Unix(evt.Timestamp/1000, evt.Timestamp%1000*1000)
 		return
 	}
 
@@ -327,7 +339,7 @@ func (c *Container) HandleMessage(source EventSource, evt *mautrix.Event) {
 			c.ui.Render()
 		}
 	} else {
-		debug.Printf("Parsing event %s type %s %v from %s in %s failed (ParseEvent() returned nil).", evt.ID, evt.Type, evt.Content.Raw, evt.Sender, evt.RoomID)
+		debug.Printf("Parsing event %s type %s %v from %s in %s failed (ParseEvent() returned nil).", evt.ID, evt.Type.String(), evt.Content.Raw, evt.Sender, evt.RoomID)
 	}
 }
 
@@ -335,6 +347,9 @@ func (c *Container) HandleMessage(source EventSource, evt *mautrix.Event) {
 func (c *Container) HandleMembership(source EventSource, evt *mautrix.Event) {
 	isLeave := source&EventSourceLeave != 0
 	isTimeline := source&EventSourceTimeline != 0
+	if isLeave {
+		c.GetOrCreateRoom(evt.RoomID).HasLeft = true
+	}
 	isNonTimelineLeave := isLeave && !isTimeline
 	if !c.config.AuthCache.InitialSyncDone && isNonTimelineLeave {
 		return
@@ -437,7 +452,7 @@ func (c *Container) parseDirectChatInfo(evt *mautrix.Event) map[*rooms.Room]bool
 				continue
 			}
 
-			room := c.GetRoom(roomID)
+			room := c.GetOrCreateRoom(roomID)
 			if room != nil && !room.HasLeft {
 				directChats[room] = true
 			}
@@ -473,7 +488,7 @@ func (c *Container) HandlePushRules(source EventSource, evt *mautrix.Event) {
 
 // HandleTag is the event handler for the m.tag account data event.
 func (c *Container) HandleTag(source EventSource, evt *mautrix.Event) {
-	room := c.config.GetRoom(evt.RoomID)
+	room := c.GetOrCreateRoom(evt.RoomID)
 
 	newTags := make([]rooms.RoomTag, len(evt.Content.RoomTags))
 	index := 0

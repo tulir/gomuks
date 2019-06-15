@@ -93,6 +93,17 @@ func NewRoomView(parent *MainView, room *rooms.Room) *RoomView {
 		config: parent.config,
 	}
 	view.content = NewMessageView(view)
+	view.Room.SetOnUnload(func() bool {
+		if view.parent.currentRoom == view {
+			return false
+		}
+		view.content.Unload()
+		return true
+	})
+	view.Room.SetOnLoad(func() bool {
+		view.loadTyping()
+		return true
+	})
 
 	view.input.
 		SetBackgroundColor(tcell.ColorDefault).
@@ -270,14 +281,20 @@ func (view *RoomView) SetCompletions(completions []string) {
 	view.completions.time = time.Now()
 }
 
-func (view *RoomView) SetTyping(users []string) {
-	for index, user := range users {
+func (view *RoomView) loadTyping() {
+	for index, user := range view.typing {
 		member := view.Room.GetMember(user)
 		if member != nil {
-			users[index] = member.Displayname
+			view.typing[index] = member.Displayname
 		}
 	}
+}
+
+func (view *RoomView) SetTyping(users []string) {
 	view.typing = users
+	if view.Room.Loaded() {
+		view.loadTyping()
+	}
 }
 
 type completion struct {

@@ -21,8 +21,11 @@ import (
 	"fmt"
 	"os"
 	"runtime"
+	dbg "runtime/debug"
 	"runtime/pprof"
+	"strconv"
 	"strings"
+	"time"
 	"unicode"
 
 	"github.com/lucasb-eyer/go-colorful"
@@ -71,15 +74,56 @@ var rainbow = GradientTable{
 }
 
 func cmdHeapProfile(cmd *Command) {
+	dbg.FreeOSMemory()
 	runtime.GC()
-	memProfile, err := os.Create("gomuks.prof")
+	memProfile, err := os.Create("gomuks.heap.prof")
 	if err != nil {
-		debug.Print(err)
+		debug.Print("Failed to open gomuks.heap.prof:", err)
+		return
 	}
-	defer memProfile.Close()
+	defer func() {
+		err := memProfile.Close()
+		if err != nil {
+			debug.Print("Failed to close gomuks.heap.prof:", err)
+		}
+	}()
 	if err := pprof.WriteHeapProfile(memProfile); err != nil {
-		debug.Print(err)
+		debug.Print("Heap profile error:", err)
 	}
+}
+
+func cmdCPUProfile(cmd *Command) {
+	if len(cmd.Args) == 0 {
+		cmd.Reply("Usage: /cprof <seconds>")
+		return
+	}
+	dur, err := strconv.Atoi(cmd.Args[0])
+	if err != nil || dur < 0 {
+		cmd.Reply("Usage: /cprof <seconds>")
+		return
+	}
+	cpuProfile, err := os.Create("gomuks.cpu.prof")
+	if err != nil {
+		debug.Print("Failed to open gomuks.cpu.prof:", err)
+		return
+	}
+	err = pprof.StartCPUProfile(cpuProfile)
+	if err != nil {
+		_ = cpuProfile.Close()
+		debug.Print("CPU profile error:", err)
+		return
+	}
+	cmd.Reply("Started CPU profiling for %d seconds", dur)
+	go func() {
+		time.Sleep(time.Duration(dur) * time.Second)
+		pprof.StopCPUProfile()
+		cmd.Reply("CPU profiling finished.")
+
+		err := cpuProfile.Close()
+		if err != nil {
+			debug.Print("Failed to close gomuks.cpu.prof:", err)
+		}
+	}()
 }
 
 // TODO this command definitely belongs in a plugin once we have a plugin system.

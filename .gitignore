@@ -7,3 +7,4 @@ gomuks
 coverage.out
 coverage.html
 deb/usr
+*.prof

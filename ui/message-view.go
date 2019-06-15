@@ -89,6 +89,23 @@ func NewMessageView(parent *RoomView) *MessageView {
 	}
 }
 
+func (view *MessageView) Unload() {
+	debug.Print("Unloading message view", view.parent.Room.ID)
+	view.messagesLock.Lock()
+	view.msgBufferLock.Lock()
+	view.messageIDLock.Lock()
+	view.messageIDs = make(map[string]*messages.UIMessage)
+	view.msgBuffer = make([]*messages.UIMessage, 0)
+	view.messages = make([]*messages.UIMessage, 0)
+	view.initialHistoryLoaded = false
+	view.ScrollOffset = 0
+	view._widestSender = 5
+	view.prevMsgCount = -1
+	view.messagesLock.Unlock()
+	view.msgBufferLock.Unlock()
+	view.messageIDLock.Unlock()
+}
+
 func (view *MessageView) updateWidestSender(sender string) {
 	if len(sender) > int(view._widestSender) {
 		if len(sender) > view.MaxSenderWidth {

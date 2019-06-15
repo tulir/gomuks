@@ -423,8 +423,10 @@ func (list *RoomList) OnMouseEvent(event mauview.MouseEvent) bool {
 	switch event.Buttons() {
 	case tcell.WheelUp:
 		list.AddScrollOffset(-WheelScrollOffsetDiff)
+		return true
 	case tcell.WheelDown:
 		list.AddScrollOffset(WheelScrollOffsetDiff)
+		return true
 	case tcell.Button1:
 		x, y := event.Position()
 		return list.clickRoom(y, x, event.Modifiers() == tcell.ModCtrl)
@@ -486,7 +488,8 @@ func (list *RoomList) clickRoom(line, column int, mod bool) bool {
 				if trl.maxShown < 10 {
 					trl.maxShown = 10
 				}
-				break
+				list.RUnlock()
+				return true
 			}
 		}
 		// Tag footer

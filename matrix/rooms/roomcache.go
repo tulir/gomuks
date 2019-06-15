@@ -106,7 +106,7 @@ func (cache *RoomCache) LoadList() error {
 func (cache *RoomCache) SaveLoadedRooms() {
 	cache.Lock()
 	defer cache.Unlock()
-	cache.clean()
+	cache.clean(false)
 	for node := cache.head; node != nil; node = node.prev {
 		node.Save()
 	}
@@ -194,8 +194,7 @@ func (cache *RoomCache) GetOrCreate(roomID string) *Room {
 
 func (cache *RoomCache) get(roomID string) *Room {
 	node, ok := cache.Map[roomID]
-	if ok && node != nil && node.Loaded() {
-		cache.touch(node)
+	if ok && node != nil {
 		return node
 	}
 	return nil
@@ -273,18 +272,29 @@ func (cache *RoomCache) llPush(node *Room) {
 		cache.tail = node
 	}
 	cache.size++
-	cache.clean()
+	cache.clean(false)
 }
 
-func (cache *RoomCache) clean() {
+func (cache *RoomCache) ForceClean() {
+	cache.Lock()
+	cache.clean(true)
+	cache.Unlock()
+}
+
+func (cache *RoomCache) clean(force bool) {
 	origSize := cache.size
 	maxTS := time.Now().Unix() - cache.maxAge
 	for cache.size > cache.maxSize {
-		if cache.tail.touch > maxTS {
+		if cache.tail.touch > maxTS && !force {
 			break
 		}
-		cache.tail.Unload()
-		cache.llPop(cache.tail)
+		ok := cache.tail.Unload()
+		node := cache.tail
+		cache.llPop(node)
+		if !ok {
+			debug.Print("Unload returned false, pushing node back")
+			cache.llPush(node)
+		}
 	}
 	if cleaned := origSize - cache.size; cleaned > 0 {
 		debug.Print("Cleaned", cleaned, "rooms")
@@ -295,7 +305,11 @@ func (cache *RoomCache) Unload(node *Room) {
 	cache.Lock()
 	defer cache.Unlock()
 	cache.llPop(node)
-	node.Unload()
+	ok := node.Unload()
+	if !ok {
+		debug.Print("Unload returned false, pushing node back")
+		cache.llPush(node)
+	}
 }
 
 func (cache *RoomCache) newRoom(roomID string) *Room {
