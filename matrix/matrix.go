@@ -321,7 +321,7 @@ func (c *Container) HandleRedaction(source EventSource, evt *mautrix.Event) {
 		debug.Print("Failed to mark", evt.Redacts, "as redacted:", err)
 	}
 
-	if !room.Loaded() {
+	if !room.Loaded() || redactedEvt == nil {
 		return
 	}
 

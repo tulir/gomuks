@@ -123,7 +123,7 @@ func (hm *HistoryManager) Update(room *rooms.Room, eventID string, update func(e
 		}
 		stream := tx.Bucket(bucketRoomStreams).Bucket(rid)
 		eventData := stream.Get(streamIndex)
-		if eventData == nil {
+		if eventData == nil || len(eventData) == 0 {
 			return EventNotFoundError
 		}
 
