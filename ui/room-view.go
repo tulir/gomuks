@@ -333,12 +333,22 @@ func (view *RoomView) autocompleteEmoji(word string) (completions []string) {
 	if len(word) == 0 || word[0] != ':' {
 		return
 	}
+	var valueCompletion1 string
+	var manyValues bool
 	for name, value := range emoji.CodeMap() {
 		if name == word {
 			return []string{value}
 		} else if strings.HasPrefix(name, word) {
 			completions = append(completions, name)
+			if valueCompletion1 == "" {
+				valueCompletion1 = value
+			} else if valueCompletion1 != value {
+				manyValues = true
+			}
 		}
+	}
+	if !manyValues && len(completions) > 0 {
+		return []string{emoji.CodeMap()[completions[0]]}
 	}
 	return
 }
