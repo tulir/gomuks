@@ -73,6 +73,7 @@ type Room struct {
 	PrevBatch string
 	// The MXID of the user whose session this room was created for.
 	SessionUserID string
+	SessionMember *mautrix.Member
 
 	// The number of unread messages that were notified about.
 	UnreadMessages   []UnreadMessage
@@ -362,8 +363,11 @@ func (room *Room) UpdateState(event *mautrix.Event) {
 		}
 		room.aliasesCache = nil
 	case mautrix.StateMember:
+		userID := event.GetStateKey()
+		if userID == room.SessionUserID {
+			room.SessionMember = room.eventToMember(userID, &event.Content)
+		}
 		if room.memberCache != nil {
-			userID := event.GetStateKey()
 			if event.Content.Membership == mautrix.MembershipLeave || event.Content.Membership == mautrix.MembershipBan {
 				delete(room.memberCache, userID)
 			} else if event.Content.Membership == mautrix.MembershipInvite || event.Content.Membership == mautrix.MembershipJoin {
@@ -567,6 +571,9 @@ func (room *Room) createMemberCache() map[string]*mautrix.Member {
 				cache[userID] = member
 				room.updateNthMemberCache(userID, member)
 			}
+			if userID == room.SessionUserID {
+				room.SessionMember = member
+			}
 		}
 	}
 	room.lock.RUnlock()
@@ -589,6 +596,9 @@ func (room *Room) GetMembers() map[string]*mautrix.Member {
 // GetMember returns the member with the given MXID.
 // If the member doesn't exist, nil is returned.
 func (room *Room) GetMember(userID string) *mautrix.Member {
+	if userID == room.SessionUserID && room.SessionMember != nil {
+		return room.SessionMember
+	}
 	room.Load()
 	room.createMemberCache()
 	room.lock.RLock()
