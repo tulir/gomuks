@@ -270,6 +270,9 @@ func (view *MainView) switchRoom(tag string, room *rooms.Room, lock bool) {
 	view.currentRoom = roomView
 	view.MarkRead(roomView)
 	view.roomList.SetSelected(tag, room)
+	view.flex.SetFocused(view.roomView)
+	view.focused = view.roomView
+	view.roomView.Focus()
 	view.parent.Render()
 
 	if msgView := roomView.MessageView(); len(msgView.messages) < 20 && !msgView.initialHistoryLoaded {
