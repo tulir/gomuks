@@ -69,6 +69,9 @@ func directParseEvent(matrix ifc.MatrixContainer, room *rooms.Room, evt *mautrix
 	if member != nil {
 		displayname = member.Displayname
 	}
+	if evt.Unsigned.RedactedBecause != nil || evt.Type == mautrix.EventRedaction {
+		return NewRedactedMessage(evt, displayname)
+	}
 	switch evt.Type {
 	case mautrix.EventSticker:
 		evt.Content.MsgType = mautrix.MsgImage

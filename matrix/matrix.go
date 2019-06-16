@@ -209,6 +209,7 @@ func (c *Container) OnLogin() {
 	// Just pass encrypted events as messages, they'll show up with an encryption unsupported message.
 	c.syncer.OnEventType(mautrix.EventEncrypted, c.HandleMessage)
 	c.syncer.OnEventType(mautrix.EventSticker, c.HandleMessage)
+	c.syncer.OnEventType(mautrix.EventRedaction, c.HandleRedaction)
 	c.syncer.OnEventType(mautrix.StateAliases, c.HandleMessage)
 	c.syncer.OnEventType(mautrix.StateCanonicalAlias, c.HandleMessage)
 	c.syncer.OnEventType(mautrix.StateTopic, c.HandleMessage)
@@ -304,6 +305,41 @@ func (c *Container) SendPreferencesToMatrix() {
 	_, err := c.client.MakeRequest("PUT", u, &c.config.Preferences, nil)
 	if err != nil {
 		debug.Print("Failed to update preferences:", err)
+	}
+}
+
+func (c *Container) HandleRedaction(source EventSource, evt *mautrix.Event) {
+	room := c.GetOrCreateRoom(evt.RoomID)
+	var redactedEvt *mautrix.Event
+	err := c.history.Update(room, evt.Redacts, func(redacted *mautrix.Event) error {
+		redacted.Unsigned.RedactedBy = evt.ID
+		redacted.Unsigned.RedactedBecause = evt
+		redactedEvt = redacted
+		return nil
+	})
+	if err != nil {
+		debug.Print("Failed to mark", evt.Redacts, "as redacted:", err)
+	}
+
+	if !room.Loaded() {
+		return
+	}
+
+	mainView := c.ui.MainView()
+
+	roomView := mainView.GetRoom(evt.RoomID)
+	if roomView == nil {
+		debug.Printf("Failed to handle event %v: No room view found.", evt)
+		return
+	}
+
+	// TODO make this less hacky?
+	message := roomView.ParseEvent(redactedEvt)
+	if message != nil {
+		roomView.AddMessage(message)
+		if c.syncer.FirstSyncDone {
+			c.ui.Render()
+		}
 	}
 }
 

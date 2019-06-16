@@ -21,6 +21,7 @@ import (
 	"compress/gzip"
 	"encoding/binary"
 	"encoding/gob"
+	"errors"
 
 	sync "github.com/sasha-s/go-deadlock"
 	bolt "go.etcd.io/bbolt"
@@ -105,6 +106,37 @@ func (hm *HistoryManager) Get(room *rooms.Room, eventID string) (event *mautrix.
 		return umErr
 	})
 	return
+}
+
+var EventNotFoundError = errors.New("event not found")
+
+func (hm *HistoryManager) Update(room *rooms.Room, eventID string, update func(event *mautrix.Event) error) error {
+	return hm.db.Update(func (tx *bolt.Tx) error {
+		rid := []byte(room.ID)
+		eventIDs := tx.Bucket(bucketRoomEventIDs).Bucket(rid)
+		if eventIDs == nil {
+			return nil
+		}
+		streamIndex := eventIDs.Get([]byte(eventID))
+		if streamIndex == nil {
+			return nil
+		}
+		stream := tx.Bucket(bucketRoomStreams).Bucket(rid)
+		eventData := stream.Get(streamIndex)
+		if eventData == nil {
+			return EventNotFoundError
+		}
+
+		if event, err := unmarshalEvent(eventData); err != nil {
+			return err
+		} else if err = update(event); err != nil {
+			return err
+		} else if eventData, err = marshalEvent(event); err != nil {
+			return err
+		} else {
+			return stream.Put(streamIndex, eventData)
+		}
+	})
 }
 
 func (hm *HistoryManager) Append(room *rooms.Room, events []*mautrix.Event) error {
