@@ -20,6 +20,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"math"
 	"os"
 	"runtime"
 	dbg "runtime/debug"
@@ -103,6 +104,59 @@ func cmdRainbowMe(cmd *Command) {
 func cmdNotice(cmd *Command) {
 	go cmd.Room.SendMessage(mautrix.MsgNotice, strings.Join(cmd.Args, " "))
 	cmd.UI.Render()
+}
+
+func cmdTags(cmd *Command) {
+	tags := cmd.Room.MxRoom().RawTags
+	if len(tags) == 0 {
+		if cmd.Room.MxRoom().IsDirect {
+			cmd.Reply("This room has no tags, but it's marked as a direct chat.")
+		} else {
+			cmd.Reply("This room has no tags.")
+		}
+		return
+	}
+	var resp strings.Builder
+	resp.WriteString("Tags in this room:\n")
+	for _, tag := range tags {
+		if tag.Order != "" {
+			_, _ = fmt.Fprintf(&resp, "%s (order: %s)\n", tag.Tag, tag.Order)
+		} else {
+			_, _ = fmt.Fprintf(&resp, "%s (no order)\n", tag.Tag)
+		}
+	}
+	cmd.Reply(strings.TrimSpace(resp.String()))
+}
+
+func cmdTag(cmd *Command) {
+	if len(cmd.Args) == 0 {
+		cmd.Reply("Usage: /tag <tag> [order]")
+		return
+	}
+	order := math.NaN()
+	if len(cmd.Args) > 1 {
+		var err error
+		order, err = strconv.ParseFloat(cmd.Args[1], 64)
+		if err != nil {
+			cmd.Reply("%s is not a valid order: %v", cmd.Args[1], err)
+			return
+		}
+	}
+	err := cmd.Matrix.Client().AddTag(cmd.Room.MxRoom().ID, cmd.Args[0], order)
+	if err != nil {
+		cmd.Reply("Failed to add tag:", err)
+	}
+}
+
+func cmdUntag(cmd *Command) {
+	if len(cmd.Args) == 0 {
+		cmd.Reply("Usage: /untag <tag>")
+		return
+	}
+	err := cmd.Matrix.Client().RemoveTag(cmd.Room.MxRoom().ID, cmd.Args[0])
+	if err != nil {
+		cmd.Reply("Failed to remove tag:", err)
+	}
 }
 
 func cmdRoomNick(cmd *Command) {

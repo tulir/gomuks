@@ -214,6 +214,7 @@ func (s *GomuksSyncer) GetFilterJSON(userID string) json.RawMessage {
 			Timeline: mautrix.FilterPart{
 				Types: []string{
 					"m.room.message",
+					"m.room.redaction",
 					"m.room.encrypted",
 					"m.sticker",
 					"m.reaction",

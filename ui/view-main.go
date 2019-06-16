@@ -370,8 +370,13 @@ func (view *MainView) UpdateTags(room *rooms.Room) {
 	if !view.roomList.Contains(room.ID) {
 		return
 	}
+	reselect := view.roomList.selected == room
 	view.roomList.Remove(room)
 	view.roomList.Add(room)
+	if reselect {
+		view.roomList.SetSelected(room.Tags()[0].Tag, room)
+	}
+	view.parent.Render()
 }
 
 func (view *MainView) SetTyping(roomID string, users []string) {
