@@ -108,6 +108,8 @@ func NewCommandProcessor(parent *MainView) *CommandProcessor {
 			"rainbow":         cmdRainbow,
 			"invite":          cmdInvite,
 			"hprof":           cmdHeapProfile,
+			"cprof":           cmdCPUProfile,
+			"trace":           cmdTrace,
 		},
 	}
 }

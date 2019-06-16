@@ -17,9 +17,7 @@
 package messages
 
 import (
-	"fmt"
-	"strings"
-
+	ifc "maunium.net/go/gomuks/interface"
 	"maunium.net/go/mautrix"
 	"maunium.net/go/mauview"
 	"maunium.net/go/tcell"
@@ -29,30 +27,27 @@ import (
 )
 
 type HTMLMessage struct {
-	BaseMessage
-
 	Root      html.Entity
 	FocusedBg tcell.Color
 	focused   bool
 }
 
-func NewHTMLMessage(event *mautrix.Event, displayname string, root html.Entity) UIMessage {
-	return &HTMLMessage{
-		BaseMessage: newBaseMessage(event, displayname),
-		Root:        root,
-	}
+func NewHTMLMessage(event *mautrix.Event, displayname string, root html.Entity) *UIMessage {
+	return newUIMessage(event, displayname, &HTMLMessage{
+		Root: root,
+	})
 }
 
-func (hw *HTMLMessage) Clone() UIMessage {
+func (hw *HTMLMessage) RegisterMatrix(matrix ifc.MatrixContainer) {}
+
+func (hw *HTMLMessage) Clone() MessageRenderer {
 	return &HTMLMessage{
-		BaseMessage: hw.BaseMessage.clone(),
-		Root:        hw.Root.Clone(),
-		FocusedBg:   hw.FocusedBg,
+		Root:      hw.Root.Clone(),
+		FocusedBg: hw.FocusedBg,
 	}
 }
 
 func (hw *HTMLMessage) Draw(screen mauview.Screen) {
-	screen = hw.DrawReply(screen)
 	if hw.focused {
 		screen.SetStyle(tcell.StyleDefault.Background(hw.FocusedBg))
 	}
@@ -80,18 +75,17 @@ func (hw *HTMLMessage) OnPasteEvent(event mauview.PasteEvent) bool {
 	return false
 }
 
-func (hw *HTMLMessage) CalculateBuffer(preferences config.UserPreferences, width int) {
+func (hw *HTMLMessage) CalculateBuffer(preferences config.UserPreferences, width int, msg *UIMessage) {
 	if width < 2 {
 		return
 	}
-	hw.CalculateReplyBuffer(preferences, width)
 	// TODO account for bare messages in initial startX
 	startX := 0
 	hw.Root.CalculateBuffer(width, startX, preferences.BareMessageView)
 }
 
 func (hw *HTMLMessage) Height() int {
-	return hw.ReplyHeight() + hw.Root.Height()
+	return hw.Root.Height()
 }
 
 func (hw *HTMLMessage) PlainText() string {
@@ -103,8 +97,5 @@ func (hw *HTMLMessage) NotificationContent() string {
 }
 
 func (hw *HTMLMessage) String() string {
-	return fmt.Sprintf("&messages.HTMLMessage{\n" +
-		"    Base=%s,\n" +
-		"    Root=||\n%s\n" +
-		"}", strings.Replace(hw.BaseMessage.String(), "\n", "\n    ", -1), hw.Root.String())
+	return hw.Root.String()
 }

@@ -43,14 +43,14 @@ type MainView interface {
 	GetRoom(roomID string) RoomView
 	AddRoom(room *rooms.Room)
 	RemoveRoom(room *rooms.Room)
-	SetRooms(rooms map[string]*rooms.Room)
+	SetRooms(rooms *rooms.RoomCache)
+	Bump(room *rooms.Room)
 
 	UpdateTags(room *rooms.Room)
 
 	SetTyping(roomID string, users []string)
 
 	NotifyMessage(room *rooms.Room, message Message, should pushrules.PushActionArrayShould)
-	InitialSyncDone()
 }
 
 type RoomView interface {
@@ -68,13 +68,10 @@ type RoomView interface {
 
 type Message interface {
 	ID() string
-	TxnID() string
-	SenderID() string
-	Timestamp() time.Time
+	Time() time.Time
 	NotificationSenderName() string
 	NotificationContent() string
 
-	SetState(state mautrix.OutgoingEventState)
 	SetIsHighlight(highlight bool)
 	SetID(id string)
 }

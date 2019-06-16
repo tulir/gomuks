@@ -22,6 +22,7 @@ import (
 	"image/color"
 
 	"maunium.net/go/mautrix"
+	"maunium.net/go/mauview"
 	"maunium.net/go/tcell"
 
 	"maunium.net/go/gomuks/config"
@@ -32,32 +33,30 @@ import (
 )
 
 type ImageMessage struct {
-	BaseMessage
 	Body       string
 	Homeserver string
 	FileID     string
 	data       []byte
+	buffer     []tstring.TString
 
 	matrix ifc.MatrixContainer
 }
 
 // NewImageMessage creates a new ImageMessage object with the provided values and the default state.
-func NewImageMessage(matrix ifc.MatrixContainer, event *mautrix.Event, displayname string, body, homeserver, fileID string, data []byte) UIMessage {
-	return &ImageMessage{
-		newBaseMessage(event, displayname),
-		body,
-		homeserver,
-		fileID,
-		data,
-		matrix,
-	}
+func NewImageMessage(matrix ifc.MatrixContainer, event *mautrix.Event, displayname string, body, homeserver, fileID string, data []byte) *UIMessage {
+	return newUIMessage(event, displayname, &ImageMessage{
+		Body: body,
+		Homeserver: homeserver,
+		FileID: fileID,
+		data: data,
+		matrix: matrix,
+	})
 }
 
-func (msg *ImageMessage) Clone() UIMessage {
+func (msg *ImageMessage) Clone() MessageRenderer {
 	data := make([]byte, len(msg.data))
 	copy(data, msg.data)
 	return &ImageMessage{
-		BaseMessage: msg.BaseMessage.clone(),
 		Body:        msg.Body,
 		Homeserver:  msg.Homeserver,
 		FileID:      msg.FileID,
@@ -70,7 +69,7 @@ func (msg *ImageMessage) RegisterMatrix(matrix ifc.MatrixContainer) {
 	msg.matrix = matrix
 
 	if len(msg.data) == 0 {
-		go msg.updateData()
+		//FIXME go msg.updateData()
 	}
 }
 
@@ -80,6 +79,10 @@ func (msg *ImageMessage) NotificationContent() string {
 
 func (msg *ImageMessage) PlainText() string {
 	return fmt.Sprintf("%s: %s", msg.Body, msg.matrix.GetDownloadURL(msg.Homeserver, msg.FileID))
+}
+
+func (msg *ImageMessage) String() string {
+	return fmt.Sprintf(`&messages.ImageMessage{Body="%s", Homeserver="%s", FileID="%s"}`, msg.Body, msg.Homeserver, msg.FileID)
 }
 
 func (msg *ImageMessage) updateData() {
@@ -101,14 +104,13 @@ func (msg *ImageMessage) Path() string {
 // CalculateBuffer generates the internal buffer for this message that consists
 // of the text of this message split into lines at most as wide as the width
 // parameter.
-func (msg *ImageMessage) CalculateBuffer(prefs config.UserPreferences, width int) {
+func (msg *ImageMessage) CalculateBuffer(prefs config.UserPreferences, width int, uiMsg *UIMessage) {
 	if width < 2 {
 		return
 	}
-	msg.CalculateReplyBuffer(prefs, width)
 
 	if prefs.BareMessageView || prefs.DisableImages {
-		msg.calculateBufferWithText(prefs, tstring.NewTString(msg.PlainText()), width)
+		msg.buffer = calculateBufferWithText(prefs, tstring.NewTString(msg.PlainText()), width, uiMsg)
 		return
 	}
 
@@ -120,4 +122,14 @@ func (msg *ImageMessage) CalculateBuffer(prefs config.UserPreferences, width int
 	}
 
 	msg.buffer = image.Render()
+}
+
+func (msg *ImageMessage) Height() int {
+	return len(msg.buffer)
+}
+
+func (msg *ImageMessage) Draw(screen mauview.Screen) {
+	for y, line := range msg.buffer {
+		line.Draw(screen, 0, y)
+	}
 }

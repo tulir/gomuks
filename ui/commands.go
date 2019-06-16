@@ -19,10 +19,15 @@ package ui
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 	"runtime"
+	dbg "runtime/debug"
 	"runtime/pprof"
+	"runtime/trace"
+	"strconv"
 	"strings"
+	"time"
 	"unicode"
 
 	"github.com/lucasb-eyer/go-colorful"
@@ -72,40 +77,80 @@ var rainbow = GradientTable{
 
 func cmdHeapProfile(cmd *Command) {
 	runtime.GC()
-	memProfile, err := os.Create("gomuks.prof")
+	dbg.FreeOSMemory()
+	memProfile, err := os.Create("gomuks.heap.prof")
 	if err != nil {
-		debug.Print(err)
+		debug.Print("Failed to open gomuks.heap.prof:", err)
+		return
 	}
-	defer memProfile.Close()
+	defer func() {
+		err := memProfile.Close()
+		if err != nil {
+			debug.Print("Failed to close gomuks.heap.prof:", err)
+		}
+	}()
 	if err := pprof.WriteHeapProfile(memProfile); err != nil {
-		debug.Print(err)
+		debug.Print("Heap profile error:", err)
 	}
+}
+
+func runTimedProfile(cmd *Command, start func(writer io.Writer) error, stop func(), task, file string) {
+	if len(cmd.Args) == 0 {
+		cmd.Reply("Usage: /%s <seconds>", cmd.Command)
+	} else if dur, err := strconv.Atoi(cmd.Args[0]); err != nil || dur < 0 {
+		cmd.Reply("Usage: /%s <seconds>", cmd.Command)
+	} else if cpuProfile, err := os.Create(file); err != nil {
+		debug.Printf("Failed to open %s: %v", file, err)
+	} else if err = start(cpuProfile); err != nil {
+		_ = cpuProfile.Close()
+		debug.Print(task, "error:", err)
+	} else {
+		cmd.Reply("Started %s for %d seconds", task, dur)
+		go func() {
+			time.Sleep(time.Duration(dur) * time.Second)
+			stop()
+			cmd.Reply("%s finished.", task)
+
+			err := cpuProfile.Close()
+			if err != nil {
+				debug.Print("Failed to close gomuks.cpu.prof:", err)
+			}
+		}()
+	}
+}
+
+func cmdCPUProfile(cmd *Command) {
+	runTimedProfile(cmd, pprof.StartCPUProfile, pprof.StopCPUProfile, "CPU profiling", "gomuks.cpu.prof")
+}
+
+func cmdTrace(cmd *Command) {
+	runTimedProfile(cmd, trace.Start, trace.Stop, "Call tracing", "gomuks.trace")
 }
 
 // TODO this command definitely belongs in a plugin once we have a plugin system.
 func cmdRainbow(cmd *Command) {
 	text := strings.Join(cmd.Args, " ")
 	var html strings.Builder
-	fmt.Fprint(&html, "**🌈** ")
+	_, _ = fmt.Fprint(&html, "**🌈** ")
 	for i, char := range text {
 		if unicode.IsSpace(char) {
 			html.WriteRune(char)
 			continue
 		}
 		color := rainbow.GetInterpolatedColorFor(float64(i) / float64(len(text))).Hex()
-		fmt.Fprintf(&html, "<font color=\"%s\">%c</font>", color, char)
+		_, _ = fmt.Fprintf(&html, "<font color=\"%s\">%c</font>", color, char)
 	}
 	go cmd.Room.SendMessage("m.text", html.String())
 	cmd.UI.Render()
 }
 
 func cmdQuit(cmd *Command) {
-	cmd.Gomuks.Stop()
+	cmd.Gomuks.Stop(true)
 }
 
 func cmdClearCache(cmd *Command) {
 	cmd.Config.Clear()
-	cmd.Gomuks.Stop()
+	cmd.Gomuks.Stop(false)
 }
 
 func cmdUnknownCommand(cmd *Command) {

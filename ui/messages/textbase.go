@@ -52,12 +52,12 @@ func matchBoundaryPattern(bare bool, extract tstring.TString) tstring.TString {
 // CalculateBuffer generates the internal buffer for this message that consists
 // of the text of this message split into lines at most as wide as the width
 // parameter.
-func (msg *BaseMessage) calculateBufferWithText(prefs config.UserPreferences, text tstring.TString, width int) {
+func calculateBufferWithText(prefs config.UserPreferences, text tstring.TString, width int, msg *UIMessage) []tstring.TString {
 	if width < 2 {
-		return
+		return nil
 	}
 
-	msg.buffer = []tstring.TString{}
+	var buffer []tstring.TString
 
 	if prefs.BareMessageView {
 		newText := tstring.NewTString(msg.FormatTime())
@@ -74,7 +74,7 @@ func (msg *BaseMessage) calculateBufferWithText(prefs config.UserPreferences, te
 	newlines := 0
 	for _, str := range forcedLinebreaks {
 		if len(str) == 0 && newlines < 1 {
-			msg.buffer = append(msg.buffer, tstring.TString{})
+			buffer = append(buffer, tstring.TString{})
 			newlines++
 		} else {
 			newlines = 0
@@ -88,8 +88,9 @@ func (msg *BaseMessage) calculateBufferWithText(prefs config.UserPreferences, te
 				}
 				extract = matchBoundaryPattern(prefs.BareMessageView, extract)
 			}
-			msg.buffer = append(msg.buffer, extract)
+			buffer = append(buffer, extract)
 			str = str[len(extract):]
 		}
 	}
+	return buffer
 }

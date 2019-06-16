@@ -31,10 +31,10 @@ import (
 	"maunium.net/go/gomuks/ui/widget"
 )
 
-func getCachedEvent(mainView ifc.MainView, roomID, eventID string) UIMessage {
+func getCachedEvent(mainView ifc.MainView, roomID, eventID string) *UIMessage {
 	if roomView := mainView.GetRoom(roomID); roomView != nil {
 		if replyToIfcMsg := roomView.GetEvent(eventID); replyToIfcMsg != nil {
-			if replyToMsg, ok := replyToIfcMsg.(UIMessage); ok && replyToMsg != nil {
+			if replyToMsg, ok := replyToIfcMsg.(*UIMessage); ok && replyToMsg != nil {
 				return replyToMsg
 			}
 		}
@@ -42,24 +42,17 @@ func getCachedEvent(mainView ifc.MainView, roomID, eventID string) UIMessage {
 	return nil
 }
 
-func ParseEvent(matrix ifc.MatrixContainer, mainView ifc.MainView, room *rooms.Room, evt *mautrix.Event) UIMessage {
+func ParseEvent(matrix ifc.MatrixContainer, mainView ifc.MainView, room *rooms.Room, evt *mautrix.Event) *UIMessage {
 	msg := directParseEvent(matrix, room, evt)
 	if msg == nil {
 		return nil
 	}
 	if len(evt.Content.GetReplyTo()) > 0 {
-		replyToRoom := room
-		if len(evt.Content.RelatesTo.InReplyTo.RoomID) > 0 {
-			replyToRoom = matrix.GetRoom(evt.Content.RelatesTo.InReplyTo.RoomID)
-		}
-
-		if replyToMsg := getCachedEvent(mainView, replyToRoom.ID, evt.Content.GetReplyTo()); replyToMsg != nil {
-			replyToMsg = replyToMsg.Clone()
-			replyToMsg.SetReplyTo(nil)
-			msg.SetReplyTo(replyToMsg)
-		} else if replyToEvt, _ := matrix.GetEvent(replyToRoom, evt.Content.GetReplyTo()); replyToEvt != nil {
-			if replyToMsg := directParseEvent(matrix, replyToRoom, replyToEvt); replyToMsg != nil {
-				msg.SetReplyTo(replyToMsg)
+		if replyToMsg := getCachedEvent(mainView, room.ID, evt.Content.GetReplyTo()); replyToMsg != nil {
+			msg.ReplyTo = replyToMsg.Clone()
+		} else if replyToEvt, _ := matrix.GetEvent(room, evt.Content.GetReplyTo()); replyToEvt != nil {
+			if replyToMsg := directParseEvent(matrix, room, replyToEvt); replyToMsg != nil {
+				msg.ReplyTo = replyToMsg
 			} else {
 				// TODO add unrenderable reply header
 			}
@@ -70,15 +63,22 @@ func ParseEvent(matrix ifc.MatrixContainer, mainView ifc.MainView, room *rooms.R
 	return msg
 }
 
-func directParseEvent(matrix ifc.MatrixContainer, room *rooms.Room, evt *mautrix.Event) UIMessage {
+func directParseEvent(matrix ifc.MatrixContainer, room *rooms.Room, evt *mautrix.Event) *UIMessage {
+	displayname := evt.Sender
+	member := room.GetMember(evt.Sender)
+	if member != nil {
+		displayname = member.Displayname
+	}
 	switch evt.Type {
 	case mautrix.EventSticker:
 		evt.Content.MsgType = mautrix.MsgImage
 		fallthrough
 	case mautrix.EventMessage:
-		return ParseMessage(matrix, room, evt)
+		return ParseMessage(matrix, room, evt, displayname)
+	case mautrix.EventEncrypted:
+		return NewExpandedTextMessage(evt, displayname, tstring.NewStyleTString("Encrypted messages are not yet supported", tcell.StyleDefault.Italic(true)))
 	case mautrix.StateTopic, mautrix.StateRoomName, mautrix.StateAliases, mautrix.StateCanonicalAlias:
-		return ParseStateEvent(matrix, room, evt)
+		return ParseStateEvent(evt, displayname)
 	case mautrix.StateMember:
 		return ParseMembershipEvent(room, evt)
 	}
@@ -86,12 +86,7 @@ func directParseEvent(matrix ifc.MatrixContainer, room *rooms.Room, evt *mautrix
 	return nil
 }
 
-func ParseStateEvent(matrix ifc.MatrixContainer, room *rooms.Room, evt *mautrix.Event) UIMessage {
-	displayname := evt.Sender
-	member := room.GetMember(evt.Sender)
-	if member != nil {
-		displayname = member.Displayname
-	}
+func ParseStateEvent(evt *mautrix.Event, displayname string) *UIMessage {
 	text := tstring.NewColorTString(displayname, widget.GetHashColor(evt.Sender))
 	switch evt.Type {
 	case mautrix.StateTopic:
@@ -124,14 +119,12 @@ func ParseStateEvent(matrix ifc.MatrixContainer, room *rooms.Room, evt *mautrix.
 	return NewExpandedTextMessage(evt, displayname, text)
 }
 
-func ParseMessage(matrix ifc.MatrixContainer, room *rooms.Room, evt *mautrix.Event) UIMessage {
-	displayname := evt.Sender
-	member := room.GetMember(evt.Sender)
-	if member != nil {
-		displayname = member.Displayname
-	}
+func ParseMessage(matrix ifc.MatrixContainer, room *rooms.Room, evt *mautrix.Event, displayname string) *UIMessage {
 	if len(evt.Content.GetReplyTo()) > 0 {
 		evt.Content.RemoveReplyFallback()
+	}
+	if evt.Content.GetRelatesTo().Type == mautrix.RelReplace && evt.Content.NewContent != nil {
+		evt.Content = *evt.Content.NewContent
 	}
 	switch evt.Content.MsgType {
 	case "m.text", "m.notice", "m.emote":
@@ -224,7 +217,7 @@ func getMembershipEventContent(room *rooms.Room, evt *mautrix.Event) (sender str
 	return
 }
 
-func ParseMembershipEvent(room *rooms.Room, evt *mautrix.Event) UIMessage {
+func ParseMembershipEvent(room *rooms.Room, evt *mautrix.Event) *UIMessage {
 	displayname, text := getMembershipEventContent(room, evt)
 	if len(text) == 0 {
 		return nil

@@ -58,8 +58,6 @@ func NewGomuks(uiProvider ifc.UIProvider, configDir, cacheDir string) *Gomuks {
 // Save saves the active session and message history.
 func (gmx *Gomuks) Save() {
 	gmx.config.SaveAll()
-	//debug.Print("Saving history...")
-	//gmx.ui.MainView().SaveAllHistory()
 }
 
 // StartAutosave calls Save() every minute until it receives a stop signal
@@ -70,7 +68,9 @@ func (gmx *Gomuks) StartAutosave() {
 	for {
 		select {
 		case <-ticker.C:
-			gmx.Save()
+			if gmx.config.AuthCache.InitialSyncDone {
+				gmx.Save()
+			}
 		case val := <-gmx.stop:
 			if val {
 				return
@@ -81,13 +81,15 @@ func (gmx *Gomuks) StartAutosave() {
 
 // Stop stops the Matrix syncer, the tview app and the autosave goroutine,
 // then saves everything and calls os.Exit(0).
-func (gmx *Gomuks) Stop() {
+func (gmx *Gomuks) Stop(save bool) {
 	debug.Print("Disconnecting from Matrix...")
 	gmx.matrix.Stop()
 	debug.Print("Cleaning up UI...")
 	gmx.ui.Stop()
 	gmx.stop <- true
-	gmx.Save()
+	if save {
+		gmx.Save()
+	}
 	os.Exit(0)
 }
 
@@ -102,7 +104,7 @@ func (gmx *Gomuks) Start() {
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
 	go func() {
 		<-c
-		gmx.Stop()
+		gmx.Stop(true)
 	}()
 
 	go gmx.StartAutosave()

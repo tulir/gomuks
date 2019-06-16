@@ -1,33 +1,39 @@
 module maunium.net/go/gomuks
 
-go 1.12
+go 1.11
 
 require (
 	github.com/alecthomas/chroma v0.6.3
-	github.com/alecthomas/kong v0.1.16 // indirect
 	github.com/alecthomas/repr v0.0.0-20181024024818-d37bc2a10ba1 // indirect
 	github.com/disintegration/imaging v1.6.0
+	github.com/kr/pretty v0.1.0 // indirect
 	github.com/kyokomi/emoji v2.1.0+incompatible
 	github.com/lithammer/fuzzysearch v1.0.2
 	github.com/lucasb-eyer/go-colorful v1.0.2
-	github.com/mattn/go-colorable v0.1.1 // indirect
-	github.com/mattn/go-isatty v0.0.7 // indirect
+	github.com/mattn/go-isatty v0.0.8 // indirect
 	github.com/mattn/go-runewidth v0.0.4
 	github.com/nu7hatch/gouuid v0.0.0-20131221200532-179d4d0c4d8d // indirect
 	github.com/petermattis/goid v0.0.0-20180202154549-b0b1615b78e5 // indirect
+	github.com/pkg/errors v0.8.1
 	github.com/sasha-s/go-deadlock v0.2.0
-	github.com/shurcooL/sanitized_anchor_name v1.0.0 // indirect
-	github.com/stretchr/objx v0.2.0 // indirect
+	github.com/stretchr/testify v1.3.0
 	go.etcd.io/bbolt v1.3.2
-	golang.org/x/image v0.0.0-20190507092727-e4e5bf290fec
-	golang.org/x/net v0.0.0-20190509222800-a4d6f7feada5
+	golang.org/x/image v0.0.0-20190523035834-f03afa92d3ff
+	golang.org/x/net v0.0.0-20190603091049-60506f45cf65
+	golang.org/x/sys v0.0.0-20190606122018-79a91cf218c4 // indirect
 	gopkg.in/check.v1 v1.0.0-20180628173108-788fd7840127 // indirect
 	gopkg.in/russross/blackfriday.v2 v2.0.1
-	gopkg.in/toast.v1 v1.0.0-20180812000517-0a84660828b2 // indirect
+	gopkg.in/toast.v1 v1.0.0-20180812000517-0a84660828b2
 	gopkg.in/yaml.v2 v2.2.2
-	maunium.net/go/mautrix v0.1.0-alpha.3.0.20190512142959-897a8c5be1d9
-	maunium.net/go/mauview v0.0.0-20190426104003-3e5387b8a125
-	maunium.net/go/tcell v0.0.0-20190426103942-24a060c2189b
+	maunium.net/go/mautrix v0.1.0-alpha.3.0.20190616114735-e5bf3141e88e
+	maunium.net/go/mauview v0.0.0-20190606152754-de9e0a754a5d
+	maunium.net/go/tcell v0.0.0-20190606152714-9a88fc07b3ed
 )
 
 replace gopkg.in/russross/blackfriday.v2 => github.com/russross/blackfriday/v2 v2.0.1
+
+replace (
+	maunium.net/go/mautrix => ../mautrix-go
+	maunium.net/go/mauview => ../../Go/mauview
+	maunium.net/go/tcell => ../../Go/tcell
+)

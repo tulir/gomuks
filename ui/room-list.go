@@ -236,6 +236,10 @@ func (list *RoomList) AddScrollOffset(offset int) {
 func (list *RoomList) First() (string, *rooms.Room) {
 	list.RLock()
 	defer list.RUnlock()
+	return list.first()
+}
+
+func (list *RoomList) first() (string, *rooms.Room) {
 	for _, tag := range list.tags {
 		trl := list.items[tag]
 		if trl.HasVisibleRooms() {
@@ -248,6 +252,10 @@ func (list *RoomList) First() (string, *rooms.Room) {
 func (list *RoomList) Last() (string, *rooms.Room) {
 	list.RLock()
 	defer list.RUnlock()
+	return list.last()
+}
+
+func (list *RoomList) last() (string, *rooms.Room) {
 	for tagIndex := len(list.tags) - 1; tagIndex >= 0; tagIndex-- {
 		tag := list.tags[tagIndex]
 		trl := list.items[tag]
@@ -273,7 +281,7 @@ func (list *RoomList) Previous() (string, *rooms.Room) {
 	if len(list.items) == 0 {
 		return "", nil
 	} else if list.selected == nil {
-		return list.First()
+		return list.first()
 	}
 
 	trl := list.items[list.selectedTag]
@@ -295,11 +303,11 @@ func (list *RoomList) Previous() (string, *rooms.Room) {
 				return prevTag, prevTRL.LastVisible()
 			}
 		}
-		return list.Last()
+		return list.last()
 	} else if index >= 0 {
 		return list.selectedTag, trl.Visible()[index+1].Room
 	}
-	return list.First()
+	return list.first()
 }
 
 func (list *RoomList) Next() (string, *rooms.Room) {
@@ -308,7 +316,7 @@ func (list *RoomList) Next() (string, *rooms.Room) {
 	if len(list.items) == 0 {
 		return "", nil
 	} else if list.selected == nil {
-		return list.First()
+		return list.first()
 	}
 
 	trl := list.items[list.selectedTag]
@@ -330,11 +338,11 @@ func (list *RoomList) Next() (string, *rooms.Room) {
 				return nextTag, nextTRL.FirstVisible()
 			}
 		}
-		return list.First()
+		return list.first()
 	} else if index > 0 {
 		return list.selectedTag, trl.Visible()[index-1].Room
 	}
-	return list.Last()
+	return list.last()
 }
 
 // NextWithActivity Returns next room with activity.
@@ -415,8 +423,10 @@ func (list *RoomList) OnMouseEvent(event mauview.MouseEvent) bool {
 	switch event.Buttons() {
 	case tcell.WheelUp:
 		list.AddScrollOffset(-WheelScrollOffsetDiff)
+		return true
 	case tcell.WheelDown:
 		list.AddScrollOffset(WheelScrollOffsetDiff)
+		return true
 	case tcell.Button1:
 		x, y := event.Position()
 		return list.clickRoom(y, x, event.Modifiers() == tcell.ModCtrl)
@@ -478,7 +488,8 @@ func (list *RoomList) clickRoom(line, column int, mod bool) bool {
 				if trl.maxShown < 10 {
 					trl.maxShown = 10
 				}
-				break
+				list.RUnlock()
+				return true
 			}
 		}
 		// Tag footer

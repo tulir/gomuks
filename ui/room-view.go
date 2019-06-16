@@ -57,6 +57,8 @@ type RoomView struct {
 	ulBorderScreen *mauview.ProxyScreen
 	ulScreen       *mauview.ProxyScreen
 
+	userListLoaded bool
+
 	prevScreen mauview.Screen
 
 	parent *MainView
@@ -91,6 +93,14 @@ func NewRoomView(parent *MainView, room *rooms.Room) *RoomView {
 		config: parent.config,
 	}
 	view.content = NewMessageView(view)
+	view.Room.SetPreUnload(func() bool {
+		if view.parent.currentRoom == view {
+			return false
+		}
+		view.content.Unload()
+		return true
+	})
+	view.Room.SetPostLoad(view.loadTyping)
 
 	view.input.
 		SetBackgroundColor(tcell.ColorDefault).
@@ -99,7 +109,6 @@ func NewRoomView(parent *MainView, room *rooms.Room) *RoomView {
 		SetTabCompleteFunc(view.InputTabComplete)
 
 	view.topic.
-		SetText(strings.Replace(room.GetTopic(), "\n", " ", -1)).
 		SetTextColor(tcell.ColorWhite).
 		SetBackgroundColor(tcell.ColorDarkGreen)
 
@@ -269,14 +278,20 @@ func (view *RoomView) SetCompletions(completions []string) {
 	view.completions.time = time.Now()
 }
 
-func (view *RoomView) SetTyping(users []string) {
-	for index, user := range users {
+func (view *RoomView) loadTyping() {
+	for index, user := range view.typing {
 		member := view.Room.GetMember(user)
 		if member != nil {
-			users[index] = member.Displayname
+			view.typing[index] = member.Displayname
 		}
 	}
+}
+
+func (view *RoomView) SetTyping(users []string) {
 	view.typing = users
+	if view.Room.Loaded() {
+		view.loadTyping()
+	}
 }
 
 type completion struct {
@@ -385,11 +400,11 @@ func (view *RoomView) SendMessage(msgtype mautrix.MessageType, text string) {
 		text = emoji.Sprint(text)
 	}
 	evt := view.parent.matrix.PrepareMarkdownMessage(view.Room.ID, msgtype, text)
-	msg := view.ParseEvent(evt)
+	msg := view.parseEvent(evt)
 	view.AddMessage(msg)
 	eventID, err := view.parent.matrix.SendEvent(evt)
 	if err != nil {
-		msg.SetState(mautrix.EventStateSendFail)
+		msg.State = mautrix.EventStateSendFail
 		// Show shorter version if available
 		if httpErr, ok := err.(mautrix.HTTPError); ok {
 			err = httpErr
@@ -401,7 +416,10 @@ func (view *RoomView) SendMessage(msgtype mautrix.MessageType, text string) {
 		view.parent.parent.Render()
 	} else {
 		debug.Print("Event ID received:", eventID)
-		//view.MessageView().UpdateMessageID(msg, eventID)
+		msg.EventID = eventID
+		msg.State = mautrix.EventStateDefault
+		view.MessageView().setMessageID(msg)
+		view.parent.parent.Render()
 	}
 }
 
@@ -413,12 +431,20 @@ func (view *RoomView) MxRoom() *rooms.Room {
 	return view.Room
 }
 
+func (view *RoomView) Update() {
+	view.topic.SetText(strings.Replace(view.Room.GetTopic(), "\n", " ", -1))
+	if !view.userListLoaded {
+		view.UpdateUserList()
+	}
+}
+
 func (view *RoomView) UpdateUserList() {
 	pls := &mautrix.PowerLevels{}
 	if plEvent := view.Room.GetStateEvent(mautrix.StatePowerLevels, ""); plEvent != nil {
 		pls = plEvent.Content.GetPowerLevels()
 	}
 	view.userList.Update(view.Room.GetMembers(), pls)
+	view.userListLoaded = true
 }
 
 func (view *RoomView) AddServiceMessage(text string) {
@@ -429,8 +455,16 @@ func (view *RoomView) AddMessage(message ifc.Message) {
 	view.content.AddMessage(message, AppendMessage)
 }
 
-func (view *RoomView) ParseEvent(evt *mautrix.Event) ifc.Message {
+func (view *RoomView) parseEvent(evt *mautrix.Event) *messages.UIMessage {
 	return messages.ParseEvent(view.parent.matrix, view.parent, view.Room, evt)
+}
+
+func (view *RoomView) ParseEvent(evt *mautrix.Event) ifc.Message {
+	msg := view.parseEvent(evt)
+	if msg == nil {
+		return nil
+	}
+	return msg
 }
 
 func (view *RoomView) GetEvent(eventID string) ifc.Message {
