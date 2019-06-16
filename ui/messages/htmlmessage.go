@@ -29,6 +29,7 @@ import (
 type HTMLMessage struct {
 	Root      html.Entity
 	FocusedBg tcell.Color
+	TextColor tcell.Color
 	focused   bool
 }
 
@@ -49,7 +50,16 @@ func (hw *HTMLMessage) Clone() MessageRenderer {
 
 func (hw *HTMLMessage) Draw(screen mauview.Screen) {
 	if hw.focused {
-		screen.SetStyle(tcell.StyleDefault.Background(hw.FocusedBg))
+		screen.SetStyle(tcell.StyleDefault.Background(hw.FocusedBg).Foreground(hw.TextColor))
+	}
+	if hw.TextColor != tcell.ColorDefault {
+		hw.Root.AdjustStyle(func(style tcell.Style) tcell.Style {
+			fg, _, _ := style.Decompose()
+			if fg == tcell.ColorDefault {
+				return style.Foreground(hw.TextColor)
+			}
+			return style
+		})
 	}
 	screen.Clear()
 	hw.Root.Draw(screen)
@@ -81,6 +91,7 @@ func (hw *HTMLMessage) CalculateBuffer(preferences config.UserPreferences, width
 	}
 	// TODO account for bare messages in initial startX
 	startX := 0
+	hw.TextColor = msg.TextColor()
 	hw.Root.CalculateBuffer(width, startX, preferences.BareMessageView)
 }
 
