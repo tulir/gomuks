@@ -62,17 +62,57 @@ func (gt GradientTable) GetInterpolatedColorFor(t float64) colorful.Color {
 }
 
 var rainbow = GradientTable{
-	{colorful.LinearRgb(1, 0, 0), 0.0},
-	{colorful.LinearRgb(1, 0.5, 0), 0.1},
-	{colorful.LinearRgb(0.5, 0.5, 0), 0.2}, // Yellow is 0.5, 0.5 instead of 1, 1 to make it readable on light themes
-	{colorful.LinearRgb(0.5, 1, 0), 0.3},
-	{colorful.LinearRgb(0, 1, 0), 0.4},
-	{colorful.LinearRgb(0, 1, 0.5), 0.5},
-	{colorful.LinearRgb(0, 1, 1), 0.6},
-	{colorful.LinearRgb(0, 0.5, 1), 0.7},
-	{colorful.LinearRgb(0.5, 0, 1), 0.8},
-	{colorful.LinearRgb(1, 0, 1), 0.9},
-	{colorful.LinearRgb(1, 0, 0.5), 1},
+	{colorful.LinearRgb(1, 0, 0), 0 / 11.0},
+	{colorful.LinearRgb(1, 0.5, 0), 1 / 11.0},
+	{colorful.LinearRgb(1, 1, 0), 2 / 11.0},
+	{colorful.LinearRgb(0.5, 1, 0), 3 / 11.0},
+	{colorful.LinearRgb(0, 1, 0), 4 / 11.0},
+	{colorful.LinearRgb(0, 1, 0.5), 5 / 11.0},
+	{colorful.LinearRgb(0, 1, 1), 6 / 11.0},
+	{colorful.LinearRgb(0, 0.5, 1), 7 / 11.0},
+	{colorful.LinearRgb(0, 0, 1), 8 / 11.0},
+	{colorful.LinearRgb(0.5, 0, 1), 9 / 11.0},
+	{colorful.LinearRgb(1, 0, 1), 10 / 11.0},
+	{colorful.LinearRgb(1, 0, 0.5), 11 / 11.0},
+}
+
+// TODO this command definitely belongs in a plugin once we have a plugin system.
+func makeRainbow(cmd *Command, msgtype mautrix.MessageType) {
+	text := strings.Join(cmd.Args, " ")
+	var html strings.Builder
+	for i, char := range text {
+		if unicode.IsSpace(char) {
+			html.WriteRune(char)
+			continue
+		}
+		color := rainbow.GetInterpolatedColorFor(float64(i) / float64(len(text))).Hex()
+		_, _ = fmt.Fprintf(&html, "<font color=\"%s\">%c</font>", color, char)
+	}
+	go cmd.Room.SendMessage(msgtype, html.String())
+	cmd.UI.Render()
+}
+
+func cmdRainbow(cmd *Command) {
+	makeRainbow(cmd, mautrix.MsgText)
+}
+
+func cmdRainbowMe(cmd *Command) {
+	makeRainbow(cmd, mautrix.MsgEmote)
+}
+
+func cmdNotice(cmd *Command) {
+	go cmd.Room.SendMessage(mautrix.MsgNotice, strings.Join(cmd.Args, " "))
+	cmd.UI.Render()
+}
+
+func cmdRoomNick(cmd *Command) {
+	room := cmd.Room.MxRoom()
+	member := room.GetMember(room.SessionUserID)
+	member.Displayname = strings.Join(cmd.Args, " ")
+	_, err := cmd.Matrix.Client().SendStateEvent(room.ID, mautrix.StateMember, room.SessionUserID, member)
+	if err != nil {
+		cmd.Reply("Failed to set room nick:", err)
+	}
 }
 
 func cmdHeapProfile(cmd *Command) {
@@ -125,23 +165,6 @@ func cmdCPUProfile(cmd *Command) {
 
 func cmdTrace(cmd *Command) {
 	runTimedProfile(cmd, trace.Start, trace.Stop, "Call tracing", "gomuks.trace")
-}
-
-// TODO this command definitely belongs in a plugin once we have a plugin system.
-func cmdRainbow(cmd *Command) {
-	text := strings.Join(cmd.Args, " ")
-	var html strings.Builder
-	_, _ = fmt.Fprint(&html, "**🌈** ")
-	for i, char := range text {
-		if unicode.IsSpace(char) {
-			html.WriteRune(char)
-			continue
-		}
-		color := rainbow.GetInterpolatedColorFor(float64(i) / float64(len(text))).Hex()
-		_, _ = fmt.Fprintf(&html, "<font color=\"%s\">%c</font>", color, char)
-	}
-	go cmd.Room.SendMessage("m.text", html.String())
-	cmd.UI.Render()
 }
 
 func cmdQuit(cmd *Command) {

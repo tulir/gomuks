@@ -208,6 +208,7 @@ func (s *GomuksSyncer) GetFilterJSON(userID string) json.RawMessage {
 					"m.room.canonical_alias",
 					"m.room.aliases",
 					"m.room.power_levels",
+					"m.room.tombstone",
 				},
 			},
 			Timeline: mautrix.FilterPart{
@@ -223,6 +224,7 @@ func (s *GomuksSyncer) GetFilterJSON(userID string) json.RawMessage {
 					"m.room.canonical_alias",
 					"m.room.aliases",
 					"m.room.power_levels",
+					"m.room.tombstone",
 				},
 				Limit: 50,
 			},
