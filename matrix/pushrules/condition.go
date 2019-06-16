@@ -20,6 +20,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"unicode"
 
 	"maunium.net/go/mautrix"
 
@@ -116,7 +117,19 @@ func (cond *PushCondition) matchDisplayName(room Room, event *mautrix.Event) boo
 	if member == nil {
 		return false
 	}
-	return strings.Contains(event.Content.Body, member.Displayname)
+
+	msg := event.Content.Body
+	isAcceptable := func(r uint8) bool {
+		return unicode.IsSpace(rune(r)) || unicode.IsPunct(rune(r))
+	}
+	length := len(member.Displayname)
+	for index := strings.Index(msg, member.Displayname); index != -1; index = strings.Index(msg, member.Displayname) {
+		if (index <= 0 || isAcceptable(msg[index-1])) && (index + length >= len(msg) || isAcceptable(msg[index+length])) {
+			return true
+		}
+		msg = msg[index+len(member.Displayname):]
+	}
+	return false
 }
 
 func (cond *PushCondition) matchMemberCount(room Room, event *mautrix.Event) bool {
