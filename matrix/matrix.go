@@ -707,7 +707,7 @@ func (c *Container) Download(mxcURL string) (data []byte, hs, id string, err err
 		}
 	}
 
-	//FIXME data, err = c.download(hs, id, cacheFile)
+	data, err = c.download(hs, id, cacheFile)
 	return
 }
 

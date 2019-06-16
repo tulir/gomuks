@@ -69,7 +69,7 @@ func (msg *ImageMessage) RegisterMatrix(matrix ifc.MatrixContainer) {
 	msg.matrix = matrix
 
 	if len(msg.data) == 0 {
-		//FIXME go msg.updateData()
+		go msg.updateData()
 	}
 }
 
