@@ -241,6 +241,7 @@ func (msg *UIMessage) Draw(screen mauview.Screen) {
 
 func (msg *UIMessage) Clone() *UIMessage {
 	clone := *msg
+	clone.ReplyTo = nil
 	clone.Renderer = clone.Renderer.Clone()
 	return &clone
 }
@@ -253,7 +254,8 @@ func (msg *UIMessage) CalculateReplyBuffer(preferences config.UserPreferences, w
 }
 
 func (msg *UIMessage) CalculateBuffer(preferences config.UserPreferences, width int) {
-	msg.Renderer.CalculateBuffer(preferences, width-1, msg)
+	msg.Renderer.CalculateBuffer(preferences, width, msg)
+	msg.CalculateReplyBuffer(preferences, width)
 }
 
 func (msg *UIMessage) DrawReply(screen mauview.Screen) mauview.Screen {

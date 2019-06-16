@@ -148,6 +148,9 @@ func (room *Room) Load() {
 	room.lock.Lock()
 	room.load()
 	room.lock.Unlock()
+	if room.postLoad != nil {
+		room.postLoad()
+	}
 }
 
 func (room *Room) load() {
@@ -177,9 +180,6 @@ func (room *Room) load() {
 		debug.Print("Failed to decode room state:", err)
 	}
 	room.changed = false
-	if room.postLoad != nil {
-		room.postLoad()
-	}
 }
 
 func (room *Room) Touch() {

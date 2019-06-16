@@ -29,7 +29,9 @@ import (
 	"path"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"time"
+	dbg "runtime/debug"
 
 	"maunium.net/go/mautrix"
 	"maunium.net/go/mautrix/format"
@@ -232,6 +234,11 @@ func (c *Container) OnLogin() {
 		debug.Print("Adding rooms to UI")
 		c.ui.MainView().SetRooms(c.config.Rooms)
 		c.ui.Render()
+		// The initial sync can be a bit heavy, so we force run the GC here
+		// after cleaning up rooms from memory above.
+		debug.Print("Running GC")
+		runtime.GC()
+		dbg.FreeOSMemory()
 	}
 	c.client.Syncer = c.syncer
 

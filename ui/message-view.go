@@ -143,7 +143,7 @@ func (view *MessageView) AddMessage(ifcMessage ifc.Message, direction MessageDir
 		view.replaceMessage(oldMsg, message)
 		view.deleteMessageID(message.TxnID)
 		direction = IgnoreMessage
-	} else if oldMsg = view.getMessageByID(message.Relation.EventID); oldMsg != nil {
+	} else if oldMsg = view.getMessageByID(message.Relation.GetReplaceID()); oldMsg != nil {
 		direction = IgnoreMessage
 	}
 

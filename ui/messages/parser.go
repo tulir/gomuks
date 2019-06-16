@@ -49,9 +49,7 @@ func ParseEvent(matrix ifc.MatrixContainer, mainView ifc.MainView, room *rooms.R
 	}
 	if len(evt.Content.GetReplyTo()) > 0 {
 		if replyToMsg := getCachedEvent(mainView, room.ID, evt.Content.GetReplyTo()); replyToMsg != nil {
-			replyToMsg = replyToMsg.Clone()
-			replyToMsg.ReplyTo = nil
-			msg.ReplyTo = replyToMsg
+			msg.ReplyTo = replyToMsg.Clone()
 		} else if replyToEvt, _ := matrix.GetEvent(room, evt.Content.GetReplyTo()); replyToEvt != nil {
 			if replyToMsg := directParseEvent(matrix, room, replyToEvt); replyToMsg != nil {
 				msg.ReplyTo = replyToMsg
