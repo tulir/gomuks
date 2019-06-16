@@ -713,6 +713,9 @@ func (c *Container) Download(mxcURL string) (data []byte, hs, id string, err err
 
 func (c *Container) GetDownloadURL(hs, id string) string {
 	dlURL, _ := url.Parse(c.client.HomeserverURL.String())
+	if dlURL.Scheme == "" {
+		dlURL.Scheme = "https"
+	}
 	dlURL.Path = path.Join(dlURL.Path, "/_matrix/media/v1/download", hs, id)
 	return dlURL.String()
 }

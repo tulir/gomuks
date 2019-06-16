@@ -25,7 +25,7 @@ require (
 	gopkg.in/russross/blackfriday.v2 v2.0.1
 	gopkg.in/toast.v1 v1.0.0-20180812000517-0a84660828b2
 	gopkg.in/yaml.v2 v2.2.2
-	maunium.net/go/mautrix v0.1.0-alpha.3.0.20190616122434-35971ee5ad3c
+	maunium.net/go/mautrix v0.1.0-alpha.3.0.20190616140407-62f6f484857e
 	maunium.net/go/mauview v0.0.0-20190606152754-de9e0a754a5d
 	maunium.net/go/tcell v0.0.0-20190606152714-9a88fc07b3ed
 )
