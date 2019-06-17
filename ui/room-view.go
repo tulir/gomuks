@@ -412,7 +412,7 @@ func (view *RoomView) SendMessage(msgtype mautrix.MessageType, text string) {
 	}
 	evt := view.parent.matrix.PrepareMarkdownMessage(view.Room.ID, msgtype, text)
 	msg := view.parseEvent(evt)
-	view.AddMessage(msg)
+	view.content.AddMessage(msg, AppendMessage)
 	eventID, err := view.parent.matrix.SendEvent(evt)
 	if err != nil {
 		msg.State = event.StateSendFail
@@ -462,20 +462,32 @@ func (view *RoomView) AddServiceMessage(text string) {
 	view.content.AddMessage(messages.NewServiceMessage(text), AppendMessage)
 }
 
-func (view *RoomView) AddMessage(message ifc.Message) {
-	view.content.AddMessage(message, AppendMessage)
-}
-
 func (view *RoomView) parseEvent(evt *event.Event) *messages.UIMessage {
 	return messages.ParseEvent(view.parent.matrix, view.parent, view.Room, evt)
 }
 
-func (view *RoomView) ParseEvent(evt *event.Event) ifc.Message {
-	msg := view.parseEvent(evt)
-	if msg == nil {
-		return nil
+func (view *RoomView) AddHistoryEvent(evt *event.Event) {
+	if msg := view.parseEvent(evt); msg != nil {
+		view.content.AddMessage(msg, PrependMessage)
 	}
-	return msg
+}
+
+func (view *RoomView) AddEvent(evt *event.Event) ifc.Message {
+	if msg := view.parseEvent(evt); msg != nil {
+		view.content.AddMessage(msg, AppendMessage)
+		return msg
+	}
+	return nil
+}
+
+func (view *RoomView) AddRedaction(redactedEvt *event.Event) {
+	view.AddEvent(redactedEvt)
+}
+
+func (view *RoomView) AddEdit(evt *event.Event) {
+	if msg := view.parseEvent(evt); msg != nil {
+		view.content.AddMessage(msg, IgnoreMessage)
+	}
 }
 
 func (view *RoomView) GetEvent(eventID string) ifc.Message {

@@ -453,9 +453,7 @@ func (view *MainView) LoadHistory(roomID string) {
 		return
 	}
 	for _, evt := range history {
-		if message := roomView.ParseEvent(evt); message != nil {
-			msgView.AddMessage(message, PrependMessage)
-		}
+		roomView.AddHistoryEvent(evt)
 	}
 	view.parent.Render()
 }

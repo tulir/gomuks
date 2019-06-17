@@ -143,8 +143,6 @@ func (view *MessageView) AddMessage(ifcMessage ifc.Message, direction MessageDir
 		view.replaceMessage(oldMsg, message)
 		view.deleteMessageID(message.TxnID)
 		direction = IgnoreMessage
-	} else if oldMsg = view.getMessageByID(message.Relation.GetReplaceID()); oldMsg != nil {
-		direction = IgnoreMessage
 	}
 
 	view.updateWidestSender(message.Sender())
@@ -608,6 +606,10 @@ func (view *MessageView) Draw(screen mauview.Screen) {
 				usernameX, line, view.widestSender(),
 				msg.SenderColor())
 			//}
+			if msg.Edited {
+				// TODO add better indicator for edits
+				screen.SetCell(usernameX + view.widestSender(), line, tcell.StyleDefault.Foreground(tcell.ColorDarkRed), '*')
+			}
 			prevMsg = msg
 		}
 

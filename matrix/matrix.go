@@ -334,13 +334,39 @@ func (c *Container) HandleRedaction(source EventSource, evt *mautrix.Event) {
 		return
 	}
 
-	// TODO make this less hacky?
-	message := roomView.ParseEvent(redactedEvt)
-	if message != nil {
-		roomView.AddMessage(message)
-		if c.syncer.FirstSyncDone {
-			c.ui.Render()
-		}
+	roomView.AddRedaction(redactedEvt)
+	if c.syncer.FirstSyncDone {
+		c.ui.Render()
+	}
+}
+
+func (c *Container) HandleEdit(room *rooms.Room, editsID string, editEvent *event.Event) {
+	var origEvt *event.Event
+	err := c.history.Update(room, editsID, func(evt *event.Event) error {
+		evt.Gomuks.Edits = append(evt.Gomuks.Edits, editEvent)
+		origEvt = evt
+		return nil
+	})
+	if err != nil {
+		debug.Print("Failed to store edit in history db:", err)
+	}
+	if !c.config.AuthCache.InitialSyncDone {
+		return
+	}
+
+	roomView := c.ui.MainView().GetRoom(editEvent.RoomID)
+	if roomView == nil {
+		debug.Printf("Failed to handle edit event %v: No room view found.", editEvent)
+		return
+	}
+
+	if !room.Loaded() {
+		return
+	}
+
+	roomView.AddEdit(origEvt)
+	if c.syncer.FirstSyncDone {
+		c.ui.Render()
 	}
 }
 
@@ -351,6 +377,11 @@ func (c *Container) HandleMessage(source EventSource, mxEvent *mautrix.Event) {
 		room.HasLeft = true
 		return
 	} else if source&EventSourceState != 0 {
+		return
+	}
+
+	if editID := mxEvent.Content.GetRelatesTo().GetReplaceID(); len(editID) > 0 {
+		c.HandleEdit(room, editID, event.Wrap(mxEvent))
 		return
 	}
 
@@ -384,10 +415,8 @@ func (c *Container) HandleMessage(source EventSource, mxEvent *mautrix.Event) {
 		}
 	}
 
-	// TODO switch to roomView.AddEvent
-	message := roomView.ParseEvent(evt)
+	message := roomView.AddEvent(evt)
 	if message != nil {
-		roomView.AddMessage(message)
 		roomView.MxRoom().LastReceivedMessage = message.Time()
 		if c.syncer.FirstSyncDone {
 			pushRules := c.PushRules().GetActions(roomView.MxRoom(), evt.Event).Should()

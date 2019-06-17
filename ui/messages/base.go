@@ -54,6 +54,7 @@ type UIMessage struct {
 	State              event.OutgoingState
 	IsHighlight        bool
 	IsService          bool
+	Edited             bool
 	Source             json.RawMessage
 	ReplyTo            *UIMessage
 	Renderer           MessageRenderer
@@ -80,6 +81,7 @@ func newUIMessage(evt *event.Event, displayname string, renderer MessageRenderer
 		State:              evt.Gomuks.OutgoingState,
 		IsHighlight:        false,
 		IsService:          false,
+		Edited:             len(evt.Gomuks.Edits) > 0,
 		Source:             evt.Content.VeryRaw,
 		Renderer:           renderer,
 	}
@@ -231,7 +233,6 @@ func (msg *UIMessage) SetID(id string) {
 }
 
 func (msg *UIMessage) SetIsHighlight(isHighlight bool) {
-	// TODO Textmessage cache needs to be cleared
 	msg.IsHighlight = isHighlight
 }
 

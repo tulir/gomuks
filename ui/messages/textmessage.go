@@ -29,9 +29,10 @@ import (
 )
 
 type TextMessage struct {
-	cache  tstring.TString
-	buffer []tstring.TString
-	Text   string
+	cache       tstring.TString
+	buffer      []tstring.TString
+	isHighlight bool
+	Text        string
 }
 
 // NewTextMessage creates a new UITextMessage object with the provided values and the default state.
@@ -85,6 +86,9 @@ func (msg *TextMessage) String() string {
 }
 
 func (msg *TextMessage) CalculateBuffer(prefs config.UserPreferences, width int, uiMsg *UIMessage) {
+	if uiMsg.IsHighlight != msg.isHighlight {
+		msg.cache = nil
+	}
 	msg.buffer = calculateBufferWithText(prefs, msg.getCache(uiMsg), width, uiMsg)
 }
 

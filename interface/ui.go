@@ -60,9 +60,10 @@ type RoomView interface {
 	SetTyping(users []string)
 	UpdateUserList()
 
-	ParseEvent(evt *event.Event) Message
+	AddEvent(evt *event.Event) Message
+	AddRedaction(evt *event.Event)
+	AddEdit(evt *event.Event)
 	GetEvent(eventID string) Message
-	AddMessage(message Message)
 	AddServiceMessage(message string)
 }
 

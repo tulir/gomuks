@@ -127,8 +127,8 @@ func ParseMessage(matrix ifc.MatrixContainer, room *rooms.Room, evt *event.Event
 	if len(evt.Content.GetReplyTo()) > 0 {
 		evt.Content.RemoveReplyFallback()
 	}
-	if evt.Content.GetRelatesTo().Type == mautrix.RelReplace && evt.Content.NewContent != nil {
-		evt.Content = *evt.Content.NewContent
+	if len(evt.Gomuks.Edits) > 0 {
+		evt.Content = *evt.Gomuks.Edits[len(evt.Gomuks.Edits)-1].Content.NewContent
 	}
 	switch evt.Content.MsgType {
 	case "m.text", "m.notice", "m.emote":
