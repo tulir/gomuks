@@ -27,6 +27,7 @@ import (
 	"github.com/mattn/go-runewidth"
 
 	"maunium.net/go/gomuks/debug"
+	"maunium.net/go/gomuks/matrix/event"
 
 	"maunium.net/go/mauview"
 
@@ -414,7 +415,7 @@ func (view *RoomView) SendMessage(msgtype mautrix.MessageType, text string) {
 	view.AddMessage(msg)
 	eventID, err := view.parent.matrix.SendEvent(evt)
 	if err != nil {
-		msg.State = mautrix.EventStateSendFail
+		msg.State = event.StateSendFail
 		// Show shorter version if available
 		if httpErr, ok := err.(mautrix.HTTPError); ok {
 			err = httpErr
@@ -427,7 +428,7 @@ func (view *RoomView) SendMessage(msgtype mautrix.MessageType, text string) {
 	} else {
 		debug.Print("Event ID received:", eventID)
 		msg.EventID = eventID
-		msg.State = mautrix.EventStateDefault
+		msg.State = event.StateDefault
 		view.MessageView().setMessageID(msg)
 		view.parent.parent.Render()
 	}
@@ -465,11 +466,11 @@ func (view *RoomView) AddMessage(message ifc.Message) {
 	view.content.AddMessage(message, AppendMessage)
 }
 
-func (view *RoomView) parseEvent(evt *mautrix.Event) *messages.UIMessage {
+func (view *RoomView) parseEvent(evt *event.Event) *messages.UIMessage {
 	return messages.ParseEvent(view.parent.matrix, view.parent, view.Room, evt)
 }
 
-func (view *RoomView) ParseEvent(evt *mautrix.Event) ifc.Message {
+func (view *RoomView) ParseEvent(evt *event.Event) ifc.Message {
 	msg := view.parseEvent(evt)
 	if msg == nil {
 		return nil

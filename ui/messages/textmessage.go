@@ -21,7 +21,7 @@ import (
 	"time"
 
 	ifc "maunium.net/go/gomuks/interface"
-	"maunium.net/go/mautrix"
+	"maunium.net/go/gomuks/matrix/event"
 	"maunium.net/go/mauview"
 
 	"maunium.net/go/gomuks/config"
@@ -35,8 +35,8 @@ type TextMessage struct {
 }
 
 // NewTextMessage creates a new UITextMessage object with the provided values and the default state.
-func NewTextMessage(event *mautrix.Event, displayname string, text string) *UIMessage {
-	return newUIMessage(event, displayname, &TextMessage{
+func NewTextMessage(evt *event.Event, displayname string, text string) *UIMessage {
+	return newUIMessage(evt, displayname, &TextMessage{
 		Text: text,
 	})
 }

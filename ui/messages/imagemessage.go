@@ -22,7 +22,7 @@ import (
 	"image"
 	"image/color"
 
-	"maunium.net/go/mautrix"
+	"maunium.net/go/gomuks/matrix/event"
 	"maunium.net/go/mauview"
 	"maunium.net/go/tcell"
 
@@ -44,8 +44,8 @@ type ImageMessage struct {
 }
 
 // NewImageMessage creates a new ImageMessage object with the provided values and the default state.
-func NewImageMessage(matrix ifc.MatrixContainer, event *mautrix.Event, displayname string, body, homeserver, fileID string, data []byte) *UIMessage {
-	return newUIMessage(event, displayname, &ImageMessage{
+func NewImageMessage(matrix ifc.MatrixContainer, evt *event.Event, displayname string, body, homeserver, fileID string, data []byte) *UIMessage {
+	return newUIMessage(evt, displayname, &ImageMessage{
 		Body: body,
 		Homeserver: homeserver,
 		FileID: fileID,

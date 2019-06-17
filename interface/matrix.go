@@ -17,6 +17,7 @@
 package ifc
 
 import (
+	"maunium.net/go/gomuks/matrix/event"
 	"maunium.net/go/mautrix"
 
 	"maunium.net/go/gomuks/matrix/rooms"
@@ -34,16 +35,16 @@ type MatrixContainer interface {
 	Logout()
 
 	SendPreferencesToMatrix()
-	PrepareMarkdownMessage(roomID string, msgtype mautrix.MessageType, message string) *mautrix.Event
-	SendEvent(event *mautrix.Event) (string, error)
+	PrepareMarkdownMessage(roomID string, msgtype mautrix.MessageType, message string) *event.Event
+	SendEvent(evt *event.Event) (string, error)
 	SendTyping(roomID string, typing bool)
 	MarkRead(roomID, eventID string)
 	JoinRoom(roomID, server string) (*rooms.Room, error)
 	LeaveRoom(roomID string) error
 	CreateRoom(req *mautrix.ReqCreateRoom) (*rooms.Room, error)
 
-	GetHistory(room *rooms.Room, limit int) ([]*mautrix.Event, error)
-	GetEvent(room *rooms.Room, eventID string) (*mautrix.Event, error)
+	GetHistory(room *rooms.Room, limit int) ([]*event.Event, error)
+	GetEvent(room *rooms.Room, eventID string) (*event.Event, error)
 	GetRoom(roomID string) *rooms.Room
 	GetOrCreateRoom(roomID string) *rooms.Room
 

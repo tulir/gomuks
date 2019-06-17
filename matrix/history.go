@@ -26,13 +26,10 @@ import (
 	sync "github.com/sasha-s/go-deadlock"
 	bolt "go.etcd.io/bbolt"
 
+	"maunium.net/go/gomuks/matrix/event"
 	"maunium.net/go/gomuks/matrix/rooms"
 	"maunium.net/go/mautrix"
 )
-
-func init() {
-	gob.Register(&mautrix.Event{})
-}
 
 type HistoryManager struct {
 	sync.Mutex
@@ -88,7 +85,7 @@ func (hm *HistoryManager) Close() error {
 	return hm.db.Close()
 }
 
-func (hm *HistoryManager) Get(room *rooms.Room, eventID string) (event *mautrix.Event, err error) {
+func (hm *HistoryManager) Get(room *rooms.Room, eventID string) (evt *event.Event, err error) {
 	err = hm.db.View(func(tx *bolt.Tx) error {
 		rid := []byte(room.ID)
 		eventIDs := tx.Bucket(bucketRoomEventIDs).Bucket(rid)
@@ -102,7 +99,7 @@ func (hm *HistoryManager) Get(room *rooms.Room, eventID string) (event *mautrix.
 		stream := tx.Bucket(bucketRoomStreams).Bucket(rid)
 		eventData := stream.Get(streamIndex)
 		var umErr error
-		event, umErr = unmarshalEvent(eventData)
+		evt, umErr = unmarshalEvent(eventData)
 		return umErr
 	})
 	return
@@ -110,8 +107,8 @@ func (hm *HistoryManager) Get(room *rooms.Room, eventID string) (event *mautrix.
 
 var EventNotFoundError = errors.New("event not found")
 
-func (hm *HistoryManager) Update(room *rooms.Room, eventID string, update func(event *mautrix.Event) error) error {
-	return hm.db.Update(func (tx *bolt.Tx) error {
+func (hm *HistoryManager) Update(room *rooms.Room, eventID string, update func(evt *event.Event) error) error {
+	return hm.db.Update(func(tx *bolt.Tx) error {
 		rid := []byte(room.ID)
 		eventIDs := tx.Bucket(bucketRoomEventIDs).Bucket(rid)
 		if eventIDs == nil {
@@ -127,11 +124,11 @@ func (hm *HistoryManager) Update(room *rooms.Room, eventID string, update func(e
 			return EventNotFoundError
 		}
 
-		if event, err := unmarshalEvent(eventData); err != nil {
+		if evt, err := unmarshalEvent(eventData); err != nil {
 			return err
-		} else if err = update(event); err != nil {
+		} else if err = update(evt); err != nil {
 			return err
-		} else if eventData, err = marshalEvent(event); err != nil {
+		} else if eventData, err = marshalEvent(evt); err != nil {
 			return err
 		} else {
 			return stream.Put(streamIndex, eventData)
@@ -139,17 +136,18 @@ func (hm *HistoryManager) Update(room *rooms.Room, eventID string, update func(e
 	})
 }
 
-func (hm *HistoryManager) Append(room *rooms.Room, events []*mautrix.Event) error {
+func (hm *HistoryManager) Append(room *rooms.Room, events []*mautrix.Event) ([]*event.Event, error) {
 	return hm.store(room, events, true)
 }
 
-func (hm *HistoryManager) Prepend(room *rooms.Room, events []*mautrix.Event) error {
+func (hm *HistoryManager) Prepend(room *rooms.Room, events []*mautrix.Event) ([]*event.Event, error) {
 	return hm.store(room, events, false)
 }
 
-func (hm *HistoryManager) store(room *rooms.Room, events []*mautrix.Event, append bool) error {
+func (hm *HistoryManager) store(room *rooms.Room, events []*mautrix.Event, append bool) ([]*event.Event, error) {
 	hm.Lock()
 	defer hm.Unlock()
+	newEvents := make([]*event.Event, len(events))
 	err := hm.db.Update(func(tx *bolt.Tx) error {
 		streamPointers := tx.Bucket(bucketStreamPointers)
 		rid := []byte(room.ID)
@@ -174,8 +172,9 @@ func (hm *HistoryManager) store(room *rooms.Room, events []*mautrix.Event, appen
 			if err != nil {
 				return err
 			}
-			for i, event := range events {
-				if err := put(stream, eventIDs, event, ptrStart+uint64(i)); err != nil {
+			for i, evt := range events {
+				newEvents[i] = event.Wrap(evt)
+				if err := put(stream, eventIDs, newEvents[i], ptrStart+uint64(i)); err != nil {
 					return err
 				}
 			}
@@ -194,8 +193,9 @@ func (hm *HistoryManager) store(room *rooms.Room, events []*mautrix.Event, appen
 				}
 			}
 			eventCount := uint64(len(events))
-			for i, event := range events {
-				if err := put(stream, eventIDs, event, -ptrStart-uint64(i)); err != nil {
+			for i, evt := range events {
+				newEvents[i] = event.Wrap(evt)
+				if err := put(stream, eventIDs, newEvents[i], -ptrStart-uint64(i)); err != nil {
 					return err
 				}
 			}
@@ -208,10 +208,10 @@ func (hm *HistoryManager) store(room *rooms.Room, events []*mautrix.Event, appen
 
 		return nil
 	})
-	return err
+	return newEvents, err
 }
 
-func (hm *HistoryManager) Load(room *rooms.Room, num int) (events []*mautrix.Event, err error) {
+func (hm *HistoryManager) Load(room *rooms.Room, num int) (events []*event.Event, err error) {
 	hm.Lock()
 	defer hm.Unlock()
 	err = hm.db.View(func(tx *bolt.Tx) error {
@@ -232,11 +232,11 @@ func (hm *HistoryManager) Load(room *rooms.Room, num int) (events []*mautrix.Eve
 		}
 		hm.historyLoadPtr[room] = ptrStartFound - 1
 		for ; k != nil && btoi(k) < ptrStart; k, v = c.Next() {
-			event, parseError := unmarshalEvent(v)
+			evt, parseError := unmarshalEvent(v)
 			if parseError != nil {
 				return parseError
 			}
-			events = append(events, event)
+			events = append(events, evt)
 		}
 		return nil
 	})
@@ -261,10 +261,10 @@ func btoi(b []byte) uint64 {
 	return binary.BigEndian.Uint64(b)
 }
 
-func marshalEvent(event *mautrix.Event) ([]byte, error) {
+func marshalEvent(evt *event.Event) ([]byte, error) {
 	var buf bytes.Buffer
 	enc := gzip.NewWriter(&buf)
-	if err := gob.NewEncoder(enc).Encode(event); err != nil {
+	if err := gob.NewEncoder(enc).Encode(evt); err != nil {
 		_ = enc.Close()
 		return nil, err
 	} else if err := enc.Close(); err != nil {
@@ -273,21 +273,21 @@ func marshalEvent(event *mautrix.Event) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-func unmarshalEvent(data []byte) (*mautrix.Event, error) {
-	event := &mautrix.Event{}
+func unmarshalEvent(data []byte) (*event.Event, error) {
+	evt := &event.Event{}
 	if cmpReader, err := gzip.NewReader(bytes.NewReader(data)); err != nil {
 		return nil, err
-	} else if err := gob.NewDecoder(cmpReader).Decode(event); err != nil {
+	} else if err := gob.NewDecoder(cmpReader).Decode(evt); err != nil {
 		_ = cmpReader.Close()
 		return nil, err
 	} else if err := cmpReader.Close(); err != nil {
 		return nil, err
 	}
-	return event, nil
+	return evt, nil
 }
 
-func put(streams, eventIDs *bolt.Bucket, event *mautrix.Event, key uint64) error {
-	data, err := marshalEvent(event)
+func put(streams, eventIDs *bolt.Bucket, evt *event.Event, key uint64) error {
+	data, err := marshalEvent(evt)
 	if err != nil {
 		return err
 	}
@@ -295,7 +295,7 @@ func put(streams, eventIDs *bolt.Bucket, event *mautrix.Event, key uint64) error
 	if err = streams.Put(keyBytes, data); err != nil {
 		return err
 	}
-	if err = eventIDs.Put([]byte(event.ID), keyBytes); err != nil {
+	if err = eventIDs.Put([]byte(evt.ID), keyBytes); err != nil {
 		return err
 	}
 	return nil

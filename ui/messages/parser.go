@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"strings"
 
+	"maunium.net/go/gomuks/matrix/event"
 	"maunium.net/go/mautrix"
 	"maunium.net/go/tcell"
 
@@ -42,7 +43,7 @@ func getCachedEvent(mainView ifc.MainView, roomID, eventID string) *UIMessage {
 	return nil
 }
 
-func ParseEvent(matrix ifc.MatrixContainer, mainView ifc.MainView, room *rooms.Room, evt *mautrix.Event) *UIMessage {
+func ParseEvent(matrix ifc.MatrixContainer, mainView ifc.MainView, room *rooms.Room, evt *event.Event) *UIMessage {
 	msg := directParseEvent(matrix, room, evt)
 	if msg == nil {
 		return nil
@@ -63,7 +64,7 @@ func ParseEvent(matrix ifc.MatrixContainer, mainView ifc.MainView, room *rooms.R
 	return msg
 }
 
-func directParseEvent(matrix ifc.MatrixContainer, room *rooms.Room, evt *mautrix.Event) *UIMessage {
+func directParseEvent(matrix ifc.MatrixContainer, room *rooms.Room, evt *event.Event) *UIMessage {
 	displayname := evt.Sender
 	member := room.GetMember(evt.Sender)
 	if member != nil {
@@ -89,7 +90,7 @@ func directParseEvent(matrix ifc.MatrixContainer, room *rooms.Room, evt *mautrix
 	return nil
 }
 
-func ParseStateEvent(evt *mautrix.Event, displayname string) *UIMessage {
+func ParseStateEvent(evt *event.Event, displayname string) *UIMessage {
 	text := tstring.NewColorTString(displayname, widget.GetHashColor(evt.Sender))
 	switch evt.Type {
 	case mautrix.StateTopic:
@@ -122,7 +123,7 @@ func ParseStateEvent(evt *mautrix.Event, displayname string) *UIMessage {
 	return NewExpandedTextMessage(evt, displayname, text)
 }
 
-func ParseMessage(matrix ifc.MatrixContainer, room *rooms.Room, evt *mautrix.Event, displayname string) *UIMessage {
+func ParseMessage(matrix ifc.MatrixContainer, room *rooms.Room, evt *event.Event, displayname string) *UIMessage {
 	if len(evt.Content.GetReplyTo()) > 0 {
 		evt.Content.RemoveReplyFallback()
 	}
@@ -146,7 +147,7 @@ func ParseMessage(matrix ifc.MatrixContainer, room *rooms.Room, evt *mautrix.Eve
 	return nil
 }
 
-func getMembershipChangeMessage(evt *mautrix.Event, membership, prevMembership mautrix.Membership, senderDisplayname, displayname, prevDisplayname string) (sender string, text tstring.TString) {
+func getMembershipChangeMessage(evt *event.Event, membership, prevMembership mautrix.Membership, senderDisplayname, displayname, prevDisplayname string) (sender string, text tstring.TString) {
 	switch membership {
 	case "invite":
 		sender = "---"
@@ -183,7 +184,7 @@ func getMembershipChangeMessage(evt *mautrix.Event, membership, prevMembership m
 	return
 }
 
-func getMembershipEventContent(room *rooms.Room, evt *mautrix.Event) (sender string, text tstring.TString) {
+func getMembershipEventContent(room *rooms.Room, evt *event.Event) (sender string, text tstring.TString) {
 	member := room.GetMember(evt.Sender)
 	senderDisplayname := evt.Sender
 	if member != nil {
@@ -220,7 +221,7 @@ func getMembershipEventContent(room *rooms.Room, evt *mautrix.Event) (sender str
 	return
 }
 
-func ParseMembershipEvent(room *rooms.Room, evt *mautrix.Event) *UIMessage {
+func ParseMembershipEvent(room *rooms.Room, evt *event.Event) *UIMessage {
 	displayname, text := getMembershipEventContent(room, evt)
 	if len(text) == 0 {
 		return nil
@@ -229,7 +230,7 @@ func ParseMembershipEvent(room *rooms.Room, evt *mautrix.Event) *UIMessage {
 	return NewExpandedTextMessage(evt, displayname, text)
 }
 
-func ParseAliasEvent(evt *mautrix.Event, displayname string) tstring.TString {
+func ParseAliasEvent(evt *event.Event, displayname string) tstring.TString {
 	var prevAliases []string
 	if evt.Unsigned.PrevContent != nil {
 		prevAliases = evt.Unsigned.PrevContent.Aliases

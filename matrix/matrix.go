@@ -33,6 +33,7 @@ import (
 	"time"
 	dbg "runtime/debug"
 
+	"maunium.net/go/gomuks/matrix/event"
 	"maunium.net/go/mautrix"
 	"maunium.net/go/mautrix/format"
 
@@ -310,8 +311,8 @@ func (c *Container) SendPreferencesToMatrix() {
 
 func (c *Container) HandleRedaction(source EventSource, evt *mautrix.Event) {
 	room := c.GetOrCreateRoom(evt.RoomID)
-	var redactedEvt *mautrix.Event
-	err := c.history.Update(room, evt.Redacts, func(redacted *mautrix.Event) error {
+	var redactedEvt *event.Event
+	err := c.history.Update(room, evt.Redacts, func(redacted *event.Event) error {
 		redacted.Unsigned.RedactedBy = evt.ID
 		redacted.Unsigned.RedactedBecause = evt
 		redactedEvt = redacted
@@ -344,8 +345,8 @@ func (c *Container) HandleRedaction(source EventSource, evt *mautrix.Event) {
 }
 
 // HandleMessage is the event handler for the m.room.message timeline event.
-func (c *Container) HandleMessage(source EventSource, evt *mautrix.Event) {
-	room := c.GetOrCreateRoom(evt.RoomID)
+func (c *Container) HandleMessage(source EventSource, mxEvent *mautrix.Event) {
+	room := c.GetOrCreateRoom(mxEvent.RoomID)
 	if source&EventSourceLeave != 0 {
 		room.HasLeft = true
 		return
@@ -353,10 +354,11 @@ func (c *Container) HandleMessage(source EventSource, evt *mautrix.Event) {
 		return
 	}
 
-	err := c.history.Append(room, []*mautrix.Event{evt})
+	events, err := c.history.Append(room, []*mautrix.Event{mxEvent})
 	if err != nil {
-		debug.Printf("Failed to add event %s to history: %v", evt.ID, err)
+		debug.Printf("Failed to add event %s to history: %v", mxEvent.ID, err)
 	}
+	evt := events[0]
 
 	if !c.config.AuthCache.InitialSyncDone {
 		room.LastReceivedMessage = time.Unix(evt.Timestamp/1000, evt.Timestamp%1000*1000)
@@ -372,7 +374,7 @@ func (c *Container) HandleMessage(source EventSource, evt *mautrix.Event) {
 	}
 
 	if !room.Loaded() {
-		pushRules := c.PushRules().GetActions(room, evt).Should()
+		pushRules := c.PushRules().GetActions(room, evt.Event).Should()
 		shouldNotify := pushRules.Notify || !pushRules.NotifySpecified
 		if !shouldNotify {
 			room.LastReceivedMessage = time.Unix(evt.Timestamp/1000, evt.Timestamp%1000*1000)
@@ -388,7 +390,7 @@ func (c *Container) HandleMessage(source EventSource, evt *mautrix.Event) {
 		roomView.AddMessage(message)
 		roomView.MxRoom().LastReceivedMessage = message.Time()
 		if c.syncer.FirstSyncDone {
-			pushRules := c.PushRules().GetActions(roomView.MxRoom(), evt).Should()
+			pushRules := c.PushRules().GetActions(roomView.MxRoom(), evt.Event).Should()
 			mainView.NotifyMessage(roomView.MxRoom(), message, pushRules)
 			c.ui.Render()
 		}
@@ -581,7 +583,7 @@ func (c *Container) MarkRead(roomID, eventID string) {
 var mentionRegex = regexp.MustCompile("\\[(.+?)]\\(https://matrix.to/#/@.+?:.+?\\)")
 var roomRegex = regexp.MustCompile("\\[.+?]\\(https://matrix.to/#/(#.+?:[^/]+?)\\)")
 
-func (c *Container) PrepareMarkdownMessage(roomID string, msgtype mautrix.MessageType, text string) *mautrix.Event {
+func (c *Container) PrepareMarkdownMessage(roomID string, msgtype mautrix.MessageType, text string) *event.Event {
 	content := format.RenderMarkdown(text)
 	content.MsgType = msgtype
 
@@ -590,7 +592,7 @@ func (c *Container) PrepareMarkdownMessage(roomID string, msgtype mautrix.Messag
 	content.Body = roomRegex.ReplaceAllString(content.Body, "$1")
 
 	txnID := c.client.TxnID()
-	localEcho := &mautrix.Event{
+	localEcho := event.Wrap(&mautrix.Event{
 		ID:        txnID,
 		Sender:    c.config.UserID,
 		Type:      mautrix.EventMessage,
@@ -599,14 +601,14 @@ func (c *Container) PrepareMarkdownMessage(roomID string, msgtype mautrix.Messag
 		Content:   content,
 		Unsigned: mautrix.Unsigned{
 			TransactionID: txnID,
-			OutgoingState: mautrix.EventStateLocalEcho,
 		},
-	}
+	})
+	localEcho.Gomuks.OutgoingState = event.StateLocalEcho
 	return localEcho
 }
 
 // SendMarkdownMessage sends a message with the given markdown text to the given room.
-func (c *Container) SendEvent(event *mautrix.Event) (string, error) {
+func (c *Container) SendEvent(event *event.Event) (string, error) {
 	defer debug.Recover()
 
 	c.SendTyping(event.RoomID, false)
@@ -670,7 +672,7 @@ func (c *Container) LeaveRoom(roomID string) error {
 }
 
 // GetHistory fetches room history.
-func (c *Container) GetHistory(room *rooms.Room, limit int) ([]*mautrix.Event, error) {
+func (c *Container) GetHistory(room *rooms.Room, limit int) ([]*event.Event, error) {
 	events, err := c.history.Load(room, limit)
 	if err != nil {
 		return nil, err
@@ -683,30 +685,32 @@ func (c *Container) GetHistory(room *rooms.Room, limit int) ([]*mautrix.Event, e
 	if err != nil {
 		return nil, err
 	}
-	if len(resp.Chunk) > 0 {
-		err = c.history.Prepend(room, resp.Chunk)
-		if err != nil {
-			return nil, err
-		}
-	}
 	debug.Printf("Loaded %d events for %s from server from %s to %s", len(resp.Chunk), room.ID, resp.Start, resp.End)
 	room.PrevBatch = resp.End
 	c.config.Rooms.Put(room)
-	return resp.Chunk, nil
-}
-
-func (c *Container) GetEvent(room *rooms.Room, eventID string) (*mautrix.Event, error) {
-	event, err := c.history.Get(room, eventID)
-	if event != nil || err != nil {
-		debug.Printf("Found event %s in local cache", eventID)
-		return event, err
+	if len(resp.Chunk) == 0 {
+		return []*event.Event{}, nil
 	}
-	event, err = c.client.GetEvent(room.ID, eventID)
+	events, err = c.history.Prepend(room, resp.Chunk)
 	if err != nil {
 		return nil, err
 	}
+	return events, nil
+}
+
+func (c *Container) GetEvent(room *rooms.Room, eventID string) (*event.Event, error) {
+	evt, err := c.history.Get(room, eventID)
+	if evt != nil || err != nil {
+		debug.Printf("Found event %s in local cache", eventID)
+		return evt, err
+	}
+	mxEvent, err := c.client.GetEvent(room.ID, eventID)
+	if err != nil {
+		return nil, err
+	}
+	evt = event.Wrap(mxEvent)
 	debug.Printf("Loaded event %s from server", eventID)
-	return event, nil
+	return evt, nil
 }
 
 // GetOrCreateRoom gets the room instance stored in the session.

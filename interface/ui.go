@@ -19,9 +19,9 @@ package ifc
 import (
 	"time"
 
+	"maunium.net/go/gomuks/matrix/event"
 	"maunium.net/go/gomuks/matrix/pushrules"
 	"maunium.net/go/gomuks/matrix/rooms"
-	"maunium.net/go/mautrix"
 )
 
 type UIProvider func(gmx Gomuks) GomuksUI
@@ -60,7 +60,7 @@ type RoomView interface {
 	SetTyping(users []string)
 	UpdateUserList()
 
-	ParseEvent(evt *mautrix.Event) Message
+	ParseEvent(evt *event.Event) Message
 	GetEvent(eventID string) Message
 	AddMessage(message Message)
 	AddServiceMessage(message string)

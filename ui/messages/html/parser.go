@@ -27,6 +27,7 @@ import (
 	"github.com/lucasb-eyer/go-colorful"
 	"golang.org/x/net/html"
 
+	"maunium.net/go/gomuks/matrix/event"
 	"maunium.net/go/mautrix"
 	"maunium.net/go/tcell"
 
@@ -382,7 +383,7 @@ func (parser *htmlParser) Parse(htmlData string) Entity {
 const TabLength = 4
 
 // Parse parses a HTML-formatted Matrix event into a UIMessage.
-func Parse(room *rooms.Room, evt *mautrix.Event, senderDisplayname string) Entity {
+func Parse(room *rooms.Room, evt *event.Event, senderDisplayname string) Entity {
 	htmlData := evt.Content.FormattedBody
 	if evt.Content.Format != mautrix.FormatHTML {
 		htmlData = strings.Replace(html.EscapeString(evt.Content.Body), "\n", "<br/>", -1)

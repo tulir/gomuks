@@ -22,6 +22,7 @@ import (
 	"time"
 
 	"maunium.net/go/gomuks/config"
+	"maunium.net/go/gomuks/matrix/event"
 	"maunium.net/go/mautrix"
 	"maunium.net/go/mauview"
 	"maunium.net/go/tcell"
@@ -50,7 +51,7 @@ type UIMessage struct {
 	SenderName         string
 	DefaultSenderColor tcell.Color
 	Timestamp          time.Time
-	State              mautrix.OutgoingEventState
+	State              event.OutgoingState
 	IsHighlight        bool
 	IsService          bool
 	Source             json.RawMessage
@@ -61,25 +62,25 @@ type UIMessage struct {
 const DateFormat = "January _2, 2006"
 const TimeFormat = "15:04:05"
 
-func newUIMessage(event *mautrix.Event, displayname string, renderer MessageRenderer) *UIMessage {
-	msgtype := event.Content.MsgType
+func newUIMessage(evt *event.Event, displayname string, renderer MessageRenderer) *UIMessage {
+	msgtype := evt.Content.MsgType
 	if len(msgtype) == 0 {
-		msgtype = mautrix.MessageType(event.Type.String())
+		msgtype = mautrix.MessageType(evt.Type.String())
 	}
 
 	return &UIMessage{
-		SenderID:           event.Sender,
+		SenderID:           evt.Sender,
 		SenderName:         displayname,
-		Timestamp:          unixToTime(event.Timestamp),
-		DefaultSenderColor: widget.GetHashColor(event.Sender),
+		Timestamp:          unixToTime(evt.Timestamp),
+		DefaultSenderColor: widget.GetHashColor(evt.Sender),
 		Type:               msgtype,
-		EventID:            event.ID,
-		TxnID:              event.Unsigned.TransactionID,
-		Relation:           *event.Content.GetRelatesTo(),
-		State:              event.Unsigned.OutgoingState,
+		EventID:            evt.ID,
+		TxnID:              evt.Unsigned.TransactionID,
+		Relation:           *evt.Content.GetRelatesTo(),
+		State:              evt.Gomuks.OutgoingState,
 		IsHighlight:        false,
 		IsService:          false,
-		Source:             event.Content.VeryRaw,
+		Source:             evt.Content.VeryRaw,
 		Renderer:           renderer,
 	}
 }
@@ -100,9 +101,9 @@ func unixToTime(unix int64) time.Time {
 // In any other case, the sender is the display name of the user who sent the message.
 func (msg *UIMessage) Sender() string {
 	switch msg.State {
-	case mautrix.EventStateLocalEcho:
+	case event.StateLocalEcho:
 		return "Sending..."
-	case mautrix.EventStateSendFail:
+	case event.StateSendFail:
 		return "Error"
 	}
 	switch msg.Type {
@@ -124,11 +125,11 @@ func (msg *UIMessage) NotificationContent() string {
 
 func (msg *UIMessage) getStateSpecificColor() tcell.Color {
 	switch msg.State {
-	case mautrix.EventStateLocalEcho:
+	case event.StateLocalEcho:
 		return tcell.ColorGray
-	case mautrix.EventStateSendFail:
+	case event.StateSendFail:
 		return tcell.ColorRed
-	case mautrix.EventStateDefault:
+	case event.StateDefault:
 		fallthrough
 	default:
 		return tcell.ColorDefault

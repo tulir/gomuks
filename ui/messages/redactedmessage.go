@@ -18,7 +18,7 @@ package messages
 
 import (
 	ifc "maunium.net/go/gomuks/interface"
-	"maunium.net/go/mautrix"
+	"maunium.net/go/gomuks/matrix/event"
 	"maunium.net/go/mauview"
 	"maunium.net/go/tcell"
 
@@ -27,8 +27,8 @@ import (
 
 type RedactedMessage struct{}
 
-func NewRedactedMessage(event *mautrix.Event, displayname string) *UIMessage {
-	return newUIMessage(event, displayname, &RedactedMessage{})
+func NewRedactedMessage(evt *event.Event, displayname string) *UIMessage {
+	return newUIMessage(evt, displayname, &RedactedMessage{})
 }
 
 func (msg *RedactedMessage) Clone() MessageRenderer {

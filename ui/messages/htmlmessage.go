@@ -18,7 +18,7 @@ package messages
 
 import (
 	ifc "maunium.net/go/gomuks/interface"
-	"maunium.net/go/mautrix"
+	"maunium.net/go/gomuks/matrix/event"
 	"maunium.net/go/mauview"
 	"maunium.net/go/tcell"
 
@@ -33,8 +33,8 @@ type HTMLMessage struct {
 	focused   bool
 }
 
-func NewHTMLMessage(event *mautrix.Event, displayname string, root html.Entity) *UIMessage {
-	return newUIMessage(event, displayname, &HTMLMessage{
+func NewHTMLMessage(evt *event.Event, displayname string, root html.Entity) *UIMessage {
+	return newUIMessage(evt, displayname, &HTMLMessage{
 		Root: root,
 	})
 }
