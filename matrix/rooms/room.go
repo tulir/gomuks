@@ -104,7 +104,7 @@ type Room struct {
 	// The topic of the room. Directly fetched from the m.room.topic state event.
 	topicCache string
 	// The canonical alias of the room. Directly fetched from the m.room.canonical_alias state event.
-	canonicalAliasCache string
+	CanonicalAliasCache string
 	// The list of aliases. Directly fetched from the m.room.aliases state event.
 	aliasesCache []string
 
@@ -196,7 +196,7 @@ func (room *Room) Unload() bool {
 	room.state = nil
 	room.aliasesCache = nil
 	room.topicCache = ""
-	room.canonicalAliasCache = ""
+	room.CanonicalAliasCache = ""
 	room.firstMemberCache = nil
 	room.secondMemberCache = nil
 	if room.postUnload != nil {
@@ -356,7 +356,7 @@ func (room *Room) UpdateState(event *mautrix.Event) {
 			room.NameCache = event.Content.Alias
 			room.nameCacheSource = CanonicalAliasRoomName
 		}
-		room.canonicalAliasCache = event.Content.Alias
+		room.CanonicalAliasCache = event.Content.Alias
 	case mautrix.StateAliases:
 		if room.nameCacheSource <= AliasRoomName {
 			room.NameCache = ""
@@ -427,18 +427,18 @@ func (room *Room) GetTopic() string {
 }
 
 func (room *Room) GetCanonicalAlias() string {
-	if len(room.canonicalAliasCache) == 0 {
+	if len(room.CanonicalAliasCache) == 0 {
 		canonicalAliasEvt := room.GetStateEvent(mautrix.StateCanonicalAlias, "")
 		if canonicalAliasEvt != nil {
-			room.canonicalAliasCache = canonicalAliasEvt.Content.Alias
+			room.CanonicalAliasCache = canonicalAliasEvt.Content.Alias
 		} else {
-			room.canonicalAliasCache = "-"
+			room.CanonicalAliasCache = "-"
 		}
 	}
-	if room.canonicalAliasCache == "-" {
+	if room.CanonicalAliasCache == "-" {
 		return ""
 	}
-	return room.canonicalAliasCache
+	return room.CanonicalAliasCache
 }
 
 // GetAliases returns the list of aliases that point to this room.
