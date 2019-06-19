@@ -30,8 +30,8 @@ import (
 	"path/filepath"
 	"regexp"
 	"runtime"
-	"time"
 	dbg "runtime/debug"
+	"time"
 
 	"maunium.net/go/gomuks/matrix/event"
 	"maunium.net/go/mautrix"
@@ -320,15 +320,12 @@ func (c *Container) HandleRedaction(source EventSource, evt *mautrix.Event) {
 	})
 	if err != nil {
 		debug.Print("Failed to mark", evt.Redacts, "as redacted:", err)
-	}
-
-	if !room.Loaded() || redactedEvt == nil {
+		return
+	} else if !c.config.AuthCache.InitialSyncDone || !room.Loaded() {
 		return
 	}
 
-	mainView := c.ui.MainView()
-
-	roomView := mainView.GetRoom(evt.RoomID)
+	roomView := c.ui.MainView().GetRoom(evt.RoomID)
 	if roomView == nil {
 		debug.Printf("Failed to handle event %v: No room view found.", evt)
 		return
@@ -349,18 +346,14 @@ func (c *Container) HandleEdit(room *rooms.Room, editsID string, editEvent *even
 	})
 	if err != nil {
 		debug.Print("Failed to store edit in history db:", err)
-	}
-	if !c.config.AuthCache.InitialSyncDone {
+		return
+	} else if !c.config.AuthCache.InitialSyncDone || !room.Loaded() {
 		return
 	}
 
 	roomView := c.ui.MainView().GetRoom(editEvent.RoomID)
 	if roomView == nil {
 		debug.Printf("Failed to handle edit event %v: No room view found.", editEvent)
-		return
-	}
-
-	if !room.Loaded() {
 		return
 	}
 
@@ -729,7 +722,9 @@ func (c *Container) GetHistory(room *rooms.Room, limit int) ([]*event.Event, err
 
 func (c *Container) GetEvent(room *rooms.Room, eventID string) (*event.Event, error) {
 	evt, err := c.history.Get(room, eventID)
-	if evt != nil || err != nil {
+	if err != nil && err != EventNotFoundError {
+		debug.Printf("Failed to get event %s from local cache: %v", eventID, err)
+	} else if evt != nil {
 		debug.Printf("Found event %s in local cache", eventID)
 		return evt, err
 	}

@@ -85,54 +85,58 @@ func (hm *HistoryManager) Close() error {
 	return hm.db.Close()
 }
 
+var (
+	EventNotFoundError = errors.New("event not found")
+	RoomNotFoundError = errors.New("room not found")
+)
+
+func (hm *HistoryManager) getStreamIndex(tx *bolt.Tx, roomID []byte, eventID []byte) (*bolt.Bucket, []byte, error) {
+	eventIDs := tx.Bucket(bucketRoomEventIDs).Bucket(roomID)
+	if eventIDs == nil {
+		return nil, nil, RoomNotFoundError
+	}
+	index := eventIDs.Get(eventID)
+	if index == nil {
+		return nil, nil, EventNotFoundError
+	}
+	stream := tx.Bucket(bucketRoomStreams).Bucket(roomID)
+	return stream, index, nil
+}
+
+func (hm *HistoryManager) getEvent(tx *bolt.Tx, stream *bolt.Bucket, index []byte) (*event.Event, error) {
+	eventData := stream.Get(index)
+	if eventData == nil || len(eventData) == 0 {
+		return nil, EventNotFoundError
+	}
+	return unmarshalEvent(eventData)
+}
+
 func (hm *HistoryManager) Get(room *rooms.Room, eventID string) (evt *event.Event, err error) {
 	err = hm.db.View(func(tx *bolt.Tx) error {
-		rid := []byte(room.ID)
-		eventIDs := tx.Bucket(bucketRoomEventIDs).Bucket(rid)
-		if eventIDs == nil {
-			return nil
+		if stream, index, err := hm.getStreamIndex(tx, []byte(room.ID), []byte(eventID)); err != nil {
+			return err
+		} else if evt, err = hm.getEvent(tx, stream, index); err != nil {
+			return err
 		}
-		streamIndex := eventIDs.Get([]byte(eventID))
-		if streamIndex == nil {
-			return nil
-		}
-		stream := tx.Bucket(bucketRoomStreams).Bucket(rid)
-		eventData := stream.Get(streamIndex)
-		var umErr error
-		evt, umErr = unmarshalEvent(eventData)
-		return umErr
+		return nil
 	})
 	return
 }
 
-var EventNotFoundError = errors.New("event not found")
-
 func (hm *HistoryManager) Update(room *rooms.Room, eventID string, update func(evt *event.Event) error) error {
 	return hm.db.Update(func(tx *bolt.Tx) error {
-		rid := []byte(room.ID)
-		eventIDs := tx.Bucket(bucketRoomEventIDs).Bucket(rid)
-		if eventIDs == nil {
-			return nil
-		}
-		streamIndex := eventIDs.Get([]byte(eventID))
-		if streamIndex == nil {
-			return nil
-		}
-		stream := tx.Bucket(bucketRoomStreams).Bucket(rid)
-		eventData := stream.Get(streamIndex)
-		if eventData == nil || len(eventData) == 0 {
-			return EventNotFoundError
-		}
-
-		if evt, err := unmarshalEvent(eventData); err != nil {
+		if stream, index, err := hm.getStreamIndex(tx, []byte(room.ID), []byte(eventID)); err != nil {
+			return err
+		} else if evt, err := hm.getEvent(tx, stream, index); err != nil {
 			return err
 		} else if err = update(evt); err != nil {
 			return err
-		} else if eventData, err = marshalEvent(evt); err != nil {
+		} else if eventData, err := marshalEvent(evt); err != nil {
 			return err
-		} else {
-			return stream.Put(streamIndex, eventData)
+		} else if err := stream.Put(index, eventData); err != nil {
+			return err
 		}
+		return nil
 	})
 }
 
