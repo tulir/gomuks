@@ -91,7 +91,8 @@ type Room struct {
 	// Room state cache.
 	state map[mautrix.EventType]map[string]*mautrix.Event
 	// MXID -> Member cache calculated from membership events.
-	memberCache map[string]*mautrix.Member
+	memberCache   map[string]*mautrix.Member
+	exMemberCache map[string]*mautrix.Member
 	// The first two non-SessionUserID members in the room. Calculated at
 	// the same time as memberCache.
 	firstMemberCache  *mautrix.Member
@@ -199,6 +200,8 @@ func (room *Room) Unload() bool {
 	room.CanonicalAliasCache = ""
 	room.firstMemberCache = nil
 	room.secondMemberCache = nil
+	room.memberCache = nil
+	room.exMemberCache = nil
 	if room.postUnload != nil {
 		room.postUnload()
 	}
@@ -363,27 +366,10 @@ func (room *Room) UpdateState(event *mautrix.Event) {
 		}
 		room.aliasesCache = nil
 	case mautrix.StateMember:
-		userID := event.GetStateKey()
-		if userID == room.SessionUserID {
-			room.SessionMember = room.eventToMember(userID, &event.Content)
-		}
-		if room.memberCache != nil {
-			if event.Content.Membership == mautrix.MembershipLeave || event.Content.Membership == mautrix.MembershipBan {
-				delete(room.memberCache, userID)
-			} else if event.Content.Membership == mautrix.MembershipInvite || event.Content.Membership == mautrix.MembershipJoin {
-				member := room.eventToMember(userID, &event.Content)
-				existingMember, ok := room.memberCache[userID]
-				if ok {
-					*existingMember = *member
-				} else {
-					room.memberCache[userID] = member
-					room.updateNthMemberCache(userID, member)
-				}
-			}
-		}
 		if room.nameCacheSource <= MemberRoomName {
 			room.NameCache = ""
 		}
+		room.updateMemberState(event)
 	case mautrix.StateTopic:
 		room.topicCache = event.Content.Topic
 	}
@@ -396,6 +382,34 @@ func (room *Room) UpdateState(event *mautrix.Event) {
 		room.state[event.Type][""] = event
 	} else {
 		room.state[event.Type][*event.StateKey] = event
+	}
+}
+
+func (room *Room) updateMemberState(event *mautrix.Event) {
+	userID := event.GetStateKey()
+	if userID == room.SessionUserID {
+		room.SessionMember = room.eventToMember(userID, &event.Content)
+	}
+	if room.memberCache != nil {
+		member := room.eventToMember(userID, &event.Content)
+		if event.Content.Membership.IsInviteOrJoin() {
+			existingMember, ok := room.memberCache[userID]
+			if ok {
+				*existingMember = *member
+			} else {
+				delete(room.exMemberCache, userID)
+				room.memberCache[userID] = member
+				room.updateNthMemberCache(userID, member)
+			}
+		} else {
+			existingExMember, ok := room.exMemberCache[userID]
+			if ok {
+				*existingExMember = *member
+			} else {
+				delete(room.memberCache, userID)
+				room.exMemberCache[userID] = member
+			}
+		}
 	}
 }
 
@@ -560,6 +574,7 @@ func (room *Room) createMemberCache() map[string]*mautrix.Member {
 		return room.memberCache
 	}
 	cache := make(map[string]*mautrix.Member)
+	exCache := make(map[string]*mautrix.Member)
 	room.lock.RLock()
 	events := room.getStateEvents(mautrix.StateMember)
 	room.firstMemberCache = nil
@@ -567,9 +582,11 @@ func (room *Room) createMemberCache() map[string]*mautrix.Member {
 	if events != nil {
 		for userID, event := range events {
 			member := room.eventToMember(userID, &event.Content)
-			if member.Membership == mautrix.MembershipJoin || member.Membership == mautrix.MembershipInvite {
+			if member.Membership.IsInviteOrJoin() {
 				cache[userID] = member
 				room.updateNthMemberCache(userID, member)
+			} else {
+				exCache[userID] = member
 			}
 			if userID == room.SessionUserID {
 				room.SessionMember = member
@@ -579,6 +596,7 @@ func (room *Room) createMemberCache() map[string]*mautrix.Member {
 	room.lock.RUnlock()
 	room.lock.Lock()
 	room.memberCache = cache
+	room.exMemberCache = cache
 	room.lock.Unlock()
 	return cache
 }
@@ -602,9 +620,18 @@ func (room *Room) GetMember(userID string) *mautrix.Member {
 	room.Load()
 	room.createMemberCache()
 	room.lock.RLock()
-	member, _ := room.memberCache[userID]
+	member, ok := room.memberCache[userID]
+	if ok {
+		room.lock.RUnlock()
+		return member
+	}
+	exMember, ok := room.exMemberCache[userID]
+	if ok {
+		room.lock.RUnlock()
+		return exMember
+	}
 	room.lock.RUnlock()
-	return member
+	return nil
 }
 
 // GetSessionOwner returns the ID of the user whose session this room was created for.
