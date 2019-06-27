@@ -125,6 +125,7 @@ func (view *LoginView) Login() {
 	}
 	err = view.matrix.Login(mxid, password)
 	if err != nil {
+		debug.Print("Login error:", err)
 		if httpErr, ok := err.(mautrix.HTTPError); ok {
 			if httpErr.RespError != nil {
 				view.Error(httpErr.RespError.Err)
@@ -134,6 +135,5 @@ func (view *LoginView) Login() {
 		} else {
 			view.Error("Failed to connect to server.")
 		}
-		debug.Print("Login error:", err)
 	}
 }
