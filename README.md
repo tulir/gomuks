@@ -3,6 +3,7 @@
 [![License](https://img.shields.io/github/license/tulir/gomuks.svg)](LICENSE)
 [![Release](https://img.shields.io/github/release/tulir/gomuks/all.svg)](https://github.com/tulir/gomuks/releases)
 [![Build Status](https://travis-ci.org/tulir/gomuks.svg?branch=master)](https://travis-ci.org/tulir/gomuks)
+[![GitLab CI](https://mau.dev/tulir/gomuks/badges/master/pipeline.svg)](https://mau.dev/tulir/gomuks/pipelines)
 [![Maintainability](https://img.shields.io/codeclimate/maintainability/tulir/gomuks.svg)](https://codeclimate.com/github/tulir/gomuks)
 [![Coverage](https://img.shields.io/codeclimate/coverage/tulir/gomuks.svg)](https://codeclimate.com/github/tulir/gomuks)
 
@@ -18,7 +19,7 @@ Matrix room: [#gomuks:maunium.net](https://matrix.to/#/#gomuks:maunium.net)
 ## Installation
 Once the client becomes actually usable, I'll start making GitHub releases with
 precompiled executables. For now, you can either download
-a CI build from [dl.maunium.net/programs/gomuks](https://dl.maunium.net/programs/gomuks)
+a CI build from [GitLab CI](https://mau.dev/tulir/gomuks/pipelines)
 or compile from source:
 
 0. Install [Go](https://golang.org/) 1.12 or higher
