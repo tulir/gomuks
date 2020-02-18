@@ -18,6 +18,7 @@ package matrix
 
 import (
 	"bytes"
+	"context"
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
@@ -33,6 +34,7 @@ import (
 	dbg "runtime/debug"
 	"time"
 
+	"maunium.net/go/gomuks/lib/open"
 	"maunium.net/go/gomuks/matrix/event"
 	"maunium.net/go/mautrix"
 	"maunium.net/go/mautrix/format"
@@ -131,8 +133,7 @@ func (c *Container) Initialized() bool {
 	return c.client != nil
 }
 
-// Login sends a password login request with the given username and password.
-func (c *Container) Login(user, password string) error {
+func (c *Container) PasswordLogin(user, password string) error {
 	resp, err := c.client.Login(&mautrix.ReqLogin{
 		Type: "m.login.password",
 		Identifier: mautrix.UserIdentifier{
@@ -145,14 +146,95 @@ func (c *Container) Login(user, password string) error {
 	if err != nil {
 		return err
 	}
+	c.finishLogin(resp)
+	return nil
+}
+
+func (c *Container) finishLogin(resp *mautrix.RespLogin) {
 	c.client.SetCredentials(resp.UserID, resp.AccessToken)
 	c.config.UserID = resp.UserID
 	c.config.AccessToken = resp.AccessToken
 	c.config.Save()
 
 	go c.Start()
+}
 
-	return nil
+func respondHTML(w http.ResponseWriter, status int, message string) {
+	w.Header().Add("Content-Type", "text/html")
+	w.WriteHeader(status)
+	_, _ = w.Write([]byte(fmt.Sprintf(`<!DOCTYPE html>
+<html>
+<head>
+  <title>gomuks single-sign on</title>
+  <meta charset="utf-8"/>
+</head>
+<body>
+  <center>
+    <h2>%s</h2>
+  </center>
+</body>
+</html>`, message)))
+}
+
+func (c *Container) SingleSignOn() error {
+	loginURL := c.client.BuildURLWithQuery([]string{"login", "sso", "redirect"}, map[string]string{
+		"redirectUrl": "http://localhost:29325",
+	})
+	err := open.Open(loginURL)
+	if err != nil {
+		return err
+	}
+	errChan := make(chan error, 1)
+	server := &http.Server{Addr: ":29325"}
+	server.Handler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		loginToken := r.URL.Query().Get("loginToken")
+		if len(loginToken) == 0 {
+			respondHTML(w, http.StatusBadRequest, "Missing loginToken parameter")
+			return
+		}
+		resp, err := c.client.Login(&mautrix.ReqLogin{
+			Type:                     "m.login.token",
+			Token:                    loginToken,
+			InitialDeviceDisplayName: "gomuks",
+		})
+		if err != nil {
+			respondHTML(w, http.StatusForbidden, err.Error())
+			errChan <- err
+			return
+		}
+		respondHTML(w, http.StatusOK, fmt.Sprintf("Successfully logged in as %s", resp.UserID))
+		c.finishLogin(resp)
+		go func() {
+			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			defer cancel()
+			err = server.Shutdown(ctx)
+			if err != nil {
+				debug.Printf("Failed to shut down SSO server: %v\n", err)
+			}
+			errChan <- err
+		}()
+	})
+	err = server.ListenAndServe()
+	if err != nil {
+		return err
+	}
+	err = <- errChan
+	return err
+}
+
+// Login sends a password login request with the given username and password.
+func (c *Container) Login(user, password string) error {
+	resp, err := c.client.GetLoginFlows()
+	if err != nil {
+		return err
+	}
+	if len(resp.Flows) == 1 && resp.Flows[0].Type == "m.login.password" {
+		return c.PasswordLogin(user, password)
+	} else if len(resp.Flows) == 2 && resp.Flows[0].Type == "m.login.sso" && resp.Flows[1].Type == "m.login.token" {
+		return c.SingleSignOn()
+	} else {
+		return fmt.Errorf("no supported login flows")
+	}
 }
 
 // Logout revokes the access token, stops the syncer and calls the OnLogout() method of the UI.

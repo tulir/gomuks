@@ -44,6 +44,8 @@ type LoginView struct {
 	loginButton *mauview.Button
 	quitButton  *mauview.Button
 
+	loading bool
+
 	matrix ifc.MatrixContainer
 	config *config.Config
 	parent *GomuksUI
@@ -112,11 +114,7 @@ func (view *LoginView) Error(err string) {
 	view.parent.Render()
 }
 
-func (view *LoginView) Login() {
-	hs := view.homeserver.GetText()
-	mxid := view.username.GetText()
-	password := view.password.GetText()
-
+func (view *LoginView) actuallyLogin(hs, mxid, password string) {
 	debug.Printf("Logging into %s as %s...", hs, mxid)
 	view.config.HS = hs
 	err := view.matrix.InitClient()
@@ -130,8 +128,23 @@ func (view *LoginView) Login() {
 				view.Error(httpErr.Message)
 			}
 		} else {
-			view.Error("Failed to connect to server.")
+			view.Error(err.Error())
 		}
 		debug.Print("Login error:", err)
 	}
+	view.loading = false
+	view.loginButton.SetText("Login")
+}
+
+func (view *LoginView) Login() {
+	if view.loading {
+		return
+	}
+	hs := view.homeserver.GetText()
+	mxid := view.username.GetText()
+	password := view.password.GetText()
+
+	view.loading = true
+	view.loginButton.SetText("Logging in...")
+	go view.actuallyLogin(hs, mxid, password)
 }
