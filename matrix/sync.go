@@ -146,13 +146,19 @@ func (s *GomuksSyncer) ProcessResponse(res *mautrix.RespSync, since string) (err
 	return
 }
 
-func (s *GomuksSyncer) processSyncEvents(room *rooms.Room, events []*mautrix.Event, source EventSource) {
+func (s *GomuksSyncer) processSyncEvents(room *rooms.Room, events []json.RawMessage, source EventSource) {
 	for _, event := range events {
 		s.processSyncEvent(room, event, source)
 	}
 }
 
-func (s *GomuksSyncer) processSyncEvent(room *rooms.Room, event *mautrix.Event, source EventSource) {
+func (s *GomuksSyncer) processSyncEvent(room *rooms.Room, eventJSON json.RawMessage, source EventSource) {
+	event := &mautrix.Event{}
+	err := json.Unmarshal(eventJSON, event)
+	if err != nil {
+		debug.Print("Failed to unmarshal event: %v\n%s", err, string(eventJSON))
+		return
+	}
 	if room != nil {
 		event.RoomID = room.ID
 		if source&EventSourceState != 0 || (source&EventSourceTimeline != 0 && event.Type.IsState() && event.StateKey != nil) {
