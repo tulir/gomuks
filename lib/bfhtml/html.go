@@ -19,7 +19,7 @@ package bfhtml
 import (
 	"io"
 
-	bf "gopkg.in/russross/blackfriday.v2"
+	bf "github.com/russross/blackfriday/v2"
 )
 
 type HTMLRenderer struct {

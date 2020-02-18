@@ -196,7 +196,7 @@ func (view *MainView) OnKeyEvent(event mauview.KeyEvent) bool {
 			msgView := view.currentRoom.MessageView()
 			msgView.AddScrollOffset(-msgView.TotalHeight())
 		case c == 'n' || k == tcell.KeyCtrlN:
-			return view.flex.OnKeyEvent(tcell.NewEventKey(tcell.KeyEnter, '\n', event.Modifiers()|tcell.ModShift))
+			return view.flex.OnKeyEvent(tcell.NewEventKey(tcell.KeyEnter, '\n', event.Modifiers()|tcell.ModShift, ""))
 		case c == 'a':
 			view.SwitchRoom(view.roomList.NextWithActivity())
 		case c == 'l' || k == tcell.KeyCtrlL:

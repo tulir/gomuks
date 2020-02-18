@@ -134,8 +134,11 @@ func (c *Container) Initialized() bool {
 // Login sends a password login request with the given username and password.
 func (c *Container) Login(user, password string) error {
 	resp, err := c.client.Login(&mautrix.ReqLogin{
-		Type:                     "m.login.password",
-		User:                     user,
+		Type: "m.login.password",
+		Identifier: mautrix.UserIdentifier{
+			Type: "m.id.user",
+			User: user,
+		},
 		Password:                 password,
 		InitialDeviceDisplayName: "gomuks",
 	})
