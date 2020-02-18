@@ -760,7 +760,7 @@ func (c *Container) JoinRoom(roomID, server string) (*rooms.Room, error) {
 		return nil, err
 	}
 
-	room := c.GetRoom(resp.RoomID)
+	room := c.GetOrCreateRoom(resp.RoomID)
 	room.HasLeft = false
 	return room, nil
 }
