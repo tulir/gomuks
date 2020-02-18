@@ -17,7 +17,6 @@
 package messages
 
 import (
-	"encoding/json"
 	"fmt"
 	"time"
 
@@ -55,7 +54,7 @@ type UIMessage struct {
 	IsHighlight        bool
 	IsService          bool
 	Edited             bool
-	Source             json.RawMessage
+	Event              *event.Event
 	ReplyTo            *UIMessage
 	Renderer           MessageRenderer
 }
@@ -82,7 +81,7 @@ func newUIMessage(evt *event.Event, displayname string, renderer MessageRenderer
 		IsHighlight:        false,
 		IsService:          false,
 		Edited:             len(evt.Gomuks.Edits) > 0,
-		Source:             evt.Content.VeryRaw,
+		Event:              evt,
 		Renderer:           renderer,
 	}
 }

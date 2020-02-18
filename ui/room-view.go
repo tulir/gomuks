@@ -67,6 +67,9 @@ type RoomView struct {
 
 	typing []string
 
+	editing      *event.Event
+	editMoveText string
+
 	completions struct {
 		list      []string
 		textCache string
@@ -107,7 +110,9 @@ func NewRoomView(parent *MainView, room *rooms.Room) *RoomView {
 		SetBackgroundColor(tcell.ColorDefault).
 		SetPlaceholder("Send a message...").
 		SetPlaceholderTextColor(tcell.ColorGray).
-		SetTabCompleteFunc(view.InputTabComplete)
+		SetTabCompleteFunc(view.InputTabComplete).
+		SetPressKeyUpAtStartFunc(view.EditPrevious).
+		SetPressKeyDownAtEndFunc(view.EditNext)
 
 	view.topic.
 		SetTextColor(tcell.ColorWhite).
@@ -149,8 +154,12 @@ func (view *RoomView) Blur() {
 func (view *RoomView) GetStatus() string {
 	var buf strings.Builder
 
+	if view.editing != nil {
+		buf.WriteString("Editing message - ")
+	}
+
 	if len(view.completions.list) > 0 {
-		if view.completions.textCache != view.input.GetText() || view.completions.time.Add(10 * time.Second).Before(time.Now()) {
+		if view.completions.textCache != view.input.GetText() || view.completions.time.Add(10*time.Second).Before(time.Now()) {
 			view.completions.list = []string{}
 		} else {
 			buf.WriteString(strings.Join(view.completions.list, ", "))
@@ -354,6 +363,61 @@ func (view *RoomView) autocompleteEmoji(word string) (completions []string) {
 	return
 }
 
+func (view *RoomView) SetEditing(evt *event.Event) {
+	if evt == nil {
+		view.editing = nil
+		view.SetInputText(view.editMoveText)
+		view.editMoveText = ""
+	} else {
+		if view.editing == nil {
+			view.editMoveText = view.GetInputText()
+		}
+		view.editing = evt
+		view.SetInputText(view.editing.Content.Body)
+	}
+	view.status.SetText(view.GetStatus())
+}
+
+func (view *RoomView) EditNext() {
+	if view.editing == nil {
+		return
+	}
+	var foundEvent *event.Event
+	currentFound := view.editing == nil
+	self := view.parent.matrix.Client().UserID
+	for _, msg := range view.MessageView().messages {
+		if currentFound {
+			if msg.SenderID == self {
+				foundEvent = msg.Event
+				break
+			}
+		} else if msg.EventID == view.editing.ID {
+			currentFound = true
+		}
+	}
+	view.SetEditing(foundEvent)
+}
+
+func (view *RoomView) EditPrevious() {
+	var foundEvent *event.Event
+	currentFound := view.editing == nil
+	self := view.parent.matrix.Client().UserID
+	msgs := view.MessageView().messages
+	for i := len(msgs) - 1; i >= 0; i-- {
+		if currentFound {
+			if msgs[i].SenderID == self {
+				foundEvent = msgs[i].Event
+				break
+			}
+		} else if msgs[i].EventID == view.editing.ID {
+			currentFound = true
+		}
+	}
+	if foundEvent != nil {
+		view.SetEditing(foundEvent)
+	}
+}
+
 func (view *RoomView) InputTabComplete(text string, cursorOffset int) {
 	debug.Print("Tab completing", cursorOffset, text)
 	str := runewidth.Truncate(text, cursorOffset, "")
@@ -396,11 +460,12 @@ func (view *RoomView) InputTabComplete(text string, cursorOffset int) {
 func (view *RoomView) InputSubmit(text string) {
 	if len(text) == 0 {
 		return
-	} else if cmd := view.parent.cmdProcessor.ParseCommand(view, text); cmd != nil {
+	} else if cmd := view.parent.cmdProcessor.ParseCommand(view, text); view.editing == nil && cmd != nil {
 		go view.parent.cmdProcessor.HandleCommand(cmd)
 	} else {
 		go view.SendMessage(mautrix.MsgText, text)
 	}
+	view.editMoveText = ""
 	view.SetInputText("")
 }
 
@@ -410,9 +475,11 @@ func (view *RoomView) SendMessage(msgtype mautrix.MessageType, text string) {
 	if !view.config.Preferences.DisableEmojis {
 		text = emoji.Sprint(text)
 	}
-	evt := view.parent.matrix.PrepareMarkdownMessage(view.Room.ID, msgtype, text)
+	evt := view.parent.matrix.PrepareMarkdownMessage(view.Room.ID, msgtype, text, view.editing)
 	msg := view.parseEvent(evt)
 	view.content.AddMessage(msg, AppendMessage)
+	view.editing = nil
+	view.status.SetText(view.GetStatus())
 	eventID, err := view.parent.matrix.SendEvent(evt)
 	if err != nil {
 		msg.State = event.StateSendFail

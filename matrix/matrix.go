@@ -218,7 +218,7 @@ func (c *Container) SingleSignOn() error {
 	if err != nil {
 		return err
 	}
-	err = <- errChan
+	err = <-errChan
 	return err
 }
 
@@ -690,13 +690,26 @@ func (c *Container) MarkRead(roomID, eventID string) {
 var mentionRegex = regexp.MustCompile("\\[(.+?)]\\(https://matrix.to/#/@.+?:.+?\\)")
 var roomRegex = regexp.MustCompile("\\[.+?]\\(https://matrix.to/#/(#.+?:[^/]+?)\\)")
 
-func (c *Container) PrepareMarkdownMessage(roomID string, msgtype mautrix.MessageType, text string) *event.Event {
+func (c *Container) PrepareMarkdownMessage(roomID string, msgtype mautrix.MessageType, text string, edit *event.Event) *event.Event {
 	content := format.RenderMarkdown(text)
 	content.MsgType = msgtype
 
 	// Remove markdown link stuff from plaintext mentions and room links
 	content.Body = mentionRegex.ReplaceAllString(content.Body, "$1")
 	content.Body = roomRegex.ReplaceAllString(content.Body, "$1")
+
+	if edit != nil {
+		contentCopy := content
+		content.NewContent = &contentCopy
+		content.Body = "* " + content.Body
+		if len(content.FormattedBody) > 0 {
+			content.FormattedBody = "* " + content.FormattedBody
+		}
+		content.RelatesTo = &mautrix.RelatesTo{
+			Type:    mautrix.RelReplace,
+			EventID: edit.ID,
+		}
+	}
 
 	txnID := c.client.TxnID()
 	localEcho := event.Wrap(&mautrix.Event{
@@ -711,6 +724,10 @@ func (c *Container) PrepareMarkdownMessage(roomID string, msgtype mautrix.Messag
 		},
 	})
 	localEcho.Gomuks.OutgoingState = event.StateLocalEcho
+	if edit != nil {
+		localEcho.ID = edit.ID
+		localEcho.Gomuks.Edits = []*event.Event{localEcho}
+	}
 	return localEcho
 }
 

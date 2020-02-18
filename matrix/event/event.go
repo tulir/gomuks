@@ -25,6 +25,14 @@ type Event struct {
 	Gomuks GomuksContent `json:"-"`
 }
 
+func (evt *Event) SomewhatDangerousCopy() *Event {
+	base := *evt.Event
+	return &Event{
+		Event: &base,
+		Gomuks: evt.Gomuks,
+	}
+}
+
 func Wrap(event *mautrix.Event) *Event {
 	return &Event{Event: event}
 }
