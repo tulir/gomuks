@@ -216,9 +216,6 @@ defaultHandler:
 const WheelScrollOffsetDiff = 3
 
 func (view *MainView) OnMouseEvent(event mauview.MouseEvent) bool {
-	if event.HasMotion() {
-		return false
-	}
 	if view.modal != nil {
 		return view.modal.OnMouseEvent(event)
 	}
