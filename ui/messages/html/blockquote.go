@@ -40,6 +40,11 @@ func NewBlockquoteEntity(children []Entity) *BlockquoteEntity {
 	}}
 }
 
+func (be *BlockquoteEntity) AdjustStyle(fn AdjustStyleFunc) Entity {
+	be.BaseEntity = be.BaseEntity.AdjustStyle(fn).(*BaseEntity)
+	return be
+}
+
 func (be *BlockquoteEntity) Clone() Entity {
 	return &BlockquoteEntity{ContainerEntity: be.ContainerEntity.Clone().(*ContainerEntity)}
 }

@@ -92,4 +92,6 @@ func (be *BaseEntity) CalculateBuffer(width, startX int, bare bool) int {
 	return be.startX
 }
 
-func (be *BaseEntity) Draw(screen mauview.Screen) {}
+func (be *BaseEntity) Draw(screen mauview.Screen) {
+	panic("Called Draw() of BaseEntity")
+}

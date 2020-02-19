@@ -36,6 +36,11 @@ func NewHorizontalLineEntity() *HorizontalLineEntity {
 	}}
 }
 
+func (he *HorizontalLineEntity) AdjustStyle(fn AdjustStyleFunc) Entity {
+	he.BaseEntity = he.BaseEntity.AdjustStyle(fn).(*BaseEntity)
+	return he
+}
+
 func (he *HorizontalLineEntity) Clone() Entity {
 	return NewHorizontalLineEntity()
 }

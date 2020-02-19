@@ -44,6 +44,11 @@ func NewTextEntity(text string) *TextEntity {
 	}
 }
 
+func (te *TextEntity) AdjustStyle(fn AdjustStyleFunc) Entity {
+	te.BaseEntity = te.BaseEntity.AdjustStyle(fn).(*BaseEntity)
+	return te
+}
+
 func (te *TextEntity) Clone() Entity {
 	return &TextEntity{
 		BaseEntity: te.BaseEntity.Clone().(*BaseEntity),

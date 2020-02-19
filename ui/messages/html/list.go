@@ -58,6 +58,11 @@ func NewListEntity(ordered bool, start int, children []Entity) *ListEntity {
 	return entity
 }
 
+func (le *ListEntity) AdjustStyle(fn AdjustStyleFunc) Entity {
+	le.BaseEntity = le.BaseEntity.AdjustStyle(fn).(*BaseEntity)
+	return le
+}
+
 func (le *ListEntity) Clone() Entity {
 	return &ListEntity{
 		ContainerEntity: le.ContainerEntity.Clone().(*ContainerEntity),
