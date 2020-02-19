@@ -89,7 +89,7 @@ func (log mxLogger) Debugfln(message string, args ...interface{}) {
 // InitClient initializes the mautrix client and connects to the homeserver specified in the config.
 func (c *Container) InitClient() error {
 	if len(c.config.HS) == 0 {
-		return fmt.Errorf("no homeserver in config")
+		return fmt.Errorf("no homeserver entered")
 	}
 
 	if c.client != nil {

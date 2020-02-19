@@ -74,48 +74,73 @@ func (ui *GomuksUI) NewLoginView() mauview.Component {
 	}
 
 	hs := ui.gmx.Config().HS
-	view.homeserver.SetText(hs)
-	view.username.SetText(ui.gmx.Config().UserID)
-	view.password.SetMaskCharacter('*')
+	view.homeserver.SetPlaceholder("https://example.com").SetText(hs)
+	view.username.SetPlaceholder("@user:example.com").SetText(ui.gmx.Config().UserID)
+	view.password.SetPlaceholder("correct horse battery staple").SetMaskCharacter('*')
 
 	view.quitButton.SetOnClick(func() { ui.gmx.Stop(true) }).SetBackgroundColor(tcell.ColorDarkCyan)
 	view.loginButton.SetOnClick(view.Login).SetBackgroundColor(tcell.ColorDarkCyan)
 
-	view.SetColumns([]int{1, 10, 1, 9, 1, 9, 1, 10, 1})
-	view.SetRows([]int{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1})
-	view.AddFormItem(view.username, 3, 1, 5, 1).
-		AddFormItem(view.password, 3, 3, 5, 1).
-		AddFormItem(view.homeserver, 3, 5, 5, 1).
-		AddFormItem(view.loginButton, 5, 7, 3, 1).
-		AddFormItem(view.quitButton, 1, 7, 3, 1).
+	view.
+		SetColumns([]int{1, 10, 1, 30, 1}).
+		SetRows([]int{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1})
+	view.
+		AddFormItem(view.username, 3, 1, 1, 1).
+		AddFormItem(view.password, 3, 3, 1, 1).
+		AddFormItem(view.homeserver, 3, 5, 1, 1).
+		AddFormItem(view.loginButton, 1, 7, 3, 1).
+		AddFormItem(view.quitButton, 1, 9, 3, 1).
 		AddComponent(view.usernameLabel, 1, 1, 1, 1).
 		AddComponent(view.passwordLabel, 1, 3, 1, 1).
 		AddComponent(view.homeserverLabel, 1, 5, 1, 1)
+	view.SetOnFocusChanged(view.focusChanged)
 	view.FocusNextItem()
 	ui.loginView = view
 
-	view.container = mauview.Center(mauview.NewBox(view).SetTitle("Log in to Matrix"), 45, 11)
+	view.container = mauview.Center(mauview.NewBox(view).SetTitle("Log in to Matrix"), 45, 13)
 	view.container.SetAlwaysFocusChild(true)
 	return view.container
+}
+
+func (view *LoginView) resolveWellKnown() {
+	_, homeserver, err := mautrix.ParseUserID(view.username.GetText())
+	if err != nil {
+		return
+	}
+	view.homeserver.SetText("Resolving...")
+	resp, err := mautrix.DiscoverClientAPI(homeserver)
+	if err != nil {
+		view.homeserver.SetText("")
+		view.Error(err.Error())
+		return
+	}
+	view.homeserver.SetText(resp.Homeserver.BaseURL)
+	view.parent.Render()
+}
+
+func (view *LoginView) focusChanged(from, to mauview.Component) {
+	if from == view.username && view.homeserver.GetText() == "" {
+		go view.resolveWellKnown()
+	}
 }
 
 func (view *LoginView) Error(err string) {
 	if len(err) == 0 && view.error != nil {
 		debug.Print("Hiding error")
 		view.RemoveComponent(view.error)
-		view.container.SetHeight(11)
+		view.container.SetHeight(13)
 		view.SetRows([]int{1, 1, 1, 1, 1, 1, 1, 1, 1})
 		view.error = nil
 	} else if len(err) > 0 {
 		debug.Print("Showing error", err)
 		if view.error == nil {
 			view.error = mauview.NewTextView().SetTextColor(tcell.ColorRed)
-			view.AddComponent(view.error, 1, 9, 7, 1)
+			view.AddComponent(view.error, 1, 11, 3, 1)
 		}
 		view.error.SetText(err)
 		errorHeight := int(math.Ceil(float64(mauview.StringWidth(err)) / 45))
-		view.container.SetHeight(12 + errorHeight)
-		view.SetRow(9, errorHeight)
+		view.container.SetHeight(14 + errorHeight)
+		view.SetRow(11, errorHeight)
 	}
 
 	view.parent.Render()
@@ -124,14 +149,11 @@ func (view *LoginView) Error(err string) {
 func (view *LoginView) actuallyLogin(hs, mxid, password string) {
 	debug.Printf("Logging into %s as %s...", hs, mxid)
 	view.config.HS = hs
-	err := view.matrix.InitClient()
-	if err != nil {
+
+	if err := view.matrix.InitClient(); err != nil {
 		debug.Print("Init error:", err)
 		view.Error(err.Error())
-		return
-	}
-	err = view.matrix.Login(mxid, password)
-	if err != nil {
+	} else if err = view.matrix.Login(mxid, password); err != nil {
 		if httpErr, ok := err.(mautrix.HTTPError); ok {
 			if httpErr.RespError != nil {
 				view.Error(httpErr.RespError.Err)
