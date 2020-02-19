@@ -17,6 +17,8 @@
 package ui
 
 import (
+	"math"
+
 	"maunium.net/go/tcell"
 
 	"maunium.net/go/mautrix"
@@ -39,7 +41,7 @@ type LoginView struct {
 	homeserver *mauview.InputField
 	username   *mauview.InputField
 	password   *mauview.InputField
-	error      *mauview.TextField
+	error      *mauview.TextView
 
 	loginButton *mauview.Button
 	quitButton  *mauview.Button
@@ -80,7 +82,7 @@ func (ui *GomuksUI) NewLoginView() mauview.Component {
 	view.loginButton.SetOnClick(view.Login).SetBackgroundColor(tcell.ColorDarkCyan)
 
 	view.SetColumns([]int{1, 10, 1, 9, 1, 9, 1, 10, 1})
-	view.SetRows([]int{1, 1, 1, 1, 1, 1, 1, 1, 1, 1})
+	view.SetRows([]int{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1})
 	view.AddFormItem(view.username, 3, 1, 5, 1).
 		AddFormItem(view.password, 3, 3, 5, 1).
 		AddFormItem(view.homeserver, 3, 5, 5, 1).
@@ -92,24 +94,29 @@ func (ui *GomuksUI) NewLoginView() mauview.Component {
 	view.FocusNextItem()
 	ui.loginView = view
 
-	view.container = mauview.Center(mauview.NewBox(view).SetTitle("Log in to Matrix"), 45, 13)
+	view.container = mauview.Center(mauview.NewBox(view).SetTitle("Log in to Matrix"), 45, 11)
 	view.container.SetAlwaysFocusChild(true)
 	return view.container
 }
 
 func (view *LoginView) Error(err string) {
-	if len(err) == 0 {
+	if len(err) == 0 && view.error != nil {
 		debug.Print("Hiding error")
 		view.RemoveComponent(view.error)
+		view.container.SetHeight(11)
+		view.SetRows([]int{1, 1, 1, 1, 1, 1, 1, 1, 1})
 		view.error = nil
-		return
+	} else if len(err) > 0 {
+		debug.Print("Showing error", err)
+		if view.error == nil {
+			view.error = mauview.NewTextView().SetTextColor(tcell.ColorRed)
+			view.AddComponent(view.error, 1, 9, 7, 1)
+		}
+		view.error.SetText(err)
+		errorHeight := int(math.Ceil(float64(mauview.StringWidth(err)) / 45))
+		view.container.SetHeight(12 + errorHeight)
+		view.SetRow(9, errorHeight)
 	}
-	debug.Print("Showing error", err)
-	if view.error == nil {
-		view.error = mauview.NewTextField().SetTextColor(tcell.ColorRed)
-		view.AddComponent(view.error, 1, 9, 7, 1)
-	}
-	view.error.SetText(err)
 
 	view.parent.Render()
 }
