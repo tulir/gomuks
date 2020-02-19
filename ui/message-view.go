@@ -371,6 +371,9 @@ func (view *MessageView) handleUsernameClick(message *messages.UIMessage, prevMe
 }
 
 func (view *MessageView) OnMouseEvent(event mauview.MouseEvent) bool {
+	if event.HasMotion() {
+		return false
+	}
 	switch event.Buttons() {
 	case tcell.WheelUp:
 		if view.IsAtTop() {
