@@ -509,6 +509,8 @@ func (list *RoomList) GetTagDisplayName(tag string) string {
 		return "Favorites"
 	case tag == "m.lowpriority":
 		return "Low Priority"
+	case tag == "m.server_notice":
+		return "System Alerts"
 	case tag == "net.maunium.gomuks.fake.direct":
 		return "People"
 	case strings.HasPrefix(tag, "u."):
