@@ -105,6 +105,10 @@ func (ui *GomuksUI) SetView(name View) {
 	if ok {
 		focusable.Focus()
 	}
+	if ui.app.Screen() != nil {
+		ui.app.Screen().Clear()
+		ui.Render()
+	}
 }
 
 func (ui *GomuksUI) MainView() ifc.MainView {

@@ -261,6 +261,7 @@ func (c *Container) Stop() {
 		if err != nil {
 			debug.Print("Error closing history manager:", err)
 		}
+		c.history = nil
 	}
 }
 
