@@ -380,6 +380,7 @@ func (view *RoomView) SetEditing(evt *event.Event) {
 		view.input.SetText(text)
 	}
 	view.status.SetText(view.GetStatus())
+	view.input.SetCursorOffset(-1)
 }
 
 func (view *RoomView) findMessageToEdit(forward bool) *event.Event {
@@ -409,14 +410,12 @@ func (view *RoomView) EditNext() {
 	}
 	foundEvent := view.findMessageToEdit(true)
 	view.SetEditing(foundEvent)
-	view.input.SetCursorOffset(-1)
 }
 
 func (view *RoomView) EditPrevious() {
 	foundEvent := view.findMessageToEdit(false)
 	if foundEvent != nil {
 		view.SetEditing(foundEvent)
-		view.input.SetCursorOffset(0)
 	}
 }
 
