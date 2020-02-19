@@ -80,5 +80,7 @@ maunium.net/go/mauview v0.0.0-20200218183549-88ecb1321176 h1:KoTm7ASEzFIZ1SvPWuW
 maunium.net/go/mauview v0.0.0-20200218183549-88ecb1321176/go.mod h1:jwg3Ow7akzsCX3q38pZAfmEC5gGN8gXwMyyjy/yZVMg=
 maunium.net/go/mauview v0.0.0-20200218231215-04d01c601d5b h1:Bfov5IkJQpkqDexiFioHIZpx4XL7AILDA1GwLVdqtBw=
 maunium.net/go/mauview v0.0.0-20200218231215-04d01c601d5b/go.mod h1:jwg3Ow7akzsCX3q38pZAfmEC5gGN8gXwMyyjy/yZVMg=
+maunium.net/go/mauview v0.0.0-20200219201346-81706f13fc83 h1:KdMJGXJw9Z/uBzg+19hjnfnhzw7mNXl4eCe5Epbx/Dw=
+maunium.net/go/mauview v0.0.0-20200219201346-81706f13fc83/go.mod h1:jwg3Ow7akzsCX3q38pZAfmEC5gGN8gXwMyyjy/yZVMg=
 maunium.net/go/tcell v1.1.2-0.20200218183045-87c4a25c5b09 h1:hu+R+0nodoZPS19WGyYiw/d63+/NQS/R3Duw3d9HqAU=
 maunium.net/go/tcell v1.1.2-0.20200218183045-87c4a25c5b09/go.mod h1:Ru7KmI5AU7xHUx6hGltgJvknrS+8jlGGMKK15pZuc9k=
