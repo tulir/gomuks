@@ -373,48 +373,46 @@ func (view *RoomView) SetEditing(evt *event.Event) {
 			view.editMoveText = view.GetInputText()
 		}
 		view.editing = evt
-		view.SetInputText(view.editing.Content.Body)
+		view.input.SetText(view.editing.Content.Body)
 	}
 	view.status.SetText(view.GetStatus())
+}
+
+func (view *RoomView) findMessageToEdit(forward bool) *event.Event {
+	currentFound := view.editing == nil
+	self := view.parent.matrix.Client().UserID
+	msgs := view.MessageView().messages
+	for i := 0; i < len(msgs); i++ {
+		index := i
+		if !forward {
+			index = len(msgs) - i - 1
+		}
+		evt := msgs[index]
+		if currentFound {
+			if evt.SenderID == self && evt.Event.Type == mautrix.EventMessage {
+				return evt.Event
+			}
+		} else if evt.EventID == view.editing.ID {
+			currentFound = true
+		}
+	}
+	return nil
 }
 
 func (view *RoomView) EditNext() {
 	if view.editing == nil {
 		return
 	}
-	var foundEvent *event.Event
-	currentFound := view.editing == nil
-	self := view.parent.matrix.Client().UserID
-	for _, msg := range view.MessageView().messages {
-		if currentFound {
-			if msg.SenderID == self {
-				foundEvent = msg.Event
-				break
-			}
-		} else if msg.EventID == view.editing.ID {
-			currentFound = true
-		}
-	}
+	foundEvent := view.findMessageToEdit(true)
 	view.SetEditing(foundEvent)
+	view.input.SetCursorOffset(-1)
 }
 
 func (view *RoomView) EditPrevious() {
-	var foundEvent *event.Event
-	currentFound := view.editing == nil
-	self := view.parent.matrix.Client().UserID
-	msgs := view.MessageView().messages
-	for i := len(msgs) - 1; i >= 0; i-- {
-		if currentFound {
-			if msgs[i].SenderID == self {
-				foundEvent = msgs[i].Event
-				break
-			}
-		} else if msgs[i].EventID == view.editing.ID {
-			currentFound = true
-		}
-	}
+	foundEvent := view.findMessageToEdit(false)
 	if foundEvent != nil {
 		view.SetEditing(foundEvent)
+		view.input.SetCursorOffset(0)
 	}
 }
 
