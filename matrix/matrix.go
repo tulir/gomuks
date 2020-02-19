@@ -34,6 +34,8 @@ import (
 	dbg "runtime/debug"
 	"time"
 
+	"github.com/pkg/errors"
+
 	"maunium.net/go/gomuks/lib/open"
 	"maunium.net/go/gomuks/matrix/event"
 	"maunium.net/go/mautrix"
@@ -108,9 +110,11 @@ func (c *Container) InitClient() error {
 	}
 	c.client.Logger = mxLogger{}
 
-	c.history, err = NewHistoryManager(c.config.HistoryPath)
-	if err != nil {
-		return err
+	if c.history == nil {
+		c.history, err = NewHistoryManager(c.config.HistoryPath)
+		if err != nil {
+			return errors.Wrap(err, "failed to initialize history")
+		}
 	}
 
 	allowInsecure := len(os.Getenv("GOMUKS_ALLOW_INSECURE_CONNECTIONS")) > 0
