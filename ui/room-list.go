@@ -88,7 +88,11 @@ func (list *RoomList) Contains(roomID string) bool {
 }
 
 func (list *RoomList) Add(room *rooms.Room) {
-	debug.Print("Adding room to list", room.ID, room.GetTitle(), room.IsDirect, room.Tags())
+	if room.IsReplaced() {
+		debug.Print(room.ID, "is replaced by", room.ReplacedBy(), "-> not adding to room list")
+		return
+	}
+	debug.Print("Adding room to list", room.ID, room.GetTitle(), room.IsDirect, room.ReplacedBy(), room.Tags())
 	for _, tag := range room.Tags() {
 		list.AddToTag(tag, room)
 	}

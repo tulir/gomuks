@@ -108,6 +108,10 @@ type Room struct {
 	CanonicalAliasCache string
 	// The list of aliases. Directly fetched from the m.room.aliases state event.
 	aliasesCache []string
+	// Whether or not the room has been tombstoned.
+	replacedCache bool
+	// The room ID that replaced this room.
+	replacedByCache *string
 
 	// Path for state store file.
 	path string
@@ -342,6 +346,9 @@ func (room *Room) Tags() []RoomTag {
 // UpdateState updates the room's current state with the given Event. This will clobber events based
 // on the type/state_key combination.
 func (room *Room) UpdateState(event *mautrix.Event) {
+	if event.StateKey == nil {
+		panic("Tried to UpdateState() event with no state key.")
+	}
 	room.Load()
 	room.lock.Lock()
 	defer room.lock.Unlock()
@@ -378,11 +385,7 @@ func (room *Room) UpdateState(event *mautrix.Event) {
 		debug.Printf("Updating state %s#%s for %s", event.Type.String(), event.GetStateKey(), room.ID)
 	}
 
-	if event.StateKey == nil {
-		room.state[event.Type][""] = event
-	} else {
-		room.state[event.Type][*event.StateKey] = event
-	}
+	room.state[event.Type][*event.StateKey] = event
 }
 
 func (room *Room) updateMemberState(event *mautrix.Event) {
@@ -547,6 +550,26 @@ func (room *Room) updateNameCache() {
 func (room *Room) GetTitle() string {
 	room.updateNameCache()
 	return room.NameCache
+}
+
+func (room *Room) IsReplaced() bool {
+	if room.replacedByCache == nil {
+		evt := room.GetStateEvent(mautrix.StateTombstone, "")
+		var replacement string
+		if evt != nil {
+			replacement = evt.Content.ReplacementRoom
+		}
+		room.replacedCache = evt != nil
+		room.replacedByCache = &replacement
+	}
+	return room.replacedCache
+}
+
+func (room *Room) ReplacedBy() string {
+	if room.replacedByCache == nil {
+		room.IsReplaced()
+	}
+	return *room.replacedByCache
 }
 
 func (room *Room) eventToMember(userID string, content *mautrix.Content) *mautrix.Member {

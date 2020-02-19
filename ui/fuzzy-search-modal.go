@@ -89,6 +89,10 @@ func (fs *FuzzySearchModal) Blur() {
 
 func (fs *FuzzySearchModal) InitList(rooms map[string]*RoomView) {
 	for _, room := range rooms {
+		if room.Room.IsReplaced() {
+			//if _, ok := rooms[room.Room.ReplacedBy()]; ok
+			continue
+		}
 		fs.roomList = append(fs.roomList, room.Room)
 		fs.roomTitles = append(fs.roomTitles, room.Room.GetTitle())
 	}
@@ -134,6 +138,7 @@ func (fs *FuzzySearchModal) OnKeyEvent(event mauview.KeyEvent) bool {
 			fs.results.Highlight(strconv.Itoa(fs.matches[fs.selected].OriginalIndex))
 			fs.results.ScrollToHighlight()
 		}
+		return true
 	case tcell.KeyEnter:
 		// Switch room to currently selected room
 		if len(highlights) > 0 {
