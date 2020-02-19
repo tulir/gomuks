@@ -118,7 +118,11 @@ func (view *LoginView) actuallyLogin(hs, mxid, password string) {
 	debug.Printf("Logging into %s as %s...", hs, mxid)
 	view.config.HS = hs
 	err := view.matrix.InitClient()
-	debug.Print("Init error:", err)
+	if err != nil {
+		debug.Print("Init error:", err)
+		view.Error(err.Error())
+		return
+	}
 	err = view.matrix.Login(mxid, password)
 	if err != nil {
 		if httpErr, ok := err.(mautrix.HTTPError); ok {
