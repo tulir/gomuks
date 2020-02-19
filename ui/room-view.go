@@ -373,7 +373,11 @@ func (view *RoomView) SetEditing(evt *event.Event) {
 			view.editMoveText = view.GetInputText()
 		}
 		view.editing = evt
-		view.input.SetText(view.editing.Content.Body)
+		text := view.editing.Content.Body
+		if view.editing.Content.MsgType == mautrix.MsgEmote {
+			text = "/me " + text
+		}
+		view.input.SetText(text)
 	}
 	view.status.SetText(view.GetStatus())
 }
@@ -458,7 +462,7 @@ func (view *RoomView) InputTabComplete(text string, cursorOffset int) {
 func (view *RoomView) InputSubmit(text string) {
 	if len(text) == 0 {
 		return
-	} else if cmd := view.parent.cmdProcessor.ParseCommand(view, text); view.editing == nil && cmd != nil {
+	} else if cmd := view.parent.cmdProcessor.ParseCommand(view, text); cmd != nil {
 		go view.parent.cmdProcessor.HandleCommand(cmd)
 	} else {
 		go view.SendMessage(mautrix.MsgText, text)
