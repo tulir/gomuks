@@ -19,7 +19,6 @@ package messages
 import (
 	"fmt"
 	"sort"
-	"strings"
 	"time"
 
 	"maunium.net/go/gomuks/config"
@@ -138,7 +137,6 @@ func (msg *UIMessage) AddReaction(key string) {
 		})
 	}
 	sort.Sort(msg.Reactions)
-	msg.CalculateReactionBuffer()
 }
 
 func unixToTime(unix int64) time.Time {
@@ -306,7 +304,7 @@ func (msg *UIMessage) DrawReactions(screen mauview.Screen) {
 
 	x := 0
 	for _, reaction := range msg.Reactions {
-		_, drawn := mauview.PrintWithStyle(screen, reaction.String(), x, 0, width - x, mauview.AlignLeft, tcell.StyleDefault.Foreground(mauview.Styles.PrimaryTextColor).Background(tcell.ColorDarkGreen))
+		_, drawn := mauview.PrintWithStyle(screen, reaction.String(), x, 0, width-x, mauview.AlignLeft, tcell.StyleDefault.Foreground(mauview.Styles.PrimaryTextColor).Background(tcell.ColorDarkGreen))
 		x += drawn + 1
 		if x >= width {
 			break
