@@ -442,11 +442,14 @@ func (view *MainView) LoadHistory(roomID string) {
 		return
 	}
 	defer atomic.StoreInt32(&msgView.loadingMessages, 0)
+	// Update the "Loading more messages..." text
+	view.parent.Render()
 
 	history, err := view.matrix.GetHistory(roomView.Room, 50)
 	if err != nil {
 		roomView.AddServiceMessage("Failed to fetch history")
 		debug.Print("Failed to fetch history for", roomView.Room.ID, err)
+		view.parent.Render()
 		return
 	}
 	for _, evt := range history {
