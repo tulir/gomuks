@@ -77,6 +77,7 @@ type UIMessage struct {
 	State              event.OutgoingState
 	IsHighlight        bool
 	IsService          bool
+	IsSelected         bool
 	Edited             bool
 	Event              *event.Event
 	ReplyTo            *UIMessage
@@ -316,6 +317,18 @@ func (msg *UIMessage) Draw(screen mauview.Screen) {
 	screen = msg.DrawReply(screen)
 	msg.Renderer.Draw(screen)
 	msg.DrawReactions(screen)
+	if msg.IsSelected {
+		w, h := screen.Size()
+		for x := 0; x < w; x++ {
+			for y := 0; y < h; y++ {
+				mainc, combc, style, _ := screen.GetContent(x, y)
+				_, bg, _ := style.Decompose()
+				if bg == tcell.ColorDefault {
+					screen.SetContent(x, y, mainc, combc, style.Background(tcell.ColorLightSkyBlue))
+				}
+			}
+		}
+	}
 }
 
 func (msg *UIMessage) Clone() *UIMessage {

@@ -64,6 +64,7 @@ type MessageView struct {
 	messages      []*messages.UIMessage
 	msgBufferLock sync.RWMutex
 	msgBuffer     []*messages.UIMessage
+	selected      *messages.UIMessage
 
 	initialHistoryLoaded bool
 }
@@ -286,12 +287,12 @@ func (view *MessageView) replaceBuffer(original *messages.UIMessage, new *messag
 	if new.Height() != end-start {
 		height := new.Height()
 
-		newBuffer := make([]*messages.UIMessage, height + len(view.msgBuffer) - end)
+		newBuffer := make([]*messages.UIMessage, height+len(view.msgBuffer)-end)
 		for i := 0; i < height; i++ {
 			newBuffer[i] = new
 		}
 		for i := height; i < len(newBuffer); i++ {
-			newBuffer[i] = view.msgBuffer[end + (i - height)]
+			newBuffer[i] = view.msgBuffer[end+(i-height)]
 		}
 		view.msgBuffer = append(view.msgBuffer[0:start], newBuffer...)
 	} else {
@@ -333,14 +334,24 @@ func (view *MessageView) recalculateBuffers() {
 	view.prevPrefs = prefs
 }
 
-func (view *MessageView) handleMessageClick(message *messages.UIMessage) bool {
-	switch msg := message.Renderer.(type) {
-	case *messages.ImageMessage:
-		open.Open(msg.Path())
-	default:
-		debug.Print("Message clicked:", message)
+func (view *MessageView) SetSelected(message *messages.UIMessage) {
+	if view.selected != nil {
+		view.selected.IsSelected = false
 	}
-	return false
+	view.selected = message
+	if view.selected != nil {
+		view.selected.IsSelected = true
+	}
+}
+
+func (view *MessageView) handleMessageClick(message *messages.UIMessage, mod tcell.ModMask) bool {
+	if msg, ok := message.Renderer.(*messages.ImageMessage); ok && mod > 0 {
+		open.Open(msg.Path())
+		// No need to re-render
+		return false
+	}
+	view.SetSelected(message)
+	return true
 }
 
 func (view *MessageView) handleUsernameClick(message *messages.UIMessage, prevMessage *messages.UIMessage) bool {
@@ -410,7 +421,7 @@ func (view *MessageView) OnMouseEvent(event mauview.MouseEvent) bool {
 		messageX := usernameX + view.widestSender() + SenderMessageGap
 
 		if x >= messageX {
-			return view.handleMessageClick(message)
+			return view.handleMessageClick(message, event.Modifiers())
 		} else if x >= usernameX {
 			return view.handleUsernameClick(message, prevMessage)
 		}
