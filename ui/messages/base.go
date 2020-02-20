@@ -49,7 +49,7 @@ type ReactionItem struct {
 }
 
 func (ri ReactionItem) String() string {
-	return fmt.Sprintf("%d %s", ri.Count, ri.Key)
+	return fmt.Sprintf("%d×%s", ri.Count, ri.Key)
 }
 
 type ReactionSlice []ReactionItem
@@ -83,8 +83,6 @@ type UIMessage struct {
 	ReplyTo            *UIMessage
 	Reactions          ReactionSlice
 	Renderer           MessageRenderer
-
-	reactionBuffer string
 }
 
 const DateFormat = "January _2, 2006"
@@ -305,7 +303,15 @@ func (msg *UIMessage) DrawReactions(screen mauview.Screen) {
 	}
 	width, height := screen.Size()
 	screen = mauview.NewProxyScreen(screen, 0, height-1, width, 1)
-	mauview.Print(screen, msg.reactionBuffer, 0, 0, width, mauview.AlignLeft, mauview.Styles.PrimaryTextColor)
+
+	x := 0
+	for _, reaction := range msg.Reactions {
+		_, drawn := mauview.PrintWithStyle(screen, reaction.String(), x, 0, width - x, mauview.AlignLeft, tcell.StyleDefault.Foreground(mauview.Styles.PrimaryTextColor).Background(tcell.ColorDarkGreen))
+		x += drawn + 1
+		if x >= width {
+			break
+		}
+	}
 }
 
 func (msg *UIMessage) Draw(screen mauview.Screen) {
@@ -329,19 +335,9 @@ func (msg *UIMessage) CalculateReplyBuffer(preferences config.UserPreferences, w
 	msg.ReplyTo.CalculateBuffer(preferences, width-1)
 }
 
-func (msg *UIMessage) CalculateReactionBuffer() {
-	var text strings.Builder
-	for _, reaction := range msg.Reactions {
-		text.WriteString(reaction.String())
-		text.WriteRune(' ')
-	}
-	msg.reactionBuffer = text.String()
-}
-
 func (msg *UIMessage) CalculateBuffer(preferences config.UserPreferences, width int) {
 	msg.Renderer.CalculateBuffer(preferences, width, msg)
 	msg.CalculateReplyBuffer(preferences, width)
-	msg.CalculateReactionBuffer()
 }
 
 func (msg *UIMessage) DrawReply(screen mauview.Screen) mauview.Screen {
