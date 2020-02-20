@@ -54,6 +54,7 @@ func ParseEvent(matrix ifc.MatrixContainer, mainView ifc.MainView, room *rooms.R
 		} else if replyToEvt, _ := matrix.GetEvent(room, evt.Content.GetReplyTo()); replyToEvt != nil {
 			if replyToMsg := directParseEvent(matrix, room, replyToEvt); replyToMsg != nil {
 				msg.ReplyTo = replyToMsg
+				msg.ReplyTo.Reactions = nil
 			} else {
 				// TODO add unrenderable reply header
 			}

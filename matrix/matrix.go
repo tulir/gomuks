@@ -297,9 +297,9 @@ func (c *Container) OnLogin() {
 	debug.Print("Initializing syncer")
 	c.syncer = NewGomuksSyncer(c.config)
 	c.syncer.OnEventType(mautrix.EventMessage, c.HandleMessage)
-	// Just pass encrypted events as messages, they'll show up with an encryption unsupported message.
 	c.syncer.OnEventType(mautrix.EventEncrypted, c.HandleMessage)
 	c.syncer.OnEventType(mautrix.EventSticker, c.HandleMessage)
+	c.syncer.OnEventType(mautrix.EventReaction, c.HandleMessage)
 	c.syncer.OnEventType(mautrix.EventRedaction, c.HandleRedaction)
 	c.syncer.OnEventType(mautrix.StateAliases, c.HandleMessage)
 	c.syncer.OnEventType(mautrix.StateCanonicalAlias, c.HandleMessage)
@@ -453,6 +453,37 @@ func (c *Container) HandleEdit(room *rooms.Room, editsID string, editEvent *even
 	}
 }
 
+func (c *Container) HandleReaction(room *rooms.Room, reactsTo string, reactEvent *event.Event) {
+	rel := reactEvent.Content.GetRelatesTo()
+	var origEvt *event.Event
+	err := c.history.Update(room, reactsTo, func(evt *event.Event) error {
+		if evt.Unsigned.Relations.Annotations.Map == nil {
+			evt.Unsigned.Relations.Annotations.Map = make(map[string]int)
+		}
+		val, _ := evt.Unsigned.Relations.Annotations.Map[rel.Key]
+		evt.Unsigned.Relations.Annotations.Map[rel.Key] = val + 1
+		origEvt = evt
+		return nil
+	})
+	if err != nil {
+		debug.Print("Failed to store reaction in history db:", err)
+		return
+	} else if !c.config.AuthCache.InitialSyncDone || !room.Loaded() {
+		return
+	}
+
+	roomView := c.ui.MainView().GetRoom(reactEvent.RoomID)
+	if roomView == nil {
+		debug.Printf("Failed to handle edit event %v: No room view found.", reactEvent)
+		return
+	}
+
+	roomView.AddReaction(origEvt, rel.Key)
+	if c.syncer.FirstSyncDone {
+		c.ui.Render()
+	}
+}
+
 // HandleMessage is the event handler for the m.room.message timeline event.
 func (c *Container) HandleMessage(source EventSource, mxEvent *mautrix.Event) {
 	room := c.GetOrCreateRoom(mxEvent.RoomID)
@@ -465,6 +496,9 @@ func (c *Container) HandleMessage(source EventSource, mxEvent *mautrix.Event) {
 
 	if editID := mxEvent.Content.GetRelatesTo().GetReplaceID(); len(editID) > 0 {
 		c.HandleEdit(room, editID, event.Wrap(mxEvent))
+		return
+	} else if reactionID := mxEvent.Content.GetRelatesTo().GetAnnotationID(); mxEvent.Type == mautrix.EventReaction && len(reactionID) > 0 {
+		c.HandleReaction(room, reactionID, event.Wrap(mxEvent))
 		return
 	}
 

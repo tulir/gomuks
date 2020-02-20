@@ -284,11 +284,16 @@ func (view *MessageView) replaceBuffer(original *messages.UIMessage, new *messag
 
 	view.msgBufferLock.Lock()
 	if new.Height() != end-start {
-		metaBuffer := view.msgBuffer[0:start]
-		for i := 0; i < new.Height(); i++ {
-			metaBuffer = append(metaBuffer, new)
+		height := new.Height()
+
+		newBuffer := make([]*messages.UIMessage, height + len(view.msgBuffer) - end)
+		for i := 0; i < height; i++ {
+			newBuffer[i] = new
 		}
-		view.msgBuffer = append(metaBuffer, view.msgBuffer[end:]...)
+		for i := height; i < len(newBuffer); i++ {
+			newBuffer[i] = view.msgBuffer[end + (i - height)]
+		}
+		view.msgBuffer = append(view.msgBuffer[0:start], newBuffer...)
 	} else {
 		for i := start; i < end; i++ {
 			view.msgBuffer[i] = new
@@ -594,33 +599,38 @@ func (view *MessageView) Draw(screen mauview.Screen) {
 
 	var prevMsg *messages.UIMessage
 	view.msgBufferLock.RLock()
-	for line := viewStart; line < height && indexOffset+line < len(view.msgBuffer); line++ {
+	for line := viewStart; line < height && indexOffset+line < len(view.msgBuffer); {
 		index := indexOffset + line
 
 		msg := view.msgBuffer[index]
-		if msg != prevMsg {
-			if len(msg.FormatTime()) > 0 {
-				widget.WriteLineSimpleColor(screen, msg.FormatTime(), 0, line, msg.TimestampColor())
-			}
-			// TODO hiding senders might not be that nice after all, maybe an option? (disabled for now)
-			//if !bareMode && (prevMsg == nil || meta.Sender() != prevMsg.Sender()) {
-			widget.WriteLineColor(
-				screen, mauview.AlignRight, msg.Sender(),
-				usernameX, line, view.widestSender(),
-				msg.SenderColor())
-			//}
-			if msg.Edited {
-				// TODO add better indicator for edits
-				screen.SetCell(usernameX + view.widestSender(), line, tcell.StyleDefault.Foreground(tcell.ColorDarkRed), '*')
-			}
-			prevMsg = msg
+		if msg == prevMsg {
+			debug.Print("Unexpected re-encounter of", msg, msg.Height(), "at", line, index)
+			line++
+			continue
+		}
+
+		if len(msg.FormatTime()) > 0 {
+			widget.WriteLineSimpleColor(screen, msg.FormatTime(), 0, line, msg.TimestampColor())
+		}
+		// TODO hiding senders might not be that nice after all, maybe an option? (disabled for now)
+		//if !bareMode && (prevMsg == nil || meta.Sender() != prevMsg.Sender()) {
+		widget.WriteLineColor(
+			screen, mauview.AlignRight, msg.Sender(),
+			usernameX, line, view.widestSender(),
+			msg.SenderColor())
+		//}
+		if msg.Edited {
+			// TODO add better indicator for edits
+			screen.SetCell(usernameX+view.widestSender(), line, tcell.StyleDefault.Foreground(tcell.ColorDarkRed), '*')
 		}
 
 		for i := index - 1; i >= 0 && view.msgBuffer[i] == msg; i-- {
 			line--
 		}
 		msg.Draw(mauview.NewProxyScreen(screen, messageX, line, view.width()-messageX, msg.Height()))
-		line += msg.Height() - 1
+		line += msg.Height()
+
+		prevMsg = msg
 	}
 	view.msgBufferLock.RUnlock()
 }

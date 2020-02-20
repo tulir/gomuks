@@ -63,6 +63,7 @@ type RoomView interface {
 	AddEvent(evt *event.Event) Message
 	AddRedaction(evt *event.Event)
 	AddEdit(evt *event.Event)
+	AddReaction(evt *event.Event, key string)
 	GetEvent(eventID string) Message
 	AddServiceMessage(message string)
 }

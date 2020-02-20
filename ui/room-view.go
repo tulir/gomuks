@@ -558,6 +558,23 @@ func (view *RoomView) AddEdit(evt *event.Event) {
 	}
 }
 
+func (view *RoomView) AddReaction(evt *event.Event, key string) {
+	msgView := view.MessageView()
+	msg := msgView.getMessageByID(evt.ID)
+	if msg == nil {
+		// Message not in view, nothing to do
+		return
+	}
+	recalculate := len(msg.Reactions) == 0
+	msg.AddReaction(key)
+	if recalculate {
+		debug.Print(msg.ReactionHeight(), msg.Height())
+		// Recalculate height for message
+		msg.CalculateBuffer(msgView.prevPrefs, msgView.prevWidth())
+		msgView.replaceBuffer(msg, msg)
+	}
+}
+
 func (view *RoomView) GetEvent(eventID string) ifc.Message {
 	message, ok := view.content.messageIDs[eventID]
 	if !ok {

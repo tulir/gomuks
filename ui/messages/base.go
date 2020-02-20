@@ -18,6 +18,8 @@ package messages
 
 import (
 	"fmt"
+	"sort"
+	"strings"
 	"time"
 
 	"maunium.net/go/gomuks/config"
@@ -41,6 +43,29 @@ type MessageRenderer interface {
 	String() string
 }
 
+type ReactionItem struct {
+	Key   string
+	Count int
+}
+
+func (ri ReactionItem) String() string {
+	return fmt.Sprintf("%d %s", ri.Count, ri.Key)
+}
+
+type ReactionSlice []ReactionItem
+
+func (rs ReactionSlice) Len() int {
+	return len(rs)
+}
+
+func (rs ReactionSlice) Less(i, j int) bool {
+	return rs[i].Key < rs[j].Key
+}
+
+func (rs ReactionSlice) Swap(i, j int) {
+	rs[i], rs[j] = rs[j], rs[i]
+}
+
 type UIMessage struct {
 	EventID            string
 	TxnID              string
@@ -56,7 +81,10 @@ type UIMessage struct {
 	Edited             bool
 	Event              *event.Event
 	ReplyTo            *UIMessage
+	Reactions          ReactionSlice
 	Renderer           MessageRenderer
+
+	reactionBuffer string
 }
 
 const DateFormat = "January _2, 2006"
@@ -67,6 +95,15 @@ func newUIMessage(evt *event.Event, displayname string, renderer MessageRenderer
 	if len(msgtype) == 0 {
 		msgtype = mautrix.MessageType(evt.Type.String())
 	}
+
+	reactions := make(ReactionSlice, 0, len(evt.Unsigned.Relations.Annotations.Map))
+	for key, count := range evt.Unsigned.Relations.Annotations.Map {
+		reactions = append(reactions, ReactionItem{
+			Key:   key,
+			Count: count,
+		})
+	}
+	sort.Sort(reactions)
 
 	return &UIMessage{
 		SenderID:           evt.Sender,
@@ -81,9 +118,29 @@ func newUIMessage(evt *event.Event, displayname string, renderer MessageRenderer
 		IsHighlight:        false,
 		IsService:          false,
 		Edited:             len(evt.Gomuks.Edits) > 0,
+		Reactions:          reactions,
 		Event:              evt,
 		Renderer:           renderer,
 	}
+}
+
+func (msg *UIMessage) AddReaction(key string) {
+	found := false
+	for _, rs := range msg.Reactions {
+		if rs.Key == key {
+			rs.Count++
+			found = true
+			break
+		}
+	}
+	if !found {
+		msg.Reactions = append(msg.Reactions, ReactionItem{
+			Key:   key,
+			Count: 1,
+		})
+	}
+	sort.Sort(msg.Reactions)
+	msg.CalculateReactionBuffer()
 }
 
 func unixToTime(unix int64) time.Time {
@@ -195,9 +252,16 @@ func (msg *UIMessage) ReplyHeight() int {
 	return 0
 }
 
+func (msg *UIMessage) ReactionHeight() int {
+	if len(msg.Reactions) > 0 {
+		return 1
+	}
+	return 0
+}
+
 // Height returns the number of rows in the computed buffer (see Buffer()).
 func (msg *UIMessage) Height() int {
-	return msg.ReplyHeight() + msg.Renderer.Height()
+	return msg.ReplyHeight() + msg.Renderer.Height() + msg.ReactionHeight()
 }
 
 func (msg *UIMessage) Time() time.Time {
@@ -235,14 +299,25 @@ func (msg *UIMessage) SetIsHighlight(isHighlight bool) {
 	msg.IsHighlight = isHighlight
 }
 
+func (msg *UIMessage) DrawReactions(screen mauview.Screen) {
+	if len(msg.Reactions) == 0 {
+		return
+	}
+	width, height := screen.Size()
+	screen = mauview.NewProxyScreen(screen, 0, height-1, width, 1)
+	mauview.Print(screen, msg.reactionBuffer, 0, 0, width, mauview.AlignLeft, mauview.Styles.PrimaryTextColor)
+}
+
 func (msg *UIMessage) Draw(screen mauview.Screen) {
 	screen = msg.DrawReply(screen)
 	msg.Renderer.Draw(screen)
+	msg.DrawReactions(screen)
 }
 
 func (msg *UIMessage) Clone() *UIMessage {
 	clone := *msg
 	clone.ReplyTo = nil
+	clone.Reactions = nil
 	clone.Renderer = clone.Renderer.Clone()
 	return &clone
 }
@@ -254,9 +329,19 @@ func (msg *UIMessage) CalculateReplyBuffer(preferences config.UserPreferences, w
 	msg.ReplyTo.CalculateBuffer(preferences, width-1)
 }
 
+func (msg *UIMessage) CalculateReactionBuffer() {
+	var text strings.Builder
+	for _, reaction := range msg.Reactions {
+		text.WriteString(reaction.String())
+		text.WriteRune(' ')
+	}
+	msg.reactionBuffer = text.String()
+}
+
 func (msg *UIMessage) CalculateBuffer(preferences config.UserPreferences, width int) {
 	msg.Renderer.CalculateBuffer(preferences, width, msg)
 	msg.CalculateReplyBuffer(preferences, width)
+	msg.CalculateReactionBuffer()
 }
 
 func (msg *UIMessage) DrawReply(screen mauview.Screen) mauview.Screen {
@@ -286,8 +371,7 @@ func (msg *UIMessage) String() string {
 		msg.EventID, msg.TxnID,
 		msg.Type, msg.Timestamp.String(),
 		msg.SenderID, msg.SenderName, msg.DefaultSenderColor.Hex(),
-		msg.IsService, msg.IsHighlight, msg.Renderer.String(),
-	)
+		msg.IsService, msg.IsHighlight, msg.Renderer.String())
 }
 
 func (msg *UIMessage) PlainText() string {
