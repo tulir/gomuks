@@ -21,7 +21,6 @@ import (
 	"encoding/gob"
 	"fmt"
 	"os"
-	"sort"
 	"time"
 
 	sync "github.com/sasha-s/go-deadlock"
@@ -41,7 +40,6 @@ type RoomNameSource int
 const (
 	UnknownRoomName RoomNameSource = iota
 	MemberRoomName
-	AliasRoomName
 	CanonicalAliasRoomName
 	ExplicitRoomName
 )
@@ -71,6 +69,8 @@ type Room struct {
 	// The first batch of events that has been fetched for this room.
 	// Used for fetching additional history.
 	PrevBatch string
+	// The last_batch field from the most recent sync. Used for fetching member lists.
+	LastPrevBatch string
 	// The MXID of the user whose session this room was created for.
 	SessionUserID string
 	SessionMember *mautrix.Member
@@ -88,6 +88,10 @@ type Room struct {
 	// Timestamp of previously received actual message.
 	LastReceivedMessage time.Time
 
+	// The lazy loading summary for this room.
+	Summary mautrix.LazyLoadSummary
+	// Whether or not the members for this room have been fetched from the server.
+	MembersFetched bool
 	// Room state cache.
 	state map[mautrix.EventType]map[string]*mautrix.Event
 	// MXID -> Member cache calculated from membership events.
@@ -106,8 +110,6 @@ type Room struct {
 	topicCache string
 	// The canonical alias of the room. Directly fetched from the m.room.canonical_alias state event.
 	CanonicalAliasCache string
-	// The list of aliases. Directly fetched from the m.room.aliases state event.
-	aliasesCache []string
 	// Whether or not the room has been tombstoned.
 	replacedCache bool
 	// The room ID that replaced this room.
@@ -199,13 +201,13 @@ func (room *Room) Unload() bool {
 	debug.Print("Unloading", room.ID)
 	room.Save()
 	room.state = nil
-	room.aliasesCache = nil
 	room.topicCache = ""
 	room.CanonicalAliasCache = ""
 	room.firstMemberCache = nil
 	room.secondMemberCache = nil
 	room.memberCache = nil
 	room.exMemberCache = nil
+	room.replacedByCache = nil
 	if room.postUnload != nil {
 		room.postUnload()
 	}
@@ -343,6 +345,21 @@ func (room *Room) Tags() []RoomTag {
 	return room.RawTags
 }
 
+func (room *Room) UpdateSummary(summary mautrix.LazyLoadSummary) {
+	if summary.JoinedMemberCount != nil {
+		room.Summary.JoinedMemberCount = summary.JoinedMemberCount
+	}
+	if summary.InvitedMemberCount != nil {
+		room.Summary.InvitedMemberCount = summary.InvitedMemberCount
+	}
+	if summary.Heroes != nil {
+		room.Summary.Heroes = summary.Heroes
+	}
+	if room.nameCacheSource <= MemberRoomName {
+		room.NameCache = ""
+	}
+}
+
 // UpdateState updates the room's current state with the given Event. This will clobber events based
 // on the type/state_key combination.
 func (room *Room) UpdateState(event *mautrix.Event) {
@@ -367,11 +384,6 @@ func (room *Room) UpdateState(event *mautrix.Event) {
 			room.nameCacheSource = CanonicalAliasRoomName
 		}
 		room.CanonicalAliasCache = event.Content.Alias
-	case mautrix.StateAliases:
-		if room.nameCacheSource <= AliasRoomName {
-			room.NameCache = ""
-		}
-		room.aliasesCache = nil
 	case mautrix.StateMember:
 		if room.nameCacheSource <= MemberRoomName {
 			room.NameCache = ""
@@ -395,7 +407,7 @@ func (room *Room) updateMemberState(event *mautrix.Event) {
 	}
 	if room.memberCache != nil {
 		member := room.eventToMember(userID, &event.Content)
-		if event.Content.Membership.IsInviteOrJoin() {
+		if member.Membership.IsInviteOrJoin() {
 			existingMember, ok := room.memberCache[userID]
 			if ok {
 				*existingMember = *member
@@ -458,38 +470,11 @@ func (room *Room) GetCanonicalAlias() string {
 	return room.CanonicalAliasCache
 }
 
-// GetAliases returns the list of aliases that point to this room.
-func (room *Room) GetAliases() []string {
-	if room.aliasesCache == nil {
-		room.lock.RLock()
-		aliasEvents := room.getStateEvents(mautrix.StateAliases)
-		room.aliasesCache = []string{}
-		for _, event := range aliasEvents {
-			room.aliasesCache = append(room.aliasesCache, event.Content.Aliases...)
-		}
-		room.lock.RUnlock()
-	}
-	return room.aliasesCache
-}
-
 // updateNameFromNameEvent updates the room display name to be the name set in the name event.
 func (room *Room) updateNameFromNameEvent() {
 	nameEvt := room.GetStateEvent(mautrix.StateRoomName, "")
 	if nameEvt != nil {
 		room.NameCache = nameEvt.Content.Name
-	}
-}
-
-// updateNameFromAliases updates the room display name to be the first room alias it finds.
-//
-// Deprecated: the Client-Server API recommends against using non-canonical aliases as display name.
-func (room *Room) updateNameFromAliases() {
-	// TODO the spec says clients should not use m.room.aliases for room names.
-	//      However, Riot also uses m.room.aliases, so this is here now.
-	aliases := room.GetAliases()
-	if len(aliases) > 0 {
-		sort.Sort(sort.StringSlice(aliases))
-		room.NameCache = aliases[0]
 	}
 }
 
@@ -532,10 +517,6 @@ func (room *Room) updateNameCache() {
 	if len(room.NameCache) == 0 {
 		room.NameCache = room.GetCanonicalAlias()
 		room.nameCacheSource = CanonicalAliasRoomName
-	}
-	if len(room.NameCache) == 0 {
-		room.updateNameFromAliases()
-		room.nameCacheSource = AliasRoomName
 	}
 	if len(room.NameCache) == 0 {
 		room.updateNameFromMembers()
@@ -616,10 +597,16 @@ func (room *Room) createMemberCache() map[string]*mautrix.Member {
 			}
 		}
 	}
+	if len(room.Summary.Heroes) > 1 {
+		room.firstMemberCache, _ = cache[room.Summary.Heroes[0]]
+	}
+	if len(room.Summary.Heroes) > 2 {
+		room.secondMemberCache, _ = cache[room.Summary.Heroes[1]]
+	}
 	room.lock.RUnlock()
 	room.lock.Lock()
 	room.memberCache = cache
-	room.exMemberCache = cache
+	room.exMemberCache = exCache
 	room.lock.Unlock()
 	return cache
 }

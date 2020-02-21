@@ -834,6 +834,18 @@ func (c *Container) LeaveRoom(roomID string) error {
 	return nil
 }
 
+func (c *Container) FetchMembers(room *rooms.Room) error {
+	members, err := c.client.Members(room.ID, mautrix.ReqMembers{At: room.LastPrevBatch})
+	if err != nil {
+		return err
+	}
+	for _, evt := range members.Chunk {
+		room.UpdateState(evt)
+	}
+	room.MembersFetched = true
+	return nil
+}
+
 // GetHistory fetches room history.
 func (c *Container) GetHistory(room *rooms.Room, limit int) ([]*event.Event, error) {
 	events, err := c.history.Load(room, limit)
@@ -849,6 +861,9 @@ func (c *Container) GetHistory(room *rooms.Room, limit int) ([]*event.Event, err
 		return nil, err
 	}
 	debug.Printf("Loaded %d events for %s from server from %s to %s", len(resp.Chunk), room.ID, resp.Start, resp.End)
+	for _, evt := range resp.State {
+		room.UpdateState(evt)
+	}
 	room.PrevBatch = resp.End
 	c.config.Rooms.Put(room)
 	if len(resp.Chunk) == 0 {

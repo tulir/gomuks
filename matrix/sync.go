@@ -112,6 +112,7 @@ func (s *GomuksSyncer) ProcessResponse(res *mautrix.RespSync, since string) (err
 
 	for roomID, roomData := range res.Rooms.Join {
 		room := s.Session.GetRoom(roomID)
+		room.UpdateSummary(roomData.Summary)
 		s.processSyncEvents(room, roomData.State.Events, EventSourceJoin|EventSourceState)
 		s.processSyncEvents(room, roomData.Timeline.Events, EventSourceJoin|EventSourceTimeline)
 		s.processSyncEvents(room, roomData.Ephemeral.Events, EventSourceJoin|EventSourceEphemeral)
@@ -120,22 +121,26 @@ func (s *GomuksSyncer) ProcessResponse(res *mautrix.RespSync, since string) (err
 		if len(room.PrevBatch) == 0 {
 			room.PrevBatch = roomData.Timeline.PrevBatch
 		}
+		room.LastPrevBatch = roomData.Timeline.PrevBatch
 	}
 
 	for roomID, roomData := range res.Rooms.Invite {
 		room := s.Session.GetRoom(roomID)
+		room.UpdateSummary(roomData.Summary)
 		s.processSyncEvents(room, roomData.State.Events, EventSourceInvite|EventSourceState)
 	}
 
 	for roomID, roomData := range res.Rooms.Leave {
 		room := s.Session.GetRoom(roomID)
 		room.HasLeft = true
+		room.UpdateSummary(roomData.Summary)
 		s.processSyncEvents(room, roomData.State.Events, EventSourceLeave|EventSourceState)
 		s.processSyncEvents(room, roomData.Timeline.Events, EventSourceLeave|EventSourceTimeline)
 
 		if len(room.PrevBatch) == 0 {
 			room.PrevBatch = roomData.Timeline.PrevBatch
 		}
+		room.LastPrevBatch = roomData.Timeline.PrevBatch
 	}
 
 	if since == "" && s.InitDoneCallback != nil {
@@ -207,6 +212,7 @@ func (s *GomuksSyncer) GetFilterJSON(userID string) json.RawMessage {
 		Room: mautrix.RoomFilter{
 			IncludeLeave: false,
 			State: mautrix.FilterPart{
+				LazyLoadMembers: true,
 				Types: []string{
 					"m.room.member",
 					"m.room.name",
@@ -218,6 +224,7 @@ func (s *GomuksSyncer) GetFilterJSON(userID string) json.RawMessage {
 				},
 			},
 			Timeline: mautrix.FilterPart{
+				LazyLoadMembers: true,
 				Types: []string{
 					"m.room.message",
 					"m.room.redaction",

@@ -276,6 +276,17 @@ func (view *MainView) switchRoom(tag string, room *rooms.Room, lock bool) {
 		msgView.initialHistoryLoaded = true
 		go view.LoadHistory(room.ID)
 	}
+	if !room.MembersFetched {
+		go func() {
+			err := view.matrix.FetchMembers(room)
+			if err != nil {
+				debug.Print("Error fetching members:", err)
+				return
+			}
+			roomView.UpdateUserList()
+			view.parent.Render()
+		}()
+	}
 }
 
 func (view *MainView) addRoomPage(room *rooms.Room) *RoomView {

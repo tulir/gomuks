@@ -17,6 +17,7 @@
 package ui
 
 import (
+	"math"
 	"sort"
 	"strings"
 
@@ -40,6 +41,7 @@ func NewMemberList() *MemberList {
 type memberListItem struct {
 	mautrix.Member
 	PowerLevel int
+	Sigil      rune
 	UserID     string
 	Color      tcell.Color
 }
@@ -64,11 +66,35 @@ func (rml roomMemberList) Swap(i, j int) {
 func (ml *MemberList) Update(data map[string]*mautrix.Member, levels *mautrix.PowerLevels) *MemberList {
 	ml.list = make(roomMemberList, len(data))
 	i := 0
+	highestLevel := math.MinInt32
+	count := 0
+	for _, level := range levels.Users {
+		if level > highestLevel {
+			highestLevel = level
+			count = 1
+		} else if level == highestLevel {
+			count++
+		}
+	}
 	for userID, member := range data {
+		level := levels.GetUserLevel(userID)
+		sigil := ' '
+		if level == highestLevel && count == 1 {
+			sigil = '~'
+		} else if level > levels.StateDefault() {
+			sigil = '&'
+		} else if level >= levels.Ban() {
+			sigil = '@'
+		} else if level >= levels.Kick() || level >= levels.Redact() {
+			sigil = '%'
+		} else if level > levels.UsersDefault {
+			sigil = '+'
+		}
 		ml.list[i] = &memberListItem{
 			Member:     *member,
 			UserID:     userID,
-			PowerLevel: levels.GetUserLevel(userID),
+			PowerLevel: level,
+			Sigil:      sigil,
 			Color:      widget.GetHashColor(userID),
 		}
 		i++
@@ -79,17 +105,21 @@ func (ml *MemberList) Update(data map[string]*mautrix.Member, levels *mautrix.Po
 
 func (ml *MemberList) Draw(screen mauview.Screen) {
 	width, _ := screen.Size()
+	sigilStyle := tcell.StyleDefault.Background(tcell.ColorGreen).Foreground(tcell.ColorWhite)
 	for y, member := range ml.list {
+		if member.Sigil != ' ' {
+			screen.SetCell(0, y, sigilStyle, member.Sigil)
+		}
 		if member.Membership == "invite" {
-			widget.WriteLineSimpleColor(screen, member.Displayname, 1, y, member.Color)
-			screen.SetCell(0, y, tcell.StyleDefault, '(')
+			screen.SetCell(1, y, tcell.StyleDefault, '(')
 			if sw := runewidth.StringWidth(member.Displayname); sw < width-1 {
 				screen.SetCell(sw+1, y, tcell.StyleDefault, ')')
 			} else {
 				screen.SetCell(width-1, y, tcell.StyleDefault, ')')
 			}
+			widget.WriteLineSimpleColor(screen, member.Displayname, 2, y, member.Color)
 		} else {
-			widget.WriteLineSimpleColor(screen, member.Displayname, 0, y, member.Color)
+			widget.WriteLineSimpleColor(screen, member.Displayname, 1, y, member.Color)
 		}
 	}
 }
