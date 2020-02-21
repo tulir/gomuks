@@ -111,13 +111,13 @@ func (ml *MemberList) Draw(screen mauview.Screen) {
 			screen.SetCell(0, y, sigilStyle, member.Sigil)
 		}
 		if member.Membership == "invite" {
+			widget.WriteLineSimpleColor(screen, member.Displayname, 2, y, member.Color)
 			screen.SetCell(1, y, tcell.StyleDefault, '(')
-			if sw := runewidth.StringWidth(member.Displayname); sw < width-1 {
-				screen.SetCell(sw+1, y, tcell.StyleDefault, ')')
+			if sw := runewidth.StringWidth(member.Displayname); sw+2 < width {
+				screen.SetCell(sw+2, y, tcell.StyleDefault, ')')
 			} else {
 				screen.SetCell(width-1, y, tcell.StyleDefault, ')')
 			}
-			widget.WriteLineSimpleColor(screen, member.Displayname, 2, y, member.Color)
 		} else {
 			widget.WriteLineSimpleColor(screen, member.Displayname, 1, y, member.Color)
 		}
