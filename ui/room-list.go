@@ -138,7 +138,6 @@ func (list *RoomList) checkTag(tag string) {
 		//delete(list.items, tag)
 		ok = false
 	}
-	debug.Print("Checking", tag, index, trl.IsEmpty(), ok)
 
 	if ok && index == -1 {
 		list.tags = append(list.tags, tag)

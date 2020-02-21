@@ -578,20 +578,22 @@ func (c *Container) processOwnMembershipChange(evt *mautrix.Event) {
 	room := c.GetRoom(evt.RoomID)
 	switch membership {
 	case "join":
+		room.HasLeft = false
+		fallthrough
+	case "invite":
 		if c.config.AuthCache.InitialSyncDone {
 			c.ui.MainView().AddRoom(room)
 		}
-		room.HasLeft = false
 	case "leave":
 		if c.config.AuthCache.InitialSyncDone {
 			c.ui.MainView().RemoveRoom(room)
 		}
 		room.HasLeft = true
 		room.Unload()
-	case "invite":
-		// TODO handle
-		debug.Printf("%s invited the user to %s", evt.Sender, evt.RoomID)
+	default:
+		return
 	}
+	c.ui.Render()
 }
 
 func (c *Container) parseReadReceipt(evt *mautrix.Event) (largestTimestampEvent string) {

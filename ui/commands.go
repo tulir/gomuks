@@ -119,6 +119,8 @@ func cmdAccept(cmd *Command) {
 	} else {
 		cmd.Reply("Successfully accepted invite")
 	}
+	cmd.MainView.UpdateTags(room)
+	go cmd.MainView.LoadHistory(room.ID)
 }
 
 func cmdReject(cmd *Command) {
