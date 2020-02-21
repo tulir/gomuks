@@ -19,6 +19,7 @@ package rooms
 import (
 	"compress/gzip"
 	"encoding/gob"
+	"encoding/json"
 	"fmt"
 	"os"
 	"time"
@@ -49,13 +50,20 @@ type RoomTag struct {
 	// The name of the tag.
 	Tag string
 	// The order of the tag.
-	Order string
+	Order json.Number
 }
 
 type UnreadMessage struct {
 	EventID   string
 	Counted   bool
 	Highlight bool
+}
+
+type Member struct {
+	mautrix.Member
+
+	// The user who sent the membership event
+	Sender string `json:"-"`
 }
 
 // Room represents a single Matrix room.
@@ -73,7 +81,7 @@ type Room struct {
 	LastPrevBatch string
 	// The MXID of the user whose session this room was created for.
 	SessionUserID string
-	SessionMember *mautrix.Member
+	SessionMember *Member
 
 	// The number of unread messages that were notified about.
 	UnreadMessages   []UnreadMessage
@@ -95,12 +103,12 @@ type Room struct {
 	// Room state cache.
 	state map[mautrix.EventType]map[string]*mautrix.Event
 	// MXID -> Member cache calculated from membership events.
-	memberCache   map[string]*mautrix.Member
-	exMemberCache map[string]*mautrix.Member
+	memberCache   map[string]*Member
+	exMemberCache map[string]*Member
 	// The first two non-SessionUserID members in the room. Calculated at
 	// the same time as memberCache.
-	firstMemberCache  *mautrix.Member
-	secondMemberCache *mautrix.Member
+	firstMemberCache  *Member
+	secondMemberCache *Member
 	// The name of the room. Calculated from the state event name,
 	// canonical_alias or alias or the member cache.
 	NameCache string
@@ -337,8 +345,13 @@ func (room *Room) Tags() []RoomTag {
 	room.lock.RLock()
 	defer room.lock.RUnlock()
 	if len(room.RawTags) == 0 {
+		sessionMember := room.GetMember(room.SessionUserID)
 		if room.IsDirect {
 			return []RoomTag{{"net.maunium.gomuks.fake.direct", "0.5"}}
+		} else if sessionMember != nil && sessionMember.Membership == mautrix.MembershipInvite {
+			return []RoomTag{{"net.maunium.gomuks.fake.invite", "0.5"}}
+		} else if sessionMember != nil && sessionMember.Membership != mautrix.MembershipJoin {
+			return []RoomTag{{"net.maunium.gomuks.fake.leave", "0.5"}}
 		}
 		return []RoomTag{{"", "0.5"}}
 	}
@@ -403,10 +416,11 @@ func (room *Room) UpdateState(event *mautrix.Event) {
 func (room *Room) updateMemberState(event *mautrix.Event) {
 	userID := event.GetStateKey()
 	if userID == room.SessionUserID {
-		room.SessionMember = room.eventToMember(userID, &event.Content)
+		debug.Print("Updating session user state:", string(event.Content.VeryRaw))
+		room.SessionMember = room.eventToMember(userID, event.Sender, &event.Content)
 	}
 	if room.memberCache != nil {
-		member := room.eventToMember(userID, &event.Content)
+		member := room.eventToMember(userID, event.Sender, &event.Content)
 		if member.Membership.IsInviteOrJoin() {
 			existingMember, ok := room.memberCache[userID]
 			if ok {
@@ -553,16 +567,19 @@ func (room *Room) ReplacedBy() string {
 	return *room.replacedByCache
 }
 
-func (room *Room) eventToMember(userID string, content *mautrix.Content) *mautrix.Member {
-	member := &content.Member
+func (room *Room) eventToMember(userID string, sender string, content *mautrix.Content) *Member {
+	member := content.Member
 	member.Membership = content.Membership
 	if len(member.Displayname) == 0 {
 		member.Displayname = userID
 	}
-	return member
+	return &Member{
+		Member: member,
+		Sender: sender,
+	}
 }
 
-func (room *Room) updateNthMemberCache(userID string, member *mautrix.Member) {
+func (room *Room) updateNthMemberCache(userID string, member *Member) {
 	if userID != room.SessionUserID {
 		if room.firstMemberCache == nil {
 			room.firstMemberCache = member
@@ -573,19 +590,19 @@ func (room *Room) updateNthMemberCache(userID string, member *mautrix.Member) {
 }
 
 // createMemberCache caches all member events into a easily processable MXID -> *Member map.
-func (room *Room) createMemberCache() map[string]*mautrix.Member {
+func (room *Room) createMemberCache() map[string]*Member {
 	if len(room.memberCache) > 0 {
 		return room.memberCache
 	}
-	cache := make(map[string]*mautrix.Member)
-	exCache := make(map[string]*mautrix.Member)
+	cache := make(map[string]*Member)
+	exCache := make(map[string]*Member)
 	room.lock.RLock()
 	events := room.getStateEvents(mautrix.StateMember)
 	room.firstMemberCache = nil
 	room.secondMemberCache = nil
 	if events != nil {
 		for userID, event := range events {
-			member := room.eventToMember(userID, &event.Content)
+			member := room.eventToMember(userID, event.Sender, &event.Content)
 			if member.Membership.IsInviteOrJoin() {
 				cache[userID] = member
 				room.updateNthMemberCache(userID, member)
@@ -615,7 +632,7 @@ func (room *Room) createMemberCache() map[string]*mautrix.Member {
 //
 // The members are returned from the cache.
 // If the cache is empty, it is updated first.
-func (room *Room) GetMembers() map[string]*mautrix.Member {
+func (room *Room) GetMembers() map[string]*Member {
 	room.Load()
 	room.createMemberCache()
 	return room.memberCache
@@ -623,7 +640,7 @@ func (room *Room) GetMembers() map[string]*mautrix.Member {
 
 // GetMember returns the member with the given MXID.
 // If the member doesn't exist, nil is returned.
-func (room *Room) GetMember(userID string) *mautrix.Member {
+func (room *Room) GetMember(userID string) *Member {
 	if userID == room.SessionUserID && room.SessionMember != nil {
 		return room.SessionMember
 	}

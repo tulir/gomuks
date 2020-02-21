@@ -663,7 +663,7 @@ func (c *Container) parseDirectChatInfo(evt *mautrix.Event) map[*rooms.Room]bool
 	return directChats
 }
 
-func (c *Container) HandleDirectChatInfo(source EventSource, evt *mautrix.Event) {
+func (c *Container) HandleDirectChatInfo(_ EventSource, evt *mautrix.Event) {
 	directChats := c.parseDirectChatInfo(evt)
 	for _, room := range c.config.Rooms.Map {
 		shouldBeDirect := directChats[room]
@@ -677,7 +677,7 @@ func (c *Container) HandleDirectChatInfo(source EventSource, evt *mautrix.Event)
 }
 
 // HandlePushRules is the event handler for the m.push_rules account data event.
-func (c *Container) HandlePushRules(source EventSource, evt *mautrix.Event) {
+func (c *Container) HandlePushRules(_ EventSource, evt *mautrix.Event) {
 	debug.Print("Received updated push rules")
 	var err error
 	c.config.PushRules, err = pushrules.EventToPushRules(evt)
@@ -689,15 +689,16 @@ func (c *Container) HandlePushRules(source EventSource, evt *mautrix.Event) {
 }
 
 // HandleTag is the event handler for the m.tag account data event.
-func (c *Container) HandleTag(source EventSource, evt *mautrix.Event) {
+func (c *Container) HandleTag(_ EventSource, evt *mautrix.Event) {
+	debug.Printf("Received tags for %s: %s -- %s", evt.RoomID, evt.Content.RoomTags, string(evt.Content.VeryRaw))
 	room := c.GetOrCreateRoom(evt.RoomID)
 
 	newTags := make([]rooms.RoomTag, len(evt.Content.RoomTags))
 	index := 0
 	for tag, info := range evt.Content.RoomTags {
-		order := "0.5"
+		order := json.Number("0.5")
 		if len(info.Order) > 0 {
-			order = info.Order.String()
+			order = info.Order
 		}
 		newTags[index] = rooms.RoomTag{
 			Tag:   tag,
@@ -714,7 +715,7 @@ func (c *Container) HandleTag(source EventSource, evt *mautrix.Event) {
 }
 
 // HandleTyping is the event handler for the m.typing event.
-func (c *Container) HandleTyping(source EventSource, evt *mautrix.Event) {
+func (c *Container) HandleTyping(_ EventSource, evt *mautrix.Event) {
 	if !c.config.AuthCache.InitialSyncDone {
 		return
 	}
@@ -723,7 +724,7 @@ func (c *Container) HandleTyping(source EventSource, evt *mautrix.Event) {
 
 func (c *Container) MarkRead(roomID, eventID string) {
 	urlPath := c.client.BuildURL("rooms", roomID, "receipt", "m.read", eventID)
-	c.client.MakeRequest("POST", urlPath, struct{}{}, nil)
+	_, _ = c.client.MakeRequest("POST", urlPath, struct{}{}, nil)
 }
 
 var mentionRegex = regexp.MustCompile("\\[(.+?)]\\(https://matrix.to/#/@.+?:.+?\\)")
@@ -791,10 +792,10 @@ func (c *Container) SendTyping(roomID string, typing bool) {
 	}
 
 	if typing {
-		c.client.UserTyping(roomID, true, 20000)
+		_, _ = c.client.UserTyping(roomID, true, 20000)
 		c.typing = ts + 15
 	} else {
-		c.client.UserTyping(roomID, false, 0)
+		_, _ = c.client.UserTyping(roomID, false, 0)
 		c.typing = 0
 	}
 }

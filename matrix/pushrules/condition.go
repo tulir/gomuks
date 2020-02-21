@@ -22,6 +22,7 @@ import (
 	"strings"
 	"unicode"
 
+	"maunium.net/go/gomuks/matrix/rooms"
 	"maunium.net/go/mautrix"
 
 	"maunium.net/go/gomuks/lib/glob"
@@ -29,8 +30,8 @@ import (
 
 // Room is an interface with the functions that are needed for processing room-specific push conditions
 type Room interface {
-	GetMember(mxid string) *mautrix.Member
-	GetMembers() map[string]*mautrix.Member
+	GetMember(mxid string) *rooms.Member
+	GetMembers() map[string]*rooms.Member
 	GetSessionOwner() string
 }
 

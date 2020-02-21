@@ -19,6 +19,7 @@ package ui
 import (
 	"math"
 	"regexp"
+	"sort"
 	"strings"
 
 	sync "github.com/sasha-s/go-deadlock"
@@ -30,13 +31,43 @@ import (
 	"maunium.net/go/gomuks/matrix/rooms"
 )
 
+var tagOrder = map[string]int{
+	"net.maunium.gomuks.fake.invite": 4,
+	"m.favourite": 3,
+	"net.maunium.gomuks.fake.direct": 2,
+	"": 1,
+	"m.lowpriority": -1,
+	"m.server_notice": -2,
+	"net.maunium.gomuks.fake.leave": -3,
+}
+
+// TagNameList is a list of Matrix tag names where default names are sorted in a hardcoded way.
+type TagNameList []string
+
+func (tnl TagNameList) Len() int {
+	return len(tnl)
+}
+
+func (tnl TagNameList) Less(i, j int) bool {
+	orderI, _ := tagOrder[tnl[i]]
+	orderJ, _ := tagOrder[tnl[j]]
+	if orderI != orderJ {
+		return orderI > orderJ
+	}
+	return strings.Compare(tnl[i], tnl[j]) > 0
+}
+
+func (tnl TagNameList) Swap(i, j int) {
+	tnl[i], tnl[j] = tnl[j], tnl[i]
+}
+
 type RoomList struct {
 	sync.RWMutex
 
 	parent *MainView
 
 	// The list of tags in display order.
-	tags []string
+	tags TagNameList
 	// The list of rooms, in reverse order.
 	items map[string]*TagRoomList
 	// The selected room.
@@ -107,13 +138,14 @@ func (list *RoomList) checkTag(tag string) {
 		//delete(list.items, tag)
 		ok = false
 	}
+	debug.Print("Checking", tag, index, trl.IsEmpty(), ok)
 
 	if ok && index == -1 {
 		list.tags = append(list.tags, tag)
-	} /* TODO this doesn't work properly
-	else if index != -1 {
+		sort.Sort(list.tags)
+	} else if !ok && index != -1 {
 		list.tags = append(list.tags[0:index], list.tags[index+1:]...)
-	}*/
+	}
 }
 
 func (list *RoomList) AddToTag(tag rooms.RoomTag, room *rooms.Room) {
@@ -122,10 +154,9 @@ func (list *RoomList) AddToTag(tag rooms.RoomTag, room *rooms.Room) {
 	trl, ok := list.items[tag.Tag]
 	if !ok {
 		list.items[tag.Tag] = NewTagRoomList(list, tag.Tag, NewDefaultOrderedRoom(room))
-		return
+	} else {
+		trl.Insert(tag.Order, room)
 	}
-
-	trl.Insert(tag.Order, room)
 	list.checkTag(tag.Tag)
 }
 
@@ -412,11 +443,11 @@ func (list *RoomList) ContentHeight() (height int) {
 	return
 }
 
-func (list *RoomList) OnKeyEvent(event mauview.KeyEvent) bool {
+func (list *RoomList) OnKeyEvent(_ mauview.KeyEvent) bool {
 	return false
 }
 
-func (list *RoomList) OnPasteEvent(event mauview.PasteEvent) bool {
+func (list *RoomList) OnPasteEvent(_ mauview.PasteEvent) bool {
 	return false
 }
 
@@ -517,6 +548,10 @@ func (list *RoomList) GetTagDisplayName(tag string) string {
 		return "System Alerts"
 	case tag == "net.maunium.gomuks.fake.direct":
 		return "People"
+	case tag == "net.maunium.gomuks.fake.invite":
+		return "Invites"
+	case tag == "net.maunium.gomuks.fake.leave":
+		return "Historical"
 	case strings.HasPrefix(tag, "u."):
 		return tag[len("u."):]
 	case !nsRegex.MatchString(tag):

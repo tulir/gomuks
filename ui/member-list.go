@@ -27,6 +27,7 @@ import (
 	"maunium.net/go/mauview"
 	"maunium.net/go/tcell"
 
+	"maunium.net/go/gomuks/matrix/rooms"
 	"maunium.net/go/gomuks/ui/widget"
 )
 
@@ -39,7 +40,7 @@ func NewMemberList() *MemberList {
 }
 
 type memberListItem struct {
-	mautrix.Member
+	rooms.Member
 	PowerLevel int
 	Sigil      rune
 	UserID     string
@@ -63,7 +64,7 @@ func (rml roomMemberList) Swap(i, j int) {
 	rml[i], rml[j] = rml[j], rml[i]
 }
 
-func (ml *MemberList) Update(data map[string]*mautrix.Member, levels *mautrix.PowerLevels) *MemberList {
+func (ml *MemberList) Update(data map[string]*rooms.Member, levels *mautrix.PowerLevels) *MemberList {
 	ml.list = make(roomMemberList, len(data))
 	i := 0
 	highestLevel := math.MinInt32

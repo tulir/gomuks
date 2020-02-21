@@ -17,10 +17,12 @@
 package ui
 
 import (
+	"encoding/json"
 	"fmt"
 	"strconv"
 	"strings"
 
+	"maunium.net/go/gomuks/debug"
 	"maunium.net/go/mauview"
 	"maunium.net/go/tcell"
 
@@ -30,10 +32,10 @@ import (
 
 type OrderedRoom struct {
 	*rooms.Room
-	order string
+	order json.Number
 }
 
-func NewOrderedRoom(order string, room *rooms.Room) *OrderedRoom {
+func NewOrderedRoom(order json.Number, room *rooms.Room) *OrderedRoom {
 	return &OrderedRoom{
 		Room:  room,
 		order: order,
@@ -153,23 +155,25 @@ func (trl *TagRoomList) HasVisibleRooms() bool {
 // ShouldBeBefore returns if the first room should be after the second room in the room list.
 // The manual order and last received message timestamp are considered.
 func (trl *TagRoomList) ShouldBeAfter(room1 *OrderedRoom, room2 *OrderedRoom) bool {
-	orderComp := strings.Compare(room1.order, room2.order)
+	orderComp := strings.Compare(string(room1.order), string(room2.order))
 	return orderComp == 1 || (orderComp == 0 && room2.LastReceivedMessage.After(room1.LastReceivedMessage))
 }
 
-func (trl *TagRoomList) Insert(order string, mxRoom *rooms.Room) {
+func (trl *TagRoomList) Insert(order json.Number, mxRoom *rooms.Room) {
 	room := NewOrderedRoom(order, mxRoom)
-	trl.rooms = append(trl.rooms, nil)
 	// The default insert index is the newly added slot.
 	// That index will be used if all other rooms in the list have the same LastReceivedMessage timestamp.
-	insertAt := len(trl.rooms) - 1
+	insertAt := len(trl.rooms)
 	// Find the spot where the new room should be put according to the last received message timestamps.
 	for i := 0; i < len(trl.rooms)-1; i++ {
-		if trl.ShouldBeAfter(room, trl.rooms[i]) {
+		if trl.rooms[i].Room == mxRoom {
+			debug.Printf("Warning: tried to re-insert room %s into tag %s", mxRoom.ID, trl.name)
+			return
+		} else if trl.ShouldBeAfter(room, trl.rooms[i]) {
 			insertAt = i
-			break
 		}
 	}
+	trl.rooms = append(trl.rooms, nil)
 	// Move newer rooms forward in the array.
 	for i := len(trl.rooms) - 1; i > insertAt; i-- {
 		trl.rooms[i] = trl.rooms[i-1]
@@ -207,7 +211,12 @@ func (trl *TagRoomList) RemoveIndex(index int) {
 	if index < 0 || index > len(trl.rooms) {
 		return
 	}
-	trl.rooms = append(trl.rooms[0:index], trl.rooms[index+1:]...)
+	last := len(trl.rooms) - 1
+	if index < last {
+		copy(trl.rooms[index:], trl.rooms[index+1:])
+	}
+	trl.rooms[last] = nil
+	trl.rooms = trl.rooms[:last]
 }
 
 func (trl *TagRoomList) Index(room *rooms.Room) int {

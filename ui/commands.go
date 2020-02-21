@@ -106,8 +106,44 @@ func cmdNotice(cmd *Command) {
 	cmd.UI.Render()
 }
 
+func cmdAccept(cmd *Command) {
+	room := cmd.Room.MxRoom()
+	if room.SessionMember.Membership != "invite" {
+		cmd.Reply("/accept can only be used in rooms you're invited to")
+		return
+	}
+	_, server, _ := mautrix.ParseUserID(room.SessionMember.Sender)
+	_, err := cmd.Matrix.JoinRoom(room.ID, server)
+	if err != nil {
+		cmd.Reply("Failed to accept invite:", err)
+	} else {
+		cmd.Reply("Successfully accepted invite")
+	}
+}
+
+func cmdReject(cmd *Command) {
+	room := cmd.Room.MxRoom()
+	if room.SessionMember.Membership != "invite" {
+		cmd.Reply("/reject can only be used in rooms you're invited to")
+		return
+	}
+	err := cmd.Matrix.LeaveRoom(room.ID)
+	if err != nil {
+		cmd.Reply("Failed to reject invite: %v", err)
+	} else {
+		cmd.Reply("Successfully accepted invite")
+	}
+}
+
+func cmdID(cmd *Command) {
+	cmd.Reply("The internal ID of this room is %s", cmd.Room.MxRoom().ID)
+}
+
 func cmdTags(cmd *Command) {
 	tags := cmd.Room.MxRoom().RawTags
+	if len(cmd.Args) > 0 && cmd.Args[0] == "--internal" {
+		tags = cmd.Room.MxRoom().Tags()
+	}
 	if len(tags) == 0 {
 		if cmd.Room.MxRoom().IsDirect {
 			cmd.Reply("This room has no tags, but it's marked as a direct chat.")
@@ -142,7 +178,18 @@ func cmdTag(cmd *Command) {
 			return
 		}
 	}
-	err := cmd.Matrix.Client().AddTag(cmd.Room.MxRoom().ID, cmd.Args[0], order)
+	var err error
+	if len(cmd.Args) > 2 && cmd.Args[2] == "--reset" {
+		tags := mautrix.Tags{
+			cmd.Args[0]: {Order: json.Number(fmt.Sprintf("%f", order))},
+		}
+		for _, tag := range cmd.Room.MxRoom().RawTags {
+			tags[tag.Tag] = mautrix.Tag{Order: tag.Order}
+		}
+		err = cmd.Matrix.Client().SetTags(cmd.Room.MxRoom().ID, tags)
+	} else {
+		err = cmd.Matrix.Client().AddTag(cmd.Room.MxRoom().ID, cmd.Args[0], order)
+	}
 	if err != nil {
 		cmd.Reply("Failed to add tag:", err)
 	}
