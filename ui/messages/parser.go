@@ -158,7 +158,11 @@ func getMembershipChangeMessage(evt *event.Event, membership, prevMembership mau
 		text.Colorize(len(senderDisplayname)+len(" invited "), len(displayname), widget.GetHashColor(*evt.StateKey))
 	case "join":
 		sender = "-->"
-		text = tstring.NewColorTString(fmt.Sprintf("%s joined the room.", displayname), tcell.ColorGreen)
+		if prevMembership == mautrix.MembershipInvite {
+			text = tstring.NewColorTString(fmt.Sprintf("%s accepted the invite.", displayname), tcell.ColorGreen)
+		} else {
+			text = tstring.NewColorTString(fmt.Sprintf("%s joined the room.", displayname), tcell.ColorGreen)
+		}
 		text.Colorize(0, len(displayname), widget.GetHashColor(*evt.StateKey))
 	case "leave":
 		sender = "<--"
@@ -175,7 +179,11 @@ func getMembershipChangeMessage(evt *event.Event, membership, prevMembership mau
 			if displayname == *evt.StateKey {
 				displayname = prevDisplayname
 			}
-			text = tstring.NewColorTString(fmt.Sprintf("%s left the room.", displayname), tcell.ColorRed)
+			if prevMembership == mautrix.MembershipInvite {
+				text = tstring.NewColorTString(fmt.Sprintf("%s rejected the invite.", displayname), tcell.ColorRed)
+			} else {
+				text = tstring.NewColorTString(fmt.Sprintf("%s left the room.", displayname), tcell.ColorRed)
+			}
 			text.Colorize(0, len(displayname), widget.GetHashColor(*evt.StateKey))
 		}
 	case "ban":
