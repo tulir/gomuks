@@ -345,12 +345,11 @@ func (room *Room) Tags() []RoomTag {
 	room.lock.RLock()
 	defer room.lock.RUnlock()
 	if len(room.RawTags) == 0 {
-		sessionMember := room.GetMember(room.SessionUserID)
 		if room.IsDirect {
 			return []RoomTag{{"net.maunium.gomuks.fake.direct", "0.5"}}
-		} else if sessionMember != nil && sessionMember.Membership == mautrix.MembershipInvite {
+		} else if room.SessionMember != nil && room.SessionMember.Membership == mautrix.MembershipInvite {
 			return []RoomTag{{"net.maunium.gomuks.fake.invite", "0.5"}}
-		} else if sessionMember != nil && sessionMember.Membership != mautrix.MembershipJoin {
+		} else if room.SessionMember != nil && room.SessionMember.Membership != mautrix.MembershipJoin {
 			return []RoomTag{{"net.maunium.gomuks.fake.leave", "0.5"}}
 		}
 		return []RoomTag{{"", "0.5"}}
