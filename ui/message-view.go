@@ -358,14 +358,16 @@ func (view *MessageView) handleMessageClick(message *messages.UIMessage, mod tce
 }
 
 func (view *MessageView) handleUsernameClick(message *messages.UIMessage, prevMessage *messages.UIMessage) bool {
-	if prevMessage != nil && prevMessage.Sender() == message.Sender() {
+	// TODO this is needed if senders are hidden for messages from the same sender (see Draw method)
+	//if prevMessage != nil && prevMessage.SenderName == message.SenderName {
+	//	return false
+	//}
+
+	if message.SenderName == "---" || message.SenderName == "-->" || message.SenderName == "<--" || message.Type == mautrix.MsgEmote {
 		return false
 	}
 
-	if len(message.Sender()) == 0 {
-		return false
-	}
-	sender := fmt.Sprintf("[%s](https://matrix.to/#/%s)", message.Sender(), message.SenderID)
+	sender := fmt.Sprintf("[%s](https://matrix.to/#/%s)", message.SenderName, message.SenderID)
 
 	cursorPos := view.parent.input.GetCursorOffset()
 	text := view.parent.input.GetText()
