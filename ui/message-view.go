@@ -349,6 +349,9 @@ func (view *MessageView) handleMessageClick(message *messages.UIMessage, mod tce
 		open.Open(msg.Path())
 		// No need to re-render
 		return false
+	} else if message.IsService {
+		// Can't select service messages
+		return false
 	}
 	view.SetSelected(message)
 	return true
