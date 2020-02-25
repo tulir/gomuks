@@ -284,31 +284,39 @@ func cmdUnknownCommand(cmd *Command) {
 }
 
 func cmdHelp(cmd *Command) {
-	cmd.Reply(`/help - Show the temporary help message.
+	cmd.Reply(`# General
+/help           - Show this "temporary" help message.
+/quit           - Quit gomuks.
+/clearcache     - Clear cache and quit gomuks.
+/logout         - Log out of Matrix.
+/toggle <thing> - Temporary command to toggle various UI features.
 
-/quit       - Quit gomuks.
-/clearcache - Clear cache and quit gomuks.
-/logout     - Log out of Matrix.
+Things: rooms, users, baremessages, images, typingnotif
 
-/me <message>      - Send an emote message.
-/rainbow <message> - Send a rainbow message (markdown not supported).
+# Sending special messages
+/me <message>        - Send an emote message.
+/notice <message>    - Send a notice (generally used for bot messages).
+/rainbow <message>   - Send rainbow text (markdown not supported).
+/rainbowme <message> - Send rainbow text in an emote.
 
-/create [room name]  - Create a room.
-/pm <user id> <...>  - Create a private chat with the given user(s).
-/join <room address> - Join a room.
-/leave               - Leave the current room.
+# Rooms
+/pm <user id> <...>   - Create a private chat with the given user(s).
+/create [room name]   - Create a room.
 
-/invite <user id>          - Invite a user.
+/join <room> [server] - Join a room.
+/accept               - Accept the invite.
+/reject               - Reject the invite.
+
+/invite <user id>     - Invite the given user to the room.
+/roomnick <name>      - Change your per-room displayname.
+/tag <tag> <priority> - Add the room to <tag>.
+/untag <tag>          - Remove the room from <tag>.
+/tags                 - List the tags the room is in.
+
+/leave                     - Leave the current room.
 /kick   <user id> [reason] - Kick a user.
 /ban    <user id> [reason] - Ban a user.
-/unban  <user id>          - Unban a user.
-
-/send     <room id> <type>         <json> - Send a custom event to the given room.
-/msend              <type>         <json> - Send a custom event to the current room.
-/setstate <room id> <type> <key/-> <json> - Send a custom event to the given room.
-/msetstate          <type> <key/-> <json> - Send a custom event to the current room.
-
-/toggle <thing> - Temporary command to toggle various UI features.`)
+/unban  <user id>          - Unban a user.`)
 }
 
 func cmdLeave(cmd *Command) {
@@ -432,7 +440,6 @@ func cmdMSendEvent(cmd *Command) {
 }
 
 func cmdSendEvent(cmd *Command) {
-	debug.Print(cmd.Command, cmd.Args, len(cmd.Args))
 	if len(cmd.Args) < 3 {
 		cmd.Reply("Usage: /send <room id> <event type> <content>")
 		return
@@ -440,7 +447,6 @@ func cmdSendEvent(cmd *Command) {
 	roomID := cmd.Args[0]
 	eventType := mautrix.NewEventType(cmd.Args[1])
 	rawContent := strings.Join(cmd.Args[2:], " ")
-	debug.Print(roomID, eventType, rawContent)
 
 	var content interface{}
 	err := json.Unmarshal([]byte(rawContent), &content)
