@@ -729,16 +729,9 @@ func (c *Container) MarkRead(roomID, eventID string) {
 	_, _ = c.client.MakeRequest("POST", urlPath, struct{}{}, nil)
 }
 
-var mentionRegex = regexp.MustCompile("\\[(.+?)]\\(https://matrix.to/#/@.+?:.+?\\)")
-var roomRegex = regexp.MustCompile("\\[.+?]\\(https://matrix.to/#/(#.+?:[^/]+?)\\)")
-
 func (c *Container) PrepareMarkdownMessage(roomID string, msgtype mautrix.MessageType, text string, rel *ifc.Relation) *event.Event {
 	content := format.RenderMarkdown(text)
 	content.MsgType = msgtype
-
-	// Remove markdown link stuff from plaintext mentions and room links
-	content.Body = mentionRegex.ReplaceAllString(content.Body, "$1")
-	content.Body = roomRegex.ReplaceAllString(content.Body, "$1")
 
 	if rel != nil && rel.Type == mautrix.RelReplace {
 		contentCopy := content
