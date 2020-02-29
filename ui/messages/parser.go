@@ -129,7 +129,6 @@ func ParseMessage(matrix ifc.MatrixContainer, room *rooms.Room, evt *event.Event
 		evt.Content.RemoveReplyFallback()
 	}
 	if len(evt.Gomuks.Edits) > 0 {
-		evt = evt.SomewhatDangerousCopy()
 		evt.Content = *evt.Gomuks.Edits[len(evt.Gomuks.Edits)-1].Content.NewContent
 	}
 	switch evt.Content.MsgType {

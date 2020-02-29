@@ -67,6 +67,12 @@ type RoomView struct {
 
 	typing []string
 
+	selecting     bool
+	selectReason  SelectReason
+	selectContent string
+
+	replying *event.Event
+
 	editing      *event.Event
 	editMoveText string
 
@@ -148,7 +154,28 @@ func (view *RoomView) Focus() {
 }
 
 func (view *RoomView) Blur() {
+	view.MessageView().SetSelected(nil)
 	view.input.Blur()
+}
+
+func (view *RoomView) OnSelect(message *messages.UIMessage) {
+	if !view.selecting || message == nil {
+		return
+	}
+	switch view.selectReason {
+	case SelectReply:
+		view.replying = message.Event
+		if len(view.selectContent) > 0 {
+			go view.SendMessage(mautrix.MsgText, view.selectContent)
+		}
+	case SelectReact:
+		go view.SendReaction(message.EventID, view.selectContent)
+	case SelectRedact:
+		// TODO redact
+	}
+	view.selecting = false
+	view.selectContent = ""
+	view.MessageView().SetSelected(nil)
 }
 
 func (view *RoomView) GetStatus() string {
@@ -156,6 +183,14 @@ func (view *RoomView) GetStatus() string {
 
 	if view.editing != nil {
 		buf.WriteString("Editing message - ")
+	} else if view.replying != nil {
+		buf.WriteString("Replying to ")
+		buf.WriteString(view.replying.Sender)
+		buf.WriteString(" - ")
+	} else if view.selecting {
+		buf.WriteString("Selecting message to")
+		buf.WriteString(string(view.selectReason))
+		buf.WriteString(" - ")
 	}
 
 	if len(view.completions.list) > 0 {
@@ -373,6 +408,8 @@ func (view *RoomView) SetEditing(evt *event.Event) {
 			view.editMoveText = view.GetInputText()
 		}
 		view.editing = evt
+		// replying should never be non-nil when SetEditing, but do this just to be safe
+		view.replying = nil
 		text := view.editing.Content.Body
 		if view.editing.Content.MsgType == mautrix.MsgEmote {
 			text = "/me " + text
@@ -393,7 +430,9 @@ func (view *RoomView) findMessageToEdit(forward bool) *event.Event {
 			index = len(msgs) - i - 1
 		}
 		evt := msgs[index]
-		if currentFound {
+		if evt.EventID == "" || evt.EventID == evt.TxnID {
+			continue
+		} else if currentFound {
 			if evt.SenderID == self && evt.Event.Type == mautrix.EventMessage {
 				return evt.Event
 			}
@@ -413,6 +452,9 @@ func (view *RoomView) EditNext() {
 }
 
 func (view *RoomView) EditPrevious() {
+	if view.replying != nil {
+		return
+	}
 	foundEvent := view.findMessageToEdit(false)
 	if foundEvent != nil {
 		view.SetEditing(foundEvent)
@@ -468,6 +510,35 @@ func (view *RoomView) InputSubmit(text string) {
 	}
 	view.editMoveText = ""
 	view.SetInputText("")
+	view.MessageView().SetSelected(nil)
+}
+
+func (view *RoomView) SendReaction(eventID string, reaction string) {
+	defer debug.Recover()
+	debug.Print("Reacting to", eventID, "in",  view.Room.ID, "with", reaction)
+	eventID, err := view.parent.matrix.SendEvent(&event.Event{
+		Event:  &mautrix.Event{
+			Type:            mautrix.EventReaction,
+			RoomID:          view.Room.ID,
+			Content:         mautrix.Content{
+				RelatesTo: &mautrix.RelatesTo{
+					Type:    mautrix.RelAnnotation,
+					EventID: eventID,
+					Key:     reaction,
+				},
+			},
+		},
+	})
+	if err != nil {
+		if httpErr, ok := err.(mautrix.HTTPError); ok {
+			err = httpErr
+			if respErr := httpErr.RespError; respErr != nil {
+				err = respErr
+			}
+		}
+		view.AddServiceMessage(fmt.Sprintf("Failed to send reaction: %v", err))
+		view.parent.parent.Render()
+	}
 }
 
 func (view *RoomView) SendMessage(msgtype mautrix.MessageType, text string) {
@@ -476,10 +547,23 @@ func (view *RoomView) SendMessage(msgtype mautrix.MessageType, text string) {
 	if !view.config.Preferences.DisableEmojis {
 		text = emoji.Sprint(text)
 	}
-	evt := view.parent.matrix.PrepareMarkdownMessage(view.Room.ID, msgtype, text, view.editing)
-	msg := view.parseEvent(evt)
+	var rel *ifc.Relation
+	if view.editing != nil {
+		rel = &ifc.Relation{
+			Type:  mautrix.RelReplace,
+			Event: view.editing,
+		}
+	} else if view.replying != nil {
+		rel = &ifc.Relation{
+			Type:  mautrix.RelReference,
+			Event: view.replying,
+		}
+	}
+	evt := view.parent.matrix.PrepareMarkdownMessage(view.Room.ID, msgtype, text, rel)
+	msg := view.parseEvent(evt.SomewhatDangerousCopy())
 	view.content.AddMessage(msg, AppendMessage)
 	view.editing = nil
+	view.replying = nil
 	view.status.SetText(view.GetStatus())
 	eventID, err := view.parent.matrix.SendEvent(evt)
 	if err != nil {

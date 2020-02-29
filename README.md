@@ -71,6 +71,9 @@ func Foo() {
 * `/notice <text>` - Send a notice (generally used for bot messages).
 * `/rainbow <text>` - Send rainbow text (markdown not supported).
 * `/rainbowme <text>` - Send rainbow text in an emote.
+* `/reply [text]` - Reply to the selected message. If text is not specified, the next message will be used.
+* `/react <reaction>` - React to the selected message.
+* `/redact` - Redact the selected message.
 
 #### Rooms
 ##### Creating

@@ -41,7 +41,6 @@ import (
 func cmdMe(cmd *Command) {
 	text := strings.Join(cmd.Args, " ")
 	go cmd.Room.SendMessage(mautrix.MsgEmote, text)
-	cmd.UI.Render()
 }
 
 // GradientTable from https://github.com/lucasb-eyer/go-colorful/blob/master/doc/gradientgen/gradientgen.go
@@ -87,10 +86,9 @@ func makeRainbow(cmd *Command, msgtype mautrix.MessageType) {
 			continue
 		}
 		color := rainbow.GetInterpolatedColorFor(float64(i) / float64(len(text))).Hex()
-		_, _ = fmt.Fprintf(&html, "<font color=\"%s\">%c</font>", color, char)
+		_, _ = fmt.Fprintf(&html, "<font data-mx-color=\"%[1]s\" color=\"%[1]s\">%[2]c</font>", color, char)
 	}
 	go cmd.Room.SendMessage(msgtype, html.String())
-	cmd.UI.Render()
 }
 
 func cmdRainbow(cmd *Command) {
@@ -103,7 +101,6 @@ func cmdRainbowMe(cmd *Command) {
 
 func cmdNotice(cmd *Command) {
 	go cmd.Room.SendMessage(mautrix.MsgNotice, strings.Join(cmd.Args, " "))
-	cmd.UI.Render()
 }
 
 func cmdAccept(cmd *Command) {
@@ -139,6 +136,42 @@ func cmdReject(cmd *Command) {
 
 func cmdID(cmd *Command) {
 	cmd.Reply("The internal ID of this room is %s", cmd.Room.MxRoom().ID)
+}
+
+type SelectReason string
+
+const (
+	SelectReply  SelectReason = "reply to"
+	SelectReact               = "react to"
+	SelectRedact              = "redact"
+)
+
+func cmdReply(cmd *Command) {
+	cmd.Room.selecting = true
+	cmd.Room.selectReason = SelectReply
+	cmd.Room.selectContent = strings.Join(cmd.Args, " ")
+	cmd.Room.OnSelect(cmd.Room.MessageView().selected)
+}
+
+func cmdRedact(cmd *Command) {
+	cmd.Reply("Not yet implemented 3:")
+
+	// This needs to be implemented in RoomView's OnSelect method
+	//cmd.Room.selecting = true
+	//cmd.Room.selectReason = SelectRedact
+	//cmd.Room.OnSelect(cmd.Room.MessageView().selected)
+}
+
+func cmdReact(cmd *Command) {
+	if len(cmd.Args) == 0 {
+		cmd.Reply("Usage: /react <reaction>")
+		return
+	}
+
+	cmd.Room.selecting = true
+	cmd.Room.selectReason = SelectReact
+	cmd.Room.selectContent = strings.Join(cmd.Args, " ")
+	cmd.Room.OnSelect(cmd.Room.MessageView().selected)
 }
 
 func cmdTags(cmd *Command) {
@@ -298,6 +331,9 @@ Things: rooms, users, baremessages, images, typingnotif
 /notice <message>    - Send a notice (generally used for bot messages).
 /rainbow <message>   - Send rainbow text (markdown not supported).
 /rainbowme <message> - Send rainbow text in an emote.
+/reply [text]        - Reply to the selected message.
+/react <reaction>    - React to the selected message.
+/redact              - Redact the selected message.
 
 # Rooms
 /pm <user id> <...>   - Create a private chat with the given user(s).

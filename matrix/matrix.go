@@ -732,7 +732,7 @@ func (c *Container) MarkRead(roomID, eventID string) {
 var mentionRegex = regexp.MustCompile("\\[(.+?)]\\(https://matrix.to/#/@.+?:.+?\\)")
 var roomRegex = regexp.MustCompile("\\[.+?]\\(https://matrix.to/#/(#.+?:[^/]+?)\\)")
 
-func (c *Container) PrepareMarkdownMessage(roomID string, msgtype mautrix.MessageType, text string, edit *event.Event) *event.Event {
+func (c *Container) PrepareMarkdownMessage(roomID string, msgtype mautrix.MessageType, text string, rel *ifc.Relation) *event.Event {
 	content := format.RenderMarkdown(text)
 	content.MsgType = msgtype
 
@@ -740,7 +740,7 @@ func (c *Container) PrepareMarkdownMessage(roomID string, msgtype mautrix.Messag
 	content.Body = mentionRegex.ReplaceAllString(content.Body, "$1")
 	content.Body = roomRegex.ReplaceAllString(content.Body, "$1")
 
-	if edit != nil {
+	if rel != nil && rel.Type == mautrix.RelReplace {
 		contentCopy := content
 		content.NewContent = &contentCopy
 		content.Body = "* " + content.Body
@@ -749,8 +749,10 @@ func (c *Container) PrepareMarkdownMessage(roomID string, msgtype mautrix.Messag
 		}
 		content.RelatesTo = &mautrix.RelatesTo{
 			Type:    mautrix.RelReplace,
-			EventID: edit.ID,
+			EventID: rel.Event.ID,
 		}
+	} else if rel != nil && rel.Type == mautrix.RelReference {
+		content.SetReply(rel.Event.Event)
 	}
 
 	txnID := c.client.TxnID()
@@ -766,8 +768,8 @@ func (c *Container) PrepareMarkdownMessage(roomID string, msgtype mautrix.Messag
 		},
 	})
 	localEcho.Gomuks.OutgoingState = event.StateLocalEcho
-	if edit != nil {
-		localEcho.ID = edit.ID
+	if rel != nil && rel.Type == mautrix.RelReplace {
+		localEcho.ID = rel.Event.ID
 		localEcho.Gomuks.Edits = []*event.Event{localEcho}
 	}
 	return localEcho

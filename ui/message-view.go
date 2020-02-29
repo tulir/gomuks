@@ -338,7 +338,11 @@ func (view *MessageView) SetSelected(message *messages.UIMessage) {
 	if view.selected != nil {
 		view.selected.IsSelected = false
 	}
-	view.selected = message
+	if message != nil && (view.selected == message || message.IsService) {
+		view.selected = nil
+	} else {
+		view.selected = message
+	}
 	if view.selected != nil {
 		view.selected.IsSelected = true
 	}
@@ -349,11 +353,9 @@ func (view *MessageView) handleMessageClick(message *messages.UIMessage, mod tce
 		open.Open(msg.Path())
 		// No need to re-render
 		return false
-	} else if message.IsService {
-		// Can't select service messages
-		return false
 	}
 	view.SetSelected(message)
+	view.parent.OnSelect(view.selected)
 	return true
 }
 

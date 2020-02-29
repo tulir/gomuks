@@ -23,6 +23,11 @@ import (
 	"maunium.net/go/gomuks/matrix/rooms"
 )
 
+type Relation struct {
+	Type mautrix.RelationType
+	Event *event.Event
+}
+
 type MatrixContainer interface {
 	Client() *mautrix.Client
 	InitClient() error
@@ -35,7 +40,7 @@ type MatrixContainer interface {
 	Logout()
 
 	SendPreferencesToMatrix()
-	PrepareMarkdownMessage(roomID string, msgtype mautrix.MessageType, message string, edit *event.Event) *event.Event
+	PrepareMarkdownMessage(roomID string, msgtype mautrix.MessageType, message string, relation *Relation) *event.Event
 	SendEvent(evt *event.Event) (string, error)
 	SendTyping(roomID string, typing bool)
 	MarkRead(roomID, eventID string)
