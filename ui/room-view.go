@@ -188,7 +188,7 @@ func (view *RoomView) GetStatus() string {
 		buf.WriteString(view.replying.Sender)
 		buf.WriteString(" - ")
 	} else if view.selecting {
-		buf.WriteString("Selecting message to")
+		buf.WriteString("Selecting message to ")
 		buf.WriteString(string(view.selectReason))
 		buf.WriteString(" - ")
 	}
@@ -280,9 +280,19 @@ func (view *RoomView) Draw(screen mauview.Screen) {
 	}
 }
 
+func (view *RoomView) ClearAllContext() {
+	view.MessageView().SetSelected(nil)
+	view.SetEditing(nil)
+	view.replying = nil
+	view.selecting = false
+	view.selectContent = ""
+}
+
 func (view *RoomView) OnKeyEvent(event mauview.KeyEvent) bool {
 	msgView := view.MessageView()
 	switch event.Key() {
+	case tcell.KeyEscape:
+		view.ClearAllContext()
 	case tcell.KeyPgUp:
 		if msgView.IsAtTop() {
 			go view.parent.LoadHistory(view.Room.ID)
@@ -510,7 +520,6 @@ func (view *RoomView) InputSubmit(text string) {
 	}
 	view.editMoveText = ""
 	view.SetInputText("")
-	view.MessageView().SetSelected(nil)
 }
 
 func (view *RoomView) SendReaction(eventID string, reaction string) {
@@ -562,8 +571,7 @@ func (view *RoomView) SendMessage(msgtype mautrix.MessageType, text string) {
 	evt := view.parent.matrix.PrepareMarkdownMessage(view.Room.ID, msgtype, text, rel)
 	msg := view.parseEvent(evt.SomewhatDangerousCopy())
 	view.content.AddMessage(msg, AppendMessage)
-	view.editing = nil
-	view.replying = nil
+	view.ClearAllContext()
 	view.status.SetText(view.GetStatus())
 	eventID, err := view.parent.matrix.SendEvent(evt)
 	if err != nil {
