@@ -19,8 +19,8 @@ package ui
 import (
 	"encoding/json"
 	"fmt"
+	"math"
 	"strconv"
-	"strings"
 
 	"maunium.net/go/gomuks/debug"
 	"maunium.net/go/mauview"
@@ -32,13 +32,17 @@ import (
 
 type OrderedRoom struct {
 	*rooms.Room
-	order json.Number
+	order float64
 }
 
 func NewOrderedRoom(order json.Number, room *rooms.Room) *OrderedRoom {
+	numOrder, err := order.Float64()
+	if err != nil {
+		numOrder = 0.5
+	}
 	return &OrderedRoom{
 		Room:  room,
-		order: order,
+		order: numOrder,
 	}
 }
 
@@ -76,11 +80,16 @@ func (or *OrderedRoom) Draw(roomList *RoomList, screen mauview.Screen, x, y, lin
 
 type TagRoomList struct {
 	mauview.NoopEventHandler
-	rooms       []*OrderedRoom
-	maxShown    int
-	name        string
+	// The list of rooms in the list, in reverse order
+	rooms []*OrderedRoom
+	// Maximum number of rooms to show
+	maxShown int
+	// The internal name of this tag
+	name string
+	// The displayname of this tag
 	displayname string
-	parent      *RoomList
+	// The parent RoomList instance
+	parent *RoomList
 }
 
 func NewTagRoomList(parent *RoomList, name string, rooms ...*OrderedRoom) *TagRoomList {
@@ -152,11 +161,16 @@ func (trl *TagRoomList) HasVisibleRooms() bool {
 	return !trl.IsEmpty() && trl.maxShown > 0
 }
 
-// ShouldBeBefore returns if the first room should be after the second room in the room list.
+const equalityThreshold = 1e-6
+
+func almostEqual(a, b float64) bool {
+	return math.Abs(a-b) <= equalityThreshold
+}
+
+// ShouldBeAfter returns if the first room should be after the second room in the room list.
 // The manual order and last received message timestamp are considered.
 func (trl *TagRoomList) ShouldBeAfter(room1 *OrderedRoom, room2 *OrderedRoom) bool {
-	orderComp := strings.Compare(string(room1.order), string(room2.order))
-	return orderComp == 1 || (orderComp == 0 && room2.LastReceivedMessage.After(room1.LastReceivedMessage))
+	return room1.order > room2.order || (almostEqual(room1.order, room2.order) && room2.LastReceivedMessage.After(room1.LastReceivedMessage))
 }
 
 func (trl *TagRoomList) Insert(order json.Number, mxRoom *rooms.Room) {
@@ -165,42 +179,39 @@ func (trl *TagRoomList) Insert(order json.Number, mxRoom *rooms.Room) {
 	// That index will be used if all other rooms in the list have the same LastReceivedMessage timestamp.
 	insertAt := len(trl.rooms)
 	// Find the spot where the new room should be put according to the last received message timestamps.
-	for i := 0; i < len(trl.rooms)-1; i++ {
+	for i := 0; i < len(trl.rooms); i++ {
 		if trl.rooms[i].Room == mxRoom {
 			debug.Printf("Warning: tried to re-insert room %s into tag %s", mxRoom.ID, trl.name)
 			return
 		} else if trl.ShouldBeAfter(room, trl.rooms[i]) {
 			insertAt = i
+			break
 		}
 	}
 	trl.rooms = append(trl.rooms, nil)
-	// Move newer rooms forward in the array.
-	for i := len(trl.rooms) - 1; i > insertAt; i-- {
-		trl.rooms[i] = trl.rooms[i-1]
-	}
-	// Insert room.
+	copy(trl.rooms[insertAt+1:], trl.rooms[insertAt:])
 	trl.rooms[insertAt] = room
 }
 
 func (trl *TagRoomList) Bump(mxRoom *rooms.Room) {
-	var found *OrderedRoom
+	var roomBeingBumped *OrderedRoom
 	for i := 0; i < len(trl.rooms); i++ {
-		currentRoom := trl.rooms[i]
-		if found != nil {
-			if trl.ShouldBeAfter(found, trl.rooms[i]) {
+		currentIndexRoom := trl.rooms[i]
+		if roomBeingBumped != nil {
+			if trl.ShouldBeAfter(roomBeingBumped, currentIndexRoom) {
 				// This room should be after the room being bumped, so insert the
 				// room being bumped here and return
-				trl.rooms[i-1] = found
+				trl.rooms[i-1] = roomBeingBumped
 				return
 			}
 			// Move older rooms back in the array
-			trl.rooms[i-1] = currentRoom
-		} else if currentRoom.Room == mxRoom {
-			found = currentRoom
+			trl.rooms[i-1] = currentIndexRoom
+		} else if currentIndexRoom.Room == mxRoom {
+			roomBeingBumped = currentIndexRoom
 		}
 	}
 	// If the room being bumped should be first in the list, it won't be inserted during the loop.
-	trl.rooms[len(trl.rooms)-1] = found
+	trl.rooms[len(trl.rooms)-1] = roomBeingBumped
 }
 
 func (trl *TagRoomList) Remove(room *rooms.Room) {

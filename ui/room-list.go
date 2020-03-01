@@ -152,7 +152,7 @@ func (list *RoomList) AddToTag(tag rooms.RoomTag, room *rooms.Room) {
 	defer list.Unlock()
 	trl, ok := list.items[tag.Tag]
 	if !ok {
-		list.items[tag.Tag] = NewTagRoomList(list, tag.Tag, NewDefaultOrderedRoom(room))
+		list.items[tag.Tag] = NewTagRoomList(list, tag.Tag, NewOrderedRoom(tag.Order, room))
 	} else {
 		trl.Insert(tag.Order, room)
 	}
