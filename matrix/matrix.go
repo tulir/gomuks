@@ -768,7 +768,13 @@ func (c *Container) PrepareMarkdownMessage(roomID string, msgtype mautrix.Messag
 	return localEcho
 }
 
-// SendMarkdownMessage sends a message with the given markdown text to the given room.
+func (c *Container) Redact(roomID, eventID, reason string) error {
+	defer debug.Recover()
+	_, err := c.client.RedactEvent(roomID, eventID, mautrix.ReqRedact{Reason: reason})
+	return err
+}
+
+// SendMessage sends the given event.
 func (c *Container) SendEvent(event *event.Event) (string, error) {
 	defer debug.Recover()
 

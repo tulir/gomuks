@@ -190,7 +190,7 @@ func (view *RoomView) OnSelect(message *messages.UIMessage) {
 	case SelectReact:
 		go view.SendReaction(message.EventID, view.selectContent)
 	case SelectRedact:
-		// TODO redact
+		go view.Redact(message.EventID, view.selectContent)
 	}
 	view.selecting = false
 	view.selectContent = ""
@@ -578,6 +578,21 @@ func (view *RoomView) InputSubmit(text string) {
 	}
 	view.editMoveText = ""
 	view.SetInputText("")
+}
+
+func (view *RoomView) Redact(eventID, reason string) {
+	defer debug.Recover()
+	err := view.parent.matrix.Redact(view.Room.ID, eventID, reason)
+	if err != nil {
+		if httpErr, ok := err.(mautrix.HTTPError); ok {
+			err = httpErr
+			if respErr := httpErr.RespError; respErr != nil {
+				err = respErr
+			}
+		}
+		view.AddServiceMessage(fmt.Sprintf("Failed to redact message: %v", err))
+		view.parent.parent.Render()
+	}
 }
 
 func (view *RoomView) SendReaction(eventID string, reaction string) {

@@ -42,6 +42,7 @@ type MatrixContainer interface {
 	SendPreferencesToMatrix()
 	PrepareMarkdownMessage(roomID string, msgtype mautrix.MessageType, message string, relation *Relation) *event.Event
 	SendEvent(evt *event.Event) (string, error)
+	Redact(roomID, eventID, reason string) error
 	SendTyping(roomID string, typing bool)
 	MarkRead(roomID, eventID string)
 	JoinRoom(roomID, server string) (*rooms.Room, error)

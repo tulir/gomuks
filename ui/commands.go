@@ -151,10 +151,7 @@ func cmdReply(cmd *Command) {
 }
 
 func cmdRedact(cmd *Command) {
-	cmd.Reply("Not yet implemented 3:")
-
-	// This needs to be implemented in RoomView's OnSelect method
-	//cmd.Room.StartSelecting(SelectRedact, "")
+	cmd.Room.StartSelecting(SelectRedact, strings.Join(cmd.Args, " "))
 }
 
 func cmdReact(cmd *Command) {
