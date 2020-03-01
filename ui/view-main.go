@@ -431,7 +431,9 @@ func (view *MainView) NotifyMessage(room *rooms.Room, message ifc.Message, shoul
 
 	if shouldNotify && !recentlyFocused {
 		// Push rules say notify and the terminal is not focused, send desktop notification.
-		shouldPlaySound := should.PlaySound && should.SoundName == "default"
+		shouldPlaySound := should.PlaySound &&
+			should.SoundName == "default" &&
+			view.config.NotifySound
 		sendNotification(room, message.NotificationSenderName(), message.NotificationContent(), should.Highlight, shouldPlaySound)
 	}
 

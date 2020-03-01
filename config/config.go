@@ -56,6 +56,8 @@ type Config struct {
 	RoomCacheSize int   `yaml:"room_cache_size"`
 	RoomCacheAge  int64 `yaml:"room_cache_age"`
 
+	NotifySound bool `yaml:"notify_sound"`
+
 	Dir          string `yaml:"-"`
 	CacheDir     string `yaml:"cache_dir"`
 	HistoryPath  string `yaml:"history_path"`
@@ -83,6 +85,8 @@ func NewConfig(configDir, cacheDir string) *Config {
 
 		RoomCacheSize: 32,
 		RoomCacheAge:  1 * 60,
+
+		NotifySound: true,
 	}
 }
 
