@@ -154,8 +154,27 @@ func (view *RoomView) Focus() {
 }
 
 func (view *RoomView) Blur() {
-	view.MessageView().SetSelected(nil)
+	view.StopSelecting()
 	view.input.Blur()
+}
+
+func (view *RoomView) StartSelecting(reason SelectReason, content string) {
+	view.selecting = true
+	view.selectReason = reason
+	view.selectContent = content
+	msgView := view.MessageView()
+	if msgView.selected != nil {
+		view.OnSelect(msgView.selected)
+	} else {
+		view.input.Blur()
+		view.SelectPrevious()
+	}
+}
+
+func (view *RoomView) StopSelecting() {
+	view.selecting = false
+	view.selectContent = ""
+	view.MessageView().SetSelected(nil)
 }
 
 func (view *RoomView) OnSelect(message *messages.UIMessage) {
@@ -176,6 +195,7 @@ func (view *RoomView) OnSelect(message *messages.UIMessage) {
 	view.selecting = false
 	view.selectContent = ""
 	view.MessageView().SetSelected(nil)
+	view.input.Focus()
 }
 
 func (view *RoomView) GetStatus() string {
@@ -281,18 +301,33 @@ func (view *RoomView) Draw(screen mauview.Screen) {
 }
 
 func (view *RoomView) ClearAllContext() {
-	view.MessageView().SetSelected(nil)
 	view.SetEditing(nil)
+	view.StopSelecting()
 	view.replying = nil
-	view.selecting = false
-	view.selectContent = ""
+	view.input.Focus()
 }
 
 func (view *RoomView) OnKeyEvent(event mauview.KeyEvent) bool {
 	msgView := view.MessageView()
+	if view.selecting {
+		switch event.Key() {
+		case tcell.KeyEscape:
+			view.ClearAllContext()
+		case tcell.KeyUp:
+			view.SelectPrevious()
+		case tcell.KeyDown:
+			view.SelectNext()
+		case tcell.KeyEnter:
+			view.OnSelect(msgView.selected)
+		default:
+			return false
+		}
+		return true
+	}
 	switch event.Key() {
 	case tcell.KeyEscape:
 		view.ClearAllContext()
+		return true
 	case tcell.KeyPgUp:
 		if msgView.IsAtTop() {
 			go view.parent.LoadHistory(view.Room.ID)
@@ -430,8 +465,8 @@ func (view *RoomView) SetEditing(evt *event.Event) {
 	view.input.SetCursorOffset(-1)
 }
 
-func (view *RoomView) findMessageToEdit(forward bool) *event.Event {
-	currentFound := view.editing == nil
+func (view *RoomView) findMessage(current *event.Event, ownMessage, forward bool) *messages.UIMessage {
+	currentFound := current == nil
 	self := view.parent.matrix.Client().UserID
 	msgs := view.MessageView().messages
 	for i := 0; i < len(msgs); i++ {
@@ -440,13 +475,15 @@ func (view *RoomView) findMessageToEdit(forward bool) *event.Event {
 			index = len(msgs) - i - 1
 		}
 		evt := msgs[index]
-		if evt.EventID == "" || evt.EventID == evt.TxnID {
+		if evt.EventID == "" || evt.EventID == evt.TxnID || evt.IsService {
 			continue
 		} else if currentFound {
-			if evt.SenderID == self && evt.Event.Type == mautrix.EventMessage {
-				return evt.Event
+			if ownMessage && evt.SenderID == self && evt.Event.Type == mautrix.EventMessage {
+				return evt
+			} else if !ownMessage {
+				return evt
 			}
-		} else if evt.EventID == view.editing.ID {
+		} else if evt.EventID == current.ID {
 			currentFound = true
 		}
 	}
@@ -457,17 +494,38 @@ func (view *RoomView) EditNext() {
 	if view.editing == nil {
 		return
 	}
-	foundEvent := view.findMessageToEdit(true)
-	view.SetEditing(foundEvent)
+	foundMsg := view.findMessage(view.editing, true, true)
+	view.SetEditing(foundMsg.GetEvent())
 }
 
 func (view *RoomView) EditPrevious() {
 	if view.replying != nil {
 		return
 	}
-	foundEvent := view.findMessageToEdit(false)
-	if foundEvent != nil {
-		view.SetEditing(foundEvent)
+	foundMsg := view.findMessage(view.editing, true, false)
+	if foundMsg != nil {
+		view.SetEditing(foundMsg.GetEvent())
+	}
+}
+
+func (view *RoomView) SelectNext() {
+	msgView := view.MessageView()
+	if msgView.selected == nil {
+		return
+	}
+	foundMsg := view.findMessage(msgView.selected.GetEvent(), true, true)
+	if foundMsg != nil {
+		msgView.SetSelected(foundMsg)
+		// TODO scroll selected message into view
+	}
+}
+
+func (view *RoomView) SelectPrevious() {
+	msgView := view.MessageView()
+	foundMsg := view.findMessage(msgView.selected.GetEvent(), true, false)
+	if foundMsg != nil {
+		msgView.SetSelected(foundMsg)
+		// TODO scroll selected message into view
 	}
 }
 
@@ -524,12 +582,12 @@ func (view *RoomView) InputSubmit(text string) {
 
 func (view *RoomView) SendReaction(eventID string, reaction string) {
 	defer debug.Recover()
-	debug.Print("Reacting to", eventID, "in",  view.Room.ID, "with", reaction)
+	debug.Print("Reacting to", eventID, "in", view.Room.ID, "with", reaction)
 	eventID, err := view.parent.matrix.SendEvent(&event.Event{
-		Event:  &mautrix.Event{
-			Type:            mautrix.EventReaction,
-			RoomID:          view.Room.ID,
-			Content:         mautrix.Content{
+		Event: &mautrix.Event{
+			Type:   mautrix.EventReaction,
+			RoomID: view.Room.ID,
+			Content: mautrix.Content{
 				RelatesTo: &mautrix.RelatesTo{
 					Type:    mautrix.RelAnnotation,
 					EventID: eventID,

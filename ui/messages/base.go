@@ -85,6 +85,13 @@ type UIMessage struct {
 	Renderer           MessageRenderer
 }
 
+func (msg *UIMessage) GetEvent() *event.Event {
+	if msg == nil {
+		return nil
+	}
+	return msg.Event
+}
+
 const DateFormat = "January _2, 2006"
 const TimeFormat = "15:04:05"
 
@@ -314,9 +321,9 @@ func (msg *UIMessage) DrawReactions(screen mauview.Screen) {
 }
 
 func (msg *UIMessage) Draw(screen mauview.Screen) {
-	screen = msg.DrawReply(screen)
-	msg.Renderer.Draw(screen)
-	msg.DrawReactions(screen)
+	proxyScreen := msg.DrawReply(screen)
+	msg.Renderer.Draw(proxyScreen)
+	msg.DrawReactions(proxyScreen)
 	if msg.IsSelected {
 		w, h := screen.Size()
 		for x := 0; x < w; x++ {
@@ -324,7 +331,7 @@ func (msg *UIMessage) Draw(screen mauview.Screen) {
 				mainc, combc, style, _ := screen.GetContent(x, y)
 				_, bg, _ := style.Decompose()
 				if bg == tcell.ColorDefault {
-					screen.SetContent(x, y, mainc, combc, style.Background(tcell.ColorLightSkyBlue))
+					screen.SetContent(x, y, mainc, combc, style.Background(tcell.ColorDarkGreen))
 				}
 			}
 		}

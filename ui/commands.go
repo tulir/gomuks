@@ -147,19 +147,14 @@ const (
 )
 
 func cmdReply(cmd *Command) {
-	cmd.Room.selecting = true
-	cmd.Room.selectReason = SelectReply
-	cmd.Room.selectContent = strings.Join(cmd.Args, " ")
-	cmd.Room.OnSelect(cmd.Room.MessageView().selected)
+	cmd.Room.StartSelecting(SelectReply, strings.Join(cmd.Args, " "))
 }
 
 func cmdRedact(cmd *Command) {
 	cmd.Reply("Not yet implemented 3:")
 
 	// This needs to be implemented in RoomView's OnSelect method
-	//cmd.Room.selecting = true
-	//cmd.Room.selectReason = SelectRedact
-	//cmd.Room.OnSelect(cmd.Room.MessageView().selected)
+	//cmd.Room.StartSelecting(SelectRedact, "")
 }
 
 func cmdReact(cmd *Command) {
@@ -168,10 +163,7 @@ func cmdReact(cmd *Command) {
 		return
 	}
 
-	cmd.Room.selecting = true
-	cmd.Room.selectReason = SelectReact
-	cmd.Room.selectContent = strings.Join(cmd.Args, " ")
-	cmd.Room.OnSelect(cmd.Room.MessageView().selected)
+	cmd.Room.StartSelecting(SelectReact, strings.Join(cmd.Args, " "))
 }
 
 func cmdTags(cmd *Command) {
