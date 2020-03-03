@@ -189,7 +189,7 @@ func (trl *TagRoomList) Insert(order json.Number, mxRoom *rooms.Room) {
 		}
 	}
 	trl.rooms = append(trl.rooms, nil)
-	copy(trl.rooms[insertAt+1:], trl.rooms[insertAt:])
+	copy(trl.rooms[insertAt+1:], trl.rooms[insertAt:len(trl.rooms)-1])
 	trl.rooms[insertAt] = room
 }
 
@@ -209,6 +209,10 @@ func (trl *TagRoomList) Bump(mxRoom *rooms.Room) {
 		} else if currentIndexRoom.Room == mxRoom {
 			roomBeingBumped = currentIndexRoom
 		}
+	}
+	if roomBeingBumped == nil {
+		debug.Print("Warning: couldn't find room", mxRoom.ID, mxRoom.NameCache, "to bump in tag", trl.name)
+		return
 	}
 	// If the room being bumped should be first in the list, it won't be inserted during the loop.
 	trl.rooms[len(trl.rooms)-1] = roomBeingBumped
