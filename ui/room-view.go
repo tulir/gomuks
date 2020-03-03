@@ -733,7 +733,6 @@ func (view *RoomView) AddReaction(evt *event.Event, key string) {
 	recalculate := len(msg.Reactions) == 0
 	msg.AddReaction(key)
 	if recalculate {
-		debug.Print(msg.ReactionHeight(), msg.Height())
 		// Recalculate height for message
 		msg.CalculateBuffer(msgView.prevPrefs, msgView.prevWidth())
 		msgView.replaceBuffer(msg, msg)
