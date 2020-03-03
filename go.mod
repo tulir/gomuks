@@ -1,6 +1,6 @@
 module maunium.net/go/gomuks
 
-go 1.13
+go 1.14
 
 require (
 	github.com/alecthomas/chroma v0.7.1
@@ -13,13 +13,13 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/sasha-s/go-deadlock v0.2.0
 	github.com/shurcooL/sanitized_anchor_name v1.0.0 // indirect
-	github.com/stretchr/testify v1.4.0
+	github.com/stretchr/testify v1.5.1
 	go.etcd.io/bbolt v1.3.3
 	golang.org/x/image v0.0.0-20200119044424-58c23975cae1
-	golang.org/x/net v0.0.0-20200202094626-16171245cfb2
+	golang.org/x/net v0.0.0-20200301022130-244492dfa37a
 	gopkg.in/toast.v1 v1.0.0-20180812000517-0a84660828b2
 	gopkg.in/yaml.v2 v2.2.8
-	maunium.net/go/mautrix v0.1.0-alpha.3.0.20200229232321-dfc638ec809a
-	maunium.net/go/mauview v0.0.0-20200220222850-39f1414676d9
-	maunium.net/go/tcell v1.1.2-0.20200218183045-87c4a25c5b09
+	maunium.net/go/mautrix v0.1.0-beta.1
+	maunium.net/go/mauview v0.1.0-beta.1
+	maunium.net/go/tcell v0.1.0
 )
