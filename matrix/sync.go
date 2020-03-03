@@ -186,7 +186,8 @@ func (s *GomuksSyncer) OnEventType(eventType mautrix.EventType, callback EventHa
 func (s *GomuksSyncer) notifyListeners(source EventSource, event *mautrix.Event) {
 	if (event.Type.IsState() && source&EventSourceState == 0 && event.StateKey == nil) ||
 		(event.Type.IsAccountData() && source&EventSourceAccountData == 0) ||
-		(event.Type.IsEphemeral() && source&EventSourceEphemeral == 0) {
+		(event.Type.IsEphemeral() && event.Type != mautrix.EphemeralEventPresence && source&EventSourceEphemeral == 0) ||
+		(event.Type == mautrix.EphemeralEventPresence && source&EventSourcePresence == 0) {
 		evtJson, _ := json.Marshal(event)
 		debug.Printf("Event of type %s received from mismatching source %s: %s", event.Type.String(), source.String(), string(evtJson))
 		return
@@ -253,7 +254,7 @@ func (s *GomuksSyncer) GetFilterJSON(userID string) json.RawMessage {
 			Types: []string{"m.push_rules", "m.direct", "net.maunium.gomuks.preferences"},
 		},
 		Presence: mautrix.FilterPart{
-			Types: []string{},
+			NotTypes: []string{"*"},
 		},
 	}
 	rawFilter, _ := json.Marshal(&filter)
