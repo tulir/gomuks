@@ -322,7 +322,7 @@ Things: rooms, users, baremessages, images, typingnotif
 /rainbowme <message> - Send rainbow text in an emote.
 /reply [text]        - Reply to the selected message.
 /react <reaction>    - React to the selected message.
-/redact              - Redact the selected message.
+/redact [reason]    - Redact the selected message.
 
 # Rooms
 /pm <user id> <...>   - Create a private chat with the given user(s).
