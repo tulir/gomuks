@@ -105,5 +105,5 @@ func Foo() {
 
 #### Debugging
 * `/hprof` - Create a heap profile and write it to `gomuks.heap.prof` in the current directory.
-* `/pprof <seconds>` - Profile the CPU usage for the given number of seconds and write it to `gomuks.cpu.prof`.
+* `/cprof <seconds>` - Profile the CPU usage for the given number of seconds and write it to `gomuks.cpu.prof`.
 * `/trace <seconds>` - Trace calls for the given number of seconds and write traces to `gomuks.trace`.
