@@ -134,11 +134,7 @@ func (view *MainView) MarkRead(roomView *RoomView) {
 
 func (view *MainView) InputChanged(roomView *RoomView, text string) {
 	if !roomView.config.Preferences.DisableTypingNotifs {
-		if len(text) == 0 {
-			go view.matrix.SendTyping(roomView.Room.ID, false)
-		} else if text[0] != '/' {
-			go view.matrix.SendTyping(roomView.Room.ID, true)
-		}
+		view.matrix.SendTyping(roomView.Room.ID, len(text) > 0 && text[0] != '/')
 	}
 }
 

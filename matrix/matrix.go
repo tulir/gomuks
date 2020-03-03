@@ -778,7 +778,8 @@ func (c *Container) Redact(roomID, eventID, reason string) error {
 func (c *Container) SendEvent(event *event.Event) (string, error) {
 	defer debug.Recover()
 
-	c.SendTyping(event.RoomID, false)
+	c.client.UserTyping(event.RoomID, false, 0)
+	c.typing = 0
 	resp, err := c.client.SendMessageEvent(event.RoomID, event.Type, event.Content, mautrix.ReqSendEvent{TransactionID: event.Unsigned.TransactionID})
 	if err != nil {
 		return "", err
@@ -786,19 +787,23 @@ func (c *Container) SendEvent(event *event.Event) (string, error) {
 	return resp.EventID, nil
 }
 
+func (c *Container) sendTypingAsync(roomID string, typing bool, timeout int64) {
+	defer debug.Recover()
+	_, _ = c.client.UserTyping(roomID, typing, timeout)
+}
+
 // SendTyping sets whether or not the user is typing in the given room.
 func (c *Container) SendTyping(roomID string, typing bool) {
-	defer debug.Recover()
 	ts := time.Now().Unix()
-	if c.typing > ts && typing {
+	if (c.typing > ts && typing) || (c.typing == 0 && !typing) {
 		return
 	}
 
 	if typing {
-		_, _ = c.client.UserTyping(roomID, true, 20000)
+		go c.sendTypingAsync(roomID, true, 20000)
 		c.typing = ts + 15
 	} else {
-		_, _ = c.client.UserTyping(roomID, false, 0)
+		go c.sendTypingAsync(roomID, false, 0)
 		c.typing = 0
 	}
 }
