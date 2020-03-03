@@ -170,7 +170,10 @@ func almostEqual(a, b float64) bool {
 // ShouldBeAfter returns if the first room should be after the second room in the room list.
 // The manual order and last received message timestamp are considered.
 func (trl *TagRoomList) ShouldBeAfter(room1 *OrderedRoom, room2 *OrderedRoom) bool {
-	return room1.order > room2.order || (almostEqual(room1.order, room2.order) && room2.LastReceivedMessage.After(room1.LastReceivedMessage))
+	// Lower order value = higher in list
+	return room1.order > room2.order ||
+		// Equal order value and more recent message = higher in the list
+		(almostEqual(room1.order, room2.order) && room2.LastReceivedMessage.After(room1.LastReceivedMessage))
 }
 
 func (trl *TagRoomList) Insert(order json.Number, mxRoom *rooms.Room) {

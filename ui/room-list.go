@@ -91,7 +91,7 @@ func NewRoomList(parent *MainView) *RoomList {
 		parent: parent,
 
 		items: make(map[string]*TagRoomList),
-		tags:  []string{"m.favourite", "net.maunium.gomuks.fake.direct", "", "m.lowpriority"},
+		tags:  []string{},
 
 		scrollOffset: 0,
 
@@ -135,7 +135,7 @@ func (list *RoomList) checkTag(tag string) {
 	trl, ok := list.items[tag]
 
 	if ok && trl.IsEmpty() {
-		//delete(list.items, tag)
+		delete(list.items, tag)
 		ok = false
 	}
 
@@ -221,7 +221,7 @@ func (list *RoomList) Clear() {
 	list.Lock()
 	defer list.Unlock()
 	list.items = make(map[string]*TagRoomList)
-	list.tags = []string{"m.favourite", "net.maunium.gomuks.fake.direct", "", "m.lowpriority"}
+	list.tags = []string{}
 	for _, tag := range list.tags {
 		list.items[tag] = NewTagRoomList(list, tag)
 	}
@@ -533,7 +533,7 @@ func (list *RoomList) clickRoom(line, column int, mod bool) bool {
 	return false
 }
 
-var nsRegex = regexp.MustCompile("^[a-z]\\.[a-z](?:\\.[a-z])*$")
+var nsRegex = regexp.MustCompile("^[a-z]+\\.[a-z]+(?:\\.[a-z]+)*$")
 
 func (list *RoomList) GetTagDisplayName(tag string) string {
 	switch {
