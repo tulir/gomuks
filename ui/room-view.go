@@ -478,9 +478,7 @@ func (view *RoomView) findMessage(current *event.Event, ownMessage, forward bool
 		if evt.EventID == "" || evt.EventID == evt.TxnID || evt.IsService {
 			continue
 		} else if currentFound {
-			if ownMessage && evt.SenderID == self && evt.Event.Type == mautrix.EventMessage {
-				return evt
-			} else if !ownMessage {
+			if !ownMessage || (evt.SenderID == self && evt.Event.Type == mautrix.EventMessage) {
 				return evt
 			}
 		} else if evt.EventID == current.ID {
@@ -513,7 +511,7 @@ func (view *RoomView) SelectNext() {
 	if msgView.selected == nil {
 		return
 	}
-	foundMsg := view.findMessage(msgView.selected.GetEvent(), true, true)
+	foundMsg := view.findMessage(msgView.selected.GetEvent(), false, true)
 	if foundMsg != nil {
 		msgView.SetSelected(foundMsg)
 		// TODO scroll selected message into view
@@ -522,7 +520,7 @@ func (view *RoomView) SelectNext() {
 
 func (view *RoomView) SelectPrevious() {
 	msgView := view.MessageView()
-	foundMsg := view.findMessage(msgView.selected.GetEvent(), true, false)
+	foundMsg := view.findMessage(msgView.selected.GetEvent(), false, false)
 	if foundMsg != nil {
 		msgView.SetSelected(foundMsg)
 		// TODO scroll selected message into view
