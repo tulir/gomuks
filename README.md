@@ -58,6 +58,10 @@ func Foo() {
 - scroll chat (page) - `PgUp` `PgDown`
 - jump to room - `Alt + Enter`, then `Tab` and `Enter` to navigate and select room
 
+### Mouse
+* Click to select message or user.
+* Click on image with modifer (such as `Ctrl` or `Alt`) down to view image.
+
 ### Commands
 #### General
 * `/help` - View command list.
