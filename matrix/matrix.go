@@ -729,9 +729,19 @@ func (c *Container) MarkRead(roomID, eventID string) {
 	_, _ = c.client.MakeRequest("POST", urlPath, struct{}{}, nil)
 }
 
-func (c *Container) PrepareMarkdownMessage(roomID string, msgtype mautrix.MessageType, text string, rel *ifc.Relation) *event.Event {
-	content := format.RenderMarkdown(text)
-	content.MsgType = msgtype
+func (c *Container) PrepareMarkdownMessage(roomID string, msgtype mautrix.MessageType, text, html string, rel *ifc.Relation) *event.Event {
+	var content mautrix.Content
+	if html != "" {
+		content = mautrix.Content{
+			FormattedBody: html,
+			Format:        mautrix.FormatHTML,
+			Body:          text,
+			MsgType:       msgtype,
+		}
+	} else {
+		content = format.RenderMarkdown(text)
+		content.MsgType = msgtype
+	}
 
 	if rel != nil && rel.Type == mautrix.RelReplace {
 		contentCopy := content

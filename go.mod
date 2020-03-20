@@ -11,6 +11,8 @@ require (
 	github.com/mattn/go-runewidth v0.0.8
 	github.com/petermattis/goid v0.0.0-20180202154549-b0b1615b78e5 // indirect
 	github.com/pkg/errors v0.9.1
+	github.com/rivo/uniseg v0.1.0
+	github.com/russross/blackfriday/v2 v2.0.1
 	github.com/sasha-s/go-deadlock v0.2.0
 	github.com/shurcooL/sanitized_anchor_name v1.0.0 // indirect
 	github.com/stretchr/testify v1.5.1
@@ -19,7 +21,7 @@ require (
 	golang.org/x/net v0.0.0-20200301022130-244492dfa37a
 	gopkg.in/toast.v1 v1.0.0-20180812000517-0a84660828b2
 	gopkg.in/yaml.v2 v2.2.8
-	maunium.net/go/mautrix v0.1.0-beta.1
+	maunium.net/go/mautrix v0.1.0-beta.1.0.20200320123139-8ba1d97ed86b
 	maunium.net/go/mauview v0.1.0-beta.1
 	maunium.net/go/tcell v0.1.0
 )

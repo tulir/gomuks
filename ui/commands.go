@@ -22,6 +22,7 @@ import (
 	"io"
 	"math"
 	"os"
+	"regexp"
 	"runtime"
 	dbg "runtime/debug"
 	"runtime/pprof"
@@ -29,11 +30,12 @@ import (
 	"strconv"
 	"strings"
 	"time"
-	"unicode"
 
 	"github.com/lucasb-eyer/go-colorful"
+	"github.com/russross/blackfriday/v2"
 
 	"maunium.net/go/mautrix"
+	"maunium.net/go/mautrix/format"
 
 	"maunium.net/go/gomuks/debug"
 )
@@ -79,16 +81,23 @@ var rainbow = GradientTable{
 // TODO this command definitely belongs in a plugin once we have a plugin system.
 func makeRainbow(cmd *Command, msgtype mautrix.MessageType) {
 	text := strings.Join(cmd.Args, " ")
-	var html strings.Builder
-	for i, char := range text {
-		if unicode.IsSpace(char) {
-			html.WriteRune(char)
-			continue
-		}
-		color := rainbow.GetInterpolatedColorFor(float64(i) / float64(len(text))).Hex()
-		_, _ = fmt.Fprintf(&html, "<font data-mx-color=\"%[1]s\" color=\"%[1]s\">%[2]c</font>", color, char)
-	}
-	go cmd.Room.SendMessage(msgtype, html.String())
+
+	render := NewRainbowRenderer(blackfriday.NewHTMLRenderer(blackfriday.HTMLRendererParameters{
+		Flags: blackfriday.UseXHTML,
+	}))
+	htmlBodyBytes := blackfriday.Run([]byte(text), format.Extensions, blackfriday.WithRenderer(render))
+	htmlBody := strings.TrimRight(string(htmlBodyBytes), "\n")
+	htmlBody = format.AntiParagraphRegex.ReplaceAllString(htmlBody, "$1")
+	text = format.HTMLToText(htmlBody)
+
+	count := strings.Count(htmlBody, render.ColorID)
+	i := -1
+	htmlBody = regexp.MustCompile(render.ColorID).ReplaceAllStringFunc(htmlBody, func(match string) string {
+		i++
+		return rainbow.GetInterpolatedColorFor(float64(i) / float64(count)).Hex()
+	})
+
+	go cmd.Room.SendMessageHTML(msgtype, text, htmlBody)
 }
 
 func cmdRainbow(cmd *Command) {

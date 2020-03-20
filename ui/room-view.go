@@ -622,6 +622,10 @@ func (view *RoomView) SendReaction(eventID string, reaction string) {
 }
 
 func (view *RoomView) SendMessage(msgtype mautrix.MessageType, text string) {
+	view.SendMessageHTML(msgtype, text, "")
+}
+
+func (view *RoomView) SendMessageHTML(msgtype mautrix.MessageType, text, html string) {
 	defer debug.Recover()
 	debug.Print("Sending message", msgtype, text, "to", view.Room.ID)
 	if !view.config.Preferences.DisableEmojis {
@@ -639,7 +643,7 @@ func (view *RoomView) SendMessage(msgtype mautrix.MessageType, text string) {
 			Event: view.replying,
 		}
 	}
-	evt := view.parent.matrix.PrepareMarkdownMessage(view.Room.ID, msgtype, text, rel)
+	evt := view.parent.matrix.PrepareMarkdownMessage(view.Room.ID, msgtype, text, html, rel)
 	msg := view.parseEvent(evt.SomewhatDangerousCopy())
 	view.content.AddMessage(msg, AppendMessage)
 	view.ClearAllContext()

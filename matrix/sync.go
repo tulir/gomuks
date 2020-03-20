@@ -153,6 +153,9 @@ func (s *GomuksSyncer) ProcessResponse(res *mautrix.RespSync, since string) (err
 
 func (s *GomuksSyncer) processSyncEvents(room *rooms.Room, events []json.RawMessage, source EventSource) {
 	for _, event := range events {
+		if source == EventSourcePresence {
+			debug.Print(string(event))
+		}
 		s.processSyncEvent(room, event, source)
 	}
 }
@@ -241,7 +244,7 @@ func (s *GomuksSyncer) GetFilterJSON(userID string) json.RawMessage {
 					"m.room.power_levels",
 					"m.room.tombstone",
 				},
-				Limit: 50,
+//				Limit: 50,
 			},
 			Ephemeral: mautrix.FilterPart{
 				Types: []string{"m.typing", "m.receipt"},
