@@ -70,6 +70,7 @@ func (r *RainbowRenderer) RenderNode(w io.Writer, node *blackfriday.Node, enteri
 			runes := graphemes.Runes()
 			if len(runes) == 1 && unicode.IsSpace(runes[0]) {
 				buf.WriteRune(runes[0])
+				continue
 			}
 			_, _ = fmt.Fprintf(&buf, "<font color=\"%s\">%s</font>", r.ColorID, graphemes.Str())
 		}
