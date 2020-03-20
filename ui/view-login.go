@@ -75,7 +75,7 @@ func (ui *GomuksUI) NewLoginView() mauview.Component {
 
 	hs := ui.gmx.Config().HS
 	view.homeserver.SetPlaceholder("https://example.com").SetText(hs)
-	view.username.SetPlaceholder("@user:example.com").SetText(ui.gmx.Config().UserID)
+	view.username.SetPlaceholder("exampleuser").SetText(ui.gmx.Config().UserID)
 	view.password.SetPlaceholder("correct horse battery staple").SetMaskCharacter('*')
 
 	view.quitButton.SetOnClick(func() { ui.gmx.Stop(true) }).SetBackgroundColor(tcell.ColorDarkCyan)
