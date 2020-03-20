@@ -112,10 +112,10 @@ func (view *LoginView) resolveWellKnown() {
 	if err != nil {
 		view.homeserver.SetText("")
 		view.Error(err.Error())
-		return
+	} else if resp != nil {
+		view.homeserver.SetText(resp.Homeserver.BaseURL)
+		view.parent.Render()
 	}
-	view.homeserver.SetText(resp.Homeserver.BaseURL)
-	view.parent.Render()
 }
 
 func (view *LoginView) focusChanged(from, to mauview.Component) {
