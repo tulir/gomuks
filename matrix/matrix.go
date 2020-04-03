@@ -579,12 +579,16 @@ func (c *Container) processOwnMembershipChange(evt *mautrix.Event) {
 	switch membership {
 	case "join":
 		room.HasLeft = false
+		if c.config.AuthCache.InitialSyncDone {
+			c.ui.MainView().UpdateTags(room)
+		}
 		fallthrough
 	case "invite":
 		if c.config.AuthCache.InitialSyncDone {
 			c.ui.MainView().AddRoom(room)
 		}
 	case "leave":
+	case "ban":
 		if c.config.AuthCache.InitialSyncDone {
 			c.ui.MainView().RemoveRoom(room)
 		}
