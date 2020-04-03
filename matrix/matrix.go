@@ -392,7 +392,7 @@ func (c *Container) HandlePreferences(source EventSource, evt *mautrix.Event) {
 func (c *Container) SendPreferencesToMatrix() {
 	defer debug.Recover()
 	debug.Print("Sending updated preferences:", c.config.Preferences)
-	u := c.client.BuildURL("user", c.config.UserID, "account_data", "net.maunium.gomuks.preferences")
+	u := c.client.BuildURL("user", c.config.UserID, "account_data", AccountDataGomuksPreferences.Type)
 	_, err := c.client.MakeRequest("PUT", u, &c.config.Preferences, nil)
 	if err != nil {
 		debug.Print("Failed to update preferences:", err)
@@ -739,7 +739,7 @@ func (c *Container) PrepareMarkdownMessage(roomID string, msgtype mautrix.Messag
 			MsgType:       msgtype,
 		}
 	} else {
-		content = format.RenderMarkdown(text)
+		content = format.RenderMarkdown(text, !c.config.Preferences.DisableMarkdown, !c.config.Preferences.DisableHTML)
 		content.MsgType = msgtype
 	}
 

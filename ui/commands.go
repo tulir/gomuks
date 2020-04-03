@@ -556,6 +556,20 @@ func cmdToggle(cmd *Command) {
 		cmd.Config.Preferences.DisableTypingNotifs = !cmd.Config.Preferences.DisableTypingNotifs
 	case "emojis":
 		cmd.Config.Preferences.DisableEmojis = !cmd.Config.Preferences.DisableEmojis
+	case "html":
+		cmd.Config.Preferences.DisableHTML = !cmd.Config.Preferences.DisableHTML
+		if cmd.Config.Preferences.DisableHTML {
+			cmd.Reply("Disabled HTML input")
+		} else {
+			cmd.Reply("Enabled HTML input")
+		}
+	case "markdown":
+		cmd.Config.Preferences.DisableMarkdown = !cmd.Config.Preferences.DisableMarkdown
+		if cmd.Config.Preferences.DisableMarkdown {
+			cmd.Reply("Disabled Markdown input")
+		} else {
+			cmd.Reply("Enabled Markdown input")
+		}
 	default:
 		cmd.Reply("Usage: /toggle <rooms/users/baremessages/images/typingnotif/emojis>")
 		return
