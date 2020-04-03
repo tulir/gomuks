@@ -183,7 +183,7 @@ func (view *MainView) OnKeyEvent(event mauview.KeyEvent) bool {
 			view.SwitchRoom(view.roomList.Next())
 		case k == tcell.KeyUp:
 			view.SwitchRoom(view.roomList.Previous())
-		case k == tcell.KeyEnter:
+		case c == 'k' || k == tcell.KeyCtrlK:
 			view.ShowModal(NewFuzzySearchModal(view, 42, 12))
 		case k == tcell.KeyHome:
 			msgView := view.currentRoom.MessageView()
@@ -191,7 +191,7 @@ func (view *MainView) OnKeyEvent(event mauview.KeyEvent) bool {
 		case k == tcell.KeyEnd:
 			msgView := view.currentRoom.MessageView()
 			msgView.AddScrollOffset(-msgView.TotalHeight())
-		case c == 'n' || k == tcell.KeyCtrlN:
+		case k == tcell.KeyEnter:
 			return view.flex.OnKeyEvent(tcell.NewEventKey(tcell.KeyEnter, '\n', event.Modifiers()|tcell.ModShift, ""))
 		case c == 'a':
 			view.SwitchRoom(view.roomList.NextWithActivity())
