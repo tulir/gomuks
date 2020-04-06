@@ -144,6 +144,9 @@ func ParseMessage(matrix ifc.MatrixContainer, room *rooms.Room, evt *event.Event
 			debug.Printf("Failed to download %s: %v", evt.Content.URL, err)
 		}
 		return NewImageMessage(matrix, evt, displayname, evt.Content.Body, hs, id, data)
+	case "m.video":
+		_, hs, id, _ := matrix.Download(evt.Content.URL)
+		return NewVideoMessage(matrix, evt, displayname, evt.Content.Body, hs, id)
 	}
 	return nil
 }
