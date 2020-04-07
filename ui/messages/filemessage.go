@@ -66,10 +66,10 @@ func (msg *FileMessage) Clone() MessageRenderer {
 	}
 }
 
-func (msg *FileMessage) RegisterMatrix(matrix ifc.MatrixContainer) {
+func (msg *FileMessage) RegisterMatrix(matrix ifc.MatrixContainer, prefs config.UserPreferences) {
 	msg.matrix = matrix
 
-	if len(msg.data) == 0 {
+	if len(msg.data) == 0 && !prefs.DisableDownloads {
 		go msg.updateData()
 	}
 }

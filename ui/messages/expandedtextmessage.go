@@ -89,4 +89,4 @@ func (msg *ExpandedTextMessage) Draw(screen mauview.Screen) {
 	}
 }
 
-func (msg *ExpandedTextMessage) RegisterMatrix(matrix ifc.MatrixContainer) {}
+func (msg *ExpandedTextMessage) RegisterMatrix(matrix ifc.MatrixContainer, prefs config.UserPreferences) {}
