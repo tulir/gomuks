@@ -138,15 +138,12 @@ func ParseMessage(matrix ifc.MatrixContainer, room *rooms.Room, evt *event.Event
 		}
 		evt.Content.Body = strings.Replace(evt.Content.Body, "\t", "    ", -1)
 		return NewTextMessage(evt, displayname, evt.Content.Body)
-	case "m.image":
+	case "m.file", "m.video", "m.audio", "m.image":
 		data, hs, id, err := matrix.Download(evt.Content.URL)
 		if err != nil {
 			debug.Printf("Failed to download %s: %v", evt.Content.URL, err)
 		}
-		return NewImageMessage(matrix, evt, displayname, evt.Content.Body, hs, id, data)
-	case "m.video":
-		_, hs, id, _ := matrix.Download(evt.Content.URL)
-		return NewVideoMessage(matrix, evt, displayname, evt.Content.Body, hs, id)
+		return NewFileMessage(matrix, evt, displayname, evt.Content.Body, hs, id, data)
 	}
 	return nil
 }
