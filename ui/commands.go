@@ -570,6 +570,13 @@ func cmdToggle(cmd *Command) {
 		} else {
 			cmd.Reply("Enabled Markdown input")
 		}
+	case "downloads":
+		cmd.Config.Preferences.DisableDownloads = !cmd.Config.Preferences.DisableDownloads
+		if cmd.Config.Preferences.DisableDownloads {
+			cmd.Reply("Disabled Downloads input")
+		} else {
+			cmd.Reply("Enabled Downloads input")
+		}
 	default:
 		cmd.Reply("Usage: /toggle <rooms/users/baremessages/images/typingnotif/emojis>")
 		return

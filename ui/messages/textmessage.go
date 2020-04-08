@@ -102,4 +102,4 @@ func (msg *TextMessage) Draw(screen mauview.Screen) {
 	}
 }
 
-func (msg *TextMessage) RegisterMatrix(matrix ifc.MatrixContainer) {}
+func (msg *TextMessage) RegisterMatrix(matrix ifc.MatrixContainer, prefs config.UserPreferences) {}

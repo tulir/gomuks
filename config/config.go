@@ -47,6 +47,7 @@ type UserPreferences struct {
 	DisableEmojis       bool `yaml:"disable_emojis"`
 	DisableMarkdown     bool `yaml:"disable_markdown"`
 	DisableHTML         bool `yaml:"disable_html"`
+	DisableDownloads    bool `yaml:"disable_downloads"`
 }
 
 // Config contains the main config of gomuks.

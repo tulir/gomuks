@@ -39,7 +39,7 @@ func NewHTMLMessage(evt *event.Event, displayname string, root html.Entity) *UIM
 	})
 }
 
-func (hw *HTMLMessage) RegisterMatrix(matrix ifc.MatrixContainer) {}
+func (hw *HTMLMessage) RegisterMatrix(matrix ifc.MatrixContainer, prefs config.UserPreferences) {}
 
 func (hw *HTMLMessage) Clone() MessageRenderer {
 	return &HTMLMessage{

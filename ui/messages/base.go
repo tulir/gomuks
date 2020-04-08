@@ -36,7 +36,7 @@ type MessageRenderer interface {
 	NotificationContent() string
 	PlainText() string
 	CalculateBuffer(prefs config.UserPreferences, width int, msg *UIMessage)
-	RegisterMatrix(matrix ifc.MatrixContainer)
+	RegisterMatrix(matrix ifc.MatrixContainer, prefs config.UserPreferences)
 	Height() int
 	Clone() MessageRenderer
 	String() string
