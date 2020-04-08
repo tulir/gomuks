@@ -58,8 +58,14 @@ func main() {
 		fmt.Fprintln(os.Stderr, "Failed to get cache directory:", err)
 		os.Exit(3)
 	}
+	downloadDir, err := UserDownloadDir()
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "Failed to get download directory:", err)
+		os.Exit(3)
+	}
 
-	gmx := NewGomuks(MainUIProvider, configDir, cacheDir)
+
+	gmx := NewGomuks(MainUIProvider, configDir, cacheDir, downloadDir)
 	gmx.Start()
 
 	// We use os.Exit() everywhere, so exiting by returning from Start() shouldn't happen.
@@ -75,6 +81,11 @@ func UserCacheDir() (dir string, err error) {
 		dir = filepath.Join(dir, "gomuks")
 	}
 	return
+}
+
+func UserDownloadDir() (dir string, err error) {
+	dir = os.Getenv("HOME")
+	return filepath.Join(dir, "Downloads"), nil
 }
 
 func UserConfigDir() (dir string, err error) {

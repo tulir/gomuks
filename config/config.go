@@ -78,16 +78,15 @@ type Config struct {
 }
 
 // NewConfig creates a config that loads data from the given directory.
-func NewConfig(configDir, cacheDir string) *Config {
-	home, _ := os.UserHomeDir()
+func NewConfig(configDir, cacheDir, downloadDir string) *Config {
 	return &Config{
 		Dir:          configDir,
 		CacheDir:     cacheDir,
+		DownloadDir:  downloadDir,
 		HistoryPath:  filepath.Join(cacheDir, "history.db"),
 		RoomListPath: filepath.Join(cacheDir, "rooms.gob.gz"),
 		StateDir:     filepath.Join(cacheDir, "state"),
 		MediaDir:     filepath.Join(cacheDir, "media"),
-		DownloadDir:  home,
 
 		RoomCacheSize: 32,
 		RoomCacheAge:  1 * 60,
