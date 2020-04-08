@@ -27,7 +27,6 @@ import (
 	"maunium.net/go/mauview"
 	"maunium.net/go/tcell"
 
-	"maunium.net/go/gomuks/interface"
 	"maunium.net/go/gomuks/ui/widget"
 )
 
@@ -36,7 +35,6 @@ type MessageRenderer interface {
 	NotificationContent() string
 	PlainText() string
 	CalculateBuffer(prefs config.UserPreferences, width int, msg *UIMessage)
-	RegisterMatrix(matrix ifc.MatrixContainer, prefs config.UserPreferences)
 	Height() int
 	Clone() MessageRenderer
 	String() string

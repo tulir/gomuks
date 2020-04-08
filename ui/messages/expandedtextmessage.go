@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"time"
 
-	ifc "maunium.net/go/gomuks/interface"
 	"maunium.net/go/gomuks/matrix/event"
 	"maunium.net/go/mauview"
 	"maunium.net/go/tcell"
@@ -88,5 +87,3 @@ func (msg *ExpandedTextMessage) Draw(screen mauview.Screen) {
 		line.Draw(screen, 0, y)
 	}
 }
-
-func (msg *ExpandedTextMessage) RegisterMatrix(matrix ifc.MatrixContainer, prefs config.UserPreferences) {}

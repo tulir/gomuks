@@ -17,7 +17,6 @@
 package messages
 
 import (
-	ifc "maunium.net/go/gomuks/interface"
 	"maunium.net/go/gomuks/matrix/event"
 	"maunium.net/go/mauview"
 	"maunium.net/go/tcell"
@@ -64,5 +63,3 @@ func (msg *RedactedMessage) Draw(screen mauview.Screen) {
 		screen.SetContent(x, 0, RedactionChar, nil, RedactionStyle)
 	}
 }
-
-func (msg *RedactedMessage) RegisterMatrix(matrix ifc.MatrixContainer, prefs config.UserPreferences) {}

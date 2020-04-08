@@ -150,9 +150,11 @@ func cmdID(cmd *Command) {
 type SelectReason string
 
 const (
-	SelectReply  SelectReason = "reply to"
-	SelectReact               = "react to"
-	SelectRedact              = "redact"
+	SelectReply    SelectReason = "reply to"
+	SelectReact                 = "react to"
+	SelectRedact                = "redact"
+	SelectDownload              = "download"
+	SelectOpen                  = "open"
 )
 
 func cmdReply(cmd *Command) {
@@ -161,6 +163,14 @@ func cmdReply(cmd *Command) {
 
 func cmdRedact(cmd *Command) {
 	cmd.Room.StartSelecting(SelectRedact, strings.Join(cmd.Args, " "))
+}
+
+func cmdDownload(cmd *Command) {
+	cmd.Room.StartSelecting(SelectDownload, strings.Join(cmd.Args, " "))
+}
+
+func cmdOpen(cmd *Command) {
+	cmd.Room.StartSelecting(SelectOpen, strings.Join(cmd.Args, " "))
 }
 
 func cmdReact(cmd *Command) {

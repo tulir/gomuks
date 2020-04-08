@@ -17,7 +17,6 @@
 package messages
 
 import (
-	ifc "maunium.net/go/gomuks/interface"
 	"maunium.net/go/gomuks/matrix/event"
 	"maunium.net/go/mauview"
 	"maunium.net/go/tcell"
@@ -38,8 +37,6 @@ func NewHTMLMessage(evt *event.Event, displayname string, root html.Entity) *UIM
 		Root: root,
 	})
 }
-
-func (hw *HTMLMessage) RegisterMatrix(matrix ifc.MatrixContainer, prefs config.UserPreferences) {}
 
 func (hw *HTMLMessage) Clone() MessageRenderer {
 	return &HTMLMessage{

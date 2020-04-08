@@ -349,8 +349,8 @@ func (view *MessageView) SetSelected(message *messages.UIMessage) {
 }
 
 func (view *MessageView) handleMessageClick(message *messages.UIMessage, mod tcell.ModMask) bool {
-	if msg, ok := message.Renderer.(*messages.FileMessage); ok && mod > 0 {
-		open.Open(msg.Path())
+	if msg, ok := message.Renderer.(*messages.FileMessage); ok && mod > 0 && !msg.Thumbnail.IsEmpty() {
+		open.Open(msg.ThumbnailPath())
 		// No need to re-render
 		return false
 	}

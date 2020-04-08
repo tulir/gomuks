@@ -23,6 +23,7 @@ import (
 	"image/color"
 
 	"maunium.net/go/gomuks/matrix/event"
+	"maunium.net/go/mautrix"
 	"maunium.net/go/mauview"
 	"maunium.net/go/tcell"
 
@@ -34,72 +35,86 @@ import (
 )
 
 type FileMessage struct {
-	Body       string
-	Homeserver string
-	FileID     string
-	data       []byte
-	buffer     []tstring.TString
+	Type      mautrix.MessageType
+	Body      string
+	URL       mautrix.ContentURI
+	Thumbnail mautrix.ContentURI
+	imageData []byte
+	buffer    []tstring.TString
 
 	matrix ifc.MatrixContainer
 }
 
 // NewFileMessage creates a new FileMessage object with the provided values and the default state.
-func NewFileMessage(matrix ifc.MatrixContainer, evt *event.Event, displayname string, body, homeserver, fileID string, data []byte) *UIMessage {
+func NewFileMessage(matrix ifc.MatrixContainer, evt *event.Event, displayname string) *UIMessage {
+	url, _ := mautrix.ParseContentURI(evt.Content.URL)
+	thumbnail, _ := mautrix.ParseContentURI(evt.Content.GetInfo().ThumbnailURL)
 	return newUIMessage(evt, displayname, &FileMessage{
-		Body:       body,
-		Homeserver: homeserver,
-		FileID:     fileID,
-		data:       data,
-		matrix:     matrix,
+		Type:      evt.Content.MsgType,
+		Body:      evt.Content.Body,
+		URL:       url,
+		Thumbnail: thumbnail,
+		matrix:    matrix,
 	})
 }
 
 func (msg *FileMessage) Clone() MessageRenderer {
-	data := make([]byte, len(msg.data))
-	copy(data, msg.data)
+	data := make([]byte, len(msg.imageData))
+	copy(data, msg.imageData)
 	return &FileMessage{
-		Body:       msg.Body,
-		Homeserver: msg.Homeserver,
-		FileID:     msg.FileID,
-		data:       data,
-		matrix:     msg.matrix,
-	}
-}
-
-func (msg *FileMessage) RegisterMatrix(matrix ifc.MatrixContainer, prefs config.UserPreferences) {
-	msg.matrix = matrix
-
-	if len(msg.data) == 0 && !prefs.DisableDownloads {
-		go msg.updateData()
+		Body:      msg.Body,
+		URL:       msg.URL,
+		Thumbnail: msg.Thumbnail,
+		imageData: data,
+		matrix:    msg.matrix,
 	}
 }
 
 func (msg *FileMessage) NotificationContent() string {
-	return "Sent a file"
+	switch msg.Type {
+	case mautrix.MsgImage:
+		return "Sent an image"
+	case mautrix.MsgAudio:
+		return "Sent an audio file"
+	case mautrix.MsgVideo:
+		return "Sent a video"
+	case mautrix.MsgFile:
+		fallthrough
+	default:
+		return "Sent a file"
+	}
 }
 
 func (msg *FileMessage) PlainText() string {
-	return fmt.Sprintf("%s: %s", msg.Body, msg.matrix.GetDownloadURL(msg.Homeserver, msg.FileID))
+	return fmt.Sprintf("%s: %s", msg.Body, msg.matrix.GetDownloadURL(msg.URL))
 }
 
 func (msg *FileMessage) String() string {
-	return fmt.Sprintf(`&messages.FileMessage{Body="%s", Homeserver="%s", FileID="%s"}`, msg.Body, msg.Homeserver, msg.FileID)
+	return fmt.Sprintf(`&messages.FileMessage{Body="%s", URL="%s", Thumbnail="%s"}`, msg.Body, msg.URL, msg.Thumbnail)
 }
 
-func (msg *FileMessage) updateData() {
-	defer debug.Recover()
-	debug.Print("Loading file:", msg.Homeserver, msg.FileID)
-	data, _, _, err := msg.matrix.Download(fmt.Sprintf("mxc://%s/%s", msg.Homeserver, msg.FileID))
+func (msg *FileMessage) DownloadPreview() {
+	url := msg.Thumbnail
+	if url.IsEmpty() {
+		if msg.Type == mautrix.MsgImage && !msg.URL.IsEmpty() {
+			msg.Thumbnail = msg.URL
+			url = msg.Thumbnail
+		} else {
+			return
+		}
+	}
+	debug.Print("Loading file:", url)
+	data, err := msg.matrix.Download(url)
 	if err != nil {
-		debug.Printf("Failed to download file %s/%s: %v", msg.Homeserver, msg.FileID, err)
+		debug.Printf("Failed to download file %s: %v", url, err)
 		return
 	}
-	debug.Print("File", msg.Homeserver, msg.FileID, "loaded.")
-	msg.data = data
+	debug.Print("File", url, "loaded.")
+	msg.imageData = data
 }
 
-func (msg *FileMessage) Path() string {
-	return msg.matrix.GetCachePath(msg.Homeserver, msg.FileID)
+func (msg *FileMessage) ThumbnailPath() string {
+	return msg.matrix.GetCachePath(msg.Thumbnail)
 }
 
 func (msg *FileMessage) CalculateBuffer(prefs config.UserPreferences, width int, uiMsg *UIMessage) {
@@ -107,12 +122,12 @@ func (msg *FileMessage) CalculateBuffer(prefs config.UserPreferences, width int,
 		return
 	}
 
-	if prefs.BareMessageView || prefs.DisableImages || uiMsg.Type != "m.image" {
+	if prefs.BareMessageView || prefs.DisableImages || len(msg.imageData) == 0 {
 		msg.buffer = calculateBufferWithText(prefs, tstring.NewTString(msg.PlainText()), width, uiMsg)
 		return
 	}
 
-	img, _, err := image.DecodeConfig(bytes.NewReader(msg.data))
+	img, _, err := image.DecodeConfig(bytes.NewReader(msg.imageData))
 	if err != nil {
 		debug.Print("File could not be decoded:", err)
 	}
@@ -121,7 +136,7 @@ func (msg *FileMessage) CalculateBuffer(prefs config.UserPreferences, width int,
 		imgWidth = width / 3
 	}
 
-	ansFile, err := ansimage.NewScaledFromReader(bytes.NewReader(msg.data), 0, imgWidth, color.Black)
+	ansFile, err := ansimage.NewScaledFromReader(bytes.NewReader(msg.imageData), 0, imgWidth, color.Black)
 	if err != nil {
 		msg.buffer = []tstring.TString{tstring.NewColorTString("Failed to display image", tcell.ColorRed)}
 		debug.Print("Failed to display image:", err)

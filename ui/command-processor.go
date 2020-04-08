@@ -92,6 +92,8 @@ func NewCommandProcessor(parent *MainView) *CommandProcessor {
 			"remove":     {"redact"},
 			"rm":         {"redact"},
 			"del":        {"redact"},
+			"dl":         {"download"},
+			"o":          {"open"},
 		},
 		commands: map[string]CommandHandler{
 			"unknown-command": cmdUnknownCommand,
@@ -115,6 +117,8 @@ func NewCommandProcessor(parent *MainView) *CommandProcessor {
 			"reply":      cmdReply,
 			"redact":     cmdRedact,
 			"react":      cmdReact,
+			"download":   cmdDownload,
+			"open":       cmdOpen,
 			"sendevent":  cmdSendEvent,
 			"msendevent": cmdMSendEvent,
 			"setstate":   cmdSetState,

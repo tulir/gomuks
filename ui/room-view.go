@@ -27,6 +27,7 @@ import (
 	"github.com/mattn/go-runewidth"
 
 	"maunium.net/go/gomuks/debug"
+	"maunium.net/go/gomuks/lib/open"
 	"maunium.net/go/gomuks/matrix/event"
 
 	"maunium.net/go/mauview"
@@ -191,6 +192,17 @@ func (view *RoomView) OnSelect(message *messages.UIMessage) {
 		go view.SendReaction(message.EventID, view.selectContent)
 	case SelectRedact:
 		go view.Redact(message.EventID, view.selectContent)
+	case SelectDownload, SelectOpen:
+		msg, ok := message.Renderer.(*messages.FileMessage)
+		if ok {
+			path := ""
+			if len(view.selectContent) > 0 {
+				path = view.selectContent
+			} else if view.selectReason == SelectDownload {
+				path = msg.Body
+			}
+			go view.Download(msg.URL, path, view.selectReason == SelectOpen)
+		}
 	}
 	view.selecting = false
 	view.selectContent = ""
@@ -465,9 +477,22 @@ func (view *RoomView) SetEditing(evt *event.Event) {
 	view.input.SetCursorOffset(-1)
 }
 
-func (view *RoomView) findMessage(current *event.Event, ownMessage, forward bool) *messages.UIMessage {
+type findFilter func(evt *event.Event) bool
+
+func (view *RoomView) filterOwnOnly(evt *event.Event) bool {
+	return evt.Sender == view.parent.matrix.Client().UserID && evt.Type == mautrix.EventMessage
+}
+
+func (view *RoomView) filterMediaOnly(evt *event.Event) bool {
+	return evt.Type == mautrix.EventMessage && (
+		evt.Content.MsgType == mautrix.MsgFile ||
+			evt.Content.MsgType == mautrix.MsgImage ||
+			evt.Content.MsgType == mautrix.MsgAudio ||
+			evt.Content.MsgType == mautrix.MsgVideo)
+}
+
+func (view *RoomView) findMessage(current *event.Event, forward bool, allow findFilter) *messages.UIMessage {
 	currentFound := current == nil
-	self := view.parent.matrix.Client().UserID
 	msgs := view.MessageView().messages
 	for i := 0; i < len(msgs); i++ {
 		index := i
@@ -478,7 +503,7 @@ func (view *RoomView) findMessage(current *event.Event, ownMessage, forward bool
 		if evt.EventID == "" || evt.EventID == evt.TxnID || evt.IsService {
 			continue
 		} else if currentFound {
-			if !ownMessage || (evt.SenderID == self && evt.Event.Type == mautrix.EventMessage) {
+			if allow == nil || allow(evt.Event) {
 				return evt
 			}
 		} else if evt.EventID == current.ID {
@@ -492,7 +517,7 @@ func (view *RoomView) EditNext() {
 	if view.editing == nil {
 		return
 	}
-	foundMsg := view.findMessage(view.editing, true, true)
+	foundMsg := view.findMessage(view.editing, true, view.filterOwnOnly)
 	view.SetEditing(foundMsg.GetEvent())
 }
 
@@ -500,7 +525,7 @@ func (view *RoomView) EditPrevious() {
 	if view.replying != nil {
 		return
 	}
-	foundMsg := view.findMessage(view.editing, true, false)
+	foundMsg := view.findMessage(view.editing, false, view.filterOwnOnly)
 	if foundMsg != nil {
 		view.SetEditing(foundMsg.GetEvent())
 	}
@@ -511,7 +536,11 @@ func (view *RoomView) SelectNext() {
 	if msgView.selected == nil {
 		return
 	}
-	foundMsg := view.findMessage(msgView.selected.GetEvent(), false, true)
+	var filter findFilter
+	if view.selectReason == SelectDownload || view.selectReason == SelectOpen {
+		filter = view.filterMediaOnly
+	}
+	foundMsg := view.findMessage(msgView.selected.GetEvent(), true, filter)
 	if foundMsg != nil {
 		msgView.SetSelected(foundMsg)
 		// TODO scroll selected message into view
@@ -520,7 +549,11 @@ func (view *RoomView) SelectNext() {
 
 func (view *RoomView) SelectPrevious() {
 	msgView := view.MessageView()
-	foundMsg := view.findMessage(msgView.selected.GetEvent(), false, false)
+	var filter findFilter
+	if view.selectReason == SelectDownload || view.selectReason == SelectOpen {
+		filter = view.filterMediaOnly
+	}
+	foundMsg := view.findMessage(msgView.selected.GetEvent(), false, filter)
 	if foundMsg != nil {
 		msgView.SetSelected(foundMsg)
 		// TODO scroll selected message into view
@@ -576,6 +609,20 @@ func (view *RoomView) InputSubmit(text string) {
 	}
 	view.editMoveText = ""
 	view.SetInputText("")
+}
+
+func (view *RoomView) Download(url mautrix.ContentURI, filename string, openFile bool) {
+	path, err := view.parent.matrix.DownloadToDisk(url, filename)
+	if err != nil {
+		view.AddServiceMessage(fmt.Sprintf("Failed to download media: %v", err))
+		view.parent.parent.Render()
+		return
+	}
+	view.AddServiceMessage(fmt.Sprintf("File downloaded to %s", path))
+	view.parent.parent.Render()
+	if openFile {
+		open.Open(path)
+	}
 }
 
 func (view *RoomView) Redact(eventID, reason string) {

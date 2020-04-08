@@ -17,6 +17,7 @@
 package ifc
 
 import (
+	"maunium.net/go/gomuks/config"
 	"maunium.net/go/gomuks/matrix/event"
 	"maunium.net/go/mautrix"
 
@@ -24,12 +25,13 @@ import (
 )
 
 type Relation struct {
-	Type mautrix.RelationType
+	Type  mautrix.RelationType
 	Event *event.Event
 }
 
 type MatrixContainer interface {
 	Client() *mautrix.Client
+	Preferences() *config.UserPreferences
 	InitClient() error
 	Initialized() bool
 
@@ -55,7 +57,8 @@ type MatrixContainer interface {
 	GetRoom(roomID string) *rooms.Room
 	GetOrCreateRoom(roomID string) *rooms.Room
 
-	Download(mxcURL string) ([]byte, string, string, error)
-	GetDownloadURL(homeserver, fileID string) string
-	GetCachePath(homeserver, fileID string) string
+	Download(uri mautrix.ContentURI) ([]byte, error)
+	DownloadToDisk(uri mautrix.ContentURI, target string) (string, error)
+	GetDownloadURL(uri mautrix.ContentURI) string
+	GetCachePath(uri mautrix.ContentURI) string
 }

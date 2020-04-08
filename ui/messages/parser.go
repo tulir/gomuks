@@ -24,7 +24,6 @@ import (
 	"maunium.net/go/mautrix"
 	"maunium.net/go/tcell"
 
-	"maunium.net/go/gomuks/debug"
 	"maunium.net/go/gomuks/interface"
 	"maunium.net/go/gomuks/matrix/rooms"
 	"maunium.net/go/gomuks/ui/messages/html"
@@ -132,18 +131,19 @@ func ParseMessage(matrix ifc.MatrixContainer, room *rooms.Room, evt *event.Event
 		evt.Content = *evt.Gomuks.Edits[len(evt.Gomuks.Edits)-1].Content.NewContent
 	}
 	switch evt.Content.MsgType {
-	case "m.text", "m.notice", "m.emote":
+	case mautrix.MsgText, mautrix.MsgNotice, mautrix.MsgEmote:
 		if evt.Content.Format == mautrix.FormatHTML {
 			return NewHTMLMessage(evt, displayname, html.Parse(room, evt, displayname))
 		}
 		evt.Content.Body = strings.Replace(evt.Content.Body, "\t", "    ", -1)
 		return NewTextMessage(evt, displayname, evt.Content.Body)
-	case "m.file", "m.video", "m.audio", "m.image":
-		data, hs, id, err := matrix.Download(evt.Content.URL)
-		if err != nil {
-			debug.Printf("Failed to download %s: %v", evt.Content.URL, err)
+	case mautrix.MsgImage, mautrix.MsgVideo, mautrix.MsgAudio, mautrix.MsgFile:
+		msg := NewFileMessage(matrix, evt, displayname)
+		if !matrix.Preferences().DisableDownloads {
+			renderer := msg.Renderer.(*FileMessage)
+			renderer.DownloadPreview()
 		}
-		return NewFileMessage(matrix, evt, displayname, evt.Content.Body, hs, id, data)
+		return msg
 	}
 	return nil
 }

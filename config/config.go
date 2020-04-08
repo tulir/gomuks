@@ -66,6 +66,7 @@ type Config struct {
 	HistoryPath  string `yaml:"history_path"`
 	RoomListPath string `yaml:"room_list_path"`
 	MediaDir     string `yaml:"media_dir"`
+	DownloadDir  string `yaml:"download_dir"`
 	StateDir     string `yaml:"state_dir"`
 
 	Preferences UserPreferences        `yaml:"-"`
@@ -78,6 +79,7 @@ type Config struct {
 
 // NewConfig creates a config that loads data from the given directory.
 func NewConfig(configDir, cacheDir string) *Config {
+	home, _ := os.UserHomeDir()
 	return &Config{
 		Dir:          configDir,
 		CacheDir:     cacheDir,
@@ -85,6 +87,7 @@ func NewConfig(configDir, cacheDir string) *Config {
 		RoomListPath: filepath.Join(cacheDir, "rooms.gob.gz"),
 		StateDir:     filepath.Join(cacheDir, "state"),
 		MediaDir:     filepath.Join(cacheDir, "media"),
+		DownloadDir:  home,
 
 		RoomCacheSize: 32,
 		RoomCacheAge:  1 * 60,
