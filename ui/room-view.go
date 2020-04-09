@@ -322,14 +322,16 @@ func (view *RoomView) ClearAllContext() {
 func (view *RoomView) OnKeyEvent(event mauview.KeyEvent) bool {
 	msgView := view.MessageView()
 	if view.selecting {
-		switch event.Key() {
-		case tcell.KeyEscape:
+		k := event.Key()
+		c := event.Rune()
+		switch {
+		case k == tcell.KeyEscape || c == 'h':
 			view.ClearAllContext()
-		case tcell.KeyUp:
+		case k == tcell.KeyUp || c == 'k':
 			view.SelectPrevious()
-		case tcell.KeyDown:
+		case k == tcell.KeyDown || c == 'j':
 			view.SelectNext()
-		case tcell.KeyEnter:
+		case k == tcell.KeyEnter || c == 'l':
 			view.OnSelect(msgView.selected)
 		default:
 			return false
