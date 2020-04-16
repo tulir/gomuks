@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"time"
 
-	"maunium.net/go/gomuks/matrix/event"
+	"maunium.net/go/gomuks/matrix/muksevt"
 	"maunium.net/go/mauview"
 	"maunium.net/go/tcell"
 
@@ -34,7 +34,7 @@ type ExpandedTextMessage struct {
 }
 
 // NewExpandedTextMessage creates a new ExpandedTextMessage object with the provided values and the default state.
-func NewExpandedTextMessage(evt *event.Event, displayname string, text tstring.TString) *UIMessage {
+func NewExpandedTextMessage(evt *muksevt.Event, displayname string, text tstring.TString) *UIMessage {
 	return newUIMessage(evt, displayname, &ExpandedTextMessage{
 		Text: text,
 	})

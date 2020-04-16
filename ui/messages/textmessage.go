@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"time"
 
-	"maunium.net/go/gomuks/matrix/event"
+	"maunium.net/go/gomuks/matrix/muksevt"
 	"maunium.net/go/mauview"
 
 	"maunium.net/go/gomuks/config"
@@ -35,7 +35,7 @@ type TextMessage struct {
 }
 
 // NewTextMessage creates a new UITextMessage object with the provided values and the default state.
-func NewTextMessage(evt *event.Event, displayname string, text string) *UIMessage {
+func NewTextMessage(evt *muksevt.Event, displayname string, text string) *UIMessage {
 	return newUIMessage(evt, displayname, &TextMessage{
 		Text: text,
 	})

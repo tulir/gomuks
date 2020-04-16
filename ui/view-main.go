@@ -27,6 +27,7 @@ import (
 	sync "github.com/sasha-s/go-deadlock"
 
 	"maunium.net/go/gomuks/ui/messages"
+	"maunium.net/go/mautrix/id"
 	"maunium.net/go/mauview"
 	"maunium.net/go/tcell"
 
@@ -34,9 +35,9 @@ import (
 	"maunium.net/go/gomuks/debug"
 	"maunium.net/go/gomuks/interface"
 	"maunium.net/go/gomuks/lib/notification"
-	"maunium.net/go/gomuks/matrix/pushrules"
 	"maunium.net/go/gomuks/matrix/rooms"
 	"maunium.net/go/gomuks/ui/widget"
+	"maunium.net/go/mautrix/pushrules"
 )
 
 type MainView struct {
@@ -45,7 +46,7 @@ type MainView struct {
 	roomList     *RoomList
 	roomView     *mauview.Box
 	currentRoom  *RoomView
-	rooms        map[string]*RoomView
+	rooms        map[id.RoomID]*RoomView
 	roomsLock    sync.RWMutex
 	cmdProcessor *CommandProcessor
 	focused      mauview.Focusable
@@ -64,7 +65,7 @@ func (ui *GomuksUI) NewMainView() mauview.Component {
 	mainView := &MainView{
 		flex:     mauview.NewFlex().SetDirection(mauview.FlexColumn),
 		roomView: mauview.NewBox(nil).SetBorder(false),
-		rooms:    make(map[string]*RoomView),
+		rooms:    make(map[id.RoomID]*RoomView),
 
 		matrix: ui.gmx.Matrix(),
 		gmx:    ui.gmx,
@@ -295,7 +296,7 @@ func (view *MainView) addRoomPage(room *rooms.Room) *RoomView {
 	return nil
 }
 
-func (view *MainView) GetRoom(roomID string) ifc.RoomView {
+func (view *MainView) GetRoom(roomID id.RoomID) ifc.RoomView {
 	room, ok := view.getRoomView(roomID, true)
 	if !ok {
 		return view.addRoom(view.matrix.GetOrCreateRoom(roomID))
@@ -303,7 +304,7 @@ func (view *MainView) GetRoom(roomID string) ifc.RoomView {
 	return room
 }
 
-func (view *MainView) getRoomView(roomID string, lock bool) (room *RoomView, ok bool) {
+func (view *MainView) getRoomView(roomID id.RoomID, lock bool) (room *RoomView, ok bool) {
 	if lock {
 		view.roomsLock.RLock()
 		room, ok = view.rooms[roomID]
@@ -357,7 +358,7 @@ func (view *MainView) addRoom(room *rooms.Room) *RoomView {
 func (view *MainView) SetRooms(rooms *rooms.RoomCache) {
 	view.roomList.Clear()
 	view.roomsLock.Lock()
-	view.rooms = make(map[string]*RoomView)
+	view.rooms = make(map[id.RoomID]*RoomView)
 	for _, room := range rooms.Map {
 		if room.HasLeft {
 			continue
@@ -383,7 +384,7 @@ func (view *MainView) UpdateTags(room *rooms.Room) {
 	view.parent.Render()
 }
 
-func (view *MainView) SetTyping(roomID string, users []string) {
+func (view *MainView) SetTyping(roomID id.RoomID, users []id.UserID) {
 	roomView, ok := view.getRoomView(roomID, true)
 	if ok {
 		roomView.SetTyping(users)
@@ -438,7 +439,7 @@ func (view *MainView) NotifyMessage(room *rooms.Room, message ifc.Message, shoul
 	message.SetIsHighlight(should.Highlight)
 }
 
-func (view *MainView) LoadHistory(roomID string) {
+func (view *MainView) LoadHistory(roomID id.RoomID) {
 	defer debug.Recover()
 	roomView, ok := view.getRoomView(roomID, true)
 	if !ok {

@@ -24,14 +24,16 @@ import (
 	"time"
 
 	"maunium.net/go/mautrix"
+	"maunium.net/go/mautrix/event"
+	"maunium.net/go/mautrix/id"
 
 	"maunium.net/go/gomuks/debug"
 	"maunium.net/go/gomuks/matrix/rooms"
 )
 
 type SyncerSession interface {
-	GetRoom(id string) *rooms.Room
-	GetUserID() string
+	GetRoom(id id.RoomID) *rooms.Room
+	GetUserID() id.UserID
 }
 
 type EventSource int
@@ -45,6 +47,7 @@ const (
 	EventSourceTimeline
 	EventSourceState
 	EventSourceEphemeral
+	EventSourceToDevice
 )
 
 func (es EventSource) String() string {
@@ -83,14 +86,14 @@ func (es EventSource) String() string {
 	return fmt.Sprintf("unknown (%d)", es)
 }
 
-type EventHandler func(source EventSource, event *mautrix.Event)
+type EventHandler func(source EventSource, event *event.Event)
 
 // GomuksSyncer is the default syncing implementation. You can either write your own syncer, or selectively
 // replace parts of this default syncer (e.g. the ProcessResponse method). The default syncer uses the observer
 // pattern to notify callers about incoming events. See GomuksSyncer.OnEventType for more information.
 type GomuksSyncer struct {
 	Session          SyncerSession
-	listeners        map[mautrix.EventType][]EventHandler // event type to listeners array
+	listeners        map[event.Type][]EventHandler // event type to listeners array
 	FirstSyncDone    bool
 	InitDoneCallback func()
 }
@@ -99,7 +102,7 @@ type GomuksSyncer struct {
 func NewGomuksSyncer(session SyncerSession) *GomuksSyncer {
 	return &GomuksSyncer{
 		Session:       session,
-		listeners:     make(map[mautrix.EventType][]EventHandler),
+		listeners:     make(map[event.Type][]EventHandler),
 		FirstSyncDone: false,
 	}
 }
@@ -152,33 +155,44 @@ func (s *GomuksSyncer) ProcessResponse(res *mautrix.RespSync, since string) (err
 }
 
 func (s *GomuksSyncer) processSyncEvents(room *rooms.Room, events []json.RawMessage, source EventSource) {
-	for _, event := range events {
-		if source == EventSourcePresence {
-			debug.Print(string(event))
-		}
-		s.processSyncEvent(room, event, source)
+	for _, evt := range events {
+		s.processSyncEvent(room, evt, source)
 	}
 }
 
 func (s *GomuksSyncer) processSyncEvent(room *rooms.Room, eventJSON json.RawMessage, source EventSource) {
-	event := &mautrix.Event{}
-	err := json.Unmarshal(eventJSON, event)
+	evt := &event.Event{}
+	err := json.Unmarshal(eventJSON, evt)
 	if err != nil {
 		debug.Print("Failed to unmarshal event: %v\n%s", err, string(eventJSON))
 		return
 	}
+	// Ensure the type class is correct. It's safe to mutate since it's not a pointer.
+	// Listeners are keyed by type structs, which means only the correct class will pass.
+	switch {
+	case evt.StateKey != nil:
+		evt.Type.Class = event.StateEventType
+	case source == EventSourcePresence, source & EventSourceEphemeral != 0:
+		evt.Type.Class = event.EphemeralEventType
+	case source & EventSourceAccountData != 0:
+		evt.Type.Class = event.AccountDataEventType
+	case source == EventSourceToDevice:
+		evt.Type.Class = event.ToDeviceEventType
+	default:
+		evt.Type.Class = event.MessageEventType
+	}
 	if room != nil {
-		event.RoomID = room.ID
-		if source&EventSourceState != 0 || (source&EventSourceTimeline != 0 && event.Type.IsState() && event.StateKey != nil) {
-			room.UpdateState(event)
+		evt.RoomID = room.ID
+		if evt.Type.IsState() {
+			room.UpdateState(evt)
 		}
 	}
-	s.notifyListeners(source, event)
+	s.notifyListeners(source, evt)
 }
 
 // OnEventType allows callers to be notified when there are new events for the given event type.
 // There are no duplicate checks.
-func (s *GomuksSyncer) OnEventType(eventType mautrix.EventType, callback EventHandler) {
+func (s *GomuksSyncer) OnEventType(eventType event.Type, callback EventHandler) {
 	_, exists := s.listeners[eventType]
 	if !exists {
 		s.listeners[eventType] = []EventHandler{}
@@ -186,21 +200,13 @@ func (s *GomuksSyncer) OnEventType(eventType mautrix.EventType, callback EventHa
 	s.listeners[eventType] = append(s.listeners[eventType], callback)
 }
 
-func (s *GomuksSyncer) notifyListeners(source EventSource, event *mautrix.Event) {
-	if (event.Type.IsState() && source&EventSourceState == 0 && event.StateKey == nil) ||
-		(event.Type.IsAccountData() && source&EventSourceAccountData == 0) ||
-		(event.Type.IsEphemeral() && event.Type != mautrix.EphemeralEventPresence && source&EventSourceEphemeral == 0) ||
-		(event.Type == mautrix.EphemeralEventPresence && source&EventSourcePresence == 0) {
-		evtJson, _ := json.Marshal(event)
-		debug.Printf("Event of type %s received from mismatching source %s: %s", event.Type.String(), source.String(), string(evtJson))
-		return
-	}
-	listeners, exists := s.listeners[event.Type]
+func (s *GomuksSyncer) notifyListeners(source EventSource, evt *event.Event) {
+	listeners, exists := s.listeners[evt.Type]
 	if !exists {
 		return
 	}
 	for _, fn := range listeners {
-		fn(source, event)
+		fn(source, evt)
 	}
 }
 
@@ -211,53 +217,51 @@ func (s *GomuksSyncer) OnFailedSync(res *mautrix.RespSync, err error) (time.Dura
 }
 
 // GetFilterJSON returns a filter with a timeline limit of 50.
-func (s *GomuksSyncer) GetFilterJSON(userID string) json.RawMessage {
+func (s *GomuksSyncer) GetFilterJSON(_ id.UserID) json.RawMessage {
 	filter := &mautrix.Filter{
 		Room: mautrix.RoomFilter{
 			IncludeLeave: false,
 			State: mautrix.FilterPart{
 				LazyLoadMembers: true,
-				Types: []string{
-					"m.room.member",
-					"m.room.name",
-					"m.room.topic",
-					"m.room.canonical_alias",
-					"m.room.aliases",
-					"m.room.power_levels",
-					"m.room.tombstone",
+				Types: []event.Type{
+					event.StateMember,
+					event.StateRoomName,
+					event.StateTopic,
+					event.StateCanonicalAlias,
+					event.StatePowerLevels,
+					event.StateTombstone,
 				},
 			},
 			Timeline: mautrix.FilterPart{
 				LazyLoadMembers: true,
-				Types: []string{
-					"m.room.message",
-					"m.room.redaction",
-					"m.room.encrypted",
-					"m.sticker",
-					"m.reaction",
+				Types: []event.Type{
+					event.EventMessage,
+					event.EventRedaction,
+					event.EventEncrypted,
+					event.EventSticker,
+					event.EventReaction,
 
-					"m.room.member",
-					"m.room.name",
-					"m.room.topic",
-					"m.room.canonical_alias",
-					"m.room.aliases",
-					"m.room.power_levels",
-					"m.room.tombstone",
+					event.StateMember,
+					event.StateRoomName,
+					event.StateTopic,
+					event.StateCanonicalAlias,
+					event.StatePowerLevels,
+					event.StateTombstone,
 				},
-//				Limit: 50,
+				Limit: 50,
 			},
 			Ephemeral: mautrix.FilterPart{
-				Types: []string{"m.typing", "m.receipt"},
+				Types: []event.Type{event.EphemeralEventTyping, event.EphemeralEventReceipt},
 			},
 			AccountData: mautrix.FilterPart{
-				Types: []string{"m.tag"},
+				Types: []event.Type{event.AccountDataRoomTags},
 			},
 		},
 		AccountData: mautrix.FilterPart{
-			Types: []string{"m.push_rules", "m.direct", "net.maunium.gomuks.preferences"},
+			Types: []event.Type{event.AccountDataPushRules, event.AccountDataDirectChats, AccountDataGomuksPreferences},
 		},
 		Presence: mautrix.FilterPart{
-			NotTypes: []string{"*"},
+			NotTypes: []event.Type{event.NewEventType("*")},
 		},
 	}
 	rawFilter, _ := json.Marshal(&filter)

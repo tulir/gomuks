@@ -27,8 +27,9 @@ import (
 	"github.com/lucasb-eyer/go-colorful"
 	"golang.org/x/net/html"
 
-	"maunium.net/go/gomuks/matrix/event"
-	"maunium.net/go/mautrix"
+	"maunium.net/go/gomuks/matrix/muksevt"
+	"maunium.net/go/mautrix/event"
+	"maunium.net/go/mautrix/id"
 	"maunium.net/go/tcell"
 
 	"maunium.net/go/gomuks/matrix/rooms"
@@ -185,12 +186,12 @@ func (parser *htmlParser) linkToEntity(node *html.Node) Entity {
 		pillTarget := match[1]
 		text := NewTextEntity(pillTarget)
 		if pillTarget[0] == '@' {
-			if member := parser.room.GetMember(pillTarget); member != nil {
+			if member := parser.room.GetMember(id.UserID(pillTarget)); member != nil {
 				text.Text = member.Displayname
 				text.Style = text.Style.Foreground(widget.GetHashColor(pillTarget))
 			}
 			entity.Children = []Entity{text}
-			/*} else if slash := strings.IndexRune(pillTarget, '/'); slash != -1 {
+		/*} else if slash := strings.IndexRune(pillTarget, '/'); slash != -1 {
 			room := pillTarget[:slash]
 			event := pillTarget[slash+1:]*/
 		} else if pillTarget[0] == '#' {
@@ -383,9 +384,9 @@ func (parser *htmlParser) Parse(htmlData string) Entity {
 const TabLength = 4
 
 // Parse parses a HTML-formatted Matrix event into a UIMessage.
-func Parse(room *rooms.Room, evt *event.Event, senderDisplayname string) Entity {
+func Parse(room *rooms.Room, evt *muksevt.Event, senderDisplayname string) Entity {
 	htmlData := evt.Content.FormattedBody
-	if evt.Content.Format != mautrix.FormatHTML {
+	if evt.Content.Format != event.FormatHTML {
 		htmlData = strings.Replace(html.EscapeString(evt.Content.Body), "\n", "<br/>", -1)
 	}
 	htmlData = strings.Replace(htmlData, "\t", strings.Repeat(" ", TabLength), -1)
@@ -402,7 +403,7 @@ func Parse(room *rooms.Room, evt *event.Event, senderDisplayname string) Entity 
 		}
 	}
 
-	if evt.Content.MsgType == mautrix.MsgEmote {
+	if evt.Content.MsgType == event.MsgEmote {
 		root = &ContainerEntity{
 			BaseEntity: &BaseEntity{
 				Tag: "emote",

@@ -24,6 +24,7 @@ import (
 
 	sync "github.com/sasha-s/go-deadlock"
 
+	"maunium.net/go/mautrix/id"
 	"maunium.net/go/mauview"
 	"maunium.net/go/tcell"
 
@@ -105,7 +106,7 @@ func NewRoomList(parent *MainView) *RoomList {
 	return list
 }
 
-func (list *RoomList) Contains(roomID string) bool {
+func (list *RoomList) Contains(roomID id.RoomID) bool {
 	list.RLock()
 	defer list.RUnlock()
 	for _, trl := range list.items {

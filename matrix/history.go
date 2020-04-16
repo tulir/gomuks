@@ -26,9 +26,10 @@ import (
 	sync "github.com/sasha-s/go-deadlock"
 	bolt "go.etcd.io/bbolt"
 
-	"maunium.net/go/gomuks/matrix/event"
+	"maunium.net/go/gomuks/matrix/muksevt"
 	"maunium.net/go/gomuks/matrix/rooms"
-	"maunium.net/go/mautrix"
+	"maunium.net/go/mautrix/event"
+	"maunium.net/go/mautrix/id"
 )
 
 type HistoryManager struct {
@@ -87,7 +88,7 @@ func (hm *HistoryManager) Close() error {
 
 var (
 	EventNotFoundError = errors.New("event not found")
-	RoomNotFoundError = errors.New("room not found")
+	RoomNotFoundError  = errors.New("room not found")
 )
 
 func (hm *HistoryManager) getStreamIndex(tx *bolt.Tx, roomID []byte, eventID []byte) (*bolt.Bucket, []byte, error) {
@@ -103,7 +104,7 @@ func (hm *HistoryManager) getStreamIndex(tx *bolt.Tx, roomID []byte, eventID []b
 	return stream, index, nil
 }
 
-func (hm *HistoryManager) getEvent(tx *bolt.Tx, stream *bolt.Bucket, index []byte) (*event.Event, error) {
+func (hm *HistoryManager) getEvent(tx *bolt.Tx, stream *bolt.Bucket, index []byte) (*muksevt.Event, error) {
 	eventData := stream.Get(index)
 	if eventData == nil || len(eventData) == 0 {
 		return nil, EventNotFoundError
@@ -111,7 +112,7 @@ func (hm *HistoryManager) getEvent(tx *bolt.Tx, stream *bolt.Bucket, index []byt
 	return unmarshalEvent(eventData)
 }
 
-func (hm *HistoryManager) Get(room *rooms.Room, eventID string) (evt *event.Event, err error) {
+func (hm *HistoryManager) Get(room *rooms.Room, eventID id.EventID) (evt *muksevt.Event, err error) {
 	err = hm.db.View(func(tx *bolt.Tx) error {
 		if stream, index, err := hm.getStreamIndex(tx, []byte(room.ID), []byte(eventID)); err != nil {
 			return err
@@ -123,7 +124,7 @@ func (hm *HistoryManager) Get(room *rooms.Room, eventID string) (evt *event.Even
 	return
 }
 
-func (hm *HistoryManager) Update(room *rooms.Room, eventID string, update func(evt *event.Event) error) error {
+func (hm *HistoryManager) Update(room *rooms.Room, eventID id.EventID, update func(evt *muksevt.Event) error) error {
 	return hm.db.Update(func(tx *bolt.Tx) error {
 		if stream, index, err := hm.getStreamIndex(tx, []byte(room.ID), []byte(eventID)); err != nil {
 			return err
@@ -140,18 +141,18 @@ func (hm *HistoryManager) Update(room *rooms.Room, eventID string, update func(e
 	})
 }
 
-func (hm *HistoryManager) Append(room *rooms.Room, events []*mautrix.Event) ([]*event.Event, error) {
+func (hm *HistoryManager) Append(room *rooms.Room, events []*event.Event) ([]*muksevt.Event, error) {
 	return hm.store(room, events, true)
 }
 
-func (hm *HistoryManager) Prepend(room *rooms.Room, events []*mautrix.Event) ([]*event.Event, error) {
+func (hm *HistoryManager) Prepend(room *rooms.Room, events []*event.Event) ([]*muksevt.Event, error) {
 	return hm.store(room, events, false)
 }
 
-func (hm *HistoryManager) store(room *rooms.Room, events []*mautrix.Event, append bool) ([]*event.Event, error) {
+func (hm *HistoryManager) store(room *rooms.Room, events []*event.Event, append bool) ([]*muksevt.Event, error) {
 	hm.Lock()
 	defer hm.Unlock()
-	newEvents := make([]*event.Event, len(events))
+	newEvents := make([]*muksevt.Event, len(events))
 	err := hm.db.Update(func(tx *bolt.Tx) error {
 		streamPointers := tx.Bucket(bucketStreamPointers)
 		rid := []byte(room.ID)
@@ -177,7 +178,7 @@ func (hm *HistoryManager) store(room *rooms.Room, events []*mautrix.Event, appen
 				return err
 			}
 			for i, evt := range events {
-				newEvents[i] = event.Wrap(evt)
+				newEvents[i] = muksevt.Wrap(evt)
 				if err := put(stream, eventIDs, newEvents[i], ptrStart+uint64(i)); err != nil {
 					return err
 				}
@@ -198,7 +199,7 @@ func (hm *HistoryManager) store(room *rooms.Room, events []*mautrix.Event, appen
 			}
 			eventCount := uint64(len(events))
 			for i, evt := range events {
-				newEvents[i] = event.Wrap(evt)
+				newEvents[i] = muksevt.Wrap(evt)
 				if err := put(stream, eventIDs, newEvents[i], -ptrStart-uint64(i)); err != nil {
 					return err
 				}
@@ -215,12 +216,11 @@ func (hm *HistoryManager) store(room *rooms.Room, events []*mautrix.Event, appen
 	return newEvents, err
 }
 
-func (hm *HistoryManager) Load(room *rooms.Room, num int) (events []*event.Event, err error) {
+func (hm *HistoryManager) Load(room *rooms.Room, num int) (events []*muksevt.Event, err error) {
 	hm.Lock()
 	defer hm.Unlock()
 	err = hm.db.View(func(tx *bolt.Tx) error {
-		rid := []byte(room.ID)
-		stream := tx.Bucket(bucketRoomStreams).Bucket(rid)
+		stream := tx.Bucket(bucketRoomStreams).Bucket([]byte(room.ID))
 		if stream == nil {
 			return nil
 		}
@@ -265,7 +265,7 @@ func btoi(b []byte) uint64 {
 	return binary.BigEndian.Uint64(b)
 }
 
-func marshalEvent(evt *event.Event) ([]byte, error) {
+func marshalEvent(evt *muksevt.Event) ([]byte, error) {
 	var buf bytes.Buffer
 	enc := gzip.NewWriter(&buf)
 	if err := gob.NewEncoder(enc).Encode(evt); err != nil {
@@ -277,8 +277,8 @@ func marshalEvent(evt *event.Event) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-func unmarshalEvent(data []byte) (*event.Event, error) {
-	evt := &event.Event{}
+func unmarshalEvent(data []byte) (*muksevt.Event, error) {
+	evt := &muksevt.Event{}
 	if cmpReader, err := gzip.NewReader(bytes.NewReader(data)); err != nil {
 		return nil, err
 	} else if err := gob.NewDecoder(cmpReader).Decode(evt); err != nil {
@@ -290,7 +290,7 @@ func unmarshalEvent(data []byte) (*event.Event, error) {
 	return evt, nil
 }
 
-func put(streams, eventIDs *bolt.Bucket, evt *event.Event, key uint64) error {
+func put(streams, eventIDs *bolt.Bucket, evt *muksevt.Event, key uint64) error {
 	data, err := marshalEvent(evt)
 	if err != nil {
 		return err

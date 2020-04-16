@@ -26,18 +26,19 @@ import (
 	"github.com/kyokomi/emoji"
 	"github.com/mattn/go-runewidth"
 
-	"maunium.net/go/gomuks/debug"
-	"maunium.net/go/gomuks/lib/open"
-	"maunium.net/go/gomuks/matrix/event"
-
 	"maunium.net/go/mauview"
-
-	"maunium.net/go/mautrix"
 	"maunium.net/go/tcell"
 
+	"maunium.net/go/mautrix"
+	"maunium.net/go/mautrix/event"
+	"maunium.net/go/mautrix/id"
+
 	"maunium.net/go/gomuks/config"
+	"maunium.net/go/gomuks/debug"
 	"maunium.net/go/gomuks/interface"
+	"maunium.net/go/gomuks/lib/open"
 	"maunium.net/go/gomuks/lib/util"
+	"maunium.net/go/gomuks/matrix/muksevt"
 	"maunium.net/go/gomuks/matrix/rooms"
 	"maunium.net/go/gomuks/ui/messages"
 	"maunium.net/go/gomuks/ui/widget"
@@ -72,9 +73,9 @@ type RoomView struct {
 	selectReason  SelectReason
 	selectContent string
 
-	replying *event.Event
+	replying *muksevt.Event
 
-	editing      *event.Event
+	editing      *muksevt.Event
 	editMoveText string
 
 	completions struct {
@@ -186,7 +187,7 @@ func (view *RoomView) OnSelect(message *messages.UIMessage) {
 	case SelectReply:
 		view.replying = message.Event
 		if len(view.selectContent) > 0 {
-			go view.SendMessage(mautrix.MsgText, view.selectContent)
+			go view.SendMessage(event.MsgText, view.selectContent)
 		}
 	case SelectReact:
 		go view.SendReaction(message.EventID, view.selectContent)
@@ -217,7 +218,7 @@ func (view *RoomView) GetStatus() string {
 		buf.WriteString("Editing message - ")
 	} else if view.replying != nil {
 		buf.WriteString("Replying to ")
-		buf.WriteString(view.replying.Sender)
+		buf.WriteString(string(view.replying.Sender))
 		buf.WriteString(" - ")
 	} else if view.selecting {
 		buf.WriteString("Selecting message to ")
@@ -235,12 +236,19 @@ func (view *RoomView) GetStatus() string {
 	}
 
 	if len(view.typing) == 1 {
-		buf.WriteString("Typing: " + view.typing[0])
+		buf.WriteString("Typing: " + string(view.typing[0]))
 		buf.WriteString(" - ")
 	} else if len(view.typing) > 1 {
-		_, _ = fmt.Fprintf(&buf,
-			"Typing: %s and %s - ",
-			strings.Join(view.typing[:len(view.typing)-1], ", "), view.typing[len(view.typing)-1])
+		buf.WriteString("Typing: ")
+		for i, userID := range view.typing {
+			if i == len(view.typing)-1 {
+				buf.WriteString(" and ")
+			} else if i > 0 {
+				buf.WriteString(", ")
+			}
+			buf.WriteString(string(userID))
+		}
+		buf.WriteString(" - ")
 	}
 
 	return strings.TrimSuffix(buf.String(), " - ")
@@ -384,15 +392,18 @@ func (view *RoomView) SetCompletions(completions []string) {
 
 func (view *RoomView) loadTyping() {
 	for index, user := range view.typing {
-		member := view.Room.GetMember(user)
+		member := view.Room.GetMember(id.UserID(user))
 		if member != nil {
 			view.typing[index] = member.Displayname
 		}
 	}
 }
 
-func (view *RoomView) SetTyping(users []string) {
-	view.typing = users
+func (view *RoomView) SetTyping(users []id.UserID) {
+	view.typing = make([]string, len(users))
+	for i, user := range users {
+		view.typing[i] = string(user)
+	}
 	if view.Room.Loaded() {
 		view.loadTyping()
 	}
@@ -406,13 +417,13 @@ type completion struct {
 func (view *RoomView) autocompleteUser(existingText string) (completions []completion) {
 	textWithoutPrefix := strings.TrimPrefix(existingText, "@")
 	for userID, user := range view.Room.GetMembers() {
-		if user.Displayname == textWithoutPrefix || userID == existingText {
+		if user.Displayname == textWithoutPrefix || string(userID) == existingText {
 			// Exact match, return that.
-			return []completion{{user.Displayname, userID}}
+			return []completion{{user.Displayname, string(userID)}}
 		}
 
-		if strings.HasPrefix(user.Displayname, textWithoutPrefix) || strings.HasPrefix(userID, existingText) {
-			completions = append(completions, completion{user.Displayname, userID})
+		if strings.HasPrefix(user.Displayname, textWithoutPrefix) || strings.HasPrefix(string(userID), existingText) {
+			completions = append(completions, completion{user.Displayname, string(userID)})
 		}
 	}
 	return
@@ -420,13 +431,13 @@ func (view *RoomView) autocompleteUser(existingText string) (completions []compl
 
 func (view *RoomView) autocompleteRoom(existingText string) (completions []completion) {
 	for _, room := range view.parent.rooms {
-		alias := room.Room.GetCanonicalAlias()
+		alias := string(room.Room.GetCanonicalAlias())
 		if alias == existingText {
 			// Exact match, return that.
-			return []completion{{alias, room.Room.ID}}
+			return []completion{{alias, string(room.Room.ID)}}
 		}
 		if strings.HasPrefix(alias, existingText) {
-			completions = append(completions, completion{alias, room.Room.ID})
+			completions = append(completions, completion{alias, string(room.Room.ID)})
 			continue
 		}
 	}
@@ -457,7 +468,7 @@ func (view *RoomView) autocompleteEmoji(word string) (completions []string) {
 	return
 }
 
-func (view *RoomView) SetEditing(evt *event.Event) {
+func (view *RoomView) SetEditing(evt *muksevt.Event) {
 	if evt == nil {
 		view.editing = nil
 		view.SetInputText(view.editMoveText)
@@ -470,7 +481,7 @@ func (view *RoomView) SetEditing(evt *event.Event) {
 		// replying should never be non-nil when SetEditing, but do this just to be safe
 		view.replying = nil
 		text := view.editing.Content.Body
-		if view.editing.Content.MsgType == mautrix.MsgEmote {
+		if view.editing.Content.MsgType == event.MsgEmote {
 			text = "/me " + text
 		}
 		view.input.SetText(text)
@@ -479,21 +490,21 @@ func (view *RoomView) SetEditing(evt *event.Event) {
 	view.input.SetCursorOffset(-1)
 }
 
-type findFilter func(evt *event.Event) bool
+type findFilter func(evt *muksevt.Event) bool
 
-func (view *RoomView) filterOwnOnly(evt *event.Event) bool {
-	return evt.Sender == view.parent.matrix.Client().UserID && evt.Type == mautrix.EventMessage
+func (view *RoomView) filterOwnOnly(evt *muksevt.Event) bool {
+	return evt.Sender == view.parent.matrix.Client().UserID && evt.Type == event.EventMessage
 }
 
-func (view *RoomView) filterMediaOnly(evt *event.Event) bool {
-	return evt.Type == mautrix.EventMessage && (
-		evt.Content.MsgType == mautrix.MsgFile ||
-			evt.Content.MsgType == mautrix.MsgImage ||
-			evt.Content.MsgType == mautrix.MsgAudio ||
-			evt.Content.MsgType == mautrix.MsgVideo)
+func (view *RoomView) filterMediaOnly(evt *muksevt.Event) bool {
+	return evt.Type == event.EventMessage && (
+		evt.Content.MsgType == event.MsgFile ||
+			evt.Content.MsgType == event.MsgImage ||
+			evt.Content.MsgType == event.MsgAudio ||
+			evt.Content.MsgType == event.MsgVideo)
 }
 
-func (view *RoomView) findMessage(current *event.Event, forward bool, allow findFilter) *messages.UIMessage {
+func (view *RoomView) findMessage(current *muksevt.Event, forward bool, allow findFilter) *messages.UIMessage {
 	currentFound := current == nil
 	msgs := view.MessageView().messages
 	for i := 0; i < len(msgs); i++ {
@@ -502,7 +513,7 @@ func (view *RoomView) findMessage(current *event.Event, forward bool, allow find
 			index = len(msgs) - i - 1
 		}
 		evt := msgs[index]
-		if evt.EventID == "" || evt.EventID == evt.TxnID || evt.IsService {
+		if evt.EventID == "" || string(evt.EventID) == evt.TxnID || evt.IsService {
 			continue
 		} else if currentFound {
 			if allow == nil || allow(evt.Event) {
@@ -607,13 +618,13 @@ func (view *RoomView) InputSubmit(text string) {
 	} else if cmd := view.parent.cmdProcessor.ParseCommand(view, text); cmd != nil {
 		go view.parent.cmdProcessor.HandleCommand(cmd)
 	} else {
-		go view.SendMessage(mautrix.MsgText, text)
+		go view.SendMessage(event.MsgText, text)
 	}
 	view.editMoveText = ""
 	view.SetInputText("")
 }
 
-func (view *RoomView) Download(url mautrix.ContentURI, filename string, openFile bool) {
+func (view *RoomView) Download(url id.ContentURI, filename string, openFile bool) {
 	path, err := view.parent.matrix.DownloadToDisk(url, filename)
 	if err != nil {
 		view.AddServiceMessage(fmt.Sprintf("Failed to download media: %v", err))
@@ -627,7 +638,7 @@ func (view *RoomView) Download(url mautrix.ContentURI, filename string, openFile
 	}
 }
 
-func (view *RoomView) Redact(eventID, reason string) {
+func (view *RoomView) Redact(eventID id.EventID, reason string) {
 	defer debug.Recover()
 	err := view.parent.matrix.Redact(view.Room.ID, eventID, reason)
 	if err != nil {
@@ -642,16 +653,16 @@ func (view *RoomView) Redact(eventID, reason string) {
 	}
 }
 
-func (view *RoomView) SendReaction(eventID string, reaction string) {
+func (view *RoomView) SendReaction(eventID id.EventID, reaction string) {
 	defer debug.Recover()
 	debug.Print("Reacting to", eventID, "in", view.Room.ID, "with", reaction)
-	eventID, err := view.parent.matrix.SendEvent(&event.Event{
-		Event: &mautrix.Event{
-			Type:   mautrix.EventReaction,
+	eventID, err := view.parent.matrix.SendEvent(&muksevt.Event{
+		Event: &event.Event{
+			Type:   event.EventReaction,
 			RoomID: view.Room.ID,
-			Content: mautrix.Content{
-				RelatesTo: &mautrix.RelatesTo{
-					Type:    mautrix.RelAnnotation,
+			Content: event.Content{
+				RelatesTo: &event.RelatesTo{
+					Type:    event.RelAnnotation,
 					EventID: eventID,
 					Key:     reaction,
 				},
@@ -670,11 +681,11 @@ func (view *RoomView) SendReaction(eventID string, reaction string) {
 	}
 }
 
-func (view *RoomView) SendMessage(msgtype mautrix.MessageType, text string) {
+func (view *RoomView) SendMessage(msgtype event.MessageType, text string) {
 	view.SendMessageHTML(msgtype, text, "")
 }
 
-func (view *RoomView) SendMessageHTML(msgtype mautrix.MessageType, text, html string) {
+func (view *RoomView) SendMessageHTML(msgtype event.MessageType, text, html string) {
 	defer debug.Recover()
 	debug.Print("Sending message", msgtype, text, "to", view.Room.ID)
 	if !view.config.Preferences.DisableEmojis {
@@ -683,12 +694,12 @@ func (view *RoomView) SendMessageHTML(msgtype mautrix.MessageType, text, html st
 	var rel *ifc.Relation
 	if view.editing != nil {
 		rel = &ifc.Relation{
-			Type:  mautrix.RelReplace,
+			Type:  event.RelReplace,
 			Event: view.editing,
 		}
 	} else if view.replying != nil {
 		rel = &ifc.Relation{
-			Type:  mautrix.RelReference,
+			Type:  event.RelReference,
 			Event: view.replying,
 		}
 	}
@@ -699,7 +710,7 @@ func (view *RoomView) SendMessageHTML(msgtype mautrix.MessageType, text, html st
 	view.status.SetText(view.GetStatus())
 	eventID, err := view.parent.matrix.SendEvent(evt)
 	if err != nil {
-		msg.State = event.StateSendFail
+		msg.State = muksevt.StateSendFail
 		// Show shorter version if available
 		if httpErr, ok := err.(mautrix.HTTPError); ok {
 			err = httpErr
@@ -712,7 +723,7 @@ func (view *RoomView) SendMessageHTML(msgtype mautrix.MessageType, text, html st
 	} else {
 		debug.Print("Event ID received:", eventID)
 		msg.EventID = eventID
-		msg.State = event.StateDefault
+		msg.State = muksevt.StateDefault
 		view.MessageView().setMessageID(msg)
 		view.parent.parent.Render()
 	}
@@ -734,8 +745,8 @@ func (view *RoomView) Update() {
 }
 
 func (view *RoomView) UpdateUserList() {
-	pls := &mautrix.PowerLevels{}
-	if plEvent := view.Room.GetStateEvent(mautrix.StatePowerLevels, ""); plEvent != nil {
+	pls := &event.PowerLevels{}
+	if plEvent := view.Room.GetStateEvent(event.StatePowerLevels, ""); plEvent != nil {
 		pls = plEvent.Content.GetPowerLevels()
 	}
 	view.userList.Update(view.Room.GetMembers(), pls)
@@ -746,17 +757,17 @@ func (view *RoomView) AddServiceMessage(text string) {
 	view.content.AddMessage(messages.NewServiceMessage(text), AppendMessage)
 }
 
-func (view *RoomView) parseEvent(evt *event.Event) *messages.UIMessage {
+func (view *RoomView) parseEvent(evt *muksevt.Event) *messages.UIMessage {
 	return messages.ParseEvent(view.parent.matrix, view.parent, view.Room, evt)
 }
 
-func (view *RoomView) AddHistoryEvent(evt *event.Event) {
+func (view *RoomView) AddHistoryEvent(evt *muksevt.Event) {
 	if msg := view.parseEvent(evt); msg != nil {
 		view.content.AddMessage(msg, PrependMessage)
 	}
 }
 
-func (view *RoomView) AddEvent(evt *event.Event) ifc.Message {
+func (view *RoomView) AddEvent(evt *muksevt.Event) ifc.Message {
 	if msg := view.parseEvent(evt); msg != nil {
 		view.content.AddMessage(msg, AppendMessage)
 		return msg
@@ -764,17 +775,17 @@ func (view *RoomView) AddEvent(evt *event.Event) ifc.Message {
 	return nil
 }
 
-func (view *RoomView) AddRedaction(redactedEvt *event.Event) {
+func (view *RoomView) AddRedaction(redactedEvt *muksevt.Event) {
 	view.AddEvent(redactedEvt)
 }
 
-func (view *RoomView) AddEdit(evt *event.Event) {
+func (view *RoomView) AddEdit(evt *muksevt.Event) {
 	if msg := view.parseEvent(evt); msg != nil {
 		view.content.AddMessage(msg, IgnoreMessage)
 	}
 }
 
-func (view *RoomView) AddReaction(evt *event.Event, key string) {
+func (view *RoomView) AddReaction(evt *muksevt.Event, key string) {
 	msgView := view.MessageView()
 	msg := msgView.getMessageByID(evt.ID)
 	if msg == nil {
@@ -790,7 +801,7 @@ func (view *RoomView) AddReaction(evt *event.Event, key string) {
 	}
 }
 
-func (view *RoomView) GetEvent(eventID string) ifc.Message {
+func (view *RoomView) GetEvent(eventID id.EventID) ifc.Message {
 	message, ok := view.content.messageIDs[eventID]
 	if !ok {
 		return nil

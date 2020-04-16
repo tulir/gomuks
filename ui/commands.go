@@ -35,14 +35,16 @@ import (
 	"github.com/russross/blackfriday/v2"
 
 	"maunium.net/go/mautrix"
+	"maunium.net/go/mautrix/event"
 	"maunium.net/go/mautrix/format"
+	"maunium.net/go/mautrix/id"
 
 	"maunium.net/go/gomuks/debug"
 )
 
 func cmdMe(cmd *Command) {
 	text := strings.Join(cmd.Args, " ")
-	go cmd.Room.SendMessage(mautrix.MsgEmote, text)
+	go cmd.Room.SendMessage(event.MsgEmote, text)
 }
 
 // GradientTable from https://github.com/lucasb-eyer/go-colorful/blob/master/doc/gradientgen/gradientgen.go
@@ -79,7 +81,7 @@ var rainbow = GradientTable{
 }
 
 // TODO this command definitely belongs in a plugin once we have a plugin system.
-func makeRainbow(cmd *Command, msgtype mautrix.MessageType) {
+func makeRainbow(cmd *Command, msgtype event.MessageType) {
 	text := strings.Join(cmd.Args, " ")
 
 	render := NewRainbowRenderer(blackfriday.NewHTMLRenderer(blackfriday.HTMLRendererParameters{
@@ -101,15 +103,15 @@ func makeRainbow(cmd *Command, msgtype mautrix.MessageType) {
 }
 
 func cmdRainbow(cmd *Command) {
-	makeRainbow(cmd, mautrix.MsgText)
+	makeRainbow(cmd, event.MsgText)
 }
 
 func cmdRainbowMe(cmd *Command) {
-	makeRainbow(cmd, mautrix.MsgEmote)
+	makeRainbow(cmd, event.MsgEmote)
 }
 
 func cmdNotice(cmd *Command) {
-	go cmd.Room.SendMessage(mautrix.MsgNotice, strings.Join(cmd.Args, " "))
+	go cmd.Room.SendMessage(event.MsgNotice, strings.Join(cmd.Args, " "))
 }
 
 func cmdAccept(cmd *Command) {
@@ -118,7 +120,7 @@ func cmdAccept(cmd *Command) {
 		cmd.Reply("/accept can only be used in rooms you're invited to")
 		return
 	}
-	_, server, _ := mautrix.ParseUserID(room.SessionMember.Sender)
+	_, server, _ := room.SessionMember.Sender.Parse()
 	_, err := cmd.Matrix.JoinRoom(room.ID, server)
 	if err != nil {
 		cmd.Reply("Failed to accept invite:", err)
@@ -223,11 +225,11 @@ func cmdTag(cmd *Command) {
 	}
 	var err error
 	if len(cmd.Args) > 2 && cmd.Args[2] == "--reset" {
-		tags := mautrix.Tags{
+		tags := event.Tags{
 			cmd.Args[0]: {Order: json.Number(fmt.Sprintf("%f", order))},
 		}
 		for _, tag := range cmd.Room.MxRoom().RawTags {
-			tags[tag.Tag] = mautrix.Tag{Order: tag.Order}
+			tags[tag.Tag] = event.Tag{Order: tag.Order}
 		}
 		err = cmd.Matrix.Client().SetTags(cmd.Room.MxRoom().ID, tags)
 	} else {
@@ -253,7 +255,7 @@ func cmdRoomNick(cmd *Command) {
 	room := cmd.Room.MxRoom()
 	member := room.GetMember(room.SessionUserID)
 	member.Displayname = strings.Join(cmd.Args, " ")
-	_, err := cmd.Matrix.Client().SendStateEvent(room.ID, mautrix.StateMember, room.SessionUserID, member)
+	_, err := cmd.Matrix.Client().SendStateEvent(room.ID, event.StateMember, string(room.SessionUserID), member)
 	if err != nil {
 		cmd.Reply("Failed to set room nick:", err)
 	}
@@ -376,7 +378,7 @@ func cmdInvite(cmd *Command) {
 		cmd.Reply("Usage: /invite <user id>")
 		return
 	}
-	_, err := cmd.Matrix.Client().InviteUser(cmd.Room.MxRoom().ID, &mautrix.ReqInviteUser{UserID: cmd.Args[0]})
+	_, err := cmd.Matrix.Client().InviteUser(cmd.Room.MxRoom().ID, &mautrix.ReqInviteUser{UserID: id.UserID(cmd.Args[0])})
 	if err != nil {
 		debug.Print("Error in invite call:", err)
 		cmd.Reply("Failed to invite user: %v", err)
@@ -392,7 +394,7 @@ func cmdBan(cmd *Command) {
 	if len(cmd.Args) >= 2 {
 		reason = strings.Join(cmd.Args[1:], " ")
 	}
-	_, err := cmd.Matrix.Client().BanUser(cmd.Room.MxRoom().ID, &mautrix.ReqBanUser{Reason: reason, UserID: cmd.Args[0]})
+	_, err := cmd.Matrix.Client().BanUser(cmd.Room.MxRoom().ID, &mautrix.ReqBanUser{Reason: reason, UserID: id.UserID(cmd.Args[0])})
 	if err != nil {
 		debug.Print("Error in ban call:", err)
 		cmd.Reply("Failed to ban user: %v", err)
@@ -405,7 +407,7 @@ func cmdUnban(cmd *Command) {
 		cmd.Reply("Usage: /unban <user>")
 		return
 	}
-	_, err := cmd.Matrix.Client().UnbanUser(cmd.Room.MxRoom().ID, &mautrix.ReqUnbanUser{UserID: cmd.Args[0]})
+	_, err := cmd.Matrix.Client().UnbanUser(cmd.Room.MxRoom().ID, &mautrix.ReqUnbanUser{UserID: id.UserID(cmd.Args[0])})
 	if err != nil {
 		debug.Print("Error in unban call:", err)
 		cmd.Reply("Failed to unban user: %v", err)
@@ -421,7 +423,7 @@ func cmdKick(cmd *Command) {
 	if len(cmd.Args) >= 2 {
 		reason = strings.Join(cmd.Args[1:], " ")
 	}
-	_, err := cmd.Matrix.Client().KickUser(cmd.Room.MxRoom().ID, &mautrix.ReqKickUser{Reason: reason, UserID: cmd.Args[0]})
+	_, err := cmd.Matrix.Client().KickUser(cmd.Room.MxRoom().ID, &mautrix.ReqKickUser{Reason: reason, UserID: id.UserID(cmd.Args[0])})
 	if err != nil {
 		debug.Print("Error in kick call:", err)
 		debug.Print("Failed to kick user:", err)
@@ -445,9 +447,18 @@ func cmdPrivateMessage(cmd *Command) {
 	if len(cmd.Args) == 0 {
 		cmd.Reply("Usage: /pm <user id> [more user ids...]")
 	}
+	invites := make([]id.UserID, len(cmd.Args))
+	for i, userID := range cmd.Args {
+		invites[i] = id.UserID(userID)
+		_, _, err := invites[i].Parse()
+		if err != nil {
+			cmd.Reply("%s isn't a valid user ID", userID)
+			return
+		}
+	}
 	req := &mautrix.ReqCreateRoom{
 		Preset: "trusted_private_chat",
-		Invite: cmd.Args,
+		Invite: invites,
 	}
 	room, err := cmd.Matrix.CreateRoom(req)
 	if err != nil {
@@ -462,7 +473,7 @@ func cmdJoin(cmd *Command) {
 		cmd.Reply("Usage: /join <room>")
 		return
 	}
-	identifer := cmd.Args[0]
+	identifer := id.RoomID(cmd.Args[0])
 	server := ""
 	if len(cmd.Args) > 1 {
 		server = cmd.Args[1]
@@ -479,7 +490,7 @@ func cmdMSendEvent(cmd *Command) {
 		cmd.Reply("Usage: /msend <event type> <content>")
 		return
 	}
-	cmd.Args = append([]string{cmd.Room.MxRoom().ID}, cmd.Args...)
+	cmd.Args = append([]string{string(cmd.Room.MxRoom().ID)}, cmd.Args...)
 	cmdSendEvent(cmd)
 }
 
@@ -488,8 +499,8 @@ func cmdSendEvent(cmd *Command) {
 		cmd.Reply("Usage: /send <room id> <event type> <content>")
 		return
 	}
-	roomID := cmd.Args[0]
-	eventType := mautrix.NewEventType(cmd.Args[1])
+	roomID := id.RoomID(cmd.Args[0])
+	eventType := event.NewEventType(cmd.Args[1])
 	rawContent := strings.Join(cmd.Args[2:], " ")
 
 	var content interface{}
@@ -515,7 +526,7 @@ func cmdMSetState(cmd *Command) {
 		cmd.Reply("Usage: /msetstate <event type> <state key> <content>")
 		return
 	}
-	cmd.Args = append([]string{cmd.Room.MxRoom().ID}, cmd.Args...)
+	cmd.Args = append([]string{string(cmd.Room.MxRoom().ID)}, cmd.Args...)
 	cmdSetState(cmd)
 }
 
@@ -525,8 +536,8 @@ func cmdSetState(cmd *Command) {
 		return
 	}
 
-	roomID := cmd.Args[0]
-	eventType := mautrix.NewEventType(cmd.Args[1])
+	roomID := id.RoomID(cmd.Args[0])
+	eventType := event.NewEventType(cmd.Args[1])
 	stateKey := cmd.Args[2]
 	if stateKey == "-" {
 		stateKey = ""

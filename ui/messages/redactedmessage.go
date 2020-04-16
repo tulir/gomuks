@@ -17,7 +17,7 @@
 package messages
 
 import (
-	"maunium.net/go/gomuks/matrix/event"
+	"maunium.net/go/gomuks/matrix/muksevt"
 	"maunium.net/go/mauview"
 	"maunium.net/go/tcell"
 
@@ -26,7 +26,7 @@ import (
 
 type RedactedMessage struct{}
 
-func NewRedactedMessage(evt *event.Event, displayname string) *UIMessage {
+func NewRedactedMessage(evt *muksevt.Event, displayname string) *UIMessage {
 	return newUIMessage(evt, displayname, &RedactedMessage{})
 }
 

@@ -14,14 +14,14 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-package event
+package muksevt
 
 import (
-	"maunium.net/go/mautrix"
+	"maunium.net/go/mautrix/event"
 )
 
 type Event struct {
-	*mautrix.Event
+	*event.Event
 	Gomuks GomuksContent `json:"-"`
 }
 
@@ -33,7 +33,7 @@ func (evt *Event) SomewhatDangerousCopy() *Event {
 	}
 }
 
-func Wrap(event *mautrix.Event) *Event {
+func Wrap(event *event.Event) *Event {
 	return &Event{Event: event}
 }
 

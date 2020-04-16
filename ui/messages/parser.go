@@ -20,8 +20,9 @@ import (
 	"fmt"
 	"strings"
 
-	"maunium.net/go/gomuks/matrix/event"
-	"maunium.net/go/mautrix"
+	"maunium.net/go/gomuks/matrix/muksevt"
+	"maunium.net/go/mautrix/event"
+	"maunium.net/go/mautrix/id"
 	"maunium.net/go/tcell"
 
 	"maunium.net/go/gomuks/interface"
@@ -31,7 +32,7 @@ import (
 	"maunium.net/go/gomuks/ui/widget"
 )
 
-func getCachedEvent(mainView ifc.MainView, roomID, eventID string) *UIMessage {
+func getCachedEvent(mainView ifc.MainView, roomID id.RoomID, eventID id.EventID) *UIMessage {
 	if roomView := mainView.GetRoom(roomID); roomView != nil {
 		if replyToIfcMsg := roomView.GetEvent(eventID); replyToIfcMsg != nil {
 			if replyToMsg, ok := replyToIfcMsg.(*UIMessage); ok && replyToMsg != nil {
@@ -42,7 +43,7 @@ func getCachedEvent(mainView ifc.MainView, roomID, eventID string) *UIMessage {
 	return nil
 }
 
-func ParseEvent(matrix ifc.MatrixContainer, mainView ifc.MainView, room *rooms.Room, evt *event.Event) *UIMessage {
+func ParseEvent(matrix ifc.MatrixContainer, mainView ifc.MainView, room *rooms.Room, evt *muksevt.Event) *UIMessage {
 	msg := directParseEvent(matrix, room, evt)
 	if msg == nil {
 		return nil
@@ -64,36 +65,36 @@ func ParseEvent(matrix ifc.MatrixContainer, mainView ifc.MainView, room *rooms.R
 	return msg
 }
 
-func directParseEvent(matrix ifc.MatrixContainer, room *rooms.Room, evt *event.Event) *UIMessage {
-	displayname := evt.Sender
+func directParseEvent(matrix ifc.MatrixContainer, room *rooms.Room, evt *muksevt.Event) *UIMessage {
+	displayname := string(evt.Sender)
 	member := room.GetMember(evt.Sender)
 	if member != nil {
 		displayname = member.Displayname
 	}
-	if evt.Unsigned.RedactedBecause != nil || evt.Type == mautrix.EventRedaction {
+	if evt.Unsigned.RedactedBecause != nil || evt.Type == event.EventRedaction {
 		return NewRedactedMessage(evt, displayname)
 	}
 	switch evt.Type {
-	case mautrix.EventSticker:
-		evt.Content.MsgType = mautrix.MsgImage
+	case event.EventSticker:
+		evt.Content.MsgType = event.MsgImage
 		fallthrough
-	case mautrix.EventMessage:
+	case event.EventMessage:
 		return ParseMessage(matrix, room, evt, displayname)
-	case mautrix.EventEncrypted:
+	case event.EventEncrypted:
 		return NewExpandedTextMessage(evt, displayname, tstring.NewStyleTString("Encrypted messages are not yet supported", tcell.StyleDefault.Italic(true)))
-	case mautrix.StateTopic, mautrix.StateRoomName, mautrix.StateAliases, mautrix.StateCanonicalAlias:
+	case event.StateTopic, event.StateRoomName, event.StateAliases, event.StateCanonicalAlias:
 		return ParseStateEvent(evt, displayname)
-	case mautrix.StateMember:
+	case event.StateMember:
 		return ParseMembershipEvent(room, evt)
 	}
 
 	return nil
 }
 
-func ParseStateEvent(evt *event.Event, displayname string) *UIMessage {
+func ParseStateEvent(evt *muksevt.Event, displayname string) *UIMessage {
 	text := tstring.NewColorTString(displayname, widget.GetHashColor(evt.Sender))
 	switch evt.Type {
-	case mautrix.StateTopic:
+	case event.StateTopic:
 		if len(evt.Content.Topic) == 0 {
 			text = text.AppendColor(" removed the topic.", tcell.ColorGreen)
 		} else {
@@ -101,7 +102,7 @@ func ParseStateEvent(evt *event.Event, displayname string) *UIMessage {
 				AppendStyle(evt.Content.Topic, tcell.StyleDefault.Underline(true)).
 				AppendColor(".", tcell.ColorGreen)
 		}
-	case mautrix.StateRoomName:
+	case event.StateRoomName:
 		if len(evt.Content.Name) == 0 {
 			text = text.AppendColor(" removed the room name.", tcell.ColorGreen)
 		} else {
@@ -109,21 +110,21 @@ func ParseStateEvent(evt *event.Event, displayname string) *UIMessage {
 				AppendStyle(evt.Content.Name, tcell.StyleDefault.Underline(true)).
 				AppendColor(".", tcell.ColorGreen)
 		}
-	case mautrix.StateCanonicalAlias:
+	case event.StateCanonicalAlias:
 		if len(evt.Content.Alias) == 0 {
 			text = text.AppendColor(" removed the main address of the room.", tcell.ColorGreen)
 		} else {
 			text = text.AppendColor(" changed the main address of the room to ", tcell.ColorGreen).
-				AppendStyle(evt.Content.Alias, tcell.StyleDefault.Underline(true)).
+				AppendStyle(string(evt.Content.Alias), tcell.StyleDefault.Underline(true)).
 				AppendColor(".", tcell.ColorGreen)
 		}
-	case mautrix.StateAliases:
-		text = ParseAliasEvent(evt, displayname)
+	//case event.StateAliases:
+	//	text = ParseAliasEvent(evt, displayname)
 	}
 	return NewExpandedTextMessage(evt, displayname, text)
 }
 
-func ParseMessage(matrix ifc.MatrixContainer, room *rooms.Room, evt *event.Event, displayname string) *UIMessage {
+func ParseMessage(matrix ifc.MatrixContainer, room *rooms.Room, evt *muksevt.Event, displayname string) *UIMessage {
 	if len(evt.Content.GetReplyTo()) > 0 {
 		evt.Content.RemoveReplyFallback()
 	}
@@ -131,13 +132,13 @@ func ParseMessage(matrix ifc.MatrixContainer, room *rooms.Room, evt *event.Event
 		evt.Content = *evt.Gomuks.Edits[len(evt.Gomuks.Edits)-1].Content.NewContent
 	}
 	switch evt.Content.MsgType {
-	case mautrix.MsgText, mautrix.MsgNotice, mautrix.MsgEmote:
-		if evt.Content.Format == mautrix.FormatHTML {
+	case event.MsgText, event.MsgNotice, event.MsgEmote:
+		if evt.Content.Format == event.FormatHTML {
 			return NewHTMLMessage(evt, displayname, html.Parse(room, evt, displayname))
 		}
 		evt.Content.Body = strings.Replace(evt.Content.Body, "\t", "    ", -1)
 		return NewTextMessage(evt, displayname, evt.Content.Body)
-	case mautrix.MsgImage, mautrix.MsgVideo, mautrix.MsgAudio, mautrix.MsgFile:
+	case event.MsgImage, event.MsgVideo, event.MsgAudio, event.MsgFile:
 		msg := NewFileMessage(matrix, evt, displayname)
 		if !matrix.Preferences().DisableDownloads {
 			renderer := msg.Renderer.(*FileMessage)
@@ -148,54 +149,54 @@ func ParseMessage(matrix ifc.MatrixContainer, room *rooms.Room, evt *event.Event
 	return nil
 }
 
-func getMembershipChangeMessage(evt *event.Event, membership, prevMembership mautrix.Membership, senderDisplayname, displayname, prevDisplayname string) (sender string, text tstring.TString) {
+func getMembershipChangeMessage(evt *muksevt.Event, membership, prevMembership event.Membership, senderDisplayname, displayname, prevDisplayname string) (sender string, text tstring.TString) {
 	switch membership {
 	case "invite":
 		sender = "---"
 		text = tstring.NewColorTString(fmt.Sprintf("%s invited %s.", senderDisplayname, displayname), tcell.ColorGreen)
 		text.Colorize(0, len(senderDisplayname), widget.GetHashColor(evt.Sender))
-		text.Colorize(len(senderDisplayname)+len(" invited "), len(displayname), widget.GetHashColor(*evt.StateKey))
+		text.Colorize(len(senderDisplayname)+len(" invited "), len(displayname), widget.GetHashColor(evt.StateKey))
 	case "join":
 		sender = "-->"
-		if prevMembership == mautrix.MembershipInvite {
+		if prevMembership == event.MembershipInvite {
 			text = tstring.NewColorTString(fmt.Sprintf("%s accepted the invite.", displayname), tcell.ColorGreen)
 		} else {
 			text = tstring.NewColorTString(fmt.Sprintf("%s joined the room.", displayname), tcell.ColorGreen)
 		}
-		text.Colorize(0, len(displayname), widget.GetHashColor(*evt.StateKey))
+		text.Colorize(0, len(displayname), widget.GetHashColor(evt.StateKey))
 	case "leave":
 		sender = "<--"
-		if evt.Sender != *evt.StateKey {
-			if prevMembership == mautrix.MembershipBan {
+		if evt.Sender != id.UserID(*evt.StateKey) {
+			if prevMembership == event.MembershipBan {
 				text = tstring.NewColorTString(fmt.Sprintf("%s unbanned %s", senderDisplayname, displayname), tcell.ColorGreen)
-				text.Colorize(len(senderDisplayname)+len(" unbanned "), len(displayname), widget.GetHashColor(*evt.StateKey))
+				text.Colorize(len(senderDisplayname)+len(" unbanned "), len(displayname), widget.GetHashColor(evt.StateKey))
 			} else {
 				text = tstring.NewColorTString(fmt.Sprintf("%s kicked %s: %s", senderDisplayname, displayname, evt.Content.Reason), tcell.ColorRed)
-				text.Colorize(len(senderDisplayname)+len(" kicked "), len(displayname), widget.GetHashColor(*evt.StateKey))
+				text.Colorize(len(senderDisplayname)+len(" kicked "), len(displayname), widget.GetHashColor(evt.StateKey))
 			}
 			text.Colorize(0, len(senderDisplayname), widget.GetHashColor(evt.Sender))
 		} else {
 			if displayname == *evt.StateKey {
 				displayname = prevDisplayname
 			}
-			if prevMembership == mautrix.MembershipInvite {
+			if prevMembership == event.MembershipInvite {
 				text = tstring.NewColorTString(fmt.Sprintf("%s rejected the invite.", displayname), tcell.ColorRed)
 			} else {
 				text = tstring.NewColorTString(fmt.Sprintf("%s left the room.", displayname), tcell.ColorRed)
 			}
-			text.Colorize(0, len(displayname), widget.GetHashColor(*evt.StateKey))
+			text.Colorize(0, len(displayname), widget.GetHashColor(evt.StateKey))
 		}
 	case "ban":
 		text = tstring.NewColorTString(fmt.Sprintf("%s banned %s: %s", senderDisplayname, displayname, evt.Content.Reason), tcell.ColorRed)
-		text.Colorize(len(senderDisplayname)+len(" banned "), len(displayname), widget.GetHashColor(*evt.StateKey))
+		text.Colorize(len(senderDisplayname)+len(" banned "), len(displayname), widget.GetHashColor(evt.StateKey))
 		text.Colorize(0, len(senderDisplayname), widget.GetHashColor(evt.Sender))
 	}
 	return
 }
 
-func getMembershipEventContent(room *rooms.Room, evt *event.Event) (sender string, text tstring.TString) {
+func getMembershipEventContent(room *rooms.Room, evt *muksevt.Event) (sender string, text tstring.TString) {
 	member := room.GetMember(evt.Sender)
-	senderDisplayname := evt.Sender
+	senderDisplayname := string(evt.Sender)
 	if member != nil {
 		senderDisplayname = member.Displayname
 	}
@@ -206,7 +207,7 @@ func getMembershipEventContent(room *rooms.Room, evt *event.Event) (sender strin
 		displayname = *evt.StateKey
 	}
 
-	prevMembership := mautrix.MembershipLeave
+	prevMembership := event.MembershipLeave
 	prevDisplayname := *evt.StateKey
 	if evt.Unsigned.PrevContent != nil {
 		prevMembership = evt.Unsigned.PrevContent.Membership
@@ -220,7 +221,7 @@ func getMembershipEventContent(room *rooms.Room, evt *event.Event) (sender strin
 		sender, text = getMembershipChangeMessage(evt, membership, prevMembership, senderDisplayname, displayname, prevDisplayname)
 	} else if displayname != prevDisplayname {
 		sender = "---"
-		color := widget.GetHashColor(*evt.StateKey)
+		color := widget.GetHashColor(evt.StateKey)
 		text = tstring.NewBlankTString().
 			AppendColor(prevDisplayname, color).
 			AppendColor(" changed their display name to ", tcell.ColorGreen).
@@ -230,7 +231,7 @@ func getMembershipEventContent(room *rooms.Room, evt *event.Event) (sender strin
 	return
 }
 
-func ParseMembershipEvent(room *rooms.Room, evt *event.Event) *UIMessage {
+func ParseMembershipEvent(room *rooms.Room, evt *muksevt.Event) *UIMessage {
 	displayname, text := getMembershipEventContent(room, evt)
 	if len(text) == 0 {
 		return nil
@@ -239,65 +240,65 @@ func ParseMembershipEvent(room *rooms.Room, evt *event.Event) *UIMessage {
 	return NewExpandedTextMessage(evt, displayname, text)
 }
 
-func ParseAliasEvent(evt *event.Event, displayname string) tstring.TString {
-	var prevAliases []string
-	if evt.Unsigned.PrevContent != nil {
-		prevAliases = evt.Unsigned.PrevContent.Aliases
-	}
-	aliases := evt.Content.Aliases
-	var added, removed []tstring.TString
-Outer1:
-	for _, oldAlias := range prevAliases {
-		for _, newAlias := range aliases {
-			if oldAlias == newAlias {
-				continue Outer1
-			}
-		}
-		removed = append(removed, tstring.NewStyleTString(oldAlias, tcell.StyleDefault.Foreground(widget.GetHashColor(oldAlias)).Underline(true)))
-	}
-Outer2:
-	for _, newAlias := range aliases {
-		for _, oldAlias := range prevAliases {
-			if oldAlias == newAlias {
-				continue Outer2
-			}
-		}
-		added = append(added, tstring.NewStyleTString(newAlias, tcell.StyleDefault.Foreground(widget.GetHashColor(newAlias)).Underline(true)))
-	}
-	var addedStr, removedStr tstring.TString
-	if len(added) == 1 {
-		addedStr = added[0]
-	} else if len(added) > 1 {
-		addedStr = tstring.
-			Join(added[:len(added)-1], ", ").
-			Append(" and ").
-			AppendTString(added[len(added)-1])
-	}
-	if len(removed) == 1 {
-		removedStr = removed[0]
-	} else if len(removed) > 1 {
-		removedStr = tstring.
-			Join(removed[:len(removed)-1], ", ").
-			Append(" and ").
-			AppendTString(removed[len(removed)-1])
-	}
-	text := tstring.NewBlankTString()
-	if len(addedStr) > 0 && len(removedStr) > 0 {
-		text = text.AppendColor(fmt.Sprintf("%s added ", displayname), tcell.ColorGreen).
-			AppendTString(addedStr).
-			AppendColor(" and removed ", tcell.ColorGreen).
-			AppendTString(removedStr).
-			AppendColor(" as addresses for this room.", tcell.ColorGreen)
-	} else if len(addedStr) > 0 {
-		text = text.AppendColor(fmt.Sprintf("%s added ", displayname), tcell.ColorGreen).
-			AppendTString(addedStr).
-			AppendColor(" as addresses for this room.", tcell.ColorGreen)
-	} else if len(removedStr) > 0 {
-		text = text.AppendColor(fmt.Sprintf("%s removed ", displayname), tcell.ColorGreen).
-			AppendTString(removedStr).
-			AppendColor(" as addresses for this room.", tcell.ColorGreen)
-	} else {
-		return nil
-	}
-	return text
-}
+//func ParseAliasEvent(evt *muksevt.Event, displayname string) tstring.TString {
+//	var prevAliases []string
+//	if evt.Unsigned.PrevContent != nil {
+//		prevAliases = evt.Unsigned.PrevContent.Aliases
+//	}
+//	aliases := evt.Content.Aliases
+//	var added, removed []tstring.TString
+//Outer1:
+//	for _, oldAlias := range prevAliases {
+//		for _, newAlias := range aliases {
+//			if oldAlias == newAlias {
+//				continue Outer1
+//			}
+//		}
+//		removed = append(removed, tstring.NewStyleTString(oldAlias, tcell.StyleDefault.Foreground(widget.GetHashColor(oldAlias)).Underline(true)))
+//	}
+//Outer2:
+//	for _, newAlias := range aliases {
+//		for _, oldAlias := range prevAliases {
+//			if oldAlias == newAlias {
+//				continue Outer2
+//			}
+//		}
+//		added = append(added, tstring.NewStyleTString(newAlias, tcell.StyleDefault.Foreground(widget.GetHashColor(newAlias)).Underline(true)))
+//	}
+//	var addedStr, removedStr tstring.TString
+//	if len(added) == 1 {
+//		addedStr = added[0]
+//	} else if len(added) > 1 {
+//		addedStr = tstring.
+//			Join(added[:len(added)-1], ", ").
+//			Append(" and ").
+//			AppendTString(added[len(added)-1])
+//	}
+//	if len(removed) == 1 {
+//		removedStr = removed[0]
+//	} else if len(removed) > 1 {
+//		removedStr = tstring.
+//			Join(removed[:len(removed)-1], ", ").
+//			Append(" and ").
+//			AppendTString(removed[len(removed)-1])
+//	}
+//	text := tstring.NewBlankTString()
+//	if len(addedStr) > 0 && len(removedStr) > 0 {
+//		text = text.AppendColor(fmt.Sprintf("%s added ", displayname), tcell.ColorGreen).
+//			AppendTString(addedStr).
+//			AppendColor(" and removed ", tcell.ColorGreen).
+//			AppendTString(removedStr).
+//			AppendColor(" as addresses for this room.", tcell.ColorGreen)
+//	} else if len(addedStr) > 0 {
+//		text = text.AppendColor(fmt.Sprintf("%s added ", displayname), tcell.ColorGreen).
+//			AppendTString(addedStr).
+//			AppendColor(" as addresses for this room.", tcell.ColorGreen)
+//	} else if len(removedStr) > 0 {
+//		text = text.AppendColor(fmt.Sprintf("%s removed ", displayname), tcell.ColorGreen).
+//			AppendTString(removedStr).
+//			AppendColor(" as addresses for this room.", tcell.ColorGreen)
+//	} else {
+//		return nil
+//	}
+//	return text
+//}

@@ -17,16 +17,18 @@
 package ifc
 
 import (
-	"maunium.net/go/gomuks/config"
-	"maunium.net/go/gomuks/matrix/event"
 	"maunium.net/go/mautrix"
+	"maunium.net/go/mautrix/event"
+	"maunium.net/go/mautrix/id"
 
+	"maunium.net/go/gomuks/config"
+	"maunium.net/go/gomuks/matrix/muksevt"
 	"maunium.net/go/gomuks/matrix/rooms"
 )
 
 type Relation struct {
-	Type  mautrix.RelationType
-	Event *event.Event
+	Type  event.RelationType
+	Event *muksevt.Event
 }
 
 type MatrixContainer interface {
@@ -42,23 +44,23 @@ type MatrixContainer interface {
 	Logout()
 
 	SendPreferencesToMatrix()
-	PrepareMarkdownMessage(roomID string, msgtype mautrix.MessageType, text, html string, relation *Relation) *event.Event
-	SendEvent(evt *event.Event) (string, error)
-	Redact(roomID, eventID, reason string) error
-	SendTyping(roomID string, typing bool)
-	MarkRead(roomID, eventID string)
-	JoinRoom(roomID, server string) (*rooms.Room, error)
-	LeaveRoom(roomID string) error
+	PrepareMarkdownMessage(roomID id.RoomID, msgtype event.MessageType, text, html string, relation *Relation) *muksevt.Event
+	SendEvent(evt *muksevt.Event) (id.EventID, error)
+	Redact(roomID id.RoomID, eventID id.EventID, reason string) error
+	SendTyping(roomID id.RoomID, typing bool)
+	MarkRead(roomID id.RoomID, eventID id.EventID)
+	JoinRoom(roomID id.RoomID, server string) (*rooms.Room, error)
+	LeaveRoom(roomID id.RoomID) error
 	CreateRoom(req *mautrix.ReqCreateRoom) (*rooms.Room, error)
 
 	FetchMembers(room *rooms.Room) error
-	GetHistory(room *rooms.Room, limit int) ([]*event.Event, error)
-	GetEvent(room *rooms.Room, eventID string) (*event.Event, error)
-	GetRoom(roomID string) *rooms.Room
-	GetOrCreateRoom(roomID string) *rooms.Room
+	GetHistory(room *rooms.Room, limit int) ([]*muksevt.Event, error)
+	GetEvent(room *rooms.Room, eventID id.EventID) (*muksevt.Event, error)
+	GetRoom(roomID id.RoomID) *rooms.Room
+	GetOrCreateRoom(roomID id.RoomID) *rooms.Room
 
-	Download(uri mautrix.ContentURI) ([]byte, error)
-	DownloadToDisk(uri mautrix.ContentURI, target string) (string, error)
-	GetDownloadURL(uri mautrix.ContentURI) string
-	GetCachePath(uri mautrix.ContentURI) string
+	Download(uri id.ContentURI) ([]byte, error)
+	DownloadToDisk(uri id.ContentURI, target string) (string, error)
+	GetDownloadURL(uri id.ContentURI) string
+	GetCachePath(uri id.ContentURI) string
 }

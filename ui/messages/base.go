@@ -22,8 +22,9 @@ import (
 	"time"
 
 	"maunium.net/go/gomuks/config"
-	"maunium.net/go/gomuks/matrix/event"
-	"maunium.net/go/mautrix"
+	"maunium.net/go/gomuks/matrix/muksevt"
+	"maunium.net/go/mautrix/event"
+	"maunium.net/go/mautrix/id"
 	"maunium.net/go/mauview"
 	"maunium.net/go/tcell"
 
@@ -64,26 +65,26 @@ func (rs ReactionSlice) Swap(i, j int) {
 }
 
 type UIMessage struct {
-	EventID            string
+	EventID            id.EventID
 	TxnID              string
-	Relation           mautrix.RelatesTo
-	Type               mautrix.MessageType
-	SenderID           string
+	Relation           event.RelatesTo
+	Type               event.MessageType
+	SenderID           id.UserID
 	SenderName         string
 	DefaultSenderColor tcell.Color
 	Timestamp          time.Time
-	State              event.OutgoingState
+	State              muksevt.OutgoingState
 	IsHighlight        bool
 	IsService          bool
 	IsSelected         bool
 	Edited             bool
-	Event              *event.Event
+	Event              *muksevt.Event
 	ReplyTo            *UIMessage
 	Reactions          ReactionSlice
 	Renderer           MessageRenderer
 }
 
-func (msg *UIMessage) GetEvent() *event.Event {
+func (msg *UIMessage) GetEvent() *muksevt.Event {
 	if msg == nil {
 		return nil
 	}
@@ -93,10 +94,10 @@ func (msg *UIMessage) GetEvent() *event.Event {
 const DateFormat = "January _2, 2006"
 const TimeFormat = "15:04:05"
 
-func newUIMessage(evt *event.Event, displayname string, renderer MessageRenderer) *UIMessage {
+func newUIMessage(evt *muksevt.Event, displayname string, renderer MessageRenderer) *UIMessage {
 	msgtype := evt.Content.MsgType
 	if len(msgtype) == 0 {
-		msgtype = mautrix.MessageType(evt.Type.String())
+		msgtype = event.MessageType(evt.Type.String())
 	}
 
 	reactions := make(ReactionSlice, 0, len(evt.Unsigned.Relations.Annotations.Map))
@@ -161,9 +162,9 @@ func unixToTime(unix int64) time.Time {
 // In any other case, the sender is the display name of the user who sent the message.
 func (msg *UIMessage) Sender() string {
 	switch msg.State {
-	case event.StateLocalEcho:
+	case muksevt.StateLocalEcho:
 		return "Sending..."
-	case event.StateSendFail:
+	case muksevt.StateSendFail:
 		return "Error"
 	}
 	switch msg.Type {
@@ -185,11 +186,11 @@ func (msg *UIMessage) NotificationContent() string {
 
 func (msg *UIMessage) getStateSpecificColor() tcell.Color {
 	switch msg.State {
-	case event.StateLocalEcho:
+	case muksevt.StateLocalEcho:
 		return tcell.ColorGray
-	case event.StateSendFail:
+	case muksevt.StateSendFail:
 		return tcell.ColorRed
-	case event.StateDefault:
+	case muksevt.StateDefault:
 		fallthrough
 	default:
 		return tcell.ColorDefault
@@ -286,14 +287,14 @@ func (msg *UIMessage) SameDate(message *UIMessage) bool {
 	return day1 == day2 && month1 == month2 && year1 == year2
 }
 
-func (msg *UIMessage) ID() string {
+func (msg *UIMessage) ID() id.EventID {
 	if len(msg.EventID) == 0 {
-		return msg.TxnID
+		return id.EventID(msg.TxnID)
 	}
 	return msg.EventID
 }
 
-func (msg *UIMessage) SetID(id string) {
+func (msg *UIMessage) SetID(id id.EventID) {
 	msg.EventID = id
 }
 

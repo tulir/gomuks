@@ -23,7 +23,8 @@ import (
 
 	"github.com/mattn/go-runewidth"
 
-	"maunium.net/go/mautrix"
+	"maunium.net/go/mautrix/event"
+	"maunium.net/go/mautrix/id"
 	"maunium.net/go/mauview"
 	"maunium.net/go/tcell"
 
@@ -43,7 +44,7 @@ type memberListItem struct {
 	rooms.Member
 	PowerLevel int
 	Sigil      rune
-	UserID     string
+	UserID     id.UserID
 	Color      tcell.Color
 }
 
@@ -64,7 +65,7 @@ func (rml roomMemberList) Swap(i, j int) {
 	rml[i], rml[j] = rml[j], rml[i]
 }
 
-func (ml *MemberList) Update(data map[string]*rooms.Member, levels *mautrix.PowerLevels) *MemberList {
+func (ml *MemberList) Update(data map[id.UserID]*rooms.Member, levels *event.PowerLevels) *MemberList {
 	ml.list = make(roomMemberList, len(data))
 	i := 0
 	highestLevel := math.MinInt32

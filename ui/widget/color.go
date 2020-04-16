@@ -21,6 +21,8 @@ import (
 	"hash/fnv"
 
 	"maunium.net/go/tcell"
+
+	"maunium.net/go/mautrix/id"
 )
 
 var colorNames = []string{
@@ -201,8 +203,17 @@ func GetHashColorName(s string) string {
 // GetHashColor gets the tcell Color value for the given string.
 //
 // GetHashColor calls GetHashColorName() and gets the Color value from the tcell.ColorNames map.
-func GetHashColor(s string) tcell.Color {
-	return tcell.ColorNames[GetHashColorName(s)]
+func GetHashColor(val interface{}) tcell.Color {
+	switch str := val.(type) {
+	case string:
+		return tcell.ColorNames[GetHashColorName(str)]
+	case *string:
+		return tcell.ColorNames[GetHashColorName(*str)]
+	case id.UserID:
+		return tcell.ColorNames[GetHashColorName(string(str))]
+	default:
+		return tcell.ColorNames["red"]
+	}
 }
 
 // AddColor adds tview color tags to the given string.

@@ -17,7 +17,7 @@
 package messages
 
 import (
-	"maunium.net/go/gomuks/matrix/event"
+	"maunium.net/go/gomuks/matrix/muksevt"
 	"maunium.net/go/mauview"
 	"maunium.net/go/tcell"
 
@@ -32,7 +32,7 @@ type HTMLMessage struct {
 	focused   bool
 }
 
-func NewHTMLMessage(evt *event.Event, displayname string, root html.Entity) *UIMessage {
+func NewHTMLMessage(evt *muksevt.Event, displayname string, root html.Entity) *UIMessage {
 	return newUIMessage(evt, displayname, &HTMLMessage{
 		Root: root,
 	})

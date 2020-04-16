@@ -19,6 +19,7 @@ package ui
 import (
 	"math"
 
+	"maunium.net/go/mautrix/id"
 	"maunium.net/go/tcell"
 
 	"maunium.net/go/mautrix"
@@ -75,7 +76,7 @@ func (ui *GomuksUI) NewLoginView() mauview.Component {
 
 	hs := ui.gmx.Config().HS
 	view.homeserver.SetPlaceholder("https://example.com").SetText(hs)
-	view.username.SetPlaceholder("@user:example.com").SetText(ui.gmx.Config().UserID)
+	view.username.SetPlaceholder("@user:example.com").SetText(string(ui.gmx.Config().UserID))
 	view.password.SetPlaceholder("correct horse battery staple").SetMaskCharacter('*')
 
 	view.quitButton.SetOnClick(func() { ui.gmx.Stop(true) }).SetBackgroundColor(tcell.ColorDarkCyan)
@@ -103,7 +104,7 @@ func (ui *GomuksUI) NewLoginView() mauview.Component {
 }
 
 func (view *LoginView) resolveWellKnown() {
-	_, homeserver, err := mautrix.ParseUserID(view.username.GetText())
+	_, homeserver, err := id.UserID(view.username.GetText()).Parse()
 	if err != nil {
 		return
 	}

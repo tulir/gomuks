@@ -27,6 +27,7 @@ import (
 	sync "github.com/sasha-s/go-deadlock"
 
 	"maunium.net/go/gomuks/debug"
+	"maunium.net/go/mautrix/id"
 )
 
 // RoomCache contains room state info in a hashmap and linked list.
@@ -37,15 +38,15 @@ type RoomCache struct {
 	directory string
 	maxSize   int
 	maxAge    int64
-	getOwner  func() string
+	getOwner  func() id.UserID
 
-	Map  map[string]*Room
+	Map  map[id.RoomID]*Room
 	head *Room
 	tail *Room
 	size int
 }
 
-func NewRoomCache(listPath, directory string, maxSize int, maxAge int64, getOwner func() string) *RoomCache {
+func NewRoomCache(listPath, directory string, maxSize int, maxAge int64, getOwner func() id.UserID) *RoomCache {
 	return &RoomCache{
 		listPath:  listPath,
 		directory: directory,
@@ -53,7 +54,7 @@ func NewRoomCache(listPath, directory string, maxSize int, maxAge int64, getOwne
 		maxAge:    maxAge,
 		getOwner:  getOwner,
 
-		Map: make(map[string]*Room),
+		Map: make(map[id.RoomID]*Room),
 	}
 }
 
@@ -88,7 +89,7 @@ func (cache *RoomCache) LoadList() error {
 	}
 
 	// Read list
-	cache.Map = make(map[string]*Room, size)
+	cache.Map = make(map[id.RoomID]*Room, size)
 	for i := 0; i < size; i++ {
 		room := &Room{}
 		err = dec.Decode(room)
@@ -147,7 +148,7 @@ func (cache *RoomCache) SaveList() error {
 	return nil
 }
 
-func (cache *RoomCache) Touch(roomID string) {
+func (cache *RoomCache) Touch(roomID id.RoomID) {
 	cache.Lock()
 	node, ok := cache.Map[roomID]
 	if !ok || node == nil {
@@ -174,14 +175,14 @@ func (cache *RoomCache) touch(node *Room) {
 	node.touch = time.Now().Unix()
 }
 
-func (cache *RoomCache) Get(roomID string) *Room {
+func (cache *RoomCache) Get(roomID id.RoomID) *Room {
 	cache.Lock()
 	node := cache.get(roomID)
 	cache.Unlock()
 	return node
 }
 
-func (cache *RoomCache) GetOrCreate(roomID string) *Room {
+func (cache *RoomCache) GetOrCreate(roomID id.RoomID) *Room {
 	cache.Lock()
 	node := cache.get(roomID)
 	if node == nil {
@@ -192,7 +193,7 @@ func (cache *RoomCache) GetOrCreate(roomID string) *Room {
 	return node
 }
 
-func (cache *RoomCache) get(roomID string) *Room {
+func (cache *RoomCache) get(roomID id.RoomID) *Room {
 	node, ok := cache.Map[roomID]
 	if ok && node != nil {
 		return node
@@ -215,11 +216,11 @@ func (cache *RoomCache) Put(room *Room) {
 	node.Save()
 }
 
-func (cache *RoomCache) roomPath(roomID string) string {
-	return filepath.Join(cache.directory, roomID+".gob.gz")
+func (cache *RoomCache) roomPath(roomID id.RoomID) string {
+	return filepath.Join(cache.directory, string(roomID)+".gob.gz")
 }
 
-func (cache *RoomCache) Load(roomID string) *Room {
+func (cache *RoomCache) Load(roomID id.RoomID) *Room {
 	cache.Lock()
 	defer cache.Unlock()
 	node, ok := cache.Map[roomID]
@@ -312,7 +313,7 @@ func (cache *RoomCache) Unload(node *Room) {
 	}
 }
 
-func (cache *RoomCache) newRoom(roomID string) *Room {
+func (cache *RoomCache) newRoom(roomID id.RoomID) *Room {
 	node := NewRoom(roomID, cache)
 	cache.Map[node.ID] = node
 	return node

@@ -19,9 +19,10 @@ package ifc
 import (
 	"time"
 
-	"maunium.net/go/gomuks/matrix/event"
-	"maunium.net/go/gomuks/matrix/pushrules"
+	"maunium.net/go/gomuks/matrix/muksevt"
 	"maunium.net/go/gomuks/matrix/rooms"
+	"maunium.net/go/mautrix/id"
+	"maunium.net/go/mautrix/pushrules"
 )
 
 type UIProvider func(gmx Gomuks) GomuksUI
@@ -40,7 +41,7 @@ type GomuksUI interface {
 }
 
 type MainView interface {
-	GetRoom(roomID string) RoomView
+	GetRoom(roomID id.RoomID) RoomView
 	AddRoom(room *rooms.Room)
 	RemoveRoom(room *rooms.Room)
 	SetRooms(rooms *rooms.RoomCache)
@@ -48,7 +49,7 @@ type MainView interface {
 
 	UpdateTags(room *rooms.Room)
 
-	SetTyping(roomID string, users []string)
+	SetTyping(roomID id.RoomID, users []id.UserID)
 
 	NotifyMessage(room *rooms.Room, message Message, should pushrules.PushActionArrayShould)
 }
@@ -57,23 +58,23 @@ type RoomView interface {
 	MxRoom() *rooms.Room
 
 	SetCompletions(completions []string)
-	SetTyping(users []string)
+	SetTyping(users []id.UserID)
 	UpdateUserList()
 
-	AddEvent(evt *event.Event) Message
-	AddRedaction(evt *event.Event)
-	AddEdit(evt *event.Event)
-	AddReaction(evt *event.Event, key string)
-	GetEvent(eventID string) Message
+	AddEvent(evt *muksevt.Event) Message
+	AddRedaction(evt *muksevt.Event)
+	AddEdit(evt *muksevt.Event)
+	AddReaction(evt *muksevt.Event, key string)
+	GetEvent(eventID id.EventID) Message
 	AddServiceMessage(message string)
 }
 
 type Message interface {
-	ID() string
+	ID() id.EventID
 	Time() time.Time
 	NotificationSenderName() string
 	NotificationContent() string
 
 	SetIsHighlight(highlight bool)
-	SetID(id string)
+	SetID(id id.EventID)
 }

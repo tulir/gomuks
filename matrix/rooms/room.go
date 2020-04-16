@@ -27,6 +27,8 @@ import (
 	sync "github.com/sasha-s/go-deadlock"
 
 	"maunium.net/go/mautrix"
+	"maunium.net/go/mautrix/event"
+	"maunium.net/go/mautrix/id"
 
 	"maunium.net/go/gomuks/debug"
 )
@@ -54,25 +56,27 @@ type RoomTag struct {
 }
 
 type UnreadMessage struct {
-	EventID   string
+	EventID   id.EventID
 	Counted   bool
 	Highlight bool
 }
 
 type Member struct {
-	mautrix.Member
+	event.Member
 
 	// The user who sent the membership event
-	Sender string `json:"-"`
+	Sender id.UserID `json:"-"`
 }
 
 // Room represents a single Matrix room.
 type Room struct {
 	// The room ID.
-	ID string
+	ID id.RoomID
 
 	// Whether or not the user has left the room.
 	HasLeft bool
+	// Whether or not the room is encrypted.
+	Encrypted bool
 
 	// The first batch of events that has been fetched for this room.
 	// Used for fetching additional history.
@@ -80,14 +84,14 @@ type Room struct {
 	// The last_batch field from the most recent sync. Used for fetching member lists.
 	LastPrevBatch string
 	// The MXID of the user whose session this room was created for.
-	SessionUserID string
+	SessionUserID id.UserID
 	SessionMember *Member
 
 	// The number of unread messages that were notified about.
 	UnreadMessages   []UnreadMessage
 	unreadCountCache *int
 	highlightCache   *bool
-	lastMarkedRead   string
+	lastMarkedRead   id.EventID
 	// Whether or not this room is marked as a direct chat.
 	IsDirect bool
 
@@ -101,10 +105,10 @@ type Room struct {
 	// Whether or not the members for this room have been fetched from the server.
 	MembersFetched bool
 	// Room state cache.
-	state map[mautrix.EventType]map[string]*mautrix.Event
+	state map[event.Type]map[string]*event.Event
 	// MXID -> Member cache calculated from membership events.
-	memberCache   map[string]*Member
-	exMemberCache map[string]*Member
+	memberCache   map[id.UserID]*Member
+	exMemberCache map[id.UserID]*Member
 	// The first two non-SessionUserID members in the room. Calculated at
 	// the same time as memberCache.
 	firstMemberCache  *Member
@@ -117,11 +121,11 @@ type Room struct {
 	// The topic of the room. Directly fetched from the m.room.topic state event.
 	topicCache string
 	// The canonical alias of the room. Directly fetched from the m.room.canonical_alias state event.
-	CanonicalAliasCache string
+	CanonicalAliasCache id.RoomAlias
 	// Whether or not the room has been tombstoned.
 	replacedCache bool
 	// The room ID that replaced this room.
-	replacedByCache *string
+	replacedByCache *id.RoomID
 
 	// Path for state store file.
 	path string
@@ -174,7 +178,7 @@ func (room *Room) load() {
 		return
 	}
 	debug.Print("Loading state for room", room.ID, "from disk")
-	room.state = make(map[mautrix.EventType]map[string]*mautrix.Event)
+	room.state = make(map[event.Type]map[string]*event.Event)
 	file, err := os.OpenFile(room.path, os.O_RDONLY, 0600)
 	if err != nil {
 		if !os.IsNotExist(err) {
@@ -265,7 +269,7 @@ func (room *Room) Save() {
 }
 
 // MarkRead clears the new message statuses on this room.
-func (room *Room) MarkRead(eventID string) bool {
+func (room *Room) MarkRead(eventID id.EventID) bool {
 	room.lock.Lock()
 	defer room.lock.Unlock()
 	if room.lastMarkedRead == eventID {
@@ -319,7 +323,7 @@ func (room *Room) HasNewMessages() bool {
 	return len(room.UnreadMessages) > 0
 }
 
-func (room *Room) AddUnread(eventID string, counted, highlight bool) {
+func (room *Room) AddUnread(eventID id.EventID, counted, highlight bool) {
 	room.lock.Lock()
 	defer room.lock.Unlock()
 	room.UnreadMessages = append(room.UnreadMessages, UnreadMessage{
@@ -341,18 +345,25 @@ func (room *Room) AddUnread(eventID string, counted, highlight bool) {
 	}
 }
 
+var (
+	tagDirect  = RoomTag{"net.maunium.gomuks.fake.direct", "0.5"}
+	tagInvite  = RoomTag{"net.maunium.gomuks.fake.invite", "0.5"}
+	tagDefault = RoomTag{"", "0.5"}
+	tagLeave   = RoomTag{"net.maunium.gomuks.fake.leave", "0.5"}
+)
+
 func (room *Room) Tags() []RoomTag {
 	room.lock.RLock()
 	defer room.lock.RUnlock()
 	if len(room.RawTags) == 0 {
 		if room.IsDirect {
-			return []RoomTag{{"net.maunium.gomuks.fake.direct", "0.5"}}
-		} else if room.SessionMember != nil && room.SessionMember.Membership == mautrix.MembershipInvite {
-			return []RoomTag{{"net.maunium.gomuks.fake.invite", "0.5"}}
-		} else if room.SessionMember != nil && room.SessionMember.Membership != mautrix.MembershipJoin {
-			return []RoomTag{{"net.maunium.gomuks.fake.leave", "0.5"}}
+			return []RoomTag{tagDirect}
+		} else if room.SessionMember != nil && room.SessionMember.Membership == event.MembershipInvite {
+			return []RoomTag{tagInvite}
+		} else if room.SessionMember != nil && room.SessionMember.Membership != event.MembershipJoin {
+			return []RoomTag{tagLeave}
 		}
-		return []RoomTag{{"", "0.5"}}
+		return []RoomTag{tagDefault}
 	}
 	return room.RawTags
 }
@@ -374,46 +385,46 @@ func (room *Room) UpdateSummary(summary mautrix.LazyLoadSummary) {
 
 // UpdateState updates the room's current state with the given Event. This will clobber events based
 // on the type/state_key combination.
-func (room *Room) UpdateState(event *mautrix.Event) {
-	if event.StateKey == nil {
+func (room *Room) UpdateState(evt *event.Event) {
+	if evt.StateKey == nil {
 		panic("Tried to UpdateState() event with no state key.")
 	}
 	room.Load()
 	room.lock.Lock()
 	defer room.lock.Unlock()
 	room.changed = true
-	_, exists := room.state[event.Type]
+	_, exists := room.state[evt.Type]
 	if !exists {
-		room.state[event.Type] = make(map[string]*mautrix.Event)
+		room.state[evt.Type] = make(map[string]*event.Event)
 	}
-	switch event.Type {
-	case mautrix.StateRoomName:
-		room.NameCache = event.Content.Name
+	switch evt.Type {
+	case event.StateRoomName:
+		room.NameCache = evt.Content.Name
 		room.nameCacheSource = ExplicitRoomName
-	case mautrix.StateCanonicalAlias:
+	case event.StateCanonicalAlias:
 		if room.nameCacheSource <= CanonicalAliasRoomName {
-			room.NameCache = event.Content.Alias
+			room.NameCache = string(evt.Content.Alias)
 			room.nameCacheSource = CanonicalAliasRoomName
 		}
-		room.CanonicalAliasCache = event.Content.Alias
-	case mautrix.StateMember:
+		room.CanonicalAliasCache = evt.Content.Alias
+	case event.StateMember:
 		if room.nameCacheSource <= MemberRoomName {
 			room.NameCache = ""
 		}
-		room.updateMemberState(event)
-	case mautrix.StateTopic:
-		room.topicCache = event.Content.Topic
+		room.updateMemberState(evt)
+	case event.StateTopic:
+		room.topicCache = evt.Content.Topic
 	}
 
-	if event.Type != mautrix.StateMember {
-		debug.Printf("Updating state %s#%s for %s", event.Type.String(), event.GetStateKey(), room.ID)
+	if evt.Type != event.StateMember {
+		debug.Printf("Updating state %s#%s for %s", evt.Type.String(), evt.GetStateKey(), room.ID)
 	}
 
-	room.state[event.Type][*event.StateKey] = event
+	room.state[evt.Type][*evt.StateKey] = evt
 }
 
-func (room *Room) updateMemberState(event *mautrix.Event) {
-	userID := event.GetStateKey()
+func (room *Room) updateMemberState(event *event.Event) {
+	userID := id.UserID(event.GetStateKey())
 	if userID == room.SessionUserID {
 		debug.Print("Updating session user state:", string(event.Content.VeryRaw))
 		room.SessionMember = room.eventToMember(userID, event.Sender, &event.Content)
@@ -442,7 +453,7 @@ func (room *Room) updateMemberState(event *mautrix.Event) {
 }
 
 // GetStateEvent returns the state event for the given type/state_key combo, or nil.
-func (room *Room) GetStateEvent(eventType mautrix.EventType, stateKey string) *mautrix.Event {
+func (room *Room) GetStateEvent(eventType event.Type, stateKey string) *event.Event {
 	room.Load()
 	room.lock.RLock()
 	defer room.lock.RUnlock()
@@ -452,7 +463,7 @@ func (room *Room) GetStateEvent(eventType mautrix.EventType, stateKey string) *m
 }
 
 // getStateEvents returns the state events for the given type.
-func (room *Room) getStateEvents(eventType mautrix.EventType) map[string]*mautrix.Event {
+func (room *Room) getStateEvents(eventType event.Type) map[string]*event.Event {
 	stateEventMap, _ := room.state[eventType]
 	return stateEventMap
 }
@@ -460,7 +471,7 @@ func (room *Room) getStateEvents(eventType mautrix.EventType) map[string]*mautri
 // GetTopic returns the topic of the room.
 func (room *Room) GetTopic() string {
 	if len(room.topicCache) == 0 {
-		topicEvt := room.GetStateEvent(mautrix.StateTopic, "")
+		topicEvt := room.GetStateEvent(event.StateTopic, "")
 		if topicEvt != nil {
 			room.topicCache = topicEvt.Content.Topic
 		}
@@ -468,9 +479,9 @@ func (room *Room) GetTopic() string {
 	return room.topicCache
 }
 
-func (room *Room) GetCanonicalAlias() string {
+func (room *Room) GetCanonicalAlias() id.RoomAlias {
 	if len(room.CanonicalAliasCache) == 0 {
-		canonicalAliasEvt := room.GetStateEvent(mautrix.StateCanonicalAlias, "")
+		canonicalAliasEvt := room.GetStateEvent(event.StateCanonicalAlias, "")
 		if canonicalAliasEvt != nil {
 			room.CanonicalAliasCache = canonicalAliasEvt.Content.Alias
 		} else {
@@ -485,7 +496,7 @@ func (room *Room) GetCanonicalAlias() string {
 
 // updateNameFromNameEvent updates the room display name to be the name set in the name event.
 func (room *Room) updateNameFromNameEvent() {
-	nameEvt := room.GetStateEvent(mautrix.StateRoomName, "")
+	nameEvt := room.GetStateEvent(event.StateRoomName, "")
 	if nameEvt != nil {
 		room.NameCache = nameEvt.Content.Name
 	}
@@ -528,7 +539,7 @@ func (room *Room) updateNameCache() {
 		room.nameCacheSource = ExplicitRoomName
 	}
 	if len(room.NameCache) == 0 {
-		room.NameCache = room.GetCanonicalAlias()
+		room.NameCache = string(room.GetCanonicalAlias())
 		room.nameCacheSource = CanonicalAliasRoomName
 	}
 	if len(room.NameCache) == 0 {
@@ -548,8 +559,8 @@ func (room *Room) GetTitle() string {
 
 func (room *Room) IsReplaced() bool {
 	if room.replacedByCache == nil {
-		evt := room.GetStateEvent(mautrix.StateTombstone, "")
-		var replacement string
+		evt := room.GetStateEvent(event.StateTombstone, "")
+		var replacement id.RoomID
 		if evt != nil {
 			replacement = evt.Content.ReplacementRoom
 		}
@@ -559,18 +570,18 @@ func (room *Room) IsReplaced() bool {
 	return room.replacedCache
 }
 
-func (room *Room) ReplacedBy() string {
+func (room *Room) ReplacedBy() id.RoomID {
 	if room.replacedByCache == nil {
 		room.IsReplaced()
 	}
 	return *room.replacedByCache
 }
 
-func (room *Room) eventToMember(userID string, sender string, content *mautrix.Content) *Member {
+func (room *Room) eventToMember(userID, sender id.UserID, content *event.Content) *Member {
 	member := content.Member
 	member.Membership = content.Membership
 	if len(member.Displayname) == 0 {
-		member.Displayname = userID
+		member.Displayname = string(userID)
 	}
 	return &Member{
 		Member: member,
@@ -578,7 +589,7 @@ func (room *Room) eventToMember(userID string, sender string, content *mautrix.C
 	}
 }
 
-func (room *Room) updateNthMemberCache(userID string, member *Member) {
+func (room *Room) updateNthMemberCache(userID id.UserID, member *Member) {
 	if userID != room.SessionUserID {
 		if room.firstMemberCache == nil {
 			room.firstMemberCache = member
@@ -589,19 +600,20 @@ func (room *Room) updateNthMemberCache(userID string, member *Member) {
 }
 
 // createMemberCache caches all member events into a easily processable MXID -> *Member map.
-func (room *Room) createMemberCache() map[string]*Member {
+func (room *Room) createMemberCache() map[id.UserID]*Member {
 	if len(room.memberCache) > 0 {
 		return room.memberCache
 	}
-	cache := make(map[string]*Member)
-	exCache := make(map[string]*Member)
+	cache := make(map[id.UserID]*Member)
+	exCache := make(map[id.UserID]*Member)
 	room.lock.RLock()
-	events := room.getStateEvents(mautrix.StateMember)
+	memberEvents := room.getStateEvents(event.StateMember)
 	room.firstMemberCache = nil
 	room.secondMemberCache = nil
-	if events != nil {
-		for userID, event := range events {
-			member := room.eventToMember(userID, event.Sender, &event.Content)
+	if memberEvents != nil {
+		for userIDStr, evt := range memberEvents {
+			userID := id.UserID(userIDStr)
+			member := room.eventToMember(userID, evt.Sender, &evt.Content)
 			if member.Membership.IsInviteOrJoin() {
 				cache[userID] = member
 				room.updateNthMemberCache(userID, member)
@@ -631,7 +643,7 @@ func (room *Room) createMemberCache() map[string]*Member {
 //
 // The members are returned from the cache.
 // If the cache is empty, it is updated first.
-func (room *Room) GetMembers() map[string]*Member {
+func (room *Room) GetMembers() map[id.UserID]*Member {
 	room.Load()
 	room.createMemberCache()
 	return room.memberCache
@@ -639,7 +651,7 @@ func (room *Room) GetMembers() map[string]*Member {
 
 // GetMember returns the member with the given MXID.
 // If the member doesn't exist, nil is returned.
-func (room *Room) GetMember(userID string) *Member {
+func (room *Room) GetMember(userID id.UserID) *Member {
 	if userID == room.SessionUserID && room.SessionMember != nil {
 		return room.SessionMember
 	}
@@ -660,16 +672,27 @@ func (room *Room) GetMember(userID string) *Member {
 	return nil
 }
 
+func (room *Room) GetMemberCount() int {
+	if room.memberCache == nil && room.Summary.JoinedMemberCount != nil {
+		return *room.Summary.JoinedMemberCount
+	}
+	return len(room.GetMembers())
+}
+
 // GetSessionOwner returns the ID of the user whose session this room was created for.
-func (room *Room) GetSessionOwner() string {
-	return room.SessionUserID
+func (room *Room) GetOwnDisplayname() string {
+	member := room.GetMember(room.SessionUserID)
+	if member != nil {
+		return member.Displayname
+	}
+	return ""
 }
 
 // NewRoom creates a new Room with the given ID
-func NewRoom(roomID string, cache *RoomCache) *Room {
+func NewRoom(roomID id.RoomID, cache *RoomCache) *Room {
 	return &Room{
 		ID:    roomID,
-		state: make(map[mautrix.EventType]map[string]*mautrix.Event),
+		state: make(map[event.Type]map[string]*event.Event),
 		path:  cache.roomPath(roomID),
 		cache: cache,
 

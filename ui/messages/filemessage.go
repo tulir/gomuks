@@ -22,8 +22,9 @@ import (
 	"image"
 	"image/color"
 
-	"maunium.net/go/gomuks/matrix/event"
-	"maunium.net/go/mautrix"
+	"maunium.net/go/gomuks/matrix/muksevt"
+	"maunium.net/go/mautrix/event"
+	"maunium.net/go/mautrix/id"
 	"maunium.net/go/mauview"
 	"maunium.net/go/tcell"
 
@@ -35,10 +36,10 @@ import (
 )
 
 type FileMessage struct {
-	Type      mautrix.MessageType
+	Type      event.MessageType
 	Body      string
-	URL       mautrix.ContentURI
-	Thumbnail mautrix.ContentURI
+	URL       id.ContentURI
+	Thumbnail id.ContentURI
 	imageData []byte
 	buffer    []tstring.TString
 
@@ -46,9 +47,9 @@ type FileMessage struct {
 }
 
 // NewFileMessage creates a new FileMessage object with the provided values and the default state.
-func NewFileMessage(matrix ifc.MatrixContainer, evt *event.Event, displayname string) *UIMessage {
-	url, _ := mautrix.ParseContentURI(evt.Content.URL)
-	thumbnail, _ := mautrix.ParseContentURI(evt.Content.GetInfo().ThumbnailURL)
+func NewFileMessage(matrix ifc.MatrixContainer, evt *muksevt.Event, displayname string) *UIMessage {
+	url, _ := evt.Content.URL.Parse()
+	thumbnail, _ := evt.Content.GetInfo().ThumbnailURL.Parse()
 	return newUIMessage(evt, displayname, &FileMessage{
 		Type:      evt.Content.MsgType,
 		Body:      evt.Content.Body,
@@ -72,13 +73,13 @@ func (msg *FileMessage) Clone() MessageRenderer {
 
 func (msg *FileMessage) NotificationContent() string {
 	switch msg.Type {
-	case mautrix.MsgImage:
+	case event.MsgImage:
 		return "Sent an image"
-	case mautrix.MsgAudio:
+	case event.MsgAudio:
 		return "Sent an audio file"
-	case mautrix.MsgVideo:
+	case event.MsgVideo:
 		return "Sent a video"
-	case mautrix.MsgFile:
+	case event.MsgFile:
 		fallthrough
 	default:
 		return "Sent a file"
@@ -96,7 +97,7 @@ func (msg *FileMessage) String() string {
 func (msg *FileMessage) DownloadPreview() {
 	url := msg.Thumbnail
 	if url.IsEmpty() {
-		if msg.Type == mautrix.MsgImage && !msg.URL.IsEmpty() {
+		if msg.Type == event.MsgImage && !msg.URL.IsEmpty() {
 			msg.Thumbnail = msg.URL
 			url = msg.Thumbnail
 		} else {

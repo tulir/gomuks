@@ -26,9 +26,10 @@ import (
 	"gopkg.in/yaml.v2"
 
 	"maunium.net/go/mautrix"
+	"maunium.net/go/mautrix/id"
+	"maunium.net/go/mautrix/pushrules"
 
 	"maunium.net/go/gomuks/debug"
-	"maunium.net/go/gomuks/matrix/pushrules"
 	"maunium.net/go/gomuks/matrix/rooms"
 )
 
@@ -52,9 +53,9 @@ type UserPreferences struct {
 
 // Config contains the main config of gomuks.
 type Config struct {
-	UserID      string `yaml:"mxid"`
-	AccessToken string `yaml:"access_token"`
-	HS          string `yaml:"homeserver"`
+	UserID      id.UserID `yaml:"mxid"`
+	AccessToken string    `yaml:"access_token"`
+	HS          string    `yaml:"homeserver"`
 
 	RoomCacheSize int   `yaml:"room_cache_size"`
 	RoomCacheAge  int64 `yaml:"room_cache_age"`
@@ -242,36 +243,36 @@ func (config *Config) save(name, dir, file string, source interface{}) {
 	}
 }
 
-func (config *Config) GetUserID() string {
+func (config *Config) GetUserID() id.UserID {
 	return config.UserID
 }
 
-func (config *Config) SaveFilterID(_, filterID string) {
+func (config *Config) SaveFilterID(_ id.UserID, filterID string) {
 	config.AuthCache.FilterID = filterID
 	config.SaveAuthCache()
 }
 
-func (config *Config) LoadFilterID(_ string) string {
+func (config *Config) LoadFilterID(_ id.UserID) string {
 	return config.AuthCache.FilterID
 }
 
-func (config *Config) SaveNextBatch(_, nextBatch string) {
+func (config *Config) SaveNextBatch(_ id.UserID, nextBatch string) {
 	config.AuthCache.NextBatch = nextBatch
 	config.SaveAuthCache()
 }
 
-func (config *Config) LoadNextBatch(_ string) string {
+func (config *Config) LoadNextBatch(_ id.UserID) string {
 	return config.AuthCache.NextBatch
 }
 
-func (config *Config) SaveRoom(room *mautrix.Room) {
+func (config *Config) SaveRoom(_ *mautrix.Room) {
 	panic("SaveRoom is not supported")
 }
 
-func (config *Config) LoadRoom(roomID string) *mautrix.Room {
+func (config *Config) LoadRoom(_ id.RoomID) *mautrix.Room {
 	panic("LoadRoom is not supported")
 }
 
-func (config *Config) GetRoom(roomID string) *rooms.Room {
+func (config *Config) GetRoom(roomID id.RoomID) *rooms.Room {
 	return config.Rooms.GetOrCreate(roomID)
 }

@@ -23,6 +23,7 @@ import (
 
 	"github.com/lithammer/fuzzysearch/fuzzy"
 
+	"maunium.net/go/mautrix/id"
 	"maunium.net/go/mauview"
 	"maunium.net/go/tcell"
 
@@ -87,7 +88,7 @@ func (fs *FuzzySearchModal) Blur() {
 	fs.container.Blur()
 }
 
-func (fs *FuzzySearchModal) InitList(rooms map[string]*RoomView) {
+func (fs *FuzzySearchModal) InitList(rooms map[id.RoomID]*RoomView) {
 	for _, room := range rooms {
 		if room.Room.IsReplaced() {
 			//if _, ok := rooms[room.Room.ReplacedBy()]; ok

@@ -25,9 +25,11 @@ import (
 	"github.com/mattn/go-runewidth"
 	sync "github.com/sasha-s/go-deadlock"
 
-	"maunium.net/go/mautrix"
 	"maunium.net/go/mauview"
 	"maunium.net/go/tcell"
+
+	"maunium.net/go/mautrix/event"
+	"maunium.net/go/mautrix/id"
 
 	"maunium.net/go/gomuks/config"
 	"maunium.net/go/gomuks/debug"
@@ -59,7 +61,7 @@ type MessageView struct {
 	prevPrefs     config.UserPreferences
 
 	messageIDLock sync.RWMutex
-	messageIDs    map[string]*messages.UIMessage
+	messageIDs    map[id.EventID]*messages.UIMessage
 	messagesLock  sync.RWMutex
 	messages      []*messages.UIMessage
 	msgBufferLock sync.RWMutex
@@ -79,7 +81,7 @@ func NewMessageView(parent *RoomView) *MessageView {
 		ScrollOffset:   0,
 
 		messages:   make([]*messages.UIMessage, 0),
-		messageIDs: make(map[string]*messages.UIMessage),
+		messageIDs: make(map[id.EventID]*messages.UIMessage),
 		msgBuffer:  make([]*messages.UIMessage, 0),
 
 		_width:        80,
@@ -95,7 +97,7 @@ func (view *MessageView) Unload() {
 	view.messagesLock.Lock()
 	view.msgBufferLock.Lock()
 	view.messageIDLock.Lock()
-	view.messageIDs = make(map[string]*messages.UIMessage)
+	view.messageIDs = make(map[id.EventID]*messages.UIMessage)
 	view.msgBuffer = make([]*messages.UIMessage, 0)
 	view.messages = make([]*messages.UIMessage, 0)
 	view.initialHistoryLoaded = false
@@ -140,9 +142,9 @@ func (view *MessageView) AddMessage(ifcMessage ifc.Message, direction MessageDir
 	if oldMsg = view.getMessageByID(message.EventID); oldMsg != nil {
 		view.replaceMessage(oldMsg, message)
 		direction = IgnoreMessage
-	} else if oldMsg = view.getMessageByID(message.TxnID); oldMsg != nil {
+	} else if oldMsg = view.getMessageByID(id.EventID(message.TxnID)); oldMsg != nil {
 		view.replaceMessage(oldMsg, message)
-		view.deleteMessageID(message.TxnID)
+		view.deleteMessageID(id.EventID(message.TxnID))
 		direction = IgnoreMessage
 	}
 
@@ -208,7 +210,7 @@ func (view *MessageView) replaceMessage(original *messages.UIMessage, new *messa
 	view.messagesLock.Unlock()
 }
 
-func (view *MessageView) getMessageByID(id string) *messages.UIMessage {
+func (view *MessageView) getMessageByID(id id.EventID) *messages.UIMessage {
 	if id == "" {
 		return nil
 	}
@@ -221,7 +223,7 @@ func (view *MessageView) getMessageByID(id string) *messages.UIMessage {
 	return msg
 }
 
-func (view *MessageView) deleteMessageID(id string) {
+func (view *MessageView) deleteMessageID(id id.EventID) {
 	if id == "" {
 		return
 	}
@@ -365,7 +367,7 @@ func (view *MessageView) handleUsernameClick(message *messages.UIMessage, prevMe
 	//	return false
 	//}
 
-	if message.SenderName == "---" || message.SenderName == "-->" || message.SenderName == "<--" || message.Type == mautrix.MsgEmote {
+	if message.SenderName == "---" || message.SenderName == "-->" || message.SenderName == "<--" || message.Type == event.MsgEmote {
 		return false
 	}
 
@@ -564,7 +566,7 @@ func (view *MessageView) CapturePlaintext(height int) string {
 			var sender string
 			if len(message.Sender()) > 0 {
 				sender = fmt.Sprintf(" <%s>", message.Sender())
-			} else if message.Type == mautrix.MsgEmote {
+			} else if message.Type == event.MsgEmote {
 				sender = fmt.Sprintf(" * %s", message.SenderName)
 			}
 			fmt.Fprintf(&buf, "%s%s %s\n", message.FormatTime(), sender, message.PlainText())
