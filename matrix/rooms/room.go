@@ -414,6 +414,10 @@ func (room *Room) UpdateState(evt *event.Event) {
 		room.updateMemberState(evt)
 	case event.StateTopic:
 		room.topicCache = evt.Content.Topic
+	case event.StateEncryption:
+		if evt.Content.Algorithm == "m.megolm.v1.aes-sha2" {
+			room.Encrypted = true
+		}
 	}
 
 	if evt.Type != event.StateMember {
@@ -458,8 +462,8 @@ func (room *Room) GetStateEvent(eventType event.Type, stateKey string) *event.Ev
 	room.lock.RLock()
 	defer room.lock.RUnlock()
 	stateEventMap, _ := room.state[eventType]
-	event, _ := stateEventMap[stateKey]
-	return event
+	evt, _ := stateEventMap[stateKey]
+	return evt
 }
 
 // getStateEvents returns the state events for the given type.
