@@ -543,7 +543,7 @@ func (c *Container) HandleMessage(source EventSource, mxEvent *event.Event) {
 	message := roomView.AddEvent(evt)
 	if message != nil {
 		roomView.MxRoom().LastReceivedMessage = message.Time()
-		if c.syncer.FirstSyncDone {
+		if c.syncer.FirstSyncDone && evt.Sender != c.config.UserID {
 			pushRules := c.PushRules().GetActions(roomView.MxRoom(), evt.Event).Should()
 			mainView.NotifyMessage(roomView.MxRoom(), message, pushRules)
 			c.ui.Render()
