@@ -30,6 +30,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"unicode"
 
 	"github.com/lucasb-eyer/go-colorful"
 	"github.com/russross/blackfriday/v2"
@@ -560,6 +561,7 @@ func cmdSetState(cmd *Command) {
 }
 
 type ToggleMessage interface {
+	Name() string
 	Format(state bool) string
 }
 
@@ -573,6 +575,10 @@ func (hm HideMessage) Format(state bool) string {
 	}
 }
 
+func (hm HideMessage) Name() string {
+	return string(hm)
+}
+
 type SimpleToggleMessage string
 
 func (stm SimpleToggleMessage) Format(state bool) string {
@@ -583,9 +589,13 @@ func (stm SimpleToggleMessage) Format(state bool) string {
 	}
 }
 
+func (stm SimpleToggleMessage) Name() string {
+	return string(unicode.ToUpper(rune(stm[0]))) + string(stm[1:])
+}
+
 var toggleMsg = map[string]ToggleMessage{
-	"rooms":         HideMessage("room list sidebar"),
-	"users":         HideMessage("user list sidebar"),
+	"rooms":         HideMessage("Room list sidebar"),
+	"users":         HideMessage("User list sidebar"),
 	"baremessages":  SimpleToggleMessage("bare message view"),
 	"images":        SimpleToggleMessage("image rendering"),
 	"typingnotif":   SimpleToggleMessage("typing notifications"),
@@ -596,39 +606,52 @@ var toggleMsg = map[string]ToggleMessage{
 	"notifications": SimpleToggleMessage("desktop notifications"),
 }
 
+func makeUsage() string {
+	var buf strings.Builder
+	buf.WriteString("Usage: /toggle <things...>\n\n")
+	buf.WriteString("List of Things:\n")
+	for key, value := range toggleMsg {
+		_, _ = fmt.Fprintf(&buf, "* %s - %s\n", key, value.Name())
+	}
+	return buf.String()[:buf.Len()-1]
+}
+
 func cmdToggle(cmd *Command) {
 	if len(cmd.Args) == 0 {
-		cmd.Reply("Usage: /toggle <rooms/users/baremessages/images/typingnotif/emojis>")
+		cmd.Reply(makeUsage())
 		return
 	}
-	var val *bool
-	switch cmd.Args[0] {
-	case "rooms":
-		val = &cmd.Config.Preferences.HideRoomList
-	case "users":
-		val = &cmd.Config.Preferences.HideUserList
-	case "baremessages":
-		val = &cmd.Config.Preferences.BareMessageView
-	case "images":
-		val = &cmd.Config.Preferences.DisableImages
-	case "typingnotif":
-		val = &cmd.Config.Preferences.DisableTypingNotifs
-	case "emojis":
-		val = &cmd.Config.Preferences.DisableEmojis
-	case "html":
-		val = &cmd.Config.Preferences.DisableHTML
-	case "markdown":
-		val = &cmd.Config.Preferences.DisableMarkdown
-	case "downloads":
-		val = &cmd.Config.Preferences.DisableDownloads
-	case "notifications":
-		val = &cmd.Config.Preferences.DisableNotifications
-	default:
-		cmd.Reply("Usage: /toggle <rooms/users/baremessages/images/typingnotif/emojis>")
-		return
+	for _, thing := range cmd.Args {
+		var val *bool
+		switch thing {
+		case "rooms":
+			val = &cmd.Config.Preferences.HideRoomList
+		case "users":
+			val = &cmd.Config.Preferences.HideUserList
+		case "baremessages":
+			val = &cmd.Config.Preferences.BareMessageView
+		case "images":
+			val = &cmd.Config.Preferences.DisableImages
+		case "typingnotif":
+			val = &cmd.Config.Preferences.DisableTypingNotifs
+		case "emojis":
+			val = &cmd.Config.Preferences.DisableEmojis
+		case "html":
+			val = &cmd.Config.Preferences.DisableHTML
+		case "markdown":
+			val = &cmd.Config.Preferences.DisableMarkdown
+		case "downloads":
+			val = &cmd.Config.Preferences.DisableDownloads
+		case "notifications":
+			val = &cmd.Config.Preferences.DisableNotifications
+		default:
+			cmd.Reply("Unknown toggle %s. Use /toggle without arguments for a list of togglable things.", thing)
+			return
+		}
+		*val = !(*val)
+		debug.Print(thing, *val)
+		cmd.Reply(toggleMsg[thing].Format(*val))
 	}
-	*val = !(*val)
-	cmd.Reply(toggleMsg[cmd.Args[0]].Format(*val))
 	cmd.UI.Render()
 	go cmd.Matrix.SendPreferencesToMatrix()
 }
