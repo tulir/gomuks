@@ -559,51 +559,76 @@ func cmdSetState(cmd *Command) {
 	}
 }
 
+type ToggleMessage interface {
+	Format(state bool) string
+}
+
+type HideMessage string
+
+func (hm HideMessage) Format(state bool) string {
+	if state {
+		return string(hm) + " is now hidden"
+	} else {
+		return string(hm) + " is now visible"
+	}
+}
+
+type SimpleToggleMessage string
+
+func (stm SimpleToggleMessage) Format(state bool) string {
+	if state {
+		return "Disabled " + string(stm)
+	} else {
+		return "Enabled " + string(stm)
+	}
+}
+
+var toggleMsg = map[string]ToggleMessage{
+	"rooms":         HideMessage("room list sidebar"),
+	"users":         HideMessage("user list sidebar"),
+	"baremessages":  SimpleToggleMessage("bare message view"),
+	"images":        SimpleToggleMessage("image rendering"),
+	"typingnotif":   SimpleToggleMessage("typing notifications"),
+	"emojis":        SimpleToggleMessage("emoji shortcode conversion"),
+	"html":          SimpleToggleMessage("HTML input"),
+	"markdown":      SimpleToggleMessage("markdown input"),
+	"downloads":     SimpleToggleMessage("automatic downloads"),
+	"notifications": SimpleToggleMessage("desktop notifications"),
+}
+
 func cmdToggle(cmd *Command) {
 	if len(cmd.Args) == 0 {
 		cmd.Reply("Usage: /toggle <rooms/users/baremessages/images/typingnotif/emojis>")
 		return
 	}
+	var val *bool
 	switch cmd.Args[0] {
 	case "rooms":
-		cmd.Config.Preferences.HideRoomList = !cmd.Config.Preferences.HideRoomList
+		val = &cmd.Config.Preferences.HideRoomList
 	case "users":
-		cmd.Config.Preferences.HideUserList = !cmd.Config.Preferences.HideUserList
+		val = &cmd.Config.Preferences.HideUserList
 	case "baremessages":
-		cmd.Config.Preferences.BareMessageView = !cmd.Config.Preferences.BareMessageView
+		val = &cmd.Config.Preferences.BareMessageView
 	case "images":
-		cmd.Config.Preferences.DisableImages = !cmd.Config.Preferences.DisableImages
+		val = &cmd.Config.Preferences.DisableImages
 	case "typingnotif":
-		cmd.Config.Preferences.DisableTypingNotifs = !cmd.Config.Preferences.DisableTypingNotifs
+		val = &cmd.Config.Preferences.DisableTypingNotifs
 	case "emojis":
-		cmd.Config.Preferences.DisableEmojis = !cmd.Config.Preferences.DisableEmojis
+		val = &cmd.Config.Preferences.DisableEmojis
 	case "html":
-		cmd.Config.Preferences.DisableHTML = !cmd.Config.Preferences.DisableHTML
-		if cmd.Config.Preferences.DisableHTML {
-			cmd.Reply("Disabled HTML input")
-		} else {
-			cmd.Reply("Enabled HTML input")
-		}
+		val = &cmd.Config.Preferences.DisableHTML
 	case "markdown":
-		cmd.Config.Preferences.DisableMarkdown = !cmd.Config.Preferences.DisableMarkdown
-		if cmd.Config.Preferences.DisableMarkdown {
-			cmd.Reply("Disabled Markdown input")
-		} else {
-			cmd.Reply("Enabled Markdown input")
-		}
+		val = &cmd.Config.Preferences.DisableMarkdown
 	case "downloads":
-		cmd.Config.Preferences.DisableDownloads = !cmd.Config.Preferences.DisableDownloads
-		if cmd.Config.Preferences.DisableDownloads {
-			cmd.Reply("Disabled Downloads input")
-		} else {
-			cmd.Reply("Enabled Downloads input")
-		}
+		val = &cmd.Config.Preferences.DisableDownloads
+	case "notifications":
+		val = &cmd.Config.Preferences.DisableNotifications
 	default:
 		cmd.Reply("Usage: /toggle <rooms/users/baremessages/images/typingnotif/emojis>")
 		return
 	}
-	// is there a reason this is called twice?
-	// cmd.UI.Render()
+	*val = !(*val)
+	cmd.Reply(toggleMsg[cmd.Args[0]].Format(*val))
 	cmd.UI.Render()
 	go cmd.Matrix.SendPreferencesToMatrix()
 }
