@@ -331,12 +331,15 @@ func (c *Container) OnLogin() {
 	c.syncer.OnEventType(event.AccountDataPushRules, c.HandlePushRules)
 	c.syncer.OnEventType(event.AccountDataRoomTags, c.HandleTag)
 	c.syncer.OnEventType(AccountDataGomuksPreferences, c.HandlePreferences)
-	c.syncer.Progress = c.ui.MainView().OpenSyncingModal()
-	c.syncer.Progress.SetMessage("Waiting for /sync response from server")
-	c.syncer.Progress.SetIndeterminate()
-	c.syncer.FirstDoneCallback = func() {
-		c.syncer.Progress.Close()
-		c.syncer.Progress = StubSyncingModal{}
+	if len(c.config.AuthCache.NextBatch) == 0 {
+		c.syncer.Progress = c.ui.MainView().OpenSyncingModal()
+		c.syncer.Progress.SetMessage("Waiting for /sync response from server")
+		c.syncer.Progress.SetIndeterminate()
+		c.syncer.FirstDoneCallback = func() {
+			c.syncer.Progress.Close()
+			c.syncer.Progress = StubSyncingModal{}
+			c.syncer.FirstDoneCallback = nil
+		}
 	}
 	c.syncer.InitDoneCallback = func() {
 		debug.Print("Initial sync done")

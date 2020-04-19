@@ -99,6 +99,7 @@ func NewGomuksSyncer(rooms *rooms.RoomCache) *GomuksSyncer {
 		rooms:         rooms,
 		listeners:     make(map[event.Type][]EventHandler),
 		FirstSyncDone: false,
+		Progress:      StubSyncingModal{},
 	}
 }
 
@@ -138,6 +139,7 @@ func (s *GomuksSyncer) ProcessResponse(res *mautrix.RespSync, since string) (err
 	}
 
 	wait.Wait()
+	s.Progress.SetMessage("Finishing sync")
 
 	if since == "" && s.InitDoneCallback != nil {
 		s.InitDoneCallback()
