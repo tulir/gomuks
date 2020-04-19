@@ -52,13 +52,16 @@ type MessageView struct {
 	// Used for locking
 	loadingMessages int32
 
-	_widestSender uint32
-	_width        uint32
-	_height       uint32
-	_prevWidth    uint32
-	_prevHeight   uint32
-	prevMsgCount  int
-	prevPrefs     config.UserPreferences
+	_widestSender     uint32
+	_prevWidestSender uint32
+
+	_width      uint32
+	_height     uint32
+	_prevWidth  uint32
+	_prevHeight uint32
+
+	prevMsgCount int
+	prevPrefs    config.UserPreferences
 
 	messageIDLock sync.RWMutex
 	messageIDs    map[id.EventID]*messages.UIMessage
@@ -84,11 +87,13 @@ func NewMessageView(parent *RoomView) *MessageView {
 		messageIDs: make(map[id.EventID]*messages.UIMessage),
 		msgBuffer:  make([]*messages.UIMessage, 0),
 
-		_width:        80,
-		_widestSender: 5,
-		_prevWidth:    0,
-		_prevHeight:   0,
-		prevMsgCount:  -1,
+		_widestSender:     5,
+		_prevWidestSender: 0,
+
+		_width:       80,
+		_prevWidth:   0,
+		_prevHeight:  0,
+		prevMsgCount: -1,
 	}
 }
 
@@ -308,6 +313,7 @@ func (view *MessageView) replaceBuffer(original *messages.UIMessage, new *messag
 func (view *MessageView) recalculateBuffers() {
 	prefs := view.config.Preferences
 	recalculateMessageBuffers := view.width() != view.prevWidth() ||
+		view.widestSender() != view.prevWidestSender() ||
 		view.prevPrefs.BareMessageView != prefs.BareMessageView ||
 		view.prevPrefs.DisableImages != prefs.DisableImages
 	view.messagesLock.RLock()
@@ -465,6 +471,7 @@ func (view *MessageView) setSize(width, height int) {
 func (view *MessageView) updatePrevSize() {
 	atomic.StoreUint32(&view._prevWidth, atomic.LoadUint32(&view._width))
 	atomic.StoreUint32(&view._prevHeight, atomic.LoadUint32(&view._height))
+	atomic.StoreUint32(&view._prevWidestSender, atomic.LoadUint32(&view._widestSender))
 }
 
 func (view *MessageView) prevHeight() int {
@@ -473,6 +480,10 @@ func (view *MessageView) prevHeight() int {
 
 func (view *MessageView) prevWidth() int {
 	return int(atomic.LoadUint32(&view._prevWidth))
+}
+
+func (view *MessageView) prevWidestSender() int {
+	return int(atomic.LoadUint32(&view._prevWidestSender))
 }
 
 func (view *MessageView) widestSender() int {
