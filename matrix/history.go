@@ -265,9 +265,18 @@ func btoi(b []byte) uint64 {
 	return binary.BigEndian.Uint64(b)
 }
 
+func stripRaw(evt *muksevt.Event) {
+	evtCopy := *evt.Event
+	evtCopy.Content = event.Content{
+		Parsed:  evt.Content.Parsed,
+	}
+	evt.Event = &evtCopy
+}
+
 func marshalEvent(evt *muksevt.Event) ([]byte, error) {
+	stripRaw(evt)
 	var buf bytes.Buffer
-	enc := gzip.NewWriter(&buf)
+	enc, _ := gzip.NewWriterLevel(&buf, gzip.BestSpeed)
 	if err := gob.NewEncoder(enc).Encode(evt); err != nil {
 		_ = enc.Close()
 		return nil, err
