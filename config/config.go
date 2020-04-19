@@ -277,3 +277,11 @@ func (config *Config) LoadRoom(_ id.RoomID) *mautrix.Room {
 func (config *Config) GetRoom(roomID id.RoomID) *rooms.Room {
 	return config.Rooms.GetOrCreate(roomID)
 }
+
+func (config *Config) DisableUnloading() {
+	config.Rooms.DisableUnloading()
+}
+
+func (config *Config) EnableUnloading() {
+	config.Rooms.EnableUnloading()
+}

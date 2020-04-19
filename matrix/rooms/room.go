@@ -213,13 +213,6 @@ func (room *Room) Unload() bool {
 	debug.Print("Unloading", room.ID)
 	room.Save()
 	room.state = nil
-	room.topicCache = ""
-	room.CanonicalAliasCache = ""
-	room.firstMemberCache = nil
-	room.secondMemberCache = nil
-	room.memberCache = nil
-	room.exMemberCache = nil
-	room.replacedByCache = nil
 	if room.postUnload != nil {
 		room.postUnload()
 	}

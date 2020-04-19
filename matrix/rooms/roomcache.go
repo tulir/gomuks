@@ -39,6 +39,7 @@ type RoomCache struct {
 	maxSize   int
 	maxAge    int64
 	getOwner  func() id.UserID
+	noUnload  bool
 
 	Map  map[id.RoomID]*Room
 	head *Room
@@ -56,6 +57,14 @@ func NewRoomCache(listPath, directory string, maxSize int, maxAge int64, getOwne
 
 		Map: make(map[id.RoomID]*Room),
 	}
+}
+
+func (cache *RoomCache) DisableUnloading() {
+	cache.noUnload = true
+}
+
+func (cache *RoomCache) EnableUnloading() {
+	cache.noUnload = false
 }
 
 func (cache *RoomCache) LoadList() error {
@@ -160,6 +169,9 @@ func (cache *RoomCache) Touch(roomID id.RoomID) {
 }
 
 func (cache *RoomCache) TouchNode(node *Room) {
+	if cache.noUnload || node.touch + 2 > time.Now().Unix() {
+		return
+	}
 	cache.Lock()
 	cache.touch(node)
 	cache.Unlock()
@@ -200,6 +212,7 @@ func (cache *RoomCache) get(roomID id.RoomID) *Room {
 	}
 	return nil
 }
+
 func (cache *RoomCache) Put(room *Room) {
 	cache.Lock()
 	node := cache.get(room.ID)
@@ -283,6 +296,9 @@ func (cache *RoomCache) ForceClean() {
 }
 
 func (cache *RoomCache) clean(force bool) {
+	if cache.noUnload && !force {
+		return
+	}
 	origSize := cache.size
 	maxTS := time.Now().Unix() - cache.maxAge
 	for cache.size > cache.maxSize {
