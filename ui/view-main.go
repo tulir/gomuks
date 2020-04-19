@@ -169,6 +169,12 @@ func (view *MainView) ShowBare(roomView *RoomView) {
 	})
 }
 
+func (view *MainView) OpenSyncingModal() ifc.SyncingModal {
+	component, modal := NewSyncingModal(view)
+	view.ShowModal(component)
+	return modal
+}
+
 func (view *MainView) OnKeyEvent(event mauview.KeyEvent) bool {
 	view.BumpFocus(view.currentRoom)
 

@@ -300,6 +300,13 @@ func init() {
 	gob.Register(&config.UserPreferences{})
 }
 
+type StubSyncingModal struct{}
+func (s StubSyncingModal) SetIndeterminate() {}
+func (s StubSyncingModal) SetMessage(s2 string) {}
+func (s StubSyncingModal) SetSteps(i int) {}
+func (s StubSyncingModal) Step() {}
+func (s StubSyncingModal) Close() {}
+
 // OnLogin initializes the syncer and updates the room list.
 func (c *Container) OnLogin() {
 	c.ui.OnLogin()
@@ -307,7 +314,7 @@ func (c *Container) OnLogin() {
 	c.client.Store = c.config
 
 	debug.Print("Initializing syncer")
-	c.syncer = NewGomuksSyncer(c.config)
+	c.syncer = NewGomuksSyncer(c.config.Rooms)
 	c.syncer.OnEventType(event.EventMessage, c.HandleMessage)
 	c.syncer.OnEventType(event.EventEncrypted, c.HandleMessage)
 	c.syncer.OnEventType(event.EventSticker, c.HandleMessage)
@@ -324,6 +331,13 @@ func (c *Container) OnLogin() {
 	c.syncer.OnEventType(event.AccountDataPushRules, c.HandlePushRules)
 	c.syncer.OnEventType(event.AccountDataRoomTags, c.HandleTag)
 	c.syncer.OnEventType(AccountDataGomuksPreferences, c.HandlePreferences)
+	c.syncer.Progress = c.ui.MainView().OpenSyncingModal()
+	c.syncer.Progress.SetMessage("Waiting for /sync response from server")
+	c.syncer.Progress.SetIndeterminate()
+	c.syncer.FirstDoneCallback = func() {
+		c.syncer.Progress.Close()
+		c.syncer.Progress = StubSyncingModal{}
+	}
 	c.syncer.InitDoneCallback = func() {
 		debug.Print("Initial sync done")
 		c.config.AuthCache.InitialSyncDone = true

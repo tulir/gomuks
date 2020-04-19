@@ -40,6 +40,14 @@ type GomuksUI interface {
 	Finish()
 }
 
+type SyncingModal interface {
+	SetIndeterminate()
+	SetMessage(string)
+	SetSteps(int)
+	Step()
+	Close()
+}
+
 type MainView interface {
 	GetRoom(roomID id.RoomID) RoomView
 	AddRoom(room *rooms.Room)
@@ -50,6 +58,7 @@ type MainView interface {
 	UpdateTags(room *rooms.Room)
 
 	SetTyping(roomID id.RoomID, users []id.UserID)
+	OpenSyncingModal() SyncingModal
 
 	NotifyMessage(room *rooms.Room, message Message, should pushrules.PushActionArrayShould)
 }

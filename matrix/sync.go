@@ -23,6 +23,7 @@ import (
 	"sync"
 	"time"
 
+	ifc "maunium.net/go/gomuks/interface"
 	"maunium.net/go/mautrix"
 	"maunium.net/go/mautrix/event"
 	"maunium.net/go/mautrix/id"
@@ -30,13 +31,6 @@ import (
 	"maunium.net/go/gomuks/debug"
 	"maunium.net/go/gomuks/matrix/rooms"
 )
-
-type SyncerSession interface {
-	GetRoom(id id.RoomID) *rooms.Room
-	GetUserID() id.UserID
-	DisableUnloading()
-	EnableUnloading()
-}
 
 type EventSource int
 
@@ -90,20 +84,19 @@ func (es EventSource) String() string {
 
 type EventHandler func(source EventSource, event *event.Event)
 
-// GomuksSyncer is the default syncing implementation. You can either write your own syncer, or selectively
-// replace parts of this default syncer (e.g. the ProcessResponse method). The default syncer uses the observer
-// pattern to notify callers about incoming events. See GomuksSyncer.OnEventType for more information.
 type GomuksSyncer struct {
-	Session          SyncerSession
-	listeners        map[event.Type][]EventHandler // event type to listeners array
-	FirstSyncDone    bool
-	InitDoneCallback func()
+	rooms             *rooms.RoomCache
+	listeners         map[event.Type][]EventHandler // event type to listeners array
+	FirstSyncDone     bool
+	InitDoneCallback  func()
+	FirstDoneCallback func()
+	Progress          ifc.SyncingModal
 }
 
 // NewGomuksSyncer returns an instantiated GomuksSyncer
-func NewGomuksSyncer(session SyncerSession) *GomuksSyncer {
+func NewGomuksSyncer(rooms *rooms.RoomCache) *GomuksSyncer {
 	return &GomuksSyncer{
-		Session:       session,
+		rooms:         rooms,
 		listeners:     make(map[event.Type][]EventHandler),
 		FirstSyncDone: false,
 	}
@@ -112,43 +105,54 @@ func NewGomuksSyncer(session SyncerSession) *GomuksSyncer {
 // ProcessResponse processes a Matrix sync response.
 func (s *GomuksSyncer) ProcessResponse(res *mautrix.RespSync, since string) (err error) {
 	if since == "" {
-		s.Session.DisableUnloading()
+		s.rooms.DisableUnloading()
 	}
 	debug.Print("Received sync response")
+	steps := len(res.Rooms.Join) + len(res.Rooms.Invite) + len(res.Rooms.Leave)
+	s.Progress.SetSteps(steps + 2)
+	s.Progress.SetMessage("Processing global events")
 	s.processSyncEvents(nil, res.Presence.Events, EventSourcePresence)
+	s.Progress.Step()
 	s.processSyncEvents(nil, res.AccountData.Events, EventSourceAccountData)
+	s.Progress.Step()
 
 	wait := &sync.WaitGroup{}
 
-	wait.Add(len(res.Rooms.Join))
+	wait.Add(steps)
+	callback := func() {
+		wait.Done()
+		s.Progress.Step()
+	}
+
+	s.Progress.SetMessage("Processing room events")
 	for roomID, roomData := range res.Rooms.Join {
-		go s.processJoinedRoom(roomID, roomData, wait)
+		go s.processJoinedRoom(roomID, roomData, callback)
 	}
 
-	wait.Add(len(res.Rooms.Invite))
 	for roomID, roomData := range res.Rooms.Invite {
-		go s.processInvitedRoom(roomID, roomData, wait)
+		go s.processInvitedRoom(roomID, roomData, callback)
 	}
 
-	wait.Add(len(res.Rooms.Leave))
 	for roomID, roomData := range res.Rooms.Leave {
-		go s.processLeftRoom(roomID, roomData, wait)
+		go s.processLeftRoom(roomID, roomData, callback)
 	}
 
 	wait.Wait()
 
 	if since == "" && s.InitDoneCallback != nil {
 		s.InitDoneCallback()
-		s.Session.EnableUnloading()
+		s.rooms.EnableUnloading()
+	}
+	if !s.FirstSyncDone && s.FirstDoneCallback != nil {
+		s.FirstDoneCallback()
 	}
 	s.FirstSyncDone = true
-
 	return
 }
 
-func (s *GomuksSyncer) processJoinedRoom(roomID id.RoomID, roomData mautrix.SyncJoinedRoom, wait *sync.WaitGroup) {
+func (s *GomuksSyncer) processJoinedRoom(roomID id.RoomID, roomData mautrix.SyncJoinedRoom, callback func()) {
 	defer debug.Recover()
-	room := s.Session.GetRoom(roomID)
+	room := s.rooms.GetOrCreate(roomID)
 	room.UpdateSummary(roomData.Summary)
 	s.processSyncEvents(room, roomData.State.Events, EventSourceJoin|EventSourceState)
 	s.processSyncEvents(room, roomData.Timeline.Events, EventSourceJoin|EventSourceTimeline)
@@ -159,20 +163,20 @@ func (s *GomuksSyncer) processJoinedRoom(roomID id.RoomID, roomData mautrix.Sync
 		room.PrevBatch = roomData.Timeline.PrevBatch
 	}
 	room.LastPrevBatch = roomData.Timeline.PrevBatch
-	wait.Done()
+	callback()
 }
 
-func (s *GomuksSyncer) processInvitedRoom(roomID id.RoomID, roomData mautrix.SyncInvitedRoom, wait *sync.WaitGroup) {
+func (s *GomuksSyncer) processInvitedRoom(roomID id.RoomID, roomData mautrix.SyncInvitedRoom, callback func()) {
 	defer debug.Recover()
-	room := s.Session.GetRoom(roomID)
+	room := s.rooms.GetOrCreate(roomID)
 	room.UpdateSummary(roomData.Summary)
 	s.processSyncEvents(room, roomData.State.Events, EventSourceInvite|EventSourceState)
-	wait.Done()
+	callback()
 }
 
-func (s *GomuksSyncer) processLeftRoom(roomID id.RoomID, roomData mautrix.SyncLeftRoom, wait *sync.WaitGroup) {
+func (s *GomuksSyncer) processLeftRoom(roomID id.RoomID, roomData mautrix.SyncLeftRoom, callback func()) {
 	defer debug.Recover()
-	room := s.Session.GetRoom(roomID)
+	room := s.rooms.GetOrCreate(roomID)
 	room.HasLeft = true
 	room.UpdateSummary(roomData.Summary)
 	s.processSyncEvents(room, roomData.State.Events, EventSourceLeave|EventSourceState)
@@ -182,7 +186,7 @@ func (s *GomuksSyncer) processLeftRoom(roomID id.RoomID, roomData mautrix.SyncLe
 		room.PrevBatch = roomData.Timeline.PrevBatch
 	}
 	room.LastPrevBatch = roomData.Timeline.PrevBatch
-	wait.Done()
+	callback()
 }
 
 func (s *GomuksSyncer) processSyncEvents(room *rooms.Room, events []*event.Event, source EventSource) {
