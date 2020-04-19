@@ -95,7 +95,8 @@ const DateFormat = "January _2, 2006"
 const TimeFormat = "15:04:05"
 
 func newUIMessage(evt *muksevt.Event, displayname string, renderer MessageRenderer) *UIMessage {
-	msgtype := evt.Content.MsgType
+	msgContent := evt.Content.AsMessage()
+	msgtype := msgContent.MsgType
 	if len(msgtype) == 0 {
 		msgtype = event.MessageType(evt.Type.String())
 	}
@@ -117,7 +118,7 @@ func newUIMessage(evt *muksevt.Event, displayname string, renderer MessageRender
 		Type:               msgtype,
 		EventID:            evt.ID,
 		TxnID:              evt.Unsigned.TransactionID,
-		Relation:           *evt.Content.GetRelatesTo(),
+		Relation:           *msgContent.GetRelatesTo(),
 		State:              evt.Gomuks.OutgoingState,
 		IsHighlight:        false,
 		IsService:          false,

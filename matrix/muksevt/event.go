@@ -27,8 +27,10 @@ type Event struct {
 
 func (evt *Event) SomewhatDangerousCopy() *Event {
 	base := *evt.Event
+	content := *base.Content.Parsed.(*event.MessageEventContent)
+	evt.Content.Parsed = &content
 	return &Event{
-		Event: &base,
+		Event:  &base,
 		Gomuks: evt.Gomuks,
 	}
 }

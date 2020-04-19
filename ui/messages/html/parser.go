@@ -27,7 +27,6 @@ import (
 	"github.com/lucasb-eyer/go-colorful"
 	"golang.org/x/net/html"
 
-	"maunium.net/go/gomuks/matrix/muksevt"
 	"maunium.net/go/mautrix/event"
 	"maunium.net/go/mautrix/id"
 	"maunium.net/go/tcell"
@@ -384,10 +383,10 @@ func (parser *htmlParser) Parse(htmlData string) Entity {
 const TabLength = 4
 
 // Parse parses a HTML-formatted Matrix event into a UIMessage.
-func Parse(room *rooms.Room, evt *muksevt.Event, senderDisplayname string) Entity {
-	htmlData := evt.Content.FormattedBody
-	if evt.Content.Format != event.FormatHTML {
-		htmlData = strings.Replace(html.EscapeString(evt.Content.Body), "\n", "<br/>", -1)
+func Parse(room *rooms.Room, content *event.MessageEventContent, sender id.UserID, senderDisplayname string) Entity {
+	htmlData := content.FormattedBody
+	if content.Format != event.FormatHTML {
+		htmlData = strings.Replace(html.EscapeString(content.Body), "\n", "<br/>", -1)
 	}
 	htmlData = strings.Replace(htmlData, "\t", strings.Repeat(" ", TabLength), -1)
 
@@ -403,14 +402,14 @@ func Parse(room *rooms.Room, evt *muksevt.Event, senderDisplayname string) Entit
 		}
 	}
 
-	if evt.Content.MsgType == event.MsgEmote {
+	if content.MsgType == event.MsgEmote {
 		root = &ContainerEntity{
 			BaseEntity: &BaseEntity{
 				Tag: "emote",
 			},
 			Children: []Entity{
 				NewTextEntity("* "),
-				NewTextEntity(senderDisplayname).AdjustStyle(AdjustStyleTextColor(widget.GetHashColor(evt.Sender))),
+				NewTextEntity(senderDisplayname).AdjustStyle(AdjustStyleTextColor(widget.GetHashColor(sender))),
 				NewTextEntity(" "),
 				root,
 			},

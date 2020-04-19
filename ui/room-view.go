@@ -480,8 +480,8 @@ func (view *RoomView) SetEditing(evt *muksevt.Event) {
 		view.editing = evt
 		// replying should never be non-nil when SetEditing, but do this just to be safe
 		view.replying = nil
-		text := view.editing.Content.Body
-		if view.editing.Content.MsgType == event.MsgEmote {
+		text := view.editing.Content.AsMessage().Body
+		if view.editing.Content.AsMessage().MsgType == event.MsgEmote {
 			text = "/me " + text
 		}
 		view.input.SetText(text)
@@ -497,11 +497,11 @@ func (view *RoomView) filterOwnOnly(evt *muksevt.Event) bool {
 }
 
 func (view *RoomView) filterMediaOnly(evt *muksevt.Event) bool {
-	return evt.Type == event.EventMessage && (
-		evt.Content.MsgType == event.MsgFile ||
-			evt.Content.MsgType == event.MsgImage ||
-			evt.Content.MsgType == event.MsgAudio ||
-			evt.Content.MsgType == event.MsgVideo)
+	content, ok := evt.Content.Parsed.(*event.MessageEventContent)
+	return ok && content.MsgType == event.MsgFile ||
+		content.MsgType == event.MsgImage ||
+		content.MsgType == event.MsgAudio ||
+		content.MsgType == event.MsgVideo
 }
 
 func (view *RoomView) findMessage(current *muksevt.Event, forward bool, allow findFilter) *messages.UIMessage {
@@ -660,13 +660,11 @@ func (view *RoomView) SendReaction(eventID id.EventID, reaction string) {
 		Event: &event.Event{
 			Type:   event.EventReaction,
 			RoomID: view.Room.ID,
-			Content: event.Content{
-				RelatesTo: &event.RelatesTo{
-					Type:    event.RelAnnotation,
-					EventID: eventID,
-					Key:     reaction,
-				},
-			},
+			Content: event.Content{Parsed: event.ReactionEventContent{RelatesTo: event.RelatesTo{
+				Type:    event.RelAnnotation,
+				EventID: eventID,
+				Key:     reaction,
+			}}},
 		},
 	})
 	if err != nil {
@@ -745,9 +743,9 @@ func (view *RoomView) Update() {
 }
 
 func (view *RoomView) UpdateUserList() {
-	pls := &event.PowerLevels{}
+	pls := &event.PowerLevelsEventContent{}
 	if plEvent := view.Room.GetStateEvent(event.StatePowerLevels, ""); plEvent != nil {
-		pls = plEvent.Content.GetPowerLevels()
+		pls = plEvent.Content.AsPowerLevels()
 	}
 	view.userList.Update(view.Room.GetMembers(), pls)
 	view.userListLoaded = true

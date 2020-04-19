@@ -119,7 +119,6 @@ func (fs *FuzzySearchModal) changeHandler(str string) {
 
 func (fs *FuzzySearchModal) OnKeyEvent(event mauview.KeyEvent) bool {
 	highlights := fs.results.GetHighlights()
-	debug.Print("Search key event:", event)
 	switch event.Key() {
 	case tcell.KeyEsc:
 		// Close room finder

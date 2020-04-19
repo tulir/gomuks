@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"strings"
 
+	"maunium.net/go/gomuks/debug"
 	"maunium.net/go/gomuks/matrix/muksevt"
 	"maunium.net/go/mautrix/event"
 	"maunium.net/go/mautrix/id"
@@ -48,10 +49,10 @@ func ParseEvent(matrix ifc.MatrixContainer, mainView ifc.MainView, room *rooms.R
 	if msg == nil {
 		return nil
 	}
-	if len(evt.Content.GetReplyTo()) > 0 {
-		if replyToMsg := getCachedEvent(mainView, room.ID, evt.Content.GetReplyTo()); replyToMsg != nil {
+	if content, ok := evt.Content.Parsed.(*event.MessageEventContent); ok && len(content.GetReplyTo()) > 0 {
+		if replyToMsg := getCachedEvent(mainView, room.ID, content.GetReplyTo()); replyToMsg != nil {
 			msg.ReplyTo = replyToMsg.Clone()
-		} else if replyToEvt, _ := matrix.GetEvent(room, evt.Content.GetReplyTo()); replyToEvt != nil {
+		} else if replyToEvt, _ := matrix.GetEvent(room, content.GetReplyTo()); replyToEvt != nil {
 			if replyToMsg := directParseEvent(matrix, room, replyToEvt); replyToMsg != nil {
 				msg.ReplyTo = replyToMsg
 				msg.ReplyTo.Reactions = nil
@@ -74,48 +75,49 @@ func directParseEvent(matrix ifc.MatrixContainer, room *rooms.Room, evt *muksevt
 	if evt.Unsigned.RedactedBecause != nil || evt.Type == event.EventRedaction {
 		return NewRedactedMessage(evt, displayname)
 	}
-	switch evt.Type {
-	case event.EventSticker:
-		evt.Content.MsgType = event.MsgImage
-		fallthrough
-	case event.EventMessage:
+	switch content := evt.Content.Parsed.(type) {
+	case *event.MessageEventContent:
+		if evt.Type == event.EventSticker {
+			content.MsgType = event.MsgImage
+		}
 		return ParseMessage(matrix, room, evt, displayname)
-	case event.EventEncrypted:
+	case *event.EncryptedEventContent:
 		return NewExpandedTextMessage(evt, displayname, tstring.NewStyleTString("Encrypted messages are not yet supported", tcell.StyleDefault.Italic(true)))
-	case event.StateTopic, event.StateRoomName, event.StateAliases, event.StateCanonicalAlias:
+	case *event.TopicEventContent, *event.RoomNameEventContent, *event.CanonicalAliasEventContent:
 		return ParseStateEvent(evt, displayname)
-	case event.StateMember:
+	case *event.MemberEventContent:
 		return ParseMembershipEvent(room, evt)
+	default:
+		debug.Printf("Unknown event content type %T in directParseEvent", content)
+		return nil
 	}
-
-	return nil
 }
 
 func ParseStateEvent(evt *muksevt.Event, displayname string) *UIMessage {
 	text := tstring.NewColorTString(displayname, widget.GetHashColor(evt.Sender))
-	switch evt.Type {
-	case event.StateTopic:
-		if len(evt.Content.Topic) == 0 {
+	switch content := evt.Content.Parsed.(type) {
+	case *event.TopicEventContent:
+		if len(content.Topic) == 0 {
 			text = text.AppendColor(" removed the topic.", tcell.ColorGreen)
 		} else {
 			text = text.AppendColor(" changed the topic to ", tcell.ColorGreen).
-				AppendStyle(evt.Content.Topic, tcell.StyleDefault.Underline(true)).
+				AppendStyle(content.Topic, tcell.StyleDefault.Underline(true)).
 				AppendColor(".", tcell.ColorGreen)
 		}
-	case event.StateRoomName:
-		if len(evt.Content.Name) == 0 {
+	case *event.RoomNameEventContent:
+		if len(content.Name) == 0 {
 			text = text.AppendColor(" removed the room name.", tcell.ColorGreen)
 		} else {
 			text = text.AppendColor(" changed the room name to ", tcell.ColorGreen).
-				AppendStyle(evt.Content.Name, tcell.StyleDefault.Underline(true)).
+				AppendStyle(content.Name, tcell.StyleDefault.Underline(true)).
 				AppendColor(".", tcell.ColorGreen)
 		}
-	case event.StateCanonicalAlias:
-		if len(evt.Content.Alias) == 0 {
+	case *event.CanonicalAliasEventContent:
+		if len(content.Alias) == 0 {
 			text = text.AppendColor(" removed the main address of the room.", tcell.ColorGreen)
 		} else {
 			text = text.AppendColor(" changed the main address of the room to ", tcell.ColorGreen).
-				AppendStyle(string(evt.Content.Alias), tcell.StyleDefault.Underline(true)).
+				AppendStyle(string(content.Alias), tcell.StyleDefault.Underline(true)).
 				AppendColor(".", tcell.ColorGreen)
 		}
 	//case event.StateAliases:
@@ -125,19 +127,20 @@ func ParseStateEvent(evt *muksevt.Event, displayname string) *UIMessage {
 }
 
 func ParseMessage(matrix ifc.MatrixContainer, room *rooms.Room, evt *muksevt.Event, displayname string) *UIMessage {
-	if len(evt.Content.GetReplyTo()) > 0 {
-		evt.Content.RemoveReplyFallback()
+	content := evt.Content.AsMessage()
+	if len(content.GetReplyTo()) > 0 {
+		content.RemoveReplyFallback()
 	}
 	if len(evt.Gomuks.Edits) > 0 {
-		evt.Content = *evt.Gomuks.Edits[len(evt.Gomuks.Edits)-1].Content.NewContent
+		content = evt.Gomuks.Edits[len(evt.Gomuks.Edits)-1].Content.AsMessage().NewContent
 	}
-	switch evt.Content.MsgType {
+	switch content.MsgType {
 	case event.MsgText, event.MsgNotice, event.MsgEmote:
-		if evt.Content.Format == event.FormatHTML {
-			return NewHTMLMessage(evt, displayname, html.Parse(room, evt, displayname))
+		if content.Format == event.FormatHTML {
+			return NewHTMLMessage(evt, displayname, html.Parse(room, content, evt.Sender, displayname))
 		}
-		evt.Content.Body = strings.Replace(evt.Content.Body, "\t", "    ", -1)
-		return NewTextMessage(evt, displayname, evt.Content.Body)
+		content.Body = strings.Replace(content.Body, "\t", "    ", -1)
+		return NewTextMessage(evt, displayname, content.Body)
 	case event.MsgImage, event.MsgVideo, event.MsgAudio, event.MsgFile:
 		msg := NewFileMessage(matrix, evt, displayname)
 		if !matrix.Preferences().DisableDownloads {
@@ -149,8 +152,8 @@ func ParseMessage(matrix ifc.MatrixContainer, room *rooms.Room, evt *muksevt.Eve
 	return nil
 }
 
-func getMembershipChangeMessage(evt *muksevt.Event, membership, prevMembership event.Membership, senderDisplayname, displayname, prevDisplayname string) (sender string, text tstring.TString) {
-	switch membership {
+func getMembershipChangeMessage(evt *muksevt.Event, content *event.MemberEventContent, prevMembership event.Membership, senderDisplayname, displayname, prevDisplayname string) (sender string, text tstring.TString) {
+	switch content.Membership {
 	case "invite":
 		sender = "---"
 		text = tstring.NewColorTString(fmt.Sprintf("%s invited %s.", senderDisplayname, displayname), tcell.ColorGreen)
@@ -171,7 +174,7 @@ func getMembershipChangeMessage(evt *muksevt.Event, membership, prevMembership e
 				text = tstring.NewColorTString(fmt.Sprintf("%s unbanned %s", senderDisplayname, displayname), tcell.ColorGreen)
 				text.Colorize(len(senderDisplayname)+len(" unbanned "), len(displayname), widget.GetHashColor(evt.StateKey))
 			} else {
-				text = tstring.NewColorTString(fmt.Sprintf("%s kicked %s: %s", senderDisplayname, displayname, evt.Content.Reason), tcell.ColorRed)
+				text = tstring.NewColorTString(fmt.Sprintf("%s kicked %s: %s", senderDisplayname, displayname, content.Reason), tcell.ColorRed)
 				text.Colorize(len(senderDisplayname)+len(" kicked "), len(displayname), widget.GetHashColor(evt.StateKey))
 			}
 			text.Colorize(0, len(senderDisplayname), widget.GetHashColor(evt.Sender))
@@ -187,7 +190,7 @@ func getMembershipChangeMessage(evt *muksevt.Event, membership, prevMembership e
 			text.Colorize(0, len(displayname), widget.GetHashColor(evt.StateKey))
 		}
 	case "ban":
-		text = tstring.NewColorTString(fmt.Sprintf("%s banned %s: %s", senderDisplayname, displayname, evt.Content.Reason), tcell.ColorRed)
+		text = tstring.NewColorTString(fmt.Sprintf("%s banned %s: %s", senderDisplayname, displayname, content.Reason), tcell.ColorRed)
 		text.Colorize(len(senderDisplayname)+len(" banned "), len(displayname), widget.GetHashColor(evt.StateKey))
 		text.Colorize(0, len(senderDisplayname), widget.GetHashColor(evt.Sender))
 	}
@@ -201,8 +204,8 @@ func getMembershipEventContent(room *rooms.Room, evt *muksevt.Event) (sender str
 		senderDisplayname = member.Displayname
 	}
 
-	membership := evt.Content.Membership
-	displayname := evt.Content.Displayname
+	content := evt.Content.AsMember()
+	displayname := content.Displayname
 	if len(displayname) == 0 {
 		displayname = *evt.StateKey
 	}
@@ -210,15 +213,16 @@ func getMembershipEventContent(room *rooms.Room, evt *muksevt.Event) (sender str
 	prevMembership := event.MembershipLeave
 	prevDisplayname := *evt.StateKey
 	if evt.Unsigned.PrevContent != nil {
-		prevMembership = evt.Unsigned.PrevContent.Membership
-		prevDisplayname = evt.Unsigned.PrevContent.Displayname
+		prevContent := evt.Unsigned.PrevContent.AsMember()
+		prevMembership = prevContent.Membership
+		prevDisplayname = prevContent.Displayname
 		if len(prevDisplayname) == 0 {
 			prevDisplayname = *evt.StateKey
 		}
 	}
 
-	if membership != prevMembership {
-		sender, text = getMembershipChangeMessage(evt, membership, prevMembership, senderDisplayname, displayname, prevDisplayname)
+	if content.Membership != prevMembership {
+		sender, text = getMembershipChangeMessage(evt, content, prevMembership, senderDisplayname, displayname, prevDisplayname)
 	} else if displayname != prevDisplayname {
 		sender = "---"
 		color := widget.GetHashColor(evt.StateKey)

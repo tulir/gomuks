@@ -62,7 +62,7 @@ type UnreadMessage struct {
 }
 
 type Member struct {
-	event.Member
+	event.MemberEventContent
 
 	// The user who sent the membership event
 	Sender id.UserID `json:"-"`
@@ -397,25 +397,25 @@ func (room *Room) UpdateState(evt *event.Event) {
 	if !exists {
 		room.state[evt.Type] = make(map[string]*event.Event)
 	}
-	switch evt.Type {
-	case event.StateRoomName:
-		room.NameCache = evt.Content.Name
+	switch content := evt.Content.Parsed.(type) {
+	case *event.RoomNameEventContent:
+		room.NameCache = content.Name
 		room.nameCacheSource = ExplicitRoomName
-	case event.StateCanonicalAlias:
+	case *event.CanonicalAliasEventContent:
 		if room.nameCacheSource <= CanonicalAliasRoomName {
-			room.NameCache = string(evt.Content.Alias)
+			room.NameCache = string(content.Alias)
 			room.nameCacheSource = CanonicalAliasRoomName
 		}
-		room.CanonicalAliasCache = evt.Content.Alias
-	case event.StateMember:
+		room.CanonicalAliasCache = content.Alias
+	case *event.MemberEventContent:
 		if room.nameCacheSource <= MemberRoomName {
 			room.NameCache = ""
 		}
-		room.updateMemberState(evt)
-	case event.StateTopic:
-		room.topicCache = evt.Content.Topic
-	case event.StateEncryption:
-		if evt.Content.Algorithm == "m.megolm.v1.aes-sha2" {
+		room.updateMemberState(id.UserID(evt.GetStateKey()), evt.Sender, content)
+	case *event.TopicEventContent:
+		room.topicCache = content.Topic
+	case *event.EncryptionEventContent:
+		if content.Algorithm == "m.megolm.v1.aes-sha2" {
 			room.Encrypted = true
 		}
 	}
@@ -427,14 +427,13 @@ func (room *Room) UpdateState(evt *event.Event) {
 	room.state[evt.Type][*evt.StateKey] = evt
 }
 
-func (room *Room) updateMemberState(event *event.Event) {
-	userID := id.UserID(event.GetStateKey())
+func (room *Room) updateMemberState(userID, sender id.UserID, content *event.MemberEventContent) {
 	if userID == room.SessionUserID {
-		debug.Print("Updating session user state:", string(event.Content.VeryRaw))
-		room.SessionMember = room.eventToMember(userID, event.Sender, &event.Content)
+		debug.Print("Updating session user state:", content)
+		room.SessionMember = room.eventToMember(userID, sender, content)
 	}
 	if room.memberCache != nil {
-		member := room.eventToMember(userID, event.Sender, &event.Content)
+		member := room.eventToMember(userID, sender, content)
 		if member.Membership.IsInviteOrJoin() {
 			existingMember, ok := room.memberCache[userID]
 			if ok {
@@ -477,7 +476,7 @@ func (room *Room) GetTopic() string {
 	if len(room.topicCache) == 0 {
 		topicEvt := room.GetStateEvent(event.StateTopic, "")
 		if topicEvt != nil {
-			room.topicCache = topicEvt.Content.Topic
+			room.topicCache = topicEvt.Content.AsTopic().Topic
 		}
 	}
 	return room.topicCache
@@ -487,7 +486,7 @@ func (room *Room) GetCanonicalAlias() id.RoomAlias {
 	if len(room.CanonicalAliasCache) == 0 {
 		canonicalAliasEvt := room.GetStateEvent(event.StateCanonicalAlias, "")
 		if canonicalAliasEvt != nil {
-			room.CanonicalAliasCache = canonicalAliasEvt.Content.Alias
+			room.CanonicalAliasCache = canonicalAliasEvt.Content.AsCanonicalAlias().Alias
 		} else {
 			room.CanonicalAliasCache = "-"
 		}
@@ -502,7 +501,7 @@ func (room *Room) GetCanonicalAlias() id.RoomAlias {
 func (room *Room) updateNameFromNameEvent() {
 	nameEvt := room.GetStateEvent(event.StateRoomName, "")
 	if nameEvt != nil {
-		room.NameCache = nameEvt.Content.Name
+		room.NameCache = nameEvt.Content.AsRoomName().Name
 	}
 }
 
@@ -566,7 +565,10 @@ func (room *Room) IsReplaced() bool {
 		evt := room.GetStateEvent(event.StateTombstone, "")
 		var replacement id.RoomID
 		if evt != nil {
-			replacement = evt.Content.ReplacementRoom
+			content, ok := evt.Content.Parsed.(*event.TombstoneEventContent)
+			if ok {
+				replacement = content.ReplacementRoom
+			}
 		}
 		room.replacedCache = evt != nil
 		room.replacedByCache = &replacement
@@ -581,15 +583,13 @@ func (room *Room) ReplacedBy() id.RoomID {
 	return *room.replacedByCache
 }
 
-func (room *Room) eventToMember(userID, sender id.UserID, content *event.Content) *Member {
-	member := content.Member
-	member.Membership = content.Membership
+func (room *Room) eventToMember(userID, sender id.UserID, member *event.MemberEventContent) *Member {
 	if len(member.Displayname) == 0 {
 		member.Displayname = string(userID)
 	}
 	return &Member{
-		Member: member,
-		Sender: sender,
+		MemberEventContent: *member,
+		Sender:             sender,
 	}
 }
 
@@ -617,7 +617,7 @@ func (room *Room) createMemberCache() map[id.UserID]*Member {
 	if memberEvents != nil {
 		for userIDStr, evt := range memberEvents {
 			userID := id.UserID(userIDStr)
-			member := room.eventToMember(userID, evt.Sender, &evt.Content)
+			member := room.eventToMember(userID, evt.Sender, evt.Content.AsMember())
 			if member.Membership.IsInviteOrJoin() {
 				cache[userID] = member
 				room.updateNthMemberCache(userID, member)

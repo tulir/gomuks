@@ -19,7 +19,6 @@
 package matrix
 
 import (
-	"encoding/json"
 	"fmt"
 	"time"
 
@@ -154,38 +153,40 @@ func (s *GomuksSyncer) ProcessResponse(res *mautrix.RespSync, since string) (err
 	return
 }
 
-func (s *GomuksSyncer) processSyncEvents(room *rooms.Room, events []json.RawMessage, source EventSource) {
+func (s *GomuksSyncer) processSyncEvents(room *rooms.Room, events []*event.Event, source EventSource) {
 	for _, evt := range events {
 		s.processSyncEvent(room, evt, source)
 	}
 }
 
-func (s *GomuksSyncer) processSyncEvent(room *rooms.Room, eventJSON json.RawMessage, source EventSource) {
-	evt := &event.Event{}
-	err := json.Unmarshal(eventJSON, evt)
-	if err != nil {
-		debug.Print("Failed to unmarshal event: %v\n%s", err, string(eventJSON))
-		return
+func (s *GomuksSyncer) processSyncEvent(room *rooms.Room, evt *event.Event, source EventSource) {
+	if room != nil {
+		evt.RoomID = room.ID
 	}
 	// Ensure the type class is correct. It's safe to mutate since it's not a pointer.
 	// Listeners are keyed by type structs, which means only the correct class will pass.
 	switch {
 	case evt.StateKey != nil:
 		evt.Type.Class = event.StateEventType
-	case source == EventSourcePresence, source & EventSourceEphemeral != 0:
+	case source == EventSourcePresence, source&EventSourceEphemeral != 0:
 		evt.Type.Class = event.EphemeralEventType
-	case source & EventSourceAccountData != 0:
+	case source&EventSourceAccountData != 0:
 		evt.Type.Class = event.AccountDataEventType
 	case source == EventSourceToDevice:
 		evt.Type.Class = event.ToDeviceEventType
 	default:
 		evt.Type.Class = event.MessageEventType
 	}
-	if room != nil {
-		evt.RoomID = room.ID
-		if evt.Type.IsState() {
-			room.UpdateState(evt)
-		}
+
+	err := evt.Content.ParseRaw(evt.Type)
+	if err != nil {
+		debug.Printf("Failed to unmarshal content of event %s (type %s) by %s in %s: %v\n%s", evt.ID, evt.Type.Repr(), evt.Sender, evt.RoomID, err, string(evt.Content.VeryRaw))
+		// TODO might be good to let these pass to allow handling invalid events too
+		return
+	}
+
+	if room != nil && evt.Type.IsState() {
+		room.UpdateState(evt)
 	}
 	s.notifyListeners(source, evt)
 }
@@ -217,8 +218,8 @@ func (s *GomuksSyncer) OnFailedSync(res *mautrix.RespSync, err error) (time.Dura
 }
 
 // GetFilterJSON returns a filter with a timeline limit of 50.
-func (s *GomuksSyncer) GetFilterJSON(_ id.UserID) json.RawMessage {
-	filter := &mautrix.Filter{
+func (s *GomuksSyncer) GetFilterJSON(_ id.UserID) *mautrix.Filter {
+	return &mautrix.Filter{
 		Room: mautrix.RoomFilter{
 			IncludeLeave: false,
 			State: mautrix.FilterPart{
@@ -264,6 +265,4 @@ func (s *GomuksSyncer) GetFilterJSON(_ id.UserID) json.RawMessage {
 			NotTypes: []event.Type{event.NewEventType("*")},
 		},
 	}
-	rawFilter, _ := json.Marshal(&filter)
-	return rawFilter
 }

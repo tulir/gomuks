@@ -20,6 +20,7 @@ import (
 	"bytes"
 	"context"
 	"crypto/tls"
+	"encoding/gob"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -29,6 +30,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"reflect"
 	"runtime"
 	dbg "runtime/debug"
 	"time"
@@ -293,6 +295,11 @@ var AccountDataGomuksPreferences = event.Type{
 	Class: event.AccountDataEventType,
 }
 
+func init() {
+	event.TypeMap[AccountDataGomuksPreferences] = reflect.TypeOf(config.UserPreferences{})
+	gob.Register(&config.UserPreferences{})
+}
+
 // OnLogin initializes the syncer and updates the room list.
 func (c *Container) OnLogin() {
 	c.ui.OnLogin()
@@ -462,7 +469,7 @@ func (c *Container) HandleEdit(room *rooms.Room, editsID id.EventID, editEvent *
 }
 
 func (c *Container) HandleReaction(room *rooms.Room, reactsTo id.EventID, reactEvent *muksevt.Event) {
-	rel := reactEvent.Content.GetRelatesTo()
+	rel := reactEvent.Content.AsReaction().RelatesTo
 	var origEvt *muksevt.Event
 	err := c.history.Update(room, reactsTo, func(evt *muksevt.Event) error {
 		if evt.Unsigned.Relations.Annotations.Map == nil {
@@ -502,10 +509,11 @@ func (c *Container) HandleMessage(source EventSource, mxEvent *event.Event) {
 		return
 	}
 
-	if editID := mxEvent.Content.GetRelatesTo().GetReplaceID(); len(editID) > 0 {
+	rel := mxEvent.Content.AsMessage().GetRelatesTo()
+	if editID := rel.GetReplaceID(); len(editID) > 0 {
 		c.HandleEdit(room, editID, muksevt.Wrap(mxEvent))
 		return
-	} else if reactionID := mxEvent.Content.GetRelatesTo().GetAnnotationID(); mxEvent.Type == event.EventReaction && len(reactionID) > 0 {
+	} else if reactionID := rel.GetAnnotationID(); mxEvent.Type == event.EventReaction && len(reactionID) > 0 {
 		c.HandleReaction(room, reactionID, muksevt.Wrap(mxEvent))
 		return
 	}
@@ -549,7 +557,7 @@ func (c *Container) HandleMessage(source EventSource, mxEvent *event.Event) {
 			c.ui.Render()
 		}
 	} else {
-		debug.Printf("Parsing event %s type %s %v from %s in %s failed (ParseEvent() returned nil).", evt.ID, evt.Type.String(), evt.Content.Raw, evt.Sender, evt.RoomID)
+		debug.Printf("Parsing event %s type %s %v from %s in %s failed (ParseEvent() returned nil).", evt.ID, evt.Type.Repr(), evt.Content.Raw, evt.Sender, evt.RoomID)
 	}
 }
 
@@ -574,10 +582,10 @@ func (c *Container) HandleMembership(source EventSource, evt *event.Event) {
 }
 
 func (c *Container) processOwnMembershipChange(evt *event.Event) {
-	membership := evt.Content.Membership
+	membership := evt.Content.AsMember().Membership
 	prevMembership := event.MembershipLeave
 	if evt.Unsigned.PrevContent != nil {
-		prevMembership = evt.Unsigned.PrevContent.Membership
+		prevMembership = evt.Unsigned.PrevContent.AsMember().Membership
 	}
 	debug.Printf("Processing own membership change: %s->%s in %s", prevMembership, membership, evt.RoomID)
 	if membership == prevMembership {
@@ -704,12 +712,13 @@ func (c *Container) HandlePushRules(_ EventSource, evt *event.Event) {
 
 // HandleTag is the event handler for the m.tag account data event.
 func (c *Container) HandleTag(_ EventSource, evt *event.Event) {
-	debug.Printf("Received tags for %s: %s -- %s", evt.RoomID, evt.Content.RoomTags, string(evt.Content.VeryRaw))
 	room := c.GetOrCreateRoom(evt.RoomID)
 
-	newTags := make([]rooms.RoomTag, len(evt.Content.RoomTags))
+	tags := evt.Content.AsTag().Tags
+
+	newTags := make([]rooms.RoomTag, len(tags))
 	index := 0
-	for tag, info := range evt.Content.RoomTags {
+	for tag, info := range tags {
 		order := json.Number("0.5")
 		if len(info.Order) > 0 {
 			order = info.Order
@@ -733,7 +742,7 @@ func (c *Container) HandleTyping(_ EventSource, evt *event.Event) {
 	if !c.config.AuthCache.InitialSyncDone {
 		return
 	}
-	c.ui.MainView().SetTyping(evt.RoomID, evt.Content.TypingUserIDs)
+	c.ui.MainView().SetTyping(evt.RoomID, evt.Content.AsTyping().UserIDs)
 }
 
 func (c *Container) MarkRead(roomID id.RoomID, eventID id.EventID) {
@@ -742,9 +751,9 @@ func (c *Container) MarkRead(roomID id.RoomID, eventID id.EventID) {
 }
 
 func (c *Container) PrepareMarkdownMessage(roomID id.RoomID, msgtype event.MessageType, text, html string, rel *ifc.Relation) *muksevt.Event {
-	var content event.Content
+	var content event.MessageEventContent
 	if html != "" {
-		content = event.Content{
+		content = event.MessageEventContent{
 			FormattedBody: html,
 			Format:        event.FormatHTML,
 			Body:          text,
@@ -777,10 +786,8 @@ func (c *Container) PrepareMarkdownMessage(roomID id.RoomID, msgtype event.Messa
 		Type:      event.EventMessage,
 		Timestamp: time.Now().UnixNano() / 1e6,
 		RoomID:    roomID,
-		Content:   content,
-		Unsigned: event.Unsigned{
-			TransactionID: txnID,
-		},
+		Content:   event.Content{Parsed: &content},
+		Unsigned:  event.Unsigned{TransactionID: txnID},
 	})
 	localEcho.Gomuks.OutgoingState = muksevt.StateLocalEcho
 	if rel != nil && rel.Type == event.RelReplace {
@@ -797,12 +804,12 @@ func (c *Container) Redact(roomID id.RoomID, eventID id.EventID, reason string) 
 }
 
 // SendMessage sends the given event.
-func (c *Container) SendEvent(event *muksevt.Event) (id.EventID, error) {
+func (c *Container) SendEvent(evt *muksevt.Event) (id.EventID, error) {
 	defer debug.Recover()
 
-	c.client.UserTyping(event.RoomID, false, 0)
+	c.client.UserTyping(evt.RoomID, false, 0)
 	c.typing = 0
-	resp, err := c.client.SendMessageEvent(event.RoomID, event.Type, event.Content, mautrix.ReqSendEvent{TransactionID: event.Unsigned.TransactionID})
+	resp, err := c.client.SendMessageEvent(evt.RoomID, evt.Type, &evt.Content, mautrix.ReqSendEvent{TransactionID: evt.Unsigned.TransactionID})
 	if err != nil {
 		return "", err
 	}
@@ -892,6 +899,12 @@ func (c *Container) GetHistory(room *rooms.Room, limit int) ([]*muksevt.Event, e
 		return nil, err
 	}
 	debug.Printf("Loaded %d events for %s from server from %s to %s", len(resp.Chunk), room.ID, resp.Start, resp.End)
+	for _, evt := range resp.Chunk {
+		err := evt.Content.ParseRaw(evt.Type)
+		if err != nil {
+			debug.Printf("Failed to unmarshal content of event %s (type %s) by %s in %s: %v\n%s", evt.ID, evt.Type.Repr(), evt.Sender, evt.RoomID, err, string(evt.Content.VeryRaw))
+		}
+	}
 	for _, evt := range resp.State {
 		room.UpdateState(evt)
 	}

@@ -48,11 +48,12 @@ type FileMessage struct {
 
 // NewFileMessage creates a new FileMessage object with the provided values and the default state.
 func NewFileMessage(matrix ifc.MatrixContainer, evt *muksevt.Event, displayname string) *UIMessage {
-	url, _ := evt.Content.URL.Parse()
-	thumbnail, _ := evt.Content.GetInfo().ThumbnailURL.Parse()
+	content := evt.Content.AsMessage()
+	url, _ := content.URL.Parse()
+	thumbnail, _ := content.GetInfo().ThumbnailURL.Parse()
 	return newUIMessage(evt, displayname, &FileMessage{
-		Type:      evt.Content.MsgType,
-		Body:      evt.Content.Body,
+		Type:      content.MsgType,
+		Body:      content.Body,
 		URL:       url,
 		Thumbnail: thumbnail,
 		matrix:    matrix,

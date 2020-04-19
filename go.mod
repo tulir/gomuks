@@ -18,10 +18,10 @@ require (
 	github.com/stretchr/testify v1.5.1
 	go.etcd.io/bbolt v1.3.3
 	golang.org/x/image v0.0.0-20200119044424-58c23975cae1
-	golang.org/x/net v0.0.0-20200301022130-244492dfa37a
+	golang.org/x/net v0.0.0-20200324143707-d3edc9973b7e
 	gopkg.in/toast.v1 v1.0.0-20180812000517-0a84660828b2
 	gopkg.in/yaml.v2 v2.2.8
-	maunium.net/go/mautrix v0.1.0-beta.2.0.20200408115320-100bcaabf80b
+	maunium.net/go/mautrix v0.2.0-beta.1
 	maunium.net/go/mauview v0.1.0-beta.1
 	maunium.net/go/tcell v0.1.0
 )

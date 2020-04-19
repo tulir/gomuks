@@ -65,7 +65,7 @@ func (rml roomMemberList) Swap(i, j int) {
 	rml[i], rml[j] = rml[j], rml[i]
 }
 
-func (ml *MemberList) Update(data map[id.UserID]*rooms.Member, levels *event.PowerLevels) *MemberList {
+func (ml *MemberList) Update(data map[id.UserID]*rooms.Member, levels *event.PowerLevelsEventContent) *MemberList {
 	ml.list = make(roomMemberList, len(data))
 	i := 0
 	highestLevel := math.MinInt32
