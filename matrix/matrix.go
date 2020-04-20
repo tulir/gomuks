@@ -890,11 +890,18 @@ func (c *Container) LeaveRoom(roomID id.RoomID) error {
 }
 
 func (c *Container) FetchMembers(room *rooms.Room) error {
+	debug.Print("Fetching member list for", room.ID)
 	members, err := c.client.Members(room.ID, mautrix.ReqMembers{At: room.LastPrevBatch})
 	if err != nil {
 		return err
 	}
+	debug.Printf("Fetched %d members for %s", len(members.Chunk), room.ID)
 	for _, evt := range members.Chunk {
+		err := evt.Content.ParseRaw(evt.Type)
+		if err != nil {
+			debug.Printf("Failed to parse member event of %s: %v", evt.GetStateKey(), err)
+			continue
+		}
 		room.UpdateState(evt)
 	}
 	room.MembersFetched = true

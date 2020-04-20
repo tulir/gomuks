@@ -213,6 +213,10 @@ func (room *Room) Unload() bool {
 	debug.Print("Unloading", room.ID)
 	room.Save()
 	room.state = nil
+	room.memberCache = nil
+	room.exMemberCache = nil
+	room.firstMemberCache = nil
+	room.secondMemberCache = nil
 	if room.postUnload != nil {
 		room.postUnload()
 	}
@@ -408,7 +412,7 @@ func (room *Room) UpdateState(evt *event.Event) {
 	case *event.TopicEventContent:
 		room.topicCache = content.Topic
 	case *event.EncryptionEventContent:
-		if content.Algorithm == "m.megolm.v1.aes-sha2" {
+		if content.Algorithm == event.AlgorithmMegolmV1 {
 			room.Encrypted = true
 		}
 	}
