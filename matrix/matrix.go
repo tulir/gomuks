@@ -26,7 +26,6 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
-	"net/url"
 	"os"
 	"path"
 	"path/filepath"
@@ -37,18 +36,18 @@ import (
 
 	"github.com/pkg/errors"
 
-	"maunium.net/go/gomuks/lib/open"
-	"maunium.net/go/gomuks/matrix/muksevt"
 	"maunium.net/go/mautrix"
 	"maunium.net/go/mautrix/event"
 	"maunium.net/go/mautrix/format"
 	"maunium.net/go/mautrix/id"
+	"maunium.net/go/mautrix/pushrules"
 
 	"maunium.net/go/gomuks/config"
 	"maunium.net/go/gomuks/debug"
 	"maunium.net/go/gomuks/interface"
+	"maunium.net/go/gomuks/lib/open"
+	"maunium.net/go/gomuks/matrix/muksevt"
 	"maunium.net/go/gomuks/matrix/rooms"
-	"maunium.net/go/mautrix/pushrules"
 )
 
 // Container is a wrapper for a mautrix Client and some other stuff.
@@ -301,11 +300,12 @@ func init() {
 }
 
 type StubSyncingModal struct{}
-func (s StubSyncingModal) SetIndeterminate() {}
+
+func (s StubSyncingModal) SetIndeterminate()    {}
 func (s StubSyncingModal) SetMessage(s2 string) {}
-func (s StubSyncingModal) SetSteps(i int) {}
-func (s StubSyncingModal) Step() {}
-func (s StubSyncingModal) Close() {}
+func (s StubSyncingModal) SetSteps(i int)       {}
+func (s StubSyncingModal) Step()                {}
+func (s StubSyncingModal) Close()               {}
 
 // OnLogin initializes the syncer and updates the room list.
 func (c *Container) OnLogin() {
@@ -1009,14 +1009,14 @@ func (c *Container) DownloadToDisk(uri id.ContentURI, target string) (fullPath s
 		}
 		defer file.Close()
 
-		var resp *http.Response
-		resp, err = c.client.Client.Get(c.GetDownloadURL(uri))
+		var body io.ReadCloser
+		body, err = c.client.Download(uri)
 		if err != nil {
 			return
 		}
-		defer resp.Body.Close()
+		defer body.Close()
 
-		_, err = io.Copy(file, resp.Body)
+		_, err = io.Copy(file, body)
 		if err != nil {
 			return
 		}
@@ -1051,24 +1051,19 @@ func (c *Container) Download(uri id.ContentURI) (data []byte, err error) {
 }
 
 func (c *Container) GetDownloadURL(uri id.ContentURI) string {
-	dlURL, _ := url.Parse(c.client.HomeserverURL.String())
-	if dlURL.Scheme == "" {
-		dlURL.Scheme = "https"
-	}
-	dlURL.Path = path.Join(dlURL.Path, "/_matrix/media/r0/download", uri.Homeserver, uri.FileID)
-	return dlURL.String()
+	return c.client.GetDownloadURL(uri)
 }
 
 func (c *Container) download(uri id.ContentURI, cacheFile string) (data []byte, err error) {
-	var resp *http.Response
-	resp, err = c.client.Client.Get(c.GetDownloadURL(uri))
+	var body io.ReadCloser
+	body, err = c.client.Download(uri)
 	if err != nil {
 		return
 	}
-	defer resp.Body.Close()
+	defer body.Close()
 
 	var buf bytes.Buffer
-	_, err = io.Copy(&buf, resp.Body)
+	_, err = io.Copy(&buf, body)
 	if err != nil {
 		return
 	}
