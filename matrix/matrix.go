@@ -1055,7 +1055,7 @@ func (c *Container) GetDownloadURL(uri id.ContentURI) string {
 	if dlURL.Scheme == "" {
 		dlURL.Scheme = "https"
 	}
-	dlURL.Path = path.Join(dlURL.Path, "/_matrix/media/v1/download", uri.Homeserver, uri.FileID)
+	dlURL.Path = path.Join(dlURL.Path, "/_matrix/media/r0/download", uri.Homeserver, uri.FileID)
 	return dlURL.String()
 }
 
