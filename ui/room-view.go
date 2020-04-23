@@ -660,7 +660,7 @@ func (view *RoomView) SendReaction(eventID id.EventID, reaction string) {
 		Event: &event.Event{
 			Type:   event.EventReaction,
 			RoomID: view.Room.ID,
-			Content: event.Content{Parsed: event.ReactionEventContent{RelatesTo: event.RelatesTo{
+			Content: event.Content{Parsed: &event.ReactionEventContent{RelatesTo: event.RelatesTo{
 				Type:    event.RelAnnotation,
 				EventID: eventID,
 				Key:     reaction,
