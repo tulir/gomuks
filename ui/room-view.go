@@ -636,12 +636,10 @@ func (view *RoomView) CopyToClipboard(text string, register string) {
 		if err != nil {
 			view.AddServiceMessage(fmt.Sprintf("Clipboard unsupported: %v", err))
 			view.parent.parent.Render()
-			return
 		}
 	} else {
 		view.AddServiceMessage(fmt.Sprintf("Clipboard register %v unsupported", register))
 		view.parent.parent.Render()
-		return
 	}
 }
 
