@@ -34,7 +34,6 @@ import (
 
 	"github.com/lucasb-eyer/go-colorful"
 	"github.com/russross/blackfriday/v2"
-	"github.com/atotto/clipboard"
 
 	"maunium.net/go/mautrix"
 	"maunium.net/go/mautrix/event"
@@ -179,10 +178,14 @@ func cmdOpen(cmd *Command) {
 }
 
 func cmdCopy(cmd *Command) {
-	if clipboard.Unsupported {
-		cmd.Reply("Clipboard unsupported.")
+	register := strings.Join(cmd.Args, " ")
+	if len(register) == 0 {
+		register = "clipboard"
+	}
+	if (register == "clipboard" || register == "primary") {
+		cmd.Room.StartSelecting(SelectCopy, register)
 	} else {
-		cmd.Room.StartSelecting(SelectCopy, strings.Join(cmd.Args, " "))
+		cmd.Reply("Usage: /copy [register], where register is either \"clipboard\" or \"primary\". Defaults to \"clipboard\".")
 	}
 }
 
