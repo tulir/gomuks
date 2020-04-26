@@ -34,6 +34,7 @@ import (
 
 	"github.com/lucasb-eyer/go-colorful"
 	"github.com/russross/blackfriday/v2"
+	"github.com/atotto/clipboard"
 
 	"maunium.net/go/mautrix"
 	"maunium.net/go/mautrix/event"
@@ -158,6 +159,7 @@ const (
 	SelectRedact                = "redact"
 	SelectDownload              = "download"
 	SelectOpen                  = "open"
+	SelectCopy                  = "copy"
 )
 
 func cmdReply(cmd *Command) {
@@ -174,6 +176,14 @@ func cmdDownload(cmd *Command) {
 
 func cmdOpen(cmd *Command) {
 	cmd.Room.StartSelecting(SelectOpen, strings.Join(cmd.Args, " "))
+}
+
+func cmdCopy(cmd *Command) {
+	if clipboard.Unsupported {
+		cmd.Reply("Clipboard unsupported.")
+	} else {
+		cmd.Room.StartSelecting(SelectCopy, strings.Join(cmd.Args, " "))
+	}
 }
 
 func cmdReact(cmd *Command) {

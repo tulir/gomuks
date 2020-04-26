@@ -119,6 +119,7 @@ func NewCommandProcessor(parent *MainView) *CommandProcessor {
 			"react":      cmdReact,
 			"download":   cmdDownload,
 			"open":       cmdOpen,
+			"copy":       cmdCopy,
 			"sendevent":  cmdSendEvent,
 			"msendevent": cmdMSendEvent,
 			"setstate":   cmdSetState,

@@ -25,6 +25,7 @@ import (
 
 	"github.com/kyokomi/emoji"
 	"github.com/mattn/go-runewidth"
+	"github.com/atotto/clipboard"
 
 	"maunium.net/go/mauview"
 	"maunium.net/go/tcell"
@@ -203,6 +204,11 @@ func (view *RoomView) OnSelect(message *messages.UIMessage) {
 				path = msg.Body
 			}
 			go view.Download(msg.URL, path, view.selectReason == SelectOpen)
+		}
+	case SelectCopy:
+		msg, ok := message.Renderer.(*messages.TextMessage)
+		if ok {
+			go clipboard.WriteAll(msg.PlainText())
 		}
 	}
 	view.selecting = false

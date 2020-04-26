@@ -4,6 +4,7 @@ go 1.14
 
 require (
 	github.com/alecthomas/chroma v0.7.1
+	github.com/atotto/clipboard v0.1.2
 	github.com/disintegration/imaging v1.6.2
 	github.com/kyokomi/emoji v2.1.0+incompatible
 	github.com/lithammer/fuzzysearch v1.1.0
