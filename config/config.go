@@ -54,9 +54,10 @@ type UserPreferences struct {
 
 // Config contains the main config of gomuks.
 type Config struct {
-	UserID      id.UserID `yaml:"mxid"`
-	AccessToken string    `yaml:"access_token"`
-	HS          string    `yaml:"homeserver"`
+	UserID      id.UserID   `yaml:"mxid"`
+	DeviceID    id.DeviceID `yaml:"device_id"`
+	AccessToken string      `yaml:"access_token"`
+	HS          string      `yaml:"homeserver"`
 
 	RoomCacheSize int   `yaml:"room_cache_size"`
 	RoomCacheAge  int64 `yaml:"room_cache_age"`

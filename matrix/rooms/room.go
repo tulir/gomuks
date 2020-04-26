@@ -412,7 +412,7 @@ func (room *Room) UpdateState(evt *event.Event) {
 	case *event.TopicEventContent:
 		room.topicCache = content.Topic
 	case *event.EncryptionEventContent:
-		if content.Algorithm == event.AlgorithmMegolmV1 {
+		if content.Algorithm == id.AlgorithmMegolmV1 {
 			room.Encrypted = true
 		}
 	}

@@ -37,6 +37,7 @@ import (
 	"github.com/pkg/errors"
 
 	"maunium.net/go/mautrix"
+	"maunium.net/go/mautrix/crypto"
 	"maunium.net/go/mautrix/event"
 	"maunium.net/go/mautrix/format"
 	"maunium.net/go/mautrix/id"
@@ -55,6 +56,7 @@ import (
 // It is used for all Matrix calls from the UI and Matrix event handlers.
 type Container struct {
 	client  *mautrix.Client
+	crypto  *crypto.OlmMachine
 	syncer  *GomuksSyncer
 	gmx     ifc.Gomuks
 	ui      ifc.GomuksUI
@@ -88,6 +90,24 @@ func (log mxLogger) Debugfln(message string, args ...interface{}) {
 	debug.Printf("[Matrix] "+message, args...)
 }
 
+type cryptoLogger struct{}
+
+func (c cryptoLogger) Error(message string, args ...interface{}) {
+	debug.Printf("[Crypto/Error] "+message, args...)
+}
+
+func (c cryptoLogger) Warn(message string, args ...interface{}) {
+	debug.Printf("[Crypto/Warn] "+message, args...)
+}
+
+func (c cryptoLogger) Debug(message string, args ...interface{}) {
+	debug.Printf("[Crypto/Debug] "+message, args...)
+}
+
+func (c cryptoLogger) Trace(message string, args ...interface{}) {
+	debug.Printf("[Crypto/Trace] "+message, args...)
+}
+
 // InitClient initializes the mautrix client and connects to the homeserver specified in the config.
 func (c *Container) InitClient() error {
 	if len(c.config.HS) == 0 {
@@ -97,6 +117,7 @@ func (c *Container) InitClient() error {
 	if c.client != nil {
 		c.Stop()
 		c.client = nil
+		c.crypto = nil
 	}
 
 	var mxid id.UserID
@@ -112,6 +133,17 @@ func (c *Container) InitClient() error {
 		return err
 	}
 	c.client.Logger = mxLogger{}
+	c.client.DeviceID = c.config.DeviceID
+
+	cryptoStore, err := crypto.NewGobStore(filepath.Join(c.config.CacheDir, "crypto.gob"))
+	if err != nil {
+		return err
+	}
+	c.crypto = crypto.NewOlmMachine(c.client, cryptoLogger{}, cryptoStore)
+	err = c.crypto.Load()
+	if err != nil {
+		return err
+	}
 
 	if c.history == nil {
 		c.history, err = NewHistoryManager(c.config.HistoryPath)
@@ -159,7 +191,9 @@ func (c *Container) PasswordLogin(user, password string) error {
 
 func (c *Container) finishLogin(resp *mautrix.RespLogin) {
 	c.client.SetCredentials(resp.UserID, resp.AccessToken)
+	c.client.DeviceID = resp.DeviceID
 	c.config.UserID = resp.UserID
+	c.config.DeviceID = resp.DeviceID
 	c.config.AccessToken = resp.AccessToken
 	c.config.Save()
 
@@ -250,6 +284,7 @@ func (c *Container) Logout() {
 	c.config.DeleteSession()
 	c.Stop()
 	c.client = nil
+	c.crypto = nil
 	c.ui.OnLogout()
 }
 
@@ -315,8 +350,9 @@ func (c *Container) OnLogin() {
 
 	debug.Print("Initializing syncer")
 	c.syncer = NewGomuksSyncer(c.config.Rooms)
+	c.syncer.OnSync(c.crypto.ProcessSyncResponse)
 	c.syncer.OnEventType(event.EventMessage, c.HandleMessage)
-	c.syncer.OnEventType(event.EventEncrypted, c.HandleMessage)
+	c.syncer.OnEventType(event.EventEncrypted, c.HandleEncrypted)
 	c.syncer.OnEventType(event.EventSticker, c.HandleMessage)
 	c.syncer.OnEventType(event.EventReaction, c.HandleMessage)
 	c.syncer.OnEventType(event.EventRedaction, c.HandleRedaction)
@@ -514,6 +550,16 @@ func (c *Container) HandleReaction(room *rooms.Room, reactsTo id.EventID, reactE
 	if c.syncer.FirstSyncDone {
 		c.ui.Render()
 	}
+}
+
+func (c *Container) HandleEncrypted(source EventSource, mxEvent *event.Event) {
+	evt, err := c.crypto.DecryptMegolmEvent(mxEvent)
+	if err != nil {
+		debug.Print("Failed to decrypt event:", err)
+		return
+	}
+	debug.Print("!!!!!", evt)
+	c.HandleMessage(source, evt)
 }
 
 // HandleMessage is the event handler for the m.room.message timeline event.
