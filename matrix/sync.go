@@ -83,7 +83,7 @@ func (es EventSource) String() string {
 }
 
 type EventHandler func(source EventSource, event *event.Event)
-type SyncHandler func(resp *mautrix.RespSync)
+type SyncHandler func(resp *mautrix.RespSync, since string)
 
 type GomuksSyncer struct {
 	rooms             *rooms.RoomCache
@@ -122,7 +122,7 @@ func (s *GomuksSyncer) ProcessResponse(res *mautrix.RespSync, since string) (err
 		s.Progress.Step()
 	}
 	wait.Add(len(s.globalListeners))
-	s.notifyGlobalListeners(res, callback)
+	s.notifyGlobalListeners(res, since, callback)
 	wait.Wait()
 
 	s.processSyncEvents(nil, res.Presence.Events, EventSourcePresence)
@@ -158,10 +158,10 @@ func (s *GomuksSyncer) ProcessResponse(res *mautrix.RespSync, since string) (err
 	return
 }
 
-func (s *GomuksSyncer) notifyGlobalListeners(res *mautrix.RespSync, callback func()) {
+func (s *GomuksSyncer) notifyGlobalListeners(res *mautrix.RespSync, since string, callback func()) {
 	for _, listener := range s.globalListeners {
 		go func(listener SyncHandler) {
-			listener(res)
+			listener(res, since)
 			callback()
 		}(listener)
 	}
@@ -288,6 +288,7 @@ func (s *GomuksSyncer) GetFilterJSON(_ id.UserID) *mautrix.Filter {
 					event.StateCanonicalAlias,
 					event.StatePowerLevels,
 					event.StateTombstone,
+					event.StateEncryption,
 				},
 			},
 			Timeline: mautrix.FilterPart{

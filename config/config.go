@@ -118,6 +118,7 @@ func (config *Config) DeleteSession() {
 	config.AuthCache.NextBatch = ""
 	config.AuthCache.InitialSyncDone = false
 	config.AccessToken = ""
+	config.DeviceID = ""
 	config.Rooms = rooms.NewRoomCache(config.RoomListPath, config.StateDir, config.RoomCacheSize, config.RoomCacheAge, config.GetUserID)
 	config.PushRules = nil
 

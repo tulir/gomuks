@@ -650,6 +650,17 @@ func (room *Room) GetMembers() map[id.UserID]*Member {
 	return room.memberCache
 }
 
+func (room *Room) GetMemberList() []id.UserID {
+	members := room.GetMembers()
+	memberList := make([]id.UserID, len(members))
+	index := 0
+	for userID, _ := range members {
+		memberList[index] = userID
+		index++
+	}
+	return memberList
+}
+
 // GetMember returns the member with the given MXID.
 // If the member doesn't exist, nil is returned.
 func (room *Room) GetMember(userID id.UserID) *Member {

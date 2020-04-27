@@ -870,8 +870,28 @@ func (c *Container) Redact(roomID id.RoomID, eventID id.EventID, reason string) 
 func (c *Container) SendEvent(evt *muksevt.Event) (id.EventID, error) {
 	defer debug.Recover()
 
-	c.client.UserTyping(evt.RoomID, false, 0)
+	_, _ = c.client.UserTyping(evt.RoomID, false, 0)
 	c.typing = 0
+	room := c.GetRoom(evt.RoomID)
+	if room != nil && room.Encrypted {
+		encrypted, err := c.crypto.EncryptMegolmEvent(evt.RoomID, evt.Type, evt.Content)
+		if err != nil {
+			if err != crypto.SessionExpired && err != crypto.SessionNotShared && err != crypto.NoGroupSession {
+				return "", err
+			}
+			debug.Print("Got", err, "while trying to encrypt message, sharing group session and trying again...")
+			err = c.crypto.ShareGroupSession(room.ID, room.GetMemberList())
+			if err != nil {
+				return "", err
+			}
+			encrypted, err = c.crypto.EncryptMegolmEvent(evt.RoomID, evt.Type, evt.Content)
+			if err != nil {
+				return "", err
+			}
+		}
+		evt.Type = event.EventEncrypted
+		evt.Content = event.Content{Parsed: encrypted}
+	}
 	resp, err := c.client.SendMessageEvent(evt.RoomID, evt.Type, &evt.Content, mautrix.ReqSendEvent{TransactionID: evt.Unsigned.TransactionID})
 	if err != nil {
 		return "", err
