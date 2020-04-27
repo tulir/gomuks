@@ -1,65 +1,16 @@
-image: golang:alpine
+image: debian:bullseye
 
-variables:
-  CGO_ENABLED: "0"
-
-stages:
-- modules
-- build
-
-cache:
-  paths:
-  - .cache
-
-default:
-  before_script:
-  - apk add git
-  - mkdir -p .cache
-  - export GOPATH="$CI_PROJECT_DIR/.cache"
-
-modules:
-  stage: modules
-  script:
-  - go get
-
-.build: &build
+build:
   stage: build
   cache:
     paths:
     - .cache
+  before_script:
+  - apt-get install -y git libolm-dev
+  - mkdir -p .cache
+  - export GOPATH="$CI_PROJECT_DIR/.cache"
   script:
-  - echo "Building... $GOPATH $CGO_ENABLED $GOOS $GOARCH"
   - go build -o gomuks
   artifacts:
     paths:
     - gomuks
-
-build_linux_amd64:
-  <<: *build
-  variables:
-    GOOS: linux
-    GOARCH: amd64
-
-build_linux_386:
-  <<: *build
-  variables:
-    GOOS: linux
-    GOARCH: "386"
-
-build_linux_arm:
-  <<: *build
-  variables:
-    GOOS: linux
-    GOARCH: arm
-
-build_linux_arm64:
-  <<: *build
-  variables:
-    GOOS: linux
-    GOARCH: arm64
-
-build_darwin_amd64:
-  <<: *build
-  variables:
-    GOOS: darwin
-    GOARCH: amd64
