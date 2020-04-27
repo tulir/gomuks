@@ -7,7 +7,7 @@ build:
     - .cache
   before_script:
   - apt-get update
-  - apt-get install -y git libolm-dev
+  - apt-get install -y git libolm-dev golang-go
   - mkdir -p .cache
   - export GOPATH="$CI_PROJECT_DIR/.cache"
   script:
