@@ -6,6 +6,7 @@ build:
     paths:
     - .cache
   before_script:
+  - apt-get update
   - apt-get install -y git libolm-dev
   - mkdir -p .cache
   - export GOPATH="$CI_PROJECT_DIR/.cache"
