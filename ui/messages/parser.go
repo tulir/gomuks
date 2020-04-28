@@ -20,13 +20,13 @@ import (
 	"fmt"
 	"strings"
 
-	"maunium.net/go/gomuks/debug"
-	"maunium.net/go/gomuks/matrix/muksevt"
 	"maunium.net/go/mautrix/event"
 	"maunium.net/go/mautrix/id"
 	"maunium.net/go/tcell"
 
+	"maunium.net/go/gomuks/debug"
 	"maunium.net/go/gomuks/interface"
+	"maunium.net/go/gomuks/matrix/muksevt"
 	"maunium.net/go/gomuks/matrix/rooms"
 	"maunium.net/go/gomuks/ui/messages/html"
 	"maunium.net/go/gomuks/ui/messages/tstring"

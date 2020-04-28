@@ -22,7 +22,7 @@ import (
 	"image"
 	"image/color"
 
-	"maunium.net/go/gomuks/matrix/muksevt"
+	"maunium.net/go/mautrix/crypto/attachment"
 	"maunium.net/go/mautrix/event"
 	"maunium.net/go/mautrix/id"
 	"maunium.net/go/mauview"
@@ -32,14 +32,19 @@ import (
 	"maunium.net/go/gomuks/debug"
 	"maunium.net/go/gomuks/interface"
 	"maunium.net/go/gomuks/lib/ansimage"
+	"maunium.net/go/gomuks/matrix/muksevt"
 	"maunium.net/go/gomuks/ui/messages/tstring"
 )
 
 type FileMessage struct {
-	Type      event.MessageType
-	Body      string
-	URL       id.ContentURI
-	Thumbnail id.ContentURI
+	Type event.MessageType
+	Body string
+
+	URL           id.ContentURI
+	File          *attachment.EncryptedFile
+	Thumbnail     id.ContentURI
+	ThumbnailFile *attachment.EncryptedFile
+
 	imageData []byte
 	buffer    []tstring.TString
 
@@ -49,14 +54,23 @@ type FileMessage struct {
 // NewFileMessage creates a new FileMessage object with the provided values and the default state.
 func NewFileMessage(matrix ifc.MatrixContainer, evt *muksevt.Event, displayname string) *UIMessage {
 	content := evt.Content.AsMessage()
-	url, _ := content.URL.Parse()
-	thumbnail, _ := content.GetInfo().ThumbnailURL.Parse()
+	var file, thumbnailFile *attachment.EncryptedFile
+	if content.File != nil {
+		file = &content.File.EncryptedFile
+		content.URL = content.File.URL
+	}
+	if content.GetInfo().ThumbnailFile != nil {
+		thumbnailFile = &content.Info.ThumbnailFile.EncryptedFile
+		content.Info.ThumbnailURL = content.Info.ThumbnailFile.URL
+	}
 	return newUIMessage(evt, displayname, &FileMessage{
-		Type:      content.MsgType,
-		Body:      content.Body,
-		URL:       url,
-		Thumbnail: thumbnail,
-		matrix:    matrix,
+		Type:          content.MsgType,
+		Body:          content.Body,
+		URL:           content.URL,
+		File:          file,
+		Thumbnail:     content.GetInfo().ThumbnailURL,
+		ThumbnailFile: thumbnailFile,
+		matrix:        matrix,
 	})
 }
 
@@ -96,17 +110,20 @@ func (msg *FileMessage) String() string {
 }
 
 func (msg *FileMessage) DownloadPreview() {
-	url := msg.Thumbnail
-	if url.IsEmpty() {
-		if msg.Type == event.MsgImage && !msg.URL.IsEmpty() {
-			msg.Thumbnail = msg.URL
-			url = msg.Thumbnail
-		} else {
-			return
-		}
+	var url id.ContentURI
+	var file *attachment.EncryptedFile
+	if !msg.Thumbnail.IsEmpty() {
+		url = msg.Thumbnail
+		file = msg.ThumbnailFile
+	} else if msg.Type == event.MsgImage && !msg.URL.IsEmpty() {
+		msg.Thumbnail = msg.URL
+		url = msg.URL
+		file = msg.File
+	} else {
+		return
 	}
 	debug.Print("Loading file:", url)
-	data, err := msg.matrix.Download(url)
+	data, err := msg.matrix.Download(url, file)
 	if err != nil {
 		debug.Printf("Failed to download file %s: %v", url, err)
 		return
