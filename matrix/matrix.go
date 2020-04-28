@@ -135,7 +135,7 @@ func (c *Container) InitClient() error {
 	c.client.Logger = mxLogger{}
 	c.client.DeviceID = c.config.DeviceID
 
-	cryptoStore, err := crypto.NewGobStore(filepath.Join(c.config.CacheDir, "crypto.gob"))
+	cryptoStore, err := crypto.NewGobStore(filepath.Join(c.config.DataDir, "crypto.gob"))
 	if err != nil {
 		return err
 	}
@@ -281,8 +281,8 @@ func (c *Container) Login(user, password string) error {
 // Logout revokes the access token, stops the syncer and calls the OnLogout() method of the UI.
 func (c *Container) Logout() {
 	c.client.Logout()
-	c.config.DeleteSession()
 	c.Stop()
+	c.config.DeleteSession()
 	c.client = nil
 	c.crypto = nil
 	c.ui.OnLogout()
@@ -300,6 +300,11 @@ func (c *Container) Stop() {
 			debug.Print("Error closing history manager:", err)
 		}
 		c.history = nil
+		debug.Print("Flushing crypto store")
+		err = c.crypto.Store.Flush()
+		if err != nil {
+			debug.Print("Error flushing crypto store:", err)
+		}
 	}
 }
 
@@ -558,7 +563,6 @@ func (c *Container) HandleEncrypted(source EventSource, mxEvent *event.Event) {
 		debug.Print("Failed to decrypt event:", err)
 		return
 	}
-	debug.Print("!!!!!", evt)
 	c.HandleMessage(source, evt)
 }
 
