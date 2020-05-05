@@ -22,7 +22,6 @@ build_static:
     paths:
     - .cache
   before_script:
-  - apk add git
   - mkdir -p .cache
   - export GOPATH="$CI_PROJECT_DIR/.cache"
   variables:
