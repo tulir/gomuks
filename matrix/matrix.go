@@ -569,10 +569,6 @@ func (c *Container) HandleEncrypted(source EventSource, mxEvent *event.Event) {
 	c.HandleMessage(source, evt)
 }
 
-type Relatable interface {
-	GetRelatesTo() *event.RelatesTo
-}
-
 // HandleMessage is the event handler for the m.room.message timeline event.
 func (c *Container) HandleMessage(source EventSource, mxEvent *event.Event) {
 	room := c.GetOrCreateRoom(mxEvent.RoomID)
@@ -583,7 +579,7 @@ func (c *Container) HandleMessage(source EventSource, mxEvent *event.Event) {
 		return
 	}
 
-	relatable, ok := mxEvent.Content.Parsed.(Relatable)
+	relatable, ok := mxEvent.Content.Parsed.(event.Relatable)
 	if ok {
 		rel := relatable.GetRelatesTo()
 		if editID := rel.GetReplaceID(); len(editID) > 0 {
