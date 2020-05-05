@@ -66,9 +66,9 @@ func NewFileMessage(matrix ifc.MatrixContainer, evt *muksevt.Event, displayname 
 	return newUIMessage(evt, displayname, &FileMessage{
 		Type:          content.MsgType,
 		Body:          content.Body,
-		URL:           content.URL,
+		URL:           content.URL.ParseOrIgnore(),
 		File:          file,
-		Thumbnail:     content.GetInfo().ThumbnailURL,
+		Thumbnail:     content.GetInfo().ThumbnailURL.ParseOrIgnore(),
 		ThumbnailFile: thumbnailFile,
 		matrix:        matrix,
 	})

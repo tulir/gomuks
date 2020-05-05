@@ -139,7 +139,7 @@ func (c *Container) InitClient() error {
 	if err != nil {
 		return err
 	}
-	c.crypto = crypto.NewOlmMachine(c.client, cryptoLogger{}, cryptoStore)
+	c.crypto = crypto.NewOlmMachine(c.client, cryptoLogger{}, cryptoStore, c.config.Rooms)
 	err = c.crypto.Load()
 	if err != nil {
 		return err
@@ -301,7 +301,7 @@ func (c *Container) Stop() {
 		}
 		c.history = nil
 		debug.Print("Flushing crypto store")
-		err = c.crypto.Store.Flush()
+		err = c.crypto.CryptoStore.Flush()
 		if err != nil {
 			debug.Print("Error flushing crypto store:", err)
 		}
@@ -356,6 +356,9 @@ func (c *Container) OnLogin() {
 	debug.Print("Initializing syncer")
 	c.syncer = NewGomuksSyncer(c.config.Rooms)
 	c.syncer.OnSync(c.crypto.ProcessSyncResponse)
+	c.syncer.OnEventType(event.StateMember, func(source EventSource, evt *event.Event) {
+		c.crypto.HandleMemberEvent(evt)
+	})
 	c.syncer.OnEventType(event.EventMessage, c.HandleMessage)
 	c.syncer.OnEventType(event.EventEncrypted, c.HandleEncrypted)
 	c.syncer.OnEventType(event.EventSticker, c.HandleMessage)
@@ -993,10 +996,19 @@ func (c *Container) GetHistory(room *rooms.Room, limit int) ([]*muksevt.Event, e
 		return nil, err
 	}
 	debug.Printf("Loaded %d events for %s from server from %s to %s", len(resp.Chunk), room.ID, resp.Start, resp.End)
-	for _, evt := range resp.Chunk {
+	for i, evt := range resp.Chunk {
 		err := evt.Content.ParseRaw(evt.Type)
 		if err != nil {
 			debug.Printf("Failed to unmarshal content of event %s (type %s) by %s in %s: %v\n%s", evt.ID, evt.Type.Repr(), evt.Sender, evt.RoomID, err, string(evt.Content.VeryRaw))
+		}
+
+		if evt.Type == event.EventEncrypted {
+			decrypted, err := c.crypto.DecryptMegolmEvent(evt)
+			if err != nil {
+				debug.Print("Failed to decrypt event:", err)
+			} else {
+				resp.Chunk[i] = decrypted
+			}
 		}
 	}
 	for _, evt := range resp.State {
