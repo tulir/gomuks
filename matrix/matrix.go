@@ -346,7 +346,11 @@ func (c *Container) OnLogin() {
 	if c.crypto != nil {
 		c.syncer.OnSync(c.crypto.ProcessSyncResponse)
 		c.syncer.OnEventType(event.StateMember, func(source EventSource, evt *event.Event) {
-			c.crypto.HandleMemberEvent(evt)
+			// Don't spam the crypto module with member events of an initial sync
+			// TODO invalidate all group sessions when clearing cache?
+			if c.config.AuthCache.InitialSyncDone {
+				c.crypto.HandleMemberEvent(evt)
+			}
 		})
 		c.syncer.OnEventType(event.EventEncrypted, c.HandleEncrypted)
 	} else {

@@ -21,8 +21,9 @@ package matrix
 import (
 	"path/filepath"
 
-	"maunium.net/go/gomuks/debug"
 	"maunium.net/go/mautrix/crypto"
+
+	"maunium.net/go/gomuks/debug"
 )
 
 type cryptoLogger struct{}
