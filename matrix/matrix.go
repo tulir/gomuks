@@ -569,6 +569,10 @@ func (c *Container) HandleEncrypted(source EventSource, mxEvent *event.Event) {
 	c.HandleMessage(source, evt)
 }
 
+type Relatable interface {
+	GetRelatesTo() *event.RelatesTo
+}
+
 // HandleMessage is the event handler for the m.room.message timeline event.
 func (c *Container) HandleMessage(source EventSource, mxEvent *event.Event) {
 	room := c.GetOrCreateRoom(mxEvent.RoomID)
@@ -579,13 +583,16 @@ func (c *Container) HandleMessage(source EventSource, mxEvent *event.Event) {
 		return
 	}
 
-	rel := mxEvent.Content.AsMessage().GetRelatesTo()
-	if editID := rel.GetReplaceID(); len(editID) > 0 {
-		c.HandleEdit(room, editID, muksevt.Wrap(mxEvent))
-		return
-	} else if reactionID := rel.GetAnnotationID(); mxEvent.Type == event.EventReaction && len(reactionID) > 0 {
-		c.HandleReaction(room, reactionID, muksevt.Wrap(mxEvent))
-		return
+	relatable, ok := mxEvent.Content.Parsed.(Relatable)
+	if ok {
+		rel := relatable.GetRelatesTo()
+		if editID := rel.GetReplaceID(); len(editID) > 0 {
+			c.HandleEdit(room, editID, muksevt.Wrap(mxEvent))
+			return
+		} else if reactionID := rel.GetAnnotationID(); mxEvent.Type == event.EventReaction && len(reactionID) > 0 {
+			c.HandleReaction(room, reactionID, muksevt.Wrap(mxEvent))
+			return
+		}
 	}
 
 	events, err := c.history.Append(room, []*event.Event{mxEvent})
@@ -880,7 +887,7 @@ func (c *Container) SendEvent(evt *muksevt.Event) (id.EventID, error) {
 	_, _ = c.client.UserTyping(evt.RoomID, false, 0)
 	c.typing = 0
 	room := c.GetRoom(evt.RoomID)
-	if room != nil && room.Encrypted {
+	if room != nil && room.Encrypted && evt.Type != event.EventReaction {
 		encrypted, err := c.crypto.EncryptMegolmEvent(evt.RoomID, evt.Type, evt.Content)
 		if err != nil {
 			if err != crypto.SessionExpired && err != crypto.SessionNotShared && err != crypto.NoGroupSession {
