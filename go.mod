@@ -21,7 +21,7 @@ require (
 	golang.org/x/net v0.0.0-20200324143707-d3edc9973b7e
 	gopkg.in/toast.v1 v1.0.0-20180812000517-0a84660828b2
 	gopkg.in/yaml.v2 v2.2.8
-	maunium.net/go/mautrix v0.2.0-beta.4.0.20200505163640-61b3fde37bf4
+	maunium.net/go/mautrix v0.2.0-beta.4.0.20200505170605-f82efbca9632
 	maunium.net/go/mauview v0.1.0
 	maunium.net/go/tcell v0.1.0
 )

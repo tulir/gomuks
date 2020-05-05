@@ -36,7 +36,6 @@ import (
 	"github.com/pkg/errors"
 
 	"maunium.net/go/mautrix"
-	"maunium.net/go/mautrix/crypto"
 	"maunium.net/go/mautrix/crypto/attachment"
 	"maunium.net/go/mautrix/event"
 	"maunium.net/go/mautrix/format"
@@ -56,7 +55,7 @@ import (
 // It is used for all Matrix calls from the UI and Matrix event handlers.
 type Container struct {
 	client  *mautrix.Client
-	crypto  *crypto.OlmMachine
+	crypto  CryptoInterface
 	syncer  *GomuksSyncer
 	gmx     ifc.Gomuks
 	ui      ifc.GomuksUI
@@ -90,22 +89,14 @@ func (log mxLogger) Debugfln(message string, args ...interface{}) {
 	debug.Printf("[Matrix] "+message, args...)
 }
 
-type cryptoLogger struct{}
-
-func (c cryptoLogger) Error(message string, args ...interface{}) {
-	debug.Printf("[Crypto/Error] "+message, args...)
-}
-
-func (c cryptoLogger) Warn(message string, args ...interface{}) {
-	debug.Printf("[Crypto/Warn] "+message, args...)
-}
-
-func (c cryptoLogger) Debug(message string, args ...interface{}) {
-	debug.Printf("[Crypto/Debug] "+message, args...)
-}
-
-func (c cryptoLogger) Trace(message string, args ...interface{}) {
-	debug.Printf("[Crypto/Trace] "+message, args...)
+type CryptoInterface interface {
+	Load() error
+	FlushStore() error
+	ProcessSyncResponse(resp *mautrix.RespSync, since string)
+	HandleMemberEvent(*event.Event)
+	DecryptMegolmEvent(*event.Event) (*event.Event, error)
+	EncryptMegolmEvent(id.RoomID, event.Type, event.Content) (*event.EncryptedEventContent, error)
+	ShareGroupSession(id.RoomID, []id.UserID) error
 }
 
 // InitClient initializes the mautrix client and connects to the homeserver specified in the config.
@@ -135,12 +126,7 @@ func (c *Container) InitClient() error {
 	c.client.Logger = mxLogger{}
 	c.client.DeviceID = c.config.DeviceID
 
-	cryptoStore, err := crypto.NewGobStore(filepath.Join(c.config.DataDir, "crypto.gob"))
-	if err != nil {
-		return err
-	}
-	c.crypto = crypto.NewOlmMachine(c.client, cryptoLogger{}, cryptoStore, c.config.Rooms)
-	err = c.crypto.Load()
+	err = c.initCrypto()
 	if err != nil {
 		return err
 	}
@@ -300,10 +286,12 @@ func (c *Container) Stop() {
 			debug.Print("Error closing history manager:", err)
 		}
 		c.history = nil
-		debug.Print("Flushing crypto store")
-		err = c.crypto.CryptoStore.Flush()
-		if err != nil {
-			debug.Print("Error flushing crypto store:", err)
+		if c.crypto != nil {
+			debug.Print("Flushing crypto store")
+			err = c.crypto.FlushStore()
+			if err != nil {
+				debug.Print("Error flushing crypto store:", err)
+			}
 		}
 	}
 }
@@ -355,12 +343,16 @@ func (c *Container) OnLogin() {
 
 	debug.Print("Initializing syncer")
 	c.syncer = NewGomuksSyncer(c.config.Rooms)
-	c.syncer.OnSync(c.crypto.ProcessSyncResponse)
-	c.syncer.OnEventType(event.StateMember, func(source EventSource, evt *event.Event) {
-		c.crypto.HandleMemberEvent(evt)
-	})
+	if c.crypto != nil {
+		c.syncer.OnSync(c.crypto.ProcessSyncResponse)
+		c.syncer.OnEventType(event.StateMember, func(source EventSource, evt *event.Event) {
+			c.crypto.HandleMemberEvent(evt)
+		})
+		c.syncer.OnEventType(event.EventEncrypted, c.HandleEncrypted)
+	} else {
+		c.syncer.OnEventType(event.EventEncrypted, c.HandleMessage)
+	}
 	c.syncer.OnEventType(event.EventMessage, c.HandleMessage)
-	c.syncer.OnEventType(event.EventEncrypted, c.HandleEncrypted)
 	c.syncer.OnEventType(event.EventSticker, c.HandleMessage)
 	c.syncer.OnEventType(event.EventReaction, c.HandleMessage)
 	c.syncer.OnEventType(event.EventRedaction, c.HandleRedaction)
@@ -564,6 +556,8 @@ func (c *Container) HandleEncrypted(source EventSource, mxEvent *event.Event) {
 	evt, err := c.crypto.DecryptMegolmEvent(mxEvent)
 	if err != nil {
 		debug.Print("Failed to decrypt event:", err)
+		// TODO add decryption failed message instead of passing through directly
+		c.HandleMessage(source, mxEvent)
 		return
 	}
 	c.HandleMessage(source, evt)
@@ -883,10 +877,10 @@ func (c *Container) SendEvent(evt *muksevt.Event) (id.EventID, error) {
 	_, _ = c.client.UserTyping(evt.RoomID, false, 0)
 	c.typing = 0
 	room := c.GetRoom(evt.RoomID)
-	if room != nil && room.Encrypted && evt.Type != event.EventReaction {
+	if room != nil && room.Encrypted && c.crypto != nil && evt.Type != event.EventReaction {
 		encrypted, err := c.crypto.EncryptMegolmEvent(evt.RoomID, evt.Type, evt.Content)
 		if err != nil {
-			if err != crypto.SessionExpired && err != crypto.SessionNotShared && err != crypto.NoGroupSession {
+			if isBadEncryptError(err) {
 				return "", err
 			}
 			debug.Print("Got", err, "while trying to encrypt message, sharing group session and trying again...")
@@ -1005,10 +999,11 @@ func (c *Container) GetHistory(room *rooms.Room, limit int) ([]*muksevt.Event, e
 			debug.Printf("Failed to unmarshal content of event %s (type %s) by %s in %s: %v\n%s", evt.ID, evt.Type.Repr(), evt.Sender, evt.RoomID, err, string(evt.Content.VeryRaw))
 		}
 
-		if evt.Type == event.EventEncrypted {
+		if c.crypto != nil && evt.Type == event.EventEncrypted {
 			decrypted, err := c.crypto.DecryptMegolmEvent(evt)
 			if err != nil {
 				debug.Print("Failed to decrypt event:", err)
+				// TODO add decryption failed message instead of passing through directly
 			} else {
 				resp.Chunk[i] = decrypted
 			}
