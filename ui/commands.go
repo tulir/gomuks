@@ -263,8 +263,10 @@ func cmdRoomNick(cmd *Command) {
 }
 
 func cmdHeapProfile(cmd *Command) {
-	runtime.GC()
-	dbg.FreeOSMemory()
+	if len(cmd.Args) == 0 || cmd.Args[0] != "nogc" {
+		runtime.GC()
+		dbg.FreeOSMemory()
+	}
 	memProfile, err := os.Create("gomuks.heap.prof")
 	if err != nil {
 		debug.Print("Failed to open gomuks.heap.prof:", err)

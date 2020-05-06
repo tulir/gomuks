@@ -139,11 +139,11 @@ func (cache *RoomCache) LoadList() error {
 
 func (cache *RoomCache) SaveLoadedRooms() {
 	cache.Lock()
-	defer cache.Unlock()
 	cache.clean(false)
 	for node := cache.head; node != nil; node = node.prev {
 		node.Save()
 	}
+	cache.Unlock()
 }
 
 func (cache *RoomCache) SaveList() error {
@@ -193,7 +193,7 @@ func (cache *RoomCache) Touch(roomID id.RoomID) {
 }
 
 func (cache *RoomCache) TouchNode(node *Room) {
-	if cache.noUnload || node.touch + 2 > time.Now().Unix() {
+	if cache.noUnload || node.touch+2 > time.Now().Unix() {
 		return
 	}
 	cache.Lock()
