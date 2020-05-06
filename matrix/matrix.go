@@ -278,7 +278,10 @@ func (c *Container) Logout() {
 func (c *Container) Stop() {
 	if c.running {
 		debug.Print("Stopping Matrix container...")
-		c.stop <- true
+		select {
+		case c.stop <- true:
+		default:
+		}
 		c.client.StopSync()
 		debug.Print("Closing history manager...")
 		err := c.history.Close()
