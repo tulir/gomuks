@@ -692,26 +692,16 @@ func (c *Container) processOwnMembershipChange(evt *event.Event) {
 
 func (c *Container) parseReadReceipt(evt *event.Event) (largestTimestampEvent id.EventID) {
 	var largestTimestamp int64
-	for eventID, rawContent := range evt.Content.Raw {
-		content, ok := rawContent.(map[string]interface{})
+
+	for eventID, receipts := range *evt.Content.AsReceipt() {
+		myInfo, ok := receipts.Read[c.config.UserID]
 		if !ok {
 			continue
 		}
 
-		mRead, ok := content["m.read"].(map[string]interface{})
-		if !ok {
-			continue
-		}
-
-		myInfo, ok := mRead[string(c.config.UserID)].(map[string]interface{})
-		if !ok {
-			continue
-		}
-
-		ts, ok := myInfo["ts"].(float64)
-		if int64(ts) > largestTimestamp {
-			largestTimestamp = int64(ts)
-			largestTimestampEvent = id.EventID(eventID)
+		if myInfo.Timestamp > largestTimestamp {
+			largestTimestamp = myInfo.Timestamp
+			largestTimestampEvent = eventID
 		}
 	}
 	return
@@ -738,19 +728,10 @@ func (c *Container) HandleReadReceipt(source EventSource, evt *event.Event) {
 
 func (c *Container) parseDirectChatInfo(evt *event.Event) map[*rooms.Room]bool {
 	directChats := make(map[*rooms.Room]bool)
-	for _, rawRoomIDList := range evt.Content.Raw {
-		roomIDList, ok := rawRoomIDList.([]interface{})
-		if !ok {
-			continue
-		}
-
-		for _, rawRoomID := range roomIDList {
-			roomID, ok := rawRoomID.(string)
-			if !ok {
-				continue
-			}
-
-			room := c.GetOrCreateRoom(id.RoomID(roomID))
+	for _, roomIDList := range *evt.Content.AsDirectChats() {
+		for _, roomID := range roomIDList {
+			// TODO we shouldn't create direct chat rooms that we aren't in
+			room := c.GetOrCreateRoom(roomID)
 			if room != nil && !room.HasLeft {
 				directChats[room] = true
 			}
