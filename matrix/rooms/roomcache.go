@@ -27,6 +27,7 @@ import (
 	sync "github.com/sasha-s/go-deadlock"
 
 	"maunium.net/go/gomuks/debug"
+	"maunium.net/go/mautrix/event"
 	"maunium.net/go/mautrix/id"
 )
 
@@ -65,6 +66,29 @@ func (cache *RoomCache) DisableUnloading() {
 
 func (cache *RoomCache) EnableUnloading() {
 	cache.noUnload = false
+}
+
+func (cache *RoomCache) IsEncrypted(roomID id.RoomID) bool {
+	room := cache.Get(roomID)
+	return room != nil && room.Encrypted
+}
+
+func (cache *RoomCache) FindSharedRooms(userID id.UserID) (shared []id.RoomID) {
+	// FIXME this disables unloading so TouchNode wouldn't try to double-lock
+	cache.DisableUnloading()
+	cache.Lock()
+	for _, room := range cache.Map {
+		if !room.Encrypted {
+			continue
+		}
+		member, ok := room.GetMembers()[userID]
+		if ok && member.Membership == event.MembershipJoin {
+			shared = append(shared, room.ID)
+		}
+	}
+	cache.Unlock()
+	cache.EnableUnloading()
+	return
 }
 
 func (cache *RoomCache) LoadList() error {

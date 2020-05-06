@@ -18,6 +18,7 @@ package ifc
 
 import (
 	"maunium.net/go/mautrix"
+	"maunium.net/go/mautrix/crypto/attachment"
 	"maunium.net/go/mautrix/event"
 	"maunium.net/go/mautrix/id"
 
@@ -59,8 +60,8 @@ type MatrixContainer interface {
 	GetRoom(roomID id.RoomID) *rooms.Room
 	GetOrCreateRoom(roomID id.RoomID) *rooms.Room
 
-	Download(uri id.ContentURI) ([]byte, error)
-	DownloadToDisk(uri id.ContentURI, target string) (string, error)
+	Download(uri id.ContentURI, file *attachment.EncryptedFile) ([]byte, error)
+	DownloadToDisk(uri id.ContentURI, file *attachment.EncryptedFile, target string) (string, error)
 	GetDownloadURL(uri id.ContentURI) string
 	GetCachePath(uri id.ContentURI) string
 }

@@ -20,13 +20,13 @@ import (
 	"fmt"
 	"strings"
 
-	"maunium.net/go/gomuks/debug"
-	"maunium.net/go/gomuks/matrix/muksevt"
 	"maunium.net/go/mautrix/event"
 	"maunium.net/go/mautrix/id"
 	"maunium.net/go/tcell"
 
+	"maunium.net/go/gomuks/debug"
 	"maunium.net/go/gomuks/interface"
+	"maunium.net/go/gomuks/matrix/muksevt"
 	"maunium.net/go/gomuks/matrix/rooms"
 	"maunium.net/go/gomuks/ui/messages/html"
 	"maunium.net/go/gomuks/ui/messages/tstring"
@@ -82,7 +82,7 @@ func directParseEvent(matrix ifc.MatrixContainer, room *rooms.Room, evt *muksevt
 		}
 		return ParseMessage(matrix, room, evt, displayname)
 	case *event.EncryptedEventContent:
-		return NewExpandedTextMessage(evt, displayname, tstring.NewStyleTString("Encrypted messages are not yet supported", tcell.StyleDefault.Italic(true)))
+		return NewExpandedTextMessage(evt, displayname, tstring.NewStyleTString("Decryption failed or gomuks not built with encryption support", tcell.StyleDefault.Italic(true)))
 	case *event.TopicEventContent, *event.RoomNameEventContent, *event.CanonicalAliasEventContent:
 		return ParseStateEvent(evt, displayname)
 	case *event.MemberEventContent:

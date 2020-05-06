@@ -38,12 +38,12 @@ type Gomuks struct {
 
 // NewGomuks creates a new Gomuks instance with everything initialized,
 // but does not start it.
-func NewGomuks(uiProvider ifc.UIProvider, configDir, cacheDir, downloadDir string) *Gomuks {
+func NewGomuks(uiProvider ifc.UIProvider, configDir, dataDir, cacheDir, downloadDir string) *Gomuks {
 	gmx := &Gomuks{
 		stop: make(chan bool, 1),
 	}
 
-	gmx.config = config.NewConfig(configDir, cacheDir, downloadDir)
+	gmx.config = config.NewConfig(configDir, dataDir, cacheDir, downloadDir)
 	gmx.ui = uiProvider(gmx)
 	gmx.matrix = matrix.NewContainer(gmx)
 

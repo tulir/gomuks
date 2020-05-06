@@ -26,6 +26,7 @@ import (
 	"github.com/kyokomi/emoji"
 	"github.com/mattn/go-runewidth"
 
+	"maunium.net/go/mautrix/crypto/attachment"
 	"maunium.net/go/mauview"
 	"maunium.net/go/tcell"
 
@@ -122,6 +123,10 @@ func NewRoomView(parent *MainView, room *rooms.Room) *RoomView {
 		SetPressKeyUpAtStartFunc(view.EditPrevious).
 		SetPressKeyDownAtEndFunc(view.EditNext)
 
+	if room.Encrypted {
+		view.input.SetPlaceholder("Send an encrypted message...")
+	}
+
 	view.topic.
 		SetTextColor(tcell.ColorWhite).
 		SetBackgroundColor(tcell.ColorDarkGreen)
@@ -202,7 +207,7 @@ func (view *RoomView) OnSelect(message *messages.UIMessage) {
 			} else if view.selectReason == SelectDownload {
 				path = msg.Body
 			}
-			go view.Download(msg.URL, path, view.selectReason == SelectOpen)
+			go view.Download(msg.URL, msg.File, path, view.selectReason == SelectOpen)
 		}
 	}
 	view.selecting = false
@@ -624,8 +629,8 @@ func (view *RoomView) InputSubmit(text string) {
 	view.SetInputText("")
 }
 
-func (view *RoomView) Download(url id.ContentURI, filename string, openFile bool) {
-	path, err := view.parent.matrix.DownloadToDisk(url, filename)
+func (view *RoomView) Download(url id.ContentURI, file *attachment.EncryptedFile, filename string, openFile bool) {
+	path, err := view.parent.matrix.DownloadToDisk(url, file, filename)
 	if err != nil {
 		view.AddServiceMessage(fmt.Sprintf("Failed to download media: %v", err))
 		view.parent.parent.Render()

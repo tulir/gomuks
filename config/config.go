@@ -54,9 +54,10 @@ type UserPreferences struct {
 
 // Config contains the main config of gomuks.
 type Config struct {
-	UserID      id.UserID `yaml:"mxid"`
-	AccessToken string    `yaml:"access_token"`
-	HS          string    `yaml:"homeserver"`
+	UserID      id.UserID   `yaml:"mxid"`
+	DeviceID    id.DeviceID `yaml:"device_id"`
+	AccessToken string      `yaml:"access_token"`
+	HS          string      `yaml:"homeserver"`
 
 	RoomCacheSize int   `yaml:"room_cache_size"`
 	RoomCacheAge  int64 `yaml:"room_cache_age"`
@@ -64,6 +65,7 @@ type Config struct {
 	NotifySound bool `yaml:"notify_sound"`
 
 	Dir          string `yaml:"-"`
+	DataDir      string `yaml:"data_dir"`
 	CacheDir     string `yaml:"cache_dir"`
 	HistoryPath  string `yaml:"history_path"`
 	RoomListPath string `yaml:"room_list_path"`
@@ -80,9 +82,10 @@ type Config struct {
 }
 
 // NewConfig creates a config that loads data from the given directory.
-func NewConfig(configDir, cacheDir, downloadDir string) *Config {
+func NewConfig(configDir, dataDir, cacheDir, downloadDir string) *Config {
 	return &Config{
 		Dir:          configDir,
+		DataDir:      dataDir,
 		CacheDir:     cacheDir,
 		DownloadDir:  downloadDir,
 		HistoryPath:  filepath.Join(cacheDir, "history.db"),
@@ -107,8 +110,14 @@ func (config *Config) Clear() {
 	config.nosave = true
 }
 
+// ClearData clears non-temporary session data.
+func (config *Config) ClearData() {
+	_ = os.RemoveAll(config.DataDir)
+}
+
 func (config *Config) CreateCacheDirs() {
 	_ = os.MkdirAll(config.CacheDir, 0700)
+	_ = os.MkdirAll(config.DataDir, 0700)
 	_ = os.MkdirAll(config.StateDir, 0700)
 	_ = os.MkdirAll(config.MediaDir, 0700)
 }
@@ -117,9 +126,11 @@ func (config *Config) DeleteSession() {
 	config.AuthCache.NextBatch = ""
 	config.AuthCache.InitialSyncDone = false
 	config.AccessToken = ""
+	config.DeviceID = ""
 	config.Rooms = rooms.NewRoomCache(config.RoomListPath, config.StateDir, config.RoomCacheSize, config.RoomCacheAge, config.GetUserID)
 	config.PushRules = nil
 
+	config.ClearData()
 	config.Clear()
 	config.nosave = false
 	config.CreateCacheDirs()

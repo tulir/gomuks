@@ -83,9 +83,11 @@ func (es EventSource) String() string {
 }
 
 type EventHandler func(source EventSource, event *event.Event)
+type SyncHandler func(resp *mautrix.RespSync, since string)
 
 type GomuksSyncer struct {
 	rooms             *rooms.RoomCache
+	globalListeners   []SyncHandler
 	listeners         map[event.Type][]EventHandler // event type to listeners array
 	FirstSyncDone     bool
 	InitDoneCallback  func()
@@ -96,10 +98,11 @@ type GomuksSyncer struct {
 // NewGomuksSyncer returns an instantiated GomuksSyncer
 func NewGomuksSyncer(rooms *rooms.RoomCache) *GomuksSyncer {
 	return &GomuksSyncer{
-		rooms:         rooms,
-		listeners:     make(map[event.Type][]EventHandler),
-		FirstSyncDone: false,
-		Progress:      StubSyncingModal{},
+		rooms:           rooms,
+		globalListeners: []SyncHandler{},
+		listeners:       make(map[event.Type][]EventHandler),
+		FirstSyncDone:   false,
+		Progress:        StubSyncingModal{},
 	}
 }
 
@@ -109,23 +112,26 @@ func (s *GomuksSyncer) ProcessResponse(res *mautrix.RespSync, since string) (err
 		s.rooms.DisableUnloading()
 	}
 	debug.Print("Received sync response")
+	s.Progress.SetMessage("Processing sync response")
 	steps := len(res.Rooms.Join) + len(res.Rooms.Invite) + len(res.Rooms.Leave)
-	s.Progress.SetSteps(steps + 2)
-	s.Progress.SetMessage("Processing global events")
+	s.Progress.SetSteps(steps + 2 + len(s.globalListeners))
+
+	wait := &sync.WaitGroup{}
+	callback := func() {
+		wait.Done()
+		s.Progress.Step()
+	}
+	wait.Add(len(s.globalListeners))
+	s.notifyGlobalListeners(res, since, callback)
+	wait.Wait()
+
 	s.processSyncEvents(nil, res.Presence.Events, EventSourcePresence)
 	s.Progress.Step()
 	s.processSyncEvents(nil, res.AccountData.Events, EventSourceAccountData)
 	s.Progress.Step()
 
-	wait := &sync.WaitGroup{}
-
 	wait.Add(steps)
-	callback := func() {
-		wait.Done()
-		s.Progress.Step()
-	}
 
-	s.Progress.SetMessage("Processing room events")
 	for roomID, roomData := range res.Rooms.Join {
 		go s.processJoinedRoom(roomID, roomData, callback)
 	}
@@ -150,6 +156,15 @@ func (s *GomuksSyncer) ProcessResponse(res *mautrix.RespSync, since string) (err
 	}
 	s.FirstSyncDone = true
 	return
+}
+
+func (s *GomuksSyncer) notifyGlobalListeners(res *mautrix.RespSync, since string, callback func()) {
+	for _, listener := range s.globalListeners {
+		go func(listener SyncHandler) {
+			listener(res, since)
+			callback()
+		}(listener)
+	}
 }
 
 func (s *GomuksSyncer) processJoinedRoom(roomID id.RoomID, roomData mautrix.SyncJoinedRoom, callback func()) {
@@ -239,6 +254,10 @@ func (s *GomuksSyncer) OnEventType(eventType event.Type, callback EventHandler) 
 	s.listeners[eventType] = append(s.listeners[eventType], callback)
 }
 
+func (s *GomuksSyncer) OnSync(callback SyncHandler) {
+	s.globalListeners = append(s.globalListeners, callback)
+}
+
 func (s *GomuksSyncer) notifyListeners(source EventSource, evt *event.Event) {
 	listeners, exists := s.listeners[evt.Type]
 	if !exists {
@@ -269,6 +288,7 @@ func (s *GomuksSyncer) GetFilterJSON(_ id.UserID) *mautrix.Filter {
 					event.StateCanonicalAlias,
 					event.StatePowerLevels,
 					event.StateTombstone,
+					event.StateEncryption,
 				},
 			},
 			Timeline: mautrix.FilterPart{

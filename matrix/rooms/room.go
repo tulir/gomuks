@@ -412,7 +412,7 @@ func (room *Room) UpdateState(evt *event.Event) {
 	case *event.TopicEventContent:
 		room.topicCache = content.Topic
 	case *event.EncryptionEventContent:
-		if content.Algorithm == event.AlgorithmMegolmV1 {
+		if content.Algorithm == id.AlgorithmMegolmV1 {
 			room.Encrypted = true
 		}
 	}
@@ -648,6 +648,17 @@ func (room *Room) GetMembers() map[id.UserID]*Member {
 	room.Load()
 	room.createMemberCache()
 	return room.memberCache
+}
+
+func (room *Room) GetMemberList() []id.UserID {
+	members := room.GetMembers()
+	memberList := make([]id.UserID, len(members))
+	index := 0
+	for userID, _ := range members {
+		memberList[index] = userID
+		index++
+	}
+	return memberList
 }
 
 // GetMember returns the member with the given MXID.

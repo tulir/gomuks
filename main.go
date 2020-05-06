@@ -48,24 +48,32 @@ func main() {
 	debug.Initialize()
 	defer debug.Recover()
 
-	configDir, err := UserConfigDir()
+	var configDir, dataDir, cacheDir, downloadDir string
+	var err error
+
+	configDir, err = UserConfigDir()
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "Failed to get config directory:", err)
+		_, _ = fmt.Fprintln(os.Stderr, "Failed to get config directory:", err)
 		os.Exit(3)
 	}
-	cacheDir, err := UserCacheDir()
+	dataDir, err = UserDataDir()
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "Failed to get cache directory:", err)
+		_, _ = fmt.Fprintln(os.Stderr, "Failed to get data directory:", err)
 		os.Exit(3)
 	}
-	downloadDir, err := UserDownloadDir()
+	cacheDir, err = UserCacheDir()
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "Failed to get download directory:", err)
+		_, _ = fmt.Fprintln(os.Stderr, "Failed to get cache directory:", err)
+		os.Exit(3)
+	}
+	downloadDir, err = UserDownloadDir()
+	if err != nil {
+		_, _ = fmt.Fprintln(os.Stderr, "Failed to get download directory:", err)
 		os.Exit(3)
 	}
 
 
-	gmx := NewGomuks(MainUIProvider, configDir, cacheDir, downloadDir)
+	gmx := NewGomuks(MainUIProvider, configDir, dataDir, cacheDir, downloadDir)
 	gmx.Start()
 
 	// We use os.Exit() everywhere, so exiting by returning from Start() shouldn't happen.
@@ -74,8 +82,19 @@ func main() {
 	os.Exit(2)
 }
 
+func getRootDir(subdir string) string {
+	rootDir := os.Getenv("GOMUKS_ROOT")
+	if rootDir == "" {
+		return ""
+	}
+	return filepath.Join(rootDir, subdir)
+}
+
 func UserCacheDir() (dir string, err error) {
 	dir = os.Getenv("GOMUKS_CACHE_HOME")
+	if dir == "" {
+		dir = getRootDir("cache")
+	}
 	if dir == "" {
 		dir, err = os.UserCacheDir()
 		dir = filepath.Join(dir, "gomuks")
@@ -83,34 +102,43 @@ func UserCacheDir() (dir string, err error) {
 	return
 }
 
+func UserDataDir() (dir string, err error) {
+	dir = os.Getenv("GOMUKS_DATA_HOME")
+	if dir != "" {
+		return
+	}
+	if runtime.GOOS == "windows" || runtime.GOOS == "darwin" {
+		return UserConfigDir()
+	}
+	dir = os.Getenv("XDG_DATA_HOME")
+	if dir == "" {
+		dir = getRootDir("data")
+	}
+	if dir == "" {
+		dir = os.Getenv("HOME")
+		if dir == "" {
+			return "", errors.New("neither $XDG_CACHE_HOME nor $HOME are defined")
+		}
+		dir = filepath.Join(dir, ".local", "share")
+	}
+	dir = filepath.Join(dir, "gomuks")
+	return
+}
+
 func UserDownloadDir() (dir string, err error) {
-	dir = os.Getenv("HOME")
-	return filepath.Join(dir, "Downloads"), nil
+	dir, err = os.UserHomeDir()
+	dir = filepath.Join(dir, "Downloads")
+	return
 }
 
 func UserConfigDir() (dir string, err error) {
 	dir = os.Getenv("GOMUKS_CONFIG_HOME")
-	if dir != "" {
-		return
+	if dir == "" {
+		dir = getRootDir("cache")
 	}
-	if runtime.GOOS == "windows" {
-		dir = os.Getenv("AppData")
-		if dir == "" {
-			err = errors.New("%AppData% is not defined")
-		}
-	} else {
-		dir = os.Getenv("XDG_CONFIG_HOME")
-		if dir == "" {
-			dir = os.Getenv("HOME")
-			if dir == "" {
-				err = errors.New("neither $XDG_CONFIG_HOME nor $HOME are defined")
-			} else if runtime.GOOS == "darwin" {
-				dir = filepath.Join(dir, "Library", "Application Support")
-			} else {
-				dir = filepath.Join(dir, ".config")
-			}
-		}
+	if dir == "" {
+		dir, err = os.UserConfigDir()
+		dir = filepath.Join(dir, "gomuks")
 	}
-	dir = filepath.Join(dir, "gomuks")
 	return
 }
