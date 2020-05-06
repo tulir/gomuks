@@ -74,6 +74,8 @@ func (cache *RoomCache) IsEncrypted(roomID id.RoomID) bool {
 }
 
 func (cache *RoomCache) FindSharedRooms(userID id.UserID) (shared []id.RoomID) {
+	// FIXME this disables unloading so TouchNode wouldn't try to double-lock
+	cache.DisableUnloading()
 	cache.Lock()
 	for _, room := range cache.Map {
 		if !room.Encrypted {
@@ -85,6 +87,7 @@ func (cache *RoomCache) FindSharedRooms(userID id.UserID) (shared []id.RoomID) {
 		}
 	}
 	cache.Unlock()
+	cache.EnableUnloading()
 	return
 }
 
