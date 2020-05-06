@@ -1024,9 +1024,12 @@ func (c *Container) GetEvent(room *rooms.Room, eventID id.EventID) (*muksevt.Eve
 	if err != nil {
 		return nil, err
 	}
-	evt = muksevt.Wrap(mxEvent)
+	err = mxEvent.Content.ParseRaw(mxEvent.Type)
+	if err != nil {
+		return nil, err
+	}
 	debug.Printf("Loaded event %s from server", eventID)
-	return evt, nil
+	return muksevt.Wrap(mxEvent), nil
 }
 
 // GetOrCreateRoom gets the room instance stored in the session.
