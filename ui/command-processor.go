@@ -134,6 +134,8 @@ func NewCommandProcessor(parent *MainView) *CommandProcessor {
 			"hprof":      cmdHeapProfile,
 			"cprof":      cmdCPUProfile,
 			"trace":      cmdTrace,
+
+			"fingerprint": cmdFingerprint,
 		},
 	}
 }

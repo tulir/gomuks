@@ -64,4 +64,17 @@ type MatrixContainer interface {
 	DownloadToDisk(uri id.ContentURI, file *attachment.EncryptedFile, target string) (string, error)
 	GetDownloadURL(uri id.ContentURI) string
 	GetCachePath(uri id.ContentURI) string
+
+	Crypto() Crypto
+}
+
+type Crypto interface {
+	Load() error
+	FlushStore() error
+	ProcessSyncResponse(resp *mautrix.RespSync, since string)
+	HandleMemberEvent(*event.Event)
+	DecryptMegolmEvent(*event.Event) (*event.Event, error)
+	EncryptMegolmEvent(id.RoomID, event.Type, event.Content) (*event.EncryptedEventContent, error)
+	ShareGroupSession(id.RoomID, []id.UserID) error
+	Fingerprint() string
 }

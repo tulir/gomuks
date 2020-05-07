@@ -237,7 +237,7 @@ func cmdTag(cmd *Command) {
 		err = cmd.Matrix.Client().AddTag(cmd.Room.MxRoom().ID, cmd.Args[0], order)
 	}
 	if err != nil {
-		cmd.Reply("Failed to add tag:", err)
+		cmd.Reply("Failed to add tag: %v", err)
 	}
 }
 
@@ -248,7 +248,7 @@ func cmdUntag(cmd *Command) {
 	}
 	err := cmd.Matrix.Client().RemoveTag(cmd.Room.MxRoom().ID, cmd.Args[0])
 	if err != nil {
-		cmd.Reply("Failed to remove tag:", err)
+		cmd.Reply("Failed to remove tag: %v", err)
 	}
 }
 
@@ -258,7 +258,16 @@ func cmdRoomNick(cmd *Command) {
 	member.Displayname = strings.Join(cmd.Args, " ")
 	_, err := cmd.Matrix.Client().SendStateEvent(room.ID, event.StateMember, string(room.SessionUserID), member)
 	if err != nil {
-		cmd.Reply("Failed to set room nick:", err)
+		cmd.Reply("Failed to set room nick: %v", err)
+	}
+}
+
+func cmdFingerprint(cmd *Command) {
+	c := cmd.Matrix.Crypto()
+	if c == nil {
+		cmd.Reply("Encryption support is not enabled")
+	} else {
+		cmd.Reply("Device ID: %s\nFingerprint: %s", cmd.Matrix.Client().DeviceID, c.Fingerprint())
 	}
 }
 
@@ -440,7 +449,7 @@ func cmdCreateRoom(cmd *Command) {
 	}
 	room, err := cmd.Matrix.CreateRoom(req)
 	if err != nil {
-		cmd.Reply("Failed to create room:", err)
+		cmd.Reply("Failed to create room: %v", err)
 		return
 	}
 	cmd.MainView.SwitchRoom("", room)
@@ -465,7 +474,7 @@ func cmdPrivateMessage(cmd *Command) {
 	}
 	room, err := cmd.Matrix.CreateRoom(req)
 	if err != nil {
-		cmd.Reply("Failed to create room:", err)
+		cmd.Reply("Failed to create room: %v", err)
 		return
 	}
 	cmd.MainView.SwitchRoom("", room)

@@ -55,7 +55,7 @@ import (
 // It is used for all Matrix calls from the UI and Matrix event handlers.
 type Container struct {
 	client  *mautrix.Client
-	crypto  CryptoInterface
+	crypto  ifc.Crypto
 	syncer  *GomuksSyncer
 	gmx     ifc.Gomuks
 	ui      ifc.GomuksUI
@@ -89,14 +89,8 @@ func (log mxLogger) Debugfln(message string, args ...interface{}) {
 	debug.Printf("[Matrix] "+message, args...)
 }
 
-type CryptoInterface interface {
-	Load() error
-	FlushStore() error
-	ProcessSyncResponse(resp *mautrix.RespSync, since string)
-	HandleMemberEvent(*event.Event)
-	DecryptMegolmEvent(*event.Event) (*event.Event, error)
-	EncryptMegolmEvent(id.RoomID, event.Type, event.Content) (*event.EncryptedEventContent, error)
-	ShareGroupSession(id.RoomID, []id.UserID) error
+func (c *Container) Crypto() ifc.Crypto {
+	return c.crypto
 }
 
 // InitClient initializes the mautrix client and connects to the homeserver specified in the config.
