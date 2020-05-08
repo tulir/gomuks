@@ -1,41 +1,20 @@
 build:
   stage: build
-  image: debian:bullseye
-  cache:
-    paths:
-    - .cache
-  before_script:
-  - apt-get update
-  - apt-get install -y git libolm-dev golang-go
-  - mkdir -p .cache
-  - export GOPATH="$CI_PROJECT_DIR/.cache"
-  script:
-  - go build -o gomuks_linux_amd64
-  artifacts:
-    paths:
-    - gomuks_linux_amd64
-
-build_static:
-  stage: build
   image: golang:alpine
   cache:
     paths:
     - .cache
   before_script:
+  - apk add --no-cache git build-base
   - mkdir -p .cache
   - export GOPATH="$CI_PROJECT_DIR/.cache"
-  variables:
-    CGO_ENABLED: "0"
   script:
-  - GOOS=linux GOARCH=amd64 go build -o gomuks_linux_amd64
-  - GOOS=linux GOARCH=386 go build -o gomuks_linux_386
-  - GOOS=linux GOARCH=arm go build -o gomuks_linux_arm
-  - GOOS=linux GOARCH=arm64 go build -o gomuks_linux_arm64
-  - GOOS=darwin GOARCH=amd64 go build -o gomuks_darwin_amd64
+  - git clone https://gitlab.matrix.org/matrix-org/olm.git
+  - cd olm
+  - CFLAGS=-static-libgcc CPPFLAGS="-static-libgcc -static-libstdc++" make static
+  - cp build/libolm.a /usr/lib/ && cp -a include/olm/ /usr/include/
+  - cd ..
+  - go build -ldflags "-linkmode external -extldflags -static" -o gomuks
   artifacts:
     paths:
-    - gomuks_linux_amd64
-    - gomuks_linux_386
-    - gomuks_linux_arm
-    - gomuks_linux_arm64
-    - gomuks_darwin_amd64
+    - gomuks
