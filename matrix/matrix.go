@@ -795,8 +795,13 @@ func (c *Container) HandleTyping(_ EventSource, evt *event.Event) {
 }
 
 func (c *Container) MarkRead(roomID id.RoomID, eventID id.EventID) {
-	urlPath := c.client.BuildURL("rooms", roomID, "receipt", "m.read", eventID)
-	_, _ = c.client.MakeRequest("POST", urlPath, struct{}{}, nil)
+	go func() {
+		defer debug.Recover()
+		err := c.client.MarkRead(roomID, eventID)
+		if err != nil {
+			debug.Print("Failed to mark %s in %s as read: %v", eventID, roomID, err)
+		}
+	}()
 }
 
 func (c *Container) PrepareMarkdownMessage(roomID id.RoomID, msgtype event.MessageType, text, html string, rel *ifc.Relation) *muksevt.Event {
