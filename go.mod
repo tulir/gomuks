@@ -16,6 +16,7 @@ require (
 	github.com/sasha-s/go-deadlock v0.2.0
 	github.com/shurcooL/sanitized_anchor_name v1.0.0 // indirect
 	github.com/stretchr/testify v1.5.1
+	github.com/zyedidia/clipboard v0.0.0-20200421031010-7c45b8673834
 	go.etcd.io/bbolt v1.3.4
 	golang.org/x/image v0.0.0-20200430140353-33d19683fad8
 	golang.org/x/net v0.0.0-20200505041828-1ed23360d12c

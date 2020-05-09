@@ -25,6 +25,7 @@ import (
 
 	"github.com/kyokomi/emoji"
 	"github.com/mattn/go-runewidth"
+	"github.com/zyedidia/clipboard"
 
 	"maunium.net/go/mautrix/crypto/attachment"
 	"maunium.net/go/mauview"
@@ -208,6 +209,11 @@ func (view *RoomView) OnSelect(message *messages.UIMessage) {
 				path = msg.Body
 			}
 			go view.Download(msg.URL, msg.File, path, view.selectReason == SelectOpen)
+		}
+	case SelectCopy:
+		msg, ok := message.Renderer.(*messages.TextMessage)
+		if ok {
+			go view.CopyToClipboard(msg.PlainText(), view.selectContent)
 		}
 	}
 	view.selecting = false
@@ -627,6 +633,19 @@ func (view *RoomView) InputSubmit(text string) {
 	}
 	view.editMoveText = ""
 	view.SetInputText("")
+}
+
+func (view *RoomView) CopyToClipboard(text string, register string) {
+	if register == "clipboard" || register == "primary" {
+		err := clipboard.WriteAll(text, register)
+		if err != nil {
+			view.AddServiceMessage(fmt.Sprintf("Clipboard unsupported: %v", err))
+			view.parent.parent.Render()
+		}
+	} else {
+		view.AddServiceMessage(fmt.Sprintf("Clipboard register %v unsupported", register))
+		view.parent.parent.Render()
+	}
 }
 
 func (view *RoomView) Download(url id.ContentURI, file *attachment.EncryptedFile, filename string, openFile bool) {

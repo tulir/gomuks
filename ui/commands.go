@@ -158,6 +158,7 @@ const (
 	SelectRedact                = "redact"
 	SelectDownload              = "download"
 	SelectOpen                  = "open"
+	SelectCopy                  = "copy"
 )
 
 func cmdReply(cmd *Command) {
@@ -174,6 +175,18 @@ func cmdDownload(cmd *Command) {
 
 func cmdOpen(cmd *Command) {
 	cmd.Room.StartSelecting(SelectOpen, strings.Join(cmd.Args, " "))
+}
+
+func cmdCopy(cmd *Command) {
+	register := strings.Join(cmd.Args, " ")
+	if len(register) == 0 {
+		register = "clipboard"
+	}
+	if (register == "clipboard" || register == "primary") {
+		cmd.Room.StartSelecting(SelectCopy, register)
+	} else {
+		cmd.Reply("Usage: /copy [register], where register is either \"clipboard\" or \"primary\". Defaults to \"clipboard\".")
+	}
 }
 
 func cmdReact(cmd *Command) {
