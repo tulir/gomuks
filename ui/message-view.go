@@ -51,6 +51,7 @@ type MessageView struct {
 
 	// Used for locking
 	loadingMessages int32
+	historyLoadPtr  uint64
 
 	_widestSender     uint32
 	_prevWidestSender uint32
@@ -109,6 +110,7 @@ func (view *MessageView) Unload() {
 	view.ScrollOffset = 0
 	view._widestSender = 5
 	view.prevMsgCount = -1
+	view.historyLoadPtr = 0
 	view.messagesLock.Unlock()
 	view.msgBufferLock.Unlock()
 	view.messageIDLock.Unlock()

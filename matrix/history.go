@@ -26,10 +26,11 @@ import (
 	sync "github.com/sasha-s/go-deadlock"
 	bolt "go.etcd.io/bbolt"
 
-	"maunium.net/go/gomuks/matrix/muksevt"
-	"maunium.net/go/gomuks/matrix/rooms"
 	"maunium.net/go/mautrix/event"
 	"maunium.net/go/mautrix/id"
+
+	"maunium.net/go/gomuks/matrix/muksevt"
+	"maunium.net/go/gomuks/matrix/rooms"
 )
 
 type HistoryManager struct {
@@ -37,8 +38,7 @@ type HistoryManager struct {
 
 	db *bolt.DB
 
-	historyEndPtr  map[*rooms.Room]uint64
-	historyLoadPtr map[*rooms.Room]uint64
+	historyEndPtr map[*rooms.Room]uint64
 }
 
 var bucketRoomStreams = []byte("room_streams")
@@ -49,8 +49,7 @@ const halfUint64 = ^uint64(0) >> 1
 
 func NewHistoryManager(dbPath string) (*HistoryManager, error) {
 	hm := &HistoryManager{
-		historyEndPtr:  make(map[*rooms.Room]uint64),
-		historyLoadPtr: make(map[*rooms.Room]uint64),
+		historyEndPtr: make(map[*rooms.Room]uint64),
 	}
 	db, err := bolt.Open(dbPath, 0600, &bolt.Options{
 		Timeout:      1,
@@ -142,18 +141,19 @@ func (hm *HistoryManager) Update(room *rooms.Room, eventID id.EventID, update fu
 }
 
 func (hm *HistoryManager) Append(room *rooms.Room, events []*event.Event) ([]*muksevt.Event, error) {
-	return hm.store(room, events, true)
+	muksEvts, _, err := hm.store(room, events, true)
+	return muksEvts, err
 }
 
-func (hm *HistoryManager) Prepend(room *rooms.Room, events []*event.Event) ([]*muksevt.Event, error) {
+func (hm *HistoryManager) Prepend(room *rooms.Room, events []*event.Event) ([]*muksevt.Event, uint64, error) {
 	return hm.store(room, events, false)
 }
 
-func (hm *HistoryManager) store(room *rooms.Room, events []*event.Event, append bool) ([]*muksevt.Event, error) {
+func (hm *HistoryManager) store(room *rooms.Room, events []*event.Event, append bool) (newEvents []*muksevt.Event, newPtrStart uint64, err error) {
 	hm.Lock()
 	defer hm.Unlock()
-	newEvents := make([]*muksevt.Event, len(events))
-	err := hm.db.Update(func(tx *bolt.Tx) error {
+	newEvents = make([]*muksevt.Event, len(events))
+	err = hm.db.Update(func(tx *bolt.Tx) error {
 		streamPointers := tx.Bucket(bucketStreamPointers)
 		rid := []byte(room.ID)
 		stream, err := tx.Bucket(bucketRoomStreams).CreateBucketIfNotExists(rid)
@@ -205,6 +205,8 @@ func (hm *HistoryManager) store(room *rooms.Room, events []*event.Event, append 
 				}
 			}
 			hm.historyEndPtr[room] = ptrStart + eventCount
+			// TODO this is not the correct value for newPtrStart, figure out what the f*ck is going on here
+			newPtrStart = ptrStart + eventCount
 			err := streamPointers.Put(rid, itob(ptrStart+eventCount))
 			if err != nil {
 				return err
@@ -213,10 +215,10 @@ func (hm *HistoryManager) store(room *rooms.Room, events []*event.Event, append 
 
 		return nil
 	})
-	return newEvents, err
+	return
 }
 
-func (hm *HistoryManager) Load(room *rooms.Room, num int) (events []*muksevt.Event, err error) {
+func (hm *HistoryManager) Load(room *rooms.Room, num int, ptrStart uint64) (events []*muksevt.Event, newPtrStart uint64, err error) {
 	hm.Lock()
 	defer hm.Unlock()
 	err = hm.db.View(func(tx *bolt.Tx) error {
@@ -224,8 +226,7 @@ func (hm *HistoryManager) Load(room *rooms.Room, num int) (events []*muksevt.Eve
 		if stream == nil {
 			return nil
 		}
-		ptrStart, ok := hm.historyLoadPtr[room]
-		if !ok {
+		if ptrStart == 0 {
 			ptrStart = stream.Sequence() + 1
 		}
 		c := stream.Cursor()
@@ -234,7 +235,7 @@ func (hm *HistoryManager) Load(room *rooms.Room, num int) (events []*muksevt.Eve
 		if k == nil || ptrStartFound >= ptrStart {
 			return nil
 		}
-		hm.historyLoadPtr[room] = ptrStartFound - 1
+		newPtrStart = ptrStartFound
 		for ; k != nil && btoi(k) < ptrStart; k, v = c.Next() {
 			evt, parseError := unmarshalEvent(v)
 			if parseError != nil {
@@ -268,7 +269,7 @@ func btoi(b []byte) uint64 {
 func stripRaw(evt *muksevt.Event) {
 	evtCopy := *evt.Event
 	evtCopy.Content = event.Content{
-		Parsed:  evt.Content.Parsed,
+		Parsed: evt.Content.Parsed,
 	}
 	evt.Event = &evtCopy
 }

@@ -461,13 +461,15 @@ func (view *MainView) LoadHistory(roomID id.RoomID) {
 	// Update the "Loading more messages..." text
 	view.parent.Render()
 
-	history, err := view.matrix.GetHistory(roomView.Room, 50)
+	history, newLoadPtr, err := view.matrix.GetHistory(roomView.Room, 50, msgView.historyLoadPtr)
 	if err != nil {
 		roomView.AddServiceMessage("Failed to fetch history")
 		debug.Print("Failed to fetch history for", roomView.Room.ID, err)
 		view.parent.Render()
 		return
 	}
+	//debug.Printf("Load pointer %d -> %d", msgView.historyLoadPtr, newLoadPtr)
+	msgView.historyLoadPtr = newLoadPtr
 	for _, evt := range history {
 		roomView.AddHistoryEvent(evt)
 	}

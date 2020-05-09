@@ -966,18 +966,18 @@ func (c *Container) FetchMembers(room *rooms.Room) error {
 }
 
 // GetHistory fetches room history.
-func (c *Container) GetHistory(room *rooms.Room, limit int) ([]*muksevt.Event, error) {
-	events, err := c.history.Load(room, limit)
+func (c *Container) GetHistory(room *rooms.Room, limit int, dbPointer uint64) ([]*muksevt.Event, uint64, error) {
+	events, newDBPointer, err := c.history.Load(room, limit, dbPointer)
 	if err != nil {
-		return nil, err
+		return nil, dbPointer, err
 	}
 	if len(events) > 0 {
 		debug.Printf("Loaded %d events for %s from local cache", len(events), room.ID)
-		return events, nil
+		return events, newDBPointer, nil
 	}
 	resp, err := c.client.Messages(room.ID, room.PrevBatch, "", 'b', limit)
 	if err != nil {
-		return nil, err
+		return nil, dbPointer, err
 	}
 	debug.Printf("Loaded %d events for %s from server from %s to %s", len(resp.Chunk), room.ID, resp.Start, resp.End)
 	for i, evt := range resp.Chunk {
@@ -1002,13 +1002,14 @@ func (c *Container) GetHistory(room *rooms.Room, limit int) ([]*muksevt.Event, e
 	room.PrevBatch = resp.End
 	c.config.Rooms.Put(room)
 	if len(resp.Chunk) == 0 {
-		return []*muksevt.Event{}, nil
+		return []*muksevt.Event{}, dbPointer, nil
 	}
-	events, err = c.history.Prepend(room, resp.Chunk)
+	// TODO newDBPointer isn't accurate in this case yet, fix later
+	events, newDBPointer, err = c.history.Prepend(room, resp.Chunk)
 	if err != nil {
-		return nil, err
+		return nil, dbPointer, err
 	}
-	return events, nil
+	return events, dbPointer, nil
 }
 
 func (c *Container) GetEvent(room *rooms.Room, eventID id.EventID) (*muksevt.Event, error) {

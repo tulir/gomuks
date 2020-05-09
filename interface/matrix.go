@@ -55,7 +55,7 @@ type MatrixContainer interface {
 	CreateRoom(req *mautrix.ReqCreateRoom) (*rooms.Room, error)
 
 	FetchMembers(room *rooms.Room) error
-	GetHistory(room *rooms.Room, limit int) ([]*muksevt.Event, error)
+	GetHistory(room *rooms.Room, limit int, dbPointer uint64) ([]*muksevt.Event, uint64, error)
 	GetEvent(room *rooms.Room, eventID id.EventID) (*muksevt.Event, error)
 	GetRoom(roomID id.RoomID) *rooms.Room
 	GetOrCreateRoom(roomID id.RoomID) *rooms.Room
