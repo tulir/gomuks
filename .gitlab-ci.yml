@@ -15,19 +15,19 @@ cache:
     paths:
     - gomuks
 
-build linux/amd64:
+linux/amd64:
   <<: *build-linux
   image: dock.mau.dev/tulir/gomuks-build-docker:linux-amd64
 
-build linux/arm:
+linux/arm:
   <<: *build-linux
   image: dock.mau.dev/tulir/gomuks-build-docker:linux-arm
 
-build linux/arm64:
+linux/arm64:
   <<: *build-linux
   image: dock.mau.dev/tulir/gomuks-build-docker:linux-arm64
 
-build windows/amd64:
+windows/amd64:
   image: dock.mau.dev/tulir/gomuks-build-docker:windows-amd64
   stage: build
   script:
