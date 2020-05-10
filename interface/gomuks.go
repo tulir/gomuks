@@ -25,6 +25,7 @@ type Gomuks interface {
 	Matrix() MatrixContainer
 	UI() GomuksUI
 	Config() *config.Config
+	Version() string
 
 	Start()
 	Stop(save bool)
