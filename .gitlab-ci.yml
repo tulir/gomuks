@@ -40,7 +40,7 @@ windows/amd64:
     paths:
     - gomuks.exe
 
-debian package:
+debian:
   image: debian
   stage: package
   dependencies:
@@ -48,4 +48,5 @@ debian package:
   script:
   - mkdir -p deb/usr/bin
   - cp gomuks deb/usr/bin/gomuks
+  - chmod -R -s deb/DEBIAN && chmod -R 0755 deb/DEBIAN
   - dpkg-deb --build deb gomuks-$(cat deb/DEBIAN/control | grep Version | awk '{ print $2 }').deb
