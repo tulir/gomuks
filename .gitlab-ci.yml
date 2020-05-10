@@ -1,3 +1,7 @@
+stages:
+- build
+- package
+
 default:
   before_script:
   - mkdir -p .cache
@@ -35,3 +39,13 @@ windows/amd64:
   artifacts:
     paths:
     - gomuks.exe
+
+debian package:
+  image: debian
+  stage: package
+  dependencies:
+  - linux/amd64
+  script:
+  - mkdir -p deb/usr/bin
+  - cp gomuks deb/usr/bin/gomuks
+  - dpkg-deb --build deb gomuks-$(cat deb/DEBIAN/control | grep Version | awk '{ print $2 }').deb
