@@ -7,7 +7,7 @@ cache:
   paths:
   - .cache
 
-build-linux: &build-linux
+.build-linux: &build-linux
   stage: build
   script:
   - go build -ldflags "-linkmode external -extldflags -static" -o gomuks
