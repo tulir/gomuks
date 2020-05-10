@@ -1,2 +1,0 @@
-#!/bin/bash
-golint ./... | grep -v "should have comment" | grep -v "vendor/"
