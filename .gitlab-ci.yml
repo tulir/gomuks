@@ -1,20 +1,37 @@
-build:
-  stage: build
-  image: golang:alpine
-  cache:
-    paths:
-    - .cache
+default:
   before_script:
-  - apk add --no-cache git build-base
   - mkdir -p .cache
   - export GOPATH="$CI_PROJECT_DIR/.cache"
+
+cache:
+  paths:
+  - .cache
+
+build-linux: &build-linux
+  stage: build
   script:
-  - git clone https://gitlab.matrix.org/matrix-org/olm.git
-  - cd olm
-  - CFLAGS=-static-libgcc CPPFLAGS="-static-libgcc -static-libstdc++" make static
-  - cp build/libolm.a /usr/lib/ && cp -a include/olm/ /usr/include/
-  - cd ..
   - go build -ldflags "-linkmode external -extldflags -static" -o gomuks
   artifacts:
     paths:
     - gomuks
+
+build linux/amd64:
+  <<: *build-linux
+  image: dock.mau.dev/tulir/gomuks-build-docker:linux-amd64
+
+build linux/arm:
+  <<: *build-linux
+  image: dock.mau.dev/tulir/gomuks-build-docker:linux-arm
+
+build linux/arm64:
+  <<: *build-linux
+  image: dock.mau.dev/tulir/gomuks-build-docker:linux-arm64
+
+build windows/amd64:
+  image: dock.mau.dev/tulir/gomuks-build-docker:windows-amd64
+  stage: build
+  script:
+  - go build -ldflags "-linkmode external -extldflags -static" -o gomuks.exe
+  artifacts:
+    paths:
+    - gomuks.exe
