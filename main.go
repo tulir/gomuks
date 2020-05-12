@@ -134,7 +134,7 @@ func UserDownloadDir() (dir string, err error) {
 func UserConfigDir() (dir string, err error) {
 	dir = os.Getenv("GOMUKS_CONFIG_HOME")
 	if dir == "" {
-		dir = getRootDir("cache")
+		dir = getRootDir("config")
 	}
 	if dir == "" {
 		dir, err = os.UserConfigDir()
