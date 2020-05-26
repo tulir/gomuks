@@ -16,3 +16,8 @@ For installation and usage instructions, see the [wiki](https://github.com/tulir
 
 ## Discussion
 Matrix room: [#gomuks:maunium.net](https://matrix.to/#/#gomuks:maunium.net)
+
+## FAQ
+Q: Why do I see 'Decryption failed or gomuks not built with encryption support' when built with encryption, when viewing messages sent while the client is offline?
+
+A: feature is not yet implimented see: https://github.com/tulir/gomuks/issues/159
