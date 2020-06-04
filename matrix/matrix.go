@@ -115,7 +115,7 @@ func (c *Container) InitClient() error {
 	var err error
 	c.client, err = mautrix.NewClient(c.config.HS, mxid, accessToken)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "failed to create mautrix client")
 	}
 	c.client.UserAgent = fmt.Sprintf("gomuks %s (with mautrix-go %s)", c.gmx.Version(), mautrix.Version)
 	c.client.Logger = mxLogger{}
@@ -123,7 +123,7 @@ func (c *Container) InitClient() error {
 
 	err = c.initCrypto()
 	if err != nil {
-		return err
+		return errors.Wrap(err, "failed to initialize crypto")
 	}
 
 	if c.history == nil {
