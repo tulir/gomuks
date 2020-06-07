@@ -142,8 +142,9 @@ func cmdReject(cmd *Command) {
 	if err != nil {
 		cmd.Reply("Failed to reject invite: %v", err)
 	} else {
-		cmd.Reply("Successfully accepted invite")
+		cmd.Reply("Successfully rejected invite")
 	}
+	cmd.MainView.RemoveRoom(room)
 }
 
 func cmdID(cmd *Command) {
