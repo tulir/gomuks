@@ -18,6 +18,7 @@ package main
 
 import (
 	"errors"
+	"flag"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -74,6 +75,14 @@ func main() {
 
 
 	gmx := NewGomuks(MainUIProvider, configDir, dataDir, cacheDir, downloadDir)
+
+	isVersion := flag.Bool("version", false, "Display gomuks version and exit")
+	flag.Parse()
+	if *isVersion {
+		fmt.Printf("gomuks version %s\n", gmx.Version())
+		os.Exit(0)
+	}
+
 	gmx.Start()
 
 	// We use os.Exit() everywhere, so exiting by returning from Start() shouldn't happen.
