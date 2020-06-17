@@ -93,35 +93,94 @@ func directParseEvent(matrix ifc.MatrixContainer, room *rooms.Room, evt *muksevt
 	}
 }
 
+func findAltAliasDifference(newList, oldList []string) (addedStr, removedStr tstring.TString) {
+	var addedList, removedList []tstring.TString
+OldLoop:
+	for _, oldAlias := range oldList {
+		for _, newAlias := range newList {
+			if oldAlias == newAlias {
+				continue OldLoop
+			}
+		}
+		removedList = append(removedList, tstring.NewStyleTString(oldAlias, tcell.StyleDefault.Foreground(widget.GetHashColor(oldAlias)).Underline(true)))
+	}
+NewLoop:
+	for _, newAlias := range newList {
+		for _, oldAlias := range oldList {
+			if newAlias == oldAlias {
+				continue NewLoop
+			}
+		}
+		addedList = append(addedList, tstring.NewStyleTString(newAlias, tcell.StyleDefault.Foreground(widget.GetHashColor(newAlias)).Underline(true)))
+	}
+	if len(addedList) == 1 {
+		addedStr = tstring.NewColorTString("added alternative address ", tcell.ColorGreen).AppendTString(addedList[0])
+	} else if len(addedList) != 0 {
+		addedStr = tstring.
+			Join(addedList[:len(addedList)-1], ", ").
+			PrependColor("added alternative addresses ", tcell.ColorGreen).
+			AppendColor(" and ", tcell.ColorGreen).
+			AppendTString(addedList[len(addedList)-1])
+	}
+	if len(removedList) == 1 {
+		removedStr = tstring.NewColorTString("removed alternative address ", tcell.ColorGreen).AppendTString(removedList[0])
+	} else if len(removedList) != 0 {
+		removedStr = tstring.
+			Join(removedList[:len(removedList)-1], ", ").
+			PrependColor("removed alternative addresses ", tcell.ColorGreen).
+			AppendColor(" and ", tcell.ColorGreen).
+			AppendTString(removedList[len(removedList)-1])
+	}
+	return
+}
+
 func ParseStateEvent(evt *muksevt.Event, displayname string) *UIMessage {
-	text := tstring.NewColorTString(displayname, widget.GetHashColor(evt.Sender))
+	text := tstring.NewColorTString(displayname, widget.GetHashColor(evt.Sender)).Append(" ")
 	switch content := evt.Content.Parsed.(type) {
 	case *event.TopicEventContent:
 		if len(content.Topic) == 0 {
-			text = text.AppendColor(" removed the topic.", tcell.ColorGreen)
+			text = text.AppendColor("removed the topic.", tcell.ColorGreen)
 		} else {
-			text = text.AppendColor(" changed the topic to ", tcell.ColorGreen).
+			text = text.AppendColor("changed the topic to ", tcell.ColorGreen).
 				AppendStyle(content.Topic, tcell.StyleDefault.Underline(true)).
 				AppendColor(".", tcell.ColorGreen)
 		}
 	case *event.RoomNameEventContent:
 		if len(content.Name) == 0 {
-			text = text.AppendColor(" removed the room name.", tcell.ColorGreen)
+			text = text.AppendColor("removed the room name.", tcell.ColorGreen)
 		} else {
-			text = text.AppendColor(" changed the room name to ", tcell.ColorGreen).
+			text = text.AppendColor("changed the room name to ", tcell.ColorGreen).
 				AppendStyle(content.Name, tcell.StyleDefault.Underline(true)).
 				AppendColor(".", tcell.ColorGreen)
 		}
 	case *event.CanonicalAliasEventContent:
-		if len(content.Alias) == 0 {
-			text = text.AppendColor(" removed the main address of the room.", tcell.ColorGreen)
+		_ = evt.Unsigned.PrevContent.ParseRaw(evt.Type)
+		prevContent := evt.Unsigned.PrevContent.AsCanonicalAlias()
+		debug.Printf("%+v -> %+v", prevContent, content)
+		if len(content.Alias) == 0 && len(prevContent.Alias) != 0 {
+			text = text.AppendColor("removed the main address of the room", tcell.ColorGreen)
+		} else if content.Alias != prevContent.Alias {
+			text = text.
+				AppendColor("changed the main address of the room to ", tcell.ColorGreen).
+				AppendStyle(string(content.Alias), tcell.StyleDefault.Underline(true))
 		} else {
-			text = text.AppendColor(" changed the main address of the room to ", tcell.ColorGreen).
-				AppendStyle(string(content.Alias), tcell.StyleDefault.Underline(true)).
-				AppendColor(".", tcell.ColorGreen)
+			added, removed := findAltAliasDifference(content.AltAliases, prevContent.AltAliases)
+			if len(added) > 0 {
+				if len(removed) > 0 {
+					text = text.
+						AppendTString(added).
+						AppendColor(" and ", tcell.ColorGreen).
+						AppendTString(removed)
+				} else {
+					text = text.AppendTString(added)
+				}
+			} else if len(removed) > 0 {
+				text = text.AppendTString(removed)
+			} else {
+				text = text.AppendColor("changed nothing", tcell.ColorGreen)
+			}
+			text = text.AppendColor(" for this room", tcell.ColorGreen)
 		}
-	//case event.StateAliases:
-	//	text = ParseAliasEvent(evt, displayname)
 	}
 	return NewExpandedTextMessage(evt, displayname, text)
 }
@@ -243,66 +302,3 @@ func ParseMembershipEvent(room *rooms.Room, evt *muksevt.Event) *UIMessage {
 
 	return NewExpandedTextMessage(evt, displayname, text)
 }
-
-//func ParseAliasEvent(evt *muksevt.Event, displayname string) tstring.TString {
-//	var prevAliases []string
-//	if evt.Unsigned.PrevContent != nil {
-//		prevAliases = evt.Unsigned.PrevContent.Aliases
-//	}
-//	aliases := evt.Content.Aliases
-//	var added, removed []tstring.TString
-//Outer1:
-//	for _, oldAlias := range prevAliases {
-//		for _, newAlias := range aliases {
-//			if oldAlias == newAlias {
-//				continue Outer1
-//			}
-//		}
-//		removed = append(removed, tstring.NewStyleTString(oldAlias, tcell.StyleDefault.Foreground(widget.GetHashColor(oldAlias)).Underline(true)))
-//	}
-//Outer2:
-//	for _, newAlias := range aliases {
-//		for _, oldAlias := range prevAliases {
-//			if oldAlias == newAlias {
-//				continue Outer2
-//			}
-//		}
-//		added = append(added, tstring.NewStyleTString(newAlias, tcell.StyleDefault.Foreground(widget.GetHashColor(newAlias)).Underline(true)))
-//	}
-//	var addedStr, removedStr tstring.TString
-//	if len(added) == 1 {
-//		addedStr = added[0]
-//	} else if len(added) > 1 {
-//		addedStr = tstring.
-//			Join(added[:len(added)-1], ", ").
-//			Append(" and ").
-//			AppendTString(added[len(added)-1])
-//	}
-//	if len(removed) == 1 {
-//		removedStr = removed[0]
-//	} else if len(removed) > 1 {
-//		removedStr = tstring.
-//			Join(removed[:len(removed)-1], ", ").
-//			Append(" and ").
-//			AppendTString(removed[len(removed)-1])
-//	}
-//	text := tstring.NewBlankTString()
-//	if len(addedStr) > 0 && len(removedStr) > 0 {
-//		text = text.AppendColor(fmt.Sprintf("%s added ", displayname), tcell.ColorGreen).
-//			AppendTString(addedStr).
-//			AppendColor(" and removed ", tcell.ColorGreen).
-//			AppendTString(removedStr).
-//			AppendColor(" as addresses for this room.", tcell.ColorGreen)
-//	} else if len(addedStr) > 0 {
-//		text = text.AppendColor(fmt.Sprintf("%s added ", displayname), tcell.ColorGreen).
-//			AppendTString(addedStr).
-//			AppendColor(" as addresses for this room.", tcell.ColorGreen)
-//	} else if len(removedStr) > 0 {
-//		text = text.AppendColor(fmt.Sprintf("%s removed ", displayname), tcell.ColorGreen).
-//			AppendTString(removedStr).
-//			AppendColor(" as addresses for this room.", tcell.ColorGreen)
-//	} else {
-//		return nil
-//	}
-//	return text
-//}

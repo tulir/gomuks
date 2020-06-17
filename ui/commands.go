@@ -33,6 +33,7 @@ import (
 	"unicode"
 
 	"github.com/lucasb-eyer/go-colorful"
+	"github.com/pkg/errors"
 	"github.com/russross/blackfriday/v2"
 
 	"maunium.net/go/mautrix"
@@ -124,7 +125,7 @@ func cmdAccept(cmd *Command) {
 	_, server, _ := room.SessionMember.Sender.Parse()
 	_, err := cmd.Matrix.JoinRoom(room.ID, server)
 	if err != nil {
-		cmd.Reply("Failed to accept invite:", err)
+		cmd.Reply("Failed to accept invite: %v", err)
 	} else {
 		cmd.Reply("Successfully accepted invite")
 	}
@@ -183,7 +184,7 @@ func cmdCopy(cmd *Command) {
 	if len(register) == 0 {
 		register = "clipboard"
 	}
-	if (register == "clipboard" || register == "primary") {
+	if register == "clipboard" || register == "primary" {
 		cmd.Room.StartSelecting(SelectCopy, register)
 	} else {
 		cmd.Reply("Usage: /copy [register], where register is either \"clipboard\" or \"primary\". Defaults to \"clipboard\".")
@@ -197,6 +198,85 @@ func cmdReact(cmd *Command) {
 	}
 
 	cmd.Room.StartSelecting(SelectReact, strings.Join(cmd.Args, " "))
+}
+
+func readRoomAlias(cmd *Command) (alias id.RoomAlias, err error) {
+	param := strings.Join(cmd.Args[1:], " ")
+	if strings.ContainsRune(param, ':') {
+		if param[0] != '#' {
+			return "", errors.New("Full aliases must start with #")
+		}
+
+		alias = id.RoomAlias(param)
+	} else {
+		_, homeserver, _ := cmd.Matrix.Client().UserID.Parse()
+		alias = id.NewRoomAlias(param, homeserver)
+	}
+	return
+}
+
+func cmdAlias(cmd *Command) {
+	if len(cmd.Args) < 2 {
+		cmd.Reply("Usage: /alias <add|remove> <localpart>")
+		return
+	}
+
+	alias, err := readRoomAlias(cmd)
+	if err != nil {
+		cmd.Reply(err.Error())
+		return
+	}
+
+	subcmd := strings.ToLower(cmd.Args[0])
+	switch subcmd {
+	case "add", "create":
+		cmdAddAlias(cmd, alias)
+	case "remove", "delete", "del", "rm":
+		cmdRemoveAlias(cmd, alias)
+	case "resolve", "get":
+		cmdResolveAlias(cmd, alias)
+	default:
+		cmd.Reply("Usage: /alias <add|remove|resolve> <localpart>")
+	}
+}
+
+func niceError(err error) string {
+	httpErr, ok := err.(mautrix.HTTPError)
+	if ok && httpErr.RespError != nil {
+		return httpErr.RespError.Error()
+	}
+	return err.Error()
+}
+
+func cmdAddAlias(cmd *Command, alias id.RoomAlias) {
+	_, err := cmd.Matrix.Client().CreateAlias(alias, cmd.Room.MxRoom().ID)
+	if err != nil {
+		cmd.Reply("Failed to create alias: %v", niceError(err))
+	} else {
+		cmd.Reply("Created alias %s", alias)
+	}
+}
+
+func cmdRemoveAlias(cmd *Command, alias id.RoomAlias) {
+	_, err := cmd.Matrix.Client().DeleteAlias(alias)
+	if err != nil {
+		cmd.Reply("Failed to delete alias: %v", niceError(err))
+	} else {
+		cmd.Reply("Deleted alias %s", alias)
+	}
+}
+
+func cmdResolveAlias(cmd *Command, alias id.RoomAlias) {
+	resp, err := cmd.Matrix.Client().ResolveAlias(alias)
+	if err != nil {
+		cmd.Reply("Failed to resolve alias: %v", niceError(err))
+	} else {
+		roomIDText := string(resp.RoomID)
+		if resp.RoomID == cmd.Room.MxRoom().ID {
+			roomIDText += " (this room)"
+		}
+		cmd.Reply("Alias %s points to room %s\nThere are %d servers in the room.", alias, roomIDText, len(resp.Servers))
+	}
 }
 
 func cmdTags(cmd *Command) {
@@ -384,6 +464,7 @@ Things: rooms, users, baremessages, images, typingnotif
 /tag <tag> <priority> - Add the room to <tag>.
 /untag <tag>          - Remove the room from <tag>.
 /tags                 - List the tags the room is in.
+/alias <act> <name>   - Add or remove local addresses.
 
 /leave                     - Leave the current room.
 /kick   <user id> [reason] - Kick a user.

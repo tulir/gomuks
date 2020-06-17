@@ -41,11 +41,13 @@ type Command struct {
 	Command     string
 	OrigCommand string
 	Args        []string
+	RawArgs     string
 	OrigText    string
 }
 
 func (cmd *Command) Reply(message string, args ...interface{}) {
 	cmd.Room.AddServiceMessage(fmt.Sprintf(message, args...))
+	cmd.UI.Render()
 }
 
 type Alias struct {
@@ -128,6 +130,7 @@ func NewCommandProcessor(parent *MainView) *CommandProcessor {
 			"rainbow":    cmdRainbow,
 			"rainbowme":  cmdRainbowMe,
 			"notice":     cmdNotice,
+			"alias":      cmdAlias,
 			"tags":       cmdTags,
 			"tag":        cmdTag,
 			"untag":      cmdUntag,
@@ -146,15 +149,22 @@ func (ch *CommandProcessor) ParseCommand(roomView *RoomView, text string) *Comma
 		return nil
 	}
 	text = text[1:]
-	split := strings.SplitN(text, " ", -1)
+	split := strings.Fields(text)
+	command := split[0]
+	args := split[1:]
+	var rawArgs string
+	if len(text) > len(command)+1 {
+		rawArgs = text[len(command)+1:]
+	}
 	return &Command{
 		gomuksPointerContainer: ch.gomuksPointerContainer,
 		Handler:                ch,
 
 		Room:        roomView,
-		Command:     strings.ToLower(split[0]),
-		OrigCommand: split[0],
-		Args:        split[1:],
+		Command:     strings.ToLower(command),
+		OrigCommand: command,
+		Args:        args,
+		RawArgs:     rawArgs,
 		OrigText:    text,
 	}
 }
