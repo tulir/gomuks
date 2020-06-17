@@ -343,7 +343,7 @@ func (c *Container) OnLogin() {
 	c.syncer = NewGomuksSyncer(c.config.Rooms)
 	if c.crypto != nil {
 		c.syncer.OnSync(c.crypto.ProcessSyncResponse)
-		c.syncer.OnEventType(event.StateMember, func(source EventSource, evt *event.Event) {
+		c.syncer.OnEventType(event.StateMember, func(source mautrix.EventSource, evt *event.Event) {
 			// Don't spam the crypto module with member events of an initial sync
 			// TODO invalidate all group sessions when clearing cache?
 			if c.config.AuthCache.InitialSyncDone {
@@ -440,8 +440,8 @@ func (c *Container) Start() {
 	}
 }
 
-func (c *Container) HandlePreferences(source EventSource, evt *event.Event) {
-	if source&EventSourceAccountData == 0 {
+func (c *Container) HandlePreferences(source mautrix.EventSource, evt *event.Event) {
+	if source&mautrix.EventSourceAccountData == 0 {
 		return
 	}
 	orig := c.config.Preferences
@@ -470,7 +470,7 @@ func (c *Container) SendPreferencesToMatrix() {
 	}
 }
 
-func (c *Container) HandleRedaction(source EventSource, evt *event.Event) {
+func (c *Container) HandleRedaction(source mautrix.EventSource, evt *event.Event) {
 	room := c.GetOrCreateRoom(evt.RoomID)
 	var redactedEvt *muksevt.Event
 	err := c.history.Update(room, evt.Redacts, func(redacted *muksevt.Event) error {
@@ -554,7 +554,7 @@ func (c *Container) HandleReaction(room *rooms.Room, reactsTo id.EventID, reactE
 	}
 }
 
-func (c *Container) HandleEncrypted(source EventSource, mxEvent *event.Event) {
+func (c *Container) HandleEncrypted(source mautrix.EventSource, mxEvent *event.Event) {
 	evt, err := c.crypto.DecryptMegolmEvent(mxEvent)
 	if err != nil {
 		debug.Print("Failed to decrypt event:", err)
@@ -566,12 +566,12 @@ func (c *Container) HandleEncrypted(source EventSource, mxEvent *event.Event) {
 }
 
 // HandleMessage is the event handler for the m.room.message timeline event.
-func (c *Container) HandleMessage(source EventSource, mxEvent *event.Event) {
+func (c *Container) HandleMessage(source mautrix.EventSource, mxEvent *event.Event) {
 	room := c.GetOrCreateRoom(mxEvent.RoomID)
-	if source&EventSourceLeave != 0 {
+	if source&mautrix.EventSourceLeave != 0 {
 		room.HasLeft = true
 		return
-	} else if source&EventSourceState != 0 {
+	} else if source&mautrix.EventSourceState != 0 {
 		return
 	}
 
@@ -631,9 +631,9 @@ func (c *Container) HandleMessage(source EventSource, mxEvent *event.Event) {
 }
 
 // HandleMembership is the event handler for the m.room.member state event.
-func (c *Container) HandleMembership(source EventSource, evt *event.Event) {
-	isLeave := source&EventSourceLeave != 0
-	isTimeline := source&EventSourceTimeline != 0
+func (c *Container) HandleMembership(source mautrix.EventSource, evt *event.Event) {
+	isLeave := source&mautrix.EventSourceLeave != 0
+	isTimeline := source&mautrix.EventSourceTimeline != 0
 	if isLeave {
 		c.GetOrCreateRoom(evt.RoomID).HasLeft = true
 	}
@@ -702,8 +702,8 @@ func (c *Container) parseReadReceipt(evt *event.Event) (largestTimestampEvent id
 	return
 }
 
-func (c *Container) HandleReadReceipt(source EventSource, evt *event.Event) {
-	if source&EventSourceLeave != 0 {
+func (c *Container) HandleReadReceipt(source mautrix.EventSource, evt *event.Event) {
+	if source&mautrix.EventSourceLeave != 0 {
 		return
 	}
 
@@ -735,7 +735,7 @@ func (c *Container) parseDirectChatInfo(evt *event.Event) map[*rooms.Room]bool {
 	return directChats
 }
 
-func (c *Container) HandleDirectChatInfo(_ EventSource, evt *event.Event) {
+func (c *Container) HandleDirectChatInfo(_ mautrix.EventSource, evt *event.Event) {
 	directChats := c.parseDirectChatInfo(evt)
 	for _, room := range c.config.Rooms.Map {
 		shouldBeDirect := directChats[room]
@@ -749,7 +749,7 @@ func (c *Container) HandleDirectChatInfo(_ EventSource, evt *event.Event) {
 }
 
 // HandlePushRules is the event handler for the m.push_rules account data event.
-func (c *Container) HandlePushRules(_ EventSource, evt *event.Event) {
+func (c *Container) HandlePushRules(_ mautrix.EventSource, evt *event.Event) {
 	debug.Print("Received updated push rules")
 	var err error
 	c.config.PushRules, err = pushrules.EventToPushRules(evt)
@@ -761,7 +761,7 @@ func (c *Container) HandlePushRules(_ EventSource, evt *event.Event) {
 }
 
 // HandleTag is the event handler for the m.tag account data event.
-func (c *Container) HandleTag(_ EventSource, evt *event.Event) {
+func (c *Container) HandleTag(_ mautrix.EventSource, evt *event.Event) {
 	room := c.GetOrCreateRoom(evt.RoomID)
 
 	tags := evt.Content.AsTag().Tags
@@ -788,7 +788,7 @@ func (c *Container) HandleTag(_ EventSource, evt *event.Event) {
 }
 
 // HandleTyping is the event handler for the m.typing event.
-func (c *Container) HandleTyping(_ EventSource, evt *event.Event) {
+func (c *Container) HandleTyping(_ mautrix.EventSource, evt *event.Event) {
 	if !c.config.AuthCache.InitialSyncDone {
 		return
 	}

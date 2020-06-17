@@ -74,7 +74,7 @@ type Crypto interface {
 	ProcessSyncResponse(resp *mautrix.RespSync, since string)
 	HandleMemberEvent(*event.Event)
 	DecryptMegolmEvent(*event.Event) (*event.Event, error)
-	EncryptMegolmEvent(id.RoomID, event.Type, event.Content) (*event.EncryptedEventContent, error)
+	EncryptMegolmEvent(id.RoomID, event.Type, interface{}) (*event.EncryptedEventContent, error)
 	ShareGroupSession(id.RoomID, []id.UserID) error
 	Fingerprint() string
 }

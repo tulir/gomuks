@@ -19,70 +19,20 @@
 package matrix
 
 import (
-	"fmt"
 	"sync"
 	"time"
 
-	ifc "maunium.net/go/gomuks/interface"
 	"maunium.net/go/mautrix"
 	"maunium.net/go/mautrix/event"
 	"maunium.net/go/mautrix/id"
+
+	ifc "maunium.net/go/gomuks/interface"
 
 	"maunium.net/go/gomuks/debug"
 	"maunium.net/go/gomuks/matrix/rooms"
 )
 
-type EventSource int
-
-const (
-	EventSourcePresence EventSource = 1 << iota
-	EventSourceJoin
-	EventSourceInvite
-	EventSourceLeave
-	EventSourceAccountData
-	EventSourceTimeline
-	EventSourceState
-	EventSourceEphemeral
-	EventSourceToDevice
-)
-
-func (es EventSource) String() string {
-	switch {
-	case es == EventSourcePresence:
-		return "presence"
-	case es == EventSourceAccountData:
-		return "user account data"
-	case es&EventSourceJoin != 0:
-		es -= EventSourceJoin
-		switch es {
-		case EventSourceState:
-			return "joined state"
-		case EventSourceTimeline:
-			return "joined timeline"
-		case EventSourceEphemeral:
-			return "room ephemeral (joined)"
-		case EventSourceAccountData:
-			return "room account data (joined)"
-		}
-	case es&EventSourceInvite != 0:
-		es -= EventSourceInvite
-		switch es {
-		case EventSourceState:
-			return "invited state"
-		}
-	case es&EventSourceLeave != 0:
-		es -= EventSourceLeave
-		switch es {
-		case EventSourceState:
-			return "left state"
-		case EventSourceTimeline:
-			return "left timeline"
-		}
-	}
-	return fmt.Sprintf("unknown (%d)", es)
-}
-
-type EventHandler func(source EventSource, event *event.Event)
+type EventHandler func(source mautrix.EventSource, event *event.Event)
 type SyncHandler func(resp *mautrix.RespSync, since string)
 
 type GomuksSyncer struct {
@@ -125,9 +75,9 @@ func (s *GomuksSyncer) ProcessResponse(res *mautrix.RespSync, since string) (err
 	s.notifyGlobalListeners(res, since, callback)
 	wait.Wait()
 
-	s.processSyncEvents(nil, res.Presence.Events, EventSourcePresence)
+	s.processSyncEvents(nil, res.Presence.Events, mautrix.EventSourcePresence)
 	s.Progress.Step()
-	s.processSyncEvents(nil, res.AccountData.Events, EventSourceAccountData)
+	s.processSyncEvents(nil, res.AccountData.Events, mautrix.EventSourceAccountData)
 	s.Progress.Step()
 
 	wait.Add(steps)
@@ -171,10 +121,10 @@ func (s *GomuksSyncer) processJoinedRoom(roomID id.RoomID, roomData mautrix.Sync
 	defer debug.Recover()
 	room := s.rooms.GetOrCreate(roomID)
 	room.UpdateSummary(roomData.Summary)
-	s.processSyncEvents(room, roomData.State.Events, EventSourceJoin|EventSourceState)
-	s.processSyncEvents(room, roomData.Timeline.Events, EventSourceJoin|EventSourceTimeline)
-	s.processSyncEvents(room, roomData.Ephemeral.Events, EventSourceJoin|EventSourceEphemeral)
-	s.processSyncEvents(room, roomData.AccountData.Events, EventSourceJoin|EventSourceAccountData)
+	s.processSyncEvents(room, roomData.State.Events, mautrix.EventSourceJoin|mautrix.EventSourceState)
+	s.processSyncEvents(room, roomData.Timeline.Events, mautrix.EventSourceJoin|mautrix.EventSourceTimeline)
+	s.processSyncEvents(room, roomData.Ephemeral.Events, mautrix.EventSourceJoin|mautrix.EventSourceEphemeral)
+	s.processSyncEvents(room, roomData.AccountData.Events, mautrix.EventSourceJoin|mautrix.EventSourceAccountData)
 
 	if len(room.PrevBatch) == 0 {
 		room.PrevBatch = roomData.Timeline.PrevBatch
@@ -187,7 +137,7 @@ func (s *GomuksSyncer) processInvitedRoom(roomID id.RoomID, roomData mautrix.Syn
 	defer debug.Recover()
 	room := s.rooms.GetOrCreate(roomID)
 	room.UpdateSummary(roomData.Summary)
-	s.processSyncEvents(room, roomData.State.Events, EventSourceInvite|EventSourceState)
+	s.processSyncEvents(room, roomData.State.Events, mautrix.EventSourceInvite|mautrix.EventSourceState)
 	callback()
 }
 
@@ -196,8 +146,8 @@ func (s *GomuksSyncer) processLeftRoom(roomID id.RoomID, roomData mautrix.SyncLe
 	room := s.rooms.GetOrCreate(roomID)
 	room.HasLeft = true
 	room.UpdateSummary(roomData.Summary)
-	s.processSyncEvents(room, roomData.State.Events, EventSourceLeave|EventSourceState)
-	s.processSyncEvents(room, roomData.Timeline.Events, EventSourceLeave|EventSourceTimeline)
+	s.processSyncEvents(room, roomData.State.Events, mautrix.EventSourceLeave|mautrix.EventSourceState)
+	s.processSyncEvents(room, roomData.Timeline.Events, mautrix.EventSourceLeave|mautrix.EventSourceTimeline)
 
 	if len(room.PrevBatch) == 0 {
 		room.PrevBatch = roomData.Timeline.PrevBatch
@@ -206,13 +156,13 @@ func (s *GomuksSyncer) processLeftRoom(roomID id.RoomID, roomData mautrix.SyncLe
 	callback()
 }
 
-func (s *GomuksSyncer) processSyncEvents(room *rooms.Room, events []*event.Event, source EventSource) {
+func (s *GomuksSyncer) processSyncEvents(room *rooms.Room, events []*event.Event, source mautrix.EventSource) {
 	for _, evt := range events {
 		s.processSyncEvent(room, evt, source)
 	}
 }
 
-func (s *GomuksSyncer) processSyncEvent(room *rooms.Room, evt *event.Event, source EventSource) {
+func (s *GomuksSyncer) processSyncEvent(room *rooms.Room, evt *event.Event, source mautrix.EventSource) {
 	if room != nil {
 		evt.RoomID = room.ID
 	}
@@ -221,11 +171,11 @@ func (s *GomuksSyncer) processSyncEvent(room *rooms.Room, evt *event.Event, sour
 	switch {
 	case evt.StateKey != nil:
 		evt.Type.Class = event.StateEventType
-	case source == EventSourcePresence, source&EventSourceEphemeral != 0:
+	case source == mautrix.EventSourcePresence, source&mautrix.EventSourceEphemeral != 0:
 		evt.Type.Class = event.EphemeralEventType
-	case source&EventSourceAccountData != 0:
+	case source&mautrix.EventSourceAccountData != 0:
 		evt.Type.Class = event.AccountDataEventType
-	case source == EventSourceToDevice:
+	case source == mautrix.EventSourceToDevice:
 		evt.Type.Class = event.ToDeviceEventType
 	default:
 		evt.Type.Class = event.MessageEventType
@@ -258,7 +208,7 @@ func (s *GomuksSyncer) OnSync(callback SyncHandler) {
 	s.globalListeners = append(s.globalListeners, callback)
 }
 
-func (s *GomuksSyncer) notifyListeners(source EventSource, evt *event.Event) {
+func (s *GomuksSyncer) notifyListeners(source mautrix.EventSource, evt *event.Event) {
 	listeners, exists := s.listeners[evt.Type]
 	if !exists {
 		return
