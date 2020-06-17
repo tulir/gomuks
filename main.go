@@ -18,7 +18,6 @@ package main
 
 import (
 	"errors"
-	"flag"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -76,9 +75,7 @@ func main() {
 
 	gmx := NewGomuks(MainUIProvider, configDir, dataDir, cacheDir, downloadDir)
 
-	isVersion := flag.Bool("version", false, "Display gomuks version and exit")
-	flag.Parse()
-	if *isVersion {
+	if len(os.Args) > 1 && (os.Args[1] == "--version" || os.Args[1] == "-v") {
 		fmt.Printf("gomuks version %s\n", gmx.Version())
 		os.Exit(0)
 	}
