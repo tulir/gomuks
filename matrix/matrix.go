@@ -866,7 +866,7 @@ func (c *Container) SendEvent(evt *muksevt.Event) (id.EventID, error) {
 	c.typing = 0
 	room := c.GetRoom(evt.RoomID)
 	if room != nil && room.Encrypted && c.crypto != nil && evt.Type != event.EventReaction {
-		encrypted, err := c.crypto.EncryptMegolmEvent(evt.RoomID, evt.Type, evt.Content)
+		encrypted, err := c.crypto.EncryptMegolmEvent(evt.RoomID, evt.Type, &evt.Content)
 		if err != nil {
 			if isBadEncryptError(err) {
 				return "", err
@@ -876,7 +876,7 @@ func (c *Container) SendEvent(evt *muksevt.Event) (id.EventID, error) {
 			if err != nil {
 				return "", err
 			}
-			encrypted, err = c.crypto.EncryptMegolmEvent(evt.RoomID, evt.Type, evt.Content)
+			encrypted, err = c.crypto.EncryptMegolmEvent(evt.RoomID, evt.Type, &evt.Content)
 			if err != nil {
 				return "", err
 			}
