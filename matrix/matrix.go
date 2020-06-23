@@ -352,7 +352,7 @@ func (c *Container) OnLogin() {
 		})
 		c.syncer.OnEventType(event.EventEncrypted, c.HandleEncrypted)
 	} else {
-		c.syncer.OnEventType(event.EventEncrypted, c.HandleMessage)
+		c.syncer.OnEventType(event.EventEncrypted, c.HandleEncryptedUnsupported)
 	}
 	c.syncer.OnEventType(event.EventMessage, c.HandleMessage)
 	c.syncer.OnEventType(event.EventSticker, c.HandleMessage)
@@ -554,11 +554,23 @@ func (c *Container) HandleReaction(room *rooms.Room, reactsTo id.EventID, reactE
 	}
 }
 
+func (c *Container) HandleEncryptedUnsupported(source mautrix.EventSource, mxEvent *event.Event) {
+	mxEvent.Type = muksevt.EventEncryptionUnsupported
+	origContent, _ := mxEvent.Content.Parsed.(*event.EncryptedEventContent)
+	mxEvent.Content.Parsed = muksevt.EncryptionUnsupportedContent{Original: origContent}
+	c.HandleMessage(source, mxEvent)
+}
+
 func (c *Container) HandleEncrypted(source mautrix.EventSource, mxEvent *event.Event) {
 	evt, err := c.crypto.DecryptMegolmEvent(mxEvent)
 	if err != nil {
-		debug.Print("Failed to decrypt event:", err)
-		// TODO add decryption failed message instead of passing through directly
+		debug.Printf("Failed to decrypt event %s: %v", mxEvent.ID, err)
+		mxEvent.Type = muksevt.EventBadEncrypted
+		origContent, _ := mxEvent.Content.Parsed.(*event.EncryptedEventContent)
+		mxEvent.Content.Parsed = &muksevt.BadEncryptedContent{
+			Original: origContent,
+			Reason:   err.Error(),
+		}
 		c.HandleMessage(source, mxEvent)
 		return
 	}
@@ -987,13 +999,24 @@ func (c *Container) GetHistory(room *rooms.Room, limit int, dbPointer uint64) ([
 			debug.Printf("Failed to unmarshal content of event %s (type %s) by %s in %s: %v\n%s", evt.ID, evt.Type.Repr(), evt.Sender, evt.RoomID, err, string(evt.Content.VeryRaw))
 		}
 
-		if c.crypto != nil && evt.Type == event.EventEncrypted {
-			decrypted, err := c.crypto.DecryptMegolmEvent(evt)
-			if err != nil {
-				debug.Print("Failed to decrypt event:", err)
-				// TODO add decryption failed message instead of passing through directly
+		if evt.Type == event.EventEncrypted {
+			if c.crypto == nil {
+				evt.Type = muksevt.EventEncryptionUnsupported
+				origContent, _ := evt.Content.Parsed.(*event.EncryptedEventContent)
+				evt.Content.Parsed = muksevt.EncryptionUnsupportedContent{Original: origContent}
 			} else {
-				resp.Chunk[i] = decrypted
+				decrypted, err := c.crypto.DecryptMegolmEvent(evt)
+				if err != nil {
+					debug.Printf("Failed to decrypt event %s: %v", evt.ID, err)
+					evt.Type = muksevt.EventBadEncrypted
+					origContent, _ := evt.Content.Parsed.(*event.EncryptedEventContent)
+					evt.Content.Parsed = &muksevt.BadEncryptedContent{
+						Original: origContent,
+						Reason:   err.Error(),
+					}
+				} else {
+					resp.Chunk[i] = decrypted
+				}
 			}
 		}
 	}

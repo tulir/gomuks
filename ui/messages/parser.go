@@ -81,8 +81,10 @@ func directParseEvent(matrix ifc.MatrixContainer, room *rooms.Room, evt *muksevt
 			content.MsgType = event.MsgImage
 		}
 		return ParseMessage(matrix, room, evt, displayname)
-	case *event.EncryptedEventContent:
-		return NewExpandedTextMessage(evt, displayname, tstring.NewStyleTString("Decryption failed or gomuks not built with encryption support", tcell.StyleDefault.Italic(true)))
+	case *muksevt.BadEncryptedContent:
+		return NewExpandedTextMessage(evt, displayname, tstring.NewStyleTString(content.Reason, tcell.StyleDefault.Italic(true)))
+	case *muksevt.EncryptionUnsupportedContent:
+		return NewExpandedTextMessage(evt, displayname, tstring.NewStyleTString("gomuks not built with encryption support", tcell.StyleDefault.Italic(true)))
 	case *event.TopicEventContent, *event.RoomNameEventContent, *event.CanonicalAliasEventContent:
 		return ParseStateEvent(evt, displayname)
 	case *event.MemberEventContent:
