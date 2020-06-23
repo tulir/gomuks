@@ -93,7 +93,7 @@ func directParseEvent(matrix ifc.MatrixContainer, room *rooms.Room, evt *muksevt
 	}
 }
 
-func findAltAliasDifference(newList, oldList []string) (addedStr, removedStr tstring.TString) {
+func findAltAliasDifference(newList, oldList []id.RoomAlias) (addedStr, removedStr tstring.TString) {
 	var addedList, removedList []tstring.TString
 OldLoop:
 	for _, oldAlias := range oldList {
@@ -102,7 +102,7 @@ OldLoop:
 				continue OldLoop
 			}
 		}
-		removedList = append(removedList, tstring.NewStyleTString(oldAlias, tcell.StyleDefault.Foreground(widget.GetHashColor(oldAlias)).Underline(true)))
+		removedList = append(removedList, tstring.NewStyleTString(string(oldAlias), tcell.StyleDefault.Foreground(widget.GetHashColor(oldAlias)).Underline(true)))
 	}
 NewLoop:
 	for _, newAlias := range newList {
@@ -111,7 +111,7 @@ NewLoop:
 				continue NewLoop
 			}
 		}
-		addedList = append(addedList, tstring.NewStyleTString(newAlias, tcell.StyleDefault.Foreground(widget.GetHashColor(newAlias)).Underline(true)))
+		addedList = append(addedList, tstring.NewStyleTString(string(newAlias), tcell.StyleDefault.Foreground(widget.GetHashColor(newAlias)).Underline(true)))
 	}
 	if len(addedList) == 1 {
 		addedStr = tstring.NewColorTString("added alternative address ", tcell.ColorGreen).AppendTString(addedList[0])
