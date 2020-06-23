@@ -18,6 +18,8 @@ github.com/gdamore/encoding v1.0.0/go.mod h1:alR0ol34c49FCSBLjhosxzcPHQbf2trDkoo
 github.com/gorilla/mux v1.7.4/go.mod h1:DVbg23sWSpFRCP0SfiEN6jmj59UnW/n46BH5rLB71So=
 github.com/kyokomi/emoji v2.2.2+incompatible h1:gaQFbK2+uSxOR4iGZprJAbpmtqTrHhSdgOyIMD6Oidc=
 github.com/kyokomi/emoji v2.2.2+incompatible/go.mod h1:mZ6aGCD7yk8j6QY6KICwnZ2pxoszVseX1DNoGtU2tBA=
+github.com/lib/pq v1.7.0 h1:h93mCPfUSkaul3Ka/VG8uZdmW1uMHDGxzu0NWHuJmHY=
+github.com/lib/pq v1.7.0/go.mod h1:AlVN5x4E4T544tWzH6hKfbfQvm3HdbOxrmggDNAPY9o=
 github.com/lithammer/fuzzysearch v1.1.0 h1:go9v8tLCrNTTlH42OAaq4eHFe81TDHEnlrMEb6R4f+A=
 github.com/lithammer/fuzzysearch v1.1.0/go.mod h1:Bqx4wo8lTOFcJr3ckpY6HA9lEIOO0H5HrkJ5CsN56HQ=
 github.com/lucasb-eyer/go-colorful v1.0.3 h1:QIbQXiugsb+q10B+MI+7DI1oQLdmnep86tWFlaaUAac=
@@ -96,6 +98,8 @@ maunium.net/go/mautrix v0.5.1 h1:2B2CrpDKwagITveUgfEUkXVQioH8HGUHO8nGCDL3IDw=
 maunium.net/go/mautrix v0.5.1/go.mod h1:LnkFnB1yjCbb8V+upoEHDGvI/F38NHSTWYCe2RRJgSY=
 maunium.net/go/mautrix v0.5.3 h1:Lu4PGZvKZwhXmdDnBdLwmiImNM3jNGwJI9Sk78P+Gys=
 maunium.net/go/mautrix v0.5.3/go.mod h1:LnkFnB1yjCbb8V+upoEHDGvI/F38NHSTWYCe2RRJgSY=
+maunium.net/go/mautrix v0.5.5 h1:e0Pql1FdxoNUudx2oXo1gZHMrqIh5MC72cdXEPIrYLA=
+maunium.net/go/mautrix v0.5.5/go.mod h1:FLbMANzwqlsX2Fgm7SDe+E4I3wSa4UxJRKqS5wGkCwA=
 maunium.net/go/mauview v0.1.1 h1:wfTXyPx3LGAGpTskh+UbBv/QItUWnEpaneHmywoYnfY=
 maunium.net/go/mauview v0.1.1/go.mod h1:3QBUiuLct9moP1LgDhCGIg0Ovxn38Bd2sGndnUOuj4o=
 maunium.net/go/tcell v0.2.0 h1:1Q0kN3wCOGAIGu1r3QHADsjSUOPDylKREvCv3EzJpVg=
