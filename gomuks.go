@@ -56,7 +56,7 @@ func NewGomuks(uiProvider ifc.UIProvider, configDir, dataDir, cacheDir, download
 }
 
 func (gmx *Gomuks) Version() string {
-	return "v0.1.0"
+	return "v0.1.1"
 }
 
 // Save saves the active session and message history.
