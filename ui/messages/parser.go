@@ -277,6 +277,7 @@ func getMembershipEventContent(room *rooms.Room, evt *muksevt.Event) (sender str
 	prevMembership := event.MembershipLeave
 	prevDisplayname := *evt.StateKey
 	if evt.Unsigned.PrevContent != nil {
+		_ = evt.Unsigned.PrevContent.ParseRaw(evt.Type)
 		prevContent := evt.Unsigned.PrevContent.AsMember()
 		prevMembership = prevContent.Membership
 		prevDisplayname = prevContent.Displayname
