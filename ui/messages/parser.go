@@ -156,8 +156,11 @@ func ParseStateEvent(evt *muksevt.Event, displayname string) *UIMessage {
 				AppendColor(".", tcell.ColorGreen)
 		}
 	case *event.CanonicalAliasEventContent:
-		_ = evt.Unsigned.PrevContent.ParseRaw(evt.Type)
-		prevContent := evt.Unsigned.PrevContent.AsCanonicalAlias()
+		prevContent := &event.CanonicalAliasEventContent{}
+		if evt.Unsigned.PrevContent != nil {
+			_ = evt.Unsigned.PrevContent.ParseRaw(evt.Type)
+			prevContent = evt.Unsigned.PrevContent.AsCanonicalAlias()
+		}
 		debug.Printf("%+v -> %+v", prevContent, content)
 		if len(content.Alias) == 0 && len(prevContent.Alias) != 0 {
 			text = text.AppendColor("removed the main address of the room", tcell.ColorGreen)
