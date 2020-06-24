@@ -135,6 +135,9 @@ func (fs *FuzzySearchModal) OnKeyEvent(event mauview.KeyEvent) bool {
 	case tcell.KeyBacktab:
 		if len(highlights) > 0 {
 			fs.selected = (fs.selected - 1) % len(fs.matches)
+			if fs.selected < 0 {
+				fs.selected += len(fs.matches)
+			}
 			fs.results.Highlight(strconv.Itoa(fs.matches[fs.selected].OriginalIndex))
 			fs.results.ScrollToHighlight()
 		}
