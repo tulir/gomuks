@@ -196,7 +196,10 @@ func ParseMessage(matrix ifc.MatrixContainer, room *rooms.Room, evt *muksevt.Eve
 		content.RemoveReplyFallback()
 	}
 	if len(evt.Gomuks.Edits) > 0 {
-		content = evt.Gomuks.Edits[len(evt.Gomuks.Edits)-1].Content.AsMessage().NewContent
+		newContent := evt.Gomuks.Edits[len(evt.Gomuks.Edits)-1].Content.AsMessage().NewContent
+		if newContent != nil {
+			content = newContent
+		}
 	}
 	switch content.MsgType {
 	case event.MsgText, event.MsgNotice, event.MsgEmote:
