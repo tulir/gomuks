@@ -20,6 +20,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/mattn/go-runewidth"
+
 	"maunium.net/go/gomuks/config"
 	"maunium.net/go/gomuks/debug"
 	"maunium.net/go/gomuks/interface"
@@ -45,6 +47,8 @@ type Command struct {
 	OrigText    string
 }
 
+type CommandAutocomplete Command
+
 func (cmd *Command) Reply(message string, args ...interface{}) {
 	cmd.Room.AddServiceMessage(fmt.Sprintf(message, args...))
 	cmd.UI.Render()
@@ -60,12 +64,15 @@ func (alias *Alias) Process(cmd *Command) *Command {
 }
 
 type CommandHandler func(cmd *Command)
+type CommandAutocompleter func(cmd *CommandAutocomplete) (completions []string, newText string)
 
 type CommandProcessor struct {
 	gomuksPointerContainer
 
 	aliases  map[string]*Alias
 	commands map[string]CommandHandler
+
+	autocompleters map[string]CommandAutocompleter
 }
 
 func NewCommandProcessor(parent *MainView) *CommandProcessor {
@@ -96,6 +103,12 @@ func NewCommandProcessor(parent *MainView) *CommandProcessor {
 			"del":        {"redact"},
 			"dl":         {"download"},
 			"o":          {"open"},
+		},
+		autocompleters: map[string]CommandAutocompleter{
+			"devices":  autocompleteDevice,
+			"device":   autocompleteDevice,
+			"verify":   autocompleteDevice,
+			"unverify": autocompleteDevice,
 		},
 		commands: map[string]CommandHandler{
 			"unknown-command": cmdUnknownCommand,
@@ -140,6 +153,11 @@ func NewCommandProcessor(parent *MainView) *CommandProcessor {
 			"trace":      cmdTrace,
 
 			"fingerprint": cmdFingerprint,
+			"devices":     cmdDevices,
+			"verify":      cmdVerify,
+			"device":      cmdDevice,
+			"unverify":    cmdUnverify,
+			"blacklist":   cmdBlacklist,
 		},
 	}
 }
@@ -167,6 +185,47 @@ func (ch *CommandProcessor) ParseCommand(roomView *RoomView, text string) *Comma
 		RawArgs:     rawArgs,
 		OrigText:    text,
 	}
+}
+
+func (ch *CommandProcessor) Autocomplete(roomView *RoomView, text string, cursorOffset int) ([]string, string, bool) {
+	var completions []string
+	if cmd := (*CommandAutocomplete)(ch.ParseCommand(roomView, text)); cmd == nil {
+		return completions, text, false
+	} else if handler, ok := ch.autocompleters[cmd.Command]; !ok {
+		return completions, text, false
+	} else if cursorOffset != runewidth.StringWidth(text) {
+		return completions, text, false
+	} else {
+		completions, newText := handler(cmd)
+		if newText == "" {
+			newText = text
+		}
+		return completions, newText, true
+	}
+}
+
+func (ch *CommandProcessor) AutocompleteCommand(word string) (completions []string) {
+	if word[0] != '/' {
+		return
+	}
+	word = word[1:]
+	for alias := range ch.aliases {
+		if alias == word {
+			return []string{"/" + alias}
+		}
+		if strings.HasPrefix(alias, word) {
+			completions = append(completions, "/"+alias)
+		}
+	}
+	for command := range ch.commands {
+		if command == word {
+			return []string{"/" + command}
+		}
+		if strings.HasPrefix(command, word) {
+			completions = append(completions, "/"+command)
+		}
+	}
+	return
 }
 
 func (ch *CommandProcessor) HandleCommand(cmd *Command) {

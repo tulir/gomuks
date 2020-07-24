@@ -22,14 +22,17 @@ import (
 	"sort"
 	"strings"
 	"time"
+	"unicode"
 
 	"github.com/kyokomi/emoji"
 	"github.com/mattn/go-runewidth"
 	"github.com/zyedidia/clipboard"
 
-	"maunium.net/go/mautrix/crypto/attachment"
 	"maunium.net/go/mauview"
 	"maunium.net/go/tcell"
+
+	"maunium.net/go/gomuks/lib/util"
+	"maunium.net/go/mautrix/crypto/attachment"
 
 	"maunium.net/go/mautrix"
 	"maunium.net/go/mautrix/event"
@@ -39,7 +42,6 @@ import (
 	"maunium.net/go/gomuks/debug"
 	"maunium.net/go/gomuks/interface"
 	"maunium.net/go/gomuks/lib/open"
-	"maunium.net/go/gomuks/lib/util"
 	"maunium.net/go/gomuks/matrix/muksevt"
 	"maunium.net/go/gomuks/matrix/rooms"
 	"maunium.net/go/gomuks/ui/messages"
@@ -420,65 +422,6 @@ func (view *RoomView) SetTyping(users []id.UserID) {
 	}
 }
 
-type completion struct {
-	displayName string
-	id          string
-}
-
-func (view *RoomView) autocompleteUser(existingText string) (completions []completion) {
-	textWithoutPrefix := strings.TrimPrefix(existingText, "@")
-	for userID, user := range view.Room.GetMembers() {
-		if user.Displayname == textWithoutPrefix || string(userID) == existingText {
-			// Exact match, return that.
-			return []completion{{user.Displayname, string(userID)}}
-		}
-
-		if strings.HasPrefix(user.Displayname, textWithoutPrefix) || strings.HasPrefix(string(userID), existingText) {
-			completions = append(completions, completion{user.Displayname, string(userID)})
-		}
-	}
-	return
-}
-
-func (view *RoomView) autocompleteRoom(existingText string) (completions []completion) {
-	for _, room := range view.parent.rooms {
-		alias := string(room.Room.GetCanonicalAlias())
-		if alias == existingText {
-			// Exact match, return that.
-			return []completion{{alias, string(room.Room.ID)}}
-		}
-		if strings.HasPrefix(alias, existingText) {
-			completions = append(completions, completion{alias, string(room.Room.ID)})
-			continue
-		}
-	}
-	return
-}
-
-func (view *RoomView) autocompleteEmoji(word string) (completions []string) {
-	if len(word) == 0 || word[0] != ':' {
-		return
-	}
-	var valueCompletion1 string
-	var manyValues bool
-	for name, value := range emoji.CodeMap() {
-		if name == word {
-			return []string{value}
-		} else if strings.HasPrefix(name, word) {
-			completions = append(completions, name)
-			if valueCompletion1 == "" {
-				valueCompletion1 = value
-			} else if valueCompletion1 != value {
-				manyValues = true
-			}
-		}
-	}
-	if !manyValues && len(completions) > 0 {
-		return []string{emoji.CodeMap()[completions[0]]}
-	}
-	return
-}
-
 func (view *RoomView) SetEditing(evt *muksevt.Event) {
 	if evt == nil {
 		view.editing = nil
@@ -584,23 +527,90 @@ func (view *RoomView) SelectPrevious() {
 	}
 }
 
-func (view *RoomView) InputTabComplete(text string, cursorOffset int) {
-	debug.Print("Tab completing", cursorOffset, text)
-	str := runewidth.Truncate(text, cursorOffset, "")
-	word := findWordToTabComplete(str)
-	startIndex := len(str) - len(word)
+type completion struct {
+	displayName string
+	id          string
+}
 
-	var strCompletions []string
-	var strCompletion string
+func (view *RoomView) AutocompleteUser(existingText string) (completions []completion) {
+	textWithoutPrefix := strings.TrimPrefix(existingText, "@")
+	for userID, user := range view.Room.GetMembers() {
+		if user.Displayname == textWithoutPrefix || string(userID) == existingText {
+			// Exact match, return that.
+			return []completion{{user.Displayname, string(userID)}}
+		}
 
-	completions := view.autocompleteUser(word)
-	completions = append(completions, view.autocompleteRoom(word)...)
+		if strings.HasPrefix(user.Displayname, textWithoutPrefix) || strings.HasPrefix(string(userID), existingText) {
+			completions = append(completions, completion{user.Displayname, string(userID)})
+		}
+	}
+	return
+}
+
+func (view *RoomView) AutocompleteRoom(existingText string) (completions []completion) {
+	for _, room := range view.parent.rooms {
+		alias := string(room.Room.GetCanonicalAlias())
+		if alias == existingText {
+			// Exact match, return that.
+			return []completion{{alias, string(room.Room.ID)}}
+		}
+		if strings.HasPrefix(alias, existingText) {
+			completions = append(completions, completion{alias, string(room.Room.ID)})
+			continue
+		}
+	}
+	return
+}
+
+func (view *RoomView) AutocompleteEmoji(word string) (completions []string) {
+	if word[0] != ':' {
+		return
+	}
+	var valueCompletion1 string
+	var manyValues bool
+	for name, value := range emoji.CodeMap() {
+		if name == word {
+			return []string{value}
+		} else if strings.HasPrefix(name, word) {
+			completions = append(completions, name)
+			if valueCompletion1 == "" {
+				valueCompletion1 = value
+			} else if valueCompletion1 != value {
+				manyValues = true
+			}
+		}
+	}
+	if !manyValues && len(completions) > 0 {
+		return []string{emoji.CodeMap()[completions[0]]}
+	}
+	return
+}
+
+func findWordToTabComplete(text string) string {
+	output := ""
+	runes := []rune(text)
+	for i := len(runes) - 1; i >= 0; i-- {
+		if unicode.IsSpace(runes[i]) {
+			break
+		}
+		output = string(runes[i]) + output
+	}
+	return output
+}
+
+func (view *RoomView) defaultAutocomplete(word string, startIndex int) (strCompletions []string, strCompletion string) {
+	if len(word) == 0 {
+		return []string{}, ""
+	}
+
+	completions := view.AutocompleteUser(word)
+	completions = append(completions, view.AutocompleteRoom(word)...)
 
 	if len(completions) == 1 {
 		completion := completions[0]
 		strCompletion = fmt.Sprintf("[%s](https://matrix.to/#/%s)", completion.displayName, completion.id)
-		if startIndex == 0 {
-			strCompletion = strCompletion + ": "
+		if startIndex == 0 && completion.id[0] == '@' {
+			strCompletion = strCompletion + ":"
 		}
 	} else if len(completions) > 1 {
 		for _, completion := range completions {
@@ -608,18 +618,44 @@ func (view *RoomView) InputTabComplete(text string, cursorOffset int) {
 		}
 	}
 
-	strCompletions = append(strCompletions, view.autocompleteEmoji(word)...)
+	strCompletions = append(strCompletions, view.parent.cmdProcessor.AutocompleteCommand(word)...)
+	strCompletions = append(strCompletions, view.AutocompleteEmoji(word)...)
+
+	return
+}
+
+func (view *RoomView) InputTabComplete(text string, cursorOffset int) {
+	if len(text) == 0 {
+		return
+	}
+
+	debug.Print("Tab completing", cursorOffset, text)
+
+	str := runewidth.Truncate(text, cursorOffset, "")
+	word := findWordToTabComplete(str)
+	startIndex := len(str) - len(word)
+
+	var strCompletion string
+
+	strCompletions, newText, ok := view.parent.cmdProcessor.Autocomplete(view, text, cursorOffset)
+	if !ok {
+		strCompletions, strCompletion = view.defaultAutocomplete(word, startIndex)
+	}
 
 	if len(strCompletions) > 0 {
 		strCompletion = util.LongestCommonPrefix(strCompletions)
 		sort.Sort(sort.StringSlice(strCompletions))
 	}
-
-	if len(strCompletion) > 0 {
-		text = str[0:startIndex] + strCompletion + text[len(str):]
+	if len(strCompletion) > 0 && len(strCompletions) < 2 {
+		strCompletion += " "
+		strCompletions = []string{}
 	}
 
-	view.input.SetTextAndMoveCursor(text)
+	if len(strCompletion) > 0 && newText == text {
+		newText = str[0:startIndex] + strCompletion + text[len(str):]
+	}
+
+	view.input.SetTextAndMoveCursor(newText)
 	view.SetCompletions(strCompletions)
 }
 
