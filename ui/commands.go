@@ -472,7 +472,7 @@ func cmdDevices(cmd *Command) {
 	}
 	var buf strings.Builder
 	for _, device := range devices {
-		_, _ = fmt.Fprintf(&buf, "%s (%s) - %s - %s\n", device.DeviceID, device.Name, device.Trust.String(), device.Fingerprint())
+		_, _ = fmt.Fprintf(&buf, "%s (%s) - %s\n    Fingerprint: %s\n", device.DeviceID, device.Name, device.Trust.String(), device.Fingerprint())
 	}
 	resp := buf.String()
 	cmd.Reply(resp[:len(resp)-1])
@@ -499,7 +499,17 @@ func cmdVerify(cmd *Command) {
 		return
 	}
 	if len(cmd.Args) == 2 {
-		cmd.Reply("Interactive verification UI is not yet implemented")
+		mach := cmd.Matrix.Crypto().(*crypto.OlmMachine)
+		timeout := 60 * time.Second
+		err := mach.NewSASVerificationWith(device, "", timeout, true)
+		if err != nil {
+			cmd.Reply("Failed to start interactive verification: %v", err)
+			return
+		}
+		modal := NewVerificationModal(cmd.MainView, device, timeout)
+		mach.VerifySASEmojisMatch = modal.VerifyEmojisMatch
+		mach.VerifySASNumbersMatch = modal.VerifyNumbersMatch
+		cmd.MainView.ShowModal(modal)
 	} else {
 		fingerprint := strings.Join(cmd.Args[2:], "")
 		if string(device.SigningKey) != fingerprint {
