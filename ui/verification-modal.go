@@ -216,6 +216,7 @@ func (vm *VerificationModal) OnKeyEvent(event mauview.KeyEvent) bool {
 			debug.Print("Rejecting verification")
 			vm.confirmChan <- false
 		}
+		vm.inputBar.SetPlaceholder("")
 		vm.inputBar.SetTextAndMoveCursor("")
 		return true
 	} else {
