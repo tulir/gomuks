@@ -55,7 +55,9 @@ func (c *Container) initCrypto() error {
 	if err != nil {
 		return errors.Wrap(err, "failed to open crypto store")
 	}
-	c.crypto = crypto.NewOlmMachine(c.client, cryptoLogger{}, cryptoStore, c.config.Rooms)
+	crypt := crypto.NewOlmMachine(c.client, cryptoLogger{}, cryptoStore, c.config.Rooms)
+	crypt.AllowUnverifiedDevices = !c.config.SendToVerifiedOnly
+	c.crypto = crypt
 	err = c.crypto.Load()
 	if err != nil {
 		return errors.Wrap(err, "failed to create olm machine")

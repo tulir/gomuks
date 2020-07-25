@@ -96,7 +96,9 @@ func NewVerificationModal(mainView *MainView, device *crypto.DeviceIdentity, tim
 
 	vm.emojiText = &EmojiView{}
 
-	vm.inputBar = mauview.NewInputField().SetBackgroundColor(tcell.ColorDefault)
+	vm.inputBar = mauview.NewInputField().
+		SetBackgroundColor(tcell.ColorDefault).
+		SetPlaceholderTextColor(tcell.ColorWhite)
 
 	flex := mauview.NewFlex().
 		SetDirection(mauview.FlexRow).
@@ -176,7 +178,7 @@ func (vm *VerificationModal) OnCancel(cancelledByUs bool, reason string, _ event
 	} else {
 		vm.infoText.SetText(fmt.Sprintf("Verification cancelled by %s: %s", vm.device.UserID, reason))
 	}
-	vm.inputBar.SetPlaceholder("Press enter to close dialog")
+	vm.inputBar.SetPlaceholder("Press enter to close the dialog")
 	vm.done = true
 	vm.parent.parent.Render()
 }
@@ -185,9 +187,13 @@ func (vm *VerificationModal) OnSuccess() {
 	vm.waitingBar.SetIndeterminate(false).SetMax(100).SetProgress(100)
 	vm.parent.parent.app.SetRedrawTicker(1 * time.Minute)
 	vm.infoText.SetText(fmt.Sprintf("Successfully verified %s (%s) of %s", vm.device.Name, vm.device.DeviceID, vm.device.UserID))
-	vm.inputBar.SetPlaceholder("Press enter to close dialog")
+	vm.inputBar.SetPlaceholder("Press enter to close the dialog")
 	vm.done = true
 	vm.parent.parent.Render()
+	if vm.parent.config.SendToVerifiedOnly {
+		// Hacky way to make new group sessions after verified
+		vm.parent.matrix.Crypto().(*crypto.OlmMachine).OnDevicesChanged(vm.device.UserID)
+	}
 }
 
 func (vm *VerificationModal) OnKeyEvent(event mauview.KeyEvent) bool {

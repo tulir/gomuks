@@ -475,7 +475,7 @@ func cmdDevices(cmd *Command) {
 		_, _ = fmt.Fprintf(&buf, "%s (%s) - %s\n    Fingerprint: %s\n", device.DeviceID, device.Name, device.Trust.String(), device.Fingerprint())
 	}
 	resp := buf.String()
-	cmd.Reply(resp[:len(resp)-1])
+	cmd.Reply("%s", resp[:len(resp)-1])
 }
 
 func cmdDevice(cmd *Command) {
@@ -561,6 +561,15 @@ func cmdBlacklist(cmd *Command) {
 	putDevice(cmd, device, action)
 }
 
+func cmdResetSession(cmd *Command) {
+	err := cmd.Matrix.Crypto().(*crypto.OlmMachine).CryptoStore.RemoveOutboundGroupSession(cmd.Room.Room.ID)
+	if err != nil {
+		cmd.Reply("Failed to remove outbound group session: %v", err)
+	} else {
+		cmd.Reply("Removed outbound group session for this room")
+	}
+}
+
 // endregion
 
 func cmdHeapProfile(cmd *Command) {
@@ -638,7 +647,7 @@ func cmdHelp(cmd *Command) {
 /logout         - Log out of Matrix.
 /toggle <thing> - Temporary command to toggle various UI features.
 
-Things: rooms, users, baremessages, images, typingnotif
+Things: rooms, users, baremessages, images, typingnotif, unverified
 
 # Sending special messages
 /me <message>        - Send an emote message.
@@ -919,6 +928,7 @@ var toggleMsg = map[string]ToggleMessage{
 	"markdown":      SimpleToggleMessage("markdown input"),
 	"downloads":     SimpleToggleMessage("automatic downloads"),
 	"notifications": SimpleToggleMessage("desktop notifications"),
+	"unverified":    SimpleToggleMessage("sending messages to unverified devices"),
 }
 
 func makeUsage() string {
@@ -959,6 +969,8 @@ func cmdToggle(cmd *Command) {
 			val = &cmd.Config.Preferences.DisableDownloads
 		case "notifications":
 			val = &cmd.Config.Preferences.DisableNotifications
+		case "unverified":
+			val = &cmd.Config.SendToVerifiedOnly
 		default:
 			cmd.Reply("Unknown toggle %s. Use /toggle without arguments for a list of togglable things.", thing)
 			return

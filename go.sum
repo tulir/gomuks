@@ -33,6 +33,10 @@ github.com/mattn/go-runewidth v0.0.9/go.mod h1:H031xJmbD/WCDINGzjvQ9THkh0rPKHF+m
 github.com/mattn/go-sqlite3 v1.14.0/go.mod h1:JIl7NbARA7phWnGvh0LKTyg7S9BA+6gx71ShQilpsus=
 github.com/nikofil/mautrix-go v0.5.2-0.20200725145808-be3336827da7 h1:w5IiIpetgAwalLPFkxiVbxBXJtcB9zLhoGLkyouQb4k=
 github.com/nikofil/mautrix-go v0.5.2-0.20200725145808-be3336827da7/go.mod h1:Va/74MijqaS0DQ3aUqxmFO54/PMfr1LVsCOcGRHbYmo=
+github.com/nikofil/mautrix-go v0.5.2-0.20200725165923-cae799088b7e h1:K8D+9n29FP1Utrv2joUhjcuDL1zC+Qq9rEFdV5kPgTQ=
+github.com/nikofil/mautrix-go v0.5.2-0.20200725165923-cae799088b7e/go.mod h1:Va/74MijqaS0DQ3aUqxmFO54/PMfr1LVsCOcGRHbYmo=
+github.com/nikofil/mautrix-go v0.5.2-0.20200725175335-dd3f90913c4d h1:tsCIy4CvvAeFEoBhet7zGoZXc+lr/e2YogoPaEGdMN8=
+github.com/nikofil/mautrix-go v0.5.2-0.20200725175335-dd3f90913c4d/go.mod h1:Va/74MijqaS0DQ3aUqxmFO54/PMfr1LVsCOcGRHbYmo=
 github.com/nu7hatch/gouuid v0.0.0-20131221200532-179d4d0c4d8d/go.mod h1:YUTz3bUH2ZwIWBy3CJBeOBEugqcmXREj14T+iG/4k4U=
 github.com/petermattis/goid v0.0.0-20180202154549-b0b1615b78e5 h1:q2e307iGHPdTGp0hoxKjt1H5pDo6utceo3dQVK3I5XQ=
 github.com/petermattis/goid v0.0.0-20180202154549-b0b1615b78e5/go.mod h1:jvVRKCrJTQWu0XVbaOlby/2lO20uSCHEMzzplHXte1o=

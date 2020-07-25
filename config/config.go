@@ -62,7 +62,8 @@ type Config struct {
 	RoomCacheSize int   `yaml:"room_cache_size"`
 	RoomCacheAge  int64 `yaml:"room_cache_age"`
 
-	NotifySound bool `yaml:"notify_sound"`
+	NotifySound        bool `yaml:"notify_sound"`
+	SendToVerifiedOnly bool `yaml:"send_to_verified_only"`
 
 	Dir          string `yaml:"-"`
 	DataDir      string `yaml:"data_dir"`
@@ -96,7 +97,8 @@ func NewConfig(configDir, dataDir, cacheDir, downloadDir string) *Config {
 		RoomCacheSize: 32,
 		RoomCacheAge:  1 * 60,
 
-		NotifySound: true,
+		NotifySound:        true,
+		SendToVerifiedOnly: false,
 	}
 }
 

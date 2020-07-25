@@ -152,12 +152,13 @@ func NewCommandProcessor(parent *MainView) *CommandProcessor {
 			"cprof":      cmdCPUProfile,
 			"trace":      cmdTrace,
 
-			"fingerprint": cmdFingerprint,
-			"devices":     cmdDevices,
-			"verify":      cmdVerify,
-			"device":      cmdDevice,
-			"unverify":    cmdUnverify,
-			"blacklist":   cmdBlacklist,
+			"fingerprint":   cmdFingerprint,
+			"devices":       cmdDevices,
+			"verify":        cmdVerify,
+			"device":        cmdDevice,
+			"unverify":      cmdUnverify,
+			"blacklist":     cmdBlacklist,
+			"reset-session": cmdResetSession,
 		},
 	}
 }

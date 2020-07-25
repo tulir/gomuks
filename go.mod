@@ -28,4 +28,4 @@ require (
 	maunium.net/go/tcell v0.2.0
 )
 
-replace maunium.net/go/mautrix => github.com/nikofil/mautrix-go v0.5.2-0.20200725145808-be3336827da7
+replace maunium.net/go/mautrix => github.com/nikofil/mautrix-go v0.5.2-0.20200725175335-dd3f90913c4d
