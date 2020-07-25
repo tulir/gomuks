@@ -27,6 +27,7 @@ import (
 
 	"maunium.net/go/gomuks/debug"
 	"maunium.net/go/mautrix/crypto"
+	"maunium.net/go/mautrix/event"
 )
 
 type EmojiView struct {
@@ -59,6 +60,8 @@ func (e *EmojiView) Draw(screen mauview.Screen) {
 type VerificationModal struct {
 	mauview.Component
 
+	device *crypto.DeviceIdentity
+
 	container *mauview.Box
 
 	waitingBar *mauview.ProgressBar
@@ -68,6 +71,7 @@ type VerificationModal struct {
 
 	stopWaiting chan struct{}
 	confirmChan chan bool
+	done        bool
 
 	parent *MainView
 }
@@ -75,8 +79,10 @@ type VerificationModal struct {
 func NewVerificationModal(mainView *MainView, device *crypto.DeviceIdentity, timeout time.Duration) *VerificationModal {
 	vm := &VerificationModal{
 		parent:      mainView,
+		device:      device,
 		stopWaiting: make(chan struct{}),
 		confirmChan: make(chan bool),
+		done:        false,
 	}
 
 	progress := int(timeout.Seconds())
@@ -115,8 +121,6 @@ func (vm *VerificationModal) decrementWaitingBar(progress int) {
 		select {
 		case <-time.Tick(time.Second):
 			if progress <= 0 {
-				vm.parent.HideModal()
-				vm.parent.parent.Render()
 				return
 			}
 			progress--
@@ -124,13 +128,14 @@ func (vm *VerificationModal) decrementWaitingBar(progress int) {
 			vm.parent.parent.Render()
 		case <-vm.stopWaiting:
 			vm.waitingBar.SetIndeterminate(true)
-			break
+			vm.parent.parent.app.SetRedrawTicker(100 * time.Millisecond)
+			return
 		}
 	}
 }
 
-func (vm *VerificationModal) VerifyEmojisMatch(emojis [7]crypto.VerificationEmoji, _ *crypto.DeviceIdentity) bool {
-	vm.infoText.SetText("Check if the other device is showing the same emojis as below, then type \"yes\" to accept, or \"no\" to reject")
+func (vm *VerificationModal) VerifyEmojisMatch(emojis [7]crypto.VerificationEmoji) bool {
+	vm.infoText.SetText("Check if the other device is showing the\nsame emojis as below, then type \"yes\" to\naccept, or \"no\" to reject")
 	vm.inputBar.
 		SetTextColor(tcell.ColorWhite).
 		SetBackgroundColor(tcell.ColorDarkCyan).
@@ -140,14 +145,14 @@ func (vm *VerificationModal) VerifyEmojisMatch(emojis [7]crypto.VerificationEmoj
 	vm.parent.parent.Render()
 	vm.stopWaiting <- struct{}{}
 	confirm := <-vm.confirmChan
-	// TODO this should hook into cancel/success of the verification and display a success message instead of just closing
-	vm.parent.HideModal()
+	vm.emojiText.Emojis = nil
+	vm.infoText.SetText(fmt.Sprintf("Waiting for %s to accept", vm.device.UserID))
 	vm.parent.parent.Render()
 	return confirm
 }
 
-func (vm *VerificationModal) VerifyNumbersMatch(numbers [3]uint, _ *crypto.DeviceIdentity) bool {
-	vm.infoText.SetText("Check if the other device is showing the same numbers as below, then type \"yes\" to accept, or \"no\" to reject")
+func (vm *VerificationModal) VerifyNumbersMatch(numbers [3]uint) bool {
+	vm.infoText.SetText("Check if the other device is showing the\nsame numbers as below, then type \"yes\" to\naccept, or \"no\" to reject")
 	vm.inputBar.
 		SetTextColor(tcell.ColorWhite).
 		SetBackgroundColor(tcell.ColorDarkCyan).
@@ -157,14 +162,42 @@ func (vm *VerificationModal) VerifyNumbersMatch(numbers [3]uint, _ *crypto.Devic
 	vm.parent.parent.Render()
 	vm.stopWaiting <- struct{}{}
 	confirm := <-vm.confirmChan
-	// TODO this should hook into cancel/success of the verification and display a success message instead of just closing
-	vm.parent.HideModal()
+	vm.emojiText.Numbers = nil
+	vm.infoText.SetText(fmt.Sprintf("Waiting for %s to accept", vm.device.UserID))
 	vm.parent.parent.Render()
 	return confirm
 }
 
+func (vm *VerificationModal) OnCancel(cancelledByUs bool, reason string, _ event.VerificationCancelCode) {
+	vm.waitingBar.SetIndeterminate(false).SetMax(100).SetProgress(100)
+	vm.parent.parent.app.SetRedrawTicker(1 * time.Minute)
+	if cancelledByUs {
+		vm.infoText.SetText(fmt.Sprintf("Verification failed: %s", reason))
+	} else {
+		vm.infoText.SetText(fmt.Sprintf("Verification cancelled by %s: %s", vm.device.UserID, reason))
+	}
+	vm.inputBar.SetPlaceholder("Press enter to close dialog")
+	vm.done = true
+	vm.parent.parent.Render()
+}
+
+func (vm *VerificationModal) OnSuccess() {
+	vm.waitingBar.SetIndeterminate(false).SetMax(100).SetProgress(100)
+	vm.parent.parent.app.SetRedrawTicker(1 * time.Minute)
+	vm.infoText.SetText(fmt.Sprintf("Successfully verified %s (%s) of %s", vm.device.Name, vm.device.DeviceID, vm.device.UserID))
+	vm.inputBar.SetPlaceholder("Press enter to close dialog")
+	vm.done = true
+	vm.parent.parent.Render()
+}
+
 func (vm *VerificationModal) OnKeyEvent(event mauview.KeyEvent) bool {
-	if vm.emojiText.Emojis == nil && vm.emojiText.Numbers == nil {
+	if vm.done {
+		if event.Key() == tcell.KeyEnter || event.Key() == tcell.KeyEsc {
+			vm.parent.HideModal()
+			return true
+		}
+		return false
+	} else if vm.emojiText.Emojis == nil && vm.emojiText.Numbers == nil {
 		debug.Print("Ignoring pre-emoji key event")
 		return false
 	}
@@ -177,6 +210,7 @@ func (vm *VerificationModal) OnKeyEvent(event mauview.KeyEvent) bool {
 			debug.Print("Rejecting verification")
 			vm.confirmChan <- false
 		}
+		vm.inputBar.SetTextAndMoveCursor("")
 		return true
 	} else {
 		return vm.inputBar.OnKeyEvent(event)

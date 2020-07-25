@@ -498,18 +498,20 @@ func cmdVerify(cmd *Command) {
 	if device == nil {
 		return
 	}
+	if device.Trust == crypto.TrustStateVerified {
+		cmd.Reply("That device is already verified")
+		return
+	}
 	if len(cmd.Args) == 2 {
 		mach := cmd.Matrix.Crypto().(*crypto.OlmMachine)
-		timeout := 60 * time.Second
-		err := mach.NewSASVerificationWith(device, "", timeout, true)
+		mach.DefaultSASTimeout = 120 * time.Second
+		modal := NewVerificationModal(cmd.MainView, device, mach.DefaultSASTimeout)
+		cmd.MainView.ShowModal(modal)
+		err := mach.NewSimpleSASVerificationWith(device, modal)
 		if err != nil {
 			cmd.Reply("Failed to start interactive verification: %v", err)
 			return
 		}
-		modal := NewVerificationModal(cmd.MainView, device, timeout)
-		mach.VerifySASEmojisMatch = modal.VerifyEmojisMatch
-		mach.VerifySASNumbersMatch = modal.VerifyNumbersMatch
-		cmd.MainView.ShowModal(modal)
 	} else {
 		fingerprint := strings.Join(cmd.Args[2:], "")
 		if string(device.SigningKey) != fingerprint {
@@ -545,6 +547,10 @@ func cmdUnverify(cmd *Command) {
 func cmdBlacklist(cmd *Command) {
 	device := getDevice(cmd)
 	if device == nil {
+		return
+	}
+	if device.Trust == crypto.TrustStateBlacklisted {
+		cmd.Reply("That device is already blacklisted")
 		return
 	}
 	action := "blacklisted"
