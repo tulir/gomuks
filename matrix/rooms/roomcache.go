@@ -73,6 +73,19 @@ func (cache *RoomCache) IsEncrypted(roomID id.RoomID) bool {
 	return room != nil && room.Encrypted
 }
 
+func (cache *RoomCache) GetEncryptionEvent(roomID id.RoomID) *event.EncryptionEventContent {
+	room := cache.Get(roomID)
+	evt := room.GetStateEvent(event.StateEncryption, "")
+	if evt == nil {
+		return nil
+	}
+	content, ok := evt.Content.Parsed.(*event.EncryptionEventContent)
+	if !ok {
+		return nil
+	}
+	return content
+}
+
 func (cache *RoomCache) FindSharedRooms(userID id.UserID) (shared []id.RoomID) {
 	// FIXME this disables unloading so TouchNode wouldn't try to double-lock
 	cache.DisableUnloading()

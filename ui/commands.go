@@ -440,7 +440,7 @@ func cmdHelp(cmd *Command) {
 /logout         - Log out of Matrix.
 /toggle <thing> - Temporary command to toggle various UI features.
 
-Things: rooms, users, baremessages, images, typingnotif
+Things: rooms, users, baremessages, images, typingnotif, unverified
 
 # Sending special messages
 /me <message>        - Send an emote message.
@@ -449,7 +449,18 @@ Things: rooms, users, baremessages, images, typingnotif
 /rainbowme <message> - Send rainbow text in an emote.
 /reply [text]        - Reply to the selected message.
 /react <reaction>    - React to the selected message.
-/redact [reason]    - Redact the selected message.
+/redact [reason]     - Redact the selected message.
+
+# Encryption
+/fingerprint - View the fingerprint of your device.
+
+/devices <user id>               - View the device list of a user.
+/device <user id> <device id>    - Show info about a specific device.
+/unverify <user id> <device id>  - Un-verify a device.
+/blacklist <user id> <device id> - Blacklist a device.
+/verify <user id> <device id> [fingerprint]
+    - Verify a device. If the fingerprint is not provided,
+      interactive emoji verification will be started.
 
 # Rooms
 /pm <user id> <...>   - Create a private chat with the given user(s).
@@ -710,6 +721,7 @@ var toggleMsg = map[string]ToggleMessage{
 	"markdown":      SimpleToggleMessage("markdown input"),
 	"downloads":     SimpleToggleMessage("automatic downloads"),
 	"notifications": SimpleToggleMessage("desktop notifications"),
+	"unverified":    SimpleToggleMessage("sending messages to unverified devices"),
 }
 
 func makeUsage() string {
@@ -750,6 +762,8 @@ func cmdToggle(cmd *Command) {
 			val = &cmd.Config.Preferences.DisableDownloads
 		case "notifications":
 			val = &cmd.Config.Preferences.DisableNotifications
+		case "unverified":
+			val = &cmd.Config.SendToVerifiedOnly
 		default:
 			cmd.Reply("Unknown toggle %s. Use /toggle without arguments for a list of togglable things.", thing)
 			return

@@ -162,6 +162,8 @@ func (c *Container) PasswordLogin(user, password string) error {
 		},
 		Password:                 password,
 		InitialDeviceDisplayName: "gomuks",
+
+		StoreCredentials: true,
 	})
 	if err != nil {
 		return err
@@ -171,8 +173,6 @@ func (c *Container) PasswordLogin(user, password string) error {
 }
 
 func (c *Container) finishLogin(resp *mautrix.RespLogin) {
-	c.client.SetCredentials(resp.UserID, resp.AccessToken)
-	c.client.DeviceID = resp.DeviceID
 	c.config.UserID = resp.UserID
 	c.config.DeviceID = resp.DeviceID
 	c.config.AccessToken = resp.AccessToken
@@ -218,6 +218,8 @@ func (c *Container) SingleSignOn() error {
 			Type:                     "m.login.token",
 			Token:                    loginToken,
 			InitialDeviceDisplayName: "gomuks",
+
+			StoreCredentials: true,
 		})
 		if err != nil {
 			respondHTML(w, http.StatusForbidden, err.Error())

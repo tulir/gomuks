@@ -22,14 +22,14 @@ import (
 	"os"
 	"sync/atomic"
 	"time"
-	"unicode"
 
 	sync "github.com/sasha-s/go-deadlock"
 
-	"maunium.net/go/gomuks/ui/messages"
-	"maunium.net/go/mautrix/id"
 	"maunium.net/go/mauview"
 	"maunium.net/go/tcell"
+
+	"maunium.net/go/gomuks/ui/messages"
+	"maunium.net/go/mautrix/id"
 
 	"maunium.net/go/gomuks/config"
 	"maunium.net/go/gomuks/debug"
@@ -137,18 +137,6 @@ func (view *MainView) InputChanged(roomView *RoomView, text string) {
 	if !roomView.config.Preferences.DisableTypingNotifs {
 		view.matrix.SendTyping(roomView.Room.ID, len(text) > 0 && text[0] != '/')
 	}
-}
-
-func findWordToTabComplete(text string) string {
-	output := ""
-	runes := []rune(text)
-	for i := len(runes) - 1; i >= 0; i-- {
-		if unicode.IsSpace(runes[i]) {
-			break
-		}
-		output = string(runes[i]) + output
-	}
-	return output
 }
 
 func (view *MainView) ShowBare(roomView *RoomView) {
