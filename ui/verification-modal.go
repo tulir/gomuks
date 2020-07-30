@@ -14,6 +14,8 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+// +build cgo
+
 package ui
 
 import (
@@ -32,14 +34,17 @@ import (
 
 type EmojiView struct {
 	mauview.SimpleEventHandler
-	Numbers *[3]uint
-	Emojis  *[7]crypto.VerificationEmoji
+	Data crypto.SASData
 }
 
 func (e *EmojiView) Draw(screen mauview.Screen) {
-	if e.Emojis != nil {
+	if e.Data == nil {
+		return
+	}
+	switch e.Data.Type() {
+	case event.SASEmoji:
 		width := 10
-		for i, emoji := range e.Emojis {
+		for i, emoji := range e.Data.(crypto.EmojiSASData) {
 			x := i*width + i
 			y := 0
 			if i >= 4 {
@@ -49,9 +54,9 @@ func (e *EmojiView) Draw(screen mauview.Screen) {
 			mauview.Print(screen, string(emoji.Emoji), x, y, width, mauview.AlignCenter, tcell.ColorDefault)
 			mauview.Print(screen, emoji.Description, x, y+1, width, mauview.AlignCenter, tcell.ColorDefault)
 		}
-	} else if e.Numbers != nil {
+	case event.SASDecimal:
 		maxWidth := 43
-		for i, number := range e.Numbers {
+		for i, number := range e.Data.(crypto.DecimalSASData) {
 			mauview.Print(screen, strconv.FormatUint(uint64(number), 10), 0, i, maxWidth, mauview.AlignCenter, tcell.ColorDefault)
 		}
 	}
@@ -69,6 +74,8 @@ type VerificationModal struct {
 	emojiText  *EmojiView
 	inputBar   *mauview.InputField
 
+	progress    int
+	progressMax int
 	stopWaiting chan struct{}
 	confirmChan chan bool
 	done        bool
@@ -85,14 +92,15 @@ func NewVerificationModal(mainView *MainView, device *crypto.DeviceIdentity, tim
 		done:        false,
 	}
 
-	progress := int(timeout.Seconds())
+	vm.progressMax = int(timeout.Seconds())
+	vm.progress = vm.progressMax
 	vm.waitingBar = mauview.NewProgressBar().
-		SetMax(progress).
-		SetProgress(progress).
+		SetMax(vm.progressMax).
+		SetProgress(vm.progress).
 		SetIndeterminate(false)
 
 	vm.infoText = mauview.NewTextView()
-	vm.infoText.SetText(fmt.Sprintf("Waiting for %s to accept", device.UserID))
+	vm.infoText.SetText(fmt.Sprintf("Waiting for %s\nto accept", device.UserID))
 
 	vm.emojiText = &EmojiView{}
 
@@ -113,59 +121,58 @@ func NewVerificationModal(mainView *MainView, device *crypto.DeviceIdentity, tim
 
 	vm.Component = mauview.Center(vm.container, 45, 12).SetAlwaysFocusChild(true)
 
-	go vm.decrementWaitingBar(progress)
+	go vm.decrementWaitingBar()
 
 	return vm
 }
 
-func (vm *VerificationModal) decrementWaitingBar(progress int) {
+func (vm *VerificationModal) decrementWaitingBar() {
 	for {
 		select {
 		case <-time.Tick(time.Second):
-			if progress <= 0 {
+			if vm.progress <= 0 {
+				vm.waitingBar.SetIndeterminate(true)
+				vm.parent.parent.app.SetRedrawTicker(100 * time.Millisecond)
 				return
 			}
-			progress--
-			vm.waitingBar.SetProgress(progress)
+			vm.progress--
+			vm.waitingBar.SetProgress(vm.progress)
 			vm.parent.parent.Render()
 		case <-vm.stopWaiting:
-			vm.waitingBar.SetIndeterminate(true)
-			vm.parent.parent.app.SetRedrawTicker(100 * time.Millisecond)
 			return
 		}
 	}
 }
 
-func (vm *VerificationModal) VerifyEmojisMatch(emojis [7]crypto.VerificationEmoji) bool {
-	vm.infoText.SetText("Check if the other device is showing the\nsame emojis as below, then type \"yes\" to\naccept, or \"no\" to reject")
-	vm.inputBar.
-		SetTextColor(tcell.ColorWhite).
-		SetBackgroundColor(tcell.ColorDarkCyan).
-		SetPlaceholder("Type \"yes\" or \"no\"").
-		Focus()
-	vm.emojiText.Emojis = &emojis
-	vm.parent.parent.Render()
-	vm.stopWaiting <- struct{}{}
-	confirm := <-vm.confirmChan
-	vm.emojiText.Emojis = nil
-	vm.infoText.SetText(fmt.Sprintf("Waiting for %s to accept", vm.device.UserID))
-	vm.parent.parent.Render()
-	return confirm
+func (vm *VerificationModal) VerificationMethods() []crypto.VerificationMethod {
+	return []crypto.VerificationMethod{crypto.VerificationMethodEmoji{}, crypto.VerificationMethodDecimal{}}
 }
 
-func (vm *VerificationModal) VerifyNumbersMatch(numbers [3]uint) bool {
-	vm.infoText.SetText("Check if the other device is showing the\nsame numbers as below, then type \"yes\" to\naccept, or \"no\" to reject")
+func (vm *VerificationModal) VerifySASMatch(_ *crypto.DeviceIdentity, data crypto.SASData) bool {
+	var typeName string
+	if data.Type() == event.SASDecimal {
+		typeName = "numbers"
+	} else if data.Type() == event.SASEmoji {
+		typeName = "emojis"
+	} else {
+		return false
+	}
+	vm.infoText.SetText(fmt.Sprintf(
+		"Check if the other device is showing the\n"+
+			"same %s as below, then type \"yes\" to\n"+
+			"accept, or \"no\" to reject", typeName))
 	vm.inputBar.
 		SetTextColor(tcell.ColorWhite).
 		SetBackgroundColor(tcell.ColorDarkCyan).
 		SetPlaceholder("Type \"yes\" or \"no\"").
 		Focus()
-	vm.emojiText.Numbers = &numbers
+	vm.emojiText.Data = data
 	vm.parent.parent.Render()
-	vm.stopWaiting <- struct{}{}
+	vm.progress = vm.progressMax
 	confirm := <-vm.confirmChan
-	vm.emojiText.Numbers = nil
-	vm.infoText.SetText(fmt.Sprintf("Waiting for %s to accept", vm.device.UserID))
+	vm.progress = vm.progressMax
+	vm.emojiText.Data = nil
+	vm.infoText.SetText(fmt.Sprintf("Waiting for %s\nto confirm", vm.device.UserID))
 	vm.parent.parent.Render()
 	return confirm
 }
@@ -179,6 +186,7 @@ func (vm *VerificationModal) OnCancel(cancelledByUs bool, reason string, _ event
 		vm.infoText.SetText(fmt.Sprintf("Verification cancelled by %s: %s", vm.device.UserID, reason))
 	}
 	vm.inputBar.SetPlaceholder("Press enter to close the dialog")
+	vm.stopWaiting <- struct{}{}
 	vm.done = true
 	vm.parent.parent.Render()
 }
@@ -188,6 +196,7 @@ func (vm *VerificationModal) OnSuccess() {
 	vm.parent.parent.app.SetRedrawTicker(1 * time.Minute)
 	vm.infoText.SetText(fmt.Sprintf("Successfully verified %s (%s) of %s", vm.device.Name, vm.device.DeviceID, vm.device.UserID))
 	vm.inputBar.SetPlaceholder("Press enter to close the dialog")
+	vm.stopWaiting <- struct{}{}
 	vm.done = true
 	vm.parent.parent.Render()
 	if vm.parent.config.SendToVerifiedOnly {
@@ -203,7 +212,7 @@ func (vm *VerificationModal) OnKeyEvent(event mauview.KeyEvent) bool {
 			return true
 		}
 		return false
-	} else if vm.emojiText.Emojis == nil && vm.emojiText.Numbers == nil {
+	} else if vm.emojiText.Data == nil {
 		debug.Print("Ignoring pre-emoji key event")
 		return false
 	}
@@ -216,8 +225,11 @@ func (vm *VerificationModal) OnKeyEvent(event mauview.KeyEvent) bool {
 			debug.Print("Rejecting verification")
 			vm.confirmChan <- false
 		}
-		vm.inputBar.SetPlaceholder("")
-		vm.inputBar.SetTextAndMoveCursor("")
+		vm.inputBar.
+			SetPlaceholder("").
+			SetTextAndMoveCursor("").
+			SetBackgroundColor(tcell.ColorDefault).
+			SetTextColor(tcell.ColorDefault)
 		return true
 	} else {
 		return vm.inputBar.OnKeyEvent(event)

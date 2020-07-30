@@ -629,8 +629,6 @@ func (view *RoomView) InputTabComplete(text string, cursorOffset int) {
 		return
 	}
 
-	debug.Print("Tab completing", cursorOffset, text)
-
 	str := runewidth.Truncate(text, cursorOffset, "")
 	word := findWordToTabComplete(str)
 	startIndex := len(str) - len(word)

@@ -23,9 +23,7 @@ require (
 	golang.org/x/net v0.0.0-20200602114024-627f9648deb9
 	gopkg.in/toast.v1 v1.0.0-20180812000517-0a84660828b2
 	gopkg.in/yaml.v2 v2.3.0
-	maunium.net/go/mautrix v0.5.5
+	maunium.net/go/mautrix v0.7.0-rc.1
 	maunium.net/go/mauview v0.1.1
 	maunium.net/go/tcell v0.2.0
 )
-
-replace maunium.net/go/mautrix => github.com/nikofil/mautrix-go v0.5.2-0.20200725175335-dd3f90913c4d
