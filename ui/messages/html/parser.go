@@ -29,6 +29,9 @@ import (
 
 	"maunium.net/go/mautrix/event"
 	"maunium.net/go/mautrix/id"
+
+	"maunium.net/go/gomuks/config"
+	"maunium.net/go/gomuks/debug"
 	"maunium.net/go/tcell"
 
 	"maunium.net/go/gomuks/matrix/rooms"
@@ -40,6 +43,7 @@ var matrixToURL = regexp.MustCompile("^(?:https?://)?(?:www\\.)?matrix\\.to/#/([
 type htmlParser struct {
 	room *rooms.Room
 
+	Config        *config.Config
 	keepLinebreak bool
 }
 
@@ -160,7 +164,7 @@ func (parser *htmlParser) headerToEntity(node *html.Node) Entity {
 		},
 		Children: append(
 			[]Entity{NewTextEntity(strings.Repeat("#", int(node.Data[1]-'0')) + " ")},
-			parser.nodeToEntities(node.FirstChild)...
+			parser.nodeToEntities(node.FirstChild)...,
 		),
 	}).AdjustStyle(AdjustStyleBold)
 }
@@ -170,16 +174,31 @@ func (parser *htmlParser) blockquoteToEntity(node *html.Node) Entity {
 }
 
 func (parser *htmlParser) linkToEntity(node *html.Node) Entity {
+	href := parser.getAttribute(node, "href")
+
 	entity := &ContainerEntity{
 		BaseEntity: &BaseEntity{
 			Tag: "a",
 		},
 		Children: parser.nodeToEntities(node.FirstChild),
 	}
-	href := parser.getAttribute(node, "href")
+
 	if len(href) == 0 {
 		return entity
 	}
+
+	debug.Print("here value of parser.config.Preferences.ShowUrls")
+
+	debug.Printf("%v", config.UserPreferences{}.DisableShowUrls)
+	showurls := config.UserPreferences{}.DisableShowUrls
+
+	if showurls {
+		entity.Children = append(
+			[]Entity{NewTextEntity("(" + href + ") ")},
+			parser.nodeToEntities(node.FirstChild)...,
+		)
+	}
+
 	match := matrixToURL.FindStringSubmatch(href)
 	if len(match) == 2 {
 		pillTarget := match[1]
@@ -190,7 +209,7 @@ func (parser *htmlParser) linkToEntity(node *html.Node) Entity {
 				text.Style = text.Style.Foreground(widget.GetHashColor(pillTarget))
 			}
 			entity.Children = []Entity{text}
-		/*} else if slash := strings.IndexRune(pillTarget, '/'); slash != -1 {
+			/*} else if slash := strings.IndexRune(pillTarget, '/'); slash != -1 {
 			room := pillTarget[:slash]
 			event := pillTarget[slash+1:]*/
 		} else if pillTarget[0] == '#' {
