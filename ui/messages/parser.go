@@ -25,7 +25,7 @@ import (
 	"maunium.net/go/tcell"
 
 	"maunium.net/go/gomuks/debug"
-	"maunium.net/go/gomuks/interface"
+	ifc "maunium.net/go/gomuks/interface"
 	"maunium.net/go/gomuks/matrix/muksevt"
 	"maunium.net/go/gomuks/matrix/rooms"
 	"maunium.net/go/gomuks/ui/messages/html"
@@ -204,7 +204,7 @@ func ParseMessage(matrix ifc.MatrixContainer, room *rooms.Room, evt *muksevt.Eve
 	switch content.MsgType {
 	case event.MsgText, event.MsgNotice, event.MsgEmote:
 		if content.Format == event.FormatHTML {
-			return NewHTMLMessage(evt, displayname, html.Parse(room, content, evt.Sender, displayname))
+			return NewHTMLMessage(evt, displayname, html.Parse(matrix.Preferences(), room, content, evt.Sender, displayname))
 		}
 		content.Body = strings.Replace(content.Body, "\t", "    ", -1)
 		return NewTextMessage(evt, displayname, content.Body)

@@ -17,6 +17,7 @@
 package html
 
 import (
+	"fmt"
 	"regexp"
 	"strconv"
 	"strings"
@@ -31,7 +32,6 @@ import (
 	"maunium.net/go/mautrix/id"
 
 	"maunium.net/go/gomuks/config"
-	"maunium.net/go/gomuks/debug"
 	"maunium.net/go/tcell"
 
 	"maunium.net/go/gomuks/matrix/rooms"
@@ -41,9 +41,17 @@ import (
 var matrixToURL = regexp.MustCompile("^(?:https?://)?(?:www\\.)?matrix\\.to/#/([#@!].*)")
 
 type htmlParser struct {
-	room *rooms.Room
+<<<<<<< HEAD
+	prefs   *config.UserPreferences
+	room    *rooms.Room
+	sameURL bool
+=======
+	prefs         *config.UserPreferences
+	room          *rooms.Room
+	mautrixnolink bool
+	sameURL       bool
+>>>>>>> 67c0262587404c2b2912e934092dacdba7cc2ed0
 
-	Config        *config.Config
 	keepLinebreak bool
 }
 
@@ -82,6 +90,15 @@ func (parser *htmlParser) getAttribute(node *html.Node, attribute string) string
 		}
 	}
 	return ""
+}
+
+func (parser *htmlParser) hasAttribute(node *html.Node, attribute string) bool {
+	for _, attr := range node.Attr {
+		if attr.Key == attribute {
+			return true
+		}
+	}
+	return false
 }
 
 func (parser *htmlParser) listToEntity(node *html.Node) Entity {
@@ -174,6 +191,7 @@ func (parser *htmlParser) blockquoteToEntity(node *html.Node) Entity {
 }
 
 func (parser *htmlParser) linkToEntity(node *html.Node) Entity {
+	sameURL := false
 	href := parser.getAttribute(node, "href")
 
 	entity := &ContainerEntity{
@@ -187,16 +205,28 @@ func (parser *htmlParser) linkToEntity(node *html.Node) Entity {
 		return entity
 	}
 
-	debug.Print("here value of parser.config.Preferences.ShowUrls")
+	if len(entity.Children) == 1 {
+		entity, ok := entity.Children[0].(*TextEntity)
+		if ok && entity.Text == href {
+<<<<<<< HEAD
+			sameURL = true
+		}
+	}
 
-	debug.Printf("%v", config.UserPreferences{}.DisableShowUrls)
-	showurls := config.UserPreferences{}.DisableShowUrls
+	if !parser.prefs.DisableShowURLs && !parser.hasAttribute(node, "data-mautrix-no-link") && !sameURL {
 
-	if showurls {
+		entity.Children = append(entity.Children, NewTextEntity(fmt.Sprintf(" (%s)", href)))
+=======
+			parser.sameURL = true
+		}
+	}
+
+	if !parser.prefs.DisableShowurls && !parser.mautrixnolink && !parser.sameURL {
 		entity.Children = append(
 			[]Entity{NewTextEntity("(" + href + ") ")},
 			parser.nodeToEntities(node.FirstChild)...,
 		)
+>>>>>>> 67c0262587404c2b2912e934092dacdba7cc2ed0
 	}
 
 	match := matrixToURL.FindStringSubmatch(href)
@@ -396,20 +426,33 @@ func (parser *htmlParser) Parse(htmlData string) Entity {
 	if bodyNode != nil {
 		return parser.singleNodeToEntity(bodyNode)
 	}
+
 	return parser.singleNodeToEntity(node)
 }
 
 const TabLength = 4
 
 // Parse parses a HTML-formatted Matrix event into a UIMessage.
-func Parse(room *rooms.Room, content *event.MessageEventContent, sender id.UserID, senderDisplayname string) Entity {
+func Parse(prefs *config.UserPreferences, room *rooms.Room, content *event.MessageEventContent, sender id.UserID, senderDisplayname string) Entity {
 	htmlData := content.FormattedBody
+<<<<<<< HEAD
+=======
+	DataMautrixNoLink := false
+>>>>>>> 67c0262587404c2b2912e934092dacdba7cc2ed0
+
 	if content.Format != event.FormatHTML {
 		htmlData = strings.Replace(html.EscapeString(content.Body), "\n", "<br/>", -1)
 	}
 	htmlData = strings.Replace(htmlData, "\t", strings.Repeat(" ", TabLength), -1)
+<<<<<<< HEAD
 
-	parser := htmlParser{room: room}
+	parser := htmlParser{room: room, prefs: prefs}
+=======
+	if strings.Contains(htmlData, "data-mautrix-no-link") {
+		DataMautrixNoLink = true
+	}
+	parser := htmlParser{room: room, prefs: prefs, mautrixnolink: DataMautrixNoLink}
+>>>>>>> 67c0262587404c2b2912e934092dacdba7cc2ed0
 	root := parser.Parse(htmlData)
 	beRoot := root.(*ContainerEntity)
 	beRoot.Block = false
