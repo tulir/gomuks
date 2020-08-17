@@ -766,11 +766,7 @@ func cmdToggle(cmd *Command) {
 		case "unverified":
 			val = &cmd.Config.SendToVerifiedOnly
 		case "showurls":
-<<<<<<< HEAD
 			val = &cmd.Config.Preferences.DisableShowURLs
-=======
-			val = &cmd.Config.Preferences.DisableShowurls
->>>>>>> 67c0262587404c2b2912e934092dacdba7cc2ed0
 		default:
 			cmd.Reply("Unknown toggle %s. Use /toggle without arguments for a list of togglable things.", thing)
 			return
