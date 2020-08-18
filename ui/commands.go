@@ -722,6 +722,7 @@ var toggleMsg = map[string]ToggleMessage{
 	"downloads":     SimpleToggleMessage("automatic downloads"),
 	"notifications": SimpleToggleMessage("desktop notifications"),
 	"unverified":    SimpleToggleMessage("sending messages to unverified devices"),
+	"showurls":      SimpleToggleMessage("show URLs in text format"),
 }
 
 func makeUsage() string {
@@ -764,6 +765,8 @@ func cmdToggle(cmd *Command) {
 			val = &cmd.Config.Preferences.DisableNotifications
 		case "unverified":
 			val = &cmd.Config.SendToVerifiedOnly
+		case "showurls":
+			val = &cmd.Config.Preferences.DisableShowURLs
 		default:
 			cmd.Reply("Unknown toggle %s. Use /toggle without arguments for a list of togglable things.", thing)
 			return

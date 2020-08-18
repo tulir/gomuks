@@ -50,6 +50,7 @@ type UserPreferences struct {
 	DisableHTML          bool `yaml:"disable_html"`
 	DisableDownloads     bool `yaml:"disable_downloads"`
 	DisableNotifications bool `yaml:"disable_notifications"`
+	DisableShowURLs      bool `yaml:"disable_show_urls"`
 }
 
 // Config contains the main config of gomuks.
