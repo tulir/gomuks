@@ -33,7 +33,7 @@ import (
 
 	"maunium.net/go/gomuks/config"
 	"maunium.net/go/gomuks/debug"
-	ifc "maunium.net/go/gomuks/interface"
+	"maunium.net/go/gomuks/interface"
 	"maunium.net/go/gomuks/lib/notification"
 	"maunium.net/go/gomuks/matrix/rooms"
 	"maunium.net/go/gomuks/ui/widget"

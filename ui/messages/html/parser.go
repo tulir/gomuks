@@ -31,9 +31,9 @@ import (
 	"maunium.net/go/mautrix/event"
 	"maunium.net/go/mautrix/id"
 
-	"maunium.net/go/gomuks/config"
 	"maunium.net/go/tcell"
 
+	"maunium.net/go/gomuks/config"
 	"maunium.net/go/gomuks/matrix/rooms"
 	"maunium.net/go/gomuks/ui/widget"
 )
@@ -205,7 +205,6 @@ func (parser *htmlParser) linkToEntity(node *html.Node) Entity {
 	}
 
 	if !parser.prefs.DisableShowURLs && !parser.hasAttribute(node, "data-mautrix-no-link") && !sameURL {
-
 		entity.Children = append(entity.Children, NewTextEntity(fmt.Sprintf(" (%s)", href)))
 	}
 
