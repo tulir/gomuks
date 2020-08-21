@@ -598,6 +598,12 @@ func findWordToTabComplete(text string) string {
 	return output
 }
 
+var (
+	mentionMarkdown = "[%[1]s](https://matrix.to/#/%[2]s)"
+	mentionHTML = `<a href="https://matrix.to/#/%[2]s">%[1]s</a>`
+	mentionPlaintext = "%[1]s"
+)
+
 func (view *RoomView) defaultAutocomplete(word string, startIndex int) (strCompletions []string, strCompletion string) {
 	if len(word) == 0 {
 		return []string{}, ""
@@ -608,7 +614,15 @@ func (view *RoomView) defaultAutocomplete(word string, startIndex int) (strCompl
 
 	if len(completions) == 1 {
 		completion := completions[0]
-		strCompletion = fmt.Sprintf("[%s](https://matrix.to/#/%s)", completion.displayName, completion.id)
+		template := mentionMarkdown
+		if view.config.Preferences.DisableMarkdown {
+			if view.config.Preferences.DisableHTML {
+				template = mentionPlaintext
+			} else {
+				template = mentionHTML
+			}
+		}
+		strCompletion = fmt.Sprintf(template, completion.displayName, completion.id)
 		if startIndex == 0 && completion.id[0] == '@' {
 			strCompletion = strCompletion + ":"
 		}
