@@ -105,10 +105,13 @@ func NewCommandProcessor(parent *MainView) *CommandProcessor {
 			"o":          {"open"},
 		},
 		autocompleters: map[string]CommandAutocompleter{
-			"devices":  autocompleteDevice,
-			"device":   autocompleteDevice,
-			"verify":   autocompleteDevice,
-			"unverify": autocompleteDevice,
+			"devices":     autocompleteDevice,
+			"device":      autocompleteDevice,
+			"verify":      autocompleteDevice,
+			"unverify":    autocompleteDevice,
+			"import":      autocompleteFile,
+			"export":      autocompleteFile,
+			"export-room": autocompleteFile,
 		},
 		commands: map[string]CommandHandler{
 			"unknown-command": cmdUnknownCommand,
@@ -159,6 +162,9 @@ func NewCommandProcessor(parent *MainView) *CommandProcessor {
 			"unverify":      cmdUnverify,
 			"blacklist":     cmdBlacklist,
 			"reset-session": cmdResetSession,
+			"import":        cmdImportKeys,
+			"export":        cmdExportKeys,
+			"export-room":   cmdExportRoomKeys,
 		},
 	}
 }

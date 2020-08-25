@@ -20,6 +20,7 @@ package ui
 
 import (
 	"fmt"
+	"io/ioutil"
 	"strings"
 	"time"
 	"unicode"
@@ -228,4 +229,60 @@ func cmdResetSession(cmd *Command) {
 	} else {
 		cmd.Reply("Removed outbound group session for this room")
 	}
+}
+
+func autocompleteFile(cmd *CommandAutocomplete) (completions []string, newText string) {
+	// TODO implement
+	return []string{}, ""
+}
+
+// TODO add dialog for asking passphrase
+const extremelyTemporaryHardcodedPassphrase = "gomuks"
+
+func cmdImportKeys(cmd *Command) {
+	data, err := ioutil.ReadFile(cmd.RawArgs)
+	if err != nil {
+		cmd.Reply("Failed to read %s: %v", cmd.RawArgs, err)
+		return
+	}
+	mach := cmd.Matrix.Crypto().(*crypto.OlmMachine)
+	imported, total, err := mach.ImportKeys(extremelyTemporaryHardcodedPassphrase, string(data))
+	if err != nil {
+		cmd.Reply("Failed to import sessions: %v", err)
+	} else {
+		cmd.Reply("Successfully imported %d/%d sessions", imported, total)
+	}
+}
+
+func exportKeys(cmd *Command, sessions []*crypto.InboundGroupSession) {
+	export, err := crypto.ExportKeys(extremelyTemporaryHardcodedPassphrase, sessions)
+	if err != nil {
+		cmd.Reply("Failed to export sessions: %v", err)
+	}
+	err = ioutil.WriteFile(cmd.RawArgs, []byte(export), 0400)
+	if err != nil {
+		cmd.Reply("Failed to write sessions to %s: %v", cmd.RawArgs, err)
+	} else {
+		cmd.Reply("Successfully exported %d sessions to %s", len(sessions), cmd.RawArgs)
+	}
+}
+
+func cmdExportKeys(cmd *Command) {
+	mach := cmd.Matrix.Crypto().(*crypto.OlmMachine)
+	sessions, err := mach.CryptoStore.GetAllGroupSessions()
+	if err != nil {
+		cmd.Reply("Failed to get sessions to export: %v", err)
+		return
+	}
+	exportKeys(cmd, sessions)
+}
+
+func cmdExportRoomKeys(cmd *Command) {
+	mach := cmd.Matrix.Crypto().(*crypto.OlmMachine)
+	sessions, err := mach.CryptoStore.GetGroupSessionsForRoom(cmd.Room.MxRoom().ID)
+	if err != nil {
+		cmd.Reply("Failed to get sessions to export: %v", err)
+		return
+	}
+	exportKeys(cmd, sessions)
 }
