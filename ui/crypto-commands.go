@@ -246,7 +246,7 @@ func cmdImportKeys(cmd *Command) {
 		return
 	}
 	mach := cmd.Matrix.Crypto().(*crypto.OlmMachine)
-	imported, total, err := mach.ImportKeys(extremelyTemporaryHardcodedPassphrase, string(data))
+	imported, total, err := mach.ImportKeys(extremelyTemporaryHardcodedPassphrase, data)
 	if err != nil {
 		cmd.Reply("Failed to import sessions: %v", err)
 	} else {
@@ -259,7 +259,7 @@ func exportKeys(cmd *Command, sessions []*crypto.InboundGroupSession) {
 	if err != nil {
 		cmd.Reply("Failed to export sessions: %v", err)
 	}
-	err = ioutil.WriteFile(cmd.RawArgs, []byte(export), 0400)
+	err = ioutil.WriteFile(cmd.RawArgs, export, 0400)
 	if err != nil {
 		cmd.Reply("Failed to write sessions to %s: %v", cmd.RawArgs, err)
 	} else {
