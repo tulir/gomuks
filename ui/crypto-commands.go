@@ -20,6 +20,8 @@ package ui
 
 import (
 	"fmt"
+	"io/ioutil"
+	"path/filepath"
 	"strings"
 	"time"
 	"unicode"
@@ -228,4 +230,106 @@ func cmdResetSession(cmd *Command) {
 	} else {
 		cmd.Reply("Removed outbound group session for this room")
 	}
+}
+
+func autocompleteFile(cmd *CommandAutocomplete) (completions []string, newText string) {
+	inputPath, err := filepath.Abs(cmd.RawArgs)
+	if err != nil {
+		return
+	}
+
+	var searchNamePrefix, searchDir string
+	if strings.HasSuffix(cmd.RawArgs, "/") {
+		searchDir = inputPath
+	} else {
+		searchNamePrefix = filepath.Base(inputPath)
+		searchDir = filepath.Dir(inputPath)
+	}
+	files, err := ioutil.ReadDir(searchDir)
+	if err != nil {
+		return
+	}
+	for _, file := range files {
+		name := file.Name()
+		if !strings.HasPrefix(name, searchNamePrefix) || (name[0] == '.' && searchNamePrefix == "") {
+			continue
+		}
+		fullPath := filepath.Join(searchDir, name)
+		if file.IsDir() {
+			fullPath += "/"
+		}
+		completions = append(completions, fullPath)
+	}
+	if len(completions) == 1 {
+		newText = fmt.Sprintf("/%s %s", cmd.OrigCommand, completions[0])
+	}
+	return
+}
+
+func cmdImportKeys(cmd *Command) {
+	path, err := filepath.Abs(cmd.RawArgs)
+	if err != nil {
+		cmd.Reply("Failed to get absolute path: %v", err)
+		return
+	}
+	data, err := ioutil.ReadFile(path)
+	if err != nil {
+		cmd.Reply("Failed to read %s: %v", path, err)
+		return
+	}
+	passphrase, ok := cmd.MainView.AskPassword("Key import", false)
+	if !ok {
+		cmd.Reply("Passphrase entry cancelled")
+		return
+	}
+	mach := cmd.Matrix.Crypto().(*crypto.OlmMachine)
+	imported, total, err := mach.ImportKeys(passphrase, data)
+	if err != nil {
+		cmd.Reply("Failed to import sessions: %v", err)
+	} else {
+		cmd.Reply("Successfully imported %d/%d sessions", imported, total)
+	}
+}
+
+func exportKeys(cmd *Command, sessions []*crypto.InboundGroupSession) {
+	path, err := filepath.Abs(cmd.RawArgs)
+	if err != nil {
+		cmd.Reply("Failed to get absolute path: %v", err)
+		return
+	}
+	passphrase, ok := cmd.MainView.AskPassword("Key export", true)
+	if !ok {
+		cmd.Reply("Passphrase entry cancelled")
+		return
+	}
+	export, err := crypto.ExportKeys(passphrase, sessions)
+	if err != nil {
+		cmd.Reply("Failed to export sessions: %v", err)
+	}
+	err = ioutil.WriteFile(path, export, 0400)
+	if err != nil {
+		cmd.Reply("Failed to write sessions to %s: %v", path, err)
+	} else {
+		cmd.Reply("Successfully exported %d sessions to %s", len(sessions), path)
+	}
+}
+
+func cmdExportKeys(cmd *Command) {
+	mach := cmd.Matrix.Crypto().(*crypto.OlmMachine)
+	sessions, err := mach.CryptoStore.GetAllGroupSessions()
+	if err != nil {
+		cmd.Reply("Failed to get sessions to export: %v", err)
+		return
+	}
+	exportKeys(cmd, sessions)
+}
+
+func cmdExportRoomKeys(cmd *Command) {
+	mach := cmd.Matrix.Crypto().(*crypto.OlmMachine)
+	sessions, err := mach.CryptoStore.GetGroupSessionsForRoom(cmd.Room.MxRoom().ID)
+	if err != nil {
+		cmd.Reply("Failed to get sessions to export: %v", err)
+		return
+	}
+	exportKeys(cmd, sessions)
 }

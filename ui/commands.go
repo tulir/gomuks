@@ -461,6 +461,11 @@ Things: rooms, users, baremessages, images, typingnotif, unverified
 /verify <user id> <device id> [fingerprint]
     - Verify a device. If the fingerprint is not provided,
       interactive emoji verification will be started.
+/reset-session - Reset the outbound Megolm session in the current room.
+
+/import <file> - Import encryption keys
+/export <file> - Export encryption keys
+/export-room <file> - Export encryption keys for the current room.
 
 # Rooms
 /pm <user id> <...>   - Create a private chat with the given user(s).
