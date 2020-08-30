@@ -21,6 +21,7 @@ package ui
 import (
 	"fmt"
 	"io/ioutil"
+	"path/filepath"
 	"strings"
 	"time"
 	"unicode"
@@ -232,21 +233,57 @@ func cmdResetSession(cmd *Command) {
 }
 
 func autocompleteFile(cmd *CommandAutocomplete) (completions []string, newText string) {
-	// TODO implement
-	return []string{}, ""
+	inputPath, err := filepath.Abs(cmd.RawArgs)
+	if err != nil {
+		return
+	}
+
+	var searchNamePrefix, searchDir string
+	if strings.HasSuffix(cmd.RawArgs, "/") {
+		searchDir = inputPath
+	} else {
+		searchNamePrefix = filepath.Base(inputPath)
+		searchDir = filepath.Dir(inputPath)
+	}
+	files, err := ioutil.ReadDir(searchDir)
+	if err != nil {
+		return
+	}
+	for _, file := range files {
+		name := file.Name()
+		if !strings.HasPrefix(name, searchNamePrefix) || (name[0] == '.' && searchNamePrefix == "") {
+			continue
+		}
+		fullPath := filepath.Join(searchDir, name)
+		if file.IsDir() {
+			fullPath += "/"
+		}
+		completions = append(completions, fullPath)
+	}
+	if len(completions) == 1 {
+		newText = fmt.Sprintf("/%s %s", cmd.OrigCommand, completions[0])
+	}
+	return
 }
 
-// TODO add dialog for asking passphrase
-const extremelyTemporaryHardcodedPassphrase = "gomuks"
-
 func cmdImportKeys(cmd *Command) {
-	data, err := ioutil.ReadFile(cmd.RawArgs)
+	path, err := filepath.Abs(cmd.RawArgs)
 	if err != nil {
-		cmd.Reply("Failed to read %s: %v", cmd.RawArgs, err)
+		cmd.Reply("Failed to get absolute path: %v", err)
+		return
+	}
+	data, err := ioutil.ReadFile(path)
+	if err != nil {
+		cmd.Reply("Failed to read %s: %v", path, err)
+		return
+	}
+	passphrase, ok := cmd.MainView.AskPassword("Key import", false)
+	if !ok {
+		cmd.Reply("Passphrase entry cancelled")
 		return
 	}
 	mach := cmd.Matrix.Crypto().(*crypto.OlmMachine)
-	imported, total, err := mach.ImportKeys(extremelyTemporaryHardcodedPassphrase, data)
+	imported, total, err := mach.ImportKeys(passphrase, data)
 	if err != nil {
 		cmd.Reply("Failed to import sessions: %v", err)
 	} else {
@@ -255,15 +292,25 @@ func cmdImportKeys(cmd *Command) {
 }
 
 func exportKeys(cmd *Command, sessions []*crypto.InboundGroupSession) {
-	export, err := crypto.ExportKeys(extremelyTemporaryHardcodedPassphrase, sessions)
+	path, err := filepath.Abs(cmd.RawArgs)
+	if err != nil {
+		cmd.Reply("Failed to get absolute path: %v", err)
+		return
+	}
+	passphrase, ok := cmd.MainView.AskPassword("Key export", true)
+	if !ok {
+		cmd.Reply("Passphrase entry cancelled")
+		return
+	}
+	export, err := crypto.ExportKeys(passphrase, sessions)
 	if err != nil {
 		cmd.Reply("Failed to export sessions: %v", err)
 	}
-	err = ioutil.WriteFile(cmd.RawArgs, export, 0400)
+	err = ioutil.WriteFile(path, export, 0400)
 	if err != nil {
-		cmd.Reply("Failed to write sessions to %s: %v", cmd.RawArgs, err)
+		cmd.Reply("Failed to write sessions to %s: %v", path, err)
 	} else {
-		cmd.Reply("Successfully exported %d sessions to %s", len(sessions), cmd.RawArgs)
+		cmd.Reply("Successfully exported %d sessions to %s", len(sessions), path)
 	}
 }
 
