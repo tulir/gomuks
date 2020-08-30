@@ -436,8 +436,13 @@ func (view *RoomView) SetEditing(evt *muksevt.Event) {
 		view.editing = evt
 		// replying should never be non-nil when SetEditing, but do this just to be safe
 		view.replying = nil
-		text := view.editing.Content.AsMessage().Body
-		if view.editing.Content.AsMessage().MsgType == event.MsgEmote {
+		msgContent := view.editing.Content.AsMessage()
+		if len(view.editing.Gomuks.Edits) > 0 {
+			// This feels kind of dangerous, but I think it works
+			msgContent = view.editing.Gomuks.Edits[len(view.editing.Gomuks.Edits)-1].Content.AsMessage().NewContent
+		}
+		text := msgContent.Body
+		if msgContent.MsgType == event.MsgEmote {
 			text = "/me " + text
 		}
 		view.input.SetText(text)
