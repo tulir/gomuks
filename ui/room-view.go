@@ -197,6 +197,8 @@ func (view *RoomView) OnSelect(message *messages.UIMessage) {
 		if len(view.selectContent) > 0 {
 			go view.SendMessage(event.MsgText, view.selectContent)
 		}
+	case SelectEdit:
+		view.SetEditing(message.Event)
 	case SelectReact:
 		go view.SendReaction(message.EventID, view.selectContent)
 	case SelectRedact:

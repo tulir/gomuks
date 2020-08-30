@@ -158,6 +158,7 @@ const (
 	SelectReply    SelectReason = "reply to"
 	SelectReact                 = "react to"
 	SelectRedact                = "redact"
+	SelectEdit                  = "edit"
 	SelectDownload              = "download"
 	SelectOpen                  = "open"
 	SelectCopy                  = "copy"
@@ -165,6 +166,10 @@ const (
 
 func cmdReply(cmd *Command) {
 	cmd.Room.StartSelecting(SelectReply, strings.Join(cmd.Args, " "))
+}
+
+func cmdEdit(cmd *Command) {
+	cmd.Room.StartSelecting(SelectEdit, "")
 }
 
 func cmdRedact(cmd *Command) {
@@ -450,6 +455,7 @@ Things: rooms, users, baremessages, images, typingnotif, unverified
 /reply [text]        - Reply to the selected message.
 /react <reaction>    - React to the selected message.
 /redact [reason]     - Redact the selected message.
+/edit                - Edit the selected message.
 
 # Encryption
 /fingerprint - View the fingerprint of your device.
