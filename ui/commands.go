@@ -20,7 +20,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"math"
 	"os"
 	"path/filepath"
@@ -34,7 +33,6 @@ import (
 	"time"
 	"unicode"
 
-	"github.com/gabriel-vasile/mimetype"
 	"github.com/lucasb-eyer/go-colorful"
 	"github.com/pkg/errors"
 	"github.com/russross/blackfriday/v2"
@@ -179,40 +177,6 @@ func cmdRedact(cmd *Command) {
 	cmd.Room.StartSelecting(SelectRedact, strings.Join(cmd.Args, " "))
 }
 
-func autocompleteFile(cmd *CommandAutocomplete) (completions []string, newText string) {
-	inputPath, err := filepath.Abs(cmd.RawArgs)
-	if err != nil {
-		return
-	}
-
-	var searchNamePrefix, searchDir string
-	if strings.HasSuffix(cmd.RawArgs, "/") {
-		searchDir = inputPath
-	} else {
-		searchNamePrefix = filepath.Base(inputPath)
-		searchDir = filepath.Dir(inputPath)
-	}
-	files, err := ioutil.ReadDir(searchDir)
-	if err != nil {
-		return
-	}
-	for _, file := range files {
-		name := file.Name()
-		if !strings.HasPrefix(name, searchNamePrefix) || (name[0] == '.' && searchNamePrefix == "") {
-			continue
-		}
-		fullPath := filepath.Join(searchDir, name)
-		if file.IsDir() {
-			fullPath += "/"
-		}
-		completions = append(completions, fullPath)
-	}
-	if len(completions) == 1 {
-		newText = fmt.Sprintf("/%s %s", cmd.OrigCommand, completions[0])
-	}
-	return
-}
-
 func cmdDownload(cmd *Command) {
 	cmd.Room.StartSelecting(SelectDownload, strings.Join(cmd.Args, " "))
 }
@@ -229,30 +193,7 @@ func cmdUpload(cmd *Command) {
 		return
 	}
 
-	ftype, err := mimetype.DetectFile(path)
-	if err != nil {
-		cmd.Reply("Failed to get conetnt type: %v", err)
-		return
-	}
-
-	fi, err := os.Stat(path)
-	if err != nil {
-		cmd.Reply("Failed to stat file: %v", err)
-		return
-	}
-
-	reader, err := os.Open(path)
-	if err != nil {
-		cmd.Reply("Failed to open file: %v", err)
-		return
-	}
-
-	cmd.Room.UploadMedia(mautrix.ReqUploadMedia{
-		reader,
-		fi.Size(),
-		ftype.String(),
-		filepath.Base(cmd.RawArgs),
-	})
+	go cmd.Room.SendMessageMedia(path)
 }
 
 func cmdOpen(cmd *Command) {

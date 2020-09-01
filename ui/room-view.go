@@ -31,17 +31,16 @@ import (
 	"maunium.net/go/mauview"
 	"maunium.net/go/tcell"
 
-	"maunium.net/go/gomuks/lib/util"
-	"maunium.net/go/mautrix/crypto/attachment"
-
 	"maunium.net/go/mautrix"
+	"maunium.net/go/mautrix/crypto/attachment"
 	"maunium.net/go/mautrix/event"
 	"maunium.net/go/mautrix/id"
 
 	"maunium.net/go/gomuks/config"
 	"maunium.net/go/gomuks/debug"
-	ifc "maunium.net/go/gomuks/interface"
+	"maunium.net/go/gomuks/interface"
 	"maunium.net/go/gomuks/lib/open"
+	"maunium.net/go/gomuks/lib/util"
 	"maunium.net/go/gomuks/matrix/muksevt"
 	"maunium.net/go/gomuks/matrix/rooms"
 	"maunium.net/go/gomuks/ui/messages"
@@ -762,25 +761,46 @@ func (view *RoomView) SendMessage(msgtype event.MessageType, text string) {
 	view.SendMessageHTML(msgtype, text, "")
 }
 
+func (view *RoomView) getRelationForNewEvent() *ifc.Relation {
+	if view.editing != nil {
+		return &ifc.Relation{
+			Type:  event.RelReplace,
+			Event: view.editing,
+		}
+	} else if view.replying != nil {
+		return &ifc.Relation{
+			Type:  event.RelReference,
+			Event: view.replying,
+		}
+	}
+	return nil
+}
+
 func (view *RoomView) SendMessageHTML(msgtype event.MessageType, text, html string) {
 	defer debug.Recover()
 	debug.Print("Sending message", msgtype, text, "to", view.Room.ID)
 	if !view.config.Preferences.DisableEmojis {
 		text = emoji.Sprint(text)
 	}
-	var rel *ifc.Relation
-	if view.editing != nil {
-		rel = &ifc.Relation{
-			Type:  event.RelReplace,
-			Event: view.editing,
-		}
-	} else if view.replying != nil {
-		rel = &ifc.Relation{
-			Type:  event.RelReference,
-			Event: view.replying,
-		}
-	}
+	rel := view.getRelationForNewEvent()
 	evt := view.parent.matrix.PrepareMarkdownMessage(view.Room.ID, msgtype, text, html, rel)
+	view.addLocalEcho(evt)
+}
+
+func (view *RoomView) SendMessageMedia(path string) {
+	defer debug.Recover()
+	debug.Print("Sending media at", path, "to", view.Room.ID)
+	rel := view.getRelationForNewEvent()
+	evt, err := view.parent.matrix.PrepareMediaMessage(view.Room, path, rel)
+	if err != nil {
+		view.AddServiceMessage(fmt.Sprintf("Failed to upload media: %v", err))
+		view.parent.parent.Render()
+		return
+	}
+	view.addLocalEcho(evt)
+}
+
+func (view *RoomView) addLocalEcho(evt *muksevt.Event) {
 	msg := view.parseEvent(evt.SomewhatDangerousCopy())
 	view.content.AddMessage(msg, AppendMessage)
 	view.ClearAllContext()
@@ -804,20 +824,6 @@ func (view *RoomView) SendMessageHTML(msgtype event.MessageType, text, html stri
 		view.MessageView().setMessageID(msg)
 		view.parent.parent.Render()
 	}
-}
-
-func (view *RoomView) SendImage(body string, url id.ContentURI) {
-	// evt := view.parent.matrix.SendImage(view.Room.ID, body, url)
-}
-
-func (view *RoomView) UploadMedia(data mautrix.ReqUploadMedia) {
-	contentUri, err := view.parent.matrix.UploadMedia(data)
-	if err != nil {
-		view.AddServiceMessage(fmt.Sprintf("Failed to upload file: %v", err))
-		return
-	}
-
-	view.AddServiceMessage(fmt.Sprintf("ContentURI: %v", contentUri))
 }
 
 func (view *RoomView) MessageView() *MessageView {

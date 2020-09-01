@@ -32,6 +32,14 @@ type Relation struct {
 	Event *muksevt.Event
 }
 
+type UploadedMediaInfo struct {
+	*mautrix.RespMediaUpload
+	EncryptionInfo *attachment.EncryptedFile
+	MsgType        event.MessageType
+	Name           string
+	Info           *event.FileInfo
+}
+
 type MatrixContainer interface {
 	Client() *mautrix.Client
 	Preferences() *config.UserPreferences
@@ -46,6 +54,7 @@ type MatrixContainer interface {
 
 	SendPreferencesToMatrix()
 	PrepareMarkdownMessage(roomID id.RoomID, msgtype event.MessageType, text, html string, relation *Relation) *muksevt.Event
+	PrepareMediaMessage(room *rooms.Room, path string, relation *Relation) (*muksevt.Event, error)
 	SendEvent(evt *muksevt.Event) (id.EventID, error)
 	Redact(roomID id.RoomID, eventID id.EventID, reason string) error
 	SendTyping(roomID id.RoomID, typing bool)
@@ -60,8 +69,7 @@ type MatrixContainer interface {
 	GetRoom(roomID id.RoomID) *rooms.Room
 	GetOrCreateRoom(roomID id.RoomID) *rooms.Room
 
-	SendImage(roomID id.RoomID, body string, url id.ContentURI)
-	UploadMedia(data mautrix.ReqUploadMedia) (*id.ContentURI, error)
+	UploadMedia(path string, encrypt bool) (*UploadedMediaInfo, error)
 	Download(uri id.ContentURI, file *attachment.EncryptedFile) ([]byte, error)
 	DownloadToDisk(uri id.ContentURI, file *attachment.EncryptedFile, target string) (string, error)
 	GetDownloadURL(uri id.ContentURI) string

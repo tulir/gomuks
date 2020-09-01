@@ -819,6 +819,28 @@ func (c *Container) MarkRead(roomID id.RoomID, eventID id.EventID) {
 	}()
 }
 
+func (c *Container) PrepareMediaMessage(room *rooms.Room, path string, rel *ifc.Relation) (*muksevt.Event, error) {
+	resp, err := c.UploadMedia(path, room.Encrypted)
+	if err != nil {
+		return nil, err
+	}
+	content := event.MessageEventContent{
+		MsgType:    resp.MsgType,
+		Body:       resp.Name,
+		Info:       resp.Info,
+	}
+	if resp.EncryptionInfo != nil {
+		content.File = &event.EncryptedFileInfo{
+			EncryptedFile: *resp.EncryptionInfo,
+			URL:           resp.ContentURI.CUString(),
+		}
+	} else {
+		content.URL = resp.ContentURI.CUString()
+	}
+
+	return c.prepareEvent(room.ID, &content, rel), nil
+}
+
 func (c *Container) PrepareMarkdownMessage(roomID id.RoomID, msgtype event.MessageType, text, html string, rel *ifc.Relation) *muksevt.Event {
 	var content event.MessageEventContent
 	if html != "" {
@@ -833,8 +855,12 @@ func (c *Container) PrepareMarkdownMessage(roomID id.RoomID, msgtype event.Messa
 		content.MsgType = msgtype
 	}
 
+	return c.prepareEvent(roomID, &content, rel)
+}
+
+func (c *Container) prepareEvent(roomID id.RoomID, content *event.MessageEventContent, rel *ifc.Relation) *muksevt.Event {
 	if rel != nil && rel.Type == event.RelReplace {
-		contentCopy := content
+		contentCopy := *content
 		content.NewContent = &contentCopy
 		content.Body = "* " + content.Body
 		if len(content.FormattedBody) > 0 {
@@ -855,7 +881,7 @@ func (c *Container) PrepareMarkdownMessage(roomID id.RoomID, msgtype event.Messa
 		Type:      event.EventMessage,
 		Timestamp: time.Now().UnixNano() / 1e6,
 		RoomID:    roomID,
-		Content:   event.Content{Parsed: &content},
+		Content:   event.Content{Parsed: content},
 		Unsigned:  event.Unsigned{TransactionID: txnID},
 	})
 	localEcho.Gomuks.OutgoingState = muksevt.StateLocalEcho
@@ -905,18 +931,60 @@ func (c *Container) SendEvent(evt *muksevt.Event) (id.EventID, error) {
 	return resp.EventID, nil
 }
 
-func (c *Container) SendImage(roomID id.RoomID, body string, url id.ContentURI) {
+func (c *Container) UploadMedia(path string, encrypt bool) (*ifc.UploadedMediaInfo, error) {
+	var err error
+	path, err = filepath.Abs(path)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get absolute path")
+	}
 
-}
+	msgtype, info, err := getMediaInfo(path)
+	if err != nil {
+		return nil, err
+	}
 
-func (c *Container) UploadMedia(data mautrix.ReqUploadMedia) (*id.ContentURI, error) {
-	resp, err := c.client.UploadMedia(data)
+	file, err := os.Open(path)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to open file")
+	}
+
+	stat, err := file.Stat()
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get file info")
+	}
+
+	uploadFileName := stat.Name()
+	uploadMimeType := info.MimeType
+
+	var content io.Reader
+	var encryptionInfo *attachment.EncryptedFile
+	if encrypt {
+		uploadMimeType = "application/octet-stream"
+		uploadFileName = ""
+		encryptionInfo = attachment.NewEncryptedFile()
+		content = encryptionInfo.EncryptStream(file)
+	} else {
+		content = file
+	}
+
+	resp, err := c.client.UploadMedia(mautrix.ReqUploadMedia{
+		Content:       content,
+		ContentLength: stat.Size(),
+		ContentType:   uploadMimeType,
+		FileName:      uploadFileName,
+	})
 
 	if err != nil {
 		return nil, err
 	}
 
-	return &resp.ContentURI, nil
+	return &ifc.UploadedMediaInfo{
+		RespMediaUpload: resp,
+		EncryptionInfo:  encryptionInfo,
+		Name:            stat.Name(),
+		MsgType:         msgtype,
+		Info:            &info,
+	}, nil
 }
 
 func (c *Container) sendTypingAsync(roomID id.RoomID, typing bool, timeout int64) {
