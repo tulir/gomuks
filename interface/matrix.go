@@ -60,6 +60,8 @@ type MatrixContainer interface {
 	GetRoom(roomID id.RoomID) *rooms.Room
 	GetOrCreateRoom(roomID id.RoomID) *rooms.Room
 
+	SendImage(roomID id.RoomID, body string, url id.ContentURI)
+	UploadMedia(data mautrix.ReqUploadMedia) (*id.ContentURI, error)
 	Download(uri id.ContentURI, file *attachment.EncryptedFile) ([]byte, error)
 	DownloadToDisk(uri id.ContentURI, file *attachment.EncryptedFile, target string) (string, error)
 	GetDownloadURL(uri id.ContentURI) string

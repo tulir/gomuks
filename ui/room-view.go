@@ -40,7 +40,7 @@ import (
 
 	"maunium.net/go/gomuks/config"
 	"maunium.net/go/gomuks/debug"
-	"maunium.net/go/gomuks/interface"
+	ifc "maunium.net/go/gomuks/interface"
 	"maunium.net/go/gomuks/lib/open"
 	"maunium.net/go/gomuks/matrix/muksevt"
 	"maunium.net/go/gomuks/matrix/rooms"
@@ -606,8 +606,8 @@ func findWordToTabComplete(text string) string {
 }
 
 var (
-	mentionMarkdown = "[%[1]s](https://matrix.to/#/%[2]s)"
-	mentionHTML = `<a href="https://matrix.to/#/%[2]s">%[1]s</a>`
+	mentionMarkdown  = "[%[1]s](https://matrix.to/#/%[2]s)"
+	mentionHTML      = `<a href="https://matrix.to/#/%[2]s">%[1]s</a>`
 	mentionPlaintext = "%[1]s"
 )
 
@@ -804,6 +804,20 @@ func (view *RoomView) SendMessageHTML(msgtype event.MessageType, text, html stri
 		view.MessageView().setMessageID(msg)
 		view.parent.parent.Render()
 	}
+}
+
+func (view *RoomView) SendImage(body string, url id.ContentURI) {
+	// evt := view.parent.matrix.SendImage(view.Room.ID, body, url)
+}
+
+func (view *RoomView) UploadMedia(data mautrix.ReqUploadMedia) {
+	contentUri, err := view.parent.matrix.UploadMedia(data)
+	if err != nil {
+		view.AddServiceMessage(fmt.Sprintf("Failed to upload file: %v", err))
+		return
+	}
+
+	view.AddServiceMessage(fmt.Sprintf("ContentURI: %v", contentUri))
 }
 
 func (view *RoomView) MessageView() *MessageView {
