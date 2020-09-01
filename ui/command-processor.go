@@ -110,6 +110,7 @@ func NewCommandProcessor(parent *MainView) *CommandProcessor {
 			"device":      autocompleteDevice,
 			"verify":      autocompleteDevice,
 			"unverify":    autocompleteDevice,
+			"blacklist":   autocompleteDevice,
 			"upload":      autocompleteFile,
 			"download":    autocompleteFile,
 			"open":        autocompleteFile,
