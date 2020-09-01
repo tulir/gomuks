@@ -22,10 +22,6 @@ func autocompleteDevice(cmd *CommandAutocomplete) ([]string, string) {
 	return []string{}, ""
 }
 
-func autocompleteFile(cmd *CommandAutocomplete) ([]string, string) {
-	return []string{}, ""
-}
-
 func cmdNoCrypto(cmd *Command) {
 	cmd.Reply("This gomuks was built without encryption support")
 }

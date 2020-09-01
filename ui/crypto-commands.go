@@ -232,40 +232,6 @@ func cmdResetSession(cmd *Command) {
 	}
 }
 
-func autocompleteFile(cmd *CommandAutocomplete) (completions []string, newText string) {
-	inputPath, err := filepath.Abs(cmd.RawArgs)
-	if err != nil {
-		return
-	}
-
-	var searchNamePrefix, searchDir string
-	if strings.HasSuffix(cmd.RawArgs, "/") {
-		searchDir = inputPath
-	} else {
-		searchNamePrefix = filepath.Base(inputPath)
-		searchDir = filepath.Dir(inputPath)
-	}
-	files, err := ioutil.ReadDir(searchDir)
-	if err != nil {
-		return
-	}
-	for _, file := range files {
-		name := file.Name()
-		if !strings.HasPrefix(name, searchNamePrefix) || (name[0] == '.' && searchNamePrefix == "") {
-			continue
-		}
-		fullPath := filepath.Join(searchDir, name)
-		if file.IsDir() {
-			fullPath += "/"
-		}
-		completions = append(completions, fullPath)
-	}
-	if len(completions) == 1 {
-		newText = fmt.Sprintf("/%s %s", cmd.OrigCommand, completions[0])
-	}
-	return
-}
-
 func cmdImportKeys(cmd *Command) {
 	path, err := filepath.Abs(cmd.RawArgs)
 	if err != nil {

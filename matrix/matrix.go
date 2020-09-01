@@ -44,7 +44,7 @@ import (
 
 	"maunium.net/go/gomuks/config"
 	"maunium.net/go/gomuks/debug"
-	"maunium.net/go/gomuks/interface"
+	ifc "maunium.net/go/gomuks/interface"
 	"maunium.net/go/gomuks/lib/open"
 	"maunium.net/go/gomuks/matrix/muksevt"
 	"maunium.net/go/gomuks/matrix/rooms"
@@ -903,6 +903,20 @@ func (c *Container) SendEvent(evt *muksevt.Event) (id.EventID, error) {
 		return "", err
 	}
 	return resp.EventID, nil
+}
+
+func (c *Container) SendImage(roomID id.RoomID, body string, url id.ContentURI) {
+
+}
+
+func (c *Container) UploadMedia(data mautrix.ReqUploadMedia) (*id.ContentURI, error) {
+	resp, err := c.client.UploadMedia(data)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &resp.ContentURI, nil
 }
 
 func (c *Container) sendTypingAsync(roomID id.RoomID, typing bool, timeout int64) {

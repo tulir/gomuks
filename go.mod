@@ -5,6 +5,7 @@ go 1.14
 require (
 	github.com/alecthomas/chroma v0.7.3
 	github.com/disintegration/imaging v1.6.2
+	github.com/gabriel-vasile/mimetype v1.1.1
 	github.com/kyokomi/emoji v2.2.2+incompatible
 	github.com/lithammer/fuzzysearch v1.1.0
 	github.com/lucasb-eyer/go-colorful v1.0.3
