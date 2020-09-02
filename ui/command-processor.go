@@ -203,19 +203,26 @@ func (ch *CommandProcessor) ParseCommand(roomView *RoomView, text string) *Comma
 
 func (ch *CommandProcessor) Autocomplete(roomView *RoomView, text string, cursorOffset int) ([]string, string, bool) {
 	var completions []string
-	if cmd := (*CommandAutocomplete)(ch.ParseCommand(roomView, text)); cmd == nil {
+	if cursorOffset != runewidth.StringWidth(text) {
 		return completions, text, false
-	} else if handler, ok := ch.autocompleters[cmd.Command]; !ok {
-		return completions, text, false
-	} else if cursorOffset != runewidth.StringWidth(text) {
-		return completions, text, false
-	} else {
-		completions, newText := handler(cmd)
-		if newText == "" {
-			newText = text
-		}
-		return completions, newText, true
 	}
+
+	var cmd *Command
+	if cmd = ch.ParseCommand(roomView, text); cmd == nil {
+		return completions, text, false
+	} else if alias, ok := ch.aliases[cmd.Command]; ok {
+		cmd = alias.Process(cmd)
+	}
+
+	handler, ok := ch.autocompleters[cmd.Command]
+	if ok {
+		var newText string
+		completions, newText = handler((*CommandAutocomplete)(cmd))
+		if newText != "" {
+			text = newText
+		}
+	}
+	return completions, text, true
 }
 
 func (ch *CommandProcessor) AutocompleteCommand(word string) (completions []string) {
