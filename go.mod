@@ -3,7 +3,7 @@ module maunium.net/go/gomuks
 go 1.14
 
 require (
-	github.com/alecthomas/chroma v0.7.3
+	github.com/alecthomas/chroma v0.8.0
 	github.com/disintegration/imaging v1.6.2
 	github.com/gabriel-vasile/mimetype v1.1.1
 	github.com/kyokomi/emoji v2.2.2+incompatible
@@ -16,12 +16,10 @@ require (
 	github.com/rivo/uniseg v0.1.0
 	github.com/russross/blackfriday/v2 v2.0.1
 	github.com/sasha-s/go-deadlock v0.2.0
-	github.com/shurcooL/sanitized_anchor_name v1.0.0 // indirect
-	github.com/stretchr/testify v1.6.1 // indirect
 	github.com/zyedidia/clipboard v0.0.0-20200421031010-7c45b8673834
 	go.etcd.io/bbolt v1.3.4
 	golang.org/x/image v0.0.0-20200430140353-33d19683fad8
-	golang.org/x/net v0.0.0-20200602114024-627f9648deb9
+	golang.org/x/net v0.0.0-20200822124328-c89045814202
 	gopkg.in/toast.v1 v1.0.0-20180812000517-0a84660828b2
 	gopkg.in/vansante/go-ffprobe.v2 v2.0.2
 	gopkg.in/yaml.v2 v2.3.0

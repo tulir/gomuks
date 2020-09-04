@@ -263,6 +263,17 @@ func styleEntryToStyle(se chroma.StyleEntry) tcell.Style {
 		Background(colourToColor(se.Background))
 }
 
+func tokenToTextEntity(style *chroma.Style, token *chroma.Token) *TextEntity {
+	return &TextEntity{
+		BaseEntity: &BaseEntity{
+			Tag:           token.Type.String(),
+			Style:         styleEntryToStyle(style.Get(token.Type)),
+			DefaultHeight: 1,
+		},
+		Text: token.Value,
+	}
+}
+
 func (parser *htmlParser) syntaxHighlight(text, language string) Entity {
 	lexer := lexers.Get(strings.ToLower(language))
 	if lexer == nil {
@@ -276,21 +287,33 @@ func (parser *htmlParser) syntaxHighlight(text, language string) Entity {
 	style := styles.SolarizedDark
 
 	tokens := iter.Tokens()
-	children := make([]Entity, len(tokens))
-	for i, token := range tokens {
+
+	var children []Entity
+	for _, token := range tokens {
 		if token.Value == "\n" {
-			children[i] = NewBreakEntity()
-		} else {
-			children[i] = &TextEntity{
-				BaseEntity: &BaseEntity{
-					Tag:           token.Type.String(),
-					Style:         styleEntryToStyle(style.Get(token.Type)),
-					DefaultHeight: 1,
-				},
-				Text: token.Value,
+			children = append(children, NewBreakEntity())
+
+		} else if token.Type.String() == "CommentSingle" {
+			children = append(children, tokenToTextEntity(style, &token))
+			children = append(children, NewBreakEntity())
+
+		} else if token.Type.String() == "CommentMultiline" {
+			lines := strings.Split(token.Value, "\n")
+			for i, line := range lines {
+				t := token.Clone()
+				t.Value = line
+				children = append(children, tokenToTextEntity(style, &t))
+
+				if i < len(lines)-1 {
+					children = append(children, NewBreakEntity())
+				}
 			}
+
+		} else {
+			children = append(children, tokenToTextEntity(style, &token))
 		}
 	}
+
 	return NewCodeBlockEntity(children, styleEntryToStyle(style.Get(chroma.Background)))
 }
 
