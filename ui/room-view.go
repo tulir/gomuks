@@ -440,6 +440,7 @@ func (view *RoomView) SetEditing(evt *muksevt.Event) {
 			// This feels kind of dangerous, but I think it works
 			msgContent = view.editing.Gomuks.Edits[len(view.editing.Gomuks.Edits)-1].Content.AsMessage().NewContent
 		}
+		// TODO this should parse HTML instead of just using the plaintext body
 		text := msgContent.Body
 		if msgContent.MsgType == event.MsgEmote {
 			text = "/me " + text
