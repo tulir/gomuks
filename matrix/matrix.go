@@ -499,14 +499,22 @@ func (c *Container) HandleRedaction(source mautrix.EventSource, evt *event.Event
 	}
 }
 
+var ErrCantEditOthersMessage = errors.New("can't edit message sent by someone else")
+
 func (c *Container) HandleEdit(room *rooms.Room, editsID id.EventID, editEvent *muksevt.Event) {
 	var origEvt *muksevt.Event
 	err := c.history.Update(room, editsID, func(evt *muksevt.Event) error {
+		if editEvent.Sender != evt.Sender {
+			return ErrCantEditOthersMessage
+		}
 		evt.Gomuks.Edits = append(evt.Gomuks.Edits, editEvent)
 		origEvt = evt
 		return nil
 	})
-	if err != nil {
+	if err == ErrCantEditOthersMessage {
+		debug.Printf("Ignoring edit %s of %s by %s in %s: original event was sent by someone else", editEvent.ID, editsID, editEvent.Sender, editEvent.RoomID)
+		return
+	} else if err != nil {
 		debug.Print("Failed to store edit in history db:", err)
 		return
 	} else if !c.config.AuthCache.InitialSyncDone || !room.Loaded() {
