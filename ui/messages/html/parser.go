@@ -34,7 +34,6 @@ import (
 	"maunium.net/go/tcell"
 
 	"maunium.net/go/gomuks/config"
-	"maunium.net/go/gomuks/debug"
 	"maunium.net/go/gomuks/matrix/rooms"
 	"maunium.net/go/gomuks/ui/widget"
 )
@@ -291,7 +290,6 @@ func (parser *htmlParser) syntaxHighlight(text, language string) Entity {
 
 	var children []Entity
 	for _, token := range tokens {
-		debug.Print("'" + token.Value + "|" + token.Type.String() + "'")
 		if token.Value == "\n" {
 			children = append(children, NewBreakEntity())
 
