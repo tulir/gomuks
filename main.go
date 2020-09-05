@@ -17,7 +17,6 @@
 package main
 
 import (
-	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -25,8 +24,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/adrg/xdg"
 	"maunium.net/go/gomuks/debug"
-	"maunium.net/go/gomuks/interface"
+	ifc "maunium.net/go/gomuks/interface"
 	"maunium.net/go/gomuks/ui"
 )
 
@@ -48,30 +48,10 @@ func main() {
 	debug.Initialize()
 	defer debug.Recover()
 
-	var configDir, dataDir, cacheDir, downloadDir string
-	var err error
-
-	configDir, err = UserConfigDir()
-	if err != nil {
-		_, _ = fmt.Fprintln(os.Stderr, "Failed to get config directory:", err)
-		os.Exit(3)
-	}
-	dataDir, err = UserDataDir()
-	if err != nil {
-		_, _ = fmt.Fprintln(os.Stderr, "Failed to get data directory:", err)
-		os.Exit(3)
-	}
-	cacheDir, err = UserCacheDir()
-	if err != nil {
-		_, _ = fmt.Fprintln(os.Stderr, "Failed to get cache directory:", err)
-		os.Exit(3)
-	}
-	downloadDir, err = UserDownloadDir()
-	if err != nil {
-		_, _ = fmt.Fprintln(os.Stderr, "Failed to get download directory:", err)
-		os.Exit(3)
-	}
-
+	configDir := UserConfigDir()
+	dataDir := UserDataDir()
+	cacheDir := UserCacheDir()
+	downloadDir := UserDownloadDir()
 
 	gmx := NewGomuks(MainUIProvider, configDir, dataDir, cacheDir, downloadDir)
 
@@ -96,19 +76,18 @@ func getRootDir(subdir string) string {
 	return filepath.Join(rootDir, subdir)
 }
 
-func UserCacheDir() (dir string, err error) {
+func UserCacheDir() (dir string) {
 	dir = os.Getenv("GOMUKS_CACHE_HOME")
 	if dir == "" {
 		dir = getRootDir("cache")
 	}
 	if dir == "" {
-		dir, err = os.UserCacheDir()
-		dir = filepath.Join(dir, "gomuks")
+		dir = filepath.Join(xdg.CacheHome, "gomuks")
 	}
 	return
 }
 
-func UserDataDir() (dir string, err error) {
+func UserDataDir() (dir string) {
 	dir = os.Getenv("GOMUKS_DATA_HOME")
 	if dir != "" {
 		return
@@ -116,35 +95,28 @@ func UserDataDir() (dir string, err error) {
 	if runtime.GOOS == "windows" || runtime.GOOS == "darwin" {
 		return UserConfigDir()
 	}
-	dir = os.Getenv("XDG_DATA_HOME")
-	if dir == "" {
-		dir = getRootDir("data")
-	}
-	if dir == "" {
-		dir = os.Getenv("HOME")
-		if dir == "" {
-			return "", errors.New("neither $XDG_CACHE_HOME nor $HOME are defined")
-		}
-		dir = filepath.Join(dir, ".local", "share")
-	}
-	dir = filepath.Join(dir, "gomuks")
+
+	dir = filepath.Join(xdg.DataHome, "gomuks")
 	return
 }
 
-func UserDownloadDir() (dir string, err error) {
-	dir, err = os.UserHomeDir()
-	dir = filepath.Join(dir, "Downloads")
+func UserDownloadDir() (dir string) {
+	dir = os.Getenv("GOMUKS_DOWNLOAD_HOME")
+	if dir != "" {
+		return
+	}
+
+	dir = xdg.UserDirs.Download
 	return
 }
 
-func UserConfigDir() (dir string, err error) {
+func UserConfigDir() (dir string) {
 	dir = os.Getenv("GOMUKS_CONFIG_HOME")
 	if dir == "" {
 		dir = getRootDir("config")
 	}
 	if dir == "" {
-		dir, err = os.UserConfigDir()
-		dir = filepath.Join(dir, "gomuks")
+		dir = filepath.Join(xdg.ConfigHome, "gomuks")
 	}
 	return
 }

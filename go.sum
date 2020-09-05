@@ -1,4 +1,6 @@
 github.com/PuerkitoBio/goquery v1.5.1/go.mod h1:GsLWisAFVj4WgDibEWF4pvYnkVQBpKBKeU+7zCJoLcc=
+github.com/adrg/xdg v0.2.1 h1:VSVdnH7cQ7V+B33qSJHTCRlNgra1607Q8PzEmnvb2Ic=
+github.com/adrg/xdg v0.2.1/go.mod h1:ZuOshBmzV4Ta+s23hdfFZnBsdzmoR3US0d7ErpqSbTQ=
 github.com/alecthomas/assert v0.0.0-20170929043011-405dbfeb8e38 h1:smF2tmSOzy2Mm+0dGI2AIUHY+w0BUc+4tn40djz7+6U=
 github.com/alecthomas/assert v0.0.0-20170929043011-405dbfeb8e38/go.mod h1:r7bzyVFMNntcxPZXK3/+KdruV1H5KSlyVY0gc+NgInI=
 github.com/alecthomas/chroma v0.8.0 h1:HS+HE97sgcqjQGu5uVr8jIE55Mmh5UeQ7kckAhHg2pY=
