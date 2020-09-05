@@ -101,7 +101,7 @@ func UserDataDir() (dir string) {
 }
 
 func UserDownloadDir() (dir string) {
-	dir = os.Getenv("GOMUKS_DOWNLOAD_HOME")
+	dir = os.Getenv("GOMUKS_DOWNLOAD_DIR")
 	if dir != "" {
 		return
 	}
