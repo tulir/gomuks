@@ -24,7 +24,7 @@ import (
 
 	"maunium.net/go/gomuks/config"
 	"maunium.net/go/gomuks/debug"
-	"maunium.net/go/gomuks/interface"
+	ifc "maunium.net/go/gomuks/interface"
 )
 
 type gomuksPointerContainer struct {
@@ -222,7 +222,7 @@ func (ch *CommandProcessor) Autocomplete(roomView *RoomView, text string, cursor
 			text = newText
 		}
 	}
-	return completions, text, true
+	return completions, text, ok
 }
 
 func (ch *CommandProcessor) AutocompleteCommand(word string) (completions []string) {
