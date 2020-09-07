@@ -25,8 +25,10 @@ import (
 	"time"
 
 	"github.com/adrg/xdg"
+
 	"maunium.net/go/gomuks/debug"
 	ifc "maunium.net/go/gomuks/interface"
+	"maunium.net/go/gomuks/lib/util"
 	"maunium.net/go/gomuks/ui"
 )
 
@@ -48,10 +50,35 @@ func main() {
 	debug.Initialize()
 	defer debug.Recover()
 
+	userDirs, err := xdg.SearchConfigFile("user-dirs.dirs")
+	if err != nil {
+		debug.Print("user-dirs.dirs not found")
+	}
+
+	if userDirs == "" {
+		userDirs, err = xdg.SearchConfigFile("user-dirs.defaults")
+		if err != nil {
+			debug.Print("user-dirs.defaults not found")
+		}
+	}
+
+	if userDirs != "" {
+		err := util.LoadEnvFile(userDirs)
+
+		if err != nil {
+			debug.Print("Failed to load user-dirs file")
+		}
+	}
+
+	xdg.Reload()
+
 	configDir := UserConfigDir()
 	dataDir := UserDataDir()
 	cacheDir := UserCacheDir()
 	downloadDir := UserDownloadDir()
+	debug.Print(os.Getenv("HOME"))
+	debug.Print(os.Getenv("XDG_DOWNLOAD_DIR"))
+	debug.Print(downloadDir)
 
 	gmx := NewGomuks(MainUIProvider, configDir, dataDir, cacheDir, downloadDir)
 
