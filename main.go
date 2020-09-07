@@ -76,9 +76,6 @@ func main() {
 	dataDir := UserDataDir()
 	cacheDir := UserCacheDir()
 	downloadDir := UserDownloadDir()
-	debug.Print(os.Getenv("HOME"))
-	debug.Print(os.Getenv("XDG_DOWNLOAD_DIR"))
-	debug.Print(downloadDir)
 
 	gmx := NewGomuks(MainUIProvider, configDir, dataDir, cacheDir, downloadDir)
 
