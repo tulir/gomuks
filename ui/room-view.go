@@ -459,10 +459,10 @@ func (view *RoomView) filterOwnOnly(evt *muksevt.Event) bool {
 
 func (view *RoomView) filterMediaOnly(evt *muksevt.Event) bool {
 	content, ok := evt.Content.Parsed.(*event.MessageEventContent)
-	return ok && content.MsgType == event.MsgFile ||
+	return ok && (content.MsgType == event.MsgFile ||
 		content.MsgType == event.MsgImage ||
 		content.MsgType == event.MsgAudio ||
-		content.MsgType == event.MsgVideo
+		content.MsgType == event.MsgVideo)
 }
 
 func (view *RoomView) findMessage(current *muksevt.Event, forward bool, allow findFilter) *messages.UIMessage {
