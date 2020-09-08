@@ -222,7 +222,7 @@ func (ch *CommandProcessor) Autocomplete(roomView *RoomView, text string, cursor
 			text = newText
 		}
 	}
-	return completions, text, true
+	return completions, text, ok
 }
 
 func (ch *CommandProcessor) AutocompleteCommand(word string) (completions []string) {
