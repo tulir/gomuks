@@ -429,8 +429,8 @@ func (c *Container) Start() {
 			return
 		default:
 			if err := c.client.Sync(); err != nil {
-				if httpErr, ok := err.(mautrix.HTTPError); ok && httpErr.Code == http.StatusUnauthorized {
-					debug.Print("Sync() errored with ", err, " -> logging out")
+				if errors.Is(err, mautrix.MUnknownToken) {
+					debug.Print("Sync() errored with", err, "-> logging out")
 					c.Logout()
 				} else {
 					debug.Print("Sync() errored", err)

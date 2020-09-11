@@ -19,6 +19,7 @@
 package ui
 
 import (
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"path/filepath"
@@ -26,7 +27,10 @@ import (
 	"time"
 	"unicode"
 
+	ifc "maunium.net/go/gomuks/interface"
+	"maunium.net/go/mautrix"
 	"maunium.net/go/mautrix/crypto"
+	"maunium.net/go/mautrix/crypto/ssss"
 	"maunium.net/go/mautrix/id"
 )
 
@@ -243,7 +247,7 @@ func cmdImportKeys(cmd *Command) {
 		cmd.Reply("Failed to read %s: %v", path, err)
 		return
 	}
-	passphrase, ok := cmd.MainView.AskPassword("Key import", false)
+	passphrase, ok := cmd.MainView.AskPassword("Key import", "passphrase", "", false)
 	if !ok {
 		cmd.Reply("Passphrase entry cancelled")
 		return
@@ -263,7 +267,7 @@ func exportKeys(cmd *Command, sessions []*crypto.InboundGroupSession) {
 		cmd.Reply("Failed to get absolute path: %v", err)
 		return
 	}
-	passphrase, ok := cmd.MainView.AskPassword("Key export", true)
+	passphrase, ok := cmd.MainView.AskPassword("Key export", "passphrase", "", true)
 	if !ok {
 		cmd.Reply("Passphrase entry cancelled")
 		return
@@ -298,4 +302,342 @@ func cmdExportRoomKeys(cmd *Command) {
 		return
 	}
 	exportKeys(cmd, sessions)
+}
+
+const ssssHelp = `Usage: /%s <subcommand> [...]
+
+Subcommands:
+* status [key ID] - Check the status of your SSSS.
+* generate [--set-default] - Generate a SSSS key and optionally set it as the default.
+* set-default <key ID> - Set a SSSS key as the default.`
+
+func cmdSSSS(cmd *Command) {
+	if len(cmd.Args) == 0 {
+		cmd.Reply(ssssHelp, cmd.OrigCommand)
+		return
+	}
+
+	mach := cmd.Matrix.Crypto().(*crypto.OlmMachine)
+
+	switch strings.ToLower(cmd.Args[0]) {
+	case "status":
+		keyID := ""
+		if len(cmd.Args) > 1 {
+			keyID = cmd.Args[1]
+		}
+		cmdS4Status(cmd, mach, keyID)
+	case "generate":
+		setDefault := len(cmd.Args) > 1 && strings.ToLower(cmd.Args[1]) == "--set-default"
+		cmdS4Generate(cmd, mach, setDefault)
+	case "set-default":
+		if len(cmd.Args) < 2 {
+			cmd.Reply("Usage: /%s set-default <key ID>", cmd.OrigCommand)
+			return
+		}
+		cmdS4SetDefault(cmd, mach, cmd.Args[1])
+	default:
+		cmd.Reply(ssssHelp, cmd.OrigCommand)
+	}
+}
+
+func cmdS4Status(cmd *Command, mach *crypto.OlmMachine, keyID string) {
+	var keyData *ssss.KeyMetadata
+	var err error
+	if len(keyID) == 0 {
+		keyID, keyData, err = mach.SSSS.GetDefaultKeyData()
+	} else {
+		keyData, err = mach.SSSS.GetKeyData(keyID)
+	}
+	if errors.Is(err, ssss.ErrNoDefaultKeyAccountDataEvent) {
+		cmd.Reply("SSSS is not set up: no default key set")
+	} else if err != nil {
+		cmd.Reply("Failed to get key data: %v", err)
+		return
+	}
+	hasPassphrase := "no"
+	if keyData.Passphrase != nil {
+		hasPassphrase = fmt.Sprintf("yes (alg=%s,bits=%d,iter=%d)", keyData.Passphrase.Algorithm, keyData.Passphrase.Bits, keyData.Passphrase.Iterations)
+	}
+	algorithm := keyData.Algorithm
+	if algorithm != ssss.AlgorithmAESHMACSHA2 {
+		algorithm += " (not supported!)"
+	}
+	cmd.Reply("Default key is set.\n  Key ID: %s\n  Has passphrase: %s\n  Algorithm: %s", keyID, hasPassphrase, algorithm)
+}
+
+func cmdS4Generate(cmd *Command, mach *crypto.OlmMachine, setDefault bool) {
+	passphrase, ok := cmd.MainView.AskPassword("Passphrase", "", "", false)
+	if !ok {
+		return
+	}
+
+	key, err := ssss.NewKey(passphrase)
+	if err != nil {
+		cmd.Reply("Failed to generate new key: %v", err)
+		return
+	}
+
+	err = mach.SSSS.SetKeyData(key.ID, key.Metadata)
+	if err != nil {
+		cmd.Reply("Failed to upload key metadata: %v", err)
+		return
+	}
+
+	// TODO if we start persisting command replies, the recovery key needs to be moved into a popup
+	cmd.Reply("Successfully generated key %s\nRecovery key: %s", key.ID, key.RecoveryKey())
+
+	if setDefault {
+		err = mach.SSSS.SetDefaultKeyID(key.ID)
+		if err != nil {
+			cmd.Reply("Failed to set key as default: %v", err)
+		}
+	} else {
+		cmd.Reply("You can use `/%s set-default %s` to set it as the default", cmd.OrigCommand, key.ID)
+	}
+}
+
+func cmdS4SetDefault(cmd *Command, mach *crypto.OlmMachine, keyID string) {
+	_, err := mach.SSSS.GetKeyData(keyID)
+	if err != nil {
+		if errors.Is(err, mautrix.MNotFound) {
+			cmd.Reply("Couldn't find key data on server")
+		} else {
+			cmd.Reply("Failed to fetch key data: %v", err)
+		}
+		return
+	}
+
+	err = mach.SSSS.SetDefaultKeyID(keyID)
+	if err != nil {
+		cmd.Reply("Failed to set key as default: %v", err)
+	} else {
+		cmd.Reply("Successfully set key %s as default", keyID)
+	}
+}
+
+const crossSigningHelp = `Usage: /%s <subcommand> [...]
+
+Subcommands:
+* status
+    Check the status of your own cross-signing keys.
+* generate [--force]
+    Generate and upload new cross-signing keys.
+    This will prompt you to enter your account password.
+    If you already have existing keys, --force is required.
+* fetch [--save-to-disk]
+    Fetch your cross-signing keys from SSSS and decrypt them.
+    If --save-to-disk is specified, the keys are saved to disk.
+* upload
+    Upload your cross-signing keys to SSSS.`
+
+func cmdCrossSigning(cmd *Command) {
+	if len(cmd.Args) == 0 {
+		cmd.Reply(crossSigningHelp, cmd.OrigCommand)
+		return
+	}
+
+	client := cmd.Matrix.Client()
+	mach := cmd.Matrix.Crypto().(*crypto.OlmMachine)
+
+	switch strings.ToLower(cmd.Args[0]) {
+	case "status":
+		cmdCrossSigningStatus(cmd, mach, client)
+	case "generate":
+		force := len(cmd.Args) > 1 && strings.ToLower(cmd.Args[1]) == "--force"
+		cmdCrossSigningGenerate(cmd, cmd.Matrix, mach, client, force)
+	case "fetch":
+		saveToDisk := len(cmd.Args) > 1 && strings.ToLower(cmd.Args[1]) == "--save-to-disk"
+		cmdCrossSigningFetch(cmd, mach, saveToDisk)
+	case "upload":
+		cmdCrossSigningUpload(cmd, mach)
+	default:
+		cmd.Reply(crossSigningHelp, cmd.OrigCommand)
+	}
+}
+
+func parseKeyResp(keys *mautrix.RespQueryKeys, userID id.UserID) (id.Ed25519, id.Ed25519, id.Ed25519, bool) {
+	masterKeys, ok := keys.MasterKeys[userID]
+	if !ok {
+		return "", "", "", false
+	}
+	selfSigningKeys, ok := keys.SelfSigningKeys[userID]
+	if !ok {
+		return "", "", "", false
+	}
+	userSigningKeys, ok := keys.UserSigningKeys[userID]
+	if !ok {
+		return masterKeys.FirstKey(), selfSigningKeys.FirstKey(), "", true
+	}
+	return masterKeys.FirstKey(), userSigningKeys.FirstKey(), selfSigningKeys.FirstKey(), true
+}
+
+func cmdCrossSigningStatus(cmd *Command, mach *crypto.OlmMachine, client *mautrix.Client) {
+	if mach.CrossSigningKeys != nil {
+		cmd.Reply("Cross-signing is set up and private keys are cached")
+		cmd.Reply("Master key: %s", mach.CrossSigningKeys.MasterKey.PublicKey)
+		cmd.Reply("User signing key: %s", mach.CrossSigningKeys.UserSigningKey.PublicKey)
+		cmd.Reply("Self-signing key: %s", mach.CrossSigningKeys.SelfSigningKey.PublicKey)
+		return
+	}
+	keys, err := client.QueryKeys(&mautrix.ReqQueryKeys{
+		DeviceKeys: mautrix.DeviceKeysRequest{
+			client.UserID: mautrix.DeviceIDList{client.DeviceID},
+		},
+	})
+	if err != nil {
+		cmd.Reply("Failed to query own keys: %v", err)
+		return
+	}
+	masterKey, selfSigningKey, userSigningKey, ok := parseKeyResp(keys, client.UserID)
+	if !ok {
+		cmd.Reply("Didn't find published cross-signing keys")
+		return
+	}
+	cmd.Reply("Cross-signing is set up, but private keys are not cached")
+	cmd.Reply("Master key: %s", masterKey)
+	cmd.Reply("User signing key: %s", userSigningKey)
+	cmd.Reply("Self-signing key: %s", selfSigningKey)
+}
+
+func cmdCrossSigningFetch(cmd *Command, mach *crypto.OlmMachine, saveToDisk bool) {
+	key := getSSSS(cmd, mach)
+	if key == nil {
+		return
+	}
+
+	err := mach.FetchCrossSigningKeysFromSSSS(key)
+	if err != nil {
+		cmd.Reply("Error fetching cross-signing keys: %v", err)
+		return
+	}
+	if saveToDisk {
+		cmd.Reply("Saving keys to disk is not yet implemented")
+	}
+	cmd.Reply("Successfully unlocked cross-signing keys")
+}
+
+func cmdCrossSigningGenerate(cmd *Command, container ifc.MatrixContainer, mach *crypto.OlmMachine, client *mautrix.Client, force bool) {
+	if !force {
+		keys, err := client.QueryKeys(&mautrix.ReqQueryKeys{
+			DeviceKeys: mautrix.DeviceKeysRequest{
+				client.UserID: mautrix.DeviceIDList{client.DeviceID},
+			},
+		})
+		if err == nil {
+			_, _, _, ok := parseKeyResp(keys, client.UserID)
+			if ok {
+				cmd.Reply("Found existing cross-signing keys. Use `--force` if you want to overwrite them.")
+				return
+			}
+		}
+	}
+
+	keys, err := mach.GenerateCrossSigningKeys()
+	if err != nil {
+		cmd.Reply("Failed to generate cross-signing keys: %v", err)
+		return
+	}
+
+	err = mach.PublishCrossSigningKeys(keys, func(uia *mautrix.RespUserInteractive) interface{} {
+		if !uia.HasSingleStageFlow(mautrix.AuthTypePassword) {
+			for _, flow := range uia.Flows {
+				if len(flow.Stages) != 1 {
+					return nil
+				}
+				cmd.Reply("Opening browser for authentication")
+				err := container.UIAFallback(flow.Stages[0], uia.Session)
+				if err != nil {
+					cmd.Reply("Authentication failed: %v", err)
+					return nil
+				}
+				return &mautrix.BaseAuthData{
+					Type:    flow.Stages[0],
+					Session: uia.Session,
+				}
+			}
+			cmd.Reply("No supported authentication mechanisms found")
+			return nil
+		}
+		password, ok := cmd.MainView.AskPassword("Account password", "", "correct horse battery staple", false)
+		if !ok {
+			return nil
+		}
+		return &mautrix.ReqUIAuthLogin{
+			BaseAuthData: mautrix.BaseAuthData{
+				Type:    mautrix.AuthTypePassword,
+				Session: uia.Session,
+			},
+			User:     mach.Client.UserID.String(),
+			Password: password,
+		}
+	})
+	if err != nil {
+		cmd.Reply("Failed to publish cross-signing keys: %v", err)
+		return
+	}
+
+	mach.CrossSigningKeys = keys
+}
+
+func getSSSS(cmd *Command, mach *crypto.OlmMachine) *ssss.Key {
+	_, keyData, err := mach.SSSS.GetDefaultKeyData()
+	if err != nil {
+		if errors.Is(err, mautrix.MNotFound) {
+			cmd.Reply("SSSS not set up, use `!ssss generate --set-default` first")
+		} else {
+			cmd.Reply("Failed to fetch default SSSS key data: %v", err)
+		}
+		return nil
+	}
+
+	var key *ssss.Key
+	if keyData.Passphrase != nil && keyData.Passphrase.Algorithm == ssss.PassphraseAlgorithmPBKDF2 {
+		passphrase, ok := cmd.MainView.AskPassword("Passphrase", "", "correct horse battery staple", false)
+		if !ok {
+			return nil
+		}
+		key, err = keyData.VerifyPassphrase(passphrase)
+		if errors.Is(err, ssss.ErrIncorrectSSSSKey) {
+			cmd.Reply("Incorrect passphrase")
+			return nil
+		}
+	} else {
+		recoveryKey, ok := cmd.MainView.AskPassword("Recovery key", "", "tDAK LMRH PiYE bdzi maCe xLX5 wV6P Nmfd c5mC wLef 15Fs VVSc", false)
+		if !ok {
+			return nil
+		}
+		key, err = keyData.VerifyRecoveryKey(recoveryKey)
+		if errors.Is(err, ssss.ErrInvalidRecoveryKey) {
+			cmd.Reply("Malformed recovery key")
+			return nil
+		} else if errors.Is(err, ssss.ErrIncorrectSSSSKey) {
+			cmd.Reply("Incorrect recovery key")
+			return nil
+		}
+	}
+	// All the errors should already be handled above, this is just for backup
+	if err != nil {
+		cmd.Reply("Failed to get SSSS key: %v", err)
+		return nil
+	}
+	return key
+}
+
+func cmdCrossSigningUpload(cmd *Command, mach *crypto.OlmMachine) {
+	if mach.CrossSigningKeys == nil {
+		cmd.Reply("Cross-signing keys not cached, use `!%s generate` first", cmd.OrigCommand)
+		return
+	}
+
+	key := getSSSS(cmd, mach)
+	if key == nil {
+		return
+	}
+
+	err := mach.UploadCrossSigningKeysToSSSS(key, mach.CrossSigningKeys)
+	if err != nil {
+		cmd.Reply("Failed to upload keys to SSSS: %v", err)
+	} else {
+		cmd.Reply("Successfully uploaded cross-signing keys to SSSS")
+	}
 }

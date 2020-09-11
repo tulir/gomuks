@@ -104,6 +104,9 @@ func NewCommandProcessor(parent *MainView) *CommandProcessor {
 			"e":          {"edit"},
 			"dl":         {"download"},
 			"o":          {"open"},
+			"4s":         {"ssss"},
+			"s4":         {"ssss"},
+			"cs":         {"cross-signing"},
 		},
 		autocompleters: map[string]CommandAutocompleter{
 			"devices":     autocompleteDevice,
@@ -172,6 +175,8 @@ func NewCommandProcessor(parent *MainView) *CommandProcessor {
 			"import":        cmdImportKeys,
 			"export":        cmdExportKeys,
 			"export-room":   cmdExportRoomKeys,
+			"ssss":          cmdSSSS,
+			"cross-signing": cmdCrossSigning,
 		},
 	}
 }

@@ -51,6 +51,7 @@ type MatrixContainer interface {
 
 	Login(user, password string) error
 	Logout()
+	UIAFallback(authType mautrix.AuthType, sessionID string) error
 
 	SendPreferencesToMatrix()
 	PrepareMarkdownMessage(roomID id.RoomID, msgtype event.MessageType, text, html string, relation *Relation) *muksevt.Event
