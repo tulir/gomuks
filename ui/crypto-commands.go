@@ -350,6 +350,7 @@ func cmdS4Status(cmd *Command, mach *crypto.OlmMachine, keyID string) {
 	}
 	if errors.Is(err, ssss.ErrNoDefaultKeyAccountDataEvent) {
 		cmd.Reply("SSSS is not set up: no default key set")
+		return
 	} else if err != nil {
 		cmd.Reply("Failed to get key data: %v", err)
 		return
@@ -366,7 +367,7 @@ func cmdS4Status(cmd *Command, mach *crypto.OlmMachine, keyID string) {
 }
 
 func cmdS4Generate(cmd *Command, mach *crypto.OlmMachine, setDefault bool) {
-	passphrase, ok := cmd.MainView.AskPassword("Passphrase", "", "", false)
+	passphrase, ok := cmd.MainView.AskPassword("Passphrase", "", "", true)
 	if !ok {
 		return
 	}
@@ -554,9 +555,9 @@ func cmdCrossSigningGenerate(cmd *Command, container ifc.MatrixContainer, mach *
 					cmd.Reply("Authentication failed: %v", err)
 					return nil
 				}
-				return &mautrix.BaseAuthData{
-					Type:    flow.Stages[0],
+				return &mautrix.ReqUIAuthFallback{
 					Session: uia.Session,
+					User: mach.Client.UserID.String(),
 				}
 			}
 			cmd.Reply("No supported authentication mechanisms found")
@@ -581,6 +582,12 @@ func cmdCrossSigningGenerate(cmd *Command, container ifc.MatrixContainer, mach *
 	}
 
 	mach.CrossSigningKeys = keys
+	cmd.Reply("Successfully generated and published cross-signing keys")
+
+	err = mach.SignOwnMasterKey()
+	if err != nil {
+		cmd.Reply("Failed to sign master key with device key: %v", err)
+	}
 }
 
 func getSSSS(cmd *Command, mach *crypto.OlmMachine) *ssss.Key {
@@ -645,7 +652,6 @@ func cmdCrossSigningUpload(cmd *Command, mach *crypto.OlmMachine) {
 		cmd.Reply("Successfully uploaded cross-signing keys to SSSS")
 	}
 }
-
 
 func cmdCrossSigningSelfSign(cmd *Command, mach *crypto.OlmMachine) {
 	if mach.CrossSigningKeys == nil {

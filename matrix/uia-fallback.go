@@ -42,6 +42,7 @@ const uiaFallbackPage = `<!DOCTYPE html>
 </head>
 <body>
 	<h2>Please complete the login in the popup window</h2>
+	<p>Keep this page open while logging in, it will close automatically after the login finishes.</p>
 	<button onclick="openPopup()">Open popup</button>
 	<button onclick="finish(false)">Cancel</button>
 	<script>
