@@ -424,6 +424,8 @@ Subcommands:
     Generate and upload new cross-signing keys.
     This will prompt you to enter your account password.
     If you already have existing keys, --force is required.
+* self-sign
+    Sign the current device with cached cross-signing keys.
 * fetch [--save-to-disk]
     Fetch your cross-signing keys from SSSS and decrypt them.
     If --save-to-disk is specified, the keys are saved to disk.
@@ -450,6 +452,8 @@ func cmdCrossSigning(cmd *Command) {
 		cmdCrossSigningFetch(cmd, mach, saveToDisk)
 	case "upload":
 		cmdCrossSigningUpload(cmd, mach)
+	case "self-sign":
+		cmdCrossSigningSelfSign(cmd, mach)
 	default:
 		cmd.Reply(crossSigningHelp, cmd.OrigCommand)
 	}
@@ -639,5 +643,20 @@ func cmdCrossSigningUpload(cmd *Command, mach *crypto.OlmMachine) {
 		cmd.Reply("Failed to upload keys to SSSS: %v", err)
 	} else {
 		cmd.Reply("Successfully uploaded cross-signing keys to SSSS")
+	}
+}
+
+
+func cmdCrossSigningSelfSign(cmd *Command, mach *crypto.OlmMachine) {
+	if mach.CrossSigningKeys == nil {
+		cmd.Reply("Cross-signing keys not cached")
+		return
+	}
+
+	err := mach.SignOwnDevice(mach.OwnIdentity())
+	if err != nil {
+		cmd.Reply("Failed to self-sign: %v", err)
+	} else {
+		cmd.Reply("Successfully self-signed. This device is now trusted by other devices")
 	}
 }

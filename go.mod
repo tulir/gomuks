@@ -29,4 +29,4 @@ require (
 )
 
 //replace maunium.net/go/mautrix => ../mautrix-go
-replace maunium.net/go/mautrix => github.com/nikofil/mautrix-go v0.5.2-0.20200911223256-b40ab761fadc
+replace maunium.net/go/mautrix => github.com/nikofil/mautrix-go v0.5.2-0.20200911232449-6010305aed05
