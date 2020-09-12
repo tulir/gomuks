@@ -81,15 +81,20 @@ func autocompleteDeviceDeviceID(cmd *CommandAutocomplete) (completions []string,
 	return
 }
 
+func autocompleteUser(cmd *CommandAutocomplete) ([]string, string) {
+	if len(cmd.Args) == 1 && !unicode.IsSpace(rune(cmd.RawArgs[len(cmd.RawArgs)-1])) {
+		return autocompleteDeviceUserID(cmd)
+	}
+	return []string{}, ""
+}
+
 func autocompleteDevice(cmd *CommandAutocomplete) ([]string, string) {
 	if len(cmd.Args) == 0 {
 		return []string{}, ""
 	} else if len(cmd.Args) == 1 && !unicode.IsSpace(rune(cmd.RawArgs[len(cmd.RawArgs)-1])) {
 		return autocompleteDeviceUserID(cmd)
-	} else if cmd.Command != "devices" {
-		return autocompleteDeviceDeviceID(cmd)
 	}
-	return []string{}, ""
+	return autocompleteDeviceDeviceID(cmd)
 }
 
 func getDevice(cmd *Command) *crypto.DeviceIdentity {
@@ -138,7 +143,11 @@ func cmdDevices(cmd *Command) {
 	}
 	var buf strings.Builder
 	for _, device := range devices {
-		_, _ = fmt.Fprintf(&buf, "%s (%s) - %s\n    Fingerprint: %s\n", device.DeviceID, device.Name, device.Trust.String(), device.Fingerprint())
+		trust := device.Trust.String()
+		if device.Trust == crypto.TrustStateUnset && mach.IsDeviceTrusted(device) {
+			trust = "verified (transitive)"
+		}
+		_, _ = fmt.Fprintf(&buf, "%s (%s) - %s\n    Fingerprint: %s\n", device.DeviceID, device.Name, trust, device.Fingerprint())
 	}
 	resp := buf.String()
 	cmd.Reply("%s", resp[:len(resp)-1])
@@ -153,13 +162,28 @@ func cmdDevice(cmd *Command) {
 	if device.Deleted {
 		deviceType = "Deleted device"
 	}
+	mach := cmd.Matrix.Crypto().(*crypto.OlmMachine)
+	trustState := device.Trust.String()
+	if device.Trust == crypto.TrustStateUnset && mach.IsDeviceTrusted(device) {
+		trustState = "verified (transitive)"
+	}
 	cmd.Reply("%s %s of %s\nFingerprint: %s\nIdentity key: %s\nDevice name: %s\nTrust state: %s",
 		deviceType, device.DeviceID, device.UserID,
 		device.Fingerprint(), device.IdentityKey,
-		device.Name, device.Trust.String())
+		device.Name, trustState)
 }
 
-func cmdVerify(cmd *Command) {
+func crossSignDevice(cmd *Command, device *crypto.DeviceIdentity) {
+	mach := cmd.Matrix.Crypto().(*crypto.OlmMachine)
+	err := mach.SignOwnDevice(device)
+	if err != nil {
+		cmd.Reply("Failed to upload cross-signing signature: %v", err)
+	} else {
+		cmd.Reply("Successfully cross-signed %s (%s)", device.DeviceID, device.Name)
+	}
+}
+
+func cmdVerifyDevice(cmd *Command) {
 	device := getDevice(cmd)
 	if device == nil {
 		return
@@ -188,9 +212,47 @@ func cmdVerify(cmd *Command) {
 		if device.Trust == crypto.TrustStateBlacklisted {
 			action = "unblacklisted and verified"
 		}
-		device.Trust = crypto.TrustStateVerified
-		putDevice(cmd, device, action)
+		if device.UserID == cmd.Matrix.Client().UserID {
+			crossSignDevice(cmd, device)
+			device.Trust = crypto.TrustStateVerified
+			putDevice(cmd, device, action)
+		} else {
+			putDevice(cmd, device, action)
+			cmd.Reply("Warning: verifying individual devices of other users is not synced with cross-signing")
+		}
 	}
+}
+
+func cmdVerify(cmd *Command) {
+	if len(cmd.Args) < 1 {
+		cmd.Reply("Usage: /%s <user ID> [--force]", cmd.OrigCommand)
+		return
+	}
+	force := len(cmd.Args) >= 2 && strings.ToLower(cmd.Args[1]) == "--force"
+	userID := id.UserID(cmd.Args[0])
+	room := cmd.Room.Room
+	if !room.Encrypted {
+		cmd.Reply("In-room verification is only supported in encrypted rooms")
+		return
+	}
+	if (!room.IsDirect || room.OtherUser != userID) && !force {
+		cmd.Reply("This doesn't seem to be a direct chat. Either switch to a direct chat with %s, "+
+			"or use `--force` to start the verification anyway.", userID)
+		return
+	}
+	mach := cmd.Matrix.Crypto().(*crypto.OlmMachine)
+	if mach.CrossSigningKeys == nil && !force {
+		cmd.Reply("Cross-signing private keys not cached. Generate or fetch cross-signing keys with `/cross-signing`, " +
+			"or use `--force` to start the verification anyway")
+		return
+	}
+	modal := NewVerificationModal(cmd.MainView, &crypto.DeviceIdentity{UserID: userID}, mach.DefaultSASTimeout)
+	_, err := mach.NewInRoomSASVerificationWith(cmd.Room.Room.ID, userID, modal, 120*time.Second)
+	if err != nil {
+		cmd.Reply("Failed to start in-room verification: %v", err)
+		return
+	}
+	cmd.MainView.ShowModal(modal)
 }
 
 func cmdUnverify(cmd *Command) {
@@ -444,7 +506,7 @@ func cmdCrossSigning(cmd *Command) {
 
 	switch strings.ToLower(cmd.Args[0]) {
 	case "status":
-		cmdCrossSigningStatus(cmd, mach, client)
+		cmdCrossSigningStatus(cmd, mach)
 	case "generate":
 		force := len(cmd.Args) > 1 && strings.ToLower(cmd.Args[1]) == "--force"
 		cmdCrossSigningGenerate(cmd, cmd.Matrix, mach, client, force)
@@ -460,48 +522,24 @@ func cmdCrossSigning(cmd *Command) {
 	}
 }
 
-func parseKeyResp(keys *mautrix.RespQueryKeys, userID id.UserID) (id.Ed25519, id.Ed25519, id.Ed25519, bool) {
-	masterKeys, ok := keys.MasterKeys[userID]
-	if !ok {
-		return "", "", "", false
+func cmdCrossSigningStatus(cmd *Command, mach *crypto.OlmMachine) {
+	keys := mach.GetOwnCrossSigningPublicKeys()
+	if keys == nil {
+		if mach.CrossSigningKeys != nil {
+			cmd.Reply("Cross-signing keys are cached, but not published")
+		} else {
+			cmd.Reply("Didn't find published cross-signing keys")
+		}
+		return
 	}
-	selfSigningKeys, ok := keys.SelfSigningKeys[userID]
-	if !ok {
-		return "", "", "", false
-	}
-	userSigningKeys, ok := keys.UserSigningKeys[userID]
-	if !ok {
-		return masterKeys.FirstKey(), selfSigningKeys.FirstKey(), "", true
-	}
-	return masterKeys.FirstKey(), userSigningKeys.FirstKey(), selfSigningKeys.FirstKey(), true
-}
-
-func cmdCrossSigningStatus(cmd *Command, mach *crypto.OlmMachine, client *mautrix.Client) {
 	if mach.CrossSigningKeys != nil {
-		cmd.Reply("Cross-signing is set up and private keys are cached")
-		cmd.Reply("Master key: %s", mach.CrossSigningKeys.MasterKey.PublicKey)
-		cmd.Reply("User signing key: %s", mach.CrossSigningKeys.UserSigningKey.PublicKey)
-		cmd.Reply("Self-signing key: %s", mach.CrossSigningKeys.SelfSigningKey.PublicKey)
-		return
+		cmd.Reply("Cross-signing keys are published and private keys are cached")
+	} else {
+		cmd.Reply("Cross-signing keys are published, but private keys are not cached")
 	}
-	keys, err := client.QueryKeys(&mautrix.ReqQueryKeys{
-		DeviceKeys: mautrix.DeviceKeysRequest{
-			client.UserID: mautrix.DeviceIDList{client.DeviceID},
-		},
-	})
-	if err != nil {
-		cmd.Reply("Failed to query own keys: %v", err)
-		return
-	}
-	masterKey, selfSigningKey, userSigningKey, ok := parseKeyResp(keys, client.UserID)
-	if !ok {
-		cmd.Reply("Didn't find published cross-signing keys")
-		return
-	}
-	cmd.Reply("Cross-signing is set up, but private keys are not cached")
-	cmd.Reply("Master key: %s", masterKey)
-	cmd.Reply("User signing key: %s", userSigningKey)
-	cmd.Reply("Self-signing key: %s", selfSigningKey)
+	cmd.Reply("Master key: %s", keys.MasterKey)
+	cmd.Reply("User signing key: %s", keys.UserSigningKey)
+	cmd.Reply("Self-signing key: %s", keys.SelfSigningKey)
 }
 
 func cmdCrossSigningFetch(cmd *Command, mach *crypto.OlmMachine, saveToDisk bool) {
@@ -523,17 +561,10 @@ func cmdCrossSigningFetch(cmd *Command, mach *crypto.OlmMachine, saveToDisk bool
 
 func cmdCrossSigningGenerate(cmd *Command, container ifc.MatrixContainer, mach *crypto.OlmMachine, client *mautrix.Client, force bool) {
 	if !force {
-		keys, err := client.QueryKeys(&mautrix.ReqQueryKeys{
-			DeviceKeys: mautrix.DeviceKeysRequest{
-				client.UserID: mautrix.DeviceIDList{client.DeviceID},
-			},
-		})
-		if err == nil {
-			_, _, _, ok := parseKeyResp(keys, client.UserID)
-			if ok {
-				cmd.Reply("Found existing cross-signing keys. Use `--force` if you want to overwrite them.")
-				return
-			}
+		existingKeys := mach.GetOwnCrossSigningPublicKeys()
+		if existingKeys != nil {
+			cmd.Reply("Found existing cross-signing keys. Use `--force` if you want to overwrite them.")
+			return
 		}
 	}
 
@@ -557,7 +588,7 @@ func cmdCrossSigningGenerate(cmd *Command, container ifc.MatrixContainer, mach *
 				}
 				return &mautrix.ReqUIAuthFallback{
 					Session: uia.Session,
-					User: mach.Client.UserID.String(),
+					User:    mach.Client.UserID.String(),
 				}
 			}
 			cmd.Reply("No supported authentication mechanisms found")
@@ -580,8 +611,6 @@ func cmdCrossSigningGenerate(cmd *Command, container ifc.MatrixContainer, mach *
 		cmd.Reply("Failed to publish cross-signing keys: %v", err)
 		return
 	}
-
-	mach.CrossSigningKeys = keys
 	cmd.Reply("Successfully generated and published cross-signing keys")
 
 	err = mach.SignOwnMasterKey()

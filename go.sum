@@ -56,6 +56,8 @@ github.com/nikofil/mautrix-go v0.5.2-0.20200911232449-6010305aed05 h1:WFyJHdXasA
 github.com/nikofil/mautrix-go v0.5.2-0.20200911232449-6010305aed05/go.mod h1:xd0D0ekVts/UDBbjeDSs4wGlBfcarJDg0MMhVgHbxhs=
 github.com/nikofil/mautrix-go v0.5.2-0.20200911234625-a585557b3750 h1:3eUgrAhYHnI0HidL2uO1uga8dpnqpAXIN0DB7uWc95Y=
 github.com/nikofil/mautrix-go v0.5.2-0.20200911234625-a585557b3750/go.mod h1:xd0D0ekVts/UDBbjeDSs4wGlBfcarJDg0MMhVgHbxhs=
+github.com/nikofil/mautrix-go v0.5.2-0.20200912211003-156aad4c3f86 h1:cVz8JHJyGRwve5EPDN7X6pUsP3/6Dy2c7gj7RCkZa50=
+github.com/nikofil/mautrix-go v0.5.2-0.20200912211003-156aad4c3f86/go.mod h1:xd0D0ekVts/UDBbjeDSs4wGlBfcarJDg0MMhVgHbxhs=
 github.com/nu7hatch/gouuid v0.0.0-20131221200532-179d4d0c4d8d/go.mod h1:YUTz3bUH2ZwIWBy3CJBeOBEugqcmXREj14T+iG/4k4U=
 github.com/onsi/ginkgo v1.6.0/go.mod h1:lLunBs/Ym6LB5Z9jYTR76FiuTmxDTDusOGeTQH+WWjE=
 github.com/onsi/ginkgo v1.7.0/go.mod h1:lLunBs/Ym6LB5Z9jYTR76FiuTmxDTDusOGeTQH+WWjE=

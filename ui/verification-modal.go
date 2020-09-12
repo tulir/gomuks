@@ -148,7 +148,8 @@ func (vm *VerificationModal) VerificationMethods() []crypto.VerificationMethod {
 	return []crypto.VerificationMethod{crypto.VerificationMethodEmoji{}, crypto.VerificationMethodDecimal{}}
 }
 
-func (vm *VerificationModal) VerifySASMatch(_ *crypto.DeviceIdentity, data crypto.SASData) bool {
+func (vm *VerificationModal) VerifySASMatch(device *crypto.DeviceIdentity, data crypto.SASData) bool {
+	vm.device = device
 	var typeName string
 	if data.Type() == event.SASDecimal {
 		typeName = "numbers"
