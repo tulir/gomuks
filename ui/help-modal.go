@@ -3,7 +3,6 @@ package ui
 import (
 	"maunium.net/go/tcell"
 
-	"maunium.net/go/gomuks/debug"
 	"maunium.net/go/mauview"
 )
 
@@ -85,16 +84,6 @@ func NewHelpModal(parent *MainView) *HelpModal {
 	hm.FocusableComponent = mauview.FractionalCenter(box, 42, 10, 0.5, 0.5)
 
 	return hm
-}
-
-func (hm *HelpModal) Focus() {
-	debug.Print("focus")
-	hm.FocusableComponent.Focus()
-}
-
-func (hm *HelpModal) Blur() {
-	debug.Print("blur")
-	hm.FocusableComponent.Blur()
 }
 
 func (hm *HelpModal) OnKeyEvent(event mauview.KeyEvent) bool {
