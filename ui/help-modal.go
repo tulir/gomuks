@@ -1,68 +1,23 @@
 package ui
 
 import (
-	"strings"
-
-	"maunium.net/go/mauview"
 	"maunium.net/go/tcell"
+
+	"maunium.net/go/gomuks/debug"
+	"maunium.net/go/mauview"
 )
 
-type HelpModal struct {
-	mauview.Component
-
-	container *mauview.Box
-
-	text       *mauview.TextView
-	scrollX    int
-	scrollY    int
-	maxScrollX int
-	maxScrollY int
-	textWidth  int
-	textHeight int
-
-	parent *MainView
-}
-
-// There are only math.Min/math.Max for float64
-func Max(a int, b int) int {
-	if a > b {
-		return a
-	}
-
-	return b
-}
-
-func Min(a int, b int) int {
-	if a < b {
-		return a
-	}
-
-	return b
-}
-
-func NewHelpModal(parent *MainView) *HelpModal {
-	hm := &HelpModal{
-		parent: parent,
-
-		scrollX:    0,
-		scrollY:    0,
-		maxScrollX: 0,
-		maxScrollY: 0,
-	}
-
-	helpText := `# General
-/help           - Show this "temporary" help message.
+const helpText = `# General
+/help           - Show this help dialog.
 /quit           - Quit gomuks.
 /clearcache     - Clear cache and quit gomuks.
 /logout         - Log out of Matrix.
 /toggle <thing> - Temporary command to toggle various UI features.
 
-Things: rooms, users, baremessages, images, typingnotif, unverified
-
 # Sending special messages
 /me <message>        - Send an emote message.
 /notice <message>    - Send a notice (generally used for bot messages).
-/rainbow <message>   - Send rainbow text (markdown not supported).
+/rainbow <message>   - Send rainbow text.
 /rainbowme <message> - Send rainbow text in an emote.
 /reply [text]        - Reply to the selected message.
 /react <reaction>    - React to the selected message.
@@ -105,101 +60,47 @@ Things: rooms, users, baremessages, images, typingnotif, unverified
 /ban    <user id> [reason] - Ban a user.
 /unban  <user id>          - Unban a user.`
 
-	split := strings.Split(helpText, "\n")
-	hm.textHeight = len(split)
-	hm.textWidth = 0
+type HelpModal struct {
+	mauview.FocusableComponent
+	parent *MainView
+}
 
-	for _, line := range split {
-		hm.textWidth = Max(hm.textWidth, len(line))
-	}
+func NewHelpModal(parent *MainView) *HelpModal {
+	hm := &HelpModal{parent: parent}
 
-	hm.text = mauview.NewTextView().
+	text := mauview.NewTextView().
 		SetText(helpText).
 		SetScrollable(true).
 		SetWrap(false)
 
-	flex := mauview.NewFlex().
-		SetDirection(mauview.FlexRow).
-		AddProportionalComponent(hm.text, 1)
-
-	hm.container = mauview.NewBox(flex).
+	box := mauview.NewBox(text).
 		SetBorder(true).
 		SetTitle("Help").
 		SetBlurCaptureFunc(func() bool {
 			hm.parent.HideModal()
 			return true
 		})
+	box.Focus()
 
-	hm.Component = mauview.Center(hm.container, 0, 0).
-		SetAlwaysFocusChild(true)
+	hm.FocusableComponent = mauview.FractionalCenter(box, 42, 10, 0.5, 0.5)
 
 	return hm
 }
 
 func (hm *HelpModal) Focus() {
-	hm.container.Focus()
+	debug.Print("focus")
+	hm.FocusableComponent.Focus()
 }
 
 func (hm *HelpModal) Blur() {
-	hm.container.Blur()
-}
-
-func (hm *HelpModal) Draw(screen mauview.Screen) {
-	width, height := screen.Size()
-
-	width /= 2
-	if width < 42 {
-		width = 42
-	}
-
-	if height > 40 {
-		height -= 20
-	} else if height > 30 {
-		height -= 10
-	} else if height > 20 {
-		height -= 5
-	}
-
-	oldMaxScrollY := hm.maxScrollY
-	hm.maxScrollY = hm.textHeight - height + 2
-	hm.maxScrollX = hm.textWidth - width + 2
-
-	if hm.maxScrollY != oldMaxScrollY {
-		// Reset the scroll
-		// NOTE: Workarounds a problem where we can no longer scroll
-		//       due to hm.scrollY being too big.
-		hm.scrollY = 0
-		hm.scrollX = 0
-		hm.text.ScrollTo(hm.scrollY, hm.scrollX)
-	}
-
-	hm.Component = mauview.Center(hm.container, width, height).
-		SetAlwaysFocusChild(true)
-
-	hm.Component.Draw(screen)
+	debug.Print("blur")
+	hm.FocusableComponent.Blur()
 }
 
 func (hm *HelpModal) OnKeyEvent(event mauview.KeyEvent) bool {
-	switch event.Key() {
-	case tcell.KeyUp:
-		hm.scrollY = Max(0, hm.scrollY-1)
-		hm.text.ScrollTo(hm.scrollY, hm.scrollX)
-		return true
-	case tcell.KeyDown:
-		hm.scrollY = Min(hm.maxScrollY, hm.scrollY+1)
-		hm.text.ScrollTo(hm.scrollY, hm.scrollX)
-		return true
-
-	case tcell.KeyLeft:
-		hm.scrollX = Max(0, hm.scrollX-1)
-		hm.text.ScrollTo(hm.scrollY, hm.scrollX)
-		return true
-	case tcell.KeyRight:
-		hm.scrollX = Min(hm.maxScrollX, hm.scrollX+1)
-		hm.text.ScrollTo(hm.scrollY, hm.scrollX)
+	if event.Key() == tcell.KeyEscape || event.Rune() == 'q' {
+		hm.parent.HideModal()
 		return true
 	}
-
-	hm.parent.HideModal()
-	return true
+	return hm.FocusableComponent.OnKeyEvent(event)
 }
