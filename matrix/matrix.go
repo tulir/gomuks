@@ -252,13 +252,14 @@ func (c *Container) Login(user, password string) error {
 	if err != nil {
 		return err
 	}
-	if len(resp.Flows) == 1 && resp.Flows[0].Type == "m.login.password" {
-		return c.PasswordLogin(user, password)
-	} else if len(resp.Flows) == 2 && resp.Flows[0].Type == "m.login.sso" && resp.Flows[1].Type == "m.login.token" {
-		return c.SingleSignOn()
-	} else {
-		return fmt.Errorf("no supported login flows")
+	for _, flow := range resp.Flows {
+		if flow.Type == "m.login.password" {
+			return c.PasswordLogin(user, password)
+		} else if flow.Type == "m.login.sso" {
+			return c.SingleSignOn()
+		}
 	}
+	return fmt.Errorf("no supported login flows")
 }
 
 // Logout revokes the access token, stops the syncer and calls the OnLogout() method of the UI.
