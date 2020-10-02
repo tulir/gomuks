@@ -360,6 +360,7 @@ func (view *MessageView) SetSelected(message *messages.UIMessage) {
 
 func (view *MessageView) handleMessageClick(message *messages.UIMessage, mod tcell.ModMask) bool {
 	if msg, ok := message.Renderer.(*messages.FileMessage); ok && mod > 0 && !msg.Thumbnail.IsEmpty() {
+		debug.Print("Opening thumbnail", msg.ThumbnailPath())
 		open.Open(msg.ThumbnailPath())
 		// No need to re-render
 		return false
