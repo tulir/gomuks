@@ -32,8 +32,7 @@ import (
 	"runtime"
 	dbg "runtime/debug"
 	"time"
-
-	"github.com/pkg/errors"
+	"errors"
 
 	"maunium.net/go/mautrix"
 	"maunium.net/go/mautrix/crypto/attachment"
@@ -115,7 +114,7 @@ func (c *Container) InitClient() error {
 	var err error
 	c.client, err = mautrix.NewClient(c.config.HS, mxid, accessToken)
 	if err != nil {
-		return errors.Wrap(err, "failed to create mautrix client")
+		return fmt.Errorf("failed to create mautrix client: %w", err)
 	}
 	c.client.UserAgent = fmt.Sprintf("gomuks %s (with mautrix-go %s)", c.gmx.Version(), mautrix.Version)
 	c.client.Logger = mxLogger{}
@@ -123,13 +122,13 @@ func (c *Container) InitClient() error {
 
 	err = c.initCrypto()
 	if err != nil {
-		return errors.Wrap(err, "failed to initialize crypto")
+		return fmt.Errorf("failed to initialize crypto: %w", err)
 	}
 
 	if c.history == nil {
 		c.history, err = NewHistoryManager(c.config.HistoryPath)
 		if err != nil {
-			return errors.Wrap(err, "failed to initialize history")
+			return fmt.Errorf("failed to initialize history: %w", err)
 		}
 	}
 
@@ -430,8 +429,9 @@ func (c *Container) Start() {
 			return
 		default:
 			if err := c.client.Sync(); err != nil {
-				if httpErr, ok := err.(mautrix.HTTPError); ok && httpErr.Code == http.StatusUnauthorized {
+				if errors.Is(err, mautrix.MUnknownToken) {
 					debug.Print("Sync() errored with ", err, " -> logging out")
+					// TODO support soft logout
 					c.Logout()
 				} else {
 					debug.Print("Sync() errored", err)
@@ -944,7 +944,7 @@ func (c *Container) UploadMedia(path string, encrypt bool) (*ifc.UploadedMediaIn
 	var err error
 	path, err = filepath.Abs(path)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to get absolute path")
+		return nil, fmt.Errorf("failed to get absolute path: %w", err)
 	}
 
 	msgtype, info, err := getMediaInfo(path)
@@ -954,12 +954,12 @@ func (c *Container) UploadMedia(path string, encrypt bool) (*ifc.UploadedMediaIn
 
 	file, err := os.Open(path)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to open file")
+		return nil, fmt.Errorf("failed to open file: %w", err)
 	}
 
 	stat, err := file.Stat()
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to get file info")
+		return nil, fmt.Errorf("failed to get file info: %w", err)
 	}
 
 	uploadFileName := stat.Name()

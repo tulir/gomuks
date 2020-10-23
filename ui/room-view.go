@@ -24,7 +24,7 @@ import (
 	"time"
 	"unicode"
 
-	"github.com/kyokomi/emoji"
+	"github.com/kyokomi/emoji/v2"
 	"github.com/mattn/go-runewidth"
 	"github.com/zyedidia/clipboard"
 

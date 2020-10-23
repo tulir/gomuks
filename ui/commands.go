@@ -18,6 +18,7 @@ package ui
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"math"
@@ -34,7 +35,6 @@ import (
 	"unicode"
 
 	"github.com/lucasb-eyer/go-colorful"
-	"github.com/pkg/errors"
 	"github.com/russross/blackfriday/v2"
 
 	"maunium.net/go/mautrix"
@@ -225,7 +225,7 @@ func readRoomAlias(cmd *Command) (alias id.RoomAlias, err error) {
 	param := strings.Join(cmd.Args[1:], " ")
 	if strings.ContainsRune(param, ':') {
 		if param[0] != '#' {
-			return "", errors.New("Full aliases must start with #")
+			return "", errors.New("full aliases must start with #")
 		}
 
 		alias = id.RoomAlias(param)

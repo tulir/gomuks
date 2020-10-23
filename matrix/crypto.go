@@ -19,9 +19,8 @@
 package matrix
 
 import (
+	"fmt"
 	"path/filepath"
-
-	"github.com/pkg/errors"
 
 	"maunium.net/go/mautrix/crypto"
 
@@ -53,14 +52,14 @@ func isBadEncryptError(err error) bool {
 func (c *Container) initCrypto() error {
 	cryptoStore, err := crypto.NewGobStore(filepath.Join(c.config.DataDir, "crypto.gob"))
 	if err != nil {
-		return errors.Wrap(err, "failed to open crypto store")
+		return fmt.Errorf("failed to open crypto store: %w", err)
 	}
 	crypt := crypto.NewOlmMachine(c.client, cryptoLogger{}, cryptoStore, c.config.Rooms)
 	crypt.AllowUnverifiedDevices = !c.config.SendToVerifiedOnly
 	c.crypto = crypt
 	err = c.crypto.Load()
 	if err != nil {
-		return errors.Wrap(err, "failed to create olm machine")
+		return fmt.Errorf("failed to create olm machine: %w", err)
 	}
 	return nil
 }
