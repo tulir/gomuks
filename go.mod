@@ -3,6 +3,7 @@ module maunium.net/go/gomuks
 go 1.14
 
 require (
+	github.com/adrg/xdg v0.2.1
 	github.com/alecthomas/chroma v0.8.0
 	github.com/disintegration/imaging v1.6.2
 	github.com/gabriel-vasile/mimetype v1.1.1
