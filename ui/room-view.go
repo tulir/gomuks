@@ -713,6 +713,7 @@ func (view *RoomView) Download(url id.ContentURI, file *attachment.EncryptedFile
 	view.AddServiceMessage(fmt.Sprintf("File downloaded to %s", path))
 	view.parent.parent.Render()
 	if openFile {
+		debug.Print("Opening file", path)
 		open.Open(path)
 	}
 }

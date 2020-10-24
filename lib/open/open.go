@@ -20,8 +20,16 @@ package open
 
 import (
 	"os/exec"
+	"maunium.net/go/gomuks/debug"
 )
 
 func Open(input string) error {
-	return exec.Command("xdg-open", input).Start()
+	cmd := exec.Command("xdg-open", input)
+	err := cmd.Start()
+	if err != nil {
+		debug.Print("xdg-open error:", err)
+	} else {
+		go cmd.Wait()
+	}
+	return err
 }
