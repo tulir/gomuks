@@ -13,6 +13,11 @@ const helpText = `# General
 /logout         - Log out of Matrix.
 /toggle <thing> - Temporary command to toggle various UI features.
 
+# Media
+/download [path] - Downloads file from selected message.
+/open [path]     - Download file from selected message and open it with xdg-open.
+/upload <path>   - Upload the file at the given path to the current room.
+
 # Sending special messages
 /me <message>        - Send an emote message.
 /notice <message>    - Send a notice (generally used for bot messages).
