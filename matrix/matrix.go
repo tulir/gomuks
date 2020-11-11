@@ -888,7 +888,7 @@ func (c *Container) prepareEvent(roomID id.RoomID, content *event.MessageEventCo
 			Type:    event.RelReplace,
 			EventID: rel.Event.ID,
 		}
-	} else if rel != nil && rel.Type == event.RelReference {
+	} else if rel != nil && rel.Type == event.RelReply {
 		content.SetReply(rel.Event.Event)
 	}
 
