@@ -19,16 +19,17 @@ package rooms
 import (
 	"compress/gzip"
 	"encoding/gob"
+	"fmt"
 	"os"
 	"path/filepath"
 	"time"
 
-	"github.com/pkg/errors"
 	sync "github.com/sasha-s/go-deadlock"
 
-	"maunium.net/go/gomuks/debug"
 	"maunium.net/go/mautrix/event"
 	"maunium.net/go/mautrix/id"
+
+	"maunium.net/go/gomuks/debug"
 )
 
 // RoomCache contains room state info in a hashmap and linked list.
@@ -114,14 +115,14 @@ func (cache *RoomCache) LoadList() error {
 		if os.IsNotExist(err) {
 			return nil
 		}
-		return errors.Wrap(err, "failed to open room list file for reading")
+		return fmt.Errorf("failed to open room list file for reading: %w", err)
 	}
 	defer debugPrintError(file.Close, "Failed to close room list file after reading")
 
 	// Open gzip reader for room list file
 	cmpReader, err := gzip.NewReader(file)
 	if err != nil {
-		return errors.Wrap(err, "failed to read gzip room list")
+		return fmt.Errorf("failed to read gzip room list: %w", err)
 	}
 	defer debugPrintError(cmpReader.Close, "Failed to close room list gzip reader")
 
@@ -131,7 +132,7 @@ func (cache *RoomCache) LoadList() error {
 	var size int
 	err = dec.Decode(&size)
 	if err != nil {
-		return errors.Wrap(err, "failed to read size of room list")
+		return fmt.Errorf("failed to read size of room list: %w", err)
 	}
 
 	// Read list
@@ -167,7 +168,7 @@ func (cache *RoomCache) SaveList() error {
 	// Open room list file
 	file, err := os.OpenFile(cache.listPath, os.O_WRONLY|os.O_CREATE, 0600)
 	if err != nil {
-		return errors.Wrap(err, "failed to open room list file for writing")
+		return fmt.Errorf("failed to open room list file for writing: %w", err)
 	}
 	defer debugPrintError(file.Close, "Failed to close room list file after writing")
 
@@ -180,7 +181,7 @@ func (cache *RoomCache) SaveList() error {
 	// Write number of items in list
 	err = enc.Encode(len(cache.Map))
 	if err != nil {
-		return errors.Wrap(err, "failed to write size of room list")
+		return fmt.Errorf("failed to write size of room list: %w", err)
 	}
 
 	// Write list

@@ -320,7 +320,7 @@ func (parser *htmlParser) syntaxHighlight(text, language string) Entity {
 func (parser *htmlParser) codeblockToEntity(node *html.Node) Entity {
 	lang := "plaintext"
 	// TODO allow disabling syntax highlighting
-	if node.FirstChild.Type == html.ElementNode && node.FirstChild.Data == "code" {
+	if node.FirstChild != nil && node.FirstChild.Type == html.ElementNode && node.FirstChild.Data == "code" {
 		node = node.FirstChild
 		attr := parser.getAttribute(node, "class")
 		for _, class := range strings.Split(attr, " ") {

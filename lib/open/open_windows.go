@@ -18,14 +18,10 @@ package open
 
 import (
 	"os"
-	"os/exec"
 	"path/filepath"
 )
 
 const FileProtocolHandler = "url.dll,FileProtocolHandler"
 
-var RunDLL32 = filepath.Join(os.Getenv("SYSTEMROOT"), "System32", "rundll32.exe")
-
-func Open(input string) error {
-	return exec.Command(RunDLL32, FileProtocolHandler, input).Start()
-}
+var Command = filepath.Join(os.Getenv("SYSTEMROOT"), "System32", "rundll32.exe")
+var Args = []string{FileProtocolHandler}

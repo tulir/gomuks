@@ -1,5 +1,3 @@
-// +build !windows,!darwin
-
 // gomuks - A terminal Matrix client written in Go.
 // Copyright (C) 2020 Tulir Asokan
 //
@@ -20,8 +18,22 @@ package open
 
 import (
 	"os/exec"
+
+	"maunium.net/go/gomuks/debug"
 )
 
 func Open(input string) error {
-	return exec.Command("xdg-open", input).Start()
+	cmd := exec.Command(Command, append(Args, input)...)
+	err := cmd.Start()
+	if err != nil {
+		debug.Printf("Failed to start %s: %v", Command, err)
+	} else {
+		go func() {
+			waitErr := cmd.Wait()
+			if waitErr != nil {
+				debug.Printf("Failed to run %s: %v", Command, err)
+			}
+		}()
+	}
+	return err
 }

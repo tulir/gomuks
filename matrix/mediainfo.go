@@ -25,22 +25,22 @@ import (
 	"time"
 
 	"github.com/gabriel-vasile/mimetype"
-	"github.com/pkg/errors"
 	"gopkg.in/vansante/go-ffprobe.v2"
 
-	"maunium.net/go/gomuks/debug"
 	"maunium.net/go/mautrix/event"
+
+	"maunium.net/go/gomuks/debug"
 )
 
 func getImageInfo(path string) (event.FileInfo, error) {
 	var info event.FileInfo
 	file, err := os.Open(path)
 	if err != nil {
-		return info, errors.Wrap(err, "failed to open image to get info")
+		return info, fmt.Errorf("failed to open image to get info: %w", err)
 	}
 	cfg, _, err := image.DecodeConfig(file)
 	if err != nil {
-		return info, errors.Wrap(err, "failed to get image info")
+		return info, fmt.Errorf("failed to get image info: %w", err)
 	}
 	info.Width = cfg.Width
 	info.Height = cfg.Height
@@ -53,7 +53,7 @@ func getFFProbeInfo(mimeClass, path string) (msgtype event.MessageType, info eve
 	var probedInfo *ffprobe.ProbeData
 	probedInfo, err = ffprobe.ProbeURL(ctx, path)
 	if err != nil {
-		err = errors.Wrap(err, fmt.Sprintf("failed to get %s info with ffprobe", mimeClass))
+		err = fmt.Errorf("failed to get %s info with ffprobe: %w", mimeClass, err)
 		return
 	}
 	if mimeClass == "audio" {
@@ -78,7 +78,7 @@ func getMediaInfo(path string) (msgtype event.MessageType, info event.FileInfo, 
 	var mime *mimetype.MIME
 	mime, err = mimetype.DetectFile(path)
 	if err != nil {
-		err = errors.Wrap(err, "failed to get content type")
+		err = fmt.Errorf("failed to get content type: %w", err)
 		return
 	}
 

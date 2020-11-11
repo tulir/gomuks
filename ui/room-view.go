@@ -24,7 +24,7 @@ import (
 	"time"
 	"unicode"
 
-	"github.com/kyokomi/emoji"
+	"github.com/kyokomi/emoji/v2"
 	"github.com/mattn/go-runewidth"
 	"github.com/zyedidia/clipboard"
 
@@ -713,6 +713,7 @@ func (view *RoomView) Download(url id.ContentURI, file *attachment.EncryptedFile
 	view.AddServiceMessage(fmt.Sprintf("File downloaded to %s", path))
 	view.parent.parent.Render()
 	if openFile {
+		debug.Print("Opening file", path)
 		open.Open(path)
 	}
 }
