@@ -93,7 +93,8 @@ type Room struct {
 	highlightCache   *bool
 	lastMarkedRead   id.EventID
 	// Whether or not this room is marked as a direct chat.
-	IsDirect bool
+	IsDirect  bool
+	OtherUser id.UserID
 
 	// List of tags given to this room.
 	RawTags []RoomTag

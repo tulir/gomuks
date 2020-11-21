@@ -51,6 +51,7 @@ type MatrixContainer interface {
 
 	Login(user, password string) error
 	Logout()
+	UIAFallback(authType mautrix.AuthType, sessionID string) error
 
 	SendPreferencesToMatrix()
 	PrepareMarkdownMessage(roomID id.RoomID, msgtype event.MessageType, text, html string, relation *Relation) *muksevt.Event
@@ -82,6 +83,7 @@ type Crypto interface {
 	Load() error
 	FlushStore() error
 	ProcessSyncResponse(resp *mautrix.RespSync, since string)
+	ProcessInRoomVerification(evt *event.Event) error
 	HandleMemberEvent(*event.Event)
 	DecryptMegolmEvent(*event.Event) (*event.Event, error)
 	EncryptMegolmEvent(id.RoomID, event.Type, interface{}) (*event.EncryptedEventContent, error)

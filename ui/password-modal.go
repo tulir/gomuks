@@ -17,6 +17,9 @@
 package ui
 
 import (
+	"fmt"
+	"strings"
+
 	"maunium.net/go/mauview"
 	"maunium.net/go/tcell"
 )
@@ -41,13 +44,20 @@ type PasswordModal struct {
 	parent *MainView
 }
 
-func (view *MainView) AskPassword(title string, isNew bool) (string, bool) {
-	pwm := NewPasswordModal(view, title, isNew)
+func (view *MainView) AskPassword(title, thing, placeholder string, isNew bool) (string, bool) {
+	pwm := NewPasswordModal(view, title, thing, placeholder, isNew)
 	view.ShowModal(pwm)
+	view.parent.Render()
 	return pwm.Wait()
 }
 
-func NewPasswordModal(parent *MainView, title string, isNew bool) *PasswordModal {
+func NewPasswordModal(parent *MainView, title, thing, placeholder string, isNew bool) *PasswordModal {
+	if placeholder == "" {
+		placeholder = "correct horse battery staple"
+	}
+	if thing == "" {
+		thing = strings.ToLower(title)
+	}
 	pwm := &PasswordModal{
 		parent:     parent,
 		form:       mauview.NewForm(),
@@ -64,13 +74,13 @@ func NewPasswordModal(parent *MainView, title string, isNew bool) *PasswordModal
 
 	pwm.text = mauview.NewTextField()
 	if isNew {
-		pwm.text.SetText("Create a passphrase")
+		pwm.text.SetText(fmt.Sprintf("Create a %s", thing))
 	} else {
-		pwm.text.SetText("Enter the passphrase")
+		pwm.text.SetText(fmt.Sprintf("Enter the %s", thing))
 	}
 	pwm.input = mauview.NewInputField().
 		SetMaskCharacter('*').
-		SetPlaceholder("correct horse battery staple")
+		SetPlaceholder(placeholder)
 	pwm.form.AddComponent(pwm.text, 1, 1, 3, 1)
 	pwm.form.AddFormItem(pwm.input, 1, 2, 3, 1)
 
@@ -78,10 +88,10 @@ func NewPasswordModal(parent *MainView, title string, isNew bool) *PasswordModal
 		height += 3
 		pwm.confirmInput = mauview.NewInputField().
 			SetMaskCharacter('*').
-			SetPlaceholder("correct horse battery staple").
+			SetPlaceholder(placeholder).
 			SetChangedFunc(pwm.HandleChange)
 		pwm.input.SetChangedFunc(pwm.HandleChange)
-		pwm.confirmText = mauview.NewTextField().SetText("Confirm passphrase")
+		pwm.confirmText = mauview.NewTextField().SetText(fmt.Sprintf("Confirm %s", thing))
 
 		pwm.form.SetRow(3, 1).SetRow(4, 1).SetRow(5, 1)
 		pwm.form.AddComponent(pwm.confirmText, 1, 4, 3, 1)
@@ -125,9 +135,9 @@ func (pwm *PasswordModal) ClickSubmit() {
 
 func (pwm *PasswordModal) Wait() (string, bool) {
 	select {
-	case result := <- pwm.outputChan:
+	case result := <-pwm.outputChan:
 		return result, true
-	case <- pwm.cancelChan:
+	case <-pwm.cancelChan:
 		return "", false
 	}
 }

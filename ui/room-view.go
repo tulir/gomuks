@@ -771,7 +771,7 @@ func (view *RoomView) getRelationForNewEvent() *ifc.Relation {
 		}
 	} else if view.replying != nil {
 		return &ifc.Relation{
-			Type:  event.RelReference,
+			Type:  event.RelReply,
 			Event: view.replying,
 		}
 	}

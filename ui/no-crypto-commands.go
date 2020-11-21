@@ -29,6 +29,7 @@ func cmdNoCrypto(cmd *Command) {
 var (
 	cmdDevices = cmdNoCrypto
 	cmdDevice = cmdNoCrypto
+	cmdVerifyDevice = cmdNoCrypto
 	cmdVerify = cmdNoCrypto
 	cmdUnverify = cmdNoCrypto
 	cmdBlacklist = cmdNoCrypto

@@ -18,11 +18,11 @@ require (
 	github.com/zyedidia/clipboard v1.0.3
 	go.etcd.io/bbolt v1.3.5
 	golang.org/x/image v0.0.0-20200927104501-e162460cd6b5
-	golang.org/x/net v0.0.0-20201022231255-08b38378de70
+	golang.org/x/net v0.0.0-20201026091529-146b70c837a4
 	gopkg.in/toast.v1 v1.0.0-20180812000517-0a84660828b2
 	gopkg.in/vansante/go-ffprobe.v2 v2.0.2
 	gopkg.in/yaml.v2 v2.3.0
-	maunium.net/go/mautrix v0.7.13
+	maunium.net/go/mautrix v0.8.0-rc.2
 	maunium.net/go/mauview v0.1.2
 	maunium.net/go/tcell v0.2.0
 )

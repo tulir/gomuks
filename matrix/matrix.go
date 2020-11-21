@@ -585,7 +585,16 @@ func (c *Container) HandleEncrypted(source mautrix.EventSource, mxEvent *event.E
 		c.HandleMessage(source, mxEvent)
 		return
 	}
-	c.HandleMessage(source, evt)
+	if evt.Type.IsInRoomVerification() {
+		err := c.crypto.ProcessInRoomVerification(evt)
+		if err != nil {
+			debug.Printf("[Crypto/Error] Failed to process in-room verification event %s of type %s: %v", evt.ID, evt.Type.String(), err)
+		} else {
+			debug.Printf("[Crypto/Debug] Processed in-room verification event %s of type %s", evt.ID, evt.Type.String())
+		}
+	} else {
+		c.HandleMessage(source, evt)
+	}
 }
 
 // HandleMessage is the event handler for the m.room.message timeline event.
@@ -744,14 +753,14 @@ func (c *Container) HandleReadReceipt(source mautrix.EventSource, evt *event.Eve
 	}
 }
 
-func (c *Container) parseDirectChatInfo(evt *event.Event) map[*rooms.Room]bool {
-	directChats := make(map[*rooms.Room]bool)
-	for _, roomIDList := range *evt.Content.AsDirectChats() {
+func (c *Container) parseDirectChatInfo(evt *event.Event) map[*rooms.Room]id.UserID {
+	directChats := make(map[*rooms.Room]id.UserID)
+	for userID, roomIDList := range *evt.Content.AsDirectChats() {
 		for _, roomID := range roomIDList {
 			// TODO we shouldn't create direct chat rooms that we aren't in
 			room := c.GetOrCreateRoom(roomID)
 			if room != nil && !room.HasLeft {
-				directChats[room] = true
+				directChats[room] = userID
 			}
 		}
 	}
@@ -761,9 +770,10 @@ func (c *Container) parseDirectChatInfo(evt *event.Event) map[*rooms.Room]bool {
 func (c *Container) HandleDirectChatInfo(_ mautrix.EventSource, evt *event.Event) {
 	directChats := c.parseDirectChatInfo(evt)
 	for _, room := range c.config.Rooms.Map {
-		shouldBeDirect := directChats[room]
-		if shouldBeDirect != room.IsDirect {
-			room.IsDirect = shouldBeDirect
+		userID, isDirect := directChats[room]
+		if isDirect != room.IsDirect {
+			room.IsDirect = isDirect
+			room.OtherUser = userID
 			if c.config.AuthCache.InitialSyncDone {
 				c.ui.MainView().UpdateTags(room)
 			}
@@ -879,7 +889,7 @@ func (c *Container) prepareEvent(roomID id.RoomID, content *event.MessageEventCo
 			Type:    event.RelReplace,
 			EventID: rel.Event.ID,
 		}
-	} else if rel != nil && rel.Type == event.RelReference {
+	} else if rel != nil && rel.Type == event.RelReply {
 		content.SetReply(rel.Event.Event)
 	}
 
