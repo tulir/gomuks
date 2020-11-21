@@ -20,6 +20,7 @@ import (
 	"os"
 
 	"maunium.net/go/mauview"
+	"github.com/zyedidia/clipboard"
 	"maunium.net/go/tcell"
 
 	"maunium.net/go/gomuks/interface"
@@ -62,6 +63,7 @@ func NewGomuksUI(gmx ifc.Gomuks) ifc.GomuksUI {
 }
 
 func (ui *GomuksUI) Init() {
+	clipboard.Initialize()
 	ui.views = map[View]mauview.Component{
 		ViewLogin: ui.NewLoginView(),
 		ViewMain:  ui.NewMainView(),
