@@ -36,6 +36,7 @@ import (
 type AuthCache struct {
 	NextBatch       string `yaml:"next_batch"`
 	FilterID        string `yaml:"filter_id"`
+	FilterVersion   int    `yaml:"filter_version"`
 	InitialSyncDone bool   `yaml:"initial_sync_done"`
 }
 
@@ -262,12 +263,18 @@ func (config *Config) GetUserID() id.UserID {
 	return config.UserID
 }
 
+const FilterVersion = 1
+
 func (config *Config) SaveFilterID(_ id.UserID, filterID string) {
 	config.AuthCache.FilterID = filterID
+	config.AuthCache.FilterVersion = FilterVersion
 	config.SaveAuthCache()
 }
 
 func (config *Config) LoadFilterID(_ id.UserID) string {
+	if config.AuthCache.FilterVersion != FilterVersion {
+		return ""
+	}
 	return config.AuthCache.FilterID
 }
 

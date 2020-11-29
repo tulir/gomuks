@@ -226,37 +226,32 @@ func (s *GomuksSyncer) OnFailedSync(res *mautrix.RespSync, err error) (time.Dura
 
 // GetFilterJSON returns a filter with a timeline limit of 50.
 func (s *GomuksSyncer) GetFilterJSON(_ id.UserID) *mautrix.Filter {
+	stateEvents := []event.Type{
+		event.StateMember,
+		event.StateRoomName,
+		event.StateTopic,
+		event.StateCanonicalAlias,
+		event.StatePowerLevels,
+		event.StateTombstone,
+		event.StateEncryption,
+	}
+	messageEvents := []event.Type{
+		event.EventMessage,
+		event.EventRedaction,
+		event.EventEncrypted,
+		event.EventSticker,
+		event.EventReaction,
+	}
 	return &mautrix.Filter{
 		Room: mautrix.RoomFilter{
 			IncludeLeave: false,
 			State: mautrix.FilterPart{
 				LazyLoadMembers: true,
-				Types: []event.Type{
-					event.StateMember,
-					event.StateRoomName,
-					event.StateTopic,
-					event.StateCanonicalAlias,
-					event.StatePowerLevels,
-					event.StateTombstone,
-					event.StateEncryption,
-				},
+				Types: stateEvents,
 			},
 			Timeline: mautrix.FilterPart{
 				LazyLoadMembers: true,
-				Types: []event.Type{
-					event.EventMessage,
-					event.EventRedaction,
-					event.EventEncrypted,
-					event.EventSticker,
-					event.EventReaction,
-
-					event.StateMember,
-					event.StateRoomName,
-					event.StateTopic,
-					event.StateCanonicalAlias,
-					event.StatePowerLevels,
-					event.StateTombstone,
-				},
+				Types: append(messageEvents, stateEvents...),
 				Limit: 50,
 			},
 			Ephemeral: mautrix.FilterPart{
