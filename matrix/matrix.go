@@ -353,6 +353,7 @@ func (c *Container) OnLogin() {
 			}
 		})
 		c.syncer.OnEventType(event.EventEncrypted, c.HandleEncrypted)
+		c.syncer.OnEventType(event.StateEncryption, c.HandleEncryption)
 	} else {
 		c.syncer.OnEventType(event.EventEncrypted, c.HandleEncryptedUnsupported)
 	}
@@ -595,6 +596,17 @@ func (c *Container) HandleEncrypted(source mautrix.EventSource, mxEvent *event.E
 	} else {
 		c.HandleMessage(source, evt)
 	}
+}
+
+func (c *Container) HandleEncryption(source mautrix.EventSource, mxEvent *event.Event) {
+
+	roomView := c.ui.MainView().GetRoom(mxEvent.RoomID)
+	if roomView == nil {
+		debug.Printf("Failed to handle event %v: No room view found.", mxEvent)
+		return
+	}
+	roomView.SetEncrypted()
+	debug.Printf("[Crypto/Debug] Processed encryption event %s of type %s", mxEvent.ID, mxEvent.Type.String())
 }
 
 // HandleMessage is the event handler for the m.room.message timeline event.

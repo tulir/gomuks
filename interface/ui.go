@@ -68,6 +68,7 @@ type RoomView interface {
 
 	SetCompletions(completions []string)
 	SetTyping(users []id.UserID)
+	SetEncrypted()
 	UpdateUserList()
 
 	AddEvent(evt *muksevt.Event) Message
