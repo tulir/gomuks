@@ -22,7 +22,7 @@ require (
 	gopkg.in/toast.v1 v1.0.0-20180812000517-0a84660828b2
 	gopkg.in/vansante/go-ffprobe.v2 v2.0.2
 	gopkg.in/yaml.v2 v2.3.0
-	maunium.net/go/mautrix v0.8.0-rc.4
+	maunium.net/go/mautrix v0.8.0
 	maunium.net/go/mauview v0.1.2
 	maunium.net/go/tcell v0.2.0
 )
