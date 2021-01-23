@@ -552,6 +552,7 @@ func cmdPrivateMessage(cmd *Command) {
 	req := &mautrix.ReqCreateRoom{
 		Preset: "trusted_private_chat",
 		Invite: invites,
+		IsDirect: true,
 	}
 	room, err := cmd.Matrix.CreateRoom(req)
 	if err != nil {
