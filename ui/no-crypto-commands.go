@@ -27,14 +27,14 @@ func cmdNoCrypto(cmd *Command) {
 }
 
 var (
-	cmdDevices = cmdNoCrypto
-	cmdDevice = cmdNoCrypto
-	cmdVerifyDevice = cmdNoCrypto
-	cmdVerify = cmdNoCrypto
-	cmdUnverify = cmdNoCrypto
-	cmdBlacklist = cmdNoCrypto
-	cmdResetSession = cmdNoCrypto
-	cmdImportKeys = cmdNoCrypto
-	cmdExportKeys = cmdNoCrypto
+	cmdDevices        = cmdNoCrypto
+	cmdDevice         = cmdNoCrypto
+	cmdVerifyDevice   = cmdNoCrypto
+	cmdVerify         = cmdNoCrypto
+	cmdUnverify       = cmdNoCrypto
+	cmdBlacklist      = cmdNoCrypto
+	cmdResetSession   = cmdNoCrypto
+	cmdImportKeys     = cmdNoCrypto
+	cmdExportKeys     = cmdNoCrypto
 	cmdExportRoomKeys = cmdNoCrypto
 )

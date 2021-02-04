@@ -36,7 +36,7 @@ type FuzzySearchModal struct {
 
 	container *mauview.Box
 
-	search *mauview.InputArea
+	search  *mauview.InputArea
 	results *mauview.TextView
 
 	matches  fuzzy.Ranks

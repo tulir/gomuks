@@ -42,10 +42,10 @@ func NewListEntity(ordered bool, start int, children []Entity) *ListEntity {
 	entity := &ListEntity{
 		ContainerEntity: &ContainerEntity{
 			BaseEntity: &BaseEntity{
-				Tag:    "ul",
-				Block:  true,
+				Tag:   "ul",
+				Block: true,
 			},
-			Indent: 2,
+			Indent:   2,
 			Children: children,
 		},
 		Ordered: ordered,
@@ -66,8 +66,8 @@ func (le *ListEntity) AdjustStyle(fn AdjustStyleFunc) Entity {
 func (le *ListEntity) Clone() Entity {
 	return &ListEntity{
 		ContainerEntity: le.ContainerEntity.Clone().(*ContainerEntity),
-		Ordered:    le.Ordered,
-		Start:      le.Start,
+		Ordered:         le.Ordered,
+		Start:           le.Start,
 	}
 }
 

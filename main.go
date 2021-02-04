@@ -26,7 +26,7 @@ import (
 	"time"
 
 	"maunium.net/go/gomuks/debug"
-	"maunium.net/go/gomuks/interface"
+	ifc "maunium.net/go/gomuks/interface"
 	"maunium.net/go/gomuks/ui"
 )
 
@@ -40,6 +40,7 @@ func main() {
 	debugLevel := strings.ToLower(os.Getenv("DEBUG"))
 	if debugLevel != "0" && debugLevel != "f" && debugLevel != "false" {
 		debug.WriteLogs = true
+		debug.RecoverPrettyPanic = true
 	}
 	if debugLevel == "1" || debugLevel == "t" || debugLevel == "true" {
 		debug.RecoverPrettyPanic = false
@@ -72,7 +73,6 @@ func main() {
 		os.Exit(3)
 	}
 
-
 	gmx := NewGomuks(MainUIProvider, configDir, dataDir, cacheDir, downloadDir)
 
 	if len(os.Args) > 1 && (os.Args[1] == "--version" || os.Args[1] == "-v") {
@@ -93,9 +93,13 @@ func getRootDir(subdir string) string {
 	if rootDir == "" {
 		return ""
 	}
-	return filepath.Join(rootDir, subdir)
+	dir := filepath.Join(rootDir, subdir)
+	debug.Printf("root dir: %s", dir)
+	return dir
 }
 
+// UserCacheDir returns GOMUKS_CACHE_HOME
+// If the environment variable is blank, it returns the default cache dir /gomuks
 func UserCacheDir() (dir string, err error) {
 	dir = os.Getenv("GOMUKS_CACHE_HOME")
 	if dir == "" {
@@ -105,9 +109,12 @@ func UserCacheDir() (dir string, err error) {
 		dir, err = os.UserCacheDir()
 		dir = filepath.Join(dir, "gomuks")
 	}
+	debug.Printf("cache dir: %s", dir)
 	return
 }
 
+// UserDataDir returns a home directory GOMUKS_DATA_HOME
+// If the environment variable is blank, it returns a default based on OS
 func UserDataDir() (dir string, err error) {
 	dir = os.Getenv("GOMUKS_DATA_HOME")
 	if dir != "" {
@@ -128,15 +135,20 @@ func UserDataDir() (dir string, err error) {
 		dir = filepath.Join(dir, ".local", "share")
 	}
 	dir = filepath.Join(dir, "gomuks")
+	debug.Printf("data dir: %s", dir)
 	return
 }
 
+// UserDownloadDir returns either HOME/Downloads or an error if homedir cannot be found
 func UserDownloadDir() (dir string, err error) {
 	dir, err = os.UserHomeDir()
 	dir = filepath.Join(dir, "Downloads")
+	debug.Printf("download dir: %s", dir)
 	return
 }
 
+// UserConfigDir returns a configuration directory based on the GOMUKS_CONFIG_HOME
+// environment variable, or the default.
 func UserConfigDir() (dir string, err error) {
 	dir = os.Getenv("GOMUKS_CONFIG_HOME")
 	if dir == "" {
@@ -146,5 +158,6 @@ func UserConfigDir() (dir string, err error) {
 		dir, err = os.UserConfigDir()
 		dir = filepath.Join(dir, "gomuks")
 	}
+	debug.Printf("user config dir: %s", dir)
 	return
 }

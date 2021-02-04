@@ -34,12 +34,12 @@ import (
 
 var tagOrder = map[string]int{
 	"net.maunium.gomuks.fake.invite": 4,
-	"m.favourite": 3,
+	"m.favourite":                    3,
 	"net.maunium.gomuks.fake.direct": 2,
-	"": 1,
-	"m.lowpriority": -1,
-	"m.server_notice": -2,
-	"net.maunium.gomuks.fake.leave": -3,
+	"":                               1,
+	"m.lowpriority":                  -1,
+	"m.server_notice":                -2,
+	"net.maunium.gomuks.fake.leave":  -3,
 }
 
 // TagNameList is a list of Matrix tag names where default names are sorted in a hardcoded way.

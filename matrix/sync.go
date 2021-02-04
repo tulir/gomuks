@@ -247,12 +247,12 @@ func (s *GomuksSyncer) GetFilterJSON(_ id.UserID) *mautrix.Filter {
 			IncludeLeave: false,
 			State: mautrix.FilterPart{
 				LazyLoadMembers: true,
-				Types: stateEvents,
+				Types:           stateEvents,
 			},
 			Timeline: mautrix.FilterPart{
 				LazyLoadMembers: true,
-				Types: append(messageEvents, stateEvents...),
-				Limit: 50,
+				Types:           append(messageEvents, stateEvents...),
+				Limit:           50,
 			},
 			Ephemeral: mautrix.FilterPart{
 				Types: []event.Type{event.EphemeralEventTyping, event.EphemeralEventReceipt},

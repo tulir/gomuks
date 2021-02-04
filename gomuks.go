@@ -24,7 +24,7 @@ import (
 
 	"maunium.net/go/gomuks/config"
 	"maunium.net/go/gomuks/debug"
-	"maunium.net/go/gomuks/interface"
+	ifc "maunium.net/go/gomuks/interface"
 	"maunium.net/go/gomuks/matrix"
 )
 
@@ -102,7 +102,12 @@ func (gmx *Gomuks) Stop(save bool) {
 // If the tview app returns an error, it will be passed into panic(), which
 // will be recovered as specified in Recover().
 func (gmx *Gomuks) Start() {
-	_ = gmx.matrix.InitClient()
+	debug.Print("starting gomux...")
+	err := gmx.matrix.InitClient()
+	if err != nil {
+		debug.Printf("error initializing matrix client: %s", err)
+		return
+	}
 
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)

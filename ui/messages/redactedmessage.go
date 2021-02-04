@@ -55,6 +55,7 @@ func (msg *RedactedMessage) Height() int {
 
 const RedactionChar = '█'
 const RedactionMaxWidth = 40
+
 var RedactionStyle = tcell.StyleDefault.Foreground(tcell.NewRGBColor(50, 0, 0))
 
 func (msg *RedactedMessage) Draw(screen mauview.Screen) {
