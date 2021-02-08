@@ -10,6 +10,7 @@ require (
 	github.com/lithammer/fuzzysearch v1.1.1
 	github.com/lucasb-eyer/go-colorful v1.0.3
 	github.com/mattn/go-runewidth v0.0.9
+	github.com/mattn/go-sqlite3 v1.14.0
 	github.com/nu7hatch/gouuid v0.0.0-20131221200532-179d4d0c4d8d // indirect
 	github.com/petermattis/goid v0.0.0-20180202154549-b0b1615b78e5 // indirect
 	github.com/rivo/uniseg v0.1.0

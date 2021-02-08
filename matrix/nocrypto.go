@@ -11,3 +11,5 @@ func isBadEncryptError(err error) bool {
 func (c *Container) initCrypto() error {
 	return nil
 }
+
+func (c *Container) cryptoOnLogin() {}

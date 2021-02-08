@@ -337,6 +337,7 @@ func (s StubSyncingModal) Close()               {}
 
 // OnLogin initializes the syncer and updates the room list.
 func (c *Container) OnLogin() {
+	c.cryptoOnLogin()
 	c.ui.OnLogin()
 
 	c.client.Store = c.config
