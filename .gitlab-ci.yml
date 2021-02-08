@@ -40,6 +40,41 @@ windows/amd64:
     paths:
     - gomuks.exe
 
+macos/amd64:
+  tags:
+  - macos
+  - amd64
+  script:
+  - go build -o gomuks
+  - install_name_tool -change /usr/local/opt/libolm/lib/libolm.3.dylib @rpath/libolm.3 gomuks
+  - install_name_tool -add_rpath @executable_path gomuks
+  - install_name_tool -add_rpath /usr/local/opt/libolm/lib gomuks
+  - cp /usr/local/opt/libolm/lib/libolm.3.dylib .
+  artifacts:
+    paths:
+    - gomuks
+    - libolm.3.dylib
+
+macos/arm64:
+  tags:
+  - macos
+  - arm64
+  before_script:
+  - export LIBRARY_PATH=/opt/homebrew/lib
+  - export CPATH=/opt/homebrew/include
+  - export PATH=/opt/homebrew/bin:$PATH
+  script:
+  - go build -o gomuks
+  - install_name_tool -change /opt/homebrew/opt/libolm/lib/libolm.3.dylib @rpath/libolm.3 gomuks
+  - install_name_tool -add_rpath @executable_path gomuks
+  - install_name_tool -add_rpath /opt/homebrew/opt/libolm/lib gomuks
+  - install_name_tool -add_rpath /usr/local/opt/libolm/lib gomuks
+  - cp /opt/homebrew/opt/libolm/lib/libolm.3.dylib .
+  artifacts:
+    paths:
+    - gomuks
+    - libolm.3.dylib
+
 debian:
   image: debian
   stage: package
