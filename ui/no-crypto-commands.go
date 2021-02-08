@@ -22,19 +22,25 @@ func autocompleteDevice(cmd *CommandAutocomplete) ([]string, string) {
 	return []string{}, ""
 }
 
+func autocompleteUser(cmd *CommandAutocomplete) ([]string, string) {
+	return []string{}, ""
+}
+
 func cmdNoCrypto(cmd *Command) {
 	cmd.Reply("This gomuks was built without encryption support")
 }
 
 var (
-	cmdDevices = cmdNoCrypto
-	cmdDevice = cmdNoCrypto
-	cmdVerifyDevice = cmdNoCrypto
-	cmdVerify = cmdNoCrypto
-	cmdUnverify = cmdNoCrypto
-	cmdBlacklist = cmdNoCrypto
-	cmdResetSession = cmdNoCrypto
-	cmdImportKeys = cmdNoCrypto
-	cmdExportKeys = cmdNoCrypto
+	cmdDevices        = cmdNoCrypto
+	cmdDevice         = cmdNoCrypto
+	cmdVerifyDevice   = cmdNoCrypto
+	cmdVerify         = cmdNoCrypto
+	cmdUnverify       = cmdNoCrypto
+	cmdBlacklist      = cmdNoCrypto
+	cmdResetSession   = cmdNoCrypto
+	cmdImportKeys     = cmdNoCrypto
+	cmdExportKeys     = cmdNoCrypto
 	cmdExportRoomKeys = cmdNoCrypto
+	cmdSSSS           = cmdNoCrypto
+	cmdCrossSigning   = cmdNoCrypto
 )
