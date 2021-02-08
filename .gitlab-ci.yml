@@ -41,9 +41,11 @@ windows/amd64:
     - gomuks.exe
 
 macos/amd64:
+  stage: build
   tags:
   - macos
   - amd64
+  before_script: []
   script:
   - go build -o gomuks
   - install_name_tool -change /usr/local/opt/libolm/lib/libolm.3.dylib @rpath/libolm.3 gomuks
@@ -56,6 +58,7 @@ macos/amd64:
     - libolm.3.dylib
 
 macos/arm64:
+  stage: build
   tags:
   - macos
   - arm64
