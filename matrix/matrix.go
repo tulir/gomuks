@@ -254,7 +254,7 @@ func (c *Container) Login(user, password string) error {
 	for _, flow := range resp.Flows {
 		if flow.Type == "m.login.password" {
 			return c.PasswordLogin(user, password)
-		} else if flow.Type == "m.login.sso" {
+		} else if flow.Type == "m.login.sso" && len(password) == 0 {
 			return c.SingleSignOn()
 		}
 	}
