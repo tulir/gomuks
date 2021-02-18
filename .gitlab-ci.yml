@@ -80,6 +80,8 @@ macos/arm64:
 
 macos/universal:
   stage: package
+  tags:
+  - macos
   dependencies:
   - macos/amd64
   - macos/arm64
