@@ -110,6 +110,7 @@ func (fs *FuzzySearchModal) changeHandler(str string) {
 		}
 		//fs.parent.parent.Render()
 		fs.results.Highlight(strconv.Itoa(fs.matches[0].OriginalIndex))
+		fs.selected = 0
 		fs.results.ScrollToBeginning()
 	} else {
 		fs.results.Clear()
