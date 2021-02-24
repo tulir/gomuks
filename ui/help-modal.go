@@ -35,7 +35,8 @@ const helpText = `# General
 /device <user id> <device id>    - Show info about a specific device.
 /unverify <user id> <device id>  - Un-verify a device.
 /blacklist <user id> <device id> - Blacklist a device.
-/verify <user id> <device id> [fingerprint]
+/verify <user id> - Verify a user with in-room verification. Probably broken.
+/verify-device <user id> <device id> [fingerprint]
     - Verify a device. If the fingerprint is not provided,
       interactive emoji verification will be started.
 /reset-session - Reset the outbound Megolm session in the current room.
