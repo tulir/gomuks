@@ -698,6 +698,7 @@ var toggleMsg = map[string]ToggleMessage{
 	"notifications": SimpleToggleMessage("desktop notifications"),
 	"unverified":    SimpleToggleMessage("sending messages to unverified devices"),
 	"showurls":      SimpleToggleMessage("show URLs in text format"),
+	"newline":	 SimpleToggleMessage("use <enter> to create new line and <alt+enter> to send"),
 }
 
 func makeUsage() string {
@@ -742,6 +743,8 @@ func cmdToggle(cmd *Command) {
 			val = &cmd.Config.SendToVerifiedOnly
 		case "showurls":
 			val = &cmd.Config.Preferences.DisableShowURLs
+		case "newline":
+			val = &cmd.Config.Preferences.NewLineByDefault
 		default:
 			cmd.Reply("Unknown toggle %s. Use /toggle without arguments for a list of togglable things.", thing)
 			return
