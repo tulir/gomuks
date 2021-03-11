@@ -40,6 +40,7 @@ func main() {
 	debugLevel := strings.ToLower(os.Getenv("DEBUG"))
 	if debugLevel != "0" && debugLevel != "f" && debugLevel != "false" {
 		debug.WriteLogs = true
+		debug.RecoverPrettyPanic = true
 	}
 	if debugLevel == "1" || debugLevel == "t" || debugLevel == "true" {
 		debug.RecoverPrettyPanic = false
@@ -72,6 +73,10 @@ func main() {
 		os.Exit(3)
 	}
 
+	debug.Print("Config directory:", configDir)
+	debug.Print("Data directory:", dataDir)
+	debug.Print("Cache directory:", cacheDir)
+	debug.Print("Download directory:", downloadDir)
 
 	gmx := NewGomuks(MainUIProvider, configDir, dataDir, cacheDir, downloadDir)
 

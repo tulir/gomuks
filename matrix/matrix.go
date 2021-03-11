@@ -21,6 +21,7 @@ import (
 	"crypto/tls"
 	"encoding/gob"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -32,7 +33,6 @@ import (
 	"runtime"
 	dbg "runtime/debug"
 	"time"
-	"errors"
 
 	"maunium.net/go/mautrix"
 	"maunium.net/go/mautrix/crypto/attachment"
@@ -845,9 +845,9 @@ func (c *Container) PrepareMediaMessage(room *rooms.Room, path string, rel *ifc.
 		return nil, err
 	}
 	content := event.MessageEventContent{
-		MsgType:    resp.MsgType,
-		Body:       resp.Name,
-		Info:       resp.Info,
+		MsgType: resp.MsgType,
+		Body:    resp.Name,
+		Info:    resp.Info,
 	}
 	if resp.EncryptionInfo != nil {
 		content.File = &event.EncryptedFileInfo{
