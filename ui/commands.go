@@ -550,8 +550,8 @@ func cmdPrivateMessage(cmd *Command) {
 		}
 	}
 	req := &mautrix.ReqCreateRoom{
-		Preset: "trusted_private_chat",
-		Invite: invites,
+		Preset:   "trusted_private_chat",
+		Invite:   invites,
 		IsDirect: true,
 	}
 	room, err := cmd.Matrix.CreateRoom(req)
@@ -686,6 +686,20 @@ func (stm SimpleToggleMessage) Name() string {
 	return string(unicode.ToUpper(rune(stm[0]))) + string(stm[1:])
 }
 
+type NewlineKeybindMessage string
+
+func (nkm NewlineKeybindMessage) Format(state bool) string {
+	if state {
+		return "Now using <enter> to create new line and <alt+enter> to send"
+	} else {
+		return "Now using <enter> to send and <alt+enter> to create new line"
+	}
+}
+
+func (nkm NewlineKeybindMessage) Name() string {
+	return string(nkm)
+}
+
 var toggleMsg = map[string]ToggleMessage{
 	"rooms":         HideMessage("Room list sidebar"),
 	"users":         HideMessage("User list sidebar"),
@@ -699,7 +713,7 @@ var toggleMsg = map[string]ToggleMessage{
 	"notifications": SimpleToggleMessage("desktop notifications"),
 	"unverified":    SimpleToggleMessage("sending messages to unverified devices"),
 	"showurls":      SimpleToggleMessage("show URLs in text format"),
-	"newline":	 SimpleToggleMessage("use <enter> to create new line and <alt+enter> to send"),
+	"newline":       NewlineKeybindMessage("should <alt+enter> make a new line or send the message"),
 }
 
 func makeUsage() string {
@@ -745,7 +759,7 @@ func cmdToggle(cmd *Command) {
 		case "showurls":
 			val = &cmd.Config.Preferences.DisableShowURLs
 		case "newline":
-			val = &cmd.Config.Preferences.NewLineByDefault
+			val = &cmd.Config.Preferences.AltEnterToSend
 		default:
 			cmd.Reply("Unknown toggle %s. Use /toggle without arguments for a list of togglable things.", thing)
 			return

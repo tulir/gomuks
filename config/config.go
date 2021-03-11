@@ -52,7 +52,7 @@ type UserPreferences struct {
 	DisableDownloads     bool `yaml:"disable_downloads"`
 	DisableNotifications bool `yaml:"disable_notifications"`
 	DisableShowURLs      bool `yaml:"disable_show_urls"`
-	NewLineByDefault     bool `yaml:"new_line_by_default"`
+	AltEnterToSend       bool `yaml:"alt_enter_to_send"`
 }
 
 // Config contains the main config of gomuks.

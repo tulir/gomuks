@@ -374,7 +374,7 @@ func (view *RoomView) OnKeyEvent(event mauview.KeyEvent) bool {
 		msgView.AddScrollOffset(-msgView.Height() / 2)
 		return true
 	case tcell.KeyEnter:
-		if (event.Modifiers()&tcell.ModShift == 0 && event.Modifiers()&tcell.ModCtrl == 0) == (view.config.Preferences.NewLineByDefault) {
+		if (event.Modifiers()&tcell.ModShift == 0 && event.Modifiers()&tcell.ModCtrl == 0) != (view.config.Preferences.AltEnterToSend) {
 			view.InputSubmit(view.input.GetText())
 			return true
 		}
