@@ -118,6 +118,7 @@ func NewRoomView(parent *MainView, room *rooms.Room) *RoomView {
 	view.Room.SetPostLoad(view.loadTyping)
 
 	view.input.
+		SetTextColor(tcell.ColorDefault).
 		SetBackgroundColor(tcell.ColorDefault).
 		SetPlaceholder("Send a message...").
 		SetPlaceholderTextColor(tcell.ColorGray).
@@ -130,7 +131,7 @@ func NewRoomView(parent *MainView, room *rooms.Room) *RoomView {
 	}
 
 	view.topic.
-		SetTextColor(tcell.ColorWhite).
+		SetTextColor(tcell.ColorDefault).
 		SetBackgroundColor(tcell.ColorDarkGreen)
 
 	view.status.SetBackgroundColor(tcell.ColorDimGray)
