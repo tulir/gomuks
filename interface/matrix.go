@@ -82,7 +82,7 @@ type MatrixContainer interface {
 type Crypto interface {
 	Load() error
 	FlushStore() error
-	ProcessSyncResponse(resp *mautrix.RespSync, since string)
+	ProcessSyncResponse(resp *mautrix.RespSync, since string) bool
 	ProcessInRoomVerification(evt *event.Event) error
 	HandleMemberEvent(*event.Event)
 	DecryptMegolmEvent(*event.Event) (*event.Event, error)

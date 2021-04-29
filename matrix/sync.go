@@ -32,13 +32,10 @@ import (
 	"maunium.net/go/gomuks/matrix/rooms"
 )
 
-type EventHandler func(source mautrix.EventSource, event *event.Event)
-type SyncHandler func(resp *mautrix.RespSync, since string)
-
 type GomuksSyncer struct {
 	rooms             *rooms.RoomCache
-	globalListeners   []SyncHandler
-	listeners         map[event.Type][]EventHandler // event type to listeners array
+	globalListeners   []mautrix.SyncHandler
+	listeners         map[event.Type][]mautrix.EventHandler // event type to listeners array
 	FirstSyncDone     bool
 	InitDoneCallback  func()
 	FirstDoneCallback func()
@@ -49,8 +46,8 @@ type GomuksSyncer struct {
 func NewGomuksSyncer(rooms *rooms.RoomCache) *GomuksSyncer {
 	return &GomuksSyncer{
 		rooms:           rooms,
-		globalListeners: []SyncHandler{},
-		listeners:       make(map[event.Type][]EventHandler),
+		globalListeners: []mautrix.SyncHandler{},
+		listeners:       make(map[event.Type][]mautrix.EventHandler),
 		FirstSyncDone:   false,
 		Progress:        StubSyncingModal{},
 	}
@@ -110,7 +107,7 @@ func (s *GomuksSyncer) ProcessResponse(res *mautrix.RespSync, since string) (err
 
 func (s *GomuksSyncer) notifyGlobalListeners(res *mautrix.RespSync, since string, callback func()) {
 	for _, listener := range s.globalListeners {
-		go func(listener SyncHandler) {
+		go func(listener mautrix.SyncHandler) {
 			listener(res, since)
 			callback()
 		}(listener)
@@ -196,15 +193,15 @@ func (s *GomuksSyncer) processSyncEvent(room *rooms.Room, evt *event.Event, sour
 
 // OnEventType allows callers to be notified when there are new events for the given event type.
 // There are no duplicate checks.
-func (s *GomuksSyncer) OnEventType(eventType event.Type, callback EventHandler) {
+func (s *GomuksSyncer) OnEventType(eventType event.Type, callback mautrix.EventHandler) {
 	_, exists := s.listeners[eventType]
 	if !exists {
-		s.listeners[eventType] = []EventHandler{}
+		s.listeners[eventType] = []mautrix.EventHandler{}
 	}
 	s.listeners[eventType] = append(s.listeners[eventType], callback)
 }
 
-func (s *GomuksSyncer) OnSync(callback SyncHandler) {
+func (s *GomuksSyncer) OnSync(callback mautrix.SyncHandler) {
 	s.globalListeners = append(s.globalListeners, callback)
 }
 
