@@ -16,23 +16,11 @@
 
 package notification
 
-import "os/exec"
+import "github.com/gen2brain/beeep"
 
 func Send(title, text string, critical, sound bool) error {
-	args := []string{"-a", "gomuks"}
-	if !critical {
-		args = append(args, "-u", "low")
-	}
-	// 	if iconPath {
-	// 		args = append(args, "-i", iconPath)
-	// 	}
-	args = append(args, title, text)
 	if sound {
-		soundName := "message-new-instant"
-		if critical {
-			soundName = "complete"
-		}
-		exec.Command("paplay", "/usr/share/sounds/freedesktop/stereo/"+soundName+".oga").Run()
+		return beeep.Alert(title, text, "")
 	}
-	return exec.Command("notify-send", args...).Run()
+	return beeep.Notify(title, text, "")
 }

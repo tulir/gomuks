@@ -4,14 +4,15 @@ go 1.14
 
 require (
 	github.com/alecthomas/chroma v0.8.2
+	github.com/davecgh/go-spew v1.1.1
 	github.com/disintegration/imaging v1.6.2
 	github.com/gabriel-vasile/mimetype v1.2.0
+	github.com/gen2brain/beeep v0.0.0-20200526185328-e9c15c258e28
 	github.com/kyokomi/emoji/v2 v2.2.8
 	github.com/lithammer/fuzzysearch v1.1.1
 	github.com/lucasb-eyer/go-colorful v1.2.0
 	github.com/mattn/go-runewidth v0.0.9
 	github.com/mattn/go-sqlite3 v1.14.6
-	github.com/nu7hatch/gouuid v0.0.0-20131221200532-179d4d0c4d8d // indirect
 	github.com/petermattis/goid v0.0.0-20180202154549-b0b1615b78e5 // indirect
 	github.com/rivo/uniseg v0.2.0
 	github.com/russross/blackfriday/v2 v2.1.0
