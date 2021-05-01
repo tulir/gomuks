@@ -107,7 +107,7 @@ func (ml *MemberList) Update(data map[id.UserID]*rooms.Member, levels *event.Pow
 
 func (ml *MemberList) Draw(screen mauview.Screen) {
 	width, _ := screen.Size()
-	sigilStyle := tcell.StyleDefault.Background(tcell.ColorGreen).Foreground(tcell.ColorWhite)
+	sigilStyle := tcell.StyleDefault.Background(tcell.ColorGreen).Foreground(tcell.ColorDefault)
 	for y, member := range ml.list {
 		if member.Sigil != ' ' {
 			screen.SetCell(0, y, sigilStyle, member.Sigil)

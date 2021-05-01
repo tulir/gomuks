@@ -106,7 +106,7 @@ func NewVerificationModal(mainView *MainView, device *crypto.DeviceIdentity, tim
 
 	vm.inputBar = mauview.NewInputField().
 		SetBackgroundColor(tcell.ColorDefault).
-		SetPlaceholderTextColor(tcell.ColorWhite)
+		SetPlaceholderTextColor(tcell.ColorDefault)
 
 	flex := mauview.NewFlex().
 		SetDirection(mauview.FlexRow).
@@ -163,7 +163,7 @@ func (vm *VerificationModal) VerifySASMatch(device *crypto.DeviceIdentity, data 
 			"same %s as below, then type \"yes\" to\n"+
 			"accept, or \"no\" to reject", typeName))
 	vm.inputBar.
-		SetTextColor(tcell.ColorWhite).
+		SetTextColor(tcell.ColorDefault).
 		SetBackgroundColor(tcell.ColorDarkCyan).
 		SetPlaceholder("Type \"yes\" or \"no\"").
 		Focus()
