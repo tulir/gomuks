@@ -444,6 +444,10 @@ func cmdQuit(cmd *Command) {
 	cmd.Gomuks.Stop(true)
 }
 
+func cmdExit(cmd *Command) {
+	cmd.Gomuks.Stop(true)
+}
+
 func cmdClearCache(cmd *Command) {
 	cmd.Config.Clear()
 	cmd.Gomuks.Stop(false)
