@@ -1,5 +1,3 @@
-// +build !linux,!darwin,!windows,!openbsd
-
 // gomuks - A terminal Matrix client written in Go.
 // Copyright (C) 2020 Tulir Asokan
 //
@@ -18,6 +16,17 @@
 
 package notification
 
+import "os/exec"
+
 func Send(title, text string, critical, sound bool) error {
-	return nil
+	args := []string{"-a", "gomuks"}
+	if !critical {
+		args = append(args, "-u", "low")
+	}
+	// 	if iconPath {
+	// 		args = append(args, "-i", iconPath)
+	// 	}
+	args = append(args, title, text)
+
+	return exec.Command("notify-send", args...).Run()
 }
