@@ -58,7 +58,7 @@ func NewFuzzySearchModal(mainView *MainView, width int, height int) *FuzzySearch
 	fs.results = mauview.NewTextView().SetRegions(true)
 	fs.search = mauview.NewInputArea().
 		SetChangedFunc(fs.changeHandler).
-		SetTextColor(tcell.ColorDefault).
+		SetTextColor(tcell.ColorWhite).
 		SetBackgroundColor(tcell.ColorDarkCyan)
 	fs.search.Focus()
 
