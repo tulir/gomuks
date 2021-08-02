@@ -18,7 +18,6 @@ package ui
 
 import (
 	"fmt"
-	"path/filepath"
 	"sort"
 	"strings"
 	"time"
@@ -136,10 +135,6 @@ func NewRoomView(parent *MainView, room *rooms.Room) *RoomView {
 	view.status.SetBackgroundColor(tcell.ColorDimGray)
 
 	return view
-}
-
-func (view *RoomView) logPath(dir string) string {
-	return filepath.Join(dir, fmt.Sprintf("%s.gmxlog", view.Room.ID))
 }
 
 func (view *RoomView) SetInputChangedFunc(fn func(room *RoomView, text string)) *RoomView {
