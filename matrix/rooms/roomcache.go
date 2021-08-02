@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	sync "github.com/sasha-s/go-deadlock"
@@ -268,7 +269,8 @@ func (cache *RoomCache) Put(room *Room) {
 }
 
 func (cache *RoomCache) roomPath(roomID id.RoomID) string {
-	return filepath.Join(cache.directory, string(roomID)+".gob.gz")
+	escapedRoomID := strings.ReplaceAll(strings.ReplaceAll(string(roomID), "%", "%25"), "/", "%2F")
+	return filepath.Join(cache.directory, escapedRoomID+".gob.gz")
 }
 
 func (cache *RoomCache) Load(roomID id.RoomID) *Room {
