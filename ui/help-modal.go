@@ -76,7 +76,8 @@ func NewHelpModal(parent *MainView) *HelpModal {
 	text := mauview.NewTextView().
 		SetText(helpText).
 		SetScrollable(true).
-		SetWrap(false)
+		SetWrap(false).
+		SetTextColor(tcell.ColorDefault)
 
 	box := mauview.NewBox(text).
 		SetBorder(true).
