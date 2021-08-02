@@ -193,7 +193,7 @@ func (parser *htmlParser) linkToEntity(node *html.Node) Entity {
 		Children: parser.nodeToEntities(node.FirstChild),
 	}
 
-	if len(href) == 0 {
+	if len(href) == 0 || parser.hasAttribute(node, "data-mautrix-exclude-plaintext") {
 		return entity
 	}
 
