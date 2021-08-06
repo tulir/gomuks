@@ -44,6 +44,7 @@ type FuzzySearchModal struct {
 
 	roomList   []*rooms.Room
 	roomTitles []string
+	roomServers []string
 
 	parent *MainView
 }
@@ -55,7 +56,9 @@ func NewFuzzySearchModal(mainView *MainView, width int, height int) *FuzzySearch
 
 	fs.InitList(mainView.rooms)
 
-	fs.results = mauview.NewTextView().SetRegions(true)
+	fs.results = mauview.NewTextView().
+		SetRegions(true).
+		SetDynamicColors(true)
 	fs.search = mauview.NewInputArea().
 		SetChangedFunc(fs.changeHandler).
 		SetTextColor(tcell.ColorWhite).
@@ -96,6 +99,7 @@ func (fs *FuzzySearchModal) InitList(rooms map[id.RoomID]*RoomView) {
 		}
 		fs.roomList = append(fs.roomList, room.Room)
 		fs.roomTitles = append(fs.roomTitles, room.Room.GetTitle())
+		fs.roomServers = append(fs.roomServers, room.Room.GetServer())
 	}
 }
 
@@ -106,7 +110,14 @@ func (fs *FuzzySearchModal) changeHandler(str string) {
 		sort.Sort(fs.matches)
 		fs.results.Clear()
 		for _, match := range fs.matches {
-			fmt.Fprintf(fs.results, `["%d"]%s[""]%s`, match.OriginalIndex, match.Target, "\n")
+			fmt.Fprintf(
+				fs.results,
+				`["%d"]%s[""] [gray]%s[white]%s`,
+				match.OriginalIndex,
+				mauview.Escape(match.Target),
+				fs.roomServers[match.OriginalIndex],
+				"\n",
+			)
 		}
 		//fs.parent.parent.Render()
 		fs.results.Highlight(strconv.Itoa(fs.matches[0].OriginalIndex))
