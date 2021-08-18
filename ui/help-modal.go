@@ -6,7 +6,7 @@ import (
 	"maunium.net/go/mauview"
 )
 
-const helpText = `# General
+const mainHelpText = `# General
 /help           - Show this help dialog.
 /quit           - Quit gomuks.
 /clearcache     - Clear cache and quit gomuks.
@@ -24,8 +24,8 @@ const helpText = `# General
 /rainbow <message>   - Send rainbow text.
 /rainbowme <message> - Send rainbow text in an emote.
 /ph <word> <word>    - Send text resembling the PornHub logo (/pornhub).
-/html <message>      - Send text that parses bare HTML
-           - Example: <b><font color="#FFFFFF" data-mx-bg-color="#000000">
+/html[me] <message>  - Send html[in emote] allowing colored chats that work in Element.
+           - Example: <b><font color="#FFFFFF" data-mx-bg-color="#000000">black
 /reply [text]        - Reply to the selected message.
 /react <reaction>    - React to the selected message.
 /redact [reason]     - Redact the selected message.
@@ -33,6 +33,7 @@ const helpText = `# General
 
 # Encryption
 /fingerprint - View the fingerprint of your device.
+/cross-signing - Sub commands related to encryption key cross-signing.
 
 /devices <user id>               - View the device list of a user.
 /device <user id> <device id>    - Show info about a specific device.
@@ -68,13 +69,43 @@ const helpText = `# General
 /ban    <user id> [reason] - Ban a user.
 /unban  <user id>          - Unban a user.`
 
+const keyboardHelp = `# Shortuts
+Ctrl and Alt are interchangeable in most keybindings,
+but the other one may not work depending on your terminal emulator.
+
+    Switch rooms: Ctrl + ↑, Ctrl + ↓
+    Scroll chat (page): PgUp, PgDown
+    Jump to room: Ctrl + K, type part of a room's name, then Tab and Enter to navigate and select room
+    Plaintext mode: Ctrl + L
+    Newline: Alt + Enter
+    Autocompletion: Tab (emojis, usernames, room aliases and commands)
+
+# Editing messages
+
+↑ and ↓ can be used at the start and end of the input area to jump to edit the previous or next message respectively.
+Selecting messages
+
+After using commands that require selecting messages (e.g. /reply and /redact), you can move the selection with ↑ and ↓ confirm with Enter.
+
+# Mouse
+
+    Click to select message (for commands such as /reply that act on a message)
+    Ctrl + click on image to open in your default image viewer (xdg-open)
+    Click on a username to insert a mention of that user into the composer`
+
 type HelpModal struct {
 	mauview.FocusableComponent
 	parent *MainView
 }
 
-func NewHelpModal(parent *MainView) *HelpModal {
+func NewHelpModal(parent *MainView, target string) *HelpModal {
+	helpText := mainHelpText
 	hm := &HelpModal{parent: parent}
+
+	switch target {
+	case "kb":
+		helpText = keyboardHelp
+	}
 
 	text := mauview.NewTextView().
 		SetText(helpText).

@@ -490,8 +490,24 @@ func cmdUnknownCommand(cmd *Command) {
 }
 
 func cmdHelp(cmd *Command) {
+	target := "main"
 	view := cmd.MainView
-	view.ShowModal(NewHelpModal(view))
+
+	if len(cmd.Args) > 1 {
+		switch cmd.Args[1] {
+		case "keybinds":
+			fallthrough
+		case "hotkeys":
+			fallthrough
+		case "kb":
+			target = "kb"
+		default:
+			cmd.Reply("That help target doesn't exist. (Try just /help)")
+			return
+		}
+	}
+
+	view.ShowModal(NewHelpModal(view, target))
 }
 
 func cmdLeave(cmd *Command) {
@@ -519,7 +535,7 @@ func cmdBan(cmd *Command) {
 		cmd.Reply("Usage: /ban <user> [reason]")
 		return
 	}
-	reason := "you are the weakest link, goodbye!"
+	reason := "cy@"
 	if len(cmd.Args) >= 2 {
 		reason = strings.Join(cmd.Args[1:], " ")
 	}

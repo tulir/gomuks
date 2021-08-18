@@ -178,6 +178,8 @@ func (view *MainView) OnKeyEvent(event mauview.KeyEvent) bool {
 			view.SwitchRoom(view.roomList.Next())
 		case k == tcell.KeyUp:
 			view.SwitchRoom(view.roomList.Previous())
+		case c == 'f' || k == tcell.KeyCtrlF:
+			fallthrough
 		case c == 'k' || k == tcell.KeyCtrlK:
 			view.ShowModal(NewFuzzySearchModal(view, 42, 12))
 		case k == tcell.KeyHome:

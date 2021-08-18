@@ -101,7 +101,7 @@ func NewConfig(configDir, dataDir, cacheDir, downloadDir string) *Config {
 		RoomCacheAge:  1 * 60,
 
 		NotifySound:        true,
-		SendToVerifiedOnly: false,
+		SendToVerifiedOnly: true,
 	}
 }
 
