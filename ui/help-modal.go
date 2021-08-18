@@ -23,6 +23,9 @@ const helpText = `# General
 /notice <message>    - Send a notice (generally used for bot messages).
 /rainbow <message>   - Send rainbow text.
 /rainbowme <message> - Send rainbow text in an emote.
+/ph <word> <word>    - Send text resembling the PornHub logo (/pornhub).
+/html <message>      - Send text that parses bare HTML
+           - Example: <b><font color="#FFFFFF" data-mx-bg-color="#000000">
 /reply [text]        - Reply to the selected message.
 /react <reaction>    - React to the selected message.
 /redact [reason]     - Redact the selected message.

@@ -113,6 +113,42 @@ func cmdRainbowMe(cmd *Command) {
 	makeRainbow(cmd, event.MsgEmote)
 }
 
+func makePornhub(cmd *Command, msgtype event.MessageType) {
+	if len(cmd.Args) != 2 {
+		cmd.Reply("Usage: /pornhub <word> <word>")
+		return
+	}
+	plainMessage := strings.Join(cmd.Args, " ")
+	htmlBody := htmlSanitize(fmt.Sprintf("<b><font color=\"#FFFFFF\" data-mx-bg-color=\"#000000\">%s</font><font color=\"#000000\" data-mx-bg-color=\"#FC7F00\">%s</font>", cmd.Args[0], cmd.Args[1]))
+	go cmd.Room.SendMessageHTML(msgtype, plainMessage, htmlBody)
+}
+
+func cmdPornhub(cmd *Command) {
+	makePornhub(cmd, event.MsgText)
+}
+
+func cmdPornhubMe(cmd *Command) {
+	makePornhub(cmd, event.MsgEmote)
+}
+
+func makeHtml(cmd *Command, msgtype event.MessageType) {
+	if len(cmd.Args) == 0 {
+		cmd.Reply("Usage: /html <message>")
+		return
+	}
+	htmlInput := strings.Join(cmd.Args, " ")
+	htmlBody := htmlSanitize(htmlInput)
+	go cmd.Room.SendMessageHTML(msgtype, htmlStrip(htmlInput), htmlBody)
+}
+
+func cmdHtml(cmd *Command) {
+	makeHtml(cmd, event.MsgText)
+}
+
+func cmdHtmlme(cmd *Command) {
+	makeHtml(cmd, event.MsgEmote)
+}
+
 func cmdNotice(cmd *Command) {
 	go cmd.Room.SendMessage(event.MsgNotice, strings.Join(cmd.Args, " "))
 }
