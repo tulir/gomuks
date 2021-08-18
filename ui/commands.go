@@ -490,8 +490,24 @@ func cmdUnknownCommand(cmd *Command) {
 }
 
 func cmdHelp(cmd *Command) {
+	target := "main"
 	view := cmd.MainView
-	view.ShowModal(NewHelpModal(view))
+
+	if len(cmd.Args) > 0 {
+		switch cmd.Args[0] {
+		case "keyboard":
+			fallthrough
+		case "shortcuts":
+			fallthrough
+		case "kb":
+			target = "kb"
+		default:
+			cmd.Reply("That help target doesn't exist. (Try just /help)")
+			return
+		}
+	}
+
+	view.ShowModal(NewHelpModal(view, target))
 }
 
 func cmdLeave(cmd *Command) {

@@ -16,3 +16,5 @@ func htmlStrip(input string) string {
 	p := bluemonday.StrictPolicy()
 	return p.Sanitize(input)
 }
+
+//func parseFormat(
