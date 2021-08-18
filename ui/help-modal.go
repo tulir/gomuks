@@ -6,32 +6,38 @@ import (
 	"maunium.net/go/mauview"
 )
 
-const mainHelpText = `# General
-/help           - Show this help dialog.
+const mainHelpText = `
+
+# General
+
+/help [kb]      - Show this help dialog. (/help [kb] to show keyboard shortcuts)
 /quit           - Quit gomuks.
 /clearcache     - Clear cache and quit gomuks.
 /logout         - Log out of Matrix.
 /toggle <thing> - Temporary command to toggle various UI features.
 
 # Media
+
 /download [path] - Downloads file from selected message.
 /open [path]     - Download file from selected message and open it with xdg-open.
 /upload <path>   - Upload the file at the given path to the current room.
 
 # Sending special messages
+
 /me <message>        - Send an emote message.
 /notice <message>    - Send a notice (generally used for bot messages).
 /rainbow <message>   - Send rainbow text.
 /rainbowme <message> - Send rainbow text in an emote.
 /ph <word> <word>    - Send text resembling the PornHub logo (/pornhub).
 /html[me] <message>  - Send html[in emote] allowing colored chats that work in Element.
-           - Example: <b><font color="#FFFFFF" data-mx-bg-color="#000000">black
+            + Example: <b><font color="#FFFFFF" data-mx-bg-color="#000000">black
 /reply [text]        - Reply to the selected message.
 /react <reaction>    - React to the selected message.
 /redact [reason]     - Redact the selected message.
 /edit                - Edit the selected message.
 
 # Encryption
+
 /fingerprint - View the fingerprint of your device.
 /cross-signing - Sub commands related to encryption key cross-signing.
 
@@ -50,6 +56,7 @@ const mainHelpText = `# General
 /export-room <file> - Export encryption keys for the current room.
 
 # Rooms
+
 /pm <user id> <...>   - Create a private chat with the given user(s).
 /create [room name]   - Create a room.
 
@@ -69,29 +76,60 @@ const mainHelpText = `# General
 /ban    <user id> [reason] - Ban a user.
 /unban  <user id>          - Unban a user.`
 
-const keyboardHelp = `# Shortuts
-Ctrl and Alt are interchangeable in most keybindings,
-but the other one may not work depending on your terminal emulator.
+const keyboardHelp = `NOTE: Ctrl and Alt are interchangeable in most keybindings,
+      this may change based on your terminal emulator.
 
-    Switch rooms: Ctrl + ↑, Ctrl + ↓
-    Scroll chat (page): PgUp, PgDown
-    Jump to room: Ctrl + K, type part of a room's name, then Tab and Enter to navigate and select room
-    Plaintext mode: Ctrl + L
-    Newline: Alt + Enter
-    Autocompletion: Tab (emojis, usernames, room aliases and commands)
 
-# Editing messages
+## Navigation
 
-↑ and ↓ can be used at the start and end of the input area to jump to edit the previous or next message respectively.
-Selecting messages
+ # By Movement
 
-After using commands that require selecting messages (e.g. /reply and /redact), you can move the selection with ↑ and ↓ confirm with Enter.
+Ctrl +    ↑|↓       - Navigate through rooms.
 
-# Mouse
+Ctrl + PgUp|PgDown  - Scroll through current room.
 
-    Click to select message (for commands such as /reply that act on a message)
-    Ctrl + click on image to open in your default image viewer (xdg-open)
-    Click on a username to insert a mention of that user into the composer`
+ # By Search
+
+1) Ctrl + [K]      - Open a fuzzy finder to locate rooms by typing.
+        |  ≍
+        ╰▹[F]
+
+2) [TAB]⮆ [Enter]  - Use tab to navigate selections, enter to select.
+
+
+
+## Editing messages
+
+Your arrow keys (↑ and ↓) may be used for editing previous messages.
+
+ A) While your cursor is positioned the beginning of a new composer;
+  ╰▶ press [↑] arrow to edit your previous message.
+
+ B) While your cursor is positioned at the end of an editing composer;
+  ╰▶ press [↓] arrow to edit a new message.
+
+## Selecting messages
+
+After using commands that require selecting messages (e.g. /reply and /redact);
+navigate the selections with ↑ and ↓ and press Enter to confirm.
+
+(++) TAB will autocomplete man different items.
+     (e.g: emojis, usernames, room aliases, commands, files)
+
+
+## Mouse
+
+ * Selecting messages can be done by mouse click (for commands such as /reply)
+
+ * Using Ctrl + click on an image will open it in your default image viewer (xdg-open)
+
+ * Clicking on a username will insert a mention of that user into the composer
+
+
+## General
+
+Ctrl + L           - Switch to plaintext view for easy copy+paste.
+Alt  + Enter       - Start a newline in your current message.`
 
 type HelpModal struct {
 	mauview.FocusableComponent
@@ -115,7 +153,7 @@ func NewHelpModal(parent *MainView, target string) *HelpModal {
 
 	box := mauview.NewBox(text).
 		SetBorder(true).
-		SetTitle("Help").
+		SetTitle("(F1)Help - (k)eyboard shortcuts - (q)uit").
 		SetBlurCaptureFunc(func() bool {
 			hm.parent.HideModal()
 			return true
@@ -128,8 +166,22 @@ func NewHelpModal(parent *MainView, target string) *HelpModal {
 }
 
 func (hm *HelpModal) OnKeyEvent(event mauview.KeyEvent) bool {
-	if event.Key() == tcell.KeyEscape || event.Rune() == 'q' {
+	k := event.Key()
+	c := event.Rune()
+
+	switch {
+	case k == tcell.KeyEscape:
+		fallthrough
+	case c == 'q':
 		hm.parent.HideModal()
+		return true
+	case c == 'k':
+		hm.parent.HideModal()
+		hm.parent.ShowModal(NewHelpModal(hm.parent, "kb"))
+		return true
+	case k == tcell.KeyF1:
+		hm.parent.HideModal()
+		hm.parent.ShowModal(NewHelpModal(hm.parent, "main"))
 		return true
 	}
 	return hm.FocusableComponent.OnKeyEvent(event)

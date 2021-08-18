@@ -128,7 +128,7 @@ func (c *Container) InitClient() error {
 	if c.history == nil {
 		c.history, err = NewHistoryManager(c.config.HistoryPath)
 		if err != nil {
-			return fmt.Errorf("failed to initialize history: %w", err)
+			return fmt.Errorf("failed to initialize history: %w\nis gomuks already running?", err)
 		}
 	}
 

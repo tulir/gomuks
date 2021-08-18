@@ -172,6 +172,12 @@ func (view *MainView) OnKeyEvent(event mauview.KeyEvent) bool {
 
 	k := event.Key()
 	c := event.Rune()
+
+	if k == tcell.KeyF1 {
+		view.ShowModal(NewHelpModal(view, "main"))
+		return true
+	}
+
 	if event.Modifiers() == tcell.ModCtrl || event.Modifiers() == tcell.ModAlt {
 		switch {
 		case k == tcell.KeyDown:

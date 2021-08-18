@@ -493,11 +493,11 @@ func cmdHelp(cmd *Command) {
 	target := "main"
 	view := cmd.MainView
 
-	if len(cmd.Args) > 1 {
-		switch cmd.Args[1] {
-		case "keybinds":
+	if len(cmd.Args) > 0 {
+		switch cmd.Args[0] {
+		case "keyboard":
 			fallthrough
-		case "hotkeys":
+		case "shortcuts":
 			fallthrough
 		case "kb":
 			target = "kb"
