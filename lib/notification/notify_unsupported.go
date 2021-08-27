@@ -1,3 +1,4 @@
+//go:build !linux && !darwin && !windows && !openbsd
 // +build !linux,!darwin,!windows,!openbsd
 
 // gomuks - A terminal Matrix client written in Go.
