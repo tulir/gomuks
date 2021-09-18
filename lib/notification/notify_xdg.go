@@ -1,3 +1,5 @@
+// +build !windows,!darwin
+
 // gomuks - A terminal Matrix client written in Go.
 // Copyright (C) 2020 Tulir Asokan
 //
@@ -27,6 +29,12 @@ func Send(title, text string, critical, sound bool) error {
 	// 		args = append(args, "-i", iconPath)
 	// 	}
 	args = append(args, title, text)
-
+	if sound {
+		soundName := "message-new-instant"
+		if critical {
+			soundName = "complete"
+		}
+		exec.Command("ogg123", "/usr/share/sounds/freedesktop/stereo/"+soundName+".oga").Run()
+	}
 	return exec.Command("notify-send", args...).Run()
 }
