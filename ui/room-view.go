@@ -39,6 +39,7 @@ import (
 	"maunium.net/go/gomuks/debug"
 	"maunium.net/go/gomuks/interface"
 	"maunium.net/go/gomuks/lib/open"
+	"maunium.net/go/gomuks/lib/edit"
 	"maunium.net/go/gomuks/lib/util"
 	"maunium.net/go/gomuks/matrix/muksevt"
 	"maunium.net/go/gomuks/matrix/rooms"
@@ -374,6 +375,9 @@ func (view *RoomView) OnKeyEvent(event mauview.KeyEvent) bool {
 			view.InputSubmit(view.input.GetText())
 			return true
 		}
+	case tcell.KeyCtrlE:
+		view.InputSubmit(edit.GetText(view.input.GetText()))
+		return true
 	}
 	return view.input.OnKeyEvent(event)
 }
