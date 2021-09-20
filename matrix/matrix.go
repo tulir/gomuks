@@ -427,6 +427,7 @@ func (c *Container) Start() {
 
 	debug.Print("Starting sync...")
 	c.running = true
+	c.client.StreamSyncMinAge = 30 * time.Minute
 	for {
 		select {
 		case <-c.stop:
