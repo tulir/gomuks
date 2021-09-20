@@ -20,6 +20,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -128,7 +129,7 @@ func UserDataDir() (dir string, err error) {
 	if dir == "" {
 		dir = os.Getenv("HOME")
 		if dir == "" {
-			return "", errors.New("neither $XDG_CACHE_HOME nor $HOME are defined")
+			return "", errors.New("neither $XDG_DATA_HOME nor $HOME are defined")
 		}
 		dir = filepath.Join(dir, ".local", "share")
 	}
@@ -136,7 +137,24 @@ func UserDataDir() (dir string, err error) {
 	return
 }
 
+func getXDGUserDir(name string) (dir string, err error) {
+	cmd := exec.Command("xdg-user-dir", name)
+	var out strings.Builder
+	cmd.Stdout = &out
+	err = cmd.Run()
+	dir = strings.TrimSpace(out.String())
+	return
+}
+
 func UserDownloadDir() (dir string, err error) {
+	dir = os.Getenv("GOMUKS_DOWNLOAD_HOME")
+	if dir != "" {
+		return
+	}
+	dir, _ = getXDGUserDir("DOWNLOAD")
+	if dir != "" {
+		return
+	}
 	dir, err = os.UserHomeDir()
 	dir = filepath.Join(dir, "Downloads")
 	return
