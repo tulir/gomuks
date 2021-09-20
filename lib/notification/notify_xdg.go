@@ -23,8 +23,9 @@ import (
 	"os/exec"
 )
 
+var notifySendPath string
 var audioCommand string
-var tryAudioCommands = []string{"paplay", "ogg123"}
+var tryAudioCommands = []string{"ogg123", "paplay"}
 var soundNormal = "/usr/share/sounds/freedesktop/stereo/message-new-instant.oga"
 var soundCritical = "/usr/share/sounds/freedesktop/stereo/complete.oga"
 
@@ -43,6 +44,11 @@ func getSoundPath(env, defaultPath string) string {
 
 func init() {
 	var err error
+
+	if notifySendPath, err = exec.LookPath("notify-send"); err != nil {
+		return
+	}
+
 	for _, cmd := range tryAudioCommands {
 		if audioCommand, err = exec.LookPath(cmd); err == nil {
 			break
@@ -53,6 +59,10 @@ func init() {
 }
 
 func Send(title, text string, critical, sound bool) error {
+	if len(notifySendPath) == 0 {
+		return nil
+	}
+
 	args := []string{"-a", "gomuks"}
 	if !critical {
 		args = append(args, "-u", "low")
@@ -68,5 +78,5 @@ func Send(title, text string, critical, sound bool) error {
 		}
 		_ = exec.Command(audioCommand, audioFile).Run()
 	}
-	return exec.Command("notify-send", args...).Run()
+	return exec.Command(notifySendPath, args...).Run()
 }
