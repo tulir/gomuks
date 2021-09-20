@@ -18,23 +18,55 @@
 
 package notification
 
-import "os/exec"
+import (
+	"os"
+	"os/exec"
+)
+
+var audioCommand string
+var tryAudioCommands = []string{"paplay", "ogg123"}
+var soundNormal = "/usr/share/sounds/freedesktop/stereo/message-new-instant.oga"
+var soundCritical = "/usr/share/sounds/freedesktop/stereo/complete.oga"
+
+func getSoundPath(env, defaultPath string) string {
+	if path, ok := os.LookupEnv(env); ok {
+		// Sound file overriden by environment
+		return path
+	} else if _, err := os.Stat(defaultPath); os.IsNotExist(err) {
+		// Sound file doesn't exist, disable it
+		return ""
+	} else {
+		// Default sound file exists and wasn't overridden by environment
+		return defaultPath
+	}
+}
+
+func init() {
+	var err error
+	for _, cmd := range tryAudioCommands {
+		if audioCommand, err = exec.LookPath(cmd); err == nil {
+			break
+		}
+	}
+	soundNormal = getSoundPath("GOMUKS_SOUND_NORMAL", soundNormal)
+	soundCritical = getSoundPath("GOMUKS_SOUND_CRITICAL", soundCritical)
+}
 
 func Send(title, text string, critical, sound bool) error {
 	args := []string{"-a", "gomuks"}
 	if !critical {
 		args = append(args, "-u", "low")
 	}
-	// 	if iconPath {
-	// 		args = append(args, "-i", iconPath)
-	// 	}
+	//if iconPath {
+	//	args = append(args, "-i", iconPath)
+	//}
 	args = append(args, title, text)
-	if sound {
-		soundName := "message-new-instant"
-		if critical {
-			soundName = "complete"
+	if sound && len(audioCommand) > 0 && len(soundNormal) > 0 {
+		audioFile := soundNormal
+		if critical && len(soundCritical) > 0 {
+			audioFile = soundCritical
 		}
-		exec.Command("ogg123", "/usr/share/sounds/freedesktop/stereo/"+soundName+".oga").Run()
+		_ = exec.Command(audioCommand, audioFile).Run()
 	}
 	return exec.Command("notify-send", args...).Run()
 }
