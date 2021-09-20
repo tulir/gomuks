@@ -43,6 +43,7 @@ type AuthCache struct {
 type UserPreferences struct {
 	HideUserList         bool `yaml:"hide_user_list"`
 	HideRoomList         bool `yaml:"hide_room_list"`
+	HideTimeStamp        bool `yaml:"hide_time_stamp"`
 	BareMessageView      bool `yaml:"bare_message_view"`
 	DisableImages        bool `yaml:"disable_images"`
 	DisableTypingNotifs  bool `yaml:"disable_typing_notifs"`
