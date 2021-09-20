@@ -76,7 +76,9 @@ func Send(title, text string, critical, sound bool) error {
 		if critical && len(soundCritical) > 0 {
 			audioFile = soundCritical
 		}
-		_ = exec.Command(audioCommand, audioFile).Run()
+		go func() {
+			_ = exec.Command(audioCommand, audioFile).Run()
+		}()
 	}
 	return exec.Command(notifySendPath, args...).Run()
 }
