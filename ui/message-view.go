@@ -160,10 +160,9 @@ func (view *MessageView) AddMessage(ifcMessage ifc.Message, direction MessageDir
 	width := view.width()
 	bare := view.config.Preferences.BareMessageView
 	if !bare {
-		if view.config.Preferences.HideTimeStamp {
-			width -= TimestampSenderGap + view.widestSender() + SenderMessageGap
-		} else {
-			width -= view.TimestampWidth + TimestampSenderGap + view.widestSender() + SenderMessageGap
+		width -= view.widestSender() + SenderMessageGap
+		if !view.config.Preferences.HideTimestamp {
+			width -= view.TimestampWidth + TimestampSenderGap
 		}
 	}
 	message.CalculateBuffer(view.config.Preferences, width)
@@ -327,10 +326,9 @@ func (view *MessageView) recalculateBuffers() {
 	if recalculateMessageBuffers || len(view.messages) != view.prevMsgCount {
 		width := view.width()
 		if !prefs.BareMessageView {
-			if prefs.HideTimeStamp {
-				width -= TimestampSenderGap + view.widestSender() + SenderMessageGap
-			} else {
-				width -= view.TimestampWidth + TimestampSenderGap + view.widestSender() + SenderMessageGap
+			width -= view.widestSender() + SenderMessageGap
+			if !prefs.HideTimestamp {
+				width -= view.TimestampWidth + TimestampSenderGap
 			}
 		}
 		view.msgBuffer = []*messages.UIMessage{}
@@ -443,9 +441,9 @@ func (view *MessageView) OnMouseEvent(event mauview.MouseEvent) bool {
 		}
 		view.msgBufferLock.RUnlock()
 
-		usernameX := view.TimestampWidth + TimestampSenderGap
-		if !view.config.Preferences.HideTimeStamp {
-			usernameX = TimestampSenderGap
+		usernameX := 0
+		if !view.config.Preferences.HideTimestamp {
+			usernameX += view.TimestampWidth + TimestampSenderGap
 		}
 		messageX := usernameX + view.widestSender() + SenderMessageGap
 
@@ -612,9 +610,9 @@ func (view *MessageView) Draw(screen mauview.Screen) {
 		return
 	}
 
-	usernameX := view.TimestampWidth + TimestampSenderGap
-	if view.config.Preferences.HideTimeStamp {
-		usernameX = TimestampSenderGap
+	usernameX := 0
+	if !view.config.Preferences.HideTimestamp {
+		usernameX += view.TimestampWidth + TimestampSenderGap
 	}
 	messageX := usernameX + view.widestSender() + SenderMessageGap
 
@@ -657,7 +655,7 @@ func (view *MessageView) Draw(screen mauview.Screen) {
 			continue
 		}
 
-		if len(msg.FormatTime()) > 0 && !view.config.Preferences.HideTimeStamp {
+		if len(msg.FormatTime()) > 0 && !view.config.Preferences.HideTimestamp {
 			widget.WriteLineSimpleColor(screen, msg.FormatTime(), 0, line, msg.TimestampColor())
 		}
 		// TODO hiding senders might not be that nice after all, maybe an option? (disabled for now)
