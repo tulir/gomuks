@@ -146,8 +146,8 @@ gopkg.in/yaml.v3 v3.0.0-20200313102051-9f266ea9e77c h1:dUUwHk2QECo/6vqA44rthZ8ie
 gopkg.in/yaml.v3 v3.0.0-20200313102051-9f266ea9e77c/go.mod h1:K4uyk7z7BCEPqu6E+C64Yfv1cQ7kz7rIZviUmN+EgEM=
 maunium.net/go/maulogger/v2 v2.2.4 h1:oV2GDeM4fx1uRysdpDC0FcrPg+thFicSd9XzPcYMbVY=
 maunium.net/go/maulogger/v2 v2.2.4/go.mod h1:TYWy7wKwz/tIXTpsx8G3mZseIRiC5DoMxSZazOHy68A=
-maunium.net/go/mautrix v0.9.25 h1:JBu7EtT2rpzePFDpow7jrvjIAOJ0u9MXkRn0Y998Tjw=
-maunium.net/go/mautrix v0.9.25/go.mod h1:7IzKfWvpQtN+W2Lzxc0rLvIxFM3ryKX6Ys3S/ZoWbg8=
+maunium.net/go/mautrix v0.9.26 h1:WQ8Voygilj+yVh1K7YFMmZ647zeoXy3houhWUmtCsfs=
+maunium.net/go/mautrix v0.9.26/go.mod h1:7IzKfWvpQtN+W2Lzxc0rLvIxFM3ryKX6Ys3S/ZoWbg8=
 maunium.net/go/mauview v0.1.2 h1:6Y3GpyckIlzCNkry6k025YhWg8oh5XJFj3RAMf4VwWo=
 maunium.net/go/mauview v0.1.2/go.mod h1:3QBUiuLct9moP1LgDhCGIg0Ovxn38Bd2sGndnUOuj4o=
 maunium.net/go/tcell v0.2.0 h1:1Q0kN3wCOGAIGu1r3QHADsjSUOPDylKREvCv3EzJpVg=
