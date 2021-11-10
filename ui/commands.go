@@ -517,7 +517,7 @@ func cmdBan(cmd *Command) {
 		cmd.Reply("Usage: /ban <user> [reason]")
 		return
 	}
-	reason := "you are the weakest link, goodbye!"
+	reason := "cy@"
 	if len(cmd.Args) >= 2 {
 		reason = strings.Join(cmd.Args[1:], " ")
 	}

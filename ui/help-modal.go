@@ -29,9 +29,10 @@ const mainHelpText = `
 /rainbow <message>   - Send rainbow text.
 /rainbowme <message> - Send rainbow text in an emote.
 
-/html <message>      - Allow the use of HTML font tag for Element compatible colored text.
-/htmlme <message>    - Allow the use of HTML font tag in an emote.
    e.g: '/html <font color="#FFF" data-mx-bg-color="#000">white on black</font>'
+/ph <word> <word>    - Send text resembling the PornHub logo (/pornhub).
+/html[me] <message>  - Send html[in emote] allowing colored chats that work in Element.
+            + Example: <b><font color="#FFFFFF" data-mx-bg-color="#000000">black
 
 /reply [text]        - Reply to the selected message.
 /react <reaction>    - React to the selected message.
@@ -84,14 +85,14 @@ const mainHelpText = `
 const keyboardHelp = `NOTE: Ctrl and Alt are interchangeable in most keybindings,
       this may change based on your terminal emulator.
 
-##
+
 ## Navigation
-##
+
+ # By Movement
 
 Ctrl +    ↑|↓       - Navigate through rooms.
 
 Ctrl + PgUp|PgDown  - Scroll through current room.
-
 
 ##  By Search:
 
@@ -101,10 +102,8 @@ Ctrl + PgUp|PgDown  - Scroll through current room.
 
 2) [TAB]⮆ [Enter]  - Use tab to navigate selections, enter to select.
 
-
-##
 ## Editing messages
-##
+
 Your arrow keys (↑ and ↓) may be used for editing previous messages.
 
  A) While your cursor is positioned the beginning of a new composer;
@@ -113,7 +112,6 @@ Your arrow keys (↑ and ↓) may be used for editing previous messages.
  B) While your cursor is positioned at the end of an editing composer;
   ╰▶ press [↓] arrow to edit a new message.
 
-
 ## Selecting messages
 
 After using commands that require selecting messages (e.g. /reply and /redact);
@@ -121,7 +119,6 @@ navigate the selections with ↑ and ↓ and press Enter to confirm.
 
 (++) TAB will autocomplete man different items.
      (e.g: emojis, usernames, room aliases, commands, files)
-
 
 ## Mouse
 
