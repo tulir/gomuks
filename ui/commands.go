@@ -737,6 +737,7 @@ func (nkm NewlineKeybindMessage) Name() string {
 var toggleMsg = map[string]ToggleMessage{
 	"rooms":         HideMessage("Room list sidebar"),
 	"users":         HideMessage("User list sidebar"),
+	"timestamps":    HideMessage("message timestamps"),
 	"baremessages":  SimpleToggleMessage("bare message view"),
 	"images":        SimpleToggleMessage("image rendering"),
 	"typingnotif":   SimpleToggleMessage("typing notifications"),
@@ -772,6 +773,8 @@ func cmdToggle(cmd *Command) {
 			val = &cmd.Config.Preferences.HideRoomList
 		case "users":
 			val = &cmd.Config.Preferences.HideUserList
+		case "timestamps":
+			val = &cmd.Config.Preferences.HideTimestamp
 		case "baremessages":
 			val = &cmd.Config.Preferences.BareMessageView
 		case "images":

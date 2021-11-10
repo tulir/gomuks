@@ -160,7 +160,10 @@ func (view *MessageView) AddMessage(ifcMessage ifc.Message, direction MessageDir
 	width := view.width()
 	bare := view.config.Preferences.BareMessageView
 	if !bare {
-		width -= view.TimestampWidth + TimestampSenderGap + view.widestSender() + SenderMessageGap
+		width -= view.widestSender() + SenderMessageGap
+		if !view.config.Preferences.HideTimestamp {
+			width -= view.TimestampWidth + TimestampSenderGap
+		}
 	}
 	message.CalculateBuffer(view.config.Preferences, width)
 
@@ -323,7 +326,10 @@ func (view *MessageView) recalculateBuffers() {
 	if recalculateMessageBuffers || len(view.messages) != view.prevMsgCount {
 		width := view.width()
 		if !prefs.BareMessageView {
-			width -= view.TimestampWidth + TimestampSenderGap + view.widestSender() + SenderMessageGap
+			width -= view.widestSender() + SenderMessageGap
+			if !prefs.HideTimestamp {
+				width -= view.TimestampWidth + TimestampSenderGap
+			}
 		}
 		view.msgBuffer = []*messages.UIMessage{}
 		view.prevMsgCount = 0
@@ -435,7 +441,10 @@ func (view *MessageView) OnMouseEvent(event mauview.MouseEvent) bool {
 		}
 		view.msgBufferLock.RUnlock()
 
-		usernameX := view.TimestampWidth + TimestampSenderGap
+		usernameX := 0
+		if !view.config.Preferences.HideTimestamp {
+			usernameX += view.TimestampWidth + TimestampSenderGap
+		}
 		messageX := usernameX + view.widestSender() + SenderMessageGap
 
 		if x >= messageX {
@@ -601,7 +610,10 @@ func (view *MessageView) Draw(screen mauview.Screen) {
 		return
 	}
 
-	usernameX := view.TimestampWidth + TimestampSenderGap
+	usernameX := 0
+	if !view.config.Preferences.HideTimestamp {
+		usernameX += view.TimestampWidth + TimestampSenderGap
+	}
 	messageX := usernameX + view.widestSender() + SenderMessageGap
 
 	bareMode := view.config.Preferences.BareMessageView
@@ -643,7 +655,7 @@ func (view *MessageView) Draw(screen mauview.Screen) {
 			continue
 		}
 
-		if len(msg.FormatTime()) > 0 {
+		if len(msg.FormatTime()) > 0 && !view.config.Preferences.HideTimestamp {
 			widget.WriteLineSimpleColor(screen, msg.FormatTime(), 0, line, msg.TimestampColor())
 		}
 		// TODO hiding senders might not be that nice after all, maybe an option? (disabled for now)

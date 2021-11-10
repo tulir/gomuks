@@ -19,20 +19,23 @@ package notification
 import (
 	"fmt"
 	"os/exec"
-	"strings"
 )
 
-var TerminalNotifierAvailable = false
+var terminalNotifierAvailable = false
 
 func init() {
 	if err := exec.Command("which", "terminal-notifier").Run(); err != nil {
-		TerminalNotifierAvailable = false
+		terminalNotifierAvailable = false
 	}
-	TerminalNotifierAvailable = true
+	terminalNotifierAvailable = true
 }
 
+const sendScript = `on run {notifText, notifTitle}
+	display notification notifText with title "gomuks" subtitle notifTitle
+end run`
+
 func Send(title, text string, critical, sound bool) error {
-	if TerminalNotifierAvailable {
+	if terminalNotifierAvailable {
 		args := []string{"-title", "gomuks", "-subtitle", title, "-message", text}
 		if critical {
 			args = append(args, "-timeout", "15")
@@ -42,13 +45,21 @@ func Send(title, text string, critical, sound bool) error {
 		if sound {
 			args = append(args, "-sound", "default")
 		}
-		// 		if len(iconPath) > 0 {
-		// 			args = append(args, "-appIcon", iconPath)
-		// 		}
+		//if len(iconPath) > 0 {
+		//	args = append(args, "-appIcon", iconPath)
+		//}
 		return exec.Command("terminal-notifier", args...).Run()
 	}
-	title = strings.Replace(title, `"`, `\"`, -1)
-	text = strings.Replace(text, `"`, `\"`, -1)
-	notification := fmt.Sprintf("display notification \"%s\" with title \"gomuks\" subtitle \"%s\"", text, title)
-	return exec.Command("osascript", "-e", notification).Run()
+	cmd := exec.Command("osascript", "-", text, title)
+	if stdin, err := cmd.StdinPipe(); err != nil {
+		return fmt.Errorf("failed to get stdin pipe for osascript: %w", err)
+	} else if _, err = stdin.Write([]byte(sendScript)); err != nil {
+		return fmt.Errorf("failed to write notification script to osascript: %w", err)
+	} else if err = cmd.Run(); err != nil {
+		return fmt.Errorf("failed to run notification script: %w", err)
+	} else if !cmd.ProcessState.Success() {
+		return fmt.Errorf("notification script exited unsuccessfully")
+	} else {
+		return nil
+	}
 }

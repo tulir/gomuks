@@ -162,7 +162,8 @@ func (c *Container) PasswordLogin(user, password string) error {
 		Password:                 password,
 		InitialDeviceDisplayName: "gomuks",
 
-		StoreCredentials: true,
+		StoreCredentials:   true,
+		StoreHomeserverURL: true,
 	})
 	if err != nil {
 		return err
@@ -175,6 +176,9 @@ func (c *Container) finishLogin(resp *mautrix.RespLogin) {
 	c.config.UserID = resp.UserID
 	c.config.DeviceID = resp.DeviceID
 	c.config.AccessToken = resp.AccessToken
+	if resp.WellKnown != nil && len(resp.WellKnown.Homeserver.BaseURL) > 0 {
+		c.config.HS = resp.WellKnown.Homeserver.BaseURL
+	}
 	c.config.Save()
 
 	go c.Start()
@@ -218,7 +222,8 @@ func (c *Container) SingleSignOn() error {
 			Token:                    loginToken,
 			InitialDeviceDisplayName: "gomuks",
 
-			StoreCredentials: true,
+			StoreCredentials:   true,
+			StoreHomeserverURL: true,
 		})
 		if err != nil {
 			respondHTML(w, http.StatusForbidden, err.Error())
@@ -422,6 +427,7 @@ func (c *Container) Start() {
 
 	debug.Print("Starting sync...")
 	c.running = true
+	c.client.StreamSyncMinAge = 30 * time.Minute
 	for {
 		select {
 		case <-c.stop:
