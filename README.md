@@ -5,7 +5,7 @@
 [![GitLab CI](https://mau.dev/tulir/gomuks/badges/master/pipeline.svg)](https://mau.dev/tulir/gomuks/pipelines)
 [![Maintainability](https://img.shields.io/codeclimate/maintainability/tulir/gomuks.svg)](https://codeclimate.com/github/tulir/gomuks)
 
-![Chat Preview](chat-preview.png)
+![Chat Preview](https://tcp.ac/i/aiKJ3)
 
 A terminal Matrix client written in Go using [mautrix](https://github.com/tulir/mautrix-go) and [mauview](https://github.com/tulir/mauview).
 
