@@ -69,6 +69,9 @@ type Config struct {
 	NotifySound        bool `yaml:"notify_sound"`
 	SendToVerifiedOnly bool `yaml:"send_to_verified_only"`
 
+	Backspace1RemovesWord bool `yaml:"backspace1_removes_word"`
+	Backspace2RemovesWord bool `yaml:"backspace2_removes_word"`
+
 	Dir          string `yaml:"-"`
 	DataDir      string `yaml:"data_dir"`
 	CacheDir     string `yaml:"cache_dir"`
@@ -101,8 +104,9 @@ func NewConfig(configDir, dataDir, cacheDir, downloadDir string) *Config {
 		RoomCacheSize: 32,
 		RoomCacheAge:  1 * 60,
 
-		NotifySound:        true,
-		SendToVerifiedOnly: false,
+		NotifySound:           true,
+		SendToVerifiedOnly:    false,
+		Backspace1RemovesWord: true,
 	}
 }
 
