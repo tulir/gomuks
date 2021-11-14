@@ -38,6 +38,9 @@ import (
 	"maunium.net/go/gomuks/matrix/rooms"
 	"maunium.net/go/gomuks/ui/widget"
 	"maunium.net/go/mautrix/pushrules"
+
+	"gitlab.com/tslocum/cbind"
+	tcell_v2 "github.com/gdamore/tcell/v2"
 )
 
 type MainView struct {
@@ -163,11 +166,36 @@ func (view *MainView) OpenSyncingModal() ifc.SyncingModal {
 	return modal
 }
 
+func (view *MainView) PreviousRoomCallback() {
+	view.SwitchRoom(view.roomList.Previous())
+}
+
+func (view *MainView) NextRoomCallback() {
+	view.SwitchRoom(view.roomList.Next())
+}
+
 func (view *MainView) OnKeyEvent(event mauview.KeyEvent) bool {
 	view.BumpFocus(view.currentRoom)
 
 	if view.modal != nil {
 		return view.modal.OnKeyEvent(event)
+	}
+
+	key_map := map[string]func() {
+		"Ctrl+P": view.PreviousRoomCallback,
+		"Ctrl+N": view.NextRoomCallback,
+	}
+
+	key_string, _ := cbind.Encode(
+		tcell_v2.ModMask(event.Modifiers()),
+		tcell_v2.Key(event.Key()),
+		event.Rune())
+
+	callback, _ := key_map[key_string]
+
+	if callback != nil {
+		callback()
+		return true
 	}
 
 	k := event.Key()
