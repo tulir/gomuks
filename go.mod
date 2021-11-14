@@ -6,6 +6,7 @@ require (
 	github.com/alecthomas/chroma v0.8.2
 	github.com/disintegration/imaging v1.6.2
 	github.com/gabriel-vasile/mimetype v1.2.0
+	github.com/gdamore/tcell/v2 v2.0.0-dev
 	github.com/kyokomi/emoji/v2 v2.2.8
 	github.com/lithammer/fuzzysearch v1.1.1
 	github.com/lucasb-eyer/go-colorful v1.2.0
@@ -17,6 +18,7 @@ require (
 	github.com/russross/blackfriday/v2 v2.1.0
 	github.com/sasha-s/go-deadlock v0.2.0
 	github.com/zyedidia/clipboard v1.0.3
+	gitlab.com/tslocum/cbind v0.1.2
 	go.etcd.io/bbolt v1.3.5
 	golang.org/x/image v0.0.0-20210220032944-ac19c3e999fb
 	golang.org/x/net v0.0.0-20211020060615-d418f374d309
