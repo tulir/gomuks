@@ -56,6 +56,10 @@ type UserPreferences struct {
 	AltEnterToSend       bool `yaml:"alt_enter_to_send"`
 }
 
+type Keybindings struct {
+	Keybindings map[string]string `yaml:"keybindings,omitempty"`
+}
+
 // Config contains the main config of gomuks.
 type Config struct {
 	UserID      id.UserID   `yaml:"mxid"`
@@ -85,6 +89,7 @@ type Config struct {
 	AuthCache   AuthCache              `yaml:"-"`
 	Rooms       *rooms.RoomCache       `yaml:"-"`
 	PushRules   *pushrules.PushRuleset `yaml:"-"`
+	Keybindings Keybindings			   `yaml:"-"`
 
 	nosave bool
 }
@@ -152,6 +157,7 @@ func (config *Config) LoadAll() {
 	config.LoadAuthCache()
 	config.LoadPushRules()
 	config.LoadPreferences()
+	config.LoadKeybindings()
 	err := config.Rooms.LoadList()
 	if err != nil {
 		panic(err)
@@ -187,6 +193,14 @@ func (config *Config) LoadPreferences() {
 
 func (config *Config) SavePreferences() {
 	config.save("user preferences", config.CacheDir, "preferences.yaml", &config.Preferences)
+}
+
+func (config *Config) LoadKeybindings() {
+	config.load("keybindings", config.Dir, "keybindings.yaml", &config.Keybindings)
+}
+
+func (config *Config) SaveKeybindings() {
+	config.save("keybindings", config.Dir, "keybindings.yaml", &config.Keybindings)
 }
 
 func (config *Config) LoadAuthCache() {
