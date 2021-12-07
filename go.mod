@@ -9,7 +9,7 @@ require (
 	github.com/kyokomi/emoji/v2 v2.2.8
 	github.com/lithammer/fuzzysearch v1.1.1
 	github.com/lucasb-eyer/go-colorful v1.2.0
-	github.com/mattn/go-runewidth v0.0.9
+	github.com/mattn/go-runewidth v0.0.13
 	github.com/mattn/go-sqlite3 v1.14.9
 	github.com/nu7hatch/gouuid v0.0.0-20131221200532-179d4d0c4d8d // indirect
 	github.com/petermattis/goid v0.0.0-20180202154549-b0b1615b78e5 // indirect
@@ -24,6 +24,6 @@ require (
 	gopkg.in/vansante/go-ffprobe.v2 v2.0.2
 	gopkg.in/yaml.v2 v2.4.0
 	maunium.net/go/mautrix v0.10.1
-	maunium.net/go/mauview v0.1.3
+	maunium.net/go/mauview v0.1.4-0.20211207121125-01ffaf935896
 	maunium.net/go/tcell v0.2.0
 )
