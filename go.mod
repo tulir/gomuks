@@ -3,6 +3,7 @@ module maunium.net/go/gomuks
 go 1.14
 
 require (
+	github.com/3nprob/cbind v0.0.0-20211207125121-3a585abdeddb
 	github.com/alecthomas/chroma v0.8.2
 	github.com/disintegration/imaging v1.6.2
 	github.com/gabriel-vasile/mimetype v1.2.0
