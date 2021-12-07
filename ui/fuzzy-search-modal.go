@@ -27,6 +27,7 @@ import (
 	"maunium.net/go/mauview"
 	"maunium.net/go/tcell"
 
+	"maunium.net/go/gomuks/config"
 	"maunium.net/go/gomuks/debug"
 	"maunium.net/go/gomuks/matrix/rooms"
 )
@@ -120,12 +121,17 @@ func (fs *FuzzySearchModal) changeHandler(str string) {
 
 func (fs *FuzzySearchModal) OnKeyEvent(event mauview.KeyEvent) bool {
 	highlights := fs.results.GetHighlights()
-	switch event.Key() {
-	case tcell.KeyEsc:
+	kb := config.Keybind{
+		Key: event.Key(),
+		Ch:  event.Rune(),
+		Mod: event.Modifiers(),
+	}
+	switch fs.parent.config.Keybindings.Modal[kb] {
+	case "cancel":
 		// Close room finder
 		fs.parent.HideModal()
 		return true
-	case tcell.KeyTab:
+	case "select_next":
 		// Cycle highlighted area to next match
 		if len(highlights) > 0 {
 			fs.selected = (fs.selected + 1) % len(fs.matches)
@@ -133,7 +139,7 @@ func (fs *FuzzySearchModal) OnKeyEvent(event mauview.KeyEvent) bool {
 			fs.results.ScrollToHighlight()
 		}
 		return true
-	case tcell.KeyBacktab:
+	case "select_prev":
 		if len(highlights) > 0 {
 			fs.selected = (fs.selected - 1) % len(fs.matches)
 			if fs.selected < 0 {
@@ -143,7 +149,7 @@ func (fs *FuzzySearchModal) OnKeyEvent(event mauview.KeyEvent) bool {
 			fs.results.ScrollToHighlight()
 		}
 		return true
-	case tcell.KeyEnter:
+	case "confirm":
 		// Switch room to currently selected room
 		if len(highlights) > 0 {
 			debug.Print("Fuzzy Selected Room:", fs.roomList[fs.matches[fs.selected].OriginalIndex].GetTitle())

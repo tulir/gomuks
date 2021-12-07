@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"maunium.net/go/gomuks/config"
 	"maunium.net/go/tcell"
 
 	"maunium.net/go/mauview"
@@ -94,7 +95,12 @@ func NewHelpModal(parent *MainView) *HelpModal {
 }
 
 func (hm *HelpModal) OnKeyEvent(event mauview.KeyEvent) bool {
-	if event.Key() == tcell.KeyEscape || event.Rune() == 'q' {
+	kb := config.Keybind{
+		Key: event.Key(),
+		Ch:  event.Rune(),
+		Mod: event.Modifiers(),
+	}
+	if hm.parent.config.Keybindings.Room[kb] == "cancel" {
 		hm.parent.HideModal()
 		return true
 	}
