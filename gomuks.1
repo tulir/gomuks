@@ -1,0 +1,338 @@
+.\" this manual was translated into mdoc(7) by aabacchus
+.Dd December 30, 2021
+.Dt GOMUKS 1
+.Os
+.Sh NAME
+.Nm gomuks
+.Nd a terminal based Matrix client written in Go
+.Sh SYNOPSIS
+.Nm
+.Op Fl v | -version
+.\".Sh DESCRIPTION
+.Sh COMMANDS
+.Ss General
+.Bl -tag -width Ds
+.It Ic /help
+View command list.
+.It Ic /quit
+Close gomuks.
+.It Ic /clearcache
+Clear room state and close gomuks.
+.It Ic /logout
+Log out, clear caches and go back to the login view.
+.It Ic /fingerprint
+Shows the Device ID and fingerprint, allowing verification of the session.
+.It Ic /toggle Ar thing
+Toggle user preferences.
+.Pp
+Possible values for
+.Ar thing :
+.Bl -tag -width Ds -compact
+.It Ic rooms
+Room list sidebar.
+.It Ic users
+User list sidebar.
+.It Ic baremessages
+Bare message mode where the sender name is inline with the messages.
+.It Ic images
+Text image rendering.
+.It Ic typingnotif
+Outgoing typing notifications.
+.It Ic emojis
+emoji conversion when sending messages.
+.It Ic html
+HTML input.
+.It Ic markdown
+Markdown input.
+.It Ic downloads
+Automatic downloads (this will also prevent
+.Vt images
+from working).
+.It Ic notifications
+Desktop notifications.
+.It Ic unverified
+Sending (e2ee keys for) messages to unverified devices.
+You need restart gomuks for this setting to take effect.
+.El
+.El
+.Ss Media
+.Pp
+Tab-completing file paths is supported in all these commands.
+.Bl -tag -width Ds
+.It Ic /download Op Ar path
+Downloads file from selected message.
+If
+.Ar path
+is not specified, it defaults to
+.Pa <download_dir>/<message.body> .
+.Dv download_dir
+defaults to
+.Pa $HOME/Downloads .
+.It Ic /open Op Ar path
+Download file from selected message and open it with
+.Xr xdg-open 1 .
+If
+.Ar path
+is not specified, the file will be downloaded to the media
+cache.
+.It Ic /upload Ar path
+Upload the file at the given
+.Ar path
+to the current room.
+Note that to include audio/video file metadata (dimensions and
+duration), you must have
+.Xr ffprobe 1
+installed.
+.El
+.Ss Sending special messages
+.Bl -tag -width Ds
+.It Ic /me Ar text
+Send an emote.
+.It Ic /notice Ar text
+Send a notice (generally used for bot messages).
+.It Ic /rainbow Ar text
+Send rainbow text
+(markdown not supported).
+.\" _is_ markdown support for rainbow text?
+.It Ic /rainbowme Ar text
+Send rainbow text in an emote.
+.It Ic /reply Op Ar text
+Reply to the selected message. If
+.Ar text
+is not specified, the next message will be used.
+.It Ic /react Ar reaction
+React to the selected message.
+.It Ic /redact Op Ar reason
+Redact the selected message.
+.It Ic /edit
+Edit the selected message.
+.El
+.Ss Encryption
+.Pp
+These commands support tab-completing file paths and user/device IDs
+using the displaynames of users/devices.
+.Pp
+Accepting incoming interactive verification requests is not yet
+supported, only outgoing requests via
+.Ic /verify
+work.
+.Bl -tag -width Ds
+.It Ic /fingerprint
+View the fingerprint of your device (for legacy/non-interactive verification).
+.It Ic /devices Ar user-id
+View the device list of a user.
+.It Ic /device Ar user-id device-id
+Show info about a specific device.
+.It Ic /unverify Ar user-id device-id
+Un-verify a device.
+.It Ic /blacklist Ar user-id device-id
+Blacklist a device. Message keys are never sent to blacklisted devices.
+.It Ic /verify Ar user-id device-id Op Ar fingerprint
+Verify a device.
+If the fingerprint is not provided, interactive emoji verification will
+be started.
+.It Ic /export Ar path
+Export all message decryption keys to the given path.
+.It Ic /export-room Ar path
+Export message decryption keys for the current room to the given path.
+.It Ic /import Ar path
+Import message decryption keys from the given path.
+.El
+.Ss Rooms
+Creating rooms:
+.Bl -tag -width Ds
+.It Ic /pm Ar user-id Op Ar ...
+Start a private chat with the given user(s).
+.It Ic /create Op Ar room-name
+Create a new room.
+.El
+.Pp
+Joining rooms:
+.Bl -tag -width Ds
+.It Ic /join Ar room Op Ar server
+Join the room with the given room ID or alias, optionally through the given server.
+.It Ic /accept
+(in a room you\[cq]re invited to) - Accept the invite.
+.It Ic /reject
+(in a room you\[cq]re invited to) - Reject the invite.
+.El
+.Pp
+Existing rooms:
+.Bl -tag -width Ds
+.It Ic /invite Ar user-id
+Invite the given user ID to the room.
+.It Ic /roomnick Ar name
+Change your per-room displayname.
+.It Ic /tag Ar tag priority
+Add the room to
+.Ar tag .
+.Ar tag
+should start with
+.Qq u.
+and
+.Ar priority
+should be a float between 0 and 1.
+Rooms are sorted in ascending priority order.
+.It Ic /untag Ar tag
+Remove the room from
+.Ar tag .
+.It Ic /tags
+List the tags the room is in.
+.El
+.Pp
+Leaving rooms:
+.Bl -tag -width Ds
+.It Ic /leave
+Leave the current room.
+.It Ic /kick Ar user-id Op Ar reason
+Kick a user.
+.It Ic /ban Ar user-id Op Ar reason
+Ban a user.
+.It Ic /unban Ar user-id
+Unban a user.
+.El
+.Pp
+Room aliases:
+.Bl -tag -width Ds
+.It Ic /alias add Ar localpart
+Add
+.Ar #<localpart>:your.server
+as an address for the current room.
+.It Ic /alias remove Ar localpart
+Remove
+.Ar #<localpart>:your.server
+(can be ran in any room).
+.It Ic /alias resolve Ar alias
+Resolve
+.Ar alias
+or
+.Ar #<alias>:your.server
+and reply with the room ID.
+.El
+.Ss Raw events
+.Bl -tag -width Ds
+.It Ic /send Ar room-id event-type content
+Send a custom event.
+.It Ic /setstate Ar room-id event-type state-key/- content
+Change room state.
+.It Ic /msend Ar event-type content
+Send a custom event to the current room.
+.It Ic /msetstate Ar event-type state-key/- content
+Change room state in the current room.
+.It Ic /id
+Get the current room ID.
+.El
+.Ss Debugging
+.Bl -tag -width Ds
+.It Ic /hprof
+Create a heap profile and write it to
+.Pa gomuks.heap.prof
+in the current directory.
+.It Ic /cprof Ar seconds
+Profile the CPU usage for the given number of seconds and write it to
+.Pa gomuks.cpu.prof .
+.It Ic /trace Ar seconds
+Trace calls for the given number of seconds and write traces to
+.Pa gomuks.trace .
+.El
+.Sh SHORTCUTS
+.Ss Keyboard
+.Pp
+Ctrl and Alt are interchangeable in most keybindings, but the other one
+may not work depending on your terminal emulator.
+.Bl -tag -width Ds
+.It Switch rooms
+.Ic "Ctrl + \[ua]" ,
+.Ic "Ctrl + \[da]"
+.It Scroll chat (page)
+.Ic PgUp ,
+.Ic PgDown
+.It Jump to room
+.Ic "Ctrl + K" ,
+type part of a room\[cq]s name, then
+.Ic Tab
+and
+.Ic Enter
+to navigate and select room
+.It Plaintext mode
+.Ic "Ctrl + L"
+.It Newline
+.Ic "Alt + Enter"
+.It Autocompletion
+.Ic Tab
+(emojis, usernames, room aliases and commands)
+.El
+.Ss Editing messages
+.Pp
+.Ic \[ua]
+and
+.Ic \[da]
+can be used at the start and end of the input area to
+jump to edit the previous or next message respectively.
+.Ss Selecting messages
+.Pp
+After using commands that require selecting messages
+(e.g.
+.Ic /reply
+and
+.Ic /redact
+), you can move the
+selection with
+.Ic \[ua]
+and
+.Ic \[da] ;
+confirm with
+.Ic Enter .
+.Ss Mouse
+.Bl -dash -width Ds
+.It
+.Ic Click
+to select message (for commands such as
+.Ic /reply
+that act on a message)
+.It
+.Ic "Ctrl + click"
+on image to open in your default image viewer (using
+.Xr xdg-open 1 )
+.It
+.Ic Click
+on a username to insert a mention of that user into the composer
+.El
+.Sh ENVIRONMENT
+.Bl -tag -width Ds
+.It Ev DEBUG
+ Set to 1 to enable partial deadlock detection and to write panics to
+.Pa stdout
+instead of a file.
+.It Ev GOMUKS_ROOT
+Specify a custom root directory for all the
+.Nm
+directories.
+.It Ev GOMUKS_CACHE_HOME
+Location of cache dir.
+.It Ev GOMUKS_DATA_HOME
+Data dir. Default is
+.Pa $XDG_DATA_HOME/gomuks/
+or
+.Pa $HOME/.local/share/gomuks/ .
+.It Ev GOMUKS_DOWNLOAD_HOME
+Location for downloads. Default is
+.Pa $HOME/Downloads .
+.It Ev GOMUKS_CONFIG_HOME
+Location for the config file. Default is
+.Pa $HOME/.config/gomuks/
+.It Ev GOMUKS_ALLOW_INSECURE_CONNECTIONS
+Set to any value to set InsecureSkipVerify for TLS requests, which
+causes
+.Nm
+to accept any certificate presented by a server and any host name in that certificate.
+This makes TLS susceptible to machine-in-the-middle attacks.
+.El
+.Sh FILES
+.Bl -tag -width Ds
+.It Pa $DEBUG_DIR/debug.log
+Debug log. The default location is
+.Pa /tmp/gomuks/debug.log .
+.It Pa $GOMUKS_CONFIG_HOME/preferences.yaml
+User config file.
+.El
