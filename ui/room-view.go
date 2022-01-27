@@ -89,7 +89,7 @@ type RoomView struct {
 
 func NewRoomView(parent *MainView, room *rooms.Room) *RoomView {
 	view := &RoomView{
-		topic:    mauview.NewTextView(),
+		topic:    mauview.NewTextView().SetTextAlign(mauview.AlignCenter),
 		status:   mauview.NewTextField(),
 		userList: NewMemberList(),
 		ulBorder: widget.NewBorder(),
