@@ -125,7 +125,7 @@ func (fs *FuzzySearchModal) OnKeyEvent(event mauview.KeyEvent) bool {
 		// Close room finder
 		fs.parent.HideModal()
 		return true
-	case tcell.KeyTab:
+	case tcell.KeyTab, tcell.KeyDown:
 		// Cycle highlighted area to next match
 		if len(highlights) > 0 {
 			fs.selected = (fs.selected + 1) % len(fs.matches)
@@ -133,7 +133,7 @@ func (fs *FuzzySearchModal) OnKeyEvent(event mauview.KeyEvent) bool {
 			fs.results.ScrollToHighlight()
 		}
 		return true
-	case tcell.KeyBacktab:
+	case tcell.KeyBacktab, tcell.KeyUp:
 		if len(highlights) > 0 {
 			fs.selected = (fs.selected - 1) % len(fs.matches)
 			if fs.selected < 0 {
