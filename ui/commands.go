@@ -113,6 +113,10 @@ func cmdRainbowMe(cmd *Command) {
 	makeRainbow(cmd, event.MsgEmote)
 }
 
+func cmdRainbowNotice(cmd *Command) {
+	makeRainbow(cmd, event.MsgNotice)
+}
+
 func cmdNotice(cmd *Command) {
 	go cmd.Room.SendMessage(event.MsgNotice, strings.Join(cmd.Args, " "))
 }
