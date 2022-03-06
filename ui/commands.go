@@ -17,12 +17,14 @@
 package ui
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"math"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"regexp"
 	"runtime"
@@ -175,6 +177,75 @@ func cmdReply(cmd *Command) {
 
 func cmdEdit(cmd *Command) {
 	cmd.Room.StartSelecting(SelectEdit, "")
+}
+
+func findEditorExecutable() (string, string, error) {
+	if editor := os.Getenv("VISUAL"); len(editor) > 0 {
+		if path, err := exec.LookPath(editor); err != nil {
+			return "", "", fmt.Errorf("$VISUAL ('%s') not found in $PATH", editor)
+		} else {
+			return editor, path, nil
+		}
+	} else if editor = os.Getenv("EDITOR"); len(editor) > 0 {
+		if path, err := exec.LookPath(editor); err != nil {
+			return "", "", fmt.Errorf("$EDITOR ('%s') not found in $PATH", editor)
+		} else {
+			return editor, path, nil
+		}
+	} else if path, _ := exec.LookPath("nano"); len(path) > 0 {
+		return "nano", path, nil
+	} else if path, _ = exec.LookPath("vi"); len(path) > 0 {
+		return "vi", path, nil
+	} else {
+		return "", "", fmt.Errorf("$VISUAL and $EDITOR not set, nano and vi not found in $PATH")
+	}
+}
+
+func cmdExternalEditor(cmd *Command) {
+	var file *os.File
+	defer func() {
+		if file != nil {
+			_ = file.Close()
+			_ = os.Remove(file.Name())
+		}
+	}()
+
+	fileExtension := "md"
+	if cmd.Config.Preferences.DisableMarkdown {
+		if cmd.Config.Preferences.DisableHTML {
+			fileExtension = "txt"
+		} else {
+			fileExtension = "html"
+		}
+	}
+
+	if editorName, executablePath, err := findEditorExecutable(); err != nil {
+		cmd.Reply("Couldn't find editor to use: %v", err)
+		return
+	} else if file, err = os.CreateTemp("", fmt.Sprintf("gomuks-draft-*.%s", fileExtension)); err != nil {
+		cmd.Reply("Failed to create temp file: %v", err)
+		return
+	} else if _, err = file.WriteString(cmd.RawArgs); err != nil {
+		cmd.Reply("Failed to write to temp file: %v", err)
+	} else if err = file.Close(); err != nil {
+		cmd.Reply("Failed to close temp file: %v", err)
+	} else if err = cmd.UI.RunExternal(executablePath, file.Name()); err != nil {
+		var exitErr *exec.ExitError
+		if isExit := errors.As(err, &exitErr); isExit {
+			cmd.Reply("%s exited with non-zero status %d", editorName, exitErr.ExitCode())
+		} else {
+			cmd.Reply("Failed to run %s: %v", editorName, err)
+		}
+	} else if data, err := os.ReadFile(file.Name()); err != nil {
+		cmd.Reply("Failed to read temp file: %v", err)
+	} else if len(bytes.TrimSpace(data)) > 0 {
+		cmd.Room.InputSubmit(string(data))
+	} else {
+		cmd.Reply("Temp file was blank, sending cancelled")
+		if cmd.Room.editing != nil {
+			cmd.Room.SetEditing(nil)
+		}
+	}
 }
 
 func cmdRedact(cmd *Command) {

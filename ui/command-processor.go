@@ -146,6 +146,7 @@ func NewCommandProcessor(parent *MainView) *CommandProcessor {
 			"redact":     cmdRedact,
 			"react":      cmdReact,
 			"edit":       cmdEdit,
+			"external":   cmdExternalEditor,
 			"download":   cmdDownload,
 			"upload":     cmdUpload,
 			"open":       cmdOpen,

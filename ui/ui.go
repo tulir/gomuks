@@ -18,6 +18,7 @@ package ui
 
 import (
 	"os"
+	"os/exec"
 
 	"github.com/zyedidia/clipboard"
 
@@ -118,4 +119,17 @@ func (ui *GomuksUI) SetView(name View) {
 
 func (ui *GomuksUI) MainView() ifc.MainView {
 	return ui.mainView
+}
+
+func (ui *GomuksUI) RunExternal(executablePath string, args ...string) error {
+	var err error
+	ui.app.Suspend(func() {
+		cmd := exec.Command(executablePath, args...)
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+		cmd.Stdin = os.Stdin
+		cmd.Env = os.Environ()
+		err = cmd.Run()
+	})
+	return err
 }
