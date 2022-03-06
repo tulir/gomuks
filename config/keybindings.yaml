@@ -5,7 +5,6 @@ main:
   'Ctrl+Home': scroll_up
   'Ctrl+End': scroll_down
   'Ctrl+Enter': add_newline
-  'Ctrl+a': next_active_room
   'Ctrl+l': show_bare
   'Alt+Down': next_room
   'Alt+Up': prev_room

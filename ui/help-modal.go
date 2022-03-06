@@ -1,10 +1,10 @@
 package ui
 
 import (
-	"maunium.net/go/gomuks/config"
+	"maunium.net/go/mauview"
 	"maunium.net/go/tcell"
 
-	"maunium.net/go/mauview"
+	"maunium.net/go/gomuks/config"
 )
 
 const helpText = `# General
@@ -100,7 +100,8 @@ func (hm *HelpModal) OnKeyEvent(event mauview.KeyEvent) bool {
 		Ch:  event.Rune(),
 		Mod: event.Modifiers(),
 	}
-	if hm.parent.config.Keybindings.Room[kb] == "cancel" {
+	// TODO unhardcode q
+	if hm.parent.config.Keybindings.Modal[kb] == "cancel" || event.Rune() == 'q' {
 		hm.parent.HideModal()
 		return true
 	}
