@@ -37,7 +37,7 @@ import (
 
 	"maunium.net/go/gomuks/config"
 	"maunium.net/go/gomuks/debug"
-	"maunium.net/go/gomuks/interface"
+	ifc "maunium.net/go/gomuks/interface"
 	"maunium.net/go/gomuks/lib/open"
 	"maunium.net/go/gomuks/lib/util"
 	"maunium.net/go/gomuks/matrix/muksevt"
@@ -339,41 +339,44 @@ func (view *RoomView) ClearAllContext() {
 
 func (view *RoomView) OnKeyEvent(event mauview.KeyEvent) bool {
 	msgView := view.MessageView()
+	kb := config.Keybind{
+		Key: event.Key(),
+		Ch:  event.Rune(),
+		Mod: event.Modifiers(),
+	}
+
 	if view.selecting {
-		k := event.Key()
-		c := event.Rune()
-		switch {
-		case k == tcell.KeyEscape || c == 'h':
+		switch view.config.Keybindings.Visual[kb] {
+		case "clear":
 			view.ClearAllContext()
-		case k == tcell.KeyUp || c == 'k':
+		case "select_prev":
 			view.SelectPrevious()
-		case k == tcell.KeyDown || c == 'j':
+		case "select_next":
 			view.SelectNext()
-		case k == tcell.KeyEnter || c == 'l':
+		case "confirm":
 			view.OnSelect(msgView.selected)
 		default:
 			return false
 		}
 		return true
 	}
-	switch event.Key() {
-	case tcell.KeyEscape:
+
+	switch view.config.Keybindings.Room[kb] {
+	case "clear":
 		view.ClearAllContext()
 		return true
-	case tcell.KeyPgUp:
+	case "scroll_up":
 		if msgView.IsAtTop() {
 			go view.parent.LoadHistory(view.Room.ID)
 		}
 		msgView.AddScrollOffset(+msgView.Height() / 2)
 		return true
-	case tcell.KeyPgDn:
+	case "scroll_down":
 		msgView.AddScrollOffset(-msgView.Height() / 2)
 		return true
-	case tcell.KeyEnter:
-		if (event.Modifiers()&tcell.ModShift == 0 && event.Modifiers()&tcell.ModCtrl == 0) != (view.config.Preferences.AltEnterToSend) {
-			view.InputSubmit(view.input.GetText())
-			return true
-		}
+	case "send":
+		view.InputSubmit(view.input.GetText())
+		return true
 	}
 	return view.input.OnKeyEvent(event)
 }

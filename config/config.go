@@ -29,6 +29,9 @@ import (
 	"maunium.net/go/mautrix/id"
 	"maunium.net/go/mautrix/pushrules"
 
+	"github.com/3nprob/cbind"
+	"maunium.net/go/tcell"
+
 	"maunium.net/go/gomuks/debug"
 	"maunium.net/go/gomuks/matrix/rooms"
 )
@@ -54,6 +57,26 @@ type UserPreferences struct {
 	DisableNotifications bool `yaml:"disable_notifications"`
 	DisableShowURLs      bool `yaml:"disable_show_urls"`
 	AltEnterToSend       bool `yaml:"alt_enter_to_send"`
+}
+
+type Keybind struct {
+	Mod tcell.ModMask
+	Key tcell.Key
+	Ch  rune
+}
+
+type Keybindings struct {
+	Main   map[Keybind]string `yaml:"main,omitempty"`
+	Room   map[Keybind]string `yaml:"room,omitempty"`
+	Modal  map[Keybind]string `yaml:"modal,omitempty"`
+	Visual map[Keybind]string `yaml:"visual,omitempty"`
+}
+
+type KeybindingsConfig struct {
+	Main   map[string]string `yaml:"main,omitempty"`
+	Room   map[string]string `yaml:"room,omitempty"`
+	Modal  map[string]string `yaml:"modal,omitempty"`
+	Visual map[string]string `yaml:"visual,omitempty"`
 }
 
 // Config contains the main config of gomuks.
@@ -85,6 +108,7 @@ type Config struct {
 	AuthCache   AuthCache              `yaml:"-"`
 	Rooms       *rooms.RoomCache       `yaml:"-"`
 	PushRules   *pushrules.PushRuleset `yaml:"-"`
+	Keybindings Keybindings            `yaml:"-"`
 
 	nosave bool
 }
@@ -152,6 +176,7 @@ func (config *Config) LoadAll() {
 	config.LoadAuthCache()
 	config.LoadPushRules()
 	config.LoadPreferences()
+	config.LoadKeybindings()
 	err := config.Rooms.LoadList()
 	if err != nil {
 		panic(err)
@@ -187,6 +212,70 @@ func (config *Config) LoadPreferences() {
 
 func (config *Config) SavePreferences() {
 	config.save("user preferences", config.CacheDir, "preferences.yaml", &config.Preferences)
+}
+
+func (config *Config) LoadKeybindings() {
+	cfg := KeybindingsConfig{}
+	config.load("keybindings", config.Dir, "keybindings.yaml", &cfg)
+	config.Keybindings.Main = make(map[Keybind]string)
+	config.Keybindings.Room = make(map[Keybind]string)
+	config.Keybindings.Modal = make(map[Keybind]string)
+	config.Keybindings.Visual = make(map[Keybind]string)
+
+	for k, v := range cfg.Main {
+		mod, key, ch, err := cbind.Decode(k)
+		if err != nil {
+			// todo
+		}
+		kb := Keybind{
+			Mod: mod,
+			Key: key,
+			Ch:  ch,
+		}
+		config.Keybindings.Main[kb] = v
+	}
+	for k, v := range cfg.Room {
+		mod, key, ch, err := cbind.Decode(k)
+		if err != nil {
+			// todo
+		}
+		kb := Keybind{
+			Mod: mod,
+			Key: key,
+			Ch:  ch,
+		}
+		config.Keybindings.Room[kb] = v
+	}
+
+	for k, v := range cfg.Modal {
+		mod, key, ch, err := cbind.Decode(k)
+		if err != nil {
+			// todo
+		}
+		kb := Keybind{
+			Mod: mod,
+			Key: key,
+			Ch:  ch,
+		}
+		config.Keybindings.Modal[kb] = v
+	}
+
+	for k, v := range cfg.Visual {
+		mod, key, ch, err := cbind.Decode(k)
+		if err != nil {
+			// todo
+		}
+		kb := Keybind{
+			Mod: mod,
+			Key: key,
+			Ch:  ch,
+		}
+		config.Keybindings.Visual[kb] = v
+	}
+}
+
+func (config *Config) SaveKeybindings() {
+	config.save("keybindings", config.Dir, "keybindings.yaml", &config.Keybindings)
 }
 
 func (config *Config) LoadAuthCache() {

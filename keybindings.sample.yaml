@@ -1,0 +1,40 @@
+---
+main:
+  'Ctrl+Down': next_room
+  'Ctrl+Up': prev_room
+  'Ctrl+k': search_rooms
+  'Ctrl+Home': scroll_up
+  'Ctrl+End': scroll_down
+  'Ctrl+Enter': add_newline
+  'Ctrl+a': next_active_room
+  'Ctrl+l': show_bare
+  'Alt+Down': next_room
+  'Alt+Up': prev_room
+  'Alt+k':  search_rooms
+  'Alt+Home': scroll_up
+  'Alt+End': scroll_down
+  'Alt+Enter': add_newline
+  'Alt+a': next_active_room
+  'Alt+l': show_bare
+
+modal:
+  'Tab': select_next
+  'Backtab': select_prev
+  'Enter': confirm
+  'Escape': cancel
+
+visual:
+  'Escape': clear
+  'h': clear
+  'Up': select_prev
+  'k': select_prev
+  'Down': select_next
+  'j': select_next
+  'Enter': confirm
+  'l': confirm
+
+room:
+  'Escape': clear
+  'PageUp': scroll_up
+  'PageDown': scroll_down
+  'Enter': send

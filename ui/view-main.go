@@ -33,7 +33,7 @@ import (
 
 	"maunium.net/go/gomuks/config"
 	"maunium.net/go/gomuks/debug"
-	"maunium.net/go/gomuks/interface"
+	ifc "maunium.net/go/gomuks/interface"
 	"maunium.net/go/gomuks/lib/notification"
 	"maunium.net/go/gomuks/matrix/rooms"
 	"maunium.net/go/gomuks/ui/widget"
@@ -170,33 +170,34 @@ func (view *MainView) OnKeyEvent(event mauview.KeyEvent) bool {
 		return view.modal.OnKeyEvent(event)
 	}
 
-	k := event.Key()
-	c := event.Rune()
-	if event.Modifiers() == tcell.ModCtrl || event.Modifiers() == tcell.ModAlt {
-		switch {
-		case k == tcell.KeyDown:
-			view.SwitchRoom(view.roomList.Next())
-		case k == tcell.KeyUp:
-			view.SwitchRoom(view.roomList.Previous())
-		case c == 'k' || k == tcell.KeyCtrlK:
-			view.ShowModal(NewFuzzySearchModal(view, 42, 12))
-		case k == tcell.KeyHome:
-			msgView := view.currentRoom.MessageView()
-			msgView.AddScrollOffset(msgView.TotalHeight())
-		case k == tcell.KeyEnd:
-			msgView := view.currentRoom.MessageView()
-			msgView.AddScrollOffset(-msgView.TotalHeight())
-		case k == tcell.KeyEnter:
-			return view.flex.OnKeyEvent(tcell.NewEventKey(tcell.KeyEnter, '\n', event.Modifiers()|tcell.ModShift, ""))
-		case c == 'a':
-			view.SwitchRoom(view.roomList.NextWithActivity())
-		case c == 'l' || k == tcell.KeyCtrlL:
-			view.ShowBare(view.currentRoom)
-		default:
-			goto defaultHandler
-		}
-		return true
+	kb := config.Keybind{
+		Key: event.Key(),
+		Ch:  event.Rune(),
+		Mod: event.Modifiers(),
 	}
+	switch view.config.Keybindings.Main[kb] {
+	case "next_room":
+		view.SwitchRoom(view.roomList.Next())
+	case "prev_room":
+		view.SwitchRoom(view.roomList.Previous())
+	case "search_rooms":
+		view.ShowModal(NewFuzzySearchModal(view, 42, 12))
+	case "scroll_up":
+		msgView := view.currentRoom.MessageView()
+		msgView.AddScrollOffset(msgView.TotalHeight())
+	case "scroll_down":
+		msgView := view.currentRoom.MessageView()
+		msgView.AddScrollOffset(-msgView.TotalHeight())
+	case "add_newline":
+		return view.flex.OnKeyEvent(tcell.NewEventKey(tcell.KeyEnter, '\n', event.Modifiers()|tcell.ModShift, ""))
+	case "next_active_room":
+		view.SwitchRoom(view.roomList.NextWithActivity())
+	case "show_bare":
+		view.ShowBare(view.currentRoom)
+	default:
+		goto defaultHandler
+	}
+	return true
 defaultHandler:
 	if view.config.Preferences.HideRoomList {
 		return view.roomView.OnKeyEvent(event)
