@@ -845,6 +845,10 @@ func cmdToggle(cmd *Command) {
 		*val = !(*val)
 		debug.Print(thing, *val)
 		cmd.Reply(toggleMsg[thing].Format(*val))
+		if thing == "rooms" {
+			// Update topic string to include or not include room name
+			cmd.Room.Update()
+		}
 	}
 	cmd.UI.Render()
 	go cmd.Matrix.SendPreferencesToMatrix()

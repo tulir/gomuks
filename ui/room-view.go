@@ -836,7 +836,16 @@ func (view *RoomView) MxRoom() *rooms.Room {
 }
 
 func (view *RoomView) Update() {
-	view.topic.SetText(strings.Replace(view.Room.GetTopic(), "\n", " ", -1))
+	topicStr := strings.TrimSpace(strings.ReplaceAll(view.Room.GetTopic(), "\n", " "))
+	if view.config.Preferences.HideRoomList {
+		if len(topicStr) > 0 {
+			topicStr = fmt.Sprintf("%s - %s", view.Room.GetTitle(), topicStr)
+		} else {
+			topicStr = view.Room.GetTitle()
+		}
+		topicStr = strings.TrimSpace(topicStr)
+	}
+	view.topic.SetText(topicStr)
 	if !view.userListLoaded {
 		view.UpdateUserList()
 	}
