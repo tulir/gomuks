@@ -13,6 +13,7 @@ const helpText = `# General
 /clearcache     - Clear cache and quit gomuks.
 /logout         - Log out of Matrix.
 /toggle <thing> - Temporary command to toggle various UI features.
+                  Run /toggle without arguments to see the list of toggles.
 
 # Media
 /download [path] - Downloads file from selected message.
