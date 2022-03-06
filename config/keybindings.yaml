@@ -1,4 +1,3 @@
----
 main:
   'Ctrl+Down': next_room
   'Ctrl+Up': prev_room

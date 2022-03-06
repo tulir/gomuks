@@ -17,7 +17,9 @@
 package config
 
 import (
+	_ "embed"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -65,14 +67,14 @@ type Keybind struct {
 	Ch  rune
 }
 
-type Keybindings struct {
-	Main   map[Keybind]string `yaml:"main,omitempty"`
-	Room   map[Keybind]string `yaml:"room,omitempty"`
-	Modal  map[Keybind]string `yaml:"modal,omitempty"`
-	Visual map[Keybind]string `yaml:"visual,omitempty"`
+type ParsedKeybindings struct {
+	Main   map[Keybind]string
+	Room   map[Keybind]string
+	Modal  map[Keybind]string
+	Visual map[Keybind]string
 }
 
-type KeybindingsConfig struct {
+type RawKeybindings struct {
 	Main   map[string]string `yaml:"main,omitempty"`
 	Room   map[string]string `yaml:"room,omitempty"`
 	Modal  map[string]string `yaml:"modal,omitempty"`
@@ -108,7 +110,7 @@ type Config struct {
 	AuthCache   AuthCache              `yaml:"-"`
 	Rooms       *rooms.RoomCache       `yaml:"-"`
 	PushRules   *pushrules.PushRuleset `yaml:"-"`
-	Keybindings Keybindings            `yaml:"-"`
+	Keybindings ParsedKeybindings      `yaml:"-"`
 
 	nosave bool
 }
@@ -214,64 +216,39 @@ func (config *Config) SavePreferences() {
 	config.save("user preferences", config.CacheDir, "preferences.yaml", &config.Preferences)
 }
 
+//go:embed keybindings.yaml
+var DefaultKeybindings string
+
+func parseKeybindings(input map[string]string) (output map[Keybind]string) {
+	output = make(map[Keybind]string, len(input))
+	for shortcut, action := range input {
+		mod, key, ch, err := cbind.Decode(shortcut)
+		if err != nil {
+			panic(fmt.Errorf("failed to parse keybinding %s -> %s: %w", shortcut, action, err))
+		}
+		parsedShortcut := Keybind{
+			Mod: mod,
+			Key: key,
+			Ch:  ch,
+		}
+		output[parsedShortcut] = action
+	}
+	return
+}
+
 func (config *Config) LoadKeybindings() {
-	cfg := KeybindingsConfig{}
-	config.load("keybindings", config.Dir, "keybindings.yaml", &cfg)
-	config.Keybindings.Main = make(map[Keybind]string)
-	config.Keybindings.Room = make(map[Keybind]string)
-	config.Keybindings.Modal = make(map[Keybind]string)
-	config.Keybindings.Visual = make(map[Keybind]string)
+	var inputConfig RawKeybindings
 
-	for k, v := range cfg.Main {
-		mod, key, ch, err := cbind.Decode(k)
-		if err != nil {
-			// todo
-		}
-		kb := Keybind{
-			Mod: mod,
-			Key: key,
-			Ch:  ch,
-		}
-		config.Keybindings.Main[kb] = v
+	err := yaml.Unmarshal([]byte(DefaultKeybindings), &inputConfig)
+	if err != nil {
+		panic(fmt.Errorf("failed to unmarshal default keybindings: %w", err))
 	}
-	for k, v := range cfg.Room {
-		mod, key, ch, err := cbind.Decode(k)
-		if err != nil {
-			// todo
-		}
-		kb := Keybind{
-			Mod: mod,
-			Key: key,
-			Ch:  ch,
-		}
-		config.Keybindings.Room[kb] = v
-	}
+	config.load("keybindings", config.Dir, "keybindings.yaml", &inputConfig)
 
-	for k, v := range cfg.Modal {
-		mod, key, ch, err := cbind.Decode(k)
-		if err != nil {
-			// todo
-		}
-		kb := Keybind{
-			Mod: mod,
-			Key: key,
-			Ch:  ch,
-		}
-		config.Keybindings.Modal[kb] = v
-	}
-
-	for k, v := range cfg.Visual {
-		mod, key, ch, err := cbind.Decode(k)
-		if err != nil {
-			// todo
-		}
-		kb := Keybind{
-			Mod: mod,
-			Key: key,
-			Ch:  ch,
-		}
-		config.Keybindings.Visual[kb] = v
-	}
+	config.Keybindings.Main = parseKeybindings(inputConfig.Main)
+	config.Keybindings.Room = parseKeybindings(inputConfig.Room)
+	config.Keybindings.Modal = parseKeybindings(inputConfig.Modal)
+	config.Keybindings.Visual = parseKeybindings(inputConfig.Visual)
 }
 
 func (config *Config) SaveKeybindings() {
