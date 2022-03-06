@@ -17,7 +17,9 @@ main:
 
 modal:
   'Tab': select_next
+  'Down': select_next
   'Backtab': select_prev
+  'Up': select_prev
   'Enter': confirm
   'Escape': cancel
 
