@@ -1,0 +1,29 @@
+name: gomuks
+base: core20
+version: 'v0.2.4'
+summary: A TUI client for Matrix.
+description: |
+  A terminal Matrix client written in Go using mautrix and mauview.
+  https://maunium.net/go/gomuks/
+icon: snap/gui/icon.png
+grade: stable
+confinement: strict
+
+architectures:
+  - build-on: amd64
+    run-on: amd64
+
+parts:
+  gomuks:
+    plugin: go
+    source-type: git
+    source: https://github.com/tulir/gomuks.git
+    build-packages:
+      - libolm-dev
+    stage-packages:
+      - libolm3
+
+apps:
+  gomuks:
+    command: bin/gomuks
+    plugs: [network]
