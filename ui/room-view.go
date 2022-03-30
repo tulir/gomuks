@@ -34,6 +34,7 @@ import (
 	"maunium.net/go/mautrix/crypto/attachment"
 	"maunium.net/go/mautrix/event"
 	"maunium.net/go/mautrix/id"
+	"maunium.net/go/mautrix/util/variationselector"
 
 	"maunium.net/go/gomuks/config"
 	"maunium.net/go/gomuks/debug"
@@ -737,6 +738,7 @@ func (view *RoomView) SendReaction(eventID id.EventID, reaction string) {
 	if !view.config.Preferences.DisableEmojis {
 		reaction = emoji.Sprint(reaction)
 	}
+	reaction = variationselector.Add(strings.TrimSpace(reaction))
 	debug.Print("Reacting to", eventID, "in", view.Room.ID, "with", reaction)
 	eventID, err := view.parent.matrix.SendEvent(&muksevt.Event{
 		Event: &event.Event{
