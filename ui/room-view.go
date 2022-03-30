@@ -734,6 +734,9 @@ func (view *RoomView) Redact(eventID id.EventID, reason string) {
 
 func (view *RoomView) SendReaction(eventID id.EventID, reaction string) {
 	defer debug.Recover()
+	if !view.config.Preferences.DisableEmojis {
+		reaction = emoji.Sprint(reaction)
+	}
 	debug.Print("Reacting to", eventID, "in", view.Room.ID, "with", reaction)
 	eventID, err := view.parent.matrix.SendEvent(&muksevt.Event{
 		Event: &event.Event{
