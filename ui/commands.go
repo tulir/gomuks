@@ -37,7 +37,7 @@ import (
 	"unicode"
 
 	"github.com/lucasb-eyer/go-colorful"
-	"github.com/russross/blackfriday/v2"
+	"github.com/yuin/goldmark"
 
 	"maunium.net/go/mautrix"
 	"maunium.net/go/mautrix/event"
@@ -85,21 +85,22 @@ var rainbow = GradientTable{
 	{colorful.LinearRgb(1, 0, 0.5), 11 / 11.0},
 }
 
+var rainbowMark = goldmark.New(format.Extensions, format.HTMLOptions, goldmark.WithExtensions(ExtensionRainbow))
+
 // TODO this command definitely belongs in a plugin once we have a plugin system.
 func makeRainbow(cmd *Command, msgtype event.MessageType) {
 	text := strings.Join(cmd.Args, " ")
 
-	render := NewRainbowRenderer(blackfriday.NewHTMLRenderer(blackfriday.HTMLRendererParameters{
-		Flags: blackfriday.UseXHTML,
-	}))
-	htmlBodyBytes := blackfriday.Run([]byte(text), format.Extensions, blackfriday.WithRenderer(render))
-	htmlBody := strings.TrimRight(string(htmlBodyBytes), "\n")
+	var buf strings.Builder
+	_ = rainbowMark.Convert([]byte(text), &buf)
+
+	htmlBody := strings.TrimRight(buf.String(), "\n")
 	htmlBody = format.AntiParagraphRegex.ReplaceAllString(htmlBody, "$1")
 	text = format.HTMLToText(htmlBody)
 
-	count := strings.Count(htmlBody, render.ColorID)
+	count := strings.Count(htmlBody, defaultRB.ColorID)
 	i := -1
-	htmlBody = regexp.MustCompile(render.ColorID).ReplaceAllStringFunc(htmlBody, func(match string) string {
+	htmlBody = regexp.MustCompile(defaultRB.ColorID).ReplaceAllStringFunc(htmlBody, func(match string) string {
 		i++
 		return rainbow.GetInterpolatedColorFor(float64(i) / float64(count)).Hex()
 	})

@@ -12,19 +12,19 @@ require (
 	github.com/mattn/go-runewidth v0.0.13
 	github.com/mattn/go-sqlite3 v1.14.12
 	github.com/rivo/uniseg v0.2.0
-	github.com/russross/blackfriday/v2 v2.1.0
 	github.com/sasha-s/go-deadlock v0.3.1
+	github.com/yuin/goldmark v1.4.11
 	github.com/zyedidia/clipboard v1.0.3
 	go.etcd.io/bbolt v1.3.6
 	go.mau.fi/cbind v0.0.0-20220415094356-e1d579b7925e
-	go.mau.fi/mauview v0.1.4-0.20220415105047-1b3ec9f6480e
+	go.mau.fi/mauview v0.1.4-0.20220415142327-ec5e0de686a8
 	go.mau.fi/tcell v0.0.0-20220415093808-07c67d224693
 	golang.org/x/image v0.0.0-20220413100746-70e8d0d3baa9
 	golang.org/x/net v0.0.0-20220412020605-290c469a71a5
 	gopkg.in/toast.v1 v1.0.0-20180812000517-0a84660828b2
 	gopkg.in/vansante/go-ffprobe.v2 v2.0.3
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b
-	maunium.net/go/mautrix v0.10.13-0.20220409135345-cbe2dbaef0e9
+	maunium.net/go/mautrix v0.10.13-0.20220415172627-597a9560f721
 )
 
 require (
