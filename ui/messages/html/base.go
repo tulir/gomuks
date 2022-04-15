@@ -82,7 +82,7 @@ func (be *BaseEntity) PlainText() string {
 
 // String returns a textual representation of this BaseEntity struct.
 func (be *BaseEntity) String() string {
-	return fmt.Sprintf(`&html.BaseEntity{Tag="%s", Style=%d, Block=%t, startX=%d, height=%d}`,
+	return fmt.Sprintf(`&html.BaseEntity{Tag="%s", Style=%#v, Block=%t, startX=%d, height=%d}`,
 		be.Tag, be.Style, be.Block, be.startX, be.height)
 }
 
