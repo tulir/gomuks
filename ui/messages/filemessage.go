@@ -25,12 +25,13 @@ import (
 	"maunium.net/go/mautrix/crypto/attachment"
 	"maunium.net/go/mautrix/event"
 	"maunium.net/go/mautrix/id"
-	"maunium.net/go/mauview"
-	"maunium.net/go/tcell"
+
+	"go.mau.fi/mauview"
+	"go.mau.fi/tcell"
 
 	"maunium.net/go/gomuks/config"
 	"maunium.net/go/gomuks/debug"
-	"maunium.net/go/gomuks/interface"
+	ifc "maunium.net/go/gomuks/interface"
 	"maunium.net/go/gomuks/lib/ansimage"
 	"maunium.net/go/gomuks/matrix/muksevt"
 	"maunium.net/go/gomuks/ui/messages/tstring"

@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"strings"
 
-	"maunium.net/go/mauview"
+	"go.mau.fi/mauview"
 )
 
 type BlockquoteEntity struct {

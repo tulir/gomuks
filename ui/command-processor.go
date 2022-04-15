@@ -24,7 +24,7 @@ import (
 
 	"maunium.net/go/gomuks/config"
 	"maunium.net/go/gomuks/debug"
-	"maunium.net/go/gomuks/interface"
+	ifc "maunium.net/go/gomuks/interface"
 )
 
 type gomuksPointerContainer struct {

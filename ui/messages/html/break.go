@@ -17,7 +17,7 @@
 package html
 
 import (
-	"maunium.net/go/mauview"
+	"go.mau.fi/mauview"
 )
 
 type BreakEntity struct {

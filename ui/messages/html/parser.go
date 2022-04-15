@@ -28,10 +28,10 @@ import (
 	"github.com/lucasb-eyer/go-colorful"
 	"golang.org/x/net/html"
 
+	"go.mau.fi/tcell"
+
 	"maunium.net/go/mautrix/event"
 	"maunium.net/go/mautrix/id"
-
-	"maunium.net/go/tcell"
 
 	"maunium.net/go/gomuks/config"
 	"maunium.net/go/gomuks/matrix/rooms"
@@ -60,7 +60,7 @@ func AdjustStyleUnderline(style tcell.Style) tcell.Style {
 }
 
 func AdjustStyleStrikethrough(style tcell.Style) tcell.Style {
-	return style.Strikethrough(true)
+	return style.StrikeThrough(true)
 }
 
 func AdjustStyleTextColor(color tcell.Color) func(tcell.Style) tcell.Style {

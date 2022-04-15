@@ -22,9 +22,8 @@ import (
 
 	"github.com/mattn/go-runewidth"
 
-	"maunium.net/go/mauview"
-
-	"maunium.net/go/tcell"
+	"go.mau.fi/mauview"
+	"go.mau.fi/tcell"
 )
 
 type TString []Cell

@@ -25,19 +25,19 @@ import (
 
 	sync "github.com/sasha-s/go-deadlock"
 
-	"maunium.net/go/mauview"
-	"maunium.net/go/tcell"
+	"go.mau.fi/mauview"
+	"go.mau.fi/tcell"
 
-	"maunium.net/go/gomuks/ui/messages"
 	"maunium.net/go/mautrix/id"
+	"maunium.net/go/mautrix/pushrules"
 
 	"maunium.net/go/gomuks/config"
 	"maunium.net/go/gomuks/debug"
 	ifc "maunium.net/go/gomuks/interface"
 	"maunium.net/go/gomuks/lib/notification"
 	"maunium.net/go/gomuks/matrix/rooms"
+	"maunium.net/go/gomuks/ui/messages"
 	"maunium.net/go/gomuks/ui/widget"
-	"maunium.net/go/mautrix/pushrules"
 )
 
 type MainView struct {
@@ -189,7 +189,7 @@ func (view *MainView) OnKeyEvent(event mauview.KeyEvent) bool {
 		msgView := view.currentRoom.MessageView()
 		msgView.AddScrollOffset(-msgView.TotalHeight())
 	case "add_newline":
-		return view.flex.OnKeyEvent(tcell.NewEventKey(tcell.KeyEnter, '\n', event.Modifiers()|tcell.ModShift, ""))
+		return view.flex.OnKeyEvent(tcell.NewEventKey(tcell.KeyEnter, '\n', event.Modifiers()|tcell.ModShift))
 	case "next_active_room":
 		view.SwitchRoom(view.roomList.NextWithActivity())
 	case "show_bare":

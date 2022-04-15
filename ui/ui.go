@@ -22,10 +22,10 @@ import (
 
 	"github.com/zyedidia/clipboard"
 
-	"maunium.net/go/mauview"
-	"maunium.net/go/tcell"
+	"go.mau.fi/mauview"
+	"go.mau.fi/tcell"
 
-	"maunium.net/go/gomuks/interface"
+	ifc "maunium.net/go/gomuks/interface"
 )
 
 type View string

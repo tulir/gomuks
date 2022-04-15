@@ -25,14 +25,14 @@ import (
 	"path/filepath"
 	"strings"
 
-	"gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 
 	"maunium.net/go/mautrix"
 	"maunium.net/go/mautrix/id"
 	"maunium.net/go/mautrix/pushrules"
 
-	"github.com/3nprob/cbind"
-	"maunium.net/go/tcell"
+	"go.mau.fi/cbind"
+	"go.mau.fi/tcell"
 
 	"maunium.net/go/gomuks/debug"
 	"maunium.net/go/gomuks/matrix/rooms"

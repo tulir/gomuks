@@ -19,6 +19,7 @@ package notification
 import (
 	"gopkg.in/toast.v1"
 )
+
 func Send(title, text string, critical, sound bool) error {
 	notification := toast.Notification{
 		AppID:    "gomuks",

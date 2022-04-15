@@ -17,8 +17,8 @@
 package html
 
 import (
-	"maunium.net/go/mauview"
-	"maunium.net/go/tcell"
+	"go.mau.fi/mauview"
+	"go.mau.fi/tcell"
 )
 
 // AdjustStyleFunc is a lambda function type to edit an existing tcell Style.

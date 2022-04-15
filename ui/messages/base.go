@@ -21,12 +21,14 @@ import (
 	"sort"
 	"time"
 
-	"maunium.net/go/gomuks/config"
-	"maunium.net/go/gomuks/matrix/muksevt"
 	"maunium.net/go/mautrix/event"
 	"maunium.net/go/mautrix/id"
-	"maunium.net/go/mauview"
-	"maunium.net/go/tcell"
+
+	"go.mau.fi/mauview"
+	"go.mau.fi/tcell"
+
+	"maunium.net/go/gomuks/config"
+	"maunium.net/go/gomuks/matrix/muksevt"
 
 	"maunium.net/go/gomuks/ui/widget"
 )

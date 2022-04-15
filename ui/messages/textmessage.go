@@ -20,8 +20,8 @@ import (
 	"fmt"
 	"time"
 
+	"go.mau.fi/mauview"
 	"maunium.net/go/gomuks/matrix/muksevt"
-	"maunium.net/go/mauview"
 
 	"maunium.net/go/gomuks/config"
 	"maunium.net/go/gomuks/ui/messages/tstring"

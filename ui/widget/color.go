@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"hash/fnv"
 
-	"maunium.net/go/tcell"
+	"go.mau.fi/tcell"
 
 	"maunium.net/go/mautrix/id"
 )

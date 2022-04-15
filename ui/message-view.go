@@ -25,15 +25,15 @@ import (
 	"github.com/mattn/go-runewidth"
 	sync "github.com/sasha-s/go-deadlock"
 
-	"maunium.net/go/mauview"
-	"maunium.net/go/tcell"
+	"go.mau.fi/mauview"
+	"go.mau.fi/tcell"
 
 	"maunium.net/go/mautrix/event"
 	"maunium.net/go/mautrix/id"
 
 	"maunium.net/go/gomuks/config"
 	"maunium.net/go/gomuks/debug"
-	"maunium.net/go/gomuks/interface"
+	ifc "maunium.net/go/gomuks/interface"
 	"maunium.net/go/gomuks/lib/open"
 	"maunium.net/go/gomuks/ui/messages"
 	"maunium.net/go/gomuks/ui/widget"

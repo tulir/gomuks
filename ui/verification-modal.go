@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-// +build cgo
+//go:build cgo
 
 package ui
 
@@ -24,13 +24,14 @@ import (
 	"strings"
 	"time"
 
-	"maunium.net/go/mauview"
-	"maunium.net/go/tcell"
+	"go.mau.fi/mauview"
+	"go.mau.fi/tcell"
+
+	"maunium.net/go/mautrix/crypto"
+	"maunium.net/go/mautrix/event"
 
 	"maunium.net/go/gomuks/config"
 	"maunium.net/go/gomuks/debug"
-	"maunium.net/go/mautrix/crypto"
-	"maunium.net/go/mautrix/event"
 )
 
 type EmojiView struct {

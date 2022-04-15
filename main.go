@@ -27,7 +27,7 @@ import (
 	"time"
 
 	"maunium.net/go/gomuks/debug"
-	"maunium.net/go/gomuks/interface"
+	ifc "maunium.net/go/gomuks/interface"
 	"maunium.net/go/gomuks/ui"
 )
 
