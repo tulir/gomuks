@@ -187,7 +187,10 @@ func (config *Config) LoadAll() {
 
 // Load loads the config from config.yaml in the directory given to the config struct.
 func (config *Config) Load() {
-	config.load("config", config.Dir, "config.yaml", config)
+	err := config.load("config", config.Dir, "config.yaml", config)
+	if err != nil {
+		panic(fmt.Errorf("failed to load config.yaml: %w", err))
+	}
 	config.CreateCacheDirs()
 }
 
@@ -209,7 +212,7 @@ func (config *Config) Save() {
 }
 
 func (config *Config) LoadPreferences() {
-	config.load("user preferences", config.CacheDir, "preferences.yaml", &config.Preferences)
+	_ = config.load("user preferences", config.CacheDir, "preferences.yaml", &config.Preferences)
 }
 
 func (config *Config) SavePreferences() {
@@ -247,7 +250,7 @@ func (config *Config) LoadKeybindings() {
 	if err != nil {
 		panic(fmt.Errorf("failed to unmarshal default keybindings: %w", err))
 	}
-	config.load("keybindings", config.Dir, "keybindings.yaml", &inputConfig)
+	_ = config.load("keybindings", config.Dir, "keybindings.yaml", &inputConfig)
 
 	config.Keybindings.Main = parseKeybindings(inputConfig.Main)
 	config.Keybindings.Room = parseKeybindings(inputConfig.Room)
@@ -260,7 +263,10 @@ func (config *Config) SaveKeybindings() {
 }
 
 func (config *Config) LoadAuthCache() {
-	config.load("auth cache", config.CacheDir, "auth-cache.yaml", &config.AuthCache)
+	err := config.load("auth cache", config.CacheDir, "auth-cache.yaml", &config.AuthCache)
+	if err != nil {
+		panic(fmt.Errorf("failed to load auth-cache.yaml: %w", err))
+	}
 }
 
 func (config *Config) SaveAuthCache() {
@@ -268,7 +274,8 @@ func (config *Config) SaveAuthCache() {
 }
 
 func (config *Config) LoadPushRules() {
-	config.load("push rules", config.CacheDir, "pushrules.json", &config.PushRules)
+	_ = config.load("push rules", config.CacheDir, "pushrules.json", &config.PushRules)
+
 }
 
 func (config *Config) SavePushRules() {
@@ -278,21 +285,21 @@ func (config *Config) SavePushRules() {
 	config.save("push rules", config.CacheDir, "pushrules.json", &config.PushRules)
 }
 
-func (config *Config) load(name, dir, file string, target interface{}) {
+func (config *Config) load(name, dir, file string, target interface{}) error {
 	err := os.MkdirAll(dir, 0700)
 	if err != nil {
 		debug.Print("Failed to create", dir)
-		panic(err)
+		return err
 	}
 
 	path := filepath.Join(dir, file)
 	data, err := ioutil.ReadFile(path)
 	if err != nil {
 		if os.IsNotExist(err) {
-			return
+			return nil
 		}
 		debug.Print("Failed to read", name, "from", path)
-		panic(err)
+		return err
 	}
 
 	if strings.HasSuffix(file, ".yaml") {
@@ -302,8 +309,9 @@ func (config *Config) load(name, dir, file string, target interface{}) {
 	}
 	if err != nil {
 		debug.Print("Failed to parse", name, "at", path)
-		panic(err)
+		return err
 	}
+	return nil
 }
 
 func (config *Config) save(name, dir, file string, source interface{}) {
