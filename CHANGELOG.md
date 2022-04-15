@@ -10,6 +10,8 @@
   (thanks to [@tleb] in [#354]).
 * Added tab-completion support for `/toggle` options
   (thanks to [@n-peugnet] in [#362]).
+* Added initial support for rendering spoilers in messages.
+* Fixed mentions being lost when editing messages.
 * Fixed date change messages showing the wrong date.
 * Fixed some whitespace in HTML being rendered even when it shouldn't.
 

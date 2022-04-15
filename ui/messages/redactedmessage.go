@@ -59,7 +59,7 @@ const RedactionMaxWidth = 40
 
 var RedactionStyle = tcell.StyleDefault.Foreground(tcell.NewRGBColor(50, 0, 0))
 
-func (msg *RedactedMessage) Draw(screen mauview.Screen) {
+func (msg *RedactedMessage) Draw(screen mauview.Screen, _ *UIMessage) {
 	w, _ := screen.Size()
 	for x := 0; x < w && x < RedactionMaxWidth; x++ {
 		screen.SetContent(x, 0, RedactionChar, nil, RedactionStyle)

@@ -38,7 +38,7 @@ type BaseEntity struct {
 }
 
 // AdjustStyle changes the style of this text entity.
-func (be *BaseEntity) AdjustStyle(fn AdjustStyleFunc) Entity {
+func (be *BaseEntity) AdjustStyle(fn AdjustStyleFunc, reason AdjustStyleReason) Entity {
 	be.Style = fn(be.Style)
 	return be
 }
@@ -87,7 +87,7 @@ func (be *BaseEntity) String() string {
 }
 
 // CalculateBuffer prepares this entity for rendering with the given parameters.
-func (be *BaseEntity) CalculateBuffer(width, startX int, bare bool) int {
+func (be *BaseEntity) CalculateBuffer(width, startX int, ctx DrawContext) int {
 	be.height = be.DefaultHeight
 	be.startX = startX
 	if be.Block {
@@ -96,6 +96,6 @@ func (be *BaseEntity) CalculateBuffer(width, startX int, bare bool) int {
 	return be.startX
 }
 
-func (be *BaseEntity) Draw(screen mauview.Screen) {
+func (be *BaseEntity) Draw(screen mauview.Screen, ctx DrawContext) {
 	panic("Called Draw() of BaseEntity")
 }

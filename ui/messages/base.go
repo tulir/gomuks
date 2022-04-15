@@ -34,7 +34,7 @@ import (
 )
 
 type MessageRenderer interface {
-	Draw(screen mauview.Screen)
+	Draw(screen mauview.Screen, msg *UIMessage)
 	NotificationContent() string
 	PlainText() string
 	CalculateBuffer(prefs config.UserPreferences, width int, msg *UIMessage)
@@ -324,7 +324,7 @@ func (msg *UIMessage) DrawReactions(screen mauview.Screen) {
 
 func (msg *UIMessage) Draw(screen mauview.Screen) {
 	proxyScreen := msg.DrawReply(screen)
-	msg.Renderer.Draw(proxyScreen)
+	msg.Renderer.Draw(proxyScreen, msg)
 	msg.DrawReactions(proxyScreen)
 	if msg.IsSelected {
 		w, h := screen.Size()

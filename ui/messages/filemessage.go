@@ -170,7 +170,7 @@ func (msg *FileMessage) Height() int {
 	return len(msg.buffer)
 }
 
-func (msg *FileMessage) Draw(screen mauview.Screen) {
+func (msg *FileMessage) Draw(screen mauview.Screen, _ *UIMessage) {
 	for y, line := range msg.buffer {
 		line.Draw(screen, 0, y)
 	}

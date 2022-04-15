@@ -21,9 +21,9 @@ import (
 	"time"
 
 	"go.mau.fi/mauview"
-	"maunium.net/go/gomuks/matrix/muksevt"
 
 	"maunium.net/go/gomuks/config"
+	"maunium.net/go/gomuks/matrix/muksevt"
 	"maunium.net/go/gomuks/ui/messages/tstring"
 )
 
@@ -95,7 +95,7 @@ func (msg *TextMessage) Height() int {
 	return len(msg.buffer)
 }
 
-func (msg *TextMessage) Draw(screen mauview.Screen) {
+func (msg *TextMessage) Draw(screen mauview.Screen, _ *UIMessage) {
 	for y, line := range msg.buffer {
 		line.Draw(screen, 0, y)
 	}

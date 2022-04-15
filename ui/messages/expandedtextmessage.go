@@ -83,7 +83,7 @@ func (msg *ExpandedTextMessage) Height() int {
 	return len(msg.buffer)
 }
 
-func (msg *ExpandedTextMessage) Draw(screen mauview.Screen) {
+func (msg *ExpandedTextMessage) Draw(screen mauview.Screen, _ *UIMessage) {
 	for y, line := range msg.buffer {
 		line.Draw(screen, 0, y)
 	}

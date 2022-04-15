@@ -75,22 +75,23 @@ func AdjustStyleBackgroundColor(color tcell.Color) func(tcell.Style) tcell.Style
 	}
 }
 
-func (parser *htmlParser) getAttribute(node *html.Node, attribute string) string {
+func (parser *htmlParser) maybeGetAttribute(node *html.Node, attribute string) (string, bool) {
 	for _, attr := range node.Attr {
 		if attr.Key == attribute {
-			return attr.Val
+			return attr.Val, true
 		}
 	}
-	return ""
+	return "", false
+}
+
+func (parser *htmlParser) getAttribute(node *html.Node, attribute string) string {
+	val, _ := parser.maybeGetAttribute(node, attribute)
+	return val
 }
 
 func (parser *htmlParser) hasAttribute(node *html.Node, attribute string) bool {
-	for _, attr := range node.Attr {
-		if attr.Key == attribute {
-			return true
-		}
-	}
-	return false
+	_, ok := parser.maybeGetAttribute(node, attribute)
+	return ok
 }
 
 func (parser *htmlParser) listToEntity(node *html.Node) Entity {
@@ -124,21 +125,25 @@ func (parser *htmlParser) basicFormatToEntity(node *html.Node) Entity {
 	}
 	switch node.Data {
 	case "b", "strong":
-		entity.AdjustStyle(AdjustStyleBold)
+		entity.AdjustStyle(AdjustStyleBold, AdjustStyleReasonNormal)
 	case "i", "em":
-		entity.AdjustStyle(AdjustStyleItalic)
+		entity.AdjustStyle(AdjustStyleItalic, AdjustStyleReasonNormal)
 	case "s", "del", "strike":
-		entity.AdjustStyle(AdjustStyleStrikethrough)
+		entity.AdjustStyle(AdjustStyleStrikethrough, AdjustStyleReasonNormal)
 	case "u", "ins":
-		entity.AdjustStyle(AdjustStyleUnderline)
+		entity.AdjustStyle(AdjustStyleUnderline, AdjustStyleReasonNormal)
 	case "font", "span":
 		fgColor, ok := parser.parseColor(node, "data-mx-color", "color")
 		if ok {
-			entity.AdjustStyle(AdjustStyleTextColor(fgColor))
+			entity.AdjustStyle(AdjustStyleTextColor(fgColor), AdjustStyleReasonNormal)
 		}
 		bgColor, ok := parser.parseColor(node, "data-mx-bg-color", "background-color")
 		if ok {
-			entity.AdjustStyle(AdjustStyleBackgroundColor(bgColor))
+			entity.AdjustStyle(AdjustStyleBackgroundColor(bgColor), AdjustStyleReasonNormal)
+		}
+		spoilerReason, isSpoiler := parser.maybeGetAttribute(node, "data-mx-spoiler")
+		if isSpoiler {
+			return NewSpoilerEntity(entity, spoilerReason)
 		}
 	}
 	return entity
@@ -175,7 +180,7 @@ func (parser *htmlParser) headerToEntity(node *html.Node) Entity {
 			[]Entity{NewTextEntity(strings.Repeat("#", int(node.Data[1]-'0')) + " ")},
 			parser.nodeToEntities(node.FirstChild)...,
 		),
-	}).AdjustStyle(AdjustStyleBold)
+	}).AdjustStyle(AdjustStyleBold, AdjustStyleReasonNormal)
 }
 
 func (parser *htmlParser) blockquoteToEntity(node *html.Node) Entity {
@@ -468,7 +473,7 @@ func Parse(prefs *config.UserPreferences, room *rooms.Room, content *event.Messa
 			},
 			Children: []Entity{
 				NewTextEntity("* "),
-				NewTextEntity(senderDisplayname).AdjustStyle(AdjustStyleTextColor(widget.GetHashColor(sender))),
+				NewTextEntity(senderDisplayname).AdjustStyle(AdjustStyleTextColor(widget.GetHashColor(sender)), AdjustStyleReasonNormal),
 				NewTextEntity(" "),
 				root,
 			},
