@@ -41,6 +41,18 @@ func NewExpandedTextMessage(evt *muksevt.Event, displayname string, text tstring
 	})
 }
 
+func NewServiceMessage(text string) *UIMessage {
+	return &UIMessage{
+		SenderID:   "*",
+		SenderName: "*",
+		Timestamp:  time.Now(),
+		IsService:  true,
+		Renderer: &ExpandedTextMessage{
+			Text: tstring.NewTString(text),
+		},
+	}
+}
+
 func NewDateChangeMessage(text string) *UIMessage {
 	midnight := time.Now()
 	midnight = time.Date(midnight.Year(), midnight.Month(), midnight.Day(),
