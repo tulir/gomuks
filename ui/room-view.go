@@ -33,6 +33,7 @@ import (
 	"maunium.net/go/mautrix"
 	"maunium.net/go/mautrix/crypto/attachment"
 	"maunium.net/go/mautrix/event"
+	"maunium.net/go/mautrix/format"
 	"maunium.net/go/mautrix/id"
 	"maunium.net/go/mautrix/util/variationselector"
 
@@ -423,6 +424,18 @@ func (view *RoomView) SetTyping(users []id.UserID) {
 	}
 }
 
+var editHTMLParser = &format.HTMLParser{
+	PillConverter: func(displayname, mxid, eventID string, ctx format.Context) string {
+		if len(eventID) > 0 {
+			return fmt.Sprintf(`[%s](https://matrix.to/#/%s/%s)`, displayname, mxid, eventID)
+		} else {
+			return fmt.Sprintf(`[%s](https://matrix.to/#/%s)`, displayname, mxid)
+		}
+	},
+	Newline:        "\n",
+	HorizontalLine: "\n---\n",
+}
+
 func (view *RoomView) SetEditing(evt *muksevt.Event) {
 	if evt == nil {
 		view.editing = nil
@@ -440,8 +453,14 @@ func (view *RoomView) SetEditing(evt *muksevt.Event) {
 			// This feels kind of dangerous, but I think it works
 			msgContent = view.editing.Gomuks.Edits[len(view.editing.Gomuks.Edits)-1].Content.AsMessage().NewContent
 		}
-		// TODO this should parse HTML instead of just using the plaintext body
 		text := msgContent.Body
+		if len(msgContent.FormattedBody) > 0 && (!view.config.Preferences.DisableMarkdown || !view.config.Preferences.DisableHTML) {
+			if view.config.Preferences.DisableMarkdown {
+				text = msgContent.FormattedBody
+			} else {
+				text = editHTMLParser.Parse(msgContent.FormattedBody, make(format.Context))
+			}
+		}
 		if msgContent.MsgType == event.MsgEmote {
 			text = "/me " + text
 		}
