@@ -18,9 +18,12 @@ package messages
 
 import (
 	"fmt"
+	"regexp"
 	"time"
 
 	"go.mau.fi/mauview"
+	"go.mau.fi/tcell"
+	"maunium.net/go/mautrix/id"
 
 	"maunium.net/go/gomuks/config"
 	"maunium.net/go/gomuks/matrix/muksevt"
@@ -31,13 +34,15 @@ type TextMessage struct {
 	cache       tstring.TString
 	buffer      []tstring.TString
 	isHighlight bool
+	eventID     id.EventID
 	Text        string
 }
 
 // NewTextMessage creates a new UITextMessage object with the provided values and the default state.
 func NewTextMessage(evt *muksevt.Event, displayname string, text string) *UIMessage {
 	return newUIMessage(evt, displayname, &TextMessage{
-		Text: text,
+		eventID: evt.ID,
+		Text:    text,
 	})
 }
 
@@ -59,14 +64,32 @@ func (msg *TextMessage) Clone() MessageRenderer {
 	}
 }
 
+var linkRegex = regexp.MustCompile(`https?://\S+`)
+
 func (msg *TextMessage) getCache(uiMsg *UIMessage) tstring.TString {
 	if msg.cache == nil {
+		var content = tstring.NewBlankTString()
+		indices := linkRegex.FindAllStringIndex(msg.Text, -1)
+		var lastEnd int
+		for i, item := range indices {
+			start, end := item[0], item[1]
+			link := msg.Text[start:end]
+			linkID := fmt.Sprintf("%s-%d", msg.eventID, i)
+			content = content.
+				Append(msg.Text[:start]).
+				AppendTString(tstring.NewStyleTString(link, tcell.StyleDefault.Hyperlink(link, linkID)))
+			lastEnd = end
+		}
+		if lastEnd < len(msg.Text) {
+			content = content.Append(msg.Text[lastEnd:])
+		}
 		switch uiMsg.Type {
 		case "m.emote":
-			msg.cache = tstring.NewColorTString(fmt.Sprintf("* %s %s", uiMsg.SenderName, msg.Text), uiMsg.TextColor())
-			msg.cache.Colorize(0, len(uiMsg.SenderName)+2, uiMsg.SenderColor())
+			prefix := tstring.NewTString("* ")
+			name := tstring.NewColorTString(uiMsg.SenderName, uiMsg.SenderColor())
+			msg.cache = prefix.AppendTString(name, tstring.NewTString(" "), content)
 		default:
-			msg.cache = tstring.NewColorTString(msg.Text, uiMsg.TextColor())
+			msg.cache = content
 		}
 	}
 	return msg.cache
