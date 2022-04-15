@@ -147,11 +147,15 @@ func (msg *FileMessage) CalculateBuffer(prefs config.UserPreferences, width int,
 
 	if prefs.BareMessageView || prefs.DisableImages || len(msg.imageData) == 0 {
 		url := msg.matrix.GetDownloadURL(msg.URL)
+		var urlTString tstring.TString
+		if prefs.InlineURLs {
+			urlTString = tstring.NewStyleTString(url, tcell.StyleDefault.Hyperlink(url, msg.eventID.String()))
+		} else {
+			urlTString = tstring.NewTString(url)
+		}
 		text := tstring.NewTString(msg.Body).
 			Append(": ").
-			AppendTString(tstring.NewStyleTString(
-				url,
-				tcell.StyleDefault.Hyperlink(url, msg.eventID.String())))
+			AppendTString(urlTString)
 		msg.buffer = calculateBufferWithText(prefs, text, width, uiMsg)
 		return
 	}

@@ -383,9 +383,12 @@ func (parser *htmlParser) tagNodeToEntity(node *html.Node) Entity {
 var spaces = regexp.MustCompile("\\s+")
 var links = regexp.MustCompile(`https?://\S+`)
 
-func TextToEntity(text string, eventID id.EventID) Entity {
+func TextToEntity(text string, eventID id.EventID, linkify bool) Entity {
 	if len(text) == 0 {
 		return nil
+	}
+	if !linkify {
+		return NewTextEntity(text)
 	}
 	indices := links.FindAllStringIndex(text, -1)
 	if len(indices) == 0 {
@@ -418,7 +421,7 @@ func (parser *htmlParser) singleNodeToEntity(node *html.Node) Entity {
 			node.Data = strings.ReplaceAll(node.Data, "\n", "")
 			node.Data = spaces.ReplaceAllLiteralString(node.Data, " ")
 		}
-		return TextToEntity(node.Data, parser.evt.ID)
+		return TextToEntity(node.Data, parser.evt.ID, parser.prefs.InlineURLs)
 	case html.ElementNode:
 		parsed := parser.tagNodeToEntity(node)
 		if parsed != nil && !parsed.IsBlock() && parsed.IsEmpty() {
