@@ -44,7 +44,7 @@ type htmlParser struct {
 	prefs *config.UserPreferences
 	room  *rooms.Room
 
-	keepLinebreak bool
+	preserveWhitespace bool
 }
 
 func AdjustStyleBold(style tcell.Style) tcell.Style {
@@ -330,11 +330,11 @@ func (parser *htmlParser) codeblockToEntity(node *html.Node) Entity {
 			}
 		}
 	}
-	parser.keepLinebreak = true
+	parser.preserveWhitespace = true
 	text := (&ContainerEntity{
 		Children: parser.nodeToEntities(node.FirstChild),
 	}).PlainText()
-	parser.keepLinebreak = false
+	parser.preserveWhitespace = false
 	return parser.syntaxHighlight(text, lang)
 }
 
@@ -371,11 +371,13 @@ func (parser *htmlParser) tagNodeToEntity(node *html.Node) Entity {
 	}
 }
 
+var spaces = regexp.MustCompile("\\s+")
+
 func (parser *htmlParser) singleNodeToEntity(node *html.Node) Entity {
 	switch node.Type {
 	case html.TextNode:
-		if !parser.keepLinebreak {
-			node.Data = strings.Replace(node.Data, "\n", "", -1)
+		if !parser.preserveWhitespace {
+			node.Data = spaces.ReplaceAllLiteralString(node.Data, " ")
 		}
 		if len(node.Data) == 0 {
 			return nil
