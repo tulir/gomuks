@@ -43,6 +43,10 @@ func (be *BaseEntity) AdjustStyle(fn AdjustStyleFunc) Entity {
 	return be
 }
 
+func (be *BaseEntity) IsEmpty() bool {
+	return false
+}
+
 // IsBlock returns whether or not this is a block-type entity.
 func (be *BaseEntity) IsBlock() bool {
 	return be.Block

@@ -131,7 +131,7 @@ func (parser *htmlParser) basicFormatToEntity(node *html.Node) Entity {
 		entity.AdjustStyle(AdjustStyleStrikethrough)
 	case "u", "ins":
 		entity.AdjustStyle(AdjustStyleUnderline)
-	case "font":
+	case "font", "span":
 		fgColor, ok := parser.parseColor(node, "data-mx-color", "color")
 		if ok {
 			entity.AdjustStyle(AdjustStyleTextColor(fgColor))
@@ -348,7 +348,7 @@ func (parser *htmlParser) tagNodeToEntity(node *html.Node) Entity {
 		return parser.headerToEntity(node)
 	case "br":
 		return NewBreakEntity()
-	case "b", "strong", "i", "em", "s", "strike", "del", "u", "ins", "font":
+	case "b", "strong", "i", "em", "s", "strike", "del", "u", "ins", "font", "span":
 		return parser.basicFormatToEntity(node)
 	case "a":
 		return parser.linkToEntity(node)
@@ -384,7 +384,11 @@ func (parser *htmlParser) singleNodeToEntity(node *html.Node) Entity {
 		}
 		return NewTextEntity(node.Data)
 	case html.ElementNode:
-		return parser.tagNodeToEntity(node)
+		parsed := parser.tagNodeToEntity(node)
+		if parsed != nil && !parsed.IsBlock() && parsed.IsEmpty() {
+			return nil
+		}
+		return parsed
 	case html.DocumentNode:
 		if node.FirstChild.Data == "html" && node.FirstChild.NextSibling == nil {
 			return parser.singleNodeToEntity(node.FirstChild)

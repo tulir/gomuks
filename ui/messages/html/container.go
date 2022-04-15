@@ -32,6 +32,10 @@ type ContainerEntity struct {
 	Indent int
 }
 
+func (ce *ContainerEntity) IsEmpty() bool {
+	return len(ce.Children) == 0
+}
+
 // PlainText returns the plaintext content in this entity and all its children.
 func (ce *ContainerEntity) PlainText() string {
 	if len(ce.Children) == 0 {
@@ -84,8 +88,7 @@ func (ce *ContainerEntity) String() string {
 		return fmt.Sprintf(`&html.ContainerEntity{Base=%s, Indent=%d, Children=[]}`, ce.BaseEntity, ce.Indent)
 	}
 	var buf strings.Builder
-	_, _ = fmt.Fprintf(&buf, `&html.ContainerEntity{Base=%s,
-                      Indent=%d, Children=[`, ce.BaseEntity, ce.Indent)
+	_, _ = fmt.Fprintf(&buf, `&html.ContainerEntity{Base=%s, Indent=%d, Children=[`, ce.BaseEntity, ce.Indent)
 	for _, child := range ce.Children {
 		buf.WriteString("\n    ")
 		buf.WriteString(strings.Join(strings.Split(strings.TrimRight(child.String(), "\n"), "\n"), "\n    "))

@@ -46,4 +46,6 @@ type Entity interface {
 	CalculateBuffer(width, startX int, bare bool) int
 
 	getStartX() int
+
+	IsEmpty() bool
 }

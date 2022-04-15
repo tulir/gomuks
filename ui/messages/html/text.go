@@ -45,6 +45,10 @@ func NewTextEntity(text string) *TextEntity {
 	}
 }
 
+func (te *TextEntity) IsEmpty() bool {
+	return len(te.Text) == 0
+}
+
 func (te *TextEntity) AdjustStyle(fn AdjustStyleFunc) Entity {
 	te.BaseEntity = te.BaseEntity.AdjustStyle(fn).(*BaseEntity)
 	return te
