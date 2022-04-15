@@ -383,6 +383,34 @@ func (parser *htmlParser) tagNodeToEntity(node *html.Node) Entity {
 var spaces = regexp.MustCompile("\\s+")
 var links = regexp.MustCompile(`https?://\S+`)
 
+func TextToEntity(text string, eventID id.EventID) Entity {
+	if len(text) == 0 {
+		return nil
+	}
+	indices := links.FindAllStringIndex(text, -1)
+	if len(indices) == 0 {
+		return NewTextEntity(text)
+	}
+	ent := &ContainerEntity{
+		BaseEntity: &BaseEntity{Tag: "span"},
+	}
+	var lastEnd int
+	for i, item := range indices {
+		start, end := item[0], item[1]
+		if start > lastEnd {
+			ent.Children = append(ent.Children, NewTextEntity(text[lastEnd:start]))
+		}
+		link := text[start:end]
+		linkID := fmt.Sprintf("%s-%d", eventID, i)
+		ent.Children = append(ent.Children, NewTextEntity(link).AdjustStyle(AdjustStyleLink(link, linkID), AdjustStyleReasonNormal))
+		lastEnd = end
+	}
+	if lastEnd < len(text) {
+		ent.Children = append(ent.Children, NewTextEntity(text[lastEnd:]))
+	}
+	return ent
+}
+
 func (parser *htmlParser) singleNodeToEntity(node *html.Node) Entity {
 	switch node.Type {
 	case html.TextNode:
@@ -390,31 +418,7 @@ func (parser *htmlParser) singleNodeToEntity(node *html.Node) Entity {
 			node.Data = strings.ReplaceAll(node.Data, "\n", "")
 			node.Data = spaces.ReplaceAllLiteralString(node.Data, " ")
 		}
-		if len(node.Data) == 0 {
-			return nil
-		}
-		indices := links.FindAllStringIndex(node.Data, -1)
-		if len(indices) == 0 {
-			return NewTextEntity(node.Data)
-		}
-		ent := &ContainerEntity{
-			BaseEntity: &BaseEntity{Tag: "span"},
-		}
-		var lastEnd int
-		for i, item := range indices {
-			start, end := item[0], item[1]
-			if start > lastEnd {
-				ent.Children = append(ent.Children, NewTextEntity(node.Data[lastEnd:start]))
-			}
-			link := node.Data[start:end]
-			linkID := fmt.Sprintf("%s-%d", parser.evt.ID, i)
-			ent.Children = append(ent.Children, NewTextEntity(link).AdjustStyle(AdjustStyleLink(link, linkID), AdjustStyleReasonNormal))
-			lastEnd = end
-		}
-		if lastEnd < len(node.Data) {
-			ent.Children = append(ent.Children, NewTextEntity(node.Data[lastEnd:]))
-		}
-		return ent
+		return TextToEntity(node.Data, parser.evt.ID)
 	case html.ElementNode:
 		parsed := parser.tagNodeToEntity(node)
 		if parsed != nil && !parsed.IsBlock() && parsed.IsEmpty() {
