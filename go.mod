@@ -17,7 +17,7 @@ require (
 	github.com/zyedidia/clipboard v1.0.3
 	go.etcd.io/bbolt v1.3.6
 	go.mau.fi/cbind v0.0.0-20220415094356-e1d579b7925e
-	go.mau.fi/mauview v0.1.4-0.20220415142327-ec5e0de686a8
+	go.mau.fi/mauview v0.1.4-0.20220415181713-aa8cd644bf1d
 	go.mau.fi/tcell v0.0.0-20220415093808-07c67d224693
 	golang.org/x/image v0.0.0-20220413100746-70e8d0d3baa9
 	golang.org/x/net v0.0.0-20220412020605-290c469a71a5
