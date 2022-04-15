@@ -381,6 +381,7 @@ func (parser *htmlParser) tagNodeToEntity(node *html.Node) Entity {
 }
 
 var spaces = regexp.MustCompile("\\s+")
+var links = regexp.MustCompile(`https?://\S+`)
 
 func (parser *htmlParser) singleNodeToEntity(node *html.Node) Entity {
 	switch node.Type {
@@ -392,7 +393,28 @@ func (parser *htmlParser) singleNodeToEntity(node *html.Node) Entity {
 		if len(node.Data) == 0 {
 			return nil
 		}
-		return NewTextEntity(node.Data)
+		indices := links.FindAllStringIndex(node.Data, -1)
+		if len(indices) == 0 {
+			return NewTextEntity(node.Data)
+		}
+		ent := &ContainerEntity{
+			BaseEntity: &BaseEntity{Tag: "span"},
+		}
+		var lastEnd int
+		for i, item := range indices {
+			start, end := item[0], item[1]
+			if start > lastEnd {
+				ent.Children = append(ent.Children, NewTextEntity(node.Data[lastEnd:start]))
+			}
+			link := node.Data[start:end]
+			linkID := fmt.Sprintf("%s-%d", parser.evt.ID, i)
+			ent.Children = append(ent.Children, NewTextEntity(link).AdjustStyle(AdjustStyleLink(link, linkID), AdjustStyleReasonNormal))
+			lastEnd = end
+		}
+		if lastEnd < len(node.Data) {
+			ent.Children = append(ent.Children, NewTextEntity(node.Data[lastEnd:]))
+		}
+		return ent
 	case html.ElementNode:
 		parsed := parser.tagNodeToEntity(node)
 		if parsed != nil && !parsed.IsBlock() && parsed.IsEmpty() {

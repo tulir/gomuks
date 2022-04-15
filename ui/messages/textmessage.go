@@ -76,7 +76,7 @@ func (msg *TextMessage) getCache(uiMsg *UIMessage) tstring.TString {
 			link := msg.Text[start:end]
 			linkID := fmt.Sprintf("%s-%d", msg.eventID, i)
 			content = content.
-				Append(msg.Text[:start]).
+				Append(msg.Text[lastEnd:start]).
 				AppendTString(tstring.NewStyleTString(link, tcell.StyleDefault.Hyperlink(link, linkID)))
 			lastEnd = end
 		}
