@@ -46,6 +46,8 @@ type FileMessage struct {
 	Thumbnail     id.ContentURI
 	ThumbnailFile *attachment.EncryptedFile
 
+	eventID id.EventID
+
 	imageData []byte
 	buffer    []tstring.TString
 
@@ -71,6 +73,7 @@ func NewFileMessage(matrix ifc.MatrixContainer, evt *muksevt.Event, displayname 
 		File:          file,
 		Thumbnail:     content.GetInfo().ThumbnailURL.ParseOrIgnore(),
 		ThumbnailFile: thumbnailFile,
+		eventID:       evt.ID,
 		matrix:        matrix,
 	})
 }
@@ -143,7 +146,13 @@ func (msg *FileMessage) CalculateBuffer(prefs config.UserPreferences, width int,
 	}
 
 	if prefs.BareMessageView || prefs.DisableImages || len(msg.imageData) == 0 {
-		msg.buffer = calculateBufferWithText(prefs, tstring.NewTString(msg.PlainText()), width, uiMsg)
+		url := msg.matrix.GetDownloadURL(msg.URL)
+		text := tstring.NewTString(msg.Body).
+			Append(": ").
+			AppendTString(tstring.NewStyleTString(
+				url,
+				tcell.StyleDefault.Hyperlink(url, msg.eventID.String())))
+		msg.buffer = calculateBufferWithText(prefs, text, width, uiMsg)
 		return
 	}
 
