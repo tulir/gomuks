@@ -11,9 +11,12 @@
 * Added tab-completion support for `/toggle` options
   (thanks to [@n-peugnet] in [#362]).
 * Added initial support for rendering spoilers in messages.
+* Added support for sending spoilers (with `||reason|spoiler||` or `||spoiler||`).
+* Added support for inline links (limited terminal support; requires `/toggle inlineurls`).
 * Fixed mentions being lost when editing messages.
 * Fixed date change messages showing the wrong date.
 * Fixed some whitespace in HTML being rendered even when it shouldn't.
+* Fixed copying non-text messages with `/copy`.
 
 [@3nprob]: https://github.com/3nprob
 [@tleb]: https://github.com/tleb
