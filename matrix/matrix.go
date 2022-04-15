@@ -840,7 +840,7 @@ func (c *Container) MarkRead(roomID id.RoomID, eventID id.EventID) {
 		defer debug.Recover()
 		err := c.client.MarkRead(roomID, eventID)
 		if err != nil {
-			debug.Print("Failed to mark %s in %s as read: %v", eventID, roomID, err)
+			debug.Printf("Failed to mark %s in %s as read: %v", eventID, roomID, err)
 		}
 	}()
 }

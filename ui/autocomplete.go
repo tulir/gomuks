@@ -60,7 +60,7 @@ func autocompleteFile(cmd *CommandAutocomplete) (completions []string, newText s
 func autocompleteToggle(cmd *CommandAutocomplete) (completions []string, newText string) {
 	completions = make([]string, 0, len(toggleMsg))
 	for k := range toggleMsg {
-		if (strings.HasPrefix(k, cmd.RawArgs)) {
+		if strings.HasPrefix(k, cmd.RawArgs) {
 			completions = append(completions, k)
 		}
 	}
