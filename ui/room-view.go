@@ -212,10 +212,7 @@ func (view *RoomView) OnSelect(message *messages.UIMessage) {
 			go view.Download(msg.URL, msg.File, path, view.selectReason == SelectOpen)
 		}
 	case SelectCopy:
-		msg, ok := message.Renderer.(*messages.TextMessage)
-		if ok {
-			go view.CopyToClipboard(msg.PlainText(), view.selectContent)
-		}
+		go view.CopyToClipboard(message.Renderer.PlainText(), view.selectContent)
 	}
 	view.selecting = false
 	view.selectContent = ""
