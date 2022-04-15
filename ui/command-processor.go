@@ -122,6 +122,7 @@ func NewCommandProcessor(parent *MainView) *CommandProcessor {
 			"import":        autocompleteFile,
 			"export":        autocompleteFile,
 			"export-room":   autocompleteFile,
+			"toggle":        autocompleteToggle,
 		},
 		commands: map[string]CommandHandler{
 			"unknown-command": cmdUnknownCommand,
