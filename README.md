@@ -10,8 +10,6 @@
 
 A terminal Matrix client written in Go using [mautrix](https://github.com/tulir/mautrix-go) and [mauview](https://github.com/tulir/mauview).
 
-Basic usage is possible, but expect bugs and missing features.
-
 ## Docs
 For installation and usage instructions, see [docs.mau.fi](https://docs.mau.fi/gomuks/).
 
