@@ -45,6 +45,7 @@ import (
 	"maunium.net/go/mautrix/id"
 
 	"maunium.net/go/gomuks/debug"
+	"maunium.net/go/gomuks/lib/filepicker"
 )
 
 func cmdMe(cmd *Command) {
@@ -258,15 +259,28 @@ func cmdDownload(cmd *Command) {
 }
 
 func cmdUpload(cmd *Command) {
+	var path string
+	var err error
 	if len(cmd.Args) == 0 {
-		cmd.Reply("Usage: /upload <file>")
-		return
-	}
-
-	path, err := filepath.Abs(cmd.RawArgs)
-	if err != nil {
-		cmd.Reply("Failed to get absolute path: %v", err)
-		return
+		if filepicker.IsSupported() {
+			path, err = filepicker.Open()
+			if err != nil {
+				cmd.Reply("Failed to open file picker: %v", err)
+				return
+			} else if len(path) == 0 {
+				cmd.Reply("File picking cancelled")
+				return
+			}
+		} else {
+			cmd.Reply("Usage: /upload <file>")
+			return
+		}
+	} else {
+		path, err = filepath.Abs(cmd.RawArgs)
+		if err != nil {
+			cmd.Reply("Failed to get absolute path: %v", err)
+			return
+		}
 	}
 
 	go cmd.Room.SendMessageMedia(path)
