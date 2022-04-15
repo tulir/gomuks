@@ -58,6 +58,7 @@ type UserPreferences struct {
 	DisableDownloads     bool `yaml:"disable_downloads"`
 	DisableNotifications bool `yaml:"disable_notifications"`
 	DisableShowURLs      bool `yaml:"disable_show_urls"`
+	InlineURLs           bool `yaml:"inline_urls"`
 	AltEnterToSend       bool `yaml:"alt_enter_to_send"`
 }
 

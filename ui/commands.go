@@ -762,6 +762,20 @@ func (stm SimpleToggleMessage) Name() string {
 	return string(unicode.ToUpper(rune(stm[0]))) + string(stm[1:])
 }
 
+type InvertedToggleMessage string
+
+func (itm InvertedToggleMessage) Format(state bool) string {
+	if state {
+		return "Enabled " + string(itm)
+	} else {
+		return "Disabled " + string(itm)
+	}
+}
+
+func (itm InvertedToggleMessage) Name() string {
+	return string(unicode.ToUpper(rune(itm[0]))) + string(itm[1:])
+}
+
 type NewlineKeybindMessage string
 
 func (nkm NewlineKeybindMessage) Format(state bool) string {
@@ -790,6 +804,7 @@ var toggleMsg = map[string]ToggleMessage{
 	"notifications": SimpleToggleMessage("desktop notifications"),
 	"unverified":    SimpleToggleMessage("sending messages to unverified devices"),
 	"showurls":      SimpleToggleMessage("show URLs in text format"),
+	"inlineurls":    InvertedToggleMessage("use fancy terminal features to render URLs inside text"),
 	"newline":       NewlineKeybindMessage("should <alt+enter> make a new line or send the message"),
 }
 
@@ -837,6 +852,8 @@ func cmdToggle(cmd *Command) {
 			val = &cmd.Config.SendToVerifiedOnly
 		case "showurls":
 			val = &cmd.Config.Preferences.DisableShowURLs
+		case "inlineurls":
+			val = &cmd.Config.Preferences.InlineURLs
 		case "newline":
 			val = &cmd.Config.Preferences.AltEnterToSend
 		default:

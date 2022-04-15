@@ -205,7 +205,7 @@ func ParseMessage(matrix ifc.MatrixContainer, room *rooms.Room, evt *muksevt.Eve
 	switch content.MsgType {
 	case event.MsgText, event.MsgNotice, event.MsgEmote:
 		if content.Format == event.FormatHTML {
-			return NewHTMLMessage(evt, displayname, html.Parse(matrix.Preferences(), room, content, evt.Sender, displayname))
+			return NewHTMLMessage(evt, displayname, html.Parse(matrix.Preferences(), room, content, evt, displayname))
 		}
 		content.Body = strings.Replace(content.Body, "\t", "    ", -1)
 		return NewTextMessage(evt, displayname, content.Body)
