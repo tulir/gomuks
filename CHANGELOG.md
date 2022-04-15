@@ -13,6 +13,7 @@
 * Added initial support for rendering spoilers in messages.
 * Added support for sending spoilers (with `||reason|spoiler||` or `||spoiler||`).
 * Added support for inline links (limited terminal support; requires `/toggle inlineurls`).
+* Added graphical file picker for `/upload` when no path is provided (requires `zenity`).
 * Fixed mentions being lost when editing messages.
 * Fixed date change messages showing the wrong date.
 * Fixed some whitespace in HTML being rendered even when it shouldn't.
