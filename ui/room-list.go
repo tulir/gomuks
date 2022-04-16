@@ -24,9 +24,10 @@ import (
 
 	sync "github.com/sasha-s/go-deadlock"
 
+	"go.mau.fi/mauview"
+	"go.mau.fi/tcell"
+
 	"maunium.net/go/mautrix/id"
-	"maunium.net/go/mauview"
-	"maunium.net/go/tcell"
 
 	"maunium.net/go/gomuks/debug"
 	"maunium.net/go/gomuks/matrix/rooms"

@@ -17,12 +17,14 @@
 package ui
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"math"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"regexp"
 	"runtime"
@@ -35,7 +37,7 @@ import (
 	"unicode"
 
 	"github.com/lucasb-eyer/go-colorful"
-	"github.com/russross/blackfriday/v2"
+	"github.com/yuin/goldmark"
 
 	"maunium.net/go/mautrix"
 	"maunium.net/go/mautrix/event"
@@ -43,6 +45,7 @@ import (
 	"maunium.net/go/mautrix/id"
 
 	"maunium.net/go/gomuks/debug"
+	"maunium.net/go/gomuks/lib/filepicker"
 )
 
 func cmdMe(cmd *Command) {
@@ -83,21 +86,22 @@ var rainbow = GradientTable{
 	{colorful.LinearRgb(1, 0, 0.5), 11 / 11.0},
 }
 
+var rainbowMark = goldmark.New(format.Extensions, format.HTMLOptions, goldmark.WithExtensions(ExtensionRainbow))
+
 // TODO this command definitely belongs in a plugin once we have a plugin system.
 func makeRainbow(cmd *Command, msgtype event.MessageType) {
 	text := strings.Join(cmd.Args, " ")
 
-	render := NewRainbowRenderer(blackfriday.NewHTMLRenderer(blackfriday.HTMLRendererParameters{
-		Flags: blackfriday.UseXHTML,
-	}))
-	htmlBodyBytes := blackfriday.Run([]byte(text), format.Extensions, blackfriday.WithRenderer(render))
-	htmlBody := strings.TrimRight(string(htmlBodyBytes), "\n")
+	var buf strings.Builder
+	_ = rainbowMark.Convert([]byte(text), &buf)
+
+	htmlBody := strings.TrimRight(buf.String(), "\n")
 	htmlBody = format.AntiParagraphRegex.ReplaceAllString(htmlBody, "$1")
 	text = format.HTMLToText(htmlBody)
 
-	count := strings.Count(htmlBody, render.ColorID)
+	count := strings.Count(htmlBody, defaultRB.ColorID)
 	i := -1
-	htmlBody = regexp.MustCompile(render.ColorID).ReplaceAllStringFunc(htmlBody, func(match string) string {
+	htmlBody = regexp.MustCompile(defaultRB.ColorID).ReplaceAllStringFunc(htmlBody, func(match string) string {
 		i++
 		return rainbow.GetInterpolatedColorFor(float64(i) / float64(count)).Hex()
 	})
@@ -111,6 +115,10 @@ func cmdRainbow(cmd *Command) {
 
 func cmdRainbowMe(cmd *Command) {
 	makeRainbow(cmd, event.MsgEmote)
+}
+
+func cmdRainbowNotice(cmd *Command) {
+	makeRainbow(cmd, event.MsgNotice)
 }
 
 func cmdNotice(cmd *Command) {
@@ -173,6 +181,75 @@ func cmdEdit(cmd *Command) {
 	cmd.Room.StartSelecting(SelectEdit, "")
 }
 
+func findEditorExecutable() (string, string, error) {
+	if editor := os.Getenv("VISUAL"); len(editor) > 0 {
+		if path, err := exec.LookPath(editor); err != nil {
+			return "", "", fmt.Errorf("$VISUAL ('%s') not found in $PATH", editor)
+		} else {
+			return editor, path, nil
+		}
+	} else if editor = os.Getenv("EDITOR"); len(editor) > 0 {
+		if path, err := exec.LookPath(editor); err != nil {
+			return "", "", fmt.Errorf("$EDITOR ('%s') not found in $PATH", editor)
+		} else {
+			return editor, path, nil
+		}
+	} else if path, _ := exec.LookPath("nano"); len(path) > 0 {
+		return "nano", path, nil
+	} else if path, _ = exec.LookPath("vi"); len(path) > 0 {
+		return "vi", path, nil
+	} else {
+		return "", "", fmt.Errorf("$VISUAL and $EDITOR not set, nano and vi not found in $PATH")
+	}
+}
+
+func cmdExternalEditor(cmd *Command) {
+	var file *os.File
+	defer func() {
+		if file != nil {
+			_ = file.Close()
+			_ = os.Remove(file.Name())
+		}
+	}()
+
+	fileExtension := "md"
+	if cmd.Config.Preferences.DisableMarkdown {
+		if cmd.Config.Preferences.DisableHTML {
+			fileExtension = "txt"
+		} else {
+			fileExtension = "html"
+		}
+	}
+
+	if editorName, executablePath, err := findEditorExecutable(); err != nil {
+		cmd.Reply("Couldn't find editor to use: %v", err)
+		return
+	} else if file, err = os.CreateTemp("", fmt.Sprintf("gomuks-draft-*.%s", fileExtension)); err != nil {
+		cmd.Reply("Failed to create temp file: %v", err)
+		return
+	} else if _, err = file.WriteString(cmd.RawArgs); err != nil {
+		cmd.Reply("Failed to write to temp file: %v", err)
+	} else if err = file.Close(); err != nil {
+		cmd.Reply("Failed to close temp file: %v", err)
+	} else if err = cmd.UI.RunExternal(executablePath, file.Name()); err != nil {
+		var exitErr *exec.ExitError
+		if isExit := errors.As(err, &exitErr); isExit {
+			cmd.Reply("%s exited with non-zero status %d", editorName, exitErr.ExitCode())
+		} else {
+			cmd.Reply("Failed to run %s: %v", editorName, err)
+		}
+	} else if data, err := os.ReadFile(file.Name()); err != nil {
+		cmd.Reply("Failed to read temp file: %v", err)
+	} else if len(bytes.TrimSpace(data)) > 0 {
+		cmd.Room.InputSubmit(string(data))
+	} else {
+		cmd.Reply("Temp file was blank, sending cancelled")
+		if cmd.Room.editing != nil {
+			cmd.Room.SetEditing(nil)
+		}
+	}
+}
+
 func cmdRedact(cmd *Command) {
 	cmd.Room.StartSelecting(SelectRedact, strings.Join(cmd.Args, " "))
 }
@@ -182,15 +259,28 @@ func cmdDownload(cmd *Command) {
 }
 
 func cmdUpload(cmd *Command) {
+	var path string
+	var err error
 	if len(cmd.Args) == 0 {
-		cmd.Reply("Usage: /upload <file>")
-		return
-	}
-
-	path, err := filepath.Abs(cmd.RawArgs)
-	if err != nil {
-		cmd.Reply("Failed to get absolute path: %v", err)
-		return
+		if filepicker.IsSupported() {
+			path, err = filepicker.Open()
+			if err != nil {
+				cmd.Reply("Failed to open file picker: %v", err)
+				return
+			} else if len(path) == 0 {
+				cmd.Reply("File picking cancelled")
+				return
+			}
+		} else {
+			cmd.Reply("Usage: /upload <file>")
+			return
+		}
+	} else {
+		path, err = filepath.Abs(cmd.RawArgs)
+		if err != nil {
+			cmd.Reply("Failed to get absolute path: %v", err)
+			return
+		}
 	}
 
 	go cmd.Room.SendMessageMedia(path)
@@ -686,6 +776,20 @@ func (stm SimpleToggleMessage) Name() string {
 	return string(unicode.ToUpper(rune(stm[0]))) + string(stm[1:])
 }
 
+type InvertedToggleMessage string
+
+func (itm InvertedToggleMessage) Format(state bool) string {
+	if state {
+		return "Enabled " + string(itm)
+	} else {
+		return "Disabled " + string(itm)
+	}
+}
+
+func (itm InvertedToggleMessage) Name() string {
+	return string(unicode.ToUpper(rune(itm[0]))) + string(itm[1:])
+}
+
 type NewlineKeybindMessage string
 
 func (nkm NewlineKeybindMessage) Format(state bool) string {
@@ -714,6 +818,7 @@ var toggleMsg = map[string]ToggleMessage{
 	"notifications": SimpleToggleMessage("desktop notifications"),
 	"unverified":    SimpleToggleMessage("sending messages to unverified devices"),
 	"showurls":      SimpleToggleMessage("show URLs in text format"),
+	"inlineurls":    InvertedToggleMessage("use fancy terminal features to render URLs inside text"),
 	"newline":       NewlineKeybindMessage("should <alt+enter> make a new line or send the message"),
 }
 
@@ -761,6 +866,16 @@ func cmdToggle(cmd *Command) {
 			val = &cmd.Config.SendToVerifiedOnly
 		case "showurls":
 			val = &cmd.Config.Preferences.DisableShowURLs
+		case "inlineurls":
+			switch cmd.Config.Preferences.InlineURLMode {
+			case "enable":
+				cmd.Config.Preferences.InlineURLMode = "disable"
+				cmd.Reply("Force-disabled using fancy terminal features to render URLs inside text. Restart gomuks to apply changes.")
+			default:
+				cmd.Config.Preferences.InlineURLMode = "enable"
+				cmd.Reply("Force-enabled using fancy terminal features to render URLs inside text. Restart gomuks to apply changes.")
+			}
+			continue
 		case "newline":
 			val = &cmd.Config.Preferences.AltEnterToSend
 		default:
@@ -770,6 +885,10 @@ func cmdToggle(cmd *Command) {
 		*val = !(*val)
 		debug.Print(thing, *val)
 		cmd.Reply(toggleMsg[thing].Format(*val))
+		if thing == "rooms" {
+			// Update topic string to include or not include room name
+			cmd.Room.Update()
+		}
 	}
 	cmd.UI.Render()
 	go cmd.Matrix.SendPreferencesToMatrix()

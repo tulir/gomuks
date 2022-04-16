@@ -27,17 +27,19 @@ import (
 	"github.com/mattn/go-runewidth"
 	"github.com/zyedidia/clipboard"
 
-	"maunium.net/go/mauview"
-	"maunium.net/go/tcell"
+	"go.mau.fi/mauview"
+	"go.mau.fi/tcell"
 
 	"maunium.net/go/mautrix"
 	"maunium.net/go/mautrix/crypto/attachment"
 	"maunium.net/go/mautrix/event"
+	"maunium.net/go/mautrix/format"
 	"maunium.net/go/mautrix/id"
+	"maunium.net/go/mautrix/util/variationselector"
 
 	"maunium.net/go/gomuks/config"
 	"maunium.net/go/gomuks/debug"
-	"maunium.net/go/gomuks/interface"
+	ifc "maunium.net/go/gomuks/interface"
 	"maunium.net/go/gomuks/lib/open"
 	"maunium.net/go/gomuks/lib/util"
 	"maunium.net/go/gomuks/matrix/muksevt"
@@ -210,10 +212,7 @@ func (view *RoomView) OnSelect(message *messages.UIMessage) {
 			go view.Download(msg.URL, msg.File, path, view.selectReason == SelectOpen)
 		}
 	case SelectCopy:
-		msg, ok := message.Renderer.(*messages.TextMessage)
-		if ok {
-			go view.CopyToClipboard(msg.PlainText(), view.selectContent)
-		}
+		go view.CopyToClipboard(message.Renderer.PlainText(), view.selectContent)
 	}
 	view.selecting = false
 	view.selectContent = ""
@@ -339,41 +338,44 @@ func (view *RoomView) ClearAllContext() {
 
 func (view *RoomView) OnKeyEvent(event mauview.KeyEvent) bool {
 	msgView := view.MessageView()
+	kb := config.Keybind{
+		Key: event.Key(),
+		Ch:  event.Rune(),
+		Mod: event.Modifiers(),
+	}
+
 	if view.selecting {
-		k := event.Key()
-		c := event.Rune()
-		switch {
-		case k == tcell.KeyEscape || c == 'h':
+		switch view.config.Keybindings.Visual[kb] {
+		case "clear":
 			view.ClearAllContext()
-		case k == tcell.KeyUp || c == 'k':
+		case "select_prev":
 			view.SelectPrevious()
-		case k == tcell.KeyDown || c == 'j':
+		case "select_next":
 			view.SelectNext()
-		case k == tcell.KeyEnter || c == 'l':
+		case "confirm":
 			view.OnSelect(msgView.selected)
 		default:
 			return false
 		}
 		return true
 	}
-	switch event.Key() {
-	case tcell.KeyEscape:
+
+	switch view.config.Keybindings.Room[kb] {
+	case "clear":
 		view.ClearAllContext()
 		return true
-	case tcell.KeyPgUp:
+	case "scroll_up":
 		if msgView.IsAtTop() {
 			go view.parent.LoadHistory(view.Room.ID)
 		}
 		msgView.AddScrollOffset(+msgView.Height() / 2)
 		return true
-	case tcell.KeyPgDn:
+	case "scroll_down":
 		msgView.AddScrollOffset(-msgView.Height() / 2)
 		return true
-	case tcell.KeyEnter:
-		if (event.Modifiers()&tcell.ModShift == 0 && event.Modifiers()&tcell.ModCtrl == 0) != (view.config.Preferences.AltEnterToSend) {
-			view.InputSubmit(view.input.GetText())
-			return true
-		}
+	case "send":
+		view.InputSubmit(view.input.GetText())
+		return true
 	}
 	return view.input.OnKeyEvent(event)
 }
@@ -419,6 +421,18 @@ func (view *RoomView) SetTyping(users []id.UserID) {
 	}
 }
 
+var editHTMLParser = &format.HTMLParser{
+	PillConverter: func(displayname, mxid, eventID string, ctx format.Context) string {
+		if len(eventID) > 0 {
+			return fmt.Sprintf(`[%s](https://matrix.to/#/%s/%s)`, displayname, mxid, eventID)
+		} else {
+			return fmt.Sprintf(`[%s](https://matrix.to/#/%s)`, displayname, mxid)
+		}
+	},
+	Newline:        "\n",
+	HorizontalLine: "\n---\n",
+}
+
 func (view *RoomView) SetEditing(evt *muksevt.Event) {
 	if evt == nil {
 		view.editing = nil
@@ -436,8 +450,14 @@ func (view *RoomView) SetEditing(evt *muksevt.Event) {
 			// This feels kind of dangerous, but I think it works
 			msgContent = view.editing.Gomuks.Edits[len(view.editing.Gomuks.Edits)-1].Content.AsMessage().NewContent
 		}
-		// TODO this should parse HTML instead of just using the plaintext body
 		text := msgContent.Body
+		if len(msgContent.FormattedBody) > 0 && (!view.config.Preferences.DisableMarkdown || !view.config.Preferences.DisableHTML) {
+			if view.config.Preferences.DisableMarkdown {
+				text = msgContent.FormattedBody
+			} else {
+				text = editHTMLParser.Parse(msgContent.FormattedBody, make(format.Context))
+			}
+		}
 		if msgContent.MsgType == event.MsgEmote {
 			text = "/me " + text
 		}
@@ -731,6 +751,10 @@ func (view *RoomView) Redact(eventID id.EventID, reason string) {
 
 func (view *RoomView) SendReaction(eventID id.EventID, reaction string) {
 	defer debug.Recover()
+	if !view.config.Preferences.DisableEmojis {
+		reaction = emoji.Sprint(reaction)
+	}
+	reaction = variationselector.Add(strings.TrimSpace(reaction))
 	debug.Print("Reacting to", eventID, "in", view.Room.ID, "with", reaction)
 	eventID, err := view.parent.matrix.SendEvent(&muksevt.Event{
 		Event: &event.Event{
@@ -833,7 +857,16 @@ func (view *RoomView) MxRoom() *rooms.Room {
 }
 
 func (view *RoomView) Update() {
-	view.topic.SetText(strings.Replace(view.Room.GetTopic(), "\n", " ", -1))
+	topicStr := strings.TrimSpace(strings.ReplaceAll(view.Room.GetTopic(), "\n", " "))
+	if view.config.Preferences.HideRoomList {
+		if len(topicStr) > 0 {
+			topicStr = fmt.Sprintf("%s - %s", view.Room.GetTitle(), topicStr)
+		} else {
+			topicStr = view.Room.GetTitle()
+		}
+		topicStr = strings.TrimSpace(topicStr)
+	}
+	view.topic.SetText(topicStr)
 	if !view.userListLoaded {
 		view.UpdateUserList()
 	}

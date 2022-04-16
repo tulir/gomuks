@@ -17,18 +17,30 @@
 package html
 
 import (
-	"maunium.net/go/mauview"
-	"maunium.net/go/tcell"
+	"go.mau.fi/mauview"
+	"go.mau.fi/tcell"
 )
 
 // AdjustStyleFunc is a lambda function type to edit an existing tcell Style.
 type AdjustStyleFunc func(tcell.Style) tcell.Style
 
+type AdjustStyleReason int
+
+const (
+	AdjustStyleReasonNormal AdjustStyleReason = iota
+	AdjustStyleReasonHideSpoiler
+)
+
+type DrawContext struct {
+	IsSelected   bool
+	BareMessages bool
+}
+
 type Entity interface {
 	// AdjustStyle recursively changes the style of the entity and all its children.
-	AdjustStyle(AdjustStyleFunc) Entity
+	AdjustStyle(AdjustStyleFunc, AdjustStyleReason) Entity
 	// Draw draws the entity onto the given mauview Screen.
-	Draw(screen mauview.Screen)
+	Draw(screen mauview.Screen, ctx DrawContext)
 	// IsBlock returns whether or not it's a block-type entity.
 	IsBlock() bool
 	// GetTag returns the HTML tag of the entity.
@@ -43,7 +55,9 @@ type Entity interface {
 	// Height returns the render height of the entity.
 	Height() int
 	// CalculateBuffer prepares the entity and all its children for rendering with the given parameters
-	CalculateBuffer(width, startX int, bare bool) int
+	CalculateBuffer(width, startX int, ctx DrawContext) int
 
 	getStartX() int
+
+	IsEmpty() bool
 }

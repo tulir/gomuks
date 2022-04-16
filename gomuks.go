@@ -24,7 +24,7 @@ import (
 
 	"maunium.net/go/gomuks/config"
 	"maunium.net/go/gomuks/debug"
-	"maunium.net/go/gomuks/interface"
+	ifc "maunium.net/go/gomuks/interface"
 	"maunium.net/go/gomuks/matrix"
 )
 
@@ -86,6 +86,10 @@ func (gmx *Gomuks) StartAutosave() {
 // Stop stops the Matrix syncer, the tview app and the autosave goroutine,
 // then saves everything and calls os.Exit(0).
 func (gmx *Gomuks) Stop(save bool) {
+	go gmx.internalStop(save)
+}
+
+func (gmx *Gomuks) internalStop(save bool) {
 	debug.Print("Disconnecting from Matrix...")
 	gmx.matrix.Stop()
 	debug.Print("Cleaning up UI...")

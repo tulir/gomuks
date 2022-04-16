@@ -1,5 +1,5 @@
 // gomuks - A terminal Matrix client written in Go.
-// Copyright (C) 2020 Tulir Asokan
+// Copyright (C) 2022 Tulir Asokan
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Affero General Public License as published by
@@ -14,26 +14,36 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-package notification
+package filepicker
 
 import (
-	"gopkg.in/toast.v1"
+	"bytes"
+	"errors"
+	"os/exec"
+	"strings"
 )
 
-func Send(title, text string, critical, sound bool) error {
-	notification := toast.Notification{
-		AppID:    "gomuks",
-		Title:    title,
-		Message:  text,
-		Audio:    toast.Silent,
-		Duration: toast.Short,
-		// 		Icon: ...,
+var zenity string
+
+func init() {
+	zenity, _ = exec.LookPath("zenity")
+}
+
+func IsSupported() bool {
+	return len(zenity) > 0
+}
+
+func Open() (string, error) {
+	cmd := exec.Command(zenity, "--file-selection")
+	var output bytes.Buffer
+	cmd.Stdout = &output
+	err := cmd.Run()
+	if err != nil {
+		var exitErr *exec.ExitError
+		if errors.As(err, &exitErr) && exitErr.ExitCode() == 1 {
+			return "", nil
+		}
+		return "", err
 	}
-	if sound {
-		notification.Audio = toast.IM
-	}
-	if critical {
-		notification.Duration = toast.Long
-	}
-	return notification.Push()
+	return strings.TrimSpace(output.String()), nil
 }

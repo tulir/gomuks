@@ -27,7 +27,7 @@ import (
 	"time"
 
 	"maunium.net/go/gomuks/debug"
-	"maunium.net/go/gomuks/interface"
+	ifc "maunium.net/go/gomuks/interface"
 	"maunium.net/go/gomuks/ui"
 )
 
@@ -122,9 +122,9 @@ func UserDataDir() (dir string, err error) {
 	if runtime.GOOS == "windows" || runtime.GOOS == "darwin" {
 		return UserConfigDir()
 	}
-	dir = os.Getenv("XDG_DATA_HOME")
+	dir = getRootDir("data")
 	if dir == "" {
-		dir = getRootDir("data")
+		dir = os.Getenv("XDG_DATA_HOME")
 	}
 	if dir == "" {
 		dir = os.Getenv("HOME")

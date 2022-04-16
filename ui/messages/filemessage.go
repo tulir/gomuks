@@ -25,12 +25,13 @@ import (
 	"maunium.net/go/mautrix/crypto/attachment"
 	"maunium.net/go/mautrix/event"
 	"maunium.net/go/mautrix/id"
-	"maunium.net/go/mauview"
-	"maunium.net/go/tcell"
+
+	"go.mau.fi/mauview"
+	"go.mau.fi/tcell"
 
 	"maunium.net/go/gomuks/config"
 	"maunium.net/go/gomuks/debug"
-	"maunium.net/go/gomuks/interface"
+	ifc "maunium.net/go/gomuks/interface"
 	"maunium.net/go/gomuks/lib/ansimage"
 	"maunium.net/go/gomuks/matrix/muksevt"
 	"maunium.net/go/gomuks/ui/messages/tstring"
@@ -44,6 +45,8 @@ type FileMessage struct {
 	File          *attachment.EncryptedFile
 	Thumbnail     id.ContentURI
 	ThumbnailFile *attachment.EncryptedFile
+
+	eventID id.EventID
 
 	imageData []byte
 	buffer    []tstring.TString
@@ -70,6 +73,7 @@ func NewFileMessage(matrix ifc.MatrixContainer, evt *muksevt.Event, displayname 
 		File:          file,
 		Thumbnail:     content.GetInfo().ThumbnailURL.ParseOrIgnore(),
 		ThumbnailFile: thumbnailFile,
+		eventID:       evt.ID,
 		matrix:        matrix,
 	})
 }
@@ -142,7 +146,17 @@ func (msg *FileMessage) CalculateBuffer(prefs config.UserPreferences, width int,
 	}
 
 	if prefs.BareMessageView || prefs.DisableImages || len(msg.imageData) == 0 {
-		msg.buffer = calculateBufferWithText(prefs, tstring.NewTString(msg.PlainText()), width, uiMsg)
+		url := msg.matrix.GetDownloadURL(msg.URL)
+		var urlTString tstring.TString
+		if prefs.EnableInlineURLs() {
+			urlTString = tstring.NewStyleTString(url, tcell.StyleDefault.Hyperlink(url, msg.eventID.String()))
+		} else {
+			urlTString = tstring.NewTString(url)
+		}
+		text := tstring.NewTString(msg.Body).
+			Append(": ").
+			AppendTString(urlTString)
+		msg.buffer = calculateBufferWithText(prefs, text, width, uiMsg)
 		return
 	}
 
@@ -169,7 +183,7 @@ func (msg *FileMessage) Height() int {
 	return len(msg.buffer)
 }
 
-func (msg *FileMessage) Draw(screen mauview.Screen) {
+func (msg *FileMessage) Draw(screen mauview.Screen, _ *UIMessage) {
 	for y, line := range msg.buffer {
 		line.Draw(screen, 0, y)
 	}

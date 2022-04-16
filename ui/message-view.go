@@ -25,15 +25,15 @@ import (
 	"github.com/mattn/go-runewidth"
 	sync "github.com/sasha-s/go-deadlock"
 
-	"maunium.net/go/mauview"
-	"maunium.net/go/tcell"
+	"go.mau.fi/mauview"
+	"go.mau.fi/tcell"
 
 	"maunium.net/go/mautrix/event"
 	"maunium.net/go/mautrix/id"
 
 	"maunium.net/go/gomuks/config"
 	"maunium.net/go/gomuks/debug"
-	"maunium.net/go/gomuks/interface"
+	ifc "maunium.net/go/gomuks/interface"
 	"maunium.net/go/gomuks/lib/open"
 	"maunium.net/go/gomuks/ui/messages"
 	"maunium.net/go/gomuks/ui/widget"
@@ -167,9 +167,9 @@ func (view *MessageView) AddMessage(ifcMessage ifc.Message, direction MessageDir
 	}
 	message.CalculateBuffer(view.config.Preferences, width)
 
-	makeDateChange := func() *messages.UIMessage {
+	makeDateChange := func(msg *messages.UIMessage) *messages.UIMessage {
 		dateChange := messages.NewDateChangeMessage(
-			fmt.Sprintf("Date changed to %s", message.FormatDate()))
+			fmt.Sprintf("Date changed to %s", msg.FormatDate()))
 		dateChange.CalculateBuffer(view.config.Preferences, width)
 		view.appendBuffer(dateChange)
 		return dateChange
@@ -181,7 +181,7 @@ func (view *MessageView) AddMessage(ifcMessage ifc.Message, direction MessageDir
 		}
 		view.messagesLock.Lock()
 		if len(view.messages) > 0 && !view.messages[len(view.messages)-1].SameDate(message) {
-			view.messages = append(view.messages, makeDateChange(), message)
+			view.messages = append(view.messages, makeDateChange(message), message)
 		} else {
 			view.messages = append(view.messages, message)
 		}
@@ -190,7 +190,7 @@ func (view *MessageView) AddMessage(ifcMessage ifc.Message, direction MessageDir
 	} else if direction == PrependMessage {
 		view.messagesLock.Lock()
 		if len(view.messages) > 0 && !view.messages[0].SameDate(message) {
-			view.messages = append([]*messages.UIMessage{message, makeDateChange()}, view.messages...)
+			view.messages = append([]*messages.UIMessage{message, makeDateChange(view.messages[0])}, view.messages...)
 		} else {
 			view.messages = append([]*messages.UIMessage{message}, view.messages...)
 		}

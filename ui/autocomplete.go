@@ -56,3 +56,16 @@ func autocompleteFile(cmd *CommandAutocomplete) (completions []string, newText s
 	}
 	return
 }
+
+func autocompleteToggle(cmd *CommandAutocomplete) (completions []string, newText string) {
+	completions = make([]string, 0, len(toggleMsg))
+	for k := range toggleMsg {
+		if strings.HasPrefix(k, cmd.RawArgs) {
+			completions = append(completions, k)
+		}
+	}
+	if len(completions) == 1 {
+		newText = fmt.Sprintf("/%s %s", cmd.OrigCommand, completions[0])
+	}
+	return
+}

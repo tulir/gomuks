@@ -21,8 +21,9 @@ import (
 	"math"
 	"strings"
 
+	"go.mau.fi/mauview"
+
 	"maunium.net/go/gomuks/ui/widget"
-	"maunium.net/go/mauview"
 )
 
 type ListEntity struct {
@@ -58,8 +59,9 @@ func NewListEntity(ordered bool, start int, children []Entity) *ListEntity {
 	return entity
 }
 
-func (le *ListEntity) AdjustStyle(fn AdjustStyleFunc) Entity {
-	le.BaseEntity = le.BaseEntity.AdjustStyle(fn).(*BaseEntity)
+func (le *ListEntity) AdjustStyle(fn AdjustStyleFunc, reason AdjustStyleReason) Entity {
+	le.BaseEntity = le.BaseEntity.AdjustStyle(fn, reason).(*BaseEntity)
+	le.ContainerEntity.AdjustStyle(fn, reason)
 	return le
 }
 
@@ -71,7 +73,7 @@ func (le *ListEntity) Clone() Entity {
 	}
 }
 
-func (le *ListEntity) Draw(screen mauview.Screen) {
+func (le *ListEntity) Draw(screen mauview.Screen, ctx DrawContext) {
 	width, _ := screen.Size()
 
 	proxyScreen := &mauview.ProxyScreen{Parent: screen, OffsetX: le.Indent, Width: width - le.Indent, Style: le.Style}
@@ -84,7 +86,7 @@ func (le *ListEntity) Draw(screen mauview.Screen) {
 		} else {
 			screen.SetContent(0, proxyScreen.OffsetY, '●', nil, le.Style)
 		}
-		entity.Draw(proxyScreen)
+		entity.Draw(proxyScreen, ctx)
 		proxyScreen.SetStyle(le.Style)
 		proxyScreen.OffsetY += entity.Height()
 	}

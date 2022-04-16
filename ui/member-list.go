@@ -23,10 +23,11 @@ import (
 
 	"github.com/mattn/go-runewidth"
 
+	"go.mau.fi/mauview"
+	"go.mau.fi/tcell"
+
 	"maunium.net/go/mautrix/event"
 	"maunium.net/go/mautrix/id"
-	"maunium.net/go/mauview"
-	"maunium.net/go/tcell"
 
 	"maunium.net/go/gomuks/matrix/rooms"
 	"maunium.net/go/gomuks/ui/widget"

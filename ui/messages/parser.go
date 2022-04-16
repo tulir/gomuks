@@ -20,12 +20,13 @@ import (
 	"fmt"
 	"strings"
 
+	"go.mau.fi/tcell"
+
 	"maunium.net/go/mautrix/event"
 	"maunium.net/go/mautrix/id"
-	"maunium.net/go/tcell"
 
 	"maunium.net/go/gomuks/debug"
-	"maunium.net/go/gomuks/interface"
+	ifc "maunium.net/go/gomuks/interface"
 	"maunium.net/go/gomuks/matrix/muksevt"
 	"maunium.net/go/gomuks/matrix/rooms"
 	"maunium.net/go/gomuks/ui/messages/html"
@@ -53,7 +54,7 @@ func ParseEvent(matrix ifc.MatrixContainer, mainView ifc.MainView, room *rooms.R
 		if replyToMsg := getCachedEvent(mainView, room.ID, content.GetReplyTo()); replyToMsg != nil {
 			msg.ReplyTo = replyToMsg.Clone()
 		} else if replyToEvt, _ := matrix.GetEvent(room, content.GetReplyTo()); replyToEvt != nil {
-			if replyToMsg := directParseEvent(matrix, room, replyToEvt); replyToMsg != nil {
+			if replyToMsg = directParseEvent(matrix, room, replyToEvt); replyToMsg != nil {
 				msg.ReplyTo = replyToMsg
 				msg.ReplyTo.Reactions = nil
 			} else {
@@ -204,10 +205,10 @@ func ParseMessage(matrix ifc.MatrixContainer, room *rooms.Room, evt *muksevt.Eve
 	switch content.MsgType {
 	case event.MsgText, event.MsgNotice, event.MsgEmote:
 		if content.Format == event.FormatHTML {
-			return NewHTMLMessage(evt, displayname, html.Parse(matrix.Preferences(), room, content, evt.Sender, displayname))
+			return NewHTMLMessage(evt, displayname, html.Parse(matrix.Preferences(), room, content, evt, displayname))
 		}
 		content.Body = strings.Replace(content.Body, "\t", "    ", -1)
-		return NewTextMessage(evt, displayname, content.Body)
+		return NewHTMLMessage(evt, displayname, html.TextToEntity(content.Body, evt.ID, matrix.Preferences().EnableInlineURLs()))
 	case event.MsgImage, event.MsgVideo, event.MsgAudio, event.MsgFile:
 		msg := NewFileMessage(matrix, evt, displayname)
 		if !matrix.Preferences().DisableDownloads {

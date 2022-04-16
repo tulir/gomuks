@@ -22,8 +22,9 @@ import (
 
 	"github.com/mattn/go-runewidth"
 
+	"go.mau.fi/mauview"
+
 	"maunium.net/go/gomuks/ui/widget"
-	"maunium.net/go/mauview"
 )
 
 type TextEntity struct {
@@ -44,8 +45,12 @@ func NewTextEntity(text string) *TextEntity {
 	}
 }
 
-func (te *TextEntity) AdjustStyle(fn AdjustStyleFunc) Entity {
-	te.BaseEntity = te.BaseEntity.AdjustStyle(fn).(*BaseEntity)
+func (te *TextEntity) IsEmpty() bool {
+	return len(te.Text) == 0
+}
+
+func (te *TextEntity) AdjustStyle(fn AdjustStyleFunc, reason AdjustStyleReason) Entity {
+	te.BaseEntity = te.BaseEntity.AdjustStyle(fn, reason).(*BaseEntity)
 	return te
 }
 
@@ -64,7 +69,7 @@ func (te *TextEntity) String() string {
 	return fmt.Sprintf("&html.TextEntity{Text=%s, Base=%s},\n", te.Text, te.BaseEntity)
 }
 
-func (te *TextEntity) Draw(screen mauview.Screen) {
+func (te *TextEntity) Draw(screen mauview.Screen, ctx DrawContext) {
 	width, _ := screen.Size()
 	x := te.startX
 	for y, line := range te.buffer {
@@ -73,8 +78,8 @@ func (te *TextEntity) Draw(screen mauview.Screen) {
 	}
 }
 
-func (te *TextEntity) CalculateBuffer(width, startX int, bare bool) int {
-	te.BaseEntity.CalculateBuffer(width, startX, bare)
+func (te *TextEntity) CalculateBuffer(width, startX int, ctx DrawContext) int {
+	te.BaseEntity.CalculateBuffer(width, startX, ctx)
 	if len(te.Text) == 0 {
 		return te.startX
 	}
@@ -89,7 +94,7 @@ func (te *TextEntity) CalculateBuffer(width, startX int, bare bool) int {
 	for {
 		// TODO add option no wrap and character wrap options
 		extract := runewidth.Truncate(text, width-textStartX, "")
-		extract, wordWrapped := trim(extract, text, bare)
+		extract, wordWrapped := trim(extract, text, ctx.BareMessages)
 		if !wordWrapped && textStartX > 0 {
 			if bufPtr < len(te.buffer) {
 				te.buffer[bufPtr] = ""

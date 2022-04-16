@@ -840,7 +840,7 @@ func (c *Container) MarkRead(roomID id.RoomID, eventID id.EventID) {
 		defer debug.Recover()
 		err := c.client.MarkRead(roomID, eventID)
 		if err != nil {
-			debug.Print("Failed to mark %s in %s as read: %v", eventID, roomID, err)
+			debug.Printf("Failed to mark %s in %s as read: %v", eventID, roomID, err)
 		}
 	}()
 }
@@ -1098,7 +1098,7 @@ func (c *Container) GetHistory(room *rooms.Room, limit int, dbPointer uint64) ([
 		debug.Printf("Loaded %d events for %s from local cache", len(events), room.ID)
 		return events, newDBPointer, nil
 	}
-	resp, err := c.client.Messages(room.ID, room.PrevBatch, "", 'b', limit)
+	resp, err := c.client.Messages(room.ID, room.PrevBatch, "", 'b', nil, limit)
 	if err != nil {
 		return nil, dbPointer, err
 	}

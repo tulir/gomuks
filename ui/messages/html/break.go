@@ -17,7 +17,7 @@
 package html
 
 import (
-	"maunium.net/go/mauview"
+	"go.mau.fi/mauview"
 )
 
 type BreakEntity struct {
@@ -32,8 +32,8 @@ func NewBreakEntity() *BreakEntity {
 }
 
 // AdjustStyle changes the style of this text entity.
-func (be *BreakEntity) AdjustStyle(fn AdjustStyleFunc) Entity {
-	be.BaseEntity = be.BaseEntity.AdjustStyle(fn).(*BaseEntity)
+func (be *BreakEntity) AdjustStyle(fn AdjustStyleFunc, reason AdjustStyleReason) Entity {
+	be.BaseEntity = be.BaseEntity.AdjustStyle(fn, reason).(*BaseEntity)
 	return be
 }
 
@@ -49,6 +49,6 @@ func (be *BreakEntity) String() string {
 	return "&html.BreakEntity{},\n"
 }
 
-func (be *BreakEntity) Draw(screen mauview.Screen) {
+func (be *BreakEntity) Draw(screen mauview.Screen, ctx DrawContext) {
 	// No-op, the logic happens in containers
 }

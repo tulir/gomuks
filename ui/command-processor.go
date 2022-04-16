@@ -24,7 +24,7 @@ import (
 
 	"maunium.net/go/gomuks/config"
 	"maunium.net/go/gomuks/debug"
-	"maunium.net/go/gomuks/interface"
+	ifc "maunium.net/go/gomuks/interface"
 )
 
 type gomuksPointerContainer struct {
@@ -92,6 +92,7 @@ func NewCommandProcessor(parent *MainView) *CommandProcessor {
 			"mstate":     {"msetstate"},
 			"rb":         {"rainbow"},
 			"rbme":       {"rainbowme"},
+			"rbn":        {"rainbownotice"},
 			"myroomnick": {"roomnick"},
 			"createroom": {"create"},
 			"dm":         {"pm"},
@@ -121,6 +122,7 @@ func NewCommandProcessor(parent *MainView) *CommandProcessor {
 			"import":        autocompleteFile,
 			"export":        autocompleteFile,
 			"export-room":   autocompleteFile,
+			"toggle":        autocompleteToggle,
 		},
 		commands: map[string]CommandHandler{
 			"unknown-command": cmdUnknownCommand,
@@ -145,6 +147,7 @@ func NewCommandProcessor(parent *MainView) *CommandProcessor {
 			"redact":     cmdRedact,
 			"react":      cmdReact,
 			"edit":       cmdEdit,
+			"external":   cmdExternalEditor,
 			"download":   cmdDownload,
 			"upload":     cmdUpload,
 			"open":       cmdOpen,
@@ -165,6 +168,8 @@ func NewCommandProcessor(parent *MainView) *CommandProcessor {
 			"hprof":      cmdHeapProfile,
 			"cprof":      cmdCPUProfile,
 			"trace":      cmdTrace,
+
+			"rainbownotice": cmdRainbowNotice,
 
 			"fingerprint":   cmdFingerprint,
 			"devices":       cmdDevices,

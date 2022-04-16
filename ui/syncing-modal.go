@@ -19,7 +19,7 @@ package ui
 import (
 	"time"
 
-	"maunium.net/go/mauview"
+	"go.mau.fi/mauview"
 )
 
 type SyncingModal struct {

@@ -1,9 +1,10 @@
 package ui
 
 import (
-	"maunium.net/go/tcell"
+	"go.mau.fi/mauview"
+	"go.mau.fi/tcell"
 
-	"maunium.net/go/mauview"
+	"maunium.net/go/gomuks/config"
 )
 
 const helpText = `# General
@@ -12,6 +13,7 @@ const helpText = `# General
 /clearcache     - Clear cache and quit gomuks.
 /logout         - Log out of Matrix.
 /toggle <thing> - Temporary command to toggle various UI features.
+                  Run /toggle without arguments to see the list of toggles.
 
 # Media
 /download [path] - Downloads file from selected message.
@@ -44,6 +46,13 @@ const helpText = `# General
 /import <file> - Import encryption keys
 /export <file> - Export encryption keys
 /export-room <file> - Export encryption keys for the current room.
+
+/cross-signing <subcommand> [...]
+    - Cross-signing commands. Somewhat experimental.
+      Run without arguments for help. (alias: /cs)
+/ssss <subcommand> [...]
+    - Secure Secret Storage (and Sharing) commands. Very experimental.
+      Run without arguments for help.
 
 # Rooms
 /pm <user id> <...>   - Create a private chat with the given user(s).
@@ -94,7 +103,13 @@ func NewHelpModal(parent *MainView) *HelpModal {
 }
 
 func (hm *HelpModal) OnKeyEvent(event mauview.KeyEvent) bool {
-	if event.Key() == tcell.KeyEscape || event.Rune() == 'q' {
+	kb := config.Keybind{
+		Key: event.Key(),
+		Ch:  event.Rune(),
+		Mod: event.Modifiers(),
+	}
+	// TODO unhardcode q
+	if hm.parent.config.Keybindings.Modal[kb] == "cancel" || event.Rune() == 'q' {
 		hm.parent.HideModal()
 		return true
 	}

@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-// +build cgo
+//go:build cgo
 
 package ui
 
@@ -24,12 +24,14 @@ import (
 	"strings"
 	"time"
 
-	"maunium.net/go/mauview"
-	"maunium.net/go/tcell"
+	"go.mau.fi/mauview"
+	"go.mau.fi/tcell"
 
-	"maunium.net/go/gomuks/debug"
 	"maunium.net/go/mautrix/crypto"
 	"maunium.net/go/mautrix/event"
+
+	"maunium.net/go/gomuks/config"
+	"maunium.net/go/gomuks/debug"
 )
 
 type EmojiView struct {
@@ -207,8 +209,13 @@ func (vm *VerificationModal) OnSuccess() {
 }
 
 func (vm *VerificationModal) OnKeyEvent(event mauview.KeyEvent) bool {
+	kb := config.Keybind{
+		Key: event.Key(),
+		Ch:  event.Rune(),
+		Mod: event.Modifiers(),
+	}
 	if vm.done {
-		if event.Key() == tcell.KeyEnter || event.Key() == tcell.KeyEsc {
+		if vm.parent.config.Keybindings.Modal[kb] == "cancel" || vm.parent.config.Keybindings.Modal[kb] == "confirm" {
 			vm.parent.HideModal()
 			return true
 		}
@@ -217,7 +224,7 @@ func (vm *VerificationModal) OnKeyEvent(event mauview.KeyEvent) bool {
 		debug.Print("Ignoring pre-emoji key event")
 		return false
 	}
-	if event.Key() == tcell.KeyEnter {
+	if vm.parent.config.Keybindings.Modal[kb] == "confirm" {
 		text := strings.ToLower(strings.TrimSpace(vm.inputBar.GetText()))
 		if text == "yes" {
 			debug.Print("Confirming verification")

@@ -17,17 +17,23 @@
 package config
 
 import (
+	_ "embed"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 
-	"gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 
 	"maunium.net/go/mautrix"
 	"maunium.net/go/mautrix/id"
 	"maunium.net/go/mautrix/pushrules"
+
+	"go.mau.fi/cbind"
+	"go.mau.fi/tcell"
 
 	"maunium.net/go/gomuks/debug"
 	"maunium.net/go/gomuks/matrix/rooms"
@@ -54,6 +60,44 @@ type UserPreferences struct {
 	DisableNotifications bool `yaml:"disable_notifications"`
 	DisableShowURLs      bool `yaml:"disable_show_urls"`
 	AltEnterToSend       bool `yaml:"alt_enter_to_send"`
+
+	InlineURLMode string `yaml:"inline_url_mode"`
+}
+
+var InlineURLsProbablySupported bool
+
+func init() {
+	vteVersion, _ := strconv.Atoi(os.Getenv("VTE_VERSION"))
+	term := os.Getenv("TERM")
+	// Enable inline URLs by default on VTE 0.50.0+
+	InlineURLsProbablySupported = vteVersion > 5000 ||
+		os.Getenv("TERM_PROGRAM") == "iTerm.app" ||
+		term == "foot" ||
+		term == "xterm-kitty"
+}
+
+func (up *UserPreferences) EnableInlineURLs() bool {
+	return up.InlineURLMode == "enable" || (InlineURLsProbablySupported && up.InlineURLMode != "disable")
+}
+
+type Keybind struct {
+	Mod tcell.ModMask
+	Key tcell.Key
+	Ch  rune
+}
+
+type ParsedKeybindings struct {
+	Main   map[Keybind]string
+	Room   map[Keybind]string
+	Modal  map[Keybind]string
+	Visual map[Keybind]string
+}
+
+type RawKeybindings struct {
+	Main   map[string]string `yaml:"main,omitempty"`
+	Room   map[string]string `yaml:"room,omitempty"`
+	Modal  map[string]string `yaml:"modal,omitempty"`
+	Visual map[string]string `yaml:"visual,omitempty"`
 }
 
 // Config contains the main config of gomuks.
@@ -69,6 +113,9 @@ type Config struct {
 	NotifySound        bool `yaml:"notify_sound"`
 	SendToVerifiedOnly bool `yaml:"send_to_verified_only"`
 
+	Backspace1RemovesWord bool `yaml:"backspace1_removes_word"`
+	Backspace2RemovesWord bool `yaml:"backspace2_removes_word"`
+
 	Dir          string `yaml:"-"`
 	DataDir      string `yaml:"data_dir"`
 	CacheDir     string `yaml:"cache_dir"`
@@ -82,6 +129,7 @@ type Config struct {
 	AuthCache   AuthCache              `yaml:"-"`
 	Rooms       *rooms.RoomCache       `yaml:"-"`
 	PushRules   *pushrules.PushRuleset `yaml:"-"`
+	Keybindings ParsedKeybindings      `yaml:"-"`
 
 	nosave bool
 }
@@ -101,8 +149,9 @@ func NewConfig(configDir, dataDir, cacheDir, downloadDir string) *Config {
 		RoomCacheSize: 32,
 		RoomCacheAge:  1 * 60,
 
-		NotifySound:        true,
-		SendToVerifiedOnly: false,
+		NotifySound:           true,
+		SendToVerifiedOnly:    false,
+		Backspace1RemovesWord: true,
 	}
 }
 
@@ -148,6 +197,7 @@ func (config *Config) LoadAll() {
 	config.LoadAuthCache()
 	config.LoadPushRules()
 	config.LoadPreferences()
+	config.LoadKeybindings()
 	err := config.Rooms.LoadList()
 	if err != nil {
 		panic(err)
@@ -156,7 +206,10 @@ func (config *Config) LoadAll() {
 
 // Load loads the config from config.yaml in the directory given to the config struct.
 func (config *Config) Load() {
-	config.load("config", config.Dir, "config.yaml", config)
+	err := config.load("config", config.Dir, "config.yaml", config)
+	if err != nil {
+		panic(fmt.Errorf("failed to load config.yaml: %w", err))
+	}
 	config.CreateCacheDirs()
 }
 
@@ -178,15 +231,61 @@ func (config *Config) Save() {
 }
 
 func (config *Config) LoadPreferences() {
-	config.load("user preferences", config.CacheDir, "preferences.yaml", &config.Preferences)
+	_ = config.load("user preferences", config.CacheDir, "preferences.yaml", &config.Preferences)
 }
 
 func (config *Config) SavePreferences() {
 	config.save("user preferences", config.CacheDir, "preferences.yaml", &config.Preferences)
 }
 
+//go:embed keybindings.yaml
+var DefaultKeybindings string
+
+func parseKeybindings(input map[string]string) (output map[Keybind]string) {
+	output = make(map[Keybind]string, len(input))
+	for shortcut, action := range input {
+		mod, key, ch, err := cbind.Decode(shortcut)
+		if err != nil {
+			panic(fmt.Errorf("failed to parse keybinding %s -> %s: %w", shortcut, action, err))
+		}
+		// TODO find out if other keys are parsed incorrectly like this
+		if key == tcell.KeyEscape {
+			ch = 0
+		}
+		parsedShortcut := Keybind{
+			Mod: mod,
+			Key: key,
+			Ch:  ch,
+		}
+		output[parsedShortcut] = action
+	}
+	return
+}
+
+func (config *Config) LoadKeybindings() {
+	var inputConfig RawKeybindings
+
+	err := yaml.Unmarshal([]byte(DefaultKeybindings), &inputConfig)
+	if err != nil {
+		panic(fmt.Errorf("failed to unmarshal default keybindings: %w", err))
+	}
+	_ = config.load("keybindings", config.Dir, "keybindings.yaml", &inputConfig)
+
+	config.Keybindings.Main = parseKeybindings(inputConfig.Main)
+	config.Keybindings.Room = parseKeybindings(inputConfig.Room)
+	config.Keybindings.Modal = parseKeybindings(inputConfig.Modal)
+	config.Keybindings.Visual = parseKeybindings(inputConfig.Visual)
+}
+
+func (config *Config) SaveKeybindings() {
+	config.save("keybindings", config.Dir, "keybindings.yaml", &config.Keybindings)
+}
+
 func (config *Config) LoadAuthCache() {
-	config.load("auth cache", config.CacheDir, "auth-cache.yaml", &config.AuthCache)
+	err := config.load("auth cache", config.CacheDir, "auth-cache.yaml", &config.AuthCache)
+	if err != nil {
+		panic(fmt.Errorf("failed to load auth-cache.yaml: %w", err))
+	}
 }
 
 func (config *Config) SaveAuthCache() {
@@ -194,7 +293,8 @@ func (config *Config) SaveAuthCache() {
 }
 
 func (config *Config) LoadPushRules() {
-	config.load("push rules", config.CacheDir, "pushrules.json", &config.PushRules)
+	_ = config.load("push rules", config.CacheDir, "pushrules.json", &config.PushRules)
+
 }
 
 func (config *Config) SavePushRules() {
@@ -204,21 +304,21 @@ func (config *Config) SavePushRules() {
 	config.save("push rules", config.CacheDir, "pushrules.json", &config.PushRules)
 }
 
-func (config *Config) load(name, dir, file string, target interface{}) {
+func (config *Config) load(name, dir, file string, target interface{}) error {
 	err := os.MkdirAll(dir, 0700)
 	if err != nil {
 		debug.Print("Failed to create", dir)
-		panic(err)
+		return err
 	}
 
 	path := filepath.Join(dir, file)
 	data, err := ioutil.ReadFile(path)
 	if err != nil {
 		if os.IsNotExist(err) {
-			return
+			return nil
 		}
 		debug.Print("Failed to read", name, "from", path)
-		panic(err)
+		return err
 	}
 
 	if strings.HasSuffix(file, ".yaml") {
@@ -228,8 +328,9 @@ func (config *Config) load(name, dir, file string, target interface{}) {
 	}
 	if err != nil {
 		debug.Print("Failed to parse", name, "at", path)
-		panic(err)
+		return err
 	}
+	return nil
 }
 
 func (config *Config) save(name, dir, file string, source interface{}) {
