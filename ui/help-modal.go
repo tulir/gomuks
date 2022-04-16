@@ -47,6 +47,13 @@ const helpText = `# General
 /export <file> - Export encryption keys
 /export-room <file> - Export encryption keys for the current room.
 
+/cross-signing <subcommand> [...]
+    - Cross-signing commands. Somewhat experimental.
+      Run without arguments for help. (alias: /cs)
+/ssss <subcommand> [...]
+    - Secure Secret Storage (and Sharing) commands. Very experimental.
+      Run without arguments for help.
+
 # Rooms
 /pm <user id> <...>   - Create a private chat with the given user(s).
 /create [room name]   - Create a room.
