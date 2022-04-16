@@ -67,9 +67,13 @@ type UserPreferences struct {
 var InlineURLsProbablySupported bool
 
 func init() {
-	v, _ := strconv.Atoi(os.Getenv("VTE_VERSION"))
+	vteVersion, _ := strconv.Atoi(os.Getenv("VTE_VERSION"))
+	term := os.Getenv("TERM")
 	// Enable inline URLs by default on VTE 0.50.0+
-	InlineURLsProbablySupported = v > 5000
+	InlineURLsProbablySupported = vteVersion > 5000 ||
+		os.Getenv("TERM_PROGRAM") == "iTerm.app" ||
+		term == "foot" ||
+		term == "xterm-kitty"
 }
 
 func (up *UserPreferences) EnableInlineURLs() bool {
