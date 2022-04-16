@@ -27,6 +27,7 @@ import (
 	"github.com/alecthomas/chroma/styles"
 	"github.com/lucasb-eyer/go-colorful"
 	"golang.org/x/net/html"
+	"mvdan.cc/xurls/v2"
 
 	"go.mau.fi/tcell"
 
@@ -386,7 +387,6 @@ func (parser *htmlParser) tagNodeToEntity(node *html.Node) Entity {
 }
 
 var spaces = regexp.MustCompile("\\s+")
-var links = regexp.MustCompile(`https?://\S+`)
 
 func TextToEntity(text string, eventID id.EventID, linkify bool) Entity {
 	if len(text) == 0 {
@@ -395,7 +395,7 @@ func TextToEntity(text string, eventID id.EventID, linkify bool) Entity {
 	if !linkify {
 		return NewTextEntity(text)
 	}
-	indices := links.FindAllStringIndex(text, -1)
+	indices := xurls.Strict().FindAllStringIndex(text, -1)
 	if len(indices) == 0 {
 		return NewTextEntity(text)
 	}
