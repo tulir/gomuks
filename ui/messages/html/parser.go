@@ -234,7 +234,7 @@ func (parser *htmlParser) linkToEntity(node *html.Node) Entity {
 		} else if matrixURI.Sigil1 == '#' {
 			entity.Children = []Entity{text}
 		}
-	} else if parser.prefs.InlineURLs {
+	} else if parser.prefs.EnableInlineURLs() {
 		linkID := fmt.Sprintf("%s-%d", parser.evt.ID, parser.linkIDCounter)
 		parser.linkIDCounter++
 		entity.AdjustStyle(AdjustStyleLink(href, linkID), AdjustStyleReasonNormal)
@@ -426,7 +426,7 @@ func (parser *htmlParser) singleNodeToEntity(node *html.Node) Entity {
 			node.Data = strings.ReplaceAll(node.Data, "\n", "")
 			node.Data = spaces.ReplaceAllLiteralString(node.Data, " ")
 		}
-		return TextToEntity(node.Data, parser.evt.ID, parser.prefs.InlineURLs)
+		return TextToEntity(node.Data, parser.evt.ID, parser.prefs.EnableInlineURLs())
 	case html.ElementNode:
 		parsed := parser.tagNodeToEntity(node)
 		if parsed != nil && !parsed.IsBlock() && parsed.IsEmpty() {

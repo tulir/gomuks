@@ -867,7 +867,15 @@ func cmdToggle(cmd *Command) {
 		case "showurls":
 			val = &cmd.Config.Preferences.DisableShowURLs
 		case "inlineurls":
-			val = &cmd.Config.Preferences.InlineURLs
+			switch cmd.Config.Preferences.InlineURLMode {
+			case "enable":
+				cmd.Config.Preferences.InlineURLMode = "disable"
+				cmd.Reply("Force-disabled using fancy terminal features to render URLs inside text. Restart gomuks to apply changes.")
+			default:
+				cmd.Config.Preferences.InlineURLMode = "enable"
+				cmd.Reply("Force-enabled using fancy terminal features to render URLs inside text. Restart gomuks to apply changes.")
+			}
+			continue
 		case "newline":
 			val = &cmd.Config.Preferences.AltEnterToSend
 		default:

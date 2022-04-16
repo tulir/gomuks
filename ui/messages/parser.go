@@ -208,7 +208,7 @@ func ParseMessage(matrix ifc.MatrixContainer, room *rooms.Room, evt *muksevt.Eve
 			return NewHTMLMessage(evt, displayname, html.Parse(matrix.Preferences(), room, content, evt, displayname))
 		}
 		content.Body = strings.Replace(content.Body, "\t", "    ", -1)
-		return NewHTMLMessage(evt, displayname, html.TextToEntity(content.Body, evt.ID, matrix.Preferences().InlineURLs))
+		return NewHTMLMessage(evt, displayname, html.TextToEntity(content.Body, evt.ID, matrix.Preferences().EnableInlineURLs()))
 	case event.MsgImage, event.MsgVideo, event.MsgAudio, event.MsgFile:
 		msg := NewFileMessage(matrix, evt, displayname)
 		if !matrix.Preferences().DisableDownloads {

@@ -148,7 +148,7 @@ func (msg *FileMessage) CalculateBuffer(prefs config.UserPreferences, width int,
 	if prefs.BareMessageView || prefs.DisableImages || len(msg.imageData) == 0 {
 		url := msg.matrix.GetDownloadURL(msg.URL)
 		var urlTString tstring.TString
-		if prefs.InlineURLs {
+		if prefs.EnableInlineURLs() {
 			urlTString = tstring.NewStyleTString(url, tcell.StyleDefault.Hyperlink(url, msg.eventID.String()))
 		} else {
 			urlTString = tstring.NewTString(url)

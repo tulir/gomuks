@@ -23,6 +23,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"gopkg.in/yaml.v3"
@@ -58,8 +59,21 @@ type UserPreferences struct {
 	DisableDownloads     bool `yaml:"disable_downloads"`
 	DisableNotifications bool `yaml:"disable_notifications"`
 	DisableShowURLs      bool `yaml:"disable_show_urls"`
-	InlineURLs           bool `yaml:"inline_urls"`
 	AltEnterToSend       bool `yaml:"alt_enter_to_send"`
+
+	InlineURLMode string `yaml:"inline_url_mode"`
+}
+
+var InlineURLsProbablySupported bool
+
+func init() {
+	v, _ := strconv.Atoi(os.Getenv("VTE_VERSION"))
+	// Enable inline URLs by default on VTE 0.50.0+
+	InlineURLsProbablySupported = v > 5000
+}
+
+func (up *UserPreferences) EnableInlineURLs() bool {
+	return up.InlineURLMode == "enable" || (InlineURLsProbablySupported && up.InlineURLMode != "disable")
 }
 
 type Keybind struct {
