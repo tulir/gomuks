@@ -139,6 +139,11 @@ func (parser *htmlParser) basicFormatToEntity(node *html.Node) Entity {
 		entity.AdjustStyle(AdjustStyleStrikethrough, AdjustStyleReasonNormal)
 	case "u", "ins":
 		entity.AdjustStyle(AdjustStyleUnderline, AdjustStyleReasonNormal)
+	case "code":
+		bgColor := tcell.ColorDarkSlateGray
+		fgColor := tcell.ColorWhite
+		entity.AdjustStyle(AdjustStyleBackgroundColor(bgColor), AdjustStyleReasonNormal)
+		entity.AdjustStyle(AdjustStyleTextColor(fgColor), AdjustStyleReasonNormal)
 	case "font", "span":
 		fgColor, ok := parser.parseColor(node, "data-mx-color", "color")
 		if ok {
@@ -357,7 +362,7 @@ func (parser *htmlParser) tagNodeToEntity(node *html.Node) Entity {
 		return parser.headerToEntity(node)
 	case "br":
 		return NewBreakEntity()
-	case "b", "strong", "i", "em", "s", "strike", "del", "u", "ins", "font", "span":
+	case "b", "strong", "i", "em", "s", "strike", "del", "u", "ins", "font", "span", "code":
 		return parser.basicFormatToEntity(node)
 	case "a":
 		return parser.linkToEntity(node)

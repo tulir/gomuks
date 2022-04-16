@@ -8,6 +8,8 @@
   (thanks to [@3nprob] in [#328]).
 * Added support for shortcodes *without* tab-completion in `/react`
   (thanks to [@tleb] in [#354]).
+* Added background color to differentiate `inline code`
+  (thanks to [@n-peugnet] in [#361]).
 * Added tab-completion support for `/toggle` options
   (thanks to [@n-peugnet] in [#362]).
 * Added initial support for rendering spoilers in messages.
@@ -24,6 +26,7 @@
 [@n-peugnet]: https://github.com/n-peugnet
 [#328]: https://github.com/tulir/gomuks/pull/328
 [#354]: https://github.com/tulir/gomuks/pull/354
+[#361]: https://github.com/tulir/gomuks/pull/361
 [#362]: https://github.com/tulir/gomuks/pull/362
 
 # v0.2.4 (2021-09-21)
