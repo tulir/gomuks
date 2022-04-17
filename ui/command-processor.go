@@ -168,6 +168,9 @@ func NewCommandProcessor(parent *MainView) *CommandProcessor {
 			"hprof":      cmdHeapProfile,
 			"cprof":      cmdCPUProfile,
 			"trace":      cmdTrace,
+			"panic": func(cmd *Command) {
+				panic("hello world")
+			},
 
 			"rainbownotice": cmdRainbowNotice,
 
