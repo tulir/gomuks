@@ -19,6 +19,8 @@ package ui
 import (
 	"math"
 
+	"github.com/mattn/go-runewidth"
+
 	"go.mau.fi/mauview"
 	"go.mau.fi/tcell"
 
@@ -139,7 +141,7 @@ func (view *LoginView) Error(err string) {
 			view.AddComponent(view.error, 1, 11, 3, 1)
 		}
 		view.error.SetText(err)
-		errorHeight := int(math.Ceil(float64(mauview.StringWidth(err)) / 45))
+		errorHeight := int(math.Ceil(float64(runewidth.StringWidth(err)) / 45))
 		view.container.SetHeight(14 + errorHeight)
 		view.SetRow(11, errorHeight)
 	}
