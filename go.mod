@@ -24,7 +24,7 @@ require (
 	gopkg.in/toast.v1 v1.0.0-20180812000517-0a84660828b2
 	gopkg.in/vansante/go-ffprobe.v2 v2.0.3
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b
-	maunium.net/go/mautrix v0.10.13-0.20220415172627-597a9560f721
+	maunium.net/go/mautrix v0.10.13-0.20220417095934-0eee489b6417
 	mvdan.cc/xurls/v2 v2.4.0
 )
 

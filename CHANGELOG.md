@@ -1,5 +1,9 @@
 # unreleased
 
+* Bumped minimum Go version to 1.17.
+* Switched from `/r0` to `/v3` paths everywhere.
+  * The new `v3` paths are implemented since Synapse 1.48, Dendrite 0.6.5,
+    and Conduit 0.4.0. Servers older than these are no longer supported.
 * Added config flags for backspace behavior.
 * Added `/rainbownotice` command to send a rainbow as a `m.notice` message.
 * Added support for editing messages in an external editor.

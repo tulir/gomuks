@@ -202,7 +202,7 @@ func respondHTML(w http.ResponseWriter, status int, message string) {
 }
 
 func (c *Container) SingleSignOn() error {
-	loginURL := c.client.BuildURLWithQuery(mautrix.URLPath{"login", "sso", "redirect"}, map[string]string{
+	loginURL := c.client.BuildURLWithQuery(mautrix.ClientURLPath{"v3", "login", "sso", "redirect"}, map[string]string{
 		"redirectUrl": "http://localhost:29325",
 	})
 	err := open.Open(loginURL)
@@ -460,7 +460,7 @@ func (c *Container) HandlePreferences(source mautrix.EventSource, evt *event.Eve
 		debug.Print("Failed to parse updated preferences:", err)
 		return
 	}
-	debug.Print("Updated preferences:", orig, "->", c.config.Preferences)
+	debug.Printf("Updated preferences: %#v -> %#v", orig, c.config.Preferences)
 	if c.config.AuthCache.InitialSyncDone {
 		c.ui.HandleNewPreferences()
 	}
@@ -472,9 +472,8 @@ func (c *Container) Preferences() *config.UserPreferences {
 
 func (c *Container) SendPreferencesToMatrix() {
 	defer debug.Recover()
-	debug.Print("Sending updated preferences:", c.config.Preferences)
-	u := c.client.BuildURL("user", string(c.config.UserID), "account_data", AccountDataGomuksPreferences.Type)
-	_, err := c.client.MakeRequest("PUT", u, &c.config.Preferences, nil)
+	debug.Printf("Sending updated preferences: %#v", c.config.Preferences)
+	err := c.client.SetAccountData(AccountDataGomuksPreferences.Type, &c.config.Preferences)
 	if err != nil {
 		debug.Print("Failed to update preferences:", err)
 	}
