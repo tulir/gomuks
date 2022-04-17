@@ -116,7 +116,7 @@ func (c *Container) InitClient() error {
 	if err != nil {
 		return fmt.Errorf("failed to create mautrix client: %w", err)
 	}
-	c.client.UserAgent = fmt.Sprintf("gomuks %s (with mautrix-go %s)", c.gmx.Version(), mautrix.Version)
+	c.client.UserAgent = fmt.Sprintf("gomuks/%s %s", c.gmx.Version(), mautrix.DefaultUserAgent)
 	c.client.Logger = mxLogger{}
 	c.client.DeviceID = c.config.DeviceID
 

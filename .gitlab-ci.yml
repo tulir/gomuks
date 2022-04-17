@@ -13,8 +13,10 @@ cache:
 
 .build-linux: &build-linux
   stage: build
+  before_script:
+  - export GO_LDFLAGS="-s -w -linkmode external -extldflags -static -X main.Tag=$CI_COMMIT_TAG -X main.Commit=$CI_COMMIT_SHA -X 'main.BuildTime=`date '+%b %_d %Y, %H:%M:%S'`'"
   script:
-  - go build -ldflags "-linkmode external -extldflags -static" -o gomuks
+  - go build -o gomuks
   artifacts:
     paths:
     - gomuks
@@ -35,7 +37,7 @@ windows/amd64:
   image: dock.mau.dev/tulir/gomuks-build-docker:windows-amd64
   stage: build
   script:
-  - go build -ldflags "-linkmode external -extldflags -static" -o gomuks.exe
+  - go build -o gomuks.exe
   artifacts:
     paths:
     - gomuks.exe
@@ -45,7 +47,8 @@ macos/amd64:
   tags:
   - macos
   - amd64
-  before_script: []
+  before_script:
+  - export GO_LDFLAGS="-X main.Tag=$CI_COMMIT_TAG -X main.Commit=$CI_COMMIT_SHA -X 'main.BuildTime=`date '+%b %_d %Y, %H:%M:%S'`'"
   script:
   - mkdir gomuks-macos-amd64
   - go build -o gomuks-macos-amd64/gomuks
@@ -66,6 +69,7 @@ macos/arm64:
   - export LIBRARY_PATH=/opt/homebrew/lib
   - export CPATH=/opt/homebrew/include
   - export PATH=/opt/homebrew/bin:$PATH
+  - export GO_LDFLAGS="-X main.Tag=$CI_COMMIT_TAG -X main.Commit=$CI_COMMIT_SHA -X 'main.BuildTime=`date '+%b %_d %Y, %H:%M:%S'`'"
   script:
   - mkdir gomuks-macos-arm64
   - go build -o gomuks-macos-arm64/gomuks

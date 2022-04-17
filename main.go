@@ -82,7 +82,7 @@ func main() {
 	gmx := NewGomuks(MainUIProvider, configDir, dataDir, cacheDir, downloadDir)
 
 	if len(os.Args) > 1 && (os.Args[1] == "--version" || os.Args[1] == "-v") {
-		fmt.Printf("gomuks version %s\n", gmx.Version())
+		fmt.Println(VersionString)
 		os.Exit(0)
 	}
 
