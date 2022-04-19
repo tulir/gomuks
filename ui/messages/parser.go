@@ -204,11 +204,21 @@ func ParseMessage(matrix ifc.MatrixContainer, room *rooms.Room, evt *muksevt.Eve
 	}
 	switch content.MsgType {
 	case event.MsgText, event.MsgNotice, event.MsgEmote:
-		if content.Format == event.FormatHTML {
-			return NewHTMLMessage(evt, displayname, html.Parse(matrix.Preferences(), room, content, evt, displayname))
+		var htmlEntity html.Entity
+		if content.Format == event.FormatHTML && len(content.FormattedBody) > 0 {
+			htmlEntity = html.Parse(matrix.Preferences(), room, content, evt, displayname)
+			if htmlEntity == nil {
+				htmlEntity = html.NewTextEntity("Malformed message")
+				htmlEntity.AdjustStyle(html.AdjustStyleTextColor(tcell.ColorRed), html.AdjustStyleReasonNormal)
+			}
+		} else if len(content.Body) > 0 {
+			content.Body = strings.Replace(content.Body, "\t", "    ", -1)
+			htmlEntity = html.TextToEntity(content.Body, evt.ID, matrix.Preferences().EnableInlineURLs())
+		} else {
+			htmlEntity = html.NewTextEntity("Blank message")
+			htmlEntity.AdjustStyle(html.AdjustStyleTextColor(tcell.ColorRed), html.AdjustStyleReasonNormal)
 		}
-		content.Body = strings.Replace(content.Body, "\t", "    ", -1)
-		return NewHTMLMessage(evt, displayname, html.TextToEntity(content.Body, evt.ID, matrix.Preferences().EnableInlineURLs()))
+		return NewHTMLMessage(evt, displayname, htmlEntity)
 	case event.MsgImage, event.MsgVideo, event.MsgAudio, event.MsgFile:
 		msg := NewFileMessage(matrix, evt, displayname)
 		if !matrix.Preferences().DisableDownloads {

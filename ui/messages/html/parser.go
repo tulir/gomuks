@@ -495,13 +495,18 @@ func Parse(prefs *config.UserPreferences, room *rooms.Room, content *event.Messa
 
 	parser := htmlParser{room: room, prefs: prefs, evt: evt}
 	root := parser.Parse(htmlData)
-	beRoot := root.(*ContainerEntity)
-	beRoot.Block = false
-	if len(beRoot.Children) > 0 {
-		beChild, ok := beRoot.Children[0].(*ContainerEntity)
-		if ok && beChild.Tag == "p" {
-			// Hacky fix for m.emote
-			beChild.Block = false
+	if root == nil {
+		return nil
+	}
+	beRoot, ok := root.(*ContainerEntity)
+	if ok {
+		beRoot.Block = false
+		if len(beRoot.Children) > 0 {
+			beChild, ok := beRoot.Children[0].(*ContainerEntity)
+			if ok && beChild.Tag == "p" {
+				// Hacky fix for m.emote
+				beChild.Block = false
+			}
 		}
 	}
 
