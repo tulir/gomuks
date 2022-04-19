@@ -540,7 +540,7 @@ func cmdClearCache(cmd *Command) {
 }
 
 func cmdUnknownCommand(cmd *Command) {
-	cmd.Reply("Unknown command \"%s\". Try \"/help\" for help.", cmd.Command)
+	cmd.Reply(`Unknown command "/%s". Try "/help" for help.`, cmd.Command)
 }
 
 func cmdHelp(cmd *Command) {
