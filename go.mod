@@ -46,3 +46,5 @@ require (
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	maunium.net/go/maulogger/v2 v2.3.2 // indirect
 )
+
+replace github.com/mattn/go-runewidth => github.com/tulir/go-runewidth v0.0.14-0.20220424205441-e6266a230669
