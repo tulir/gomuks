@@ -24,6 +24,7 @@ import (
 )
 
 var zenity string
+var sep = "|"
 
 func init() {
 	zenity, _ = exec.LookPath("zenity")
@@ -33,17 +34,18 @@ func IsSupported() bool {
 	return len(zenity) > 0
 }
 
-func Open() (string, error) {
-	cmd := exec.Command(zenity, "--file-selection")
+func Open() ([]string, error) {
+	cmd := exec.Command(zenity, "--file-selection", "--multiple", "--separator", sep)
 	var output bytes.Buffer
 	cmd.Stdout = &output
 	err := cmd.Run()
 	if err != nil {
 		var exitErr *exec.ExitError
 		if errors.As(err, &exitErr) && exitErr.ExitCode() == 1 {
-			return "", nil
+			return nil, nil
 		}
-		return "", err
+		return nil, err
 	}
-	return strings.TrimSpace(output.String()), nil
+
+	return strings.Split(strings.TrimSpace(output.String()), sep), nil
 }
