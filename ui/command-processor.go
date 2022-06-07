@@ -201,7 +201,7 @@ func (ch *CommandProcessor) ParseCommand(roomView *RoomView, text string) *Comma
 	args := split[1:]
 	var rawArgs string
 	if len(text) > len(command)+1 {
-		rawArgs = text[len(command)+1:]
+		rawArgs = strings.TrimSpace(text[len(command)+1:])
 	}
 	return &Command{
 		gomuksPointerContainer: ch.gomuksPointerContainer,
