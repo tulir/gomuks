@@ -129,6 +129,7 @@ func NewCommandProcessor(parent *MainView) *CommandProcessor {
 
 			"id":         cmdID,
 			"help":       cmdHelp,
+			"keys":       cmdKeys,
 			"me":         cmdMe,
 			"quit":       cmdQuit,
 			"clearcache": cmdClearCache,
