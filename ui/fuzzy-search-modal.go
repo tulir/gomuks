@@ -55,9 +55,8 @@ func NewFuzzySearchModal(mainView *MainView, width int, height int) *FuzzySearch
 		parent: mainView,
 	}
 
+	fs.results = mauview.NewTextView().SetRegions(true).SetTextColor(tcell.ColorBlack)
 	fs.InitList(mainView.rooms)
-
-	fs.results = mauview.NewTextView().SetRegions(true)
 	fs.search = mauview.NewInputArea().
 		SetChangedFunc(fs.changeHandler).
 		SetTextColor(tcell.ColorWhite).
@@ -99,13 +98,35 @@ func (fs *FuzzySearchModal) InitList(rooms map[id.RoomID]*RoomView) {
 		fs.roomList = append(fs.roomList, room.Room)
 		fs.roomTitles = append(fs.roomTitles, room.Room.GetTitle())
 	}
+	fs.changeHandler("") // initial load of unread rooms
 }
 
 func (fs *FuzzySearchModal) changeHandler(str string) {
 	// Get matches and display in result box
-	fs.matches = fuzzy.RankFindFold(str, fs.roomTitles)
-	if len(str) > 0 && len(fs.matches) > 0 {
+	if len(str) > 0 {
+		fs.matches = fuzzy.RankFindFold(str, fs.roomTitles)
 		sort.Sort(fs.matches)
+	} else {
+		// Set matches to unread rooms if no query
+		fs.matches = []fuzzy.Rank{}
+		for i, room := range fs.roomList {
+			if len(room.UnreadMessages) > 0 {
+				if room.UnreadCount() > 0 {
+					// Higher importance to rooms where notifications are not disabled
+					fs.matches = append(
+						[]fuzzy.Rank{{Source: str, Target: room.NameCache, Distance: 0, OriginalIndex: i}},
+						fs.matches...,
+					)
+				} else {
+					fs.matches = append(
+						fs.matches,
+						fuzzy.Rank{Source: str, Target: room.NameCache, Distance: 0, OriginalIndex: i},
+					)
+				}
+			}
+		}
+	}
+	if len(fs.matches) > 0 {
 		fs.results.Clear()
 		for _, match := range fs.matches {
 			fmt.Fprintf(fs.results, `["%d"]%s[""]%s`, match.OriginalIndex, match.Target, "\n")
