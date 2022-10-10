@@ -312,11 +312,13 @@ func (parser *htmlParser) syntaxHighlight(text, language string) Entity {
 				continue
 			}
 			t := token.Clone()
-			t.Value = line
-			children = append(children, tokenToTextEntity(style, &t))
 
 			if line[line_len-1:] == "\n" {
-				children = append(children, NewBreakEntity())
+				t.Value = line[:line_len-1]
+				children = append(children, tokenToTextEntity(style, &t), NewBreakEntity())
+			} else {
+				t.Value = line
+				children = append(children, tokenToTextEntity(style, &t))
 			}
 		}
 	}
