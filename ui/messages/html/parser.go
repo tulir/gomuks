@@ -388,16 +388,39 @@ func (parser *htmlParser) tagNodeToEntity(node *html.Node) Entity {
 
 var spaces = regexp.MustCompile("\\s+")
 
+// textToHtmlEntity converts a plain text string into an HtmlEntity while preserving newlines.
+func textToHtmlEntity(text string) Entity {
+	lines := strings.SplitAfter(text, "\n")
+	if len(lines) == 1 {
+		return NewTextEntity(text)
+	}
+	ent := &ContainerEntity{
+		BaseEntity: &BaseEntity{Tag: "span"},
+	}
+	for _, line := range lines {
+		line_len := len(line)
+		if line_len == 0 {
+			continue
+		}
+		if line[line_len-1:] == "\n" {
+			ent.Children = append(ent.Children, NewTextEntity(line[:line_len-1]), NewBreakEntity())
+		} else {
+			ent.Children = append(ent.Children, NewTextEntity(line))
+		}
+	}
+	return ent
+}
+
 func TextToEntity(text string, eventID id.EventID, linkify bool) Entity {
 	if len(text) == 0 {
 		return nil
 	}
 	if !linkify {
-		return NewTextEntity(text)
+		return textToHtmlEntity(text)
 	}
 	indices := xurls.Strict().FindAllStringIndex(text, -1)
 	if len(indices) == 0 {
-		return NewTextEntity(text)
+		return textToHtmlEntity(text)
 	}
 	ent := &ContainerEntity{
 		BaseEntity: &BaseEntity{Tag: "span"},
@@ -406,7 +429,7 @@ func TextToEntity(text string, eventID id.EventID, linkify bool) Entity {
 	for i, item := range indices {
 		start, end := item[0], item[1]
 		if start > lastEnd {
-			ent.Children = append(ent.Children, NewTextEntity(text[lastEnd:start]))
+			ent.Children = append(ent.Children, textToHtmlEntity(text[lastEnd:start]))
 		}
 		link := text[start:end]
 		linkID := fmt.Sprintf("%s-%d", eventID, i)
@@ -414,7 +437,7 @@ func TextToEntity(text string, eventID id.EventID, linkify bool) Entity {
 		lastEnd = end
 	}
 	if lastEnd < len(text) {
-		ent.Children = append(ent.Children, NewTextEntity(text[lastEnd:]))
+		ent.Children = append(ent.Children, textToHtmlEntity(text[lastEnd:]))
 	}
 	return ent
 }
