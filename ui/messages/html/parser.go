@@ -305,27 +305,19 @@ func (parser *htmlParser) syntaxHighlight(text, language string) Entity {
 
 	var children []Entity
 	for _, token := range tokens {
-		if token.Value == "\n" {
-			children = append(children, NewBreakEntity())
-
-		} else if token.Type.String() == "CommentSingle" {
-			children = append(children, tokenToTextEntity(style, &token))
-			children = append(children, NewBreakEntity())
-
-		} else if token.Type.String() == "CommentMultiline" {
-			lines := strings.Split(token.Value, "\n")
-			for i, line := range lines {
-				t := token.Clone()
-				t.Value = line
-				children = append(children, tokenToTextEntity(style, &t))
-
-				if i < len(lines)-1 {
-					children = append(children, NewBreakEntity())
-				}
+		lines := strings.SplitAfter(token.Value, "\n")
+		for _, line := range lines {
+			line_len := len(line)
+			if line_len == 0 {
+				continue
 			}
+			t := token.Clone()
+			t.Value = line
+			children = append(children, tokenToTextEntity(style, &t))
 
-		} else {
-			children = append(children, tokenToTextEntity(style, &token))
+			if line[line_len-1:] == "\n" {
+				children = append(children, NewBreakEntity())
+			}
 		}
 	}
 
