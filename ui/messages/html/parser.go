@@ -345,11 +345,10 @@ func (parser *htmlParser) codeblockToEntity(node *html.Node) Entity {
 			}
 		}
 	}
-	parser.preserveWhitespace = true
-	text := (&ContainerEntity{
-		Children: parser.nodeToEntities(node.FirstChild),
-	}).PlainText()
-	parser.preserveWhitespace = false
+	text := "\n"
+	if node.FirstChild != nil {
+		text = node.FirstChild.Data
+	}
 	return parser.syntaxHighlight(text, lang)
 }
 
