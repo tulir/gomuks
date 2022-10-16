@@ -150,6 +150,20 @@ func (msg *UIMessage) AddReaction(key string) {
 	sort.Sort(msg.Reactions)
 }
 
+func (msg *UIMessage) RemoveReaction(key string) {
+	for i, rs := range msg.Reactions {
+		if rs.Key == key {
+			if rs.Count == 1 {
+				msg.Reactions = append(msg.Reactions[:i], msg.Reactions[i+1:]...)
+			} else {
+				rs.Count--
+				msg.Reactions[i] = rs
+			}
+			break
+		}
+	}
+}
+
 func unixToTime(unix int64) time.Time {
 	timestamp := time.Now()
 	if unix != 0 {

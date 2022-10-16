@@ -74,6 +74,11 @@ func directParseEvent(matrix ifc.MatrixContainer, room *rooms.Room, evt *muksevt
 		displayname = member.Displayname
 	}
 	if evt.Unsigned.RedactedBecause != nil || evt.Type == event.EventRedaction {
+		relates := evt.Content.AsReaction().OptionalGetRelatesTo()
+		if relates != nil && relates.Type == event.RelAnnotation {
+			// Redacted reactions are not displayed in the timeline as redacted messages
+			return nil
+		}
 		return NewRedactedMessage(evt, displayname)
 	}
 	switch content := evt.Content.Parsed.(type) {
@@ -90,6 +95,8 @@ func directParseEvent(matrix ifc.MatrixContainer, room *rooms.Room, evt *muksevt
 		return ParseStateEvent(evt, displayname)
 	case *event.MemberEventContent:
 		return ParseMembershipEvent(room, evt)
+	case *event.ReactionEventContent:
+		return nil
 	default:
 		debug.Printf("Unknown event content type %T in directParseEvent", content)
 		return nil

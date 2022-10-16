@@ -508,7 +508,12 @@ func (c *Container) HandleRedaction(source mautrix.EventSource, evt *event.Event
 		return
 	}
 
-	roomView.AddRedaction(redactedEvt)
+	relatesTo := redactedEvt.Content.AsReaction().OptionalGetRelatesTo()
+	if relatesTo != nil && relatesTo.Type == event.RelAnnotation {
+		c.HandleRedactedReaction(roomView.MxRoom(), relatesTo.EventID, redactedEvt)
+	} else {
+		roomView.AddRedaction(redactedEvt)
+	}
 	if c.syncer.FirstSyncDone {
 		c.ui.Render()
 	}
@@ -567,6 +572,11 @@ func (c *Container) HandleReaction(room *rooms.Room, reactsTo id.EventID, reactE
 		return
 	}
 
+	_, err = c.history.Append(room, []*event.Event{reactEvent.Event})
+	if err != nil {
+		debug.Printf("Failed to add reaction event %s to history: %v", reactEvent.ID, err)
+	}
+
 	roomView := c.ui.MainView().GetRoom(reactEvent.RoomID)
 	if roomView == nil {
 		debug.Printf("Failed to handle edit event %v: No room view found.", reactEvent)
@@ -574,6 +584,43 @@ func (c *Container) HandleReaction(room *rooms.Room, reactsTo id.EventID, reactE
 	}
 
 	roomView.AddReaction(origEvt, rel.Key)
+	if c.syncer.FirstSyncDone {
+		c.ui.Render()
+	}
+}
+
+func (c *Container) HandleRedactedReaction(room *rooms.Room, reactsTo id.EventID, reactEvent *muksevt.Event) {
+	rel := reactEvent.Content.AsReaction().RelatesTo
+	var origEvt *muksevt.Event
+	err := c.history.Update(room, reactsTo, func(evt *muksevt.Event) error {
+		if evt.Unsigned.Relations.Annotations.Map == nil {
+			evt.Unsigned.Relations.Annotations.Map = make(map[string]int)
+		}
+		val, found := evt.Unsigned.Relations.Annotations.Map[rel.Key]
+		if found {
+			if val == 1 {
+				delete(evt.Unsigned.Relations.Annotations.Map, rel.Key)
+			} else {
+				evt.Unsigned.Relations.Annotations.Map[rel.Key] = val - 1
+			}
+		}
+		origEvt = evt
+		return nil
+	})
+	if err != nil {
+		debug.Print("Failed to store reaction redaction in history db:", err)
+		return
+	} else if !c.config.AuthCache.InitialSyncDone || !room.Loaded() {
+		return
+	}
+
+	roomView := c.ui.MainView().GetRoom(reactEvent.RoomID)
+	if roomView == nil {
+		debug.Printf("Failed to handle edit event %v: No room view found.", reactEvent)
+		return
+	}
+
+	roomView.RemoveReaction(origEvt, rel.Key)
 	if c.syncer.FirstSyncDone {
 		c.ui.Render()
 	}

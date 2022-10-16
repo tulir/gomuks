@@ -74,6 +74,7 @@ type RoomView interface {
 	AddRedaction(evt *muksevt.Event)
 	AddEdit(evt *muksevt.Event)
 	AddReaction(evt *muksevt.Event, key string)
+	RemoveReaction(evt *muksevt.Event, key string)
 	GetEvent(eventID id.EventID) Message
 	AddServiceMessage(message string)
 }

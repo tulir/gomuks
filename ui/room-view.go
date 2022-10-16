@@ -928,6 +928,21 @@ func (view *RoomView) AddReaction(evt *muksevt.Event, key string) {
 	}
 }
 
+func (view *RoomView) RemoveReaction(evt *muksevt.Event, key string) {
+	msgView := view.MessageView()
+	msg := msgView.getMessageByID(evt.ID)
+	if msg == nil {
+		// Message not in view, nothing to do
+		return
+	}
+	heightChanged := len(msg.Reactions) == 1
+	msg.RemoveReaction(key)
+	if heightChanged {
+		// Replace buffer to update height of message
+		msgView.replaceBuffer(msg, msg)
+	}
+}
+
 func (view *RoomView) GetEvent(eventID id.EventID) ifc.Message {
 	message, ok := view.content.messageIDs[eventID]
 	if !ok {
