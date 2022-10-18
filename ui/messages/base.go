@@ -133,9 +133,10 @@ func newUIMessage(evt *muksevt.Event, displayname string, renderer MessageRender
 
 func (msg *UIMessage) AddReaction(key string) {
 	found := false
-	for _, rs := range msg.Reactions {
+	for i, rs := range msg.Reactions {
 		if rs.Key == key {
 			rs.Count++
+			msg.Reactions[i] = rs
 			found = true
 			break
 		}
