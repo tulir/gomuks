@@ -292,7 +292,7 @@ func tokenToTextEntity(style *chroma.Style, token *chroma.Token) *TextEntity {
 func (parser *htmlParser) syntaxHighlight(text, language string) Entity {
 	lexer := lexers.Get(strings.ToLower(language))
 	if lexer == nil {
-		return nil
+		lexer = lexers.Get("plaintext")
 	}
 	iter, err := lexer.Tokenise(nil, text)
 	if err != nil {
