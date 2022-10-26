@@ -585,6 +585,9 @@ func (c *Container) HandleReaction(room *rooms.Room, reactsTo id.EventID, reactE
 	rel := reactEvent.Content.AsReaction().RelatesTo
 	var origEvt *muksevt.Event
 	err := c.history.Update(room, reactsTo, func(evt *muksevt.Event) error {
+		if evt.Unsigned.Relations == nil {
+			evt.Unsigned.Relations = &event.Relations{}
+		}
 		if evt.Unsigned.Relations.Annotations.Map == nil {
 			evt.Unsigned.Relations.Annotations.Map = make(map[string]int)
 		}
