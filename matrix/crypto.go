@@ -19,14 +19,18 @@
 package matrix
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"os"
 	"path/filepath"
+	"time"
 
 	_ "github.com/mattn/go-sqlite3"
 
 	"maunium.net/go/mautrix/crypto"
+	"maunium.net/go/mautrix/id"
+	"maunium.net/go/mautrix/util/dbutil"
 
 	"maunium.net/go/gomuks/debug"
 )
@@ -51,6 +55,24 @@ func (c cryptoLogger) Trace(message string, args ...interface{}) {
 	debug.Printf(fmt.Sprintf("[%s/Trace] %s", c.prefix, message), args...)
 }
 
+func (c cryptoLogger) WarnUnsupportedVersion(current, latest int) {
+	c.Warn("Unsupported database schema version: currently on v%d, latest known: v%d - continuing anyway", current, latest)
+}
+
+func (c cryptoLogger) PrepareUpgrade(current, latest int) {
+	c.Debug("Database currently on v%d, latest: v%d", current, latest)
+}
+
+func (c cryptoLogger) DoUpgrade(from, to int, message string) {
+	c.Debug("Upgrading database from v%d to v%d: %s", from, to, message)
+}
+
+func (c cryptoLogger) QueryTiming(_ context.Context, method, query string, _ []interface{}, duration time.Duration) {
+	if duration > 1*time.Second {
+		c.Warn("%s(%s) took %.3f seconds", method, query, duration.Seconds())
+	}
+}
+
 func isBadEncryptError(err error) bool {
 	return err != crypto.SessionExpired && err != crypto.SessionNotShared && err != crypto.NoGroupSession
 }
@@ -72,16 +94,22 @@ func (c *Container) initCrypto() error {
 		if err != nil {
 			return fmt.Errorf("sql open: %w", err)
 		}
+		mauDb, err := dbutil.NewWithDB(db, "sqlite3")
+		if err != nil {
+			return fmt.Errorf("mautrix dbutils instanciation: %w", err)
+		}
 		accID := fmt.Sprintf("%s/%s", c.config.UserID.String(), c.config.DeviceID)
-		sqlStore := crypto.NewSQLCryptoStore(db, "sqlite3", accID, c.config.DeviceID, []byte("fi.mau.gomuks"), cryptoLogger{"Crypto/DB"})
-		err = sqlStore.CreateTables()
+		sqlStore := crypto.NewSQLCryptoStore(mauDb, cryptoLogger{"Crypto/DB"}, accID, c.config.DeviceID, []byte("fi.mau.gomuks"))
+		err = sqlStore.Upgrade()
 		if err != nil {
 			return fmt.Errorf("create table: %w", err)
 		}
 		cryptoStore = sqlStore
 	}
 	crypt := crypto.NewOlmMachine(c.client, cryptoLogger{"Crypto"}, cryptoStore, c.config.Rooms)
-	crypt.AllowUnverifiedDevices = !c.config.SendToVerifiedOnly
+	if c.config.SendToVerifiedOnly {
+		crypt.SendKeysMinTrust = id.TrustStateCrossSignedVerified
+	}
 	c.crypto = crypt
 	err = c.crypto.Load()
 	if err != nil {

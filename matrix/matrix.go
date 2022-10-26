@@ -764,17 +764,21 @@ func (c *Container) processOwnMembershipChange(evt *event.Event) {
 }
 
 func (c *Container) parseReadReceipt(evt *event.Event) (largestTimestampEvent id.EventID) {
-	var largestTimestamp int64
+	var largestTimestamp time.Time
 
 	for eventID, receipts := range *evt.Content.AsReceipt() {
-		myInfo, ok := receipts.Read[c.config.UserID]
-		if !ok {
-			continue
-		}
+		receiptTypes := [2]event.ReceiptType{event.ReceiptTypeRead, event.ReceiptTypeReadPrivate}
+		for _, receiptType := range receiptTypes {
+			userReceipts := receipts.GetOrCreate(receiptType)
+			myInfo, ok := userReceipts[c.config.UserID]
+			if !ok {
+				continue
+			}
 
-		if myInfo.Timestamp > largestTimestamp {
-			largestTimestamp = myInfo.Timestamp
-			largestTimestampEvent = eventID
+			if myInfo.Timestamp.After(largestTimestamp) {
+				largestTimestamp = myInfo.Timestamp
+				largestTimestampEvent = eventID
+			}
 		}
 	}
 	return
@@ -935,7 +939,7 @@ func (c *Container) prepareEvent(roomID id.RoomID, content *event.MessageEventCo
 			Type:    event.RelReplace,
 			EventID: rel.Event.ID,
 		}
-	} else if rel != nil && rel.Type == event.RelReply {
+	} else if rel != nil && rel.Type == event.RelThread {
 		content.SetReply(rel.Event.Event)
 	}
 
@@ -1054,7 +1058,7 @@ func (c *Container) UploadMedia(path string, encrypt bool) (*ifc.UploadedMediaIn
 
 func (c *Container) sendTypingAsync(roomID id.RoomID, typing bool, timeout int64) {
 	defer debug.Recover()
-	_, _ = c.client.UserTyping(roomID, typing, timeout)
+	_, _ = c.client.UserTyping(roomID, typing, time.Duration(timeout)*time.Millisecond)
 }
 
 // SendTyping sets whether or not the user is typing in the given room.

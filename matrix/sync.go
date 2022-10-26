@@ -79,15 +79,15 @@ func (s *GomuksSyncer) ProcessResponse(res *mautrix.RespSync, since string) (err
 	wait.Add(steps)
 
 	for roomID, roomData := range res.Rooms.Join {
-		go s.processJoinedRoom(roomID, roomData, callback)
+		go s.processJoinedRoom(roomID, *roomData, callback)
 	}
 
 	for roomID, roomData := range res.Rooms.Invite {
-		go s.processInvitedRoom(roomID, roomData, callback)
+		go s.processInvitedRoom(roomID, *roomData, callback)
 	}
 
 	for roomID, roomData := range res.Rooms.Leave {
-		go s.processLeftRoom(roomID, roomData, callback)
+		go s.processLeftRoom(roomID, *roomData, callback)
 	}
 
 	wait.Wait()
