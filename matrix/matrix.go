@@ -256,12 +256,20 @@ func (c *Container) Login(user, password string) error {
 	if err != nil {
 		return err
 	}
+	ssoSkippedBecausePassword := false
 	for _, flow := range resp.Flows {
 		if flow.Type == "m.login.password" {
 			return c.PasswordLogin(user, password)
-		} else if flow.Type == "m.login.sso" && len(password) == 0 {
-			return c.SingleSignOn()
+		} else if flow.Type == "m.login.sso" {
+			if len(password) == 0 {
+				return c.SingleSignOn()
+			} else {
+				ssoSkippedBecausePassword = true
+			}
 		}
+	}
+	if ssoSkippedBecausePassword {
+		return fmt.Errorf("password login is not supported\nleave the password field blank to use SSO")
 	}
 	return fmt.Errorf("no supported login flows")
 }
