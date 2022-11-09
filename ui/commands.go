@@ -808,7 +808,7 @@ var toggleMsg = map[string]ToggleMessage{
 	"rooms":         HideMessage("Room list sidebar"),
 	"users":         HideMessage("User list sidebar"),
 	"timestamps":    HideMessage("message timestamps"),
-	"baremessages":  SimpleToggleMessage("bare message view"),
+	"baremessages":  InvertedToggleMessage("bare message view"),
 	"images":        SimpleToggleMessage("image rendering"),
 	"typingnotif":   SimpleToggleMessage("typing notifications"),
 	"emojis":        SimpleToggleMessage("emoji shortcode conversion"),
