@@ -384,25 +384,32 @@ var spaces = regexp.MustCompile("\\s+")
 
 // textToHTMLEntity converts a plain text string into an HTML Entity while preserving newlines.
 func textToHTMLEntity(text string) Entity {
-	lines := strings.SplitAfter(text, "\n")
-	if len(lines) == 1 {
+	if strings.Index(text, "\n") == -1 {
 		return NewTextEntity(text)
 	}
-	ent := &ContainerEntity{
+	return &ContainerEntity{
 		BaseEntity: &BaseEntity{Tag: "span"},
+		Children:   textToHTMLEntities(text),
 	}
+}
+
+func textToHTMLEntities(text string) []Entity {
+	lines := strings.SplitAfter(text, "\n")
+	entities := make([]Entity, 0, len(lines))
 	for _, line := range lines {
 		line_len := len(line)
 		if line_len == 0 {
 			continue
 		}
-		if line[line_len-1:] == "\n" {
-			ent.Children = append(ent.Children, NewTextEntity(line[:line_len-1]), NewBreakEntity())
+		if line == "\n" {
+			entities = append(entities, NewBreakEntity())
+		} else if line[line_len-1:] == "\n" {
+			entities = append(entities, NewTextEntity(line[:line_len-1]), NewBreakEntity())
 		} else {
-			ent.Children = append(ent.Children, NewTextEntity(line))
+			entities = append(entities, NewTextEntity(line))
 		}
 	}
-	return ent
+	return entities
 }
 
 func TextToEntity(text string, eventID id.EventID, linkify bool) Entity {
@@ -423,7 +430,7 @@ func TextToEntity(text string, eventID id.EventID, linkify bool) Entity {
 	for i, item := range indices {
 		start, end := item[0], item[1]
 		if start > lastEnd {
-			ent.Children = append(ent.Children, textToHTMLEntity(text[lastEnd:start]))
+			ent.Children = append(ent.Children, textToHTMLEntities(text[lastEnd:start])...)
 		}
 		link := text[start:end]
 		linkID := fmt.Sprintf("%s-%d", eventID, i)
@@ -431,7 +438,7 @@ func TextToEntity(text string, eventID id.EventID, linkify bool) Entity {
 		lastEnd = end
 	}
 	if lastEnd < len(text) {
-		ent.Children = append(ent.Children, textToHTMLEntity(text[lastEnd:]))
+		ent.Children = append(ent.Children, textToHTMLEntities(text[lastEnd:])...)
 	}
 	return ent
 }
