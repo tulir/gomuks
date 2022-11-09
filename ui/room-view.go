@@ -920,11 +920,10 @@ func (view *RoomView) AddReaction(evt *muksevt.Event, key string) {
 		// Message not in view, nothing to do
 		return
 	}
-	recalculate := len(msg.Reactions) == 0
+	heightChanged := len(msg.Reactions) == 0
 	msg.AddReaction(key)
-	if recalculate {
-		// Recalculate height for message
-		msg.CalculateBuffer(msgView.prevPrefs, msgView.prevWidth())
+	if heightChanged {
+		// Replace buffer to update height of message
 		msgView.replaceBuffer(msg, msg)
 	}
 }
