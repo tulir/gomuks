@@ -1,6 +1,6 @@
-# unreleased
+# v0.3.0 (unreleased)
 
-* Bumped minimum Go version to 1.17.
+* Bumped minimum Go version to 1.18.
 * Switched from `/r0` to `/v3` paths everywhere.
   * The new `v3` paths are implemented since Synapse 1.48, Dendrite 0.6.5,
     and Conduit 0.4.0. Servers older than these are no longer supported.
@@ -18,12 +18,22 @@
   (thanks to [@n-peugnet] in [#362]).
 * Added initial support for rendering spoilers in messages.
 * Added support for sending spoilers (with `||reason|spoiler||` or `||spoiler||`).
-* Added support for inline links (limited terminal support; requires `/toggle inlineurls`).
-* Added graphical file picker for `/upload` when no path is provided (requires `zenity`).
+* Added support for inline links (limited terminal support; requires
+  `/toggle inlineurls`).
+* Added graphical file picker for `/upload` when no path is provided
+  (requires `zenity`).
 * Fixed mentions being lost when editing messages.
 * Fixed date change messages showing the wrong date.
 * Fixed some whitespace in HTML being rendered even when it shouldn't.
 * Fixed copying non-text messages with `/copy`.
+* Fixed rendering code blocks with unknown languages
+  (thanks to [@n-peugnet] in [#386]).
+* Fixed newlines not working in code blocks with certain syntax highlightings
+  (thanks to [@n-peugnet] in [#387]).
+* Fixed rendering more than one reaction of the same type in a single message.
+  (thanks to [@n-peugnet] in [#391]).
+* Fixed line-wrapped messages getting corrupted when receiving a reaction
+  (thanks to [@n-peugnet] in [#397]).
 
 [@3nprob]: https://github.com/3nprob
 [@tleb]: https://github.com/tleb
