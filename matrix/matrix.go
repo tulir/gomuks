@@ -1228,7 +1228,7 @@ func (c *Container) DownloadToDisk(uri id.ContentURI, file *attachment.Encrypted
 		}
 
 		if file != nil {
-			data, err = file.Decrypt(data)
+			err = file.DecryptInPlace(data)
 			if err != nil {
 				return
 			}
@@ -1286,7 +1286,7 @@ func (c *Container) download(uri id.ContentURI, file *attachment.EncryptedFile, 
 	}
 
 	if file != nil {
-		data, err = file.Decrypt(data)
+		err = file.DecryptInPlace(data)
 		if err != nil {
 			return
 		}
