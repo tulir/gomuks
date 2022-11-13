@@ -506,11 +506,12 @@ func (room *Room) updateNameFromNameEvent() {
 // updateNameFromMembers updates the room display name based on the members in this room.
 //
 // The room name depends on the number of users:
-//  Less than two users -> "Empty room"
-//  Exactly two users   -> The display name of the other user.
-//  More than two users -> The display name of one of the other users, followed
-//                         by "and X others", where X is the number of users
-//                         excluding the local user and the named user.
+//
+//	Less than two users -> "Empty room"
+//	Exactly two users   -> The display name of the other user.
+//	More than two users -> The display name of one of the other users, followed
+//	                       by "and X others", where X is the number of users
+//	                       excluding the local user and the named user.
 func (room *Room) updateNameFromMembers() {
 	members := room.GetMembers()
 	if len(members) <= 1 {
