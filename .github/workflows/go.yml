@@ -8,7 +8,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        go-version: [1.18]
+        go-version: [1.19]
     steps:
       - uses: actions/checkout@v3
 
@@ -33,7 +33,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        go-version: [1.17, 1.18]
+        go-version: [1.18, 1.19]
 
     steps:
       - uses: actions/checkout@v3

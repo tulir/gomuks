@@ -79,7 +79,7 @@ func AdjustStyleBackgroundColor(color tcell.Color) AdjustStyleFunc {
 
 func AdjustStyleLink(url, id string) AdjustStyleFunc {
 	return func(style tcell.Style) tcell.Style {
-		return style.Hyperlink(url, id)
+		return style.Url(url).UrlId(id)
 	}
 }
 
