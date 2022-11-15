@@ -48,6 +48,8 @@ type GomuksUI struct {
 
 func init() {
 	mauview.Styles.PrimitiveBackgroundColor = tcell.ColorDefault
+	mauview.Styles.PrimaryTextColor = tcell.ColorDefault
+	mauview.Styles.BorderColor = tcell.ColorDefault
 	mauview.Styles.ContrastBackgroundColor = tcell.ColorDarkGreen
 	if tcellDB := os.Getenv("TCELLDB"); len(tcellDB) == 0 {
 		if info, err := os.Stat("/usr/share/tcell/database"); err == nil && info.IsDir() {

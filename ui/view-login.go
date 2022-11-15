@@ -77,12 +77,20 @@ func (ui *GomuksUI) NewLoginView() mauview.Component {
 	}
 
 	hs := ui.gmx.Config().HS
-	view.homeserver.SetPlaceholder("https://example.com").SetText(hs)
-	view.username.SetPlaceholder("@user:example.com").SetText(string(ui.gmx.Config().UserID))
-	view.password.SetPlaceholder("correct horse battery staple").SetMaskCharacter('*')
+	view.homeserver.SetPlaceholder("https://example.com").SetText(hs).SetTextColor(tcell.ColorWhite)
+	view.username.SetPlaceholder("@user:example.com").SetText(string(ui.gmx.Config().UserID)).SetTextColor(tcell.ColorWhite)
+	view.password.SetPlaceholder("correct horse battery staple").SetMaskCharacter('*').SetTextColor(tcell.ColorWhite)
 
-	view.quitButton.SetOnClick(func() { ui.gmx.Stop(true) }).SetBackgroundColor(tcell.ColorDarkCyan)
-	view.loginButton.SetOnClick(view.Login).SetBackgroundColor(tcell.ColorDarkCyan)
+	view.quitButton.
+		SetOnClick(func() { ui.gmx.Stop(true) }).
+		SetBackgroundColor(tcell.ColorDarkCyan).
+		SetForegroundColor(tcell.ColorWhite).
+		SetFocusedForegroundColor(tcell.ColorWhite)
+	view.loginButton.
+		SetOnClick(view.Login).
+		SetBackgroundColor(tcell.ColorDarkCyan).
+		SetForegroundColor(tcell.ColorWhite).
+		SetFocusedForegroundColor(tcell.ColorWhite)
 
 	view.
 		SetColumns([]int{1, 10, 1, 30, 1}).
