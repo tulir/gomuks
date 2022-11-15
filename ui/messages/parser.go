@@ -74,8 +74,7 @@ func directParseEvent(matrix ifc.MatrixContainer, room *rooms.Room, evt *muksevt
 		displayname = member.Displayname
 	}
 	if evt.Unsigned.RedactedBecause != nil || evt.Type == event.EventRedaction {
-		relates := evt.Content.AsReaction().OptionalGetRelatesTo()
-		if relates != nil && relates.Type == event.RelAnnotation {
+		if evt.Type == event.EventReaction {
 			// Redacted reactions are not displayed in the timeline as redacted messages
 			return nil
 		}
