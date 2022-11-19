@@ -1,4 +1,4 @@
-# v0.3.0 (unreleased)
+# v0.3.0 (2022-11-19)
 
 * Bumped minimum Go version to 1.18.
 * Switched from `/r0` to `/v3` paths everywhere.
@@ -32,7 +32,7 @@
   (thanks to [@n-peugnet] in [#386]).
 * Fixed newlines not working in code blocks with certain syntax highlightings
   (thanks to [@n-peugnet] in [#387]).
-* Fixed rendering more than one reaction of the same type in a single message.
+* Fixed rendering more than one reaction of the same type in a single message
   (thanks to [@n-peugnet] in [#391]).
 * Fixed line-wrapped messages getting corrupted when receiving a reaction
   (thanks to [@n-peugnet] in [#397]).

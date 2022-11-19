@@ -40,7 +40,7 @@ var (
 
 var (
 	// Version is the version number of gomuks. Changed manually when making a release.
-	Version = "0.2.4"
+	Version = "0.3.0"
 	// VersionString is the gomuks version, plus commit information. Filled in init() using the build-time values.
 	VersionString = ""
 )
