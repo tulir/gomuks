@@ -133,6 +133,7 @@ func (gmx *Gomuks) internalStop(save bool) {
 	if save {
 		gmx.Save()
 	}
+	debug.Print("Exiting process")
 	os.Exit(0)
 }
 
