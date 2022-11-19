@@ -22,6 +22,8 @@
   `/toggle inlineurls`).
 * Added graphical file picker for `/upload` when no path is provided
   (requires `zenity`).
+* Updated more places to use default/reverse colors instead of white/black to
+  better work on light themed terminals (thanks to [@n-peugnet] in [#401]).
 * Fixed mentions being lost when editing messages.
 * Fixed date change messages showing the wrong date.
 * Fixed some whitespace in HTML being rendered even when it shouldn't.
@@ -42,6 +44,7 @@
 [#354]: https://github.com/tulir/gomuks/pull/354
 [#361]: https://github.com/tulir/gomuks/pull/361
 [#362]: https://github.com/tulir/gomuks/pull/362
+[#401]: https://github.com/tulir/gomuks/pull/401
 
 # v0.2.4 (2021-09-21)
 
