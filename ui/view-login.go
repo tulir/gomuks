@@ -166,10 +166,12 @@ func (view *LoginView) actuallyLogin(hs, mxid, password string) {
 		view.Error(err.Error())
 	} else if err = view.matrix.Login(mxid, password); err != nil {
 		if httpErr, ok := err.(mautrix.HTTPError); ok {
-			if httpErr.RespError != nil {
+			if httpErr.RespError != nil && len(httpErr.RespError.Err) > 0 {
 				view.Error(httpErr.RespError.Err)
-			} else {
+			} else if len(httpErr.Message) > 0 {
 				view.Error(httpErr.Message)
+			} else {
+				view.Error(err.Error())
 			}
 		} else {
 			view.Error(err.Error())
