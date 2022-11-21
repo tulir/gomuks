@@ -26,14 +26,38 @@ import (
 	"strings"
 	"time"
 
+	flag "maunium.net/go/mauflag"
+
 	"maunium.net/go/gomuks/debug"
 	ifc "maunium.net/go/gomuks/interface"
+	"maunium.net/go/gomuks/matrix"
 	"maunium.net/go/gomuks/ui"
 )
 
 var MainUIProvider ifc.UIProvider = ui.NewGomuksUI
 
+var wantVersion = flag.MakeFull("v", "version", "Show the version of gomuks", "false").Bool()
+var clearCache = flag.MakeFull("c", "clear-cache", "Clear the cache directory instead of starting", "false").Bool()
+var clearData = flag.Make().LongKey("clear-all-data").Usage("Clear all data instead of starting").Default("false").Bool()
+var skipVersionCheck = flag.MakeFull("s", "skip-version-check", "Skip the homeserver version checks at startup and login", "false").Bool()
+var wantHelp, _ = flag.MakeHelpFlag()
+
 func main() {
+	flag.SetHelpTitles(
+		"gomuks - A terminal Matrix client written in Go.",
+		"gomuks [-vch] [--clear-all-data]",
+	)
+	err := flag.Parse()
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	} else if *wantHelp {
+		flag.PrintHelp()
+		return
+	} else if *wantVersion {
+		fmt.Println(VersionString)
+		return
+	}
 	debugDir := os.Getenv("DEBUG_DIR")
 	if len(debugDir) > 0 {
 		debug.LogDirectory = debugDir
@@ -51,7 +75,6 @@ func main() {
 	defer debug.Recover()
 
 	var configDir, dataDir, cacheDir, downloadDir string
-	var err error
 
 	configDir, err = UserConfigDir()
 	if err != nil {
@@ -79,11 +102,21 @@ func main() {
 	debug.Print("Cache directory:", cacheDir)
 	debug.Print("Download directory:", downloadDir)
 
+	matrix.SkipVersionCheck = *skipVersionCheck
 	gmx := NewGomuks(MainUIProvider, configDir, dataDir, cacheDir, downloadDir)
 
-	if len(os.Args) > 1 && (os.Args[1] == "--version" || os.Args[1] == "-v") {
-		fmt.Println(VersionString)
-		os.Exit(0)
+	if *clearCache {
+		debug.Print("Clearing cache as requested by CLI flag")
+		gmx.config.Clear()
+		fmt.Printf("Cleared cache at %s\n", gmx.config.CacheDir)
+		return
+	} else if *clearData {
+		debug.Print("Clearing all data as requested by CLI flag")
+		gmx.config.Clear()
+		gmx.config.ClearData()
+		_ = os.RemoveAll(gmx.config.Dir)
+		fmt.Printf("Cleared cache at %s, data at %s and config at %s\n", gmx.config.CacheDir, gmx.config.DataDir, gmx.config.Dir)
+		return
 	}
 
 	gmx.Start()

@@ -149,7 +149,7 @@ func (view *LoginView) Error(err string) {
 			view.AddComponent(view.error, 1, 11, 3, 1)
 		}
 		view.error.SetText(err)
-		errorHeight := int(math.Ceil(float64(runewidth.StringWidth(err)) / 45))
+		errorHeight := int(math.Ceil(float64(runewidth.StringWidth(err)) / 41))
 		view.container.SetHeight(14 + errorHeight)
 		view.SetRow(11, errorHeight)
 	}
@@ -161,7 +161,7 @@ func (view *LoginView) actuallyLogin(hs, mxid, password string) {
 	debug.Printf("Logging into %s as %s...", hs, mxid)
 	view.config.HS = hs
 
-	if err := view.matrix.InitClient(); err != nil {
+	if err := view.matrix.InitClient(false); err != nil {
 		debug.Print("Init error:", err)
 		view.Error(err.Error())
 	} else if err = view.matrix.Login(mxid, password); err != nil {

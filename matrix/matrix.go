@@ -92,10 +92,21 @@ func (c *Container) Crypto() ifc.Crypto {
 	return c.crypto
 }
 
+var (
+	ErrNoHomeserver   = errors.New("no homeserver entered")
+	ErrServerOutdated = errors.New("homeserver is outdated")
+)
+
+var MinSpecVersion = mautrix.SpecV11
+var SkipVersionCheck = false
+
 // InitClient initializes the mautrix client and connects to the homeserver specified in the config.
-func (c *Container) InitClient() error {
+func (c *Container) InitClient(isStartup bool) error {
 	if len(c.config.HS) == 0 {
-		return fmt.Errorf("no homeserver entered")
+		if isStartup {
+			return nil
+		}
+		return ErrNoHomeserver
 	}
 
 	if c.client != nil {
@@ -136,6 +147,28 @@ func (c *Container) InitClient() error {
 	if allowInsecure {
 		c.client.Client = &http.Client{
 			Transport: &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}},
+		}
+	}
+
+	if !SkipVersionCheck && (!isStartup || len(c.client.AccessToken) > 0) {
+		debug.Printf("Checking versions that %s supports", c.client.HomeserverURL)
+		resp, err := c.client.Versions()
+		if err != nil {
+			debug.Print("Error checking supported versions:", err)
+			return fmt.Errorf("failed to check server versions: %w", err)
+		} else if !resp.ContainsGreaterOrEqual(MinSpecVersion) {
+			debug.Print("Server doesn't support modern spec versions")
+			bestVersionStr := "nothing"
+			bestVersion := mautrix.MustParseSpecVersion("r0.0.0")
+			for _, ver := range resp.Versions {
+				if ver.GreaterThan(bestVersion) {
+					bestVersion = ver
+					bestVersionStr = ver.String()
+				}
+			}
+			return fmt.Errorf("%w (it only supports %s, while gomuks requires %s)", ErrServerOutdated, bestVersionStr, MinSpecVersion.String())
+		} else {
+			debug.Print("Server supports modern spec versions")
 		}
 	}
 

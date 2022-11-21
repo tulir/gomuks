@@ -44,6 +44,7 @@ require (
 	golang.org/x/term v0.2.0 // indirect
 	golang.org/x/text v0.4.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
+	maunium.net/go/mauflag v1.0.0 // indirect
 	maunium.net/go/maulogger/v2 v2.3.2 // indirect
 )
 

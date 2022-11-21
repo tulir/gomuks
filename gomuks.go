@@ -17,9 +17,12 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"os/signal"
+	"path/filepath"
+	"runtime"
 	"strings"
 	"syscall"
 	"time"
@@ -60,7 +63,7 @@ func init() {
 			Version = fmt.Sprintf("%s%s.unknown", Version, suffix)
 		}
 	}
-	VersionString = fmt.Sprintf("gomuks %s (%s)", Version, BuildTime)
+	VersionString = fmt.Sprintf("gomuks %s (%s with %s)", Version, BuildTime, runtime.Version())
 }
 
 // Gomuks is the wrapper for everything.
@@ -142,7 +145,23 @@ func (gmx *Gomuks) internalStop(save bool) {
 // If the tview app returns an error, it will be passed into panic(), which
 // will be recovered as specified in Recover().
 func (gmx *Gomuks) Start() {
-	_ = gmx.matrix.InitClient()
+	err := gmx.matrix.InitClient(true)
+	if err != nil {
+		if errors.Is(err, matrix.ErrServerOutdated) {
+			_, _ = fmt.Fprintln(os.Stderr, strings.Replace(err.Error(), "homeserver", gmx.config.HS, 1))
+			_, _ = fmt.Fprintln(os.Stderr)
+			_, _ = fmt.Fprintf(os.Stderr, "See `%s --help` if you want to skip this check or clear all data.\n", os.Args[0])
+			os.Exit(4)
+		} else if strings.HasPrefix(err.Error(), "failed to check server versions") {
+			_, _ = fmt.Fprintln(os.Stderr, "Failed to check versions supported by server:", errors.Unwrap(err))
+			_, _ = fmt.Fprintln(os.Stderr)
+			_, _ = fmt.Fprintf(os.Stderr, "Modify %s if the server has moved.\n", filepath.Join(gmx.config.Dir, "config.yaml"))
+			_, _ = fmt.Fprintf(os.Stderr, "See `%s --help` if you want to skip this check or clear all data.\n", os.Args[0])
+			os.Exit(5)
+		} else {
+			panic(err)
+		}
+	}
 
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
@@ -152,7 +171,7 @@ func (gmx *Gomuks) Start() {
 	}()
 
 	go gmx.StartAutosave()
-	if err := gmx.ui.Start(); err != nil {
+	if err = gmx.ui.Start(); err != nil {
 		panic(err)
 	}
 }
