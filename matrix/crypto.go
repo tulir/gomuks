@@ -63,11 +63,11 @@ func (c cryptoLogger) PrepareUpgrade(current, latest int) {
 	c.Debug("Database currently on v%d, latest: v%d", current, latest)
 }
 
-func (c cryptoLogger) DoUpgrade(from, to int, message string) {
+func (c cryptoLogger) DoUpgrade(from, to int, message string, _ bool) {
 	c.Debug("Upgrading database from v%d to v%d: %s", from, to, message)
 }
 
-func (c cryptoLogger) QueryTiming(_ context.Context, method, query string, _ []interface{}, duration time.Duration) {
+func (c cryptoLogger) QueryTiming(_ context.Context, method, query string, _ []interface{}, _ int, duration time.Duration) {
 	if duration > 1*time.Second {
 		c.Warn("%s(%s) took %.3f seconds", method, query, duration.Seconds())
 	}
@@ -100,7 +100,7 @@ func (c *Container) initCrypto() error {
 		}
 		accID := fmt.Sprintf("%s/%s", c.config.UserID.String(), c.config.DeviceID)
 		sqlStore := crypto.NewSQLCryptoStore(mauDb, cryptoLogger{"Crypto/DB"}, accID, c.config.DeviceID, []byte("fi.mau.gomuks"))
-		err = sqlStore.Upgrade()
+		err = sqlStore.DB.Upgrade()
 		if err != nil {
 			return fmt.Errorf("create table: %w", err)
 		}
