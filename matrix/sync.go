@@ -258,7 +258,12 @@ func (s *GomuksSyncer) GetFilterJSON(_ id.UserID) *mautrix.Filter {
 			},
 		},
 		AccountData: mautrix.FilterPart{
-			Types: []event.Type{event.AccountDataPushRules, event.AccountDataDirectChats, AccountDataGomuksPreferences},
+			Types: []event.Type{
+				event.AccountDataPushRules,
+				event.AccountDataDirectChats,
+				AccountDataGomuksPreferences,
+				event.AccountDataRoomTags,
+			},
 		},
 		Presence: mautrix.FilterPart{
 			NotTypes: []event.Type{event.NewEventType("*")},
