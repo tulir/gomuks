@@ -24,7 +24,8 @@ require (
 	gopkg.in/toast.v1 v1.0.0-20180812000517-0a84660828b2
 	gopkg.in/vansante/go-ffprobe.v2 v2.1.1
 	gopkg.in/yaml.v3 v3.0.1
-	maunium.net/go/mautrix v0.11.0
+	maunium.net/go/mauflag v1.0.0
+	maunium.net/go/mautrix v0.11.1
 	mvdan.cc/xurls/v2 v2.4.0
 )
 
@@ -44,7 +45,6 @@ require (
 	golang.org/x/term v0.2.0 // indirect
 	golang.org/x/text v0.4.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
-	maunium.net/go/mauflag v1.0.0 // indirect
 	maunium.net/go/maulogger/v2 v2.3.2 // indirect
 )
 
