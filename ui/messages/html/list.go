@@ -66,6 +66,14 @@ func (le *ListEntity) Clone() Entity {
 	}
 }
 
+func (le *ListEntity) paddingFor(number int) string {
+	padding := le.Indent - 2 - format.Digits(number)
+	if padding <= 0 {
+		return ""
+	}
+	return strings.Repeat(" ", padding)
+}
+
 func (le *ListEntity) Draw(screen mauview.Screen, ctx DrawContext) {
 	width, _ := screen.Size()
 
@@ -74,7 +82,7 @@ func (le *ListEntity) Draw(screen mauview.Screen, ctx DrawContext) {
 		proxyScreen.Height = entity.Height()
 		if le.Ordered {
 			number := le.Start + i
-			line := fmt.Sprintf("%d. %s", number, strings.Repeat(" ", le.Indent-2-format.Digits(number)))
+			line := fmt.Sprintf("%d. %s", number, le.paddingFor(number))
 			widget.WriteLine(screen, mauview.AlignLeft, line, 0, proxyScreen.OffsetY, le.Indent, le.Style)
 		} else {
 			screen.SetContent(0, proxyScreen.OffsetY, '●', nil, le.Style)
@@ -94,7 +102,7 @@ func (le *ListEntity) PlainText() string {
 		indent := strings.Repeat(" ", le.Indent)
 		if le.Ordered {
 			number := le.Start + i
-			_, _ = fmt.Fprintf(&buf, "%d. %s", number, strings.Repeat(" ", le.Indent-2-format.Digits(number)))
+			_, _ = fmt.Fprintf(&buf, "%d. %s", number, le.paddingFor(number))
 		} else {
 			buf.WriteString("● ")
 		}
