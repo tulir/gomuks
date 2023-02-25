@@ -62,6 +62,8 @@ type UserPreferences struct {
 	AltEnterToSend       bool `yaml:"alt_enter_to_send"`
 
 	InlineURLMode string `yaml:"inline_url_mode"`
+
+	DisplayMode DisplayMode `yaml:"display_mode"`
 }
 
 var InlineURLsProbablySupported bool

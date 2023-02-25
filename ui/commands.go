@@ -44,6 +44,7 @@ import (
 	"maunium.net/go/mautrix/format"
 	"maunium.net/go/mautrix/id"
 
+	"maunium.net/go/gomuks/config"
 	"maunium.net/go/gomuks/debug"
 	"maunium.net/go/gomuks/lib/filepicker"
 )
@@ -1038,6 +1039,16 @@ func cmdToggle(cmd *Command) {
 			default:
 				cmd.Config.Preferences.InlineURLMode = "enable"
 				cmd.Reply("Force-enabled using fancy terminal features to render URLs inside text. Restart gomuks to apply changes.")
+			}
+			continue
+		case "displaymode":
+			switch cmd.Config.Preferences.DisplayMode {
+			case "modern":
+				cmd.Config.Preferences.DisplayMode = config.DisplayModeIRC
+				cmd.Reply("Enabled IRC display mode. Restart gomuks to apply changes.")
+			default:
+				cmd.Config.Preferences.DisplayMode = config.DisplayModeModern
+				cmd.Reply("Enabled modern display mode. Restart gomuks to apply changes.")
 			}
 			continue
 		case "newline":
