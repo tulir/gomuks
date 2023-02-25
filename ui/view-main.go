@@ -45,6 +45,7 @@ type MainView struct {
 
 	roomList     *RoomList
 	roomView     *mauview.Box
+	rosterView   *RosterView
 	currentRoom  *RoomView
 	rooms        map[id.RoomID]*RoomView
 	roomsLock    sync.RWMutex
@@ -73,6 +74,7 @@ func (ui *GomuksUI) NewMainView() mauview.Component {
 		parent: ui,
 	}
 	mainView.roomList = NewRoomList(mainView)
+	mainView.rosterView = NewRosterView(mainView)
 	mainView.cmdProcessor = NewCommandProcessor(mainView)
 
 	mainView.flex.
@@ -103,7 +105,9 @@ func (view *MainView) HideModal() {
 }
 
 func (view *MainView) Draw(screen mauview.Screen) {
-	if view.config.Preferences.HideRoomList {
+	if view.config.Preferences.DisplayMode == config.DisplayModeModern {
+		view.rosterView.Draw(screen)
+	} else if view.config.Preferences.HideRoomList {
 		view.roomView.Draw(screen)
 	} else {
 		view.flex.Draw(screen)
