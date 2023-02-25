@@ -1045,10 +1045,10 @@ func cmdToggle(cmd *Command) {
 			switch cmd.Config.Preferences.DisplayMode {
 			case "modern":
 				cmd.Config.Preferences.DisplayMode = config.DisplayModeIRC
-				cmd.Reply("Enabled IRC display mode. Restart gomuks to apply changes.")
+				cmd.Reply("Enabled IRC display mode.")
 			default:
 				cmd.Config.Preferences.DisplayMode = config.DisplayModeModern
-				cmd.Reply("Enabled modern display mode. Restart gomuks to apply changes.")
+				cmd.Reply("Enabled modern display mode.")
 			}
 			continue
 		case "newline":
