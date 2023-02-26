@@ -17,6 +17,9 @@
 package ui
 
 import (
+	"strings"
+	"time"
+
 	"go.mau.fi/mauview"
 	"go.mau.fi/tcell"
 
@@ -51,8 +54,28 @@ func NewRosterView(mainView *MainView) *RosterView {
 
 func (rstr *RosterView) Draw(screen mauview.Screen) {
 	rstr.width, rstr.height = screen.Size()
-	y := 0
 
+	titleStyle := tcell.StyleDefault.Foreground(rstr.mainTextColor).Bold(true)
+	mainStyle := titleStyle.Bold(false)
+
+	now := time.Now()
+	tm := now.Format("15:04")
+	tmX := rstr.width - 3 - len(tm)
+
+	// first line
+	widget.WriteLine(screen, mauview.AlignLeft, "GOMUKS", 2, 1, tmX, titleStyle)
+	widget.WriteLine(screen, mauview.AlignLeft, tm, tmX, 1, 2+len(tm), titleStyle)
+	// second line
+	widget.WriteLine(screen, mauview.AlignRight, now.Format("Mon, Jan 02"), 0, 2, rstr.width-3, mainStyle)
+	// third line
+	widget.WriteLine(
+		screen, mauview.AlignCenter,
+		strings.Repeat(string(mauview.BoxDrawingsLightHorizontal), rstr.width-5),
+		2, 3, rstr.width-2,
+		mainStyle,
+	)
+
+	y := 4
 	for _, room := range rstr.parent.rooms {
 		if room.Room.IsReplaced() {
 			continue
@@ -75,10 +98,9 @@ func (rstr *RosterView) Draw(screen mauview.Screen) {
 		}
 
 		widget.WriteLinePadded(
-			screen,
-			mauview.AlignLeft,
+			screen, mauview.AlignCenter,
 			room.Room.GetTitle(),
-			0, y, rstr.width,
+			2, y, rstr.width,
 			style,
 		)
 
