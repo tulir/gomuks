@@ -139,12 +139,20 @@ func (rstr *RosterView) Draw(screen mauview.Screen) {
 				Background(rstr.selectedBackgroundColor)
 		}
 
-		widget.WriteLinePadded(
-			screen, mauview.AlignCenter,
-			room.GetTitle(),
-			2, y, rstr.width,
-			style,
-		)
+		timestamp := room.LastReceivedMessage
+		day, _ := time.ParseDuration("24h")
+		tm := timestamp.Format("15:04")
+		if timestamp.Before(time.Now().Round(day)) {
+			if timestamp.Before(time.Now().Round(day).AddDate(0, 0, -7)) {
+				tm = timestamp.Format("2006-01-02")
+			} else {
+				tm = timestamp.Format("Monday")
+			}
+		}
+
+		tmX := rstr.width - 3 - len(tm)
+		widget.WriteLine(screen, mauview.AlignLeft, room.GetTitle(), 2, y, tmX, style)
+		widget.WriteLine(screen, mauview.AlignLeft, tm, tmX, y, 2+len(tm), style)
 
 		y += renderHeight
 		if y >= rstr.height {
