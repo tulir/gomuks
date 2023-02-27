@@ -31,6 +31,7 @@ type RosterView struct {
 	mauview.Component
 
 	selected *rooms.Room
+	rooms    []*rooms.Room
 
 	height, width int
 
@@ -47,9 +48,50 @@ type RosterView struct {
 func NewRosterView(mainView *MainView) *RosterView {
 	rstr := &RosterView{
 		parent: mainView,
+		rooms:  make([]*rooms.Room, 0),
 	}
 
 	return rstr
+}
+
+func (rstr *RosterView) Add(room *rooms.Room) {
+	if room.IsReplaced() {
+		return
+	}
+	insertAt := len(rstr.rooms)
+	for i := 0; i < len(rstr.rooms); i++ {
+		if rstr.rooms[i] == room {
+			return
+		} else if room.LastReceivedMessage.After(rstr.rooms[i].LastReceivedMessage) {
+			insertAt = i
+			break
+		}
+	}
+	rstr.rooms = append(rstr.rooms, nil)
+	copy(rstr.rooms[insertAt+1:], rstr.rooms[insertAt:len(rstr.rooms)-1])
+	rstr.rooms[insertAt] = room
+}
+
+func (rstr *RosterView) Remove(room *rooms.Room) {
+	index := rstr.index(room)
+	if index < 0 || index > len(rstr.rooms) {
+		return
+	}
+	last := len(rstr.rooms) - 1
+	if index < last {
+		copy(rstr.rooms[index:], rstr.rooms[index+1:])
+	}
+	rstr.rooms[last] = nil
+	rstr.rooms = rstr.rooms[:last]
+}
+
+func (rstr *RosterView) index(room *rooms.Room) int {
+	for index, entry := range rstr.rooms {
+		if entry == room {
+			return index
+		}
+	}
+	return -1
 }
 
 func (rstr *RosterView) Draw(screen mauview.Screen) {
@@ -76,8 +118,8 @@ func (rstr *RosterView) Draw(screen mauview.Screen) {
 	)
 
 	y := 4
-	for _, room := range rstr.parent.rooms {
-		if room.Room.IsReplaced() {
+	for _, room := range rstr.rooms {
+		if room.IsReplaced() {
 			continue
 		}
 
@@ -86,11 +128,11 @@ func (rstr *RosterView) Draw(screen mauview.Screen) {
 			renderHeight = rstr.height - y
 		}
 
-		isSelected := room.Room == rstr.selected
+		isSelected := room == rstr.selected
 
 		style := tcell.StyleDefault.
 			Foreground(rstr.mainTextColor).
-			Bold(room.Room.HasNewMessages())
+			Bold(room.HasNewMessages())
 		if isSelected {
 			style = style.
 				Foreground(rstr.selectedTextColor).
@@ -99,7 +141,7 @@ func (rstr *RosterView) Draw(screen mauview.Screen) {
 
 		widget.WriteLinePadded(
 			screen, mauview.AlignCenter,
-			room.Room.GetTitle(),
+			room.GetTitle(),
 			2, y, rstr.width,
 			style,
 		)

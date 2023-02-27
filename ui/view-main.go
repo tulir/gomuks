@@ -328,6 +328,7 @@ func (view *MainView) RemoveRoom(room *rooms.Room) {
 	}
 	debug.Print("Removing", room.ID, room.GetTitle())
 
+	view.rosterView.Remove(room)
 	view.roomList.Remove(room)
 	t, r := view.roomList.Selected()
 	view.switchRoom(t, r, false)
@@ -344,6 +345,7 @@ func (view *MainView) addRoom(room *rooms.Room) *RoomView {
 	}
 	debug.Print("Adding", room.ID, room.GetTitle())
 	view.roomList.Add(room)
+	view.rosterView.Add(room)
 	view.roomsLock.Lock()
 	roomView := view.addRoomPage(room)
 	if !view.roomList.HasSelected() {
@@ -363,6 +365,7 @@ func (view *MainView) SetRooms(rooms *rooms.RoomCache) {
 			continue
 		}
 		view.roomList.Add(room)
+		view.rosterView.Add(room)
 		view.addRoomPage(room)
 	}
 	t, r := view.roomList.First()
