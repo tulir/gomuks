@@ -140,10 +140,11 @@ func (rstr *RosterView) Draw(screen mauview.Screen) {
 		}
 
 		timestamp := room.LastReceivedMessage
-		day, _ := time.ParseDuration("24h")
 		tm := timestamp.Format("15:04")
-		if timestamp.Before(time.Now().Round(day)) {
-			if timestamp.Before(time.Now().Round(day).AddDate(0, 0, -7)) {
+		now := time.Now()
+		today := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
+		if timestamp.Before(today) {
+			if timestamp.Before(today.AddDate(0, 0, -6)) {
 				tm = timestamp.Format("2006-01-02")
 			} else {
 				tm = timestamp.Format("Monday")
