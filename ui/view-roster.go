@@ -25,6 +25,7 @@ import (
 
 	"maunium.net/go/gomuks/matrix/rooms"
 	"maunium.net/go/gomuks/ui/widget"
+	"maunium.net/go/mautrix/event"
 )
 
 type RosterView struct {
@@ -94,6 +95,25 @@ func (rstr *RosterView) index(room *rooms.Room) int {
 	return -1
 }
 
+func (rstr *RosterView) getMostRecentMessage(room *rooms.Room) (string, bool) {
+	roomView, _ := rstr.parent.getRoomView(room.ID, true)
+
+	if msgView := roomView.MessageView(); len(msgView.messages) < 20 && !msgView.initialHistoryLoaded {
+		msgView.initialHistoryLoaded = true
+		go rstr.parent.LoadHistory(room.ID)
+	}
+
+	if len(roomView.content.msgBuffer) > 0 {
+		for _, msg := range roomView.content.msgBuffer {
+			if msg.Type == event.MsgText {
+				return msg.PlainText(), true
+			}
+		}
+	}
+
+	return "It's quite empty in here.", false
+}
+
 func (rstr *RosterView) Draw(screen mauview.Screen) {
 	rstr.width, rstr.height = screen.Size()
 
@@ -123,7 +143,7 @@ func (rstr *RosterView) Draw(screen mauview.Screen) {
 			continue
 		}
 
-		renderHeight := 1
+		renderHeight := 2
 		if y+renderHeight >= rstr.height {
 			renderHeight = rstr.height - y
 		}
@@ -151,9 +171,13 @@ func (rstr *RosterView) Draw(screen mauview.Screen) {
 			}
 		}
 
+		lastMessage, received := rstr.getMostRecentMessage(room)
+		msgStyle := style.Foreground(tcell.ColorGray).Italic(!received)
+
 		tmX := rstr.width - 3 - len(tm)
 		widget.WriteLine(screen, mauview.AlignLeft, room.GetTitle(), 2, y, tmX, style)
 		widget.WriteLine(screen, mauview.AlignLeft, tm, tmX, y, 2+len(tm), style)
+		widget.WriteLine(screen, mauview.AlignLeft, lastMessage, 2, y+1, rstr.width, msgStyle)
 
 		y += renderHeight
 		if y >= rstr.height {
