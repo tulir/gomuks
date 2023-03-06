@@ -17,7 +17,6 @@
 package ui
 
 import (
-	"strings"
 	"time"
 
 	"go.mau.fi/mauview"
@@ -130,12 +129,7 @@ func (rstr *RosterView) Draw(screen mauview.Screen) {
 	// second line
 	widget.WriteLine(screen, mauview.AlignRight, now.Format("Mon, Jan 02"), 0, 2, rstr.width-3, mainStyle)
 	// third line
-	widget.WriteLine(
-		screen, mauview.AlignCenter,
-		strings.Repeat(string(mauview.BoxDrawingsLightHorizontal), rstr.width-5),
-		2, 3, rstr.width-2,
-		mainStyle,
-	)
+	widget.NewBorder().Draw(mauview.NewProxyScreen(screen, 2, 3, rstr.width-5, 1))
 
 	y := 4
 	for _, room := range rstr.rooms {
