@@ -177,7 +177,7 @@ func (rstr *RosterView) Draw(screen mauview.Screen) {
 		tmX := rstr.width - 3 - len(tm)
 		widget.WriteLine(screen, mauview.AlignLeft, room.GetTitle(), 2, y, tmX, style)
 		widget.WriteLine(screen, mauview.AlignLeft, tm, tmX, y, 2+len(tm), style)
-		widget.WriteLine(screen, mauview.AlignLeft, lastMessage, 2, y+1, rstr.width, msgStyle)
+		widget.WriteLine(screen, mauview.AlignLeft, lastMessage, 2, y+1, rstr.width-5, msgStyle)
 
 		y += renderHeight
 		if y >= rstr.height {
