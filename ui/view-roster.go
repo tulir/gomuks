@@ -103,10 +103,10 @@ func (rstr *RosterView) getMostRecentMessage(room *rooms.Room) (string, bool) {
 		go rstr.parent.LoadHistory(room.ID)
 	}
 
-	if len(roomView.content.msgBuffer) > 0 {
-		for _, msg := range roomView.content.msgBuffer {
-			if msg.Type == event.MsgText {
-				return msg.PlainText(), true
+	if len(roomView.content.messages) > 0 {
+		for index := len(roomView.content.messages) - 1; index >= 0; index-- {
+			if roomView.content.messages[index].Type == event.MsgText {
+				return roomView.content.messages[index].PlainText(), true
 			}
 		}
 	}
