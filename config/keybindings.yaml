@@ -22,6 +22,7 @@ roster:
   'Up': prev_room
   'Escape': clear
   'q': quit
+  'Enter': enter
 
 modal:
   'Tab': select_next

@@ -35,6 +35,7 @@ type RosterView struct {
 	rooms    []*rooms.Room
 
 	height, width int
+	focused       bool
 
 	parent *MainView
 }
@@ -108,6 +109,14 @@ func (rstr *RosterView) getMostRecentMessage(room *rooms.Room) (string, bool) {
 }
 
 func (rstr *RosterView) Draw(screen mauview.Screen) {
+	if rstr.focused {
+		if roomView, ok := rstr.parent.getRoomView(rstr.selected.ID, true); ok {
+			roomView.Update()
+			roomView.Draw(screen)
+			return
+		}
+	}
+
 	rstr.width, rstr.height = screen.Size()
 
 	titleStyle := tcell.StyleDefault.Foreground(tcell.ColorDefault).Bold(true)
@@ -197,9 +206,12 @@ func (rstr *RosterView) OnKeyEvent(event mauview.KeyEvent) bool {
 			rstr.selected = rstr.rooms[index-1]
 		}
 	case "clear":
+		rstr.focused = false
 		rstr.selected = nil
 	case "quit":
 		rstr.parent.gmx.Stop(true)
+	case "enter":
+		rstr.focused = rstr.selected != nil
 	default:
 		return false
 	}
