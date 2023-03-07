@@ -198,6 +198,8 @@ func (rstr *RosterView) OnKeyEvent(event mauview.KeyEvent) bool {
 		}
 	case "clear":
 		rstr.selected = nil
+	case "quit":
+		rstr.parent.gmx.Stop(true)
 	default:
 		return false
 	}

@@ -21,6 +21,7 @@ roster:
   'Down': next_room
   'Up': prev_room
   'Escape': clear
+  'q': quit
 
 modal:
   'Tab': select_next
