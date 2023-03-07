@@ -172,6 +172,8 @@ func (view *MainView) OnKeyEvent(event mauview.KeyEvent) bool {
 
 	if view.modal != nil {
 		return view.modal.OnKeyEvent(event)
+	} else if view.config.Preferences.DisplayMode == config.DisplayModeModern {
+		return view.rosterView.OnKeyEvent(event)
 	}
 
 	kb := config.Keybind{

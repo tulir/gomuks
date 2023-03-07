@@ -22,6 +22,7 @@ import (
 	"go.mau.fi/mauview"
 	"go.mau.fi/tcell"
 
+	"maunium.net/go/gomuks/config"
 	"maunium.net/go/gomuks/matrix/rooms"
 	"maunium.net/go/gomuks/ui/widget"
 	"maunium.net/go/mautrix/event"
@@ -34,13 +35,6 @@ type RosterView struct {
 	rooms    []*rooms.Room
 
 	height, width int
-
-	// The item main text color.
-	mainTextColor tcell.Color
-	// The text color for selected items.
-	selectedTextColor tcell.Color
-	// The background color for selected items.
-	selectedBackgroundColor tcell.Color
 
 	parent *MainView
 }
@@ -116,7 +110,7 @@ func (rstr *RosterView) getMostRecentMessage(room *rooms.Room) (string, bool) {
 func (rstr *RosterView) Draw(screen mauview.Screen) {
 	rstr.width, rstr.height = screen.Size()
 
-	titleStyle := tcell.StyleDefault.Foreground(rstr.mainTextColor).Bold(true)
+	titleStyle := tcell.StyleDefault.Foreground(tcell.ColorDefault).Bold(true)
 	mainStyle := titleStyle.Bold(false)
 
 	now := time.Now()
@@ -145,12 +139,12 @@ func (rstr *RosterView) Draw(screen mauview.Screen) {
 		isSelected := room == rstr.selected
 
 		style := tcell.StyleDefault.
-			Foreground(rstr.mainTextColor).
+			Foreground(tcell.ColorDefault).
 			Bold(room.HasNewMessages())
 		if isSelected {
 			style = style.
-				Foreground(rstr.selectedTextColor).
-				Background(rstr.selectedBackgroundColor)
+				Foreground(tcell.ColorBlack).
+				Background(tcell.ColorWhite)
 		}
 
 		timestamp := room.LastReceivedMessage
@@ -167,15 +161,53 @@ func (rstr *RosterView) Draw(screen mauview.Screen) {
 
 		lastMessage, received := rstr.getMostRecentMessage(room)
 		msgStyle := style.Foreground(tcell.ColorGray).Italic(!received)
+		if isSelected {
+			msgStyle = msgStyle.Background(tcell.ColorWhite)
+		}
 
 		tmX := rstr.width - 3 - len(tm)
-		widget.WriteLine(screen, mauview.AlignLeft, room.GetTitle(), 2, y, tmX, style)
+		widget.WriteLinePadded(screen, mauview.AlignLeft, room.GetTitle(), 2, y, tmX, style)
 		widget.WriteLine(screen, mauview.AlignLeft, tm, tmX, y, 2+len(tm), style)
-		widget.WriteLine(screen, mauview.AlignLeft, lastMessage, 2, y+1, rstr.width-5, msgStyle)
+		widget.WriteLinePadded(screen, mauview.AlignLeft, lastMessage, 2, y+1, rstr.width-5, msgStyle)
 
 		y += renderHeight
 		if y >= rstr.height {
 			break
 		}
 	}
+}
+
+func (rstr *RosterView) OnKeyEvent(event mauview.KeyEvent) bool {
+	kb := config.Keybind{
+		Key: event.Key(),
+		Ch:  event.Rune(),
+		Mod: event.Modifiers(),
+	}
+	switch rstr.parent.config.Keybindings.Roster[kb] {
+	case "next_room":
+		if index := rstr.index(rstr.selected); index == -1 || index == len(rstr.rooms)-1 {
+			rstr.selected = rstr.First()
+		} else {
+			rstr.selected = rstr.rooms[index+1]
+		}
+	case "prev_room":
+		if index := rstr.index(rstr.selected); index < 1 {
+			rstr.selected = rstr.Last()
+		} else {
+			rstr.selected = rstr.rooms[index-1]
+		}
+	case "clear":
+		rstr.selected = nil
+	default:
+		return false
+	}
+	return true
+}
+
+func (rstr *RosterView) First() *rooms.Room {
+	return rstr.rooms[0]
+}
+
+func (rstr *RosterView) Last() *rooms.Room {
+	return rstr.rooms[len(rstr.rooms)-1]
 }

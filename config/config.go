@@ -90,6 +90,7 @@ type Keybind struct {
 
 type ParsedKeybindings struct {
 	Main   map[Keybind]string
+	Roster map[Keybind]string
 	Room   map[Keybind]string
 	Modal  map[Keybind]string
 	Visual map[Keybind]string
@@ -97,6 +98,7 @@ type ParsedKeybindings struct {
 
 type RawKeybindings struct {
 	Main   map[string]string `yaml:"main,omitempty"`
+	Roster map[string]string `yaml:"roster,omitempty"`
 	Room   map[string]string `yaml:"room,omitempty"`
 	Modal  map[string]string `yaml:"modal,omitempty"`
 	Visual map[string]string `yaml:"visual,omitempty"`
@@ -277,6 +279,7 @@ func (config *Config) LoadKeybindings() {
 	_ = config.load("keybindings", config.Dir, "keybindings.yaml", &inputConfig)
 
 	config.Keybindings.Main = parseKeybindings(inputConfig.Main)
+	config.Keybindings.Roster = parseKeybindings(inputConfig.Roster)
 	config.Keybindings.Room = parseKeybindings(inputConfig.Room)
 	config.Keybindings.Modal = parseKeybindings(inputConfig.Modal)
 	config.Keybindings.Visual = parseKeybindings(inputConfig.Visual)

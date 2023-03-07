@@ -15,6 +15,13 @@ main:
   'Alt+a': next_active_room
   'Alt+l': show_bare
 
+roster:
+  'j': next_room
+  'k': prev_room
+  'Down': next_room
+  'Up': prev_room
+  'Escape': clear
+
 modal:
   'Tab': select_next
   'Down': select_next
