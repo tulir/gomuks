@@ -304,6 +304,12 @@ func (view *RoomView) Draw(screen mauview.Screen) {
 		contentWidth = width
 	}
 
+	if view.config.Preferences.DisplayMode == config.DisplayModeModern {
+		view.topicScreen.Height = 2
+		view.contentScreen.OffsetY = 2
+		contentHeight -= 1
+	}
+
 	view.topicScreen.Width = width
 	view.contentScreen.Width = contentWidth
 	view.contentScreen.Height = contentHeight
