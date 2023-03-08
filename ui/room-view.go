@@ -300,7 +300,7 @@ func (view *RoomView) Draw(screen mauview.Screen) {
 	}
 	contentHeight := height - inputHeight - TopicBarHeight - StatusBarHeight
 	contentWidth := width - StaticHorizontalSpace
-	if view.config.Preferences.HideUserList {
+	if view.config.Preferences.HideUserList || view.config.Preferences.DisplayMode == config.DisplayModeModern {
 		contentWidth = width
 	}
 
@@ -323,7 +323,7 @@ func (view *RoomView) Draw(screen mauview.Screen) {
 	view.status.SetText(view.GetStatus())
 	view.status.Draw(view.statusScreen)
 	view.input.Draw(view.inputScreen)
-	if !view.config.Preferences.HideUserList {
+	if !view.config.Preferences.HideUserList && view.config.Preferences.DisplayMode != config.DisplayModeModern {
 		view.ulBorder.Draw(view.ulBorderScreen)
 		view.userList.Draw(view.ulScreen)
 	}
