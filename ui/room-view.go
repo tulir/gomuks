@@ -131,9 +131,15 @@ func NewRoomView(parent *MainView, room *rooms.Room) *RoomView {
 		view.input.SetPlaceholder("Send an encrypted message...")
 	}
 
-	view.topic.
-		SetTextColor(tcell.ColorWhite).
-		SetBackgroundColor(tcell.ColorDarkGreen)
+	if view.config.Preferences.DisplayMode != config.DisplayModeModern {
+		view.topic.
+			SetTextColor(tcell.ColorWhite).
+			SetBackgroundColor(tcell.ColorDarkGreen)
+	} else {
+		view.topic.
+			SetTextColor(tcell.ColorDefault).
+			SetTextAlign(mauview.AlignCenter)
+	}
 
 	view.status.SetBackgroundColor(tcell.ColorDimGray)
 
@@ -332,6 +338,9 @@ func (view *RoomView) Draw(screen mauview.Screen) {
 	if !view.config.Preferences.HideUserList && view.config.Preferences.DisplayMode != config.DisplayModeModern {
 		view.ulBorder.Draw(view.ulBorderScreen)
 		view.userList.Draw(view.ulScreen)
+	}
+	if view.config.Preferences.DisplayMode == config.DisplayModeModern {
+		widget.NewBorder().Draw(mauview.NewProxyScreen(view.topicScreen, 2, 1, view.topicScreen.Width-5, 1))
 	}
 }
 
@@ -864,7 +873,9 @@ func (view *RoomView) MxRoom() *rooms.Room {
 
 func (view *RoomView) Update() {
 	topicStr := strings.TrimSpace(strings.ReplaceAll(view.Room.GetTopic(), "\n", " "))
-	if view.config.Preferences.HideRoomList || view.config.Preferences.DisplayMode == config.DisplayModeModern {
+	if view.config.Preferences.DisplayMode == config.DisplayModeModern {
+		topicStr = view.Room.GetTitle()
+	} else if view.config.Preferences.HideRoomList {
 		if len(topicStr) > 0 {
 			topicStr = fmt.Sprintf("%s - %s", view.Room.GetTitle(), topicStr)
 		} else {
