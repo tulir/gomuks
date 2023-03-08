@@ -858,7 +858,7 @@ func (view *RoomView) MxRoom() *rooms.Room {
 
 func (view *RoomView) Update() {
 	topicStr := strings.TrimSpace(strings.ReplaceAll(view.Room.GetTopic(), "\n", " "))
-	if view.config.Preferences.HideRoomList {
+	if view.config.Preferences.HideRoomList || view.config.Preferences.DisplayMode == config.DisplayModeModern {
 		if len(topicStr) > 0 {
 			topicStr = fmt.Sprintf("%s - %s", view.Room.GetTitle(), topicStr)
 		} else {
