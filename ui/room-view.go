@@ -131,6 +131,7 @@ func NewRoomView(parent *MainView, room *rooms.Room) *RoomView {
 		view.input.SetPlaceholder("Send an encrypted message...")
 	}
 
+	// TODO: update when displaymode toggled
 	if view.config.Preferences.DisplayMode != config.DisplayModeModern {
 		view.topic.
 			SetTextColor(tcell.ColorWhite).
