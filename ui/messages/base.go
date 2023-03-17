@@ -254,7 +254,7 @@ func (msg *UIMessage) TimestampColor() tcell.Color {
 
 func (msg *UIMessage) ReplyHeight() int {
 	if msg.ReplyTo != nil {
-		return 1 + msg.ReplyTo.Height()
+		return 1 + msg.ReplyTo.Height(false)
 	}
 	return 0
 }
@@ -267,8 +267,13 @@ func (msg *UIMessage) ReactionHeight() int {
 }
 
 // Height returns the number of rows in the computed buffer (see Buffer()).
-func (msg *UIMessage) Height() int {
-	return msg.ReplyHeight() + msg.Renderer.Height() + msg.ReactionHeight()
+func (msg *UIMessage) Height(modernHeader bool) int {
+	height := msg.ReplyHeight() + msg.Renderer.Height() + msg.ReactionHeight()
+	if modernHeader {
+		height++
+	}
+
+	return height
 }
 
 func (msg *UIMessage) Time() time.Time {
@@ -366,7 +371,7 @@ func (msg *UIMessage) DrawReply(screen mauview.Screen) mauview.Screen {
 		return screen
 	}
 	width, height := screen.Size()
-	replyHeight := msg.ReplyTo.Height()
+	replyHeight := msg.ReplyTo.Height(false)
 	widget.WriteLineSimpleColor(screen, "In reply to", 1, 0, tcell.ColorGreen)
 	widget.WriteLineSimpleColor(screen, msg.ReplyTo.SenderName, 13, 0, msg.ReplyTo.SenderColor())
 	for y := 0; y < 1+replyHeight; y++ {

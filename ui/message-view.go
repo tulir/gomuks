@@ -177,7 +177,7 @@ func (view *MessageView) AddMessage(ifcMessage ifc.Message, direction MessageDir
 
 	if direction == AppendMessage {
 		if view.ScrollOffset > 0 {
-			view.ScrollOffset += message.Height()
+			view.ScrollOffset += message.Height(view.showModernHeader(message))
 		}
 		view.messagesLock.Lock()
 		if len(view.messages) > 0 && !view.messages[len(view.messages)-1].SameDate(message) {
@@ -251,6 +251,17 @@ func (view *MessageView) setMessageID(message *messages.UIMessage) {
 	view.messageIDLock.Unlock()
 }
 
+func (view *MessageView) showModernHeader(message *messages.UIMessage) bool {
+	if view.config.Preferences.DisplayMode != config.DisplayModeModern {
+		return false
+	}
+	if message.IsService {
+		return false
+	}
+
+	return true
+}
+
 func (view *MessageView) appendBuffer(message *messages.UIMessage) {
 	view.msgBufferLock.Lock()
 	view.appendBufferUnlocked(message)
@@ -258,7 +269,7 @@ func (view *MessageView) appendBuffer(message *messages.UIMessage) {
 }
 
 func (view *MessageView) appendBufferUnlocked(message *messages.UIMessage) {
-	for i := 0; i < message.Height(); i++ {
+	for i := 0; i < message.Height(view.showModernHeader(message)); i++ {
 		view.msgBuffer = append(view.msgBuffer, message)
 	}
 	view.prevMsgCount++
@@ -291,13 +302,13 @@ func (view *MessageView) replaceBuffer(original *messages.UIMessage, new *messag
 		end++
 	}
 
-	if new.Height() == 0 {
+	if new.Height(view.showModernHeader(new)) == 0 {
 		new.CalculateBuffer(view.prevPrefs, view.prevWidth())
 	}
 
 	view.msgBufferLock.Lock()
-	if new.Height() != end-start {
-		height := new.Height()
+	if new.Height(view.showModernHeader(new)) != end-start {
+		height := new.Height(view.showModernHeader(new))
 
 		newBuffer := make([]*messages.UIMessage, height+len(view.msgBuffer)-end)
 		for i := 0; i < height; i++ {
@@ -616,9 +627,13 @@ func (view *MessageView) Draw(screen mauview.Screen) {
 	}
 	messageX := usernameX + view.widestSender() + SenderMessageGap
 
-	bareMode := view.config.Preferences.BareMessageView
-	if bareMode {
-		messageX = 0
+	noLeftPad := view.config.Preferences.BareMessageView || view.config.Preferences.DisplayMode == config.DisplayModeModern
+	if noLeftPad {
+		if view.config.Preferences.DisplayMode == config.DisplayModeModern {
+			messageX = 2
+		} else {
+			messageX = 0
+		}
 	}
 
 	indexOffset := view.getIndexOffset(screen, height, messageX)
@@ -628,7 +643,7 @@ func (view *MessageView) Draw(screen mauview.Screen) {
 		viewStart = -indexOffset
 	}
 
-	if !bareMode {
+	if !noLeftPad {
 		separatorX := usernameX + view.widestSender() + SenderSeparatorGap
 		scrollBarHeight, scrollBarPos := view.calculateScrollBar(height)
 
@@ -650,31 +665,48 @@ func (view *MessageView) Draw(screen mauview.Screen) {
 
 		msg := view.msgBuffer[index]
 		if msg == prevMsg {
-			debug.Print("Unexpected re-encounter of", msg, msg.Height(), "at", line, index)
+			debug.Print("Unexpected re-encounter of", msg, msg.Height(view.showModernHeader(msg)), "at", line, index)
 			line++
 			continue
 		}
 
-		if len(msg.FormatTime()) > 0 && !view.config.Preferences.HideTimestamp {
-			widget.WriteLineSimpleColor(screen, msg.FormatTime(), 0, line, msg.TimestampColor())
-		}
-		// TODO hiding senders might not be that nice after all, maybe an option? (disabled for now)
-		//if !bareMode && (prevMsg == nil || meta.Sender() != prevMsg.Sender()) {
-		widget.WriteLineColor(
-			screen, mauview.AlignRight, msg.Sender(),
-			usernameX, line, view.widestSender(),
-			msg.SenderColor())
-		//}
-		if msg.Edited {
-			// TODO add better indicator for edits
-			screen.SetCell(usernameX+view.widestSender(), line, tcell.StyleDefault.Foreground(tcell.ColorDarkRed), '*')
+		if view.config.Preferences.DisplayMode != config.DisplayModeModern {
+			if len(msg.FormatTime()) > 0 && !view.config.Preferences.HideTimestamp {
+				widget.WriteLineSimpleColor(screen, msg.FormatTime(), 0, line, msg.TimestampColor())
+			}
+			// TODO hiding senders might not be that nice after all, maybe an option? (disabled for now)
+			//if !bareMode && (prevMsg == nil || meta.Sender() != prevMsg.Sender()) {
+			widget.WriteLineColor(
+				screen, mauview.AlignRight, msg.Sender(),
+				usernameX, line, view.widestSender(),
+				msg.SenderColor())
+			//}
+			if msg.Edited {
+				// TODO add better indicator for edits
+				screen.SetCell(usernameX+view.widestSender(), line, tcell.StyleDefault.Foreground(tcell.ColorDarkRed), '*')
+			}
 		}
 
 		for i := index - 1; i >= 0 && view.msgBuffer[i] == msg; i-- {
 			line--
 		}
-		msg.Draw(mauview.NewProxyScreen(screen, messageX, line, view.width()-messageX, msg.Height()))
-		line += msg.Height()
+		offset := 0
+		if view.showModernHeader(msg) {
+			offset = 1
+
+			boldStyle := tcell.StyleDefault.Bold(true)
+			username := msg.Sender()
+			widget.WriteLine(screen, mauview.AlignLeft, username,
+				messageX, line, len(username), boldStyle.Foreground(msg.SenderColor()))
+			widget.WriteLine(screen, mauview.AlignLeft, " "+string(tcell.RuneBullet)+" ",
+				messageX+len(username), line, 3, boldStyle)
+			widget.WriteLine(screen, mauview.AlignLeft, msg.FormatTime(),
+				messageX+len(username)+3, line, view.width()-len(username)-3,
+				boldStyle.Foreground(msg.TimestampColor()),
+			)
+		}
+		msg.Draw(mauview.NewProxyScreen(screen, messageX, line+offset, view.width()-messageX, msg.Height(view.showModernHeader(msg))))
+		line += msg.Height(view.showModernHeader(msg))
 
 		prevMsg = msg
 	}
