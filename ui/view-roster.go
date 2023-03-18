@@ -108,6 +108,14 @@ func (rstr *RosterView) getMostRecentMessage(room *rooms.Room) (string, bool) {
 	return "It's quite empty in here.", false
 }
 
+func (rstr *RosterView) First() *rooms.Room {
+	return rstr.rooms[0]
+}
+
+func (rstr *RosterView) Last() *rooms.Room {
+	return rstr.rooms[len(rstr.rooms)-1]
+}
+
 func (rstr *RosterView) Draw(screen mauview.Screen) {
 	if rstr.focused {
 		if roomView, ok := rstr.parent.getRoomView(rstr.selected.ID, true); ok {
@@ -227,12 +235,4 @@ func (rstr *RosterView) OnKeyEvent(event mauview.KeyEvent) bool {
 		return false
 	}
 	return true
-}
-
-func (rstr *RosterView) First() *rooms.Room {
-	return rstr.rooms[0]
-}
-
-func (rstr *RosterView) Last() *rooms.Room {
-	return rstr.rooms[len(rstr.rooms)-1]
 }
