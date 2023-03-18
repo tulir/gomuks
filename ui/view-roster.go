@@ -192,6 +192,18 @@ func (rstr *RosterView) OnKeyEvent(event mauview.KeyEvent) bool {
 		Ch:  event.Rune(),
 		Mod: event.Modifiers(),
 	}
+
+	if rstr.focused {
+		if rstr.parent.config.Keybindings.Roster[kb] == "clear" {
+			rstr.focused = false
+			rstr.selected = nil
+		} else {
+			if roomView, ok := rstr.parent.getRoomView(rstr.selected.ID, true); ok {
+				return roomView.OnKeyEvent(event)
+			}
+		}
+	}
+
 	switch rstr.parent.config.Keybindings.Roster[kb] {
 	case "next_room":
 		if index := rstr.index(rstr.selected); index == -1 || index == len(rstr.rooms)-1 {
@@ -206,7 +218,6 @@ func (rstr *RosterView) OnKeyEvent(event mauview.KeyEvent) bool {
 			rstr.selected = rstr.rooms[index-1]
 		}
 	case "clear":
-		rstr.focused = false
 		rstr.selected = nil
 	case "quit":
 		rstr.parent.gmx.Stop(true)
