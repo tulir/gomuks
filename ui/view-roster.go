@@ -263,6 +263,19 @@ func (rstr *RosterView) OnMouseEvent(event mauview.MouseEvent) bool {
 	case tcell.WheelDown:
 		rstr.ScrollNext()
 		return true
+	case tcell.Button1:
+		_, y := event.Position()
+		if y <= 3 || y > 3+(2*len(rstr.rooms)) {
+			return false
+		} else {
+			index := y/2 - 2
+			if index > len(rstr.rooms)-1 {
+				return false
+			}
+			rstr.selected = rstr.rooms[index]
+			rstr.focused = true
+			return true
+		}
 	}
 
 	return false
