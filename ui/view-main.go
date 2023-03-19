@@ -217,6 +217,9 @@ func (view *MainView) OnMouseEvent(event mauview.MouseEvent) bool {
 	if view.modal != nil {
 		return view.modal.OnMouseEvent(event)
 	}
+	if view.config.Preferences.DisplayMode == config.DisplayModeModern {
+		return view.rosterView.OnMouseEvent(event)
+	}
 	if view.config.Preferences.HideRoomList {
 		return view.roomView.OnMouseEvent(event)
 	}

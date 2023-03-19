@@ -116,6 +116,22 @@ func (rstr *RosterView) Last() *rooms.Room {
 	return rstr.rooms[len(rstr.rooms)-1]
 }
 
+func (rstr *RosterView) ScrollNext() {
+	if index := rstr.index(rstr.selected); index == -1 || index == len(rstr.rooms)-1 {
+		rstr.selected = rstr.First()
+	} else {
+		rstr.selected = rstr.rooms[index+1]
+	}
+}
+
+func (rstr *RosterView) ScrollPrev() {
+	if index := rstr.index(rstr.selected); index < 1 {
+		rstr.selected = rstr.Last()
+	} else {
+		rstr.selected = rstr.rooms[index-1]
+	}
+}
+
 func (rstr *RosterView) Draw(screen mauview.Screen) {
 	if rstr.focused {
 		if roomView, ok := rstr.parent.getRoomView(rstr.selected.ID, true); ok {
@@ -214,17 +230,9 @@ func (rstr *RosterView) OnKeyEvent(event mauview.KeyEvent) bool {
 
 	switch rstr.parent.config.Keybindings.Roster[kb] {
 	case "next_room":
-		if index := rstr.index(rstr.selected); index == -1 || index == len(rstr.rooms)-1 {
-			rstr.selected = rstr.First()
-		} else {
-			rstr.selected = rstr.rooms[index+1]
-		}
+		rstr.ScrollNext()
 	case "prev_room":
-		if index := rstr.index(rstr.selected); index < 1 {
-			rstr.selected = rstr.Last()
-		} else {
-			rstr.selected = rstr.rooms[index-1]
-		}
+		rstr.ScrollPrev()
 	case "clear":
 		rstr.selected = nil
 	case "quit":
@@ -235,4 +243,27 @@ func (rstr *RosterView) OnKeyEvent(event mauview.KeyEvent) bool {
 		return false
 	}
 	return true
+}
+
+func (rstr *RosterView) OnMouseEvent(event mauview.MouseEvent) bool {
+	if rstr.focused {
+		if roomView, ok := rstr.parent.getRoomView(rstr.selected.ID, true); ok {
+			return roomView.OnMouseEvent(event)
+		}
+	}
+
+	if event.HasMotion() {
+		return false
+	}
+
+	switch event.Buttons() {
+	case tcell.WheelUp:
+		rstr.ScrollPrev()
+		return true
+	case tcell.WheelDown:
+		rstr.ScrollNext()
+		return true
+	}
+
+	return false
 }
