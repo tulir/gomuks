@@ -664,8 +664,10 @@ func (view *MessageView) Draw(screen mauview.Screen) {
 		index := indexOffset + line
 
 		msg := view.msgBuffer[index]
+		header := view.showModernHeader(msg)
+
 		if msg == prevMsg {
-			debug.Print("Unexpected re-encounter of", msg, msg.Height(view.showModernHeader(msg)), "at", line, index)
+			debug.Print("Unexpected re-encounter of", msg, msg.Height(header), "at", line, index)
 			line++
 			continue
 		}
@@ -691,7 +693,7 @@ func (view *MessageView) Draw(screen mauview.Screen) {
 			line--
 		}
 		offset := 0
-		if view.showModernHeader(msg) {
+		if header {
 			offset = 1
 
 			boldStyle := tcell.StyleDefault.Bold(true)
@@ -705,8 +707,8 @@ func (view *MessageView) Draw(screen mauview.Screen) {
 				boldStyle.Foreground(msg.TimestampColor()),
 			)
 		}
-		msg.Draw(mauview.NewProxyScreen(screen, messageX, line+offset, view.width()-messageX, msg.Height(view.showModernHeader(msg))))
-		line += msg.Height(view.showModernHeader(msg))
+		msg.Draw(mauview.NewProxyScreen(screen, messageX, line+offset, view.width()-messageX, msg.Height(header)), header)
+		line += msg.Height(header)
 
 		prevMsg = msg
 	}

@@ -311,12 +311,18 @@ func (msg *UIMessage) SetIsHighlight(isHighlight bool) {
 	msg.IsHighlight = isHighlight
 }
 
-func (msg *UIMessage) DrawReactions(screen mauview.Screen) {
+func (msg *UIMessage) DrawReactions(screen mauview.Screen, modernHeader bool) {
 	if len(msg.Reactions) == 0 {
 		return
 	}
+
+	diff := 1
+	if modernHeader {
+		diff = 2
+	}
+
 	width, height := screen.Size()
-	screen = mauview.NewProxyScreen(screen, 0, height-1, width, 1)
+	screen = mauview.NewProxyScreen(screen, 0, height-diff, width, 1)
 
 	x := 0
 	for _, reaction := range msg.Reactions {
@@ -328,10 +334,10 @@ func (msg *UIMessage) DrawReactions(screen mauview.Screen) {
 	}
 }
 
-func (msg *UIMessage) Draw(screen mauview.Screen) {
-	proxyScreen := msg.DrawReply(screen)
+func (msg *UIMessage) Draw(screen mauview.Screen, modernHeader bool) {
+	proxyScreen := msg.DrawReply(screen, modernHeader)
 	msg.Renderer.Draw(proxyScreen, msg)
-	msg.DrawReactions(proxyScreen)
+	msg.DrawReactions(proxyScreen, modernHeader)
 	if msg.IsSelected {
 		w, h := screen.Size()
 		for x := 0; x < w; x++ {
@@ -366,7 +372,7 @@ func (msg *UIMessage) CalculateBuffer(preferences config.UserPreferences, width 
 	msg.CalculateReplyBuffer(preferences, width)
 }
 
-func (msg *UIMessage) DrawReply(screen mauview.Screen) mauview.Screen {
+func (msg *UIMessage) DrawReply(screen mauview.Screen, modernHeader bool) mauview.Screen {
 	if msg.ReplyTo == nil {
 		return screen
 	}
@@ -378,7 +384,7 @@ func (msg *UIMessage) DrawReply(screen mauview.Screen) mauview.Screen {
 		screen.SetCell(0, y, tcell.StyleDefault, '▊')
 	}
 	replyScreen := mauview.NewProxyScreen(screen, 1, 1, width-1, replyHeight)
-	msg.ReplyTo.Draw(replyScreen)
+	msg.ReplyTo.Draw(replyScreen, modernHeader)
 	return mauview.NewProxyScreen(screen, 0, replyHeight+1, width, height-replyHeight-1)
 }
 
