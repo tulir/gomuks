@@ -687,10 +687,9 @@ func (c *Container) HandleMessage(source mautrix.EventSource, mxEvent *event.Eve
 
 	if !room.Loaded() {
 		pushRules := c.PushRules().GetActions(room, evt.Event).Should()
-		shouldNotify := pushRules.Notify || !pushRules.NotifySpecified
-		if !shouldNotify {
+		if !pushRules.Notify {
 			room.LastReceivedMessage = time.Unix(evt.Timestamp/1000, evt.Timestamp%1000*1000)
-			room.AddUnread(evt.ID, shouldNotify, pushRules.Highlight)
+			room.AddUnread(evt.ID, pushRules.Notify, pushRules.Highlight)
 			mainView.Bump(room)
 			return
 		}

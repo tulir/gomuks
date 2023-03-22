@@ -411,17 +411,14 @@ func (view *MainView) NotifyMessage(room *rooms.Room, message ifc.Message, shoul
 	recentlyFocused := time.Now().Add(-30 * time.Second).Before(view.lastFocusTime)
 	isFocused := time.Now().Add(-5 * time.Second).Before(view.lastFocusTime)
 
-	// Whether or not the push rules say this message should be notified about.
-	shouldNotify := should.Notify || !should.NotifySpecified
-
 	if !isCurrent || !isFocused {
 		// The message is not in the current room, show new message status in room list.
-		room.AddUnread(message.ID(), shouldNotify, should.Highlight)
+		room.AddUnread(message.ID(), should.Notify, should.Highlight)
 	} else {
 		view.matrix.MarkRead(room.ID, message.ID())
 	}
 
-	if shouldNotify && !recentlyFocused && !view.config.Preferences.DisableNotifications {
+	if should.Notify && !recentlyFocused && !view.config.Preferences.DisableNotifications {
 		// Push rules say notify and the terminal is not focused, send desktop notification.
 		shouldPlaySound := should.PlaySound &&
 			should.SoundName == "default" &&
