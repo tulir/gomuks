@@ -340,6 +340,9 @@ func (msg *UIMessage) Draw(screen mauview.Screen, modernHeader bool) {
 	msg.DrawReactions(proxyScreen, modernHeader)
 	if msg.IsSelected {
 		w, h := screen.Size()
+		if modernHeader {
+			h--
+		}
 		for x := 0; x < w; x++ {
 			for y := 0; y < h; y++ {
 				mainc, combc, style, _ := screen.GetContent(x, y)
