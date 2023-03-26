@@ -452,6 +452,14 @@ func (view *MessageView) OnMouseEvent(event mauview.MouseEvent) bool {
 		}
 		view.msgBufferLock.RUnlock()
 
+		if view.config.Preferences.DisplayMode == config.DisplayModeModern {
+			if prevMessage == message {
+				return view.handleMessageClick(message, event.Modifiers())
+			} else {
+				return view.handleUsernameClick(message, prevMessage)
+			}
+		}
+
 		usernameX := 0
 		if !view.config.Preferences.HideTimestamp {
 			usernameX += view.TimestampWidth + TimestampSenderGap
