@@ -19,6 +19,8 @@ package ui
 import (
 	"time"
 
+	sync "github.com/sasha-s/go-deadlock"
+
 	"go.mau.fi/mauview"
 	"go.mau.fi/tcell"
 
@@ -30,6 +32,7 @@ import (
 
 type RosterView struct {
 	mauview.Component
+	sync.RWMutex
 
 	selected *rooms.Room
 	rooms    []*rooms.Room
@@ -53,6 +56,10 @@ func (rstr *RosterView) Add(room *rooms.Room) {
 	if room.IsReplaced() {
 		return
 	}
+
+	rstr.Lock()
+	defer rstr.Unlock()
+
 	insertAt := len(rstr.rooms)
 	for i := 0; i < len(rstr.rooms); i++ {
 		if rstr.rooms[i] == room {
@@ -72,6 +79,10 @@ func (rstr *RosterView) Remove(room *rooms.Room) {
 	if index < 0 || index > len(rstr.rooms) {
 		return
 	}
+
+	rstr.Lock()
+	defer rstr.Unlock()
+
 	last := len(rstr.rooms) - 1
 	if index < last {
 		copy(rstr.rooms[index:], rstr.rooms[index+1:])
@@ -81,6 +92,9 @@ func (rstr *RosterView) Remove(room *rooms.Room) {
 }
 
 func (rstr *RosterView) index(room *rooms.Room) int {
+	rstr.Lock()
+	defer rstr.Unlock()
+
 	for index, entry := range rstr.rooms {
 		if entry == room {
 			return index
@@ -109,10 +123,14 @@ func (rstr *RosterView) getMostRecentMessage(room *rooms.Room) (string, bool) {
 }
 
 func (rstr *RosterView) First() *rooms.Room {
+	rstr.Lock()
+	defer rstr.Unlock()
 	return rstr.rooms[0]
 }
 
 func (rstr *RosterView) Last() *rooms.Room {
+	rstr.Lock()
+	defer rstr.Unlock()
 	return rstr.rooms[len(rstr.rooms)-1]
 }
 
@@ -120,6 +138,8 @@ func (rstr *RosterView) ScrollNext() {
 	if index := rstr.index(rstr.selected); index == -1 || index == len(rstr.rooms)-1 {
 		rstr.selected = rstr.First()
 	} else {
+		rstr.Lock()
+		defer rstr.Unlock()
 		rstr.selected = rstr.rooms[index+1]
 	}
 }
@@ -128,6 +148,8 @@ func (rstr *RosterView) ScrollPrev() {
 	if index := rstr.index(rstr.selected); index < 1 {
 		rstr.selected = rstr.Last()
 	} else {
+		rstr.Lock()
+		defer rstr.Unlock()
 		rstr.selected = rstr.rooms[index-1]
 	}
 }
