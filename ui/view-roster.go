@@ -91,6 +91,11 @@ func (rstr *RosterView) Remove(room *rooms.Room) {
 	rstr.rooms = rstr.rooms[:last]
 }
 
+func (rstr *RosterView) Bump(room *rooms.Room) {
+	rstr.Remove(room)
+	rstr.Add(room)
+}
+
 func (rstr *RosterView) index(room *rooms.Room) int {
 	rstr.Lock()
 	defer rstr.Unlock()

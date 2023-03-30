@@ -409,6 +409,7 @@ func sendNotification(room *rooms.Room, sender, text string, critical, sound boo
 
 func (view *MainView) Bump(room *rooms.Room) {
 	view.roomList.Bump(room)
+	view.rosterView.Bump(room)
 }
 
 func (view *MainView) NotifyMessage(room *rooms.Room, message ifc.Message, should pushrules.PushActionArrayShould) {
