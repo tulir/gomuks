@@ -69,3 +69,20 @@ func autocompleteToggle(cmd *CommandAutocomplete) (completions []string, newText
 	}
 	return
 }
+
+var staticPowerLevelKeys = []string{"ban", "kick", "redact", "invite", "state_default", "events_default", "users_default"}
+
+func autocompletePowerLevel(cmd *CommandAutocomplete) (completions []string, newText string) {
+	if len(cmd.Args) > 1 {
+		return
+	}
+	for _, staticKey := range staticPowerLevelKeys {
+		if strings.HasPrefix(staticKey, cmd.RawArgs) {
+			completions = append(completions, staticKey)
+		}
+	}
+	for _, cpl := range cmd.Room.AutocompleteUser(cmd.RawArgs) {
+		completions = append(completions, cpl.id)
+	}
+	return
+}
