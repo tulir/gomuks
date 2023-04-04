@@ -50,7 +50,10 @@ type Command struct {
 type CommandAutocomplete Command
 
 func (cmd *Command) Reply(message string, args ...interface{}) {
-	cmd.Room.AddServiceMessage(fmt.Sprintf(message, args...))
+	if len(args) > 0 {
+		message = fmt.Sprintf(message, args...)
+	}
+	cmd.Room.AddServiceMessage(message)
 	cmd.UI.Render()
 }
 
