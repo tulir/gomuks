@@ -714,6 +714,12 @@ func (view *MessageView) Draw(screen mauview.Screen) {
 				messageX+len(username)+3, line, view.width()-len(username)-3,
 				boldStyle.Foreground(msg.TimestampColor()),
 			)
+			if msg.Edited {
+				widget.WriteLine(screen, mauview.AlignLeft, " "+string(tcell.RuneBullet)+" ",
+					messageX+len(username)+3+len(msg.FormatTime()), line, 3, boldStyle)
+				widget.WriteLine(screen, mauview.AlignLeft, "Edited",
+					messageX+len(username)+len(msg.FormatTime())+6, line, 6, boldStyle.Foreground(tcell.ColorDarkRed))
+			}
 		}
 		msg.Draw(mauview.NewProxyScreen(screen, messageX, line+offset, view.width()-messageX, msg.Height(header)), header)
 		line += msg.Height(header)
