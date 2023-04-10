@@ -34,8 +34,9 @@ type RosterView struct {
 	mauview.Component
 	sync.RWMutex
 
-	selected *rooms.Room
-	rooms    []*rooms.Room
+	selected     *rooms.Room
+	rooms        []*rooms.Room
+	scrollOffset int
 
 	height, width int
 	focused       bool
@@ -142,21 +143,49 @@ func (rstr *RosterView) Last() *rooms.Room {
 func (rstr *RosterView) ScrollNext() {
 	if index := rstr.index(rstr.selected); index == -1 || index == len(rstr.rooms)-1 {
 		rstr.selected = rstr.First()
+		rstr.scrollOffset = 0
 	} else {
 		rstr.Lock()
 		defer rstr.Unlock()
 		rstr.selected = rstr.rooms[index+1]
+		if rstr.VisualScrollHeight(rstr.scrollOffset, index+1) >= rstr.height {
+			rstr.scrollOffset++
+		}
 	}
 }
 
 func (rstr *RosterView) ScrollPrev() {
 	if index := rstr.index(rstr.selected); index < 1 {
 		rstr.selected = rstr.Last()
+
+		if i := len(rstr.rooms) - rstr.RoomsOnScreen(); i < 0 {
+			rstr.scrollOffset = 0
+		} else {
+			rstr.scrollOffset = i
+		}
 	} else {
 		rstr.Lock()
 		defer rstr.Unlock()
 		rstr.selected = rstr.rooms[index-1]
+		if index == rstr.scrollOffset {
+			rstr.scrollOffset--
+		}
 	}
+}
+
+func (rstr *RosterView) VisualScrollHeight(start, end int) int {
+	if start < 0 || start > end {
+		return -1
+	}
+	return 3 + (2 * (end - start))
+}
+
+func (rstr *RosterView) RoomsOnScreen() int {
+	return (rstr.height - 3) / 2
+}
+
+func (rstr *RosterView) IndexOfLastVisibleRoom() int {
+	return rstr.scrollOffset + rstr.RoomsOnScreen()
 }
 
 func (rstr *RosterView) Draw(screen mauview.Screen) {
@@ -186,7 +215,7 @@ func (rstr *RosterView) Draw(screen mauview.Screen) {
 	widget.NewBorder().Draw(mauview.NewProxyScreen(screen, 2, 3, rstr.width-5, 1))
 
 	y := 4
-	for _, room := range rstr.rooms {
+	for _, room := range rstr.rooms[rstr.scrollOffset:] {
 		if room.IsReplaced() {
 			continue
 		}
@@ -292,10 +321,10 @@ func (rstr *RosterView) OnMouseEvent(event mauview.MouseEvent) bool {
 		return true
 	case tcell.Button1:
 		_, y := event.Position()
-		if y <= 3 || y > 3+(2*len(rstr.rooms)) {
+		if y <= 3 || y > rstr.VisualScrollHeight(rstr.scrollOffset, rstr.IndexOfLastVisibleRoom()) {
 			return false
 		} else {
-			index := y/2 - 2
+			index := rstr.scrollOffset + y/2 - 2
 			if index > len(rstr.rooms)-1 {
 				return false
 			}
