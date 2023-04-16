@@ -132,15 +132,9 @@ func NewRoomView(parent *MainView, room *rooms.Room) *RoomView {
 	}
 
 	// TODO: update when displaymode toggled
-	if view.config.Preferences.DisplayMode != config.DisplayModeModern {
-		view.topic.
-			SetTextColor(tcell.ColorWhite).
-			SetBackgroundColor(tcell.ColorDarkGreen)
-	} else {
-		view.topic.
-			SetTextColor(tcell.ColorDefault).
-			SetTextAlign(mauview.AlignCenter)
-	}
+	view.topic.
+		SetTextColor(tcell.ColorWhite).
+		SetBackgroundColor(tcell.ColorDarkGreen)
 
 	view.status.SetBackgroundColor(tcell.ColorDimGray)
 
@@ -314,7 +308,20 @@ func (view *RoomView) Draw(screen mauview.Screen) {
 	if view.config.Preferences.DisplayMode == config.DisplayModeModern {
 		view.topicScreen.Height = 2
 		view.contentScreen.OffsetY = 2
-		contentHeight -= 1
+		contentHeight--
+
+		view.topic.
+			SetTextColor(tcell.ColorDefault).
+			SetBackgroundColor(tcell.ColorDefault).
+			SetTextAlign(mauview.AlignCenter)
+	} else {
+		view.topicScreen.Height = TopicBarHeight
+		view.contentScreen.OffsetY = StatusBarHeight
+
+		view.topic.
+			SetTextColor(tcell.ColorWhite).
+			SetBackgroundColor(tcell.ColorDarkGreen).
+			SetTextAlign(mauview.AlignLeft)
 	}
 
 	view.topicScreen.Width = width
