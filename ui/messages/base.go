@@ -316,12 +316,12 @@ func (msg *UIMessage) DrawReactions(screen mauview.Screen, modernHeader bool) {
 		return
 	}
 
+	width, height := screen.Size()
 	diff := 1
-	if modernHeader {
+	if modernHeader && height == msg.Height(modernHeader) {
 		diff = 2
 	}
 
-	width, height := screen.Size()
 	screen = mauview.NewProxyScreen(screen, 0, height-diff, width, 1)
 
 	x := 0
