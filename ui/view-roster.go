@@ -148,7 +148,7 @@ func (rstr *RosterView) ScrollNext() {
 		rstr.Lock()
 		defer rstr.Unlock()
 		rstr.selected = rstr.rooms[index+1]
-		if rstr.VisualScrollHeight(rstr.scrollOffset, index+1) >= rstr.height {
+		if rstr.VisualScrollHeight(rstr.scrollOffset, index+2) >= rstr.height {
 			rstr.scrollOffset++
 		}
 	}
