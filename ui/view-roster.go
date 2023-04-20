@@ -141,10 +141,10 @@ func (rstr *RosterView) Last() *rooms.Room {
 }
 
 func (rstr *RosterView) ScrollNext() {
-	if index := rstr.index(rstr.selected); index == -1 || index == len(rstr.rooms)-1 {
+	if index := rstr.index(rstr.selected); index == -1 {
 		rstr.selected = rstr.First()
 		rstr.scrollOffset = 0
-	} else {
+	} else if index < len(rstr.rooms)-1 {
 		rstr.Lock()
 		defer rstr.Unlock()
 		rstr.selected = rstr.rooms[index+1]
@@ -155,15 +155,7 @@ func (rstr *RosterView) ScrollNext() {
 }
 
 func (rstr *RosterView) ScrollPrev() {
-	if index := rstr.index(rstr.selected); index < 1 {
-		rstr.selected = rstr.Last()
-
-		if i := len(rstr.rooms) - rstr.RoomsOnScreen(); i < 0 {
-			rstr.scrollOffset = 0
-		} else {
-			rstr.scrollOffset = i
-		}
-	} else {
+	if index := rstr.index(rstr.selected); index > 0 {
 		rstr.Lock()
 		defer rstr.Unlock()
 		rstr.selected = rstr.rooms[index-1]
