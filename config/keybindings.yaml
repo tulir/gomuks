@@ -20,6 +20,8 @@ roster:
   'k': prev_room
   'Down': next_room
   'Up': prev_room
+  'g': top
+  'G': bottom
   'Escape': clear
   'q': quit
   'Enter': enter

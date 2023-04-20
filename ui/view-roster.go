@@ -281,6 +281,17 @@ func (rstr *RosterView) OnKeyEvent(event mauview.KeyEvent) bool {
 		rstr.ScrollNext()
 	case "prev_room":
 		rstr.ScrollPrev()
+	case "top":
+		rstr.selected = rstr.First()
+		rstr.scrollOffset = 0
+	case "bottom":
+		rstr.selected = rstr.Last()
+
+		if i := len(rstr.rooms) - rstr.RoomsOnScreen(); i < 0 {
+			rstr.scrollOffset = 0
+		} else {
+			rstr.scrollOffset = i
+		}
 	case "clear":
 		rstr.selected = nil
 	case "quit":
