@@ -159,7 +159,10 @@ func (view *MessageView) AddMessage(ifcMessage ifc.Message, direction MessageDir
 
 	width := view.width()
 	bare := view.config.Preferences.BareMessageView
-	if !bare {
+	modern := view.config.Preferences.DisplayMode == config.DisplayModeModern
+	if modern {
+		width -= 5
+	} else if !bare {
 		width -= view.widestSender() + SenderMessageGap
 		if !view.config.Preferences.HideTimestamp {
 			width -= view.TimestampWidth + TimestampSenderGap
@@ -336,7 +339,9 @@ func (view *MessageView) recalculateBuffers() {
 	view.msgBufferLock.Lock()
 	if recalculateMessageBuffers || len(view.messages) != view.prevMsgCount {
 		width := view.width()
-		if !prefs.BareMessageView {
+		if prefs.DisplayMode == config.DisplayModeModern {
+			width -= 5
+		} else if !prefs.BareMessageView {
 			width -= view.widestSender() + SenderMessageGap
 			if !prefs.HideTimestamp {
 				width -= view.TimestampWidth + TimestampSenderGap
