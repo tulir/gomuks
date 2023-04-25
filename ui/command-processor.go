@@ -113,6 +113,7 @@ func NewCommandProcessor(parent *MainView) *CommandProcessor {
 			"cs":         {"cross-signing"},
 			"power":      {"powerlevel"},
 			"pl":         {"powerlevel"},
+			"esc":        {"escape"},
 		},
 		autocompleters: map[string]CommandAutocompleter{
 			"devices":       autocompleteUser,
@@ -180,6 +181,8 @@ func NewCommandProcessor(parent *MainView) *CommandProcessor {
 			},
 
 			"rainbownotice": cmdRainbowNotice,
+
+			"escape": cmdEscape,
 
 			"fingerprint":   cmdFingerprint,
 			"devices":       cmdDevices,

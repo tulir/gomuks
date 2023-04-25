@@ -908,6 +908,19 @@ func cmdSetState(cmd *Command) {
 	}
 }
 
+func cmdEscape(cmd *Command) {
+	if cmd.Config.Preferences.DisplayMode != config.DisplayModeModern {
+		cmd.Reply("/escape can only be used in the modern display mode")
+		return
+	}
+	if cmd.MainView.rosterView.selected == nil || !cmd.MainView.rosterView.focused {
+		cmd.Reply("/escape is used to exit from an open room (no room opened)")
+		return
+	}
+	cmd.MainView.rosterView.focused = false
+	cmd.MainView.rosterView.selected = nil
+}
+
 type ToggleMessage interface {
 	Name() string
 	Format(state bool) string
