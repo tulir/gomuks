@@ -225,7 +225,8 @@ func (rstr *RosterView) Draw(screen mauview.Screen) {
 		if isSelected {
 			style = style.
 				Foreground(tcell.ColorBlack).
-				Background(tcell.ColorWhite)
+				Background(tcell.ColorWhite).
+				Italic(true)
 		}
 
 		timestamp := room.LastReceivedMessage
@@ -243,7 +244,7 @@ func (rstr *RosterView) Draw(screen mauview.Screen) {
 		lastMessage, received := rstr.getMostRecentMessage(room)
 		msgStyle := style.Foreground(tcell.ColorGray).Italic(!received)
 		if isSelected {
-			msgStyle = msgStyle.Background(tcell.ColorWhite)
+			msgStyle = msgStyle.Background(tcell.ColorWhite).Italic(true)
 		}
 
 		tmX := rstr.width - 3 - len(tm)
