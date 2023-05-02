@@ -243,13 +243,19 @@ func (rstr *RosterView) Draw(screen mauview.Screen) {
 
 		lastMessage, received := rstr.getMostRecentMessage(room)
 		msgStyle := style.Foreground(tcell.ColorGray).Italic(!received)
+		startingX := 2
+
 		if isSelected {
+			lastMessage = "  " + lastMessage
 			msgStyle = msgStyle.Background(tcell.ColorWhite).Italic(true)
+			startingX += 2
+
+			widget.WriteLine(screen, mauview.AlignLeft, string(tcell.RuneDiamond)+" ", 2, y, 4, style)
 		}
 
 		tmX := rstr.width - 3 - len(tm)
-		widget.WriteLinePadded(screen, mauview.AlignLeft, room.GetTitle(), 2, y, tmX, style)
-		widget.WriteLine(screen, mauview.AlignLeft, tm, tmX, y, 2+len(tm), style)
+		widget.WriteLinePadded(screen, mauview.AlignLeft, room.GetTitle(), startingX, y, tmX, style)
+		widget.WriteLine(screen, mauview.AlignLeft, tm, tmX, y, startingX+len(tm), style)
 		widget.WriteLinePadded(screen, mauview.AlignLeft, lastMessage, 2, y+1, rstr.width-5, msgStyle)
 
 		y += renderHeight
