@@ -919,6 +919,7 @@ func cmdEscape(cmd *Command) {
 	}
 	cmd.MainView.rosterView.focused = false
 	cmd.MainView.rosterView.selected = nil
+	cmd.UI.Render()
 }
 
 type ToggleMessage interface {
