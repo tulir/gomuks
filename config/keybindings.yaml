@@ -23,6 +23,7 @@ roster:
   'g': top
   'G': bottom
   'Escape': clear
+  'Alt+Backspace': clear
   'q': quit
   'Enter': enter
 
