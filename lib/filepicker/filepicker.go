@@ -18,32 +18,94 @@ package filepicker
 
 import (
 	"bytes"
-	"errors"
+	"fmt"
+	"io/ioutil"
+	"os"
 	"os/exec"
-	"strings"
+	"path/filepath"
 )
 
-var zenity string
+// var zenity string
+var file_browser string
 
 func init() {
-	zenity, _ = exec.LookPath("zenity")
+	// zenity, _ = exec.LookPath("zenity")
+
+	// TODO: read config from user to try and load file-browser
+	file_browser, _ = exec.LookPath("ranger")
 }
 
 func IsSupported() bool {
-	return len(zenity) > 0
+	return len(file_browser) > 0
 }
 
-func Open() (string, error) {
-	cmd := exec.Command(zenity, "--file-selection")
-	var output bytes.Buffer
-	cmd.Stdout = &output
+func Open(confDir string) (string, error) {
+
+	// cmd := exec.Command(zenity, "--file-selection")
+
+	upload_history_file := "_last_upload_file.txt"
+	upload_history_path := filepath.Join(confDir, upload_history_file)
+
+	flag := fmt.Sprintf(
+		"--choosefile=%s",
+		upload_history_path,
+	)
+
+	cmd := exec.Command(
+		file_browser,
+		flag,
+	)
+	// args := []string{file_browser, flag}
+	// cmd := &exec.Cmd{
+	// 	Stdout: os.Stdout,
+	// 	Stderr: os.Stderr,
+	// }
+
+	// XXX: async run code..
+	// err := cmd.Start()
+	// if err != nil {
+	// 	panic(err)
+	// }
+	// err = cmd.Wait()
+	// if err != nil {
+	// 	panic(err)
+	// }
+
+	// var output bytes.Buffer
+	var errout bytes.Buffer
+	cmd.Stderr = &errout
+	// cmd.Stdout = &output
+	cmd.Stdout = os.Stdout
+	cmd.Stdin = os.Stdin
+
 	err := cmd.Run()
+
+	// if err != nil {
+	// 	var exitErr *exec.ExitError
+	// 	if errors.As(err, &exitErr) && exitErr.ExitCode() == 1 {
+	// 		return "", nil
+	// 	}
+	// 	return "", err
+	// }
+
+	// var last_path string
+	bpath, err := ioutil.ReadFile(
+		upload_history_path,
+	)
 	if err != nil {
-		var exitErr *exec.ExitError
-		if errors.As(err, &exitErr) && exitErr.ExitCode() == 1 {
-			return "", nil
-		}
-		return "", err
+		panic(err)
 	}
-	return strings.TrimSpace(output.String()), nil
+	last_path := string(bpath[:])
+	// if err != nil {
+	// 	return "", err
+	// }
+	// defer file.Close()
+
+	// nbytes, err := file.Read(output)
+	// if err != nil {
+	// 	return "", err
+	// }
+	// output, err := strings.TrimSpace(output.String()), nil
+	fmt.Print(last_path)
+	return last_path, err
 }

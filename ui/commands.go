@@ -262,8 +262,35 @@ func cmdUpload(cmd *Command) {
 	var path string
 	var err error
 	if len(cmd.Args) == 0 {
+
 		if filepicker.IsSupported() {
-			path, err = filepicker.Open()
+			// NOTE: (maybe) suspend TUI so that underlying terminal based
+			// file browser can take over the tty.
+
+			callback := make(chan string)
+			ui := cmd.Room.parent.parent
+			conf := cmd.Room.config
+			confDir := conf.Dir
+
+			ui.app.Suspend(func() {
+				path, err = filepicker.Open(confDir)
+				if err != nil {
+					panic(err)
+				}
+				callback <- path
+			})
+			// filepiker.Open,
+
+			// path, err = filepicker.Open()
+			// if err != nil {
+			// 	panic(err)
+			// }
+			// callback <- (path, err)
+
+			path := <-callback
+
+			// path, err = filepicker.Open()
+			cmd.Reply(path)
 			if err != nil {
 				cmd.Reply("Failed to open file picker: %v", err)
 				return
