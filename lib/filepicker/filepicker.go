@@ -53,6 +53,8 @@ func Open(confDir string) (string, error) {
 
 	cmd := exec.Command(
 		file_browser,
+		// TODO: also offer config option to allow custom bootup-path?
+		os.Getenv("HOME"),
 		flag,
 	)
 	// args := []string{file_browser, flag}
