@@ -18,6 +18,7 @@ package filepicker
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -41,8 +42,15 @@ func IsSupported() bool {
 
 func Open(confDir string) (string, error) {
 
+	// TODO: what priority rules should we have between zenity (gui
+	// browser) and ranger (terminal browser)?
 	// cmd := exec.Command(zenity, "--file-selection")
 
+	// TODO: upload dir config:
+	// - allow user to set a `upload_dir string` and if not defined
+	//   we just boot `ranger` in user's $HOME.
+	// - also offer config option to allow custom bootup-path?
+	default_upload_dir := os.Getenv("HOME")
 	upload_history_file := "_last_upload_file.txt"
 	upload_history_path := filepath.Join(confDir, upload_history_file)
 
@@ -53,25 +61,9 @@ func Open(confDir string) (string, error) {
 
 	cmd := exec.Command(
 		file_browser,
-		// TODO: also offer config option to allow custom bootup-path?
-		os.Getenv("HOME"),
+		default_upload_dir,
 		flag,
 	)
-	// args := []string{file_browser, flag}
-	// cmd := &exec.Cmd{
-	// 	Stdout: os.Stdout,
-	// 	Stderr: os.Stderr,
-	// }
-
-	// XXX: async run code..
-	// err := cmd.Start()
-	// if err != nil {
-	// 	panic(err)
-	// }
-	// err = cmd.Wait()
-	// if err != nil {
-	// 	panic(err)
-	// }
 
 	// var output bytes.Buffer
 	var errout bytes.Buffer
@@ -81,14 +73,13 @@ func Open(confDir string) (string, error) {
 	cmd.Stdin = os.Stdin
 
 	err := cmd.Run()
-
-	// if err != nil {
-	// 	var exitErr *exec.ExitError
-	// 	if errors.As(err, &exitErr) && exitErr.ExitCode() == 1 {
-	// 		return "", nil
-	// 	}
-	// 	return "", err
-	// }
+	if err != nil {
+		var exitErr *exec.ExitError
+		if errors.As(err, &exitErr) && exitErr.ExitCode() == 1 {
+			return "", nil
+		}
+		return "", err
+	}
 
 	// var last_path string
 	bpath, err := ioutil.ReadFile(
