@@ -69,6 +69,18 @@ func NewDateChangeMessage(text string) *UIMessage {
 	}
 }
 
+func NewSenderChangeMessage() *UIMessage {
+	return &UIMessage{
+		SenderID:      "",
+		SenderName:    "",
+		IsService:     true,
+		HideTimestamp: true,
+		Renderer: &ExpandedTextMessage{
+			Text: tstring.NewColorTString(" ", tcell.ColorGreen),
+		},
+	}
+}
+
 func (msg *ExpandedTextMessage) Clone() MessageRenderer {
 	return &ExpandedTextMessage{
 		Text: msg.Text.Clone(),

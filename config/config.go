@@ -60,6 +60,7 @@ type UserPreferences struct {
 	DisableNotifications bool `yaml:"disable_notifications"`
 	DisableShowURLs      bool `yaml:"disable_show_urls"`
 	AltEnterToSend       bool `yaml:"alt_enter_to_send"`
+	EnableLineBreaks     bool `yaml:"enable_line_breaks"`
 
 	InlineURLMode string `yaml:"inline_url_mode"`
 }
