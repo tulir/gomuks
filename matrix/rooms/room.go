@@ -463,6 +463,23 @@ func (room *Room) GetStateEvent(eventType event.Type, stateKey string) *event.Ev
 	return evt
 }
 
+// GetMostRecentEvent returns the most recent state event for the given
+// type, or nil.
+func (room *Room) GetMostRecentEvent(eventType event.Type) *event.Event {
+	room.Load()
+	room.lock.RLock()
+	defer room.lock.RUnlock()
+	stateEventMap, _ := room.state[eventType]
+
+	var evt *event.Event = nil
+	for _, e := range stateEventMap {
+		if evt == nil || time.UnixMilli(e.Timestamp).After(time.UnixMilli(evt.Timestamp)) {
+			evt = e
+		}
+	}
+	return evt
+}
+
 // getStateEvents returns the state events for the given type.
 func (room *Room) getStateEvents(eventType event.Type) map[string]*event.Event {
 	stateEventMap, _ := room.state[eventType]
