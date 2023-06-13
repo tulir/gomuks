@@ -673,7 +673,7 @@ func (room *Room) GetMemberList() []id.UserID {
 	members := room.GetMembers()
 	memberList := make([]id.UserID, len(members))
 	index := 0
-	for userID, _ := range members {
+	for userID := range members {
 		memberList[index] = userID
 		index++
 	}
