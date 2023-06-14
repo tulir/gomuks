@@ -463,9 +463,9 @@ func (room *Room) GetStateEvent(eventType event.Type, stateKey string) *event.Ev
 	return evt
 }
 
-// GetMostRecentEvent returns the most recent state event for the given
+// MostRecentStateEventOfType returns the most recent state event for the given
 // type, or nil.
-func (room *Room) GetMostRecentEvent(eventType event.Type) *event.Event {
+func (room *Room) MostRecentStateEventOfType(eventType event.Type) *event.Event {
 	room.Load()
 	room.lock.RLock()
 	defer room.lock.RUnlock()
