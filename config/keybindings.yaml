@@ -26,6 +26,7 @@ roster:
   'Alt+Backspace': clear
   'q': quit
   'Enter': enter
+  'z': toggle_split
 
 modal:
   'Tab': select_next

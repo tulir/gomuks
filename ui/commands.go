@@ -913,12 +913,13 @@ func cmdEscape(cmd *Command) {
 		cmd.Reply("/escape can only be used in the modern display mode")
 		return
 	}
-	if cmd.MainView.rosterView.selected == nil || !cmd.MainView.rosterView.focused {
+	if cmd.MainView.rosterView.room == nil || !cmd.MainView.rosterView.focused {
 		cmd.Reply("/escape is used to exit from an open room (no room opened)")
 		return
 	}
 	cmd.MainView.rosterView.focused = false
-	cmd.MainView.rosterView.selected = nil
+	cmd.MainView.rosterView.split = nil
+	cmd.MainView.rosterView.room = nil
 	cmd.UI.Render()
 }
 
