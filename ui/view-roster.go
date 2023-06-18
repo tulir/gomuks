@@ -61,8 +61,8 @@ type RosterView struct {
 	splits      []*split
 	splitLookup map[string]*split
 
-	height, width int
-	//scrollOffset  int
+	height, width,
+	splitOffset, roomOffset int
 	focused bool
 
 	parent *MainView
@@ -205,7 +205,7 @@ func (rstr *RosterView) Remove(room *rooms.Room) {
 	rstr.Lock()
 	defer rstr.Unlock()
 
-	splt, index := rstr.index(room)
+	splt, index := rstr.indexOfRoom(room)
 	if index < 0 || index > len(splt.rooms) {
 		return
 	}
@@ -223,7 +223,7 @@ func (rstr *RosterView) Bump(room *rooms.Room) {
 	rstr.Add(room)
 }
 
-func (rstr *RosterView) index(room *rooms.Room) (*split, int) {
+func (rstr *RosterView) indexOfRoom(room *rooms.Room) (*split, int) {
 	if room == nil {
 		return nil, -1
 	}
@@ -240,6 +240,15 @@ func (rstr *RosterView) index(room *rooms.Room) (*split, int) {
 	}
 
 	return nil, -1
+}
+
+func (rstr *RosterView) indexOfSplit(split *split) int {
+	for index, entry := range rstr.splits {
+		if entry == split {
+			return index
+		}
+	}
+	return -1
 }
 
 func (rstr *RosterView) getMostRecentMessage(room *rooms.Room) (string, bool) {
@@ -285,18 +294,22 @@ func (rstr *RosterView) Last() (*split, *rooms.Room) {
 	return rstr.splits[len(rstr.splits)-1], rstr.splits[len(rstr.splits)-1].rooms[0]
 }
 
-func (rstr *RosterView) ScrollNext() {
+func (rstr *RosterView) MatchOffsetsToSelection() {
 	rstr.Lock()
 	defer rstr.Unlock()
 
-	if splt, index := rstr.index(rstr.room); splt == nil || index == -1 {
+	var splt *split
+	splt, rstr.roomOffset = rstr.indexOfRoom(rstr.room)
+	rstr.splitOffset = rstr.indexOfSplit(splt)
+}
+
+func (rstr *RosterView) ScrollNext() {
+	rstr.Lock()
+
+	if splt, index := rstr.indexOfRoom(rstr.room); splt == nil || index == -1 {
 		rstr.split, rstr.room = rstr.first()
-		//rstr.scrollOffset = 0
 	} else if index < len(splt.rooms)-1 && !splt.collapsed {
 		rstr.room = splt.rooms[index+1]
-		//if rstr.VisualScrollHeight(rstr.scrollOffset, index+2) >= rstr.height {
-		//	rstr.scrollOffset++
-		//}
 	} else {
 		idx := -1
 		for i, s := range rstr.splits {
@@ -308,9 +321,15 @@ func (rstr *RosterView) ScrollNext() {
 			if len(rstr.splits[i].rooms) > 0 {
 				rstr.split = rstr.splits[i]
 				rstr.room = rstr.splits[i].rooms[0]
-				return
+				break
 			}
 		}
+	}
+
+	rstr.Unlock()
+
+	if rstr.HeightThroughSelection() > rstr.height {
+		rstr.MatchOffsetsToSelection()
 	}
 }
 
@@ -318,22 +337,26 @@ func (rstr *RosterView) ScrollPrev() {
 	rstr.Lock()
 	defer rstr.Unlock()
 
-	if splt, index := rstr.index(rstr.room); splt == nil || index == -1 {
+	if splt, index := rstr.indexOfRoom(rstr.room); splt == nil || index == -1 {
 		return
 	} else if index > 0 && !splt.collapsed {
 		rstr.room = splt.rooms[index-1]
-		//if index == rstr.scrollOffset {
-		//	rstr.scrollOffset--
-		//}
+		if index == rstr.roomOffset {
+			rstr.roomOffset--
+		}
 	} else {
 		for idx := len(rstr.splits) - 1; idx > 0; idx-- {
 			if rstr.splits[idx] == rstr.split {
 				rstr.split = rstr.splits[idx-1]
+				rstr.splitOffset = idx - 1
+
 				if len(rstr.split.rooms) > 0 {
 					if rstr.split.collapsed {
 						rstr.room = rstr.split.rooms[0]
+						rstr.roomOffset = 0
 					} else {
 						rstr.room = rstr.split.rooms[len(rstr.split.rooms)-1]
+						rstr.roomOffset = len(rstr.split.rooms) - 1
 					}
 				}
 				return
@@ -342,20 +365,27 @@ func (rstr *RosterView) ScrollPrev() {
 	}
 }
 
-func (rstr *RosterView) VisualScrollHeight(start, end int) int {
-	if start < 0 || start > end {
-		return -1
+func (rstr *RosterView) HeightThroughSelection() int {
+	height := 3
+	for _, splt := range rstr.splits[rstr.splitOffset:] {
+		if len(splt.rooms) == 0 {
+			continue
+		}
+
+		height++
+		if splt.collapsed {
+			continue
+		}
+
+		for _, r := range splt.rooms[rstr.roomOffset:] {
+			height += 2
+			if r == rstr.room {
+				return height
+			}
+		}
 	}
-	return 3 + (2 * (end - start))
+	return -1
 }
-
-func (rstr *RosterView) RoomsOnScreen() int {
-	return (rstr.height - 3) / 2
-}
-
-//func (rstr *RosterView) IndexOfLastVisibleRoom() int {
-//	return rstr.scrollOffset + rstr.RoomsOnScreen()
-//}
 
 func (rstr *RosterView) Draw(screen mauview.Screen) {
 	if rstr.focused {
@@ -384,7 +414,7 @@ func (rstr *RosterView) Draw(screen mauview.Screen) {
 	widget.NewBorder().Draw(mauview.NewProxyScreen(screen, 2, 3, rstr.width-5, 1))
 
 	y := 4
-	for _, splt := range rstr.splits {
+	for _, splt := range rstr.splits[rstr.splitOffset:] {
 
 		if len(splt.rooms) == 0 {
 			continue
@@ -399,7 +429,12 @@ func (rstr *RosterView) Draw(screen mauview.Screen) {
 			continue
 		}
 
-		for _, room := range splt.rooms {
+		iter := splt.rooms
+		if splt == rstr.split {
+			iter = iter[rstr.roomOffset:]
+		}
+
+		for _, room := range iter {
 			if room.IsReplaced() {
 				continue
 			}
@@ -482,18 +517,16 @@ func (rstr *RosterView) OnKeyEvent(event mauview.KeyEvent) bool {
 		rstr.ScrollNext()
 	case "prev_room":
 		rstr.ScrollPrev()
+		rstr.MatchOffsetsToSelection()
 	case "top":
 		rstr.Lock()
-		defer rstr.Unlock()
 		rstr.split, rstr.room = rstr.first()
-		//rstr.scrollOffset = 0
+		rstr.Unlock()
+		rstr.MatchOffsetsToSelection()
 	case "bottom":
 		rstr.split, rstr.room = rstr.Last()
-
-		if i := len(rstr.splits) - rstr.RoomsOnScreen(); i < 0 {
-			//rstr.scrollOffset = 0
-		} else {
-			//rstr.scrollOffset = i
+		if rstr.HeightThroughSelection() > rstr.height {
+			rstr.MatchOffsetsToSelection()
 		}
 	case "clear":
 		rstr.split = nil
@@ -532,19 +565,6 @@ func (rstr *RosterView) OnMouseEvent(event mauview.MouseEvent) bool {
 	case tcell.WheelDown:
 		rstr.ScrollNext()
 		return true
-		//case tcell.Button1:
-		//	_, y := event.Position()
-		//	if y <= 3 || y > rstr.VisualScrollHeight(rstr.scrollOffset, rstr.IndexOfLastVisibleRoom()) {
-		//		return false
-		//	} else {
-		//		index := rstr.scrollOffset + y/2 - 2
-		//		if index > len(rstr.rooms)-1 {
-		//			return false
-		//		}
-		//		rstr.selected = rstr.rooms[index]
-		//		rstr.focused = true
-		//		return true
-		//	}
 	}
 
 	return false
