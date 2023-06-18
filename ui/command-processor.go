@@ -133,6 +133,8 @@ func NewCommandProcessor(parent *MainView) *CommandProcessor {
 		commands: map[string]CommandHandler{
 			"unknown-command": cmdUnknownCommand,
 
+			"ignore":	  cmdIgnore,
+			"unignore":	  cmdUnignore,
 			"id":         cmdID,
 			"help":       cmdHelp,
 			"me":         cmdMe,

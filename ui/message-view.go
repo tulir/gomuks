@@ -135,6 +135,7 @@ const (
 )
 
 func (view *MessageView) AddMessage(ifcMessage ifc.Message, direction MessageDirection) {
+
 	if ifcMessage == nil {
 		return
 	}
@@ -155,6 +156,9 @@ func (view *MessageView) AddMessage(ifcMessage ifc.Message, direction MessageDir
 		direction = IgnoreMessage
 	}
 
+	if(strings.Contains(view.config.Preferences.IgnoredUserList, message.Sender())){
+		return
+	}
 	view.updateWidestSender(message.Sender())
 
 	width := view.width()

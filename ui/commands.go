@@ -53,6 +53,29 @@ func cmdMe(cmd *Command) {
 	go cmd.Room.SendMessage(event.MsgEmote, text)
 }
 
+func cmdIgnore(cmd *Command){
+	if len(cmd.Args) == 0 {
+		cmd.Reply("Please provide a username as an argument")
+		return
+	}
+
+	user := cmd.Args[0]
+	cmd.Config.Preferences.IgnoredUserList += " "+user
+	cmd.Reply("Ignoring any messages from "+user)
+}
+
+func cmdUnignore(cmd *Command){
+	if len(cmd.Args) == 0 {
+		cmd.Reply("Please provide a username as an argument")
+		return
+	}
+
+	user := cmd.Args[0]
+	res := strings.ReplaceAll(cmd.Config.Preferences.IgnoredUserList, " "+user, "")
+	cmd.Config.Preferences.IgnoredUserList = res
+	cmd.Reply("No more ignoring messages from "+user)
+}
+
 // GradientTable from https://github.com/lucasb-eyer/go-colorful/blob/master/doc/gradientgen/gradientgen.go
 type GradientTable []struct {
 	Col colorful.Color

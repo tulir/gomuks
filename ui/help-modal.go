@@ -58,6 +58,9 @@ const helpText = `# General
 /pm <user id> <...>   - Create a private chat with the given user(s).
 /create [room name]   - Create a room.
 
+/ignore <user id>	  - Ignore messages from the given user.
+/unignore <user id>	- Don't ignore messages from the give user.
+
 /join <room> [server] - Join a room.
 /accept               - Accept the invite.
 /reject               - Reject the invite.

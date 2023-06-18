@@ -61,6 +61,7 @@ type UserPreferences struct {
 	DisableShowURLs      bool `yaml:"disable_show_urls"`
 	AltEnterToSend       bool `yaml:"alt_enter_to_send"`
 
+	IgnoredUserList string `yaml:"ignore_user_list"`
 	InlineURLMode string `yaml:"inline_url_mode"`
 }
 
