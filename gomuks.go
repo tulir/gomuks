@@ -76,14 +76,14 @@ type Gomuks struct {
 
 // NewGomuks creates a new Gomuks instance with everything initialized,
 // but does not start it.
-func NewGomuks(uiProvider ifc.UIProvider, configDir, dataDir, cacheDir, downloadDir string) *Gomuks {
+func NewGomuks(uiProvider ifc.UIProvider, configDir, dataDir, cacheDir, downloadDir string, isHeadless bool) *Gomuks {
 	gmx := &Gomuks{
 		stop: make(chan bool, 1),
 	}
 
 	gmx.config = config.NewConfig(configDir, dataDir, cacheDir, downloadDir)
 	gmx.ui = uiProvider(gmx)
-	gmx.matrix = matrix.NewContainer(gmx)
+	gmx.matrix = matrix.NewContainer(gmx, isHeadless)
 
 	gmx.config.LoadAll()
 	gmx.ui.Init()
@@ -135,6 +135,24 @@ func (gmx *Gomuks) internalStop(save bool) {
 	gmx.stop <- true
 	if save {
 		gmx.Save()
+	}
+	if gmx.matrix.IsHeadless() {
+		fmt.Println("🚚📦📦 gomuks is ready to go 🚚📦📦")
+		fmt.Println("⇒⇒⇒⇒⇒⇒⇒⇒⇒⇒⇒⇒⇒⇒⇒⇒⇒⇒⇒⇒⇒⇒⇒⇒⇒⇒⇒⇒⇒⇒⇒⇒⇒⇒⇒")
+		fmt.Println()
+		fmt.Println("1.")
+		fmt.Println("copy your new `transfer` folder to the target")
+		fmt.Println("location (perhaps a shiny new beepberry) with")
+		fmt.Println("cp, rsync, or equivalent.")
+		fmt.Println()
+		fmt.Println("2.")
+		fmt.Println("set the GOMUKS_ROOT environment variable to match")
+		fmt.Println("the new location of the directory and edit the")
+		fmt.Println("config file to reflect the changes.")
+		fmt.Println()
+		fmt.Println("recommended reading:")
+		fmt.Println("https://docs.mau.fi/gomuks/faq.html#where-does-gomuks-store-data")
+		fmt.Println("https://beepberry.sqfmi.com")
 	}
 	debug.Print("Exiting process")
 	os.Exit(0)

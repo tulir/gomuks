@@ -40,12 +40,13 @@ var wantVersion = flag.MakeFull("v", "version", "Show the version of gomuks", "f
 var clearCache = flag.MakeFull("c", "clear-cache", "Clear the cache directory instead of starting", "false").Bool()
 var skipVersionCheck = flag.MakeFull("s", "skip-version-check", "Skip the homeserver version checks at startup and login", "false").Bool()
 var clearData = flag.Make().LongKey("clear-all-data").Usage("Clear all data instead of starting").Default("false").Bool()
+var logInForTransfer = flag.Make().LongKey("log-in-for-transfer").Usage("Log in and generate packaged data for transfer").Default("false").Bool()
 var wantHelp, _ = flag.MakeHelpFlag()
 
 func main() {
 	flag.SetHelpTitles(
 		"gomuks - A terminal Matrix client written in Go.",
-		"gomuks [-vcsh] [--clear-all-data]",
+		"gomuks [-vcsh] [--clear-all-data|--log-in-for-transfer]",
 	)
 	err := flag.Parse()
 	if err != nil {
@@ -58,6 +59,12 @@ func main() {
 		fmt.Println(VersionString)
 		return
 	}
+	if *logInForTransfer {
+		if currentDir, err := os.Getwd(); err == nil {
+			os.Setenv("GOMUKS_ROOT", filepath.Join(currentDir, "transfer"))
+		}
+	}
+
 	debugDir := os.Getenv("DEBUG_DIR")
 	if len(debugDir) > 0 {
 		debug.LogDirectory = debugDir
@@ -103,7 +110,7 @@ func main() {
 	debug.Print("Download directory:", downloadDir)
 
 	matrix.SkipVersionCheck = *skipVersionCheck
-	gmx := NewGomuks(MainUIProvider, configDir, dataDir, cacheDir, downloadDir)
+	gmx := NewGomuks(MainUIProvider, configDir, dataDir, cacheDir, downloadDir, *logInForTransfer)
 
 	if *clearCache {
 		debug.Print("Clearing cache as requested by CLI flag")
@@ -117,6 +124,8 @@ func main() {
 		_ = os.RemoveAll(gmx.config.Dir)
 		fmt.Printf("Cleared cache at %s, data at %s and config at %s\n", gmx.config.CacheDir, gmx.config.DataDir, gmx.config.Dir)
 		return
+	} else if *logInForTransfer {
+		debug.Print("Initializing in headless mode as requested by CLI flag")
 	}
 
 	gmx.Start()

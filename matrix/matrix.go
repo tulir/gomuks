@@ -60,18 +60,20 @@ type Container struct {
 	ui      ifc.GomuksUI
 	config  *config.Config
 	history *HistoryManager
-	running bool
-	stop    chan bool
+	running,
+	headless bool
+	stop chan bool
 
 	typing int64
 }
 
 // NewContainer creates a new Container for the given Gomuks instance.
-func NewContainer(gmx ifc.Gomuks) *Container {
+func NewContainer(gmx ifc.Gomuks, isHeadless bool) *Container {
 	c := &Container{
-		config: gmx.Config(),
-		ui:     gmx.UI(),
-		gmx:    gmx,
+		config:   gmx.Config(),
+		ui:       gmx.UI(),
+		gmx:      gmx,
+		headless: isHeadless,
 	}
 
 	return c
@@ -80,6 +82,10 @@ func NewContainer(gmx ifc.Gomuks) *Container {
 // Client returns the underlying mautrix Client.
 func (c *Container) Client() *mautrix.Client {
 	return c.client
+}
+
+func (c *Container) IsHeadless() bool {
+	return c.headless
 }
 
 type mxLogger struct{}
@@ -426,6 +432,9 @@ func (c *Container) OnLogin() {
 			c.syncer.Progress.Close()
 			c.syncer.Progress = StubSyncingModal{}
 			c.syncer.FirstDoneCallback = nil
+			if c.headless {
+				c.gmx.Stop(true)
+			}
 		}
 	}
 	c.syncer.InitDoneCallback = func() {
@@ -439,9 +448,11 @@ func (c *Container) OnLogin() {
 		c.config.Rooms.ForceClean()
 		debug.Print("Saving all data")
 		c.config.SaveAll()
-		debug.Print("Adding rooms to UI")
-		c.ui.MainView().SetRooms(c.config.Rooms)
-		c.ui.Render()
+		if !c.headless {
+			debug.Print("Adding rooms to UI")
+			c.ui.MainView().SetRooms(c.config.Rooms)
+			c.ui.Render()
+		}
 		// The initial sync can be a bit heavy, so we force run the GC here
 		// after cleaning up rooms from memory above.
 		debug.Print("Running GC")
@@ -451,7 +462,9 @@ func (c *Container) OnLogin() {
 	c.client.Syncer = c.syncer
 
 	debug.Print("Setting existing rooms")
-	c.ui.MainView().SetRooms(c.config.Rooms)
+	if !c.headless {
+		c.ui.MainView().SetRooms(c.config.Rooms)
+	}
 
 	debug.Print("OnLogin() done.")
 }
