@@ -33,6 +33,7 @@ linux/arm64:
   <<: *build-linux
   image: dock.mau.dev/tulir/gomuks-build-docker:linux-arm64-native
   tags:
+  - linux
   - arm64
 
 windows/amd64:
