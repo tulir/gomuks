@@ -45,6 +45,7 @@ type MatrixContainer interface {
 	Preferences() *config.UserPreferences
 	InitClient(isStartup bool) error
 	Initialized() bool
+	IsHeadless() bool
 
 	Start()
 	Stop()
