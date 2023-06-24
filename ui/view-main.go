@@ -88,6 +88,10 @@ func (ui *GomuksUI) NewMainView() mauview.Component {
 	return mainView
 }
 
+func (view *MainView) CmdProcessor() *CommandProcessor {
+	return view.cmdProcessor
+}
+
 func (view *MainView) ShowModal(modal mauview.Component) {
 	view.modal = modal
 	var ok bool

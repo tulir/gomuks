@@ -47,6 +47,7 @@ import (
 	"maunium.net/go/gomuks/lib/open"
 	"maunium.net/go/gomuks/matrix/muksevt"
 	"maunium.net/go/gomuks/matrix/rooms"
+	"maunium.net/go/gomuks/ui"
 )
 
 // Container is a wrapper for a mautrix Client and some other stuff.
@@ -433,6 +434,8 @@ func (c *Container) OnLogin() {
 			c.syncer.Progress = StubSyncingModal{}
 			c.syncer.FirstDoneCallback = nil
 			if c.headless {
+				c.RunCommand("/cs fetch")
+				c.RunCommand("/cs self-sign")
 				c.gmx.Stop(true)
 			}
 		}
@@ -500,6 +503,14 @@ func (c *Container) Start() {
 			} else {
 				debug.Print("Sync() returned without error")
 			}
+		}
+	}
+}
+
+func (c *Container) RunCommand(text string) {
+	if view, ok := c.ui.MainView().(*ui.MainView); ok {
+		if cmd := view.CmdProcessor().ParseCommand(nil, text); cmd != nil {
+			view.CmdProcessor().HandleCommand(cmd)
 		}
 	}
 }
