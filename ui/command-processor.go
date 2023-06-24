@@ -53,7 +53,9 @@ func (cmd *Command) Reply(message string, args ...interface{}) {
 	if len(args) > 0 {
 		message = fmt.Sprintf(message, args...)
 	}
-	cmd.Room.AddServiceMessage(message)
+	if cmd.Room != nil {
+		cmd.Room.AddServiceMessage(message)
+	}
 	cmd.UI.Render()
 }
 
