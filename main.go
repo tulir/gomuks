@@ -61,7 +61,15 @@ func main() {
 	}
 	if *logInForTransfer {
 		if currentDir, err := os.Getwd(); err == nil {
-			os.Setenv("GOMUKS_ROOT", filepath.Join(currentDir, "transfer"))
+			pack := filepath.Join(currentDir, "transfer")
+			if _, err := os.Stat(pack); err == nil {
+				fmt.Println("with the --log-in-for-transfer flag, gomuks packs your data up into")
+				fmt.Println("the transfer/ directory so you can move it around easily. please make")
+				fmt.Println("sure there is nothing there already, and then run it again.")
+				os.Exit(1)
+			}
+
+			os.Setenv("GOMUKS_ROOT", pack)
 		}
 	}
 
