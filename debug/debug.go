@@ -35,7 +35,7 @@ var RecoverPrettyPanic bool
 var DeadlockDetection bool
 var WriteLogs bool
 var OnRecover func()
-var LogDirectory = filepath.Join(os.TempDir(), "gomuks-" + getUname())
+var LogDirectory = filepath.Join(os.TempDir(), "gomuks-"+getUname())
 
 func getUname() string {
 	currUser, err := user.Current()
