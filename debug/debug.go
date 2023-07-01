@@ -22,6 +22,7 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
+	"os/user"
 	"path/filepath"
 	"runtime/debug"
 	"time"
@@ -34,7 +35,17 @@ var RecoverPrettyPanic bool
 var DeadlockDetection bool
 var WriteLogs bool
 var OnRecover func()
-var LogDirectory = filepath.Join(os.TempDir(), "gomuks")
+var LogDirectory = filepath.Join(os.TempDir(), "gomuks-" + getUname())
+
+func getUname() string {
+	currUser, err := user.Current()
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+
+	return currUser.Username
+}
 
 func Initialize() {
 	err := os.MkdirAll(LogDirectory, 0750)
