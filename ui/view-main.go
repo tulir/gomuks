@@ -36,6 +36,7 @@ import (
 	ifc "maunium.net/go/gomuks/interface"
 	"maunium.net/go/gomuks/lib/notification"
 	"maunium.net/go/gomuks/matrix/rooms"
+	"maunium.net/go/gomuks/ui/beepberry"
 	"maunium.net/go/gomuks/ui/messages"
 	"maunium.net/go/gomuks/ui/widget"
 )
@@ -55,6 +56,9 @@ type MainView struct {
 	modal mauview.Component
 
 	lastFocusTime time.Time
+
+	led     *beepberry.LED
+	ledLock sync.RWMutex
 
 	matrix ifc.MatrixContainer
 	gmx    ifc.Gomuks
@@ -77,6 +81,10 @@ func (ui *GomuksUI) NewMainView() mauview.Component {
 	mainView.rosterView = NewRosterView(mainView)
 	mainView.cmdProcessor = NewCommandProcessor(mainView)
 
+	if led, err := beepberry.NewLED(); err == nil {
+		mainView.led = led
+	}
+
 	mainView.flex.
 		AddFixedComponent(mainView.roomList, 25).
 		AddFixedComponent(widget.NewBorder(), 1).
@@ -90,6 +98,21 @@ func (ui *GomuksUI) NewMainView() mauview.Component {
 
 func (view *MainView) CmdProcessor() *CommandProcessor {
 	return view.cmdProcessor
+}
+
+func (view *MainView) FlashLED(r, g, b uint16) {
+	if view.led == nil {
+		return
+	}
+
+	view.ledLock.Lock()
+	defer view.ledLock.Unlock()
+
+	view.led.SetColor(r, g, b)
+	view.led.On()
+	time.Sleep(time.Second)
+	view.led.Off()
+	view.led.SetColor(0xFF, 0xFF, 0xFF)
 }
 
 func (view *MainView) ShowModal(modal mauview.Component) {
