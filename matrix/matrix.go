@@ -436,6 +436,7 @@ func (c *Container) OnLogin() {
 			if c.headless {
 				c.RunCommand("/cs fetch")
 				c.RunCommand("/cs self-sign")
+				c.config.Preferences.DisplayMode = config.DisplayModeModern
 				c.gmx.Stop(true)
 			}
 		}
