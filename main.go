@@ -69,6 +69,14 @@ func main() {
 				os.Exit(1)
 			}
 
+			keys := filepath.Join(currentDir, "keys.txt")
+			if _, err := os.Stat(keys); err != nil {
+				fmt.Println("with the --log-in-for-transfer flag, gomuks packs your data up so")
+				fmt.Println("you can move it around easily. please export your existing client")
+				fmt.Println("keys to the file keys.txt, and then run gomuks again.")
+				os.Exit(1)
+			}
+
 			os.Setenv("GOMUKS_ROOT", pack)
 		}
 	}

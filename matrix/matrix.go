@@ -395,6 +395,11 @@ func (c *Container) OnLogin() {
 
 	c.client.Store = c.config
 
+	if c.headless {
+		debug.Print("Importing keys...")
+		c.RunCommand("/import keys.txt")
+	}
+
 	debug.Print("Initializing syncer")
 	c.syncer = NewGomuksSyncer(c.config.Rooms)
 	if c.crypto != nil {
