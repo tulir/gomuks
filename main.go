@@ -63,13 +63,10 @@ func main() {
 		debug.LogDirectory = debugDir
 	}
 	debugLevel := strings.ToLower(os.Getenv("DEBUG"))
-	if debugLevel != "0" && debugLevel != "f" && debugLevel != "false" {
-		debug.WriteLogs = true
-		debug.RecoverPrettyPanic = true
-	}
 	if debugLevel == "1" || debugLevel == "t" || debugLevel == "true" {
 		debug.RecoverPrettyPanic = false
 		debug.DeadlockDetection = true
+		debug.WriteLogs = true
 	}
 	debug.Initialize()
 	defer debug.Recover()

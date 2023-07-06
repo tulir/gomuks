@@ -67,7 +67,7 @@ func getUname() string {
 func Initialize() {
 	err := os.MkdirAll(LogDirectory, 0750)
 	if err != nil {
-		RecoverPrettyPanic = false
+		RecoverPrettyPanic = true
 		DeadlockDetection = false
 		WriteLogs = false
 		return
