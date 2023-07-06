@@ -24,6 +24,7 @@ import (
 	"os"
 	"os/user"
 	"path/filepath"
+	"runtime"
 	"runtime/debug"
 	"time"
 
@@ -35,7 +36,23 @@ var RecoverPrettyPanic bool
 var DeadlockDetection bool
 var WriteLogs bool
 var OnRecover func()
-var LogDirectory = filepath.Join(os.TempDir(), "gomuks-"+getUname())
+var LogDirectory = GetUserDebugDir()
+
+func GetUserDebugDir() string {
+	if runtime.GOOS == "windows" || runtime.GOOS == "darwin" {
+		return filepath.Join(os.TempDir(), "gomuks-"+getUname())
+	}
+	// See https://specifications.freedesktop.org/basedir-spec/basedir-spec-latest.html
+	if xdgStateHome := os.Getenv("XDG_STATE_HOME"); xdgStateHome != "" {
+		return xdgStateHome
+	}
+	home := os.Getenv("HOME")
+	if home == "" {
+		fmt.Println("XDG_STATE_HOME and HOME are both unset")
+		os.Exit(1)
+	}
+	return filepath.Join(home, ".local", "state", "gomuks")
+}
 
 func getUname() string {
 	currUser, err := user.Current()
