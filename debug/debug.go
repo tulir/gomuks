@@ -32,7 +32,7 @@ import (
 )
 
 var writer io.Writer
-var RecoverPrettyPanic bool
+var RecoverPrettyPanic bool = true
 var DeadlockDetection bool
 var WriteLogs bool
 var OnRecover func()
@@ -44,7 +44,7 @@ func GetUserDebugDir() string {
 	}
 	// See https://specifications.freedesktop.org/basedir-spec/basedir-spec-latest.html
 	if xdgStateHome := os.Getenv("XDG_STATE_HOME"); xdgStateHome != "" {
-		return xdgStateHome
+		return filepath.Join(xdgStateHome, "gomuks")
 	}
 	home := os.Getenv("HOME")
 	if home == "" {
@@ -67,7 +67,7 @@ func getUname() string {
 func Initialize() {
 	err := os.MkdirAll(LogDirectory, 0750)
 	if err != nil {
-		RecoverPrettyPanic = true
+		RecoverPrettyPanic = false
 		DeadlockDetection = false
 		WriteLogs = false
 		return
