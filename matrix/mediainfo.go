@@ -38,6 +38,7 @@ func getImageInfo(path string) (event.FileInfo, error) {
 	if err != nil {
 		return info, fmt.Errorf("failed to open image to get info: %w", err)
 	}
+	defer file.Close()
 	cfg, _, err := image.DecodeConfig(file)
 	if err != nil {
 		return info, fmt.Errorf("failed to get image info: %w", err)
