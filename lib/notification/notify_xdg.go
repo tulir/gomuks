@@ -21,6 +21,7 @@ package notification
 import (
 	"os"
 	"os/exec"
+	"fmt"
 )
 
 var notifySendPath string
@@ -80,5 +81,8 @@ func Send(title, text string, critical, sound bool) error {
 			_ = exec.Command(audioCommand, audioFile).Run()
 		}()
 	}
+
+	fmt.Print("\a")
+
 	return exec.Command(notifySendPath, args...).Run()
 }
