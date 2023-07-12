@@ -19,24 +19,59 @@ package filepicker
 import (
 	"bytes"
 	"errors"
+	"fmt"
+	"io/ioutil"
+	"os"
 	"os/exec"
-	"strings"
+	"path/filepath"
 )
 
-var zenity string
+// var zenity string
+var file_browser string
 
 func init() {
-	zenity, _ = exec.LookPath("zenity")
+	// zenity, _ = exec.LookPath("zenity")
+
+	// TODO: read config from user to try and load file-browser
+	file_browser, _ = exec.LookPath("ranger")
 }
 
 func IsSupported() bool {
-	return len(zenity) > 0
+	return len(file_browser) > 0
 }
 
-func Open() (string, error) {
-	cmd := exec.Command(zenity, "--file-selection")
-	var output bytes.Buffer
-	cmd.Stdout = &output
+func Open(confDir string) (string, error) {
+
+	// TODO: what priority rules should we have between zenity (gui
+	// browser) and ranger (terminal browser)?
+	// cmd := exec.Command(zenity, "--file-selection")
+
+	// TODO: upload dir config:
+	// - allow user to set a `upload_dir string` and if not defined
+	//   we just boot `ranger` in user's $HOME.
+	// - also offer config option to allow custom bootup-path?
+	default_upload_dir := os.Getenv("HOME")
+	upload_history_file := "_last_upload_file.txt"
+	upload_history_path := filepath.Join(confDir, upload_history_file)
+
+	flag := fmt.Sprintf(
+		"--choosefile=%s",
+		upload_history_path,
+	)
+
+	cmd := exec.Command(
+		file_browser,
+		default_upload_dir,
+		flag,
+	)
+
+	// var output bytes.Buffer
+	var errout bytes.Buffer
+	cmd.Stderr = &errout
+	// cmd.Stdout = &output
+	cmd.Stdout = os.Stdout
+	cmd.Stdin = os.Stdin
+
 	err := cmd.Run()
 	if err != nil {
 		var exitErr *exec.ExitError
@@ -45,5 +80,25 @@ func Open() (string, error) {
 		}
 		return "", err
 	}
-	return strings.TrimSpace(output.String()), nil
+
+	// var last_path string
+	bpath, err := ioutil.ReadFile(
+		upload_history_path,
+	)
+	if err != nil {
+		panic(err)
+	}
+	last_path := string(bpath[:])
+	// if err != nil {
+	// 	return "", err
+	// }
+	// defer file.Close()
+
+	// nbytes, err := file.Read(output)
+	// if err != nil {
+	// 	return "", err
+	// }
+	// output, err := strings.TrimSpace(output.String()), nil
+	fmt.Print(last_path)
+	return last_path, err
 }
