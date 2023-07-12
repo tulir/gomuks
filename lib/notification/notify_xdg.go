@@ -82,7 +82,11 @@ func Send(title, text string, critical, sound bool) error {
 		}()
 	}
 
-	fmt.Print("\a")
+	TerminalBell()
 
 	return exec.Command(notifySendPath, args...).Run()
+}
+
+func TerminalBell() {
+	fmt.Print("\a")
 }
