@@ -152,7 +152,7 @@ func (gmx *Gomuks) internalStop(save bool) {
 		fmt.Println()
 		fmt.Println("recommended reading:")
 		fmt.Println("https://docs.mau.fi/gomuks/faq.html#where-does-gomuks-store-data")
-		fmt.Println("https://beepberry.sqfmi.com")
+		fmt.Println("https://beepy.sqfmi.com")
 	}
 	debug.Print("Exiting process")
 	os.Exit(0)
