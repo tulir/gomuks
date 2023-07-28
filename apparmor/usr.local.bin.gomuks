@@ -1,0 +1,23 @@
+include <tunables/global>
+
+# vim:syntax=apparmor
+# AppArmor policy for gomuks
+# change `/usr/local/bin/gomuks` and filename to the path of gomuks
+
+/usr/local/bin/gomuks {
+  include <abstractions/base>
+  include <abstractions/consoles>
+  include <abstractions/dbus-session-strict>
+  include <abstractions/nameservice>
+  include <abstractions/user-tmp>
+
+  /proc/filesystems r,
+  /sys/kernel/mm/transparent_hugepage/hpage_pmd_size r,
+  /usr/bin/infocmp Px,
+  /usr/bin/notify-send Px,
+  /usr/bin/xdg-user-dir Px,
+  owner @{HOME}/.cache/gomuks/{**,} rwk,
+  owner @{HOME}/.config/gomuks/{**,} rw,
+  owner @{HOME}/.local/share/gomuks/{**,} rwk,
+
+}
