@@ -25,19 +25,19 @@ import (
 
 	sync "github.com/sasha-s/go-deadlock"
 
-	"maunium.net/go/mauview"
-	"maunium.net/go/tcell"
+	"go.mau.fi/mauview"
+	"go.mau.fi/tcell"
 
-	"maunium.net/go/gomuks/ui/messages"
 	"maunium.net/go/mautrix/id"
+	"maunium.net/go/mautrix/pushrules"
 
 	"maunium.net/go/gomuks/config"
 	"maunium.net/go/gomuks/debug"
 	ifc "maunium.net/go/gomuks/interface"
 	"maunium.net/go/gomuks/lib/notification"
 	"maunium.net/go/gomuks/matrix/rooms"
+	"maunium.net/go/gomuks/ui/messages"
 	"maunium.net/go/gomuks/ui/widget"
-	"maunium.net/go/mautrix/pushrules"
 )
 
 type MainView struct {
@@ -189,7 +189,7 @@ func (view *MainView) OnKeyEvent(event mauview.KeyEvent) bool {
 		msgView := view.currentRoom.MessageView()
 		msgView.AddScrollOffset(-msgView.TotalHeight())
 	case "add_newline":
-		return view.flex.OnKeyEvent(tcell.NewEventKey(tcell.KeyEnter, '\n', event.Modifiers()|tcell.ModShift, ""))
+		return view.flex.OnKeyEvent(tcell.NewEventKey(tcell.KeyEnter, '\n', event.Modifiers()|tcell.ModShift))
 	case "next_active_room":
 		view.SwitchRoom(view.roomList.NextWithActivity())
 	case "show_bare":
@@ -411,17 +411,14 @@ func (view *MainView) NotifyMessage(room *rooms.Room, message ifc.Message, shoul
 	recentlyFocused := time.Now().Add(-30 * time.Second).Before(view.lastFocusTime)
 	isFocused := time.Now().Add(-5 * time.Second).Before(view.lastFocusTime)
 
-	// Whether or not the push rules say this message should be notified about.
-	shouldNotify := should.Notify || !should.NotifySpecified
-
 	if !isCurrent || !isFocused {
 		// The message is not in the current room, show new message status in room list.
-		room.AddUnread(message.ID(), shouldNotify, should.Highlight)
+		room.AddUnread(message.ID(), should.Notify, should.Highlight)
 	} else {
 		view.matrix.MarkRead(room.ID, message.ID())
 	}
 
-	if shouldNotify && !recentlyFocused && !view.config.Preferences.DisableNotifications {
+	if should.Notify && !recentlyFocused && !view.config.Preferences.DisableNotifications {
 		// Push rules say notify and the terminal is not focused, send desktop notification.
 		shouldPlaySound := should.PlaySound &&
 			should.SoundName == "default" &&

@@ -24,9 +24,10 @@ import (
 
 	sync "github.com/sasha-s/go-deadlock"
 
+	"go.mau.fi/mauview"
+	"go.mau.fi/tcell"
+
 	"maunium.net/go/mautrix/id"
-	"maunium.net/go/mauview"
-	"maunium.net/go/tcell"
 
 	"maunium.net/go/gomuks/debug"
 	"maunium.net/go/gomuks/matrix/rooms"
@@ -97,7 +98,7 @@ func NewRoomList(parent *MainView) *RoomList {
 		scrollOffset: 0,
 
 		mainTextColor:           tcell.ColorDefault,
-		selectedTextColor:       tcell.ColorDefault,
+		selectedTextColor:       tcell.ColorWhite,
 		selectedBackgroundColor: tcell.ColorDarkGreen,
 	}
 	for _, tag := range list.tags {

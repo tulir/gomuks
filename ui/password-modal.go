@@ -20,8 +20,8 @@ import (
 	"fmt"
 	"strings"
 
-	"maunium.net/go/mauview"
-	"maunium.net/go/tcell"
+	"go.mau.fi/mauview"
+	"go.mau.fi/tcell"
 )
 
 type PasswordModal struct {

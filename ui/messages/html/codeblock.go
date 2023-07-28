@@ -17,8 +17,8 @@
 package html
 
 import (
-	"maunium.net/go/mauview"
-	"maunium.net/go/tcell"
+	"go.mau.fi/mauview"
+	"go.mau.fi/tcell"
 )
 
 type CodeBlockEntity struct {
@@ -46,12 +46,14 @@ func (ce *CodeBlockEntity) Clone() Entity {
 	}
 }
 
-func (ce *CodeBlockEntity) Draw(screen mauview.Screen) {
+func (ce *CodeBlockEntity) Draw(screen mauview.Screen, ctx DrawContext) {
 	screen.Fill(' ', ce.Background)
-	ce.ContainerEntity.Draw(screen)
+	ce.ContainerEntity.Draw(screen, ctx)
 }
 
-func (ce *CodeBlockEntity) AdjustStyle(fn AdjustStyleFunc) Entity {
-	// Don't allow adjusting code block style.
+func (ce *CodeBlockEntity) AdjustStyle(fn AdjustStyleFunc, reason AdjustStyleReason) Entity {
+	if reason != AdjustStyleReasonNormal {
+		ce.ContainerEntity.AdjustStyle(fn, reason)
+	}
 	return ce
 }

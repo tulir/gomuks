@@ -35,6 +35,8 @@ visual:
 
 room:
   'Escape': clear
+  'Ctrl+p': scroll_up
+  'Ctrl+n': scroll_down
   'PageUp': scroll_up
   'PageDown': scroll_down
   'Enter': send

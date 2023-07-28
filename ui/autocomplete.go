@@ -56,3 +56,33 @@ func autocompleteFile(cmd *CommandAutocomplete) (completions []string, newText s
 	}
 	return
 }
+
+func autocompleteToggle(cmd *CommandAutocomplete) (completions []string, newText string) {
+	completions = make([]string, 0, len(toggleMsg))
+	for k := range toggleMsg {
+		if strings.HasPrefix(k, cmd.RawArgs) {
+			completions = append(completions, k)
+		}
+	}
+	if len(completions) == 1 {
+		newText = fmt.Sprintf("/%s %s", cmd.OrigCommand, completions[0])
+	}
+	return
+}
+
+var staticPowerLevelKeys = []string{"ban", "kick", "redact", "invite", "state_default", "events_default", "users_default"}
+
+func autocompletePowerLevel(cmd *CommandAutocomplete) (completions []string, newText string) {
+	if len(cmd.Args) > 1 {
+		return
+	}
+	for _, staticKey := range staticPowerLevelKeys {
+		if strings.HasPrefix(staticKey, cmd.RawArgs) {
+			completions = append(completions, staticKey)
+		}
+	}
+	for _, cpl := range cmd.Room.AutocompleteUser(cmd.RawArgs) {
+		completions = append(completions, cpl.id)
+	}
+	return
+}

@@ -1,6 +1,6 @@
 // This contains no-op stubs of the methods in crypto.go for non-cgo builds with crypto disabled.
 
-// +build !cgo
+//go:build !cgo
 
 package matrix
 

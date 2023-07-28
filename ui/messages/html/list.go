@@ -18,24 +18,18 @@ package html
 
 import (
 	"fmt"
-	"math"
 	"strings"
 
+	"go.mau.fi/mauview"
+
 	"maunium.net/go/gomuks/ui/widget"
-	"maunium.net/go/mauview"
+	"maunium.net/go/mautrix/format"
 )
 
 type ListEntity struct {
 	*ContainerEntity
 	Ordered bool
 	Start   int
-}
-
-func digits(num int) int {
-	if num <= 0 {
-		return 0
-	}
-	return int(math.Floor(math.Log10(float64(num))) + 1)
 }
 
 func NewListEntity(ordered bool, start int, children []Entity) *ListEntity {
@@ -53,13 +47,14 @@ func NewListEntity(ordered bool, start int, children []Entity) *ListEntity {
 	}
 	if ordered {
 		entity.Tag = "ol"
-		entity.Indent += digits(start + len(children) - 1)
+		entity.Indent += format.Digits(start + len(children) - 1)
 	}
 	return entity
 }
 
-func (le *ListEntity) AdjustStyle(fn AdjustStyleFunc) Entity {
-	le.BaseEntity = le.BaseEntity.AdjustStyle(fn).(*BaseEntity)
+func (le *ListEntity) AdjustStyle(fn AdjustStyleFunc, reason AdjustStyleReason) Entity {
+	le.BaseEntity = le.BaseEntity.AdjustStyle(fn, reason).(*BaseEntity)
+	le.ContainerEntity.AdjustStyle(fn, reason)
 	return le
 }
 
@@ -71,7 +66,15 @@ func (le *ListEntity) Clone() Entity {
 	}
 }
 
-func (le *ListEntity) Draw(screen mauview.Screen) {
+func (le *ListEntity) paddingFor(number int) string {
+	padding := le.Indent - 2 - format.Digits(number)
+	if padding <= 0 {
+		return ""
+	}
+	return strings.Repeat(" ", padding)
+}
+
+func (le *ListEntity) Draw(screen mauview.Screen, ctx DrawContext) {
 	width, _ := screen.Size()
 
 	proxyScreen := &mauview.ProxyScreen{Parent: screen, OffsetX: le.Indent, Width: width - le.Indent, Style: le.Style}
@@ -79,12 +82,12 @@ func (le *ListEntity) Draw(screen mauview.Screen) {
 		proxyScreen.Height = entity.Height()
 		if le.Ordered {
 			number := le.Start + i
-			line := fmt.Sprintf("%d. %s", number, strings.Repeat(" ", le.Indent-2-digits(number)))
+			line := fmt.Sprintf("%d. %s", number, le.paddingFor(number))
 			widget.WriteLine(screen, mauview.AlignLeft, line, 0, proxyScreen.OffsetY, le.Indent, le.Style)
 		} else {
 			screen.SetContent(0, proxyScreen.OffsetY, '●', nil, le.Style)
 		}
-		entity.Draw(proxyScreen)
+		entity.Draw(proxyScreen, ctx)
 		proxyScreen.SetStyle(le.Style)
 		proxyScreen.OffsetY += entity.Height()
 	}
@@ -99,7 +102,7 @@ func (le *ListEntity) PlainText() string {
 		indent := strings.Repeat(" ", le.Indent)
 		if le.Ordered {
 			number := le.Start + i
-			_, _ = fmt.Fprintf(&buf, "%d. %s", number, strings.Repeat(" ", le.Indent-2-digits(number)))
+			_, _ = fmt.Fprintf(&buf, "%d. %s", number, le.paddingFor(number))
 		} else {
 			buf.WriteString("● ")
 		}

@@ -21,18 +21,20 @@ import (
 	"sort"
 	"time"
 
-	"maunium.net/go/gomuks/config"
-	"maunium.net/go/gomuks/matrix/muksevt"
 	"maunium.net/go/mautrix/event"
 	"maunium.net/go/mautrix/id"
-	"maunium.net/go/mauview"
-	"maunium.net/go/tcell"
+
+	"go.mau.fi/mauview"
+	"go.mau.fi/tcell"
+
+	"maunium.net/go/gomuks/config"
+	"maunium.net/go/gomuks/matrix/muksevt"
 
 	"maunium.net/go/gomuks/ui/widget"
 )
 
 type MessageRenderer interface {
-	Draw(screen mauview.Screen)
+	Draw(screen mauview.Screen, msg *UIMessage)
 	NotificationContent() string
 	PlainText() string
 	CalculateBuffer(prefs config.UserPreferences, width int, msg *UIMessage)
@@ -131,9 +133,10 @@ func newUIMessage(evt *muksevt.Event, displayname string, renderer MessageRender
 
 func (msg *UIMessage) AddReaction(key string) {
 	found := false
-	for _, rs := range msg.Reactions {
+	for i, rs := range msg.Reactions {
 		if rs.Key == key {
 			rs.Count++
+			msg.Reactions[i] = rs
 			found = true
 			break
 		}
@@ -322,7 +325,7 @@ func (msg *UIMessage) DrawReactions(screen mauview.Screen) {
 
 func (msg *UIMessage) Draw(screen mauview.Screen) {
 	proxyScreen := msg.DrawReply(screen)
-	msg.Renderer.Draw(proxyScreen)
+	msg.Renderer.Draw(proxyScreen, msg)
 	msg.DrawReactions(proxyScreen)
 	if msg.IsSelected {
 		w, h := screen.Size()

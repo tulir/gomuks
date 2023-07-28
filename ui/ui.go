@@ -22,10 +22,10 @@ import (
 
 	"github.com/zyedidia/clipboard"
 
-	"maunium.net/go/mauview"
-	"maunium.net/go/tcell"
+	"go.mau.fi/mauview"
+	"go.mau.fi/tcell"
 
-	"maunium.net/go/gomuks/interface"
+	ifc "maunium.net/go/gomuks/interface"
 )
 
 type View string
@@ -48,6 +48,8 @@ type GomuksUI struct {
 
 func init() {
 	mauview.Styles.PrimitiveBackgroundColor = tcell.ColorDefault
+	mauview.Styles.PrimaryTextColor = tcell.ColorDefault
+	mauview.Styles.BorderColor = tcell.ColorDefault
 	mauview.Styles.ContrastBackgroundColor = tcell.ColorDarkGreen
 	if tcellDB := os.Getenv("TCELLDB"); len(tcellDB) == 0 {
 		if info, err := os.Stat("/usr/share/tcell/database"); err == nil && info.IsDir() {
@@ -67,6 +69,7 @@ func NewGomuksUI(gmx ifc.Gomuks) ifc.GomuksUI {
 func (ui *GomuksUI) Init() {
 	mauview.Backspace2RemovesWord = ui.gmx.Config().Backspace2RemovesWord
 	mauview.Backspace1RemovesWord = ui.gmx.Config().Backspace1RemovesWord
+	ui.app.SetAlwaysClear(ui.gmx.Config().AlwaysClearScreen)
 	clipboard.Initialize()
 	ui.views = map[View]mauview.Component{
 		ViewLogin: ui.NewLoginView(),
@@ -84,9 +87,7 @@ func (ui *GomuksUI) Stop() {
 }
 
 func (ui *GomuksUI) Finish() {
-	if ui.app.Screen() != nil {
-		ui.app.Screen().Fini()
-	}
+	ui.app.ForceStop()
 }
 
 func (ui *GomuksUI) Render() {
@@ -106,15 +107,7 @@ func (ui *GomuksUI) HandleNewPreferences() {
 }
 
 func (ui *GomuksUI) SetView(name View) {
-	ui.app.Root = ui.views[name]
-	focusable, ok := ui.app.Root.(mauview.Focusable)
-	if ok {
-		focusable.Focus()
-	}
-	if ui.app.Screen() != nil {
-		ui.app.Screen().Clear()
-		ui.Render()
-	}
+	ui.app.SetRoot(ui.views[name])
 }
 
 func (ui *GomuksUI) MainView() ifc.MainView {
@@ -122,14 +115,14 @@ func (ui *GomuksUI) MainView() ifc.MainView {
 }
 
 func (ui *GomuksUI) RunExternal(executablePath string, args ...string) error {
-	var err error
+	callback := make(chan error)
 	ui.app.Suspend(func() {
 		cmd := exec.Command(executablePath, args...)
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
 		cmd.Stdin = os.Stdin
 		cmd.Env = os.Environ()
-		err = cmd.Run()
+		callback <- cmd.Run()
 	})
-	return err
+	return <-callback
 }

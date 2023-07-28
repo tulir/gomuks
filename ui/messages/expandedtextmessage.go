@@ -20,9 +20,10 @@ import (
 	"fmt"
 	"time"
 
+	"go.mau.fi/mauview"
+	"go.mau.fi/tcell"
+
 	"maunium.net/go/gomuks/matrix/muksevt"
-	"maunium.net/go/mauview"
-	"maunium.net/go/tcell"
 
 	"maunium.net/go/gomuks/config"
 	"maunium.net/go/gomuks/ui/messages/tstring"
@@ -38,6 +39,18 @@ func NewExpandedTextMessage(evt *muksevt.Event, displayname string, text tstring
 	return newUIMessage(evt, displayname, &ExpandedTextMessage{
 		Text: text,
 	})
+}
+
+func NewServiceMessage(text string) *UIMessage {
+	return &UIMessage{
+		SenderID:   "*",
+		SenderName: "*",
+		Timestamp:  time.Now(),
+		IsService:  true,
+		Renderer: &ExpandedTextMessage{
+			Text: tstring.NewTString(text),
+		},
+	}
 }
 
 func NewDateChangeMessage(text string) *UIMessage {
@@ -82,7 +95,7 @@ func (msg *ExpandedTextMessage) Height() int {
 	return len(msg.buffer)
 }
 
-func (msg *ExpandedTextMessage) Draw(screen mauview.Screen) {
+func (msg *ExpandedTextMessage) Draw(screen mauview.Screen, _ *UIMessage) {
 	for y, line := range msg.buffer {
 		line.Draw(screen, 0, y)
 	}

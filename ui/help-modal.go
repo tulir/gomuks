@@ -1,8 +1,8 @@
 package ui
 
 import (
-	"maunium.net/go/mauview"
-	"maunium.net/go/tcell"
+	"go.mau.fi/mauview"
+	"go.mau.fi/tcell"
 
 	"maunium.net/go/gomuks/config"
 )
@@ -46,6 +46,13 @@ const helpText = `# General
 /import <file> - Import encryption keys
 /export <file> - Export encryption keys
 /export-room <file> - Export encryption keys for the current room.
+
+/cross-signing <subcommand> [...]
+    - Cross-signing commands. Somewhat experimental.
+      Run without arguments for help. (alias: /cs)
+/ssss <subcommand> [...]
+    - Secure Secret Storage (and Sharing) commands. Very experimental.
+      Run without arguments for help.
 
 # Rooms
 /pm <user id> <...>   - Create a private chat with the given user(s).

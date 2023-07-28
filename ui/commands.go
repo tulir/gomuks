@@ -37,7 +37,7 @@ import (
 	"unicode"
 
 	"github.com/lucasb-eyer/go-colorful"
-	"github.com/russross/blackfriday/v2"
+	"github.com/yuin/goldmark"
 
 	"maunium.net/go/mautrix"
 	"maunium.net/go/mautrix/event"
@@ -45,6 +45,7 @@ import (
 	"maunium.net/go/mautrix/id"
 
 	"maunium.net/go/gomuks/debug"
+	"maunium.net/go/gomuks/lib/filepicker"
 )
 
 func cmdMe(cmd *Command) {
@@ -85,21 +86,22 @@ var rainbow = GradientTable{
 	{colorful.LinearRgb(1, 0, 0.5), 11 / 11.0},
 }
 
+var rainbowMark = goldmark.New(format.Extensions, format.HTMLOptions, goldmark.WithExtensions(ExtensionRainbow))
+
 // TODO this command definitely belongs in a plugin once we have a plugin system.
 func makeRainbow(cmd *Command, msgtype event.MessageType) {
 	text := strings.Join(cmd.Args, " ")
 
-	render := NewRainbowRenderer(blackfriday.NewHTMLRenderer(blackfriday.HTMLRendererParameters{
-		Flags: blackfriday.UseXHTML,
-	}))
-	htmlBodyBytes := blackfriday.Run([]byte(text), format.Extensions, blackfriday.WithRenderer(render))
-	htmlBody := strings.TrimRight(string(htmlBodyBytes), "\n")
+	var buf strings.Builder
+	_ = rainbowMark.Convert([]byte(text), &buf)
+
+	htmlBody := strings.TrimRight(buf.String(), "\n")
 	htmlBody = format.AntiParagraphRegex.ReplaceAllString(htmlBody, "$1")
 	text = format.HTMLToText(htmlBody)
 
-	count := strings.Count(htmlBody, render.ColorID)
+	count := strings.Count(htmlBody, defaultRB.ColorID)
 	i := -1
-	htmlBody = regexp.MustCompile(render.ColorID).ReplaceAllStringFunc(htmlBody, func(match string) string {
+	htmlBody = regexp.MustCompile(defaultRB.ColorID).ReplaceAllStringFunc(htmlBody, func(match string) string {
 		i++
 		return rainbow.GetInterpolatedColorFor(float64(i) / float64(count)).Hex()
 	})
@@ -257,15 +259,28 @@ func cmdDownload(cmd *Command) {
 }
 
 func cmdUpload(cmd *Command) {
+	var path string
+	var err error
 	if len(cmd.Args) == 0 {
-		cmd.Reply("Usage: /upload <file>")
-		return
-	}
-
-	path, err := filepath.Abs(cmd.RawArgs)
-	if err != nil {
-		cmd.Reply("Failed to get absolute path: %v", err)
-		return
+		if filepicker.IsSupported() {
+			path, err = filepicker.Open()
+			if err != nil {
+				cmd.Reply("Failed to open file picker: %v", err)
+				return
+			} else if len(path) == 0 {
+				cmd.Reply("File picking cancelled")
+				return
+			}
+		} else {
+			cmd.Reply("Usage: /upload <file>")
+			return
+		}
+	} else {
+		path, err = filepath.Abs(cmd.RawArgs)
+		if err != nil {
+			cmd.Reply("Failed to get absolute path: %v", err)
+			return
+		}
 	}
 
 	go cmd.Room.SendMessageMedia(path)
@@ -525,7 +540,7 @@ func cmdClearCache(cmd *Command) {
 }
 
 func cmdUnknownCommand(cmd *Command) {
-	cmd.Reply("Unknown command \"%s\". Try \"/help\" for help.", cmd.Command)
+	cmd.Reply(`Unknown command "/%s". Try "/help" for help.`, cmd.Command)
 }
 
 func cmdHelp(cmd *Command) {
@@ -595,6 +610,170 @@ func cmdKick(cmd *Command) {
 	if err != nil {
 		debug.Print("Error in kick call:", err)
 		debug.Print("Failed to kick user:", err)
+	}
+}
+
+func formatPowerLevels(pl *event.PowerLevelsEventContent) string {
+	var buf strings.Builder
+	buf.WriteString("Membership actions:\n")
+	_, _ = fmt.Fprintf(&buf, "  Invite: %d\n", pl.Invite())
+	_, _ = fmt.Fprintf(&buf, "  Kick: %d\n", pl.Kick())
+	_, _ = fmt.Fprintf(&buf, "  Ban: %d\n", pl.Ban())
+	buf.WriteString("Events:\n")
+	_, _ = fmt.Fprintf(&buf, "  Redact: %d\n", pl.Redact())
+	_, _ = fmt.Fprintf(&buf, "  State default: %d\n", pl.StateDefault())
+	_, _ = fmt.Fprintf(&buf, "  Event default: %d\n", pl.EventsDefault)
+	for evtType, level := range pl.Events {
+		_, _ = fmt.Fprintf(&buf, "  %s: %d\n", evtType, level)
+	}
+	buf.WriteString("Users:\n")
+	_, _ = fmt.Fprintf(&buf, "  Default: %d\n", pl.UsersDefault)
+	for userID, level := range pl.Users {
+		_, _ = fmt.Fprintf(&buf, "  %s: %d\n", userID, level)
+	}
+	return strings.TrimSpace(buf.String())
+}
+
+func copyPtr(ptr *int) *int {
+	if ptr == nil {
+		return nil
+	}
+	val := *ptr
+	return &val
+}
+
+func copyMap[Key comparable](m map[Key]int) map[Key]int {
+	if m == nil {
+		return nil
+	}
+	copied := make(map[Key]int, len(m))
+	for k, v := range m {
+		copied[k] = v
+	}
+	return copied
+}
+
+func copyPowerLevels(pl *event.PowerLevelsEventContent) *event.PowerLevelsEventContent {
+	return &event.PowerLevelsEventContent{
+		Users:           copyMap(pl.Users),
+		Events:          copyMap(pl.Events),
+		InvitePtr:       copyPtr(pl.InvitePtr),
+		KickPtr:         copyPtr(pl.KickPtr),
+		BanPtr:          copyPtr(pl.BanPtr),
+		RedactPtr:       copyPtr(pl.RedactPtr),
+		StateDefaultPtr: copyPtr(pl.StateDefaultPtr),
+		EventsDefault:   pl.EventsDefault,
+		UsersDefault:    pl.UsersDefault,
+	}
+}
+
+var things = `
+[thing] can be one of the following
+
+Literals:
+* invite, kick, ban, redact - special moderation action levels
+* state_default, events_default - default level for state and non-state events
+* users_default - default level for users
+
+Patterns:
+* user ID - specific user level
+* event type - specific event type level
+
+The default levels are 0 for users, 50 for moderators and 100 for admins.`
+
+func cmdPowerLevel(cmd *Command) {
+	evt := cmd.Room.MxRoom().GetStateEvent(event.StatePowerLevels, "")
+	pl := copyPowerLevels(evt.Content.AsPowerLevels())
+	if len(cmd.Args) == 0 {
+		// TODO open in modal?
+		cmd.Reply(formatPowerLevels(pl))
+		return
+	} else if len(cmd.Args) < 2 {
+		cmd.Reply("Usage: /%s [thing] [level]\n%s", cmd.Command, things)
+		return
+	}
+
+	value, err := strconv.Atoi(cmd.Args[1])
+	if err != nil {
+		cmd.Reply("Invalid power level %q: %v", cmd.Args[1], err)
+		return
+	}
+
+	ownLevel := pl.GetUserLevel(cmd.Matrix.Client().UserID)
+	plChangeLevel := pl.GetEventLevel(event.StatePowerLevels)
+	if ownLevel < plChangeLevel {
+		cmd.Reply("Can't modify power levels (own level is %d, modifying requires %d)", ownLevel, plChangeLevel)
+		return
+	} else if value > ownLevel {
+		cmd.Reply("Can't set level to be higher than own level (%d > %d)", value, ownLevel)
+		return
+	}
+
+	var oldValue int
+	var thing string
+	switch cmd.Args[0] {
+	case "invite":
+		oldValue = pl.Invite()
+		pl.InvitePtr = &value
+		thing = "invite level"
+	case "kick":
+		oldValue = pl.Kick()
+		pl.KickPtr = &value
+		thing = "kick level"
+	case "ban":
+		oldValue = pl.Ban()
+		pl.BanPtr = &value
+		thing = "ban level"
+	case "redact":
+		oldValue = pl.Redact()
+		pl.RedactPtr = &value
+		thing = "level for redacting other users' events"
+	case "state_default":
+		oldValue = pl.StateDefault()
+		pl.StateDefaultPtr = &value
+		thing = "default level for state events"
+	case "events_default":
+		oldValue = pl.EventsDefault
+		pl.EventsDefault = value
+		thing = "default level for normal events"
+	case "users_default":
+		oldValue = pl.UsersDefault
+		pl.UsersDefault = value
+		thing = "default level for users"
+	default:
+		userID := id.UserID(cmd.Args[0])
+		if _, _, err = userID.Parse(); err == nil {
+			if pl.Users == nil {
+				pl.Users = make(map[id.UserID]int)
+			}
+			oldValue = pl.Users[userID]
+			if oldValue == ownLevel && userID != cmd.Matrix.Client().UserID {
+				cmd.Reply("Can't change level of another user which is equal to own level (%d)", ownLevel)
+				return
+			}
+			pl.Users[userID] = value
+			thing = fmt.Sprintf("level of user %s", userID)
+		} else {
+			if pl.Events == nil {
+				pl.Events = make(map[string]int)
+			}
+			oldValue = pl.Events[cmd.Args[0]]
+			pl.Events[cmd.Args[0]] = value
+			thing = fmt.Sprintf("level for event %s", cmd.Args[0])
+		}
+	}
+
+	if oldValue == value {
+		cmd.Reply("%s is already %d", strings.ToUpper(thing[0:1])+thing[1:], value)
+	} else if oldValue > ownLevel {
+		cmd.Reply("Can't change level which is higher than own level (%d > %d)", oldValue, ownLevel)
+	} else if resp, err := cmd.Matrix.Client().SendStateEvent(cmd.Room.MxRoom().ID, event.StatePowerLevels, "", pl); err != nil {
+		if httpErr, ok := err.(mautrix.HTTPError); ok && httpErr.RespError != nil {
+			err = httpErr.RespError
+		}
+		cmd.Reply("Failed to set %s to %d: %v", thing, value, err)
+	} else {
+		cmd.Reply("Successfully set %s to %d\n(event ID: %s)", thing, value, resp.EventID)
 	}
 }
 
@@ -761,6 +940,20 @@ func (stm SimpleToggleMessage) Name() string {
 	return string(unicode.ToUpper(rune(stm[0]))) + string(stm[1:])
 }
 
+type InvertedToggleMessage string
+
+func (itm InvertedToggleMessage) Format(state bool) string {
+	if state {
+		return "Enabled " + string(itm)
+	} else {
+		return "Disabled " + string(itm)
+	}
+}
+
+func (itm InvertedToggleMessage) Name() string {
+	return string(unicode.ToUpper(rune(itm[0]))) + string(itm[1:])
+}
+
 type NewlineKeybindMessage string
 
 func (nkm NewlineKeybindMessage) Format(state bool) string {
@@ -779,7 +972,7 @@ var toggleMsg = map[string]ToggleMessage{
 	"rooms":         HideMessage("Room list sidebar"),
 	"users":         HideMessage("User list sidebar"),
 	"timestamps":    HideMessage("message timestamps"),
-	"baremessages":  SimpleToggleMessage("bare message view"),
+	"baremessages":  InvertedToggleMessage("bare message view"),
 	"images":        SimpleToggleMessage("image rendering"),
 	"typingnotif":   SimpleToggleMessage("typing notifications"),
 	"emojis":        SimpleToggleMessage("emoji shortcode conversion"),
@@ -789,6 +982,7 @@ var toggleMsg = map[string]ToggleMessage{
 	"notifications": SimpleToggleMessage("desktop notifications"),
 	"unverified":    SimpleToggleMessage("sending messages to unverified devices"),
 	"showurls":      SimpleToggleMessage("show URLs in text format"),
+	"inlineurls":    InvertedToggleMessage("use fancy terminal features to render URLs inside text"),
 	"newline":       NewlineKeybindMessage("should <alt+enter> make a new line or send the message"),
 }
 
@@ -836,6 +1030,16 @@ func cmdToggle(cmd *Command) {
 			val = &cmd.Config.SendToVerifiedOnly
 		case "showurls":
 			val = &cmd.Config.Preferences.DisableShowURLs
+		case "inlineurls":
+			switch cmd.Config.Preferences.InlineURLMode {
+			case "enable":
+				cmd.Config.Preferences.InlineURLMode = "disable"
+				cmd.Reply("Force-disabled using fancy terminal features to render URLs inside text. Restart gomuks to apply changes.")
+			default:
+				cmd.Config.Preferences.InlineURLMode = "enable"
+				cmd.Reply("Force-enabled using fancy terminal features to render URLs inside text. Restart gomuks to apply changes.")
+			}
+			continue
 		case "newline":
 			val = &cmd.Config.Preferences.AltEnterToSend
 		default:

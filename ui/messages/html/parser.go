@@ -27,24 +27,26 @@ import (
 	"github.com/alecthomas/chroma/styles"
 	"github.com/lucasb-eyer/go-colorful"
 	"golang.org/x/net/html"
+	"mvdan.cc/xurls/v2"
+
+	"go.mau.fi/tcell"
 
 	"maunium.net/go/mautrix/event"
 	"maunium.net/go/mautrix/id"
 
-	"maunium.net/go/tcell"
-
 	"maunium.net/go/gomuks/config"
+	"maunium.net/go/gomuks/matrix/muksevt"
 	"maunium.net/go/gomuks/matrix/rooms"
 	"maunium.net/go/gomuks/ui/widget"
 )
 
-var matrixToURL = regexp.MustCompile("^(?:https?://)?(?:www\\.)?matrix\\.to/#/([#@!].*)")
-
 type htmlParser struct {
 	prefs *config.UserPreferences
 	room  *rooms.Room
+	evt   *muksevt.Event
 
-	keepLinebreak bool
+	preserveWhitespace bool
+	linkIDCounter      int
 }
 
 func AdjustStyleBold(style tcell.Style) tcell.Style {
@@ -60,37 +62,44 @@ func AdjustStyleUnderline(style tcell.Style) tcell.Style {
 }
 
 func AdjustStyleStrikethrough(style tcell.Style) tcell.Style {
-	return style.Strikethrough(true)
+	return style.StrikeThrough(true)
 }
 
-func AdjustStyleTextColor(color tcell.Color) func(tcell.Style) tcell.Style {
+func AdjustStyleTextColor(color tcell.Color) AdjustStyleFunc {
 	return func(style tcell.Style) tcell.Style {
 		return style.Foreground(color)
 	}
 }
 
-func AdjustStyleBackgroundColor(color tcell.Color) func(tcell.Style) tcell.Style {
+func AdjustStyleBackgroundColor(color tcell.Color) AdjustStyleFunc {
 	return func(style tcell.Style) tcell.Style {
 		return style.Background(color)
 	}
 }
 
-func (parser *htmlParser) getAttribute(node *html.Node, attribute string) string {
+func AdjustStyleLink(url, id string) AdjustStyleFunc {
+	return func(style tcell.Style) tcell.Style {
+		return style.Url(url).UrlId(id)
+	}
+}
+
+func (parser *htmlParser) maybeGetAttribute(node *html.Node, attribute string) (string, bool) {
 	for _, attr := range node.Attr {
 		if attr.Key == attribute {
-			return attr.Val
+			return attr.Val, true
 		}
 	}
-	return ""
+	return "", false
+}
+
+func (parser *htmlParser) getAttribute(node *html.Node, attribute string) string {
+	val, _ := parser.maybeGetAttribute(node, attribute)
+	return val
 }
 
 func (parser *htmlParser) hasAttribute(node *html.Node, attribute string) bool {
-	for _, attr := range node.Attr {
-		if attr.Key == attribute {
-			return true
-		}
-	}
-	return false
+	_, ok := parser.maybeGetAttribute(node, attribute)
+	return ok
 }
 
 func (parser *htmlParser) listToEntity(node *html.Node) Entity {
@@ -124,21 +133,30 @@ func (parser *htmlParser) basicFormatToEntity(node *html.Node) Entity {
 	}
 	switch node.Data {
 	case "b", "strong":
-		entity.AdjustStyle(AdjustStyleBold)
+		entity.AdjustStyle(AdjustStyleBold, AdjustStyleReasonNormal)
 	case "i", "em":
-		entity.AdjustStyle(AdjustStyleItalic)
+		entity.AdjustStyle(AdjustStyleItalic, AdjustStyleReasonNormal)
 	case "s", "del", "strike":
-		entity.AdjustStyle(AdjustStyleStrikethrough)
+		entity.AdjustStyle(AdjustStyleStrikethrough, AdjustStyleReasonNormal)
 	case "u", "ins":
-		entity.AdjustStyle(AdjustStyleUnderline)
-	case "font":
+		entity.AdjustStyle(AdjustStyleUnderline, AdjustStyleReasonNormal)
+	case "code":
+		bgColor := tcell.ColorDarkSlateGray
+		fgColor := tcell.ColorWhite
+		entity.AdjustStyle(AdjustStyleBackgroundColor(bgColor), AdjustStyleReasonNormal)
+		entity.AdjustStyle(AdjustStyleTextColor(fgColor), AdjustStyleReasonNormal)
+	case "font", "span":
 		fgColor, ok := parser.parseColor(node, "data-mx-color", "color")
 		if ok {
-			entity.AdjustStyle(AdjustStyleTextColor(fgColor))
+			entity.AdjustStyle(AdjustStyleTextColor(fgColor), AdjustStyleReasonNormal)
 		}
 		bgColor, ok := parser.parseColor(node, "data-mx-bg-color", "background-color")
 		if ok {
-			entity.AdjustStyle(AdjustStyleBackgroundColor(bgColor))
+			entity.AdjustStyle(AdjustStyleBackgroundColor(bgColor), AdjustStyleReasonNormal)
+		}
+		spoilerReason, isSpoiler := parser.maybeGetAttribute(node, "data-mx-spoiler")
+		if isSpoiler {
+			return NewSpoilerEntity(entity, spoilerReason)
 		}
 	}
 	return entity
@@ -175,7 +193,7 @@ func (parser *htmlParser) headerToEntity(node *html.Node) Entity {
 			[]Entity{NewTextEntity(strings.Repeat("#", int(node.Data[1]-'0')) + " ")},
 			parser.nodeToEntities(node.FirstChild)...,
 		),
-	}).AdjustStyle(AdjustStyleBold)
+	}).AdjustStyle(AdjustStyleBold, AdjustStyleReasonNormal)
 }
 
 func (parser *htmlParser) blockquoteToEntity(node *html.Node) Entity {
@@ -193,7 +211,7 @@ func (parser *htmlParser) linkToEntity(node *html.Node) Entity {
 		Children: parser.nodeToEntities(node.FirstChild),
 	}
 
-	if len(href) == 0 || parser.hasAttribute(node, "data-mautrix-exclude-plaintext") {
+	if len(href) == 0 {
 		return entity
 	}
 
@@ -204,28 +222,25 @@ func (parser *htmlParser) linkToEntity(node *html.Node) Entity {
 		}
 	}
 
-	if !parser.prefs.DisableShowURLs && !parser.hasAttribute(node, "data-mautrix-no-link") && !sameURL {
-		entity.Children = append(entity.Children, NewTextEntity(fmt.Sprintf(" (%s)", href)))
-	}
-
-	match := matrixToURL.FindStringSubmatch(href)
-	if len(match) == 2 {
-		pillTarget := match[1]
-		text := NewTextEntity(pillTarget)
-		if pillTarget[0] == '@' {
-			if member := parser.room.GetMember(id.UserID(pillTarget)); member != nil {
+	matrixURI, _ := id.ParseMatrixURIOrMatrixToURL(href)
+	if matrixURI != nil && (matrixURI.Sigil1 == '@' || matrixURI.Sigil1 == '#') && matrixURI.Sigil2 == 0 {
+		text := NewTextEntity(matrixURI.PrimaryIdentifier())
+		if matrixURI.Sigil1 == '@' {
+			if member := parser.room.GetMember(matrixURI.UserID()); member != nil {
 				text.Text = member.Displayname
-				text.Style = text.Style.Foreground(widget.GetHashColor(pillTarget))
+				text.Style = text.Style.Foreground(widget.GetHashColor(matrixURI.UserID()))
 			}
 			entity.Children = []Entity{text}
-			/*} else if slash := strings.IndexRune(pillTarget, '/'); slash != -1 {
-			room := pillTarget[:slash]
-			event := pillTarget[slash+1:]*/
-		} else if pillTarget[0] == '#' {
+		} else if matrixURI.Sigil1 == '#' {
 			entity.Children = []Entity{text}
 		}
+	} else if parser.prefs.EnableInlineURLs() {
+		linkID := fmt.Sprintf("%s-%d", parser.evt.ID, parser.linkIDCounter)
+		parser.linkIDCounter++
+		entity.AdjustStyle(AdjustStyleLink(href, linkID), AdjustStyleReasonNormal)
+	} else if !sameURL && !parser.prefs.DisableShowURLs && !parser.hasAttribute(node, "data-mautrix-exclude-plaintext") {
+		entity.Children = append(entity.Children, NewTextEntity(fmt.Sprintf(" (%s)", href)))
 	}
-	// TODO add click action and underline on hover for links
 	return entity
 }
 
@@ -277,7 +292,7 @@ func tokenToTextEntity(style *chroma.Style, token *chroma.Token) *TextEntity {
 func (parser *htmlParser) syntaxHighlight(text, language string) Entity {
 	lexer := lexers.Get(strings.ToLower(language))
 	if lexer == nil {
-		return nil
+		lexer = lexers.Get("plaintext")
 	}
 	iter, err := lexer.Tokenise(nil, text)
 	if err != nil {
@@ -290,27 +305,21 @@ func (parser *htmlParser) syntaxHighlight(text, language string) Entity {
 
 	var children []Entity
 	for _, token := range tokens {
-		if token.Value == "\n" {
-			children = append(children, NewBreakEntity())
+		lines := strings.SplitAfter(token.Value, "\n")
+		for _, line := range lines {
+			line_len := len(line)
+			if line_len == 0 {
+				continue
+			}
+			t := token.Clone()
 
-		} else if token.Type.String() == "CommentSingle" {
-			children = append(children, tokenToTextEntity(style, &token))
-			children = append(children, NewBreakEntity())
-
-		} else if token.Type.String() == "CommentMultiline" {
-			lines := strings.Split(token.Value, "\n")
-			for i, line := range lines {
-				t := token.Clone()
+			if line[line_len-1:] == "\n" {
+				t.Value = line[:line_len-1]
+				children = append(children, tokenToTextEntity(style, &t), NewBreakEntity())
+			} else {
 				t.Value = line
 				children = append(children, tokenToTextEntity(style, &t))
-
-				if i < len(lines)-1 {
-					children = append(children, NewBreakEntity())
-				}
 			}
-
-		} else {
-			children = append(children, tokenToTextEntity(style, &token))
 		}
 	}
 
@@ -330,11 +339,11 @@ func (parser *htmlParser) codeblockToEntity(node *html.Node) Entity {
 			}
 		}
 	}
-	parser.keepLinebreak = true
+	parser.preserveWhitespace = true
 	text := (&ContainerEntity{
 		Children: parser.nodeToEntities(node.FirstChild),
 	}).PlainText()
-	parser.keepLinebreak = false
+	parser.preserveWhitespace = false
 	return parser.syntaxHighlight(text, lang)
 }
 
@@ -348,7 +357,7 @@ func (parser *htmlParser) tagNodeToEntity(node *html.Node) Entity {
 		return parser.headerToEntity(node)
 	case "br":
 		return NewBreakEntity()
-	case "b", "strong", "i", "em", "s", "strike", "del", "u", "ins", "font":
+	case "b", "strong", "i", "em", "s", "strike", "del", "u", "ins", "font", "span", "code":
 		return parser.basicFormatToEntity(node)
 	case "a":
 		return parser.linkToEntity(node)
@@ -371,18 +380,83 @@ func (parser *htmlParser) tagNodeToEntity(node *html.Node) Entity {
 	}
 }
 
+var spaces = regexp.MustCompile("\\s+")
+
+// textToHTMLEntity converts a plain text string into an HTML Entity while preserving newlines.
+func textToHTMLEntity(text string) Entity {
+	if strings.Index(text, "\n") == -1 {
+		return NewTextEntity(text)
+	}
+	return &ContainerEntity{
+		BaseEntity: &BaseEntity{Tag: "span"},
+		Children:   textToHTMLEntities(text),
+	}
+}
+
+func textToHTMLEntities(text string) []Entity {
+	lines := strings.SplitAfter(text, "\n")
+	entities := make([]Entity, 0, len(lines))
+	for _, line := range lines {
+		line_len := len(line)
+		if line_len == 0 {
+			continue
+		}
+		if line == "\n" {
+			entities = append(entities, NewBreakEntity())
+		} else if line[line_len-1:] == "\n" {
+			entities = append(entities, NewTextEntity(line[:line_len-1]), NewBreakEntity())
+		} else {
+			entities = append(entities, NewTextEntity(line))
+		}
+	}
+	return entities
+}
+
+func TextToEntity(text string, eventID id.EventID, linkify bool) Entity {
+	if len(text) == 0 {
+		return nil
+	}
+	if !linkify {
+		return textToHTMLEntity(text)
+	}
+	indices := xurls.Strict().FindAllStringIndex(text, -1)
+	if len(indices) == 0 {
+		return textToHTMLEntity(text)
+	}
+	ent := &ContainerEntity{
+		BaseEntity: &BaseEntity{Tag: "span"},
+	}
+	var lastEnd int
+	for i, item := range indices {
+		start, end := item[0], item[1]
+		if start > lastEnd {
+			ent.Children = append(ent.Children, textToHTMLEntities(text[lastEnd:start])...)
+		}
+		link := text[start:end]
+		linkID := fmt.Sprintf("%s-%d", eventID, i)
+		ent.Children = append(ent.Children, NewTextEntity(link).AdjustStyle(AdjustStyleLink(link, linkID), AdjustStyleReasonNormal))
+		lastEnd = end
+	}
+	if lastEnd < len(text) {
+		ent.Children = append(ent.Children, textToHTMLEntities(text[lastEnd:])...)
+	}
+	return ent
+}
+
 func (parser *htmlParser) singleNodeToEntity(node *html.Node) Entity {
 	switch node.Type {
 	case html.TextNode:
-		if !parser.keepLinebreak {
-			node.Data = strings.Replace(node.Data, "\n", "", -1)
+		if !parser.preserveWhitespace {
+			node.Data = strings.ReplaceAll(node.Data, "\n", "")
+			node.Data = spaces.ReplaceAllLiteralString(node.Data, " ")
 		}
-		if len(node.Data) == 0 {
+		return TextToEntity(node.Data, parser.evt.ID, parser.prefs.EnableInlineURLs())
+	case html.ElementNode:
+		parsed := parser.tagNodeToEntity(node)
+		if parsed != nil && !parsed.IsBlock() && parsed.IsEmpty() {
 			return nil
 		}
-		return NewTextEntity(node.Data)
-	case html.ElementNode:
-		return parser.tagNodeToEntity(node)
+		return parsed
 	case html.DocumentNode:
 		if node.FirstChild.Data == "html" && node.FirstChild.NextSibling == nil {
 			return parser.singleNodeToEntity(node.FirstChild)
@@ -435,7 +509,7 @@ func (parser *htmlParser) Parse(htmlData string) Entity {
 const TabLength = 4
 
 // Parse parses a HTML-formatted Matrix event into a UIMessage.
-func Parse(prefs *config.UserPreferences, room *rooms.Room, content *event.MessageEventContent, sender id.UserID, senderDisplayname string) Entity {
+func Parse(prefs *config.UserPreferences, room *rooms.Room, content *event.MessageEventContent, evt *muksevt.Event, senderDisplayname string) Entity {
 	htmlData := content.FormattedBody
 
 	if content.Format != event.FormatHTML {
@@ -443,15 +517,20 @@ func Parse(prefs *config.UserPreferences, room *rooms.Room, content *event.Messa
 	}
 	htmlData = strings.Replace(htmlData, "\t", strings.Repeat(" ", TabLength), -1)
 
-	parser := htmlParser{room: room, prefs: prefs}
+	parser := htmlParser{room: room, prefs: prefs, evt: evt}
 	root := parser.Parse(htmlData)
-	beRoot := root.(*ContainerEntity)
-	beRoot.Block = false
-	if len(beRoot.Children) > 0 {
-		beChild, ok := beRoot.Children[0].(*ContainerEntity)
-		if ok && beChild.Tag == "p" {
-			// Hacky fix for m.emote
-			beChild.Block = false
+	if root == nil {
+		return nil
+	}
+	beRoot, ok := root.(*ContainerEntity)
+	if ok {
+		beRoot.Block = false
+		if len(beRoot.Children) > 0 {
+			beChild, ok := beRoot.Children[0].(*ContainerEntity)
+			if ok && beChild.Tag == "p" {
+				// Hacky fix for m.emote
+				beChild.Block = false
+			}
 		}
 	}
 
@@ -462,7 +541,7 @@ func Parse(prefs *config.UserPreferences, room *rooms.Room, content *event.Messa
 			},
 			Children: []Entity{
 				NewTextEntity("* "),
-				NewTextEntity(senderDisplayname).AdjustStyle(AdjustStyleTextColor(widget.GetHashColor(sender))),
+				NewTextEntity(senderDisplayname).AdjustStyle(AdjustStyleTextColor(widget.GetHashColor(evt.Sender)), AdjustStyleReasonNormal),
 				NewTextEntity(" "),
 				root,
 			},

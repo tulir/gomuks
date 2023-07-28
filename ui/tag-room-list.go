@@ -22,9 +22,10 @@ import (
 	"math"
 	"strconv"
 
+	"go.mau.fi/mauview"
+	"go.mau.fi/tcell"
+
 	"maunium.net/go/gomuks/debug"
-	"maunium.net/go/mauview"
-	"maunium.net/go/tcell"
 
 	"maunium.net/go/gomuks/matrix/rooms"
 	"maunium.net/go/gomuks/ui/widget"

@@ -23,9 +23,10 @@ import (
 
 	"github.com/lithammer/fuzzysearch/fuzzy"
 
+	"go.mau.fi/mauview"
+	"go.mau.fi/tcell"
+
 	"maunium.net/go/mautrix/id"
-	"maunium.net/go/mauview"
-	"maunium.net/go/tcell"
 
 	"maunium.net/go/gomuks/config"
 	"maunium.net/go/gomuks/debug"

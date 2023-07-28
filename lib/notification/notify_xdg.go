@@ -1,4 +1,4 @@
-// +build !windows,!darwin
+//go:build !windows && !darwin
 
 // gomuks - A terminal Matrix client written in Go.
 // Copyright (C) 2020 Tulir Asokan

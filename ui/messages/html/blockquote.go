@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"strings"
 
-	"maunium.net/go/mauview"
+	"go.mau.fi/mauview"
 )
 
 type BlockquoteEntity struct {
@@ -40,8 +40,8 @@ func NewBlockquoteEntity(children []Entity) *BlockquoteEntity {
 	}}
 }
 
-func (be *BlockquoteEntity) AdjustStyle(fn AdjustStyleFunc) Entity {
-	be.BaseEntity = be.BaseEntity.AdjustStyle(fn).(*BaseEntity)
+func (be *BlockquoteEntity) AdjustStyle(fn AdjustStyleFunc, reason AdjustStyleReason) Entity {
+	be.BaseEntity = be.BaseEntity.AdjustStyle(fn, reason).(*BaseEntity)
 	return be
 }
 
@@ -49,8 +49,8 @@ func (be *BlockquoteEntity) Clone() Entity {
 	return &BlockquoteEntity{ContainerEntity: be.ContainerEntity.Clone().(*ContainerEntity)}
 }
 
-func (be *BlockquoteEntity) Draw(screen mauview.Screen) {
-	be.ContainerEntity.Draw(screen)
+func (be *BlockquoteEntity) Draw(screen mauview.Screen, ctx DrawContext) {
+	be.ContainerEntity.Draw(screen, ctx)
 	for y := 0; y < be.height; y++ {
 		screen.SetContent(0, y, BlockQuoteChar, nil, be.Style)
 	}

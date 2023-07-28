@@ -17,8 +17,8 @@
 package widget
 
 import (
-	"maunium.net/go/mauview"
-	"maunium.net/go/tcell"
+	"go.mau.fi/mauview"
+	"go.mau.fi/tcell"
 )
 
 // Border is a simple tview widget that renders a horizontal or vertical bar.

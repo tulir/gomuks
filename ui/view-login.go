@@ -19,15 +19,17 @@ package ui
 import (
 	"math"
 
-	"maunium.net/go/mautrix/id"
-	"maunium.net/go/tcell"
+	"github.com/mattn/go-runewidth"
+
+	"go.mau.fi/mauview"
+	"go.mau.fi/tcell"
 
 	"maunium.net/go/mautrix"
-	"maunium.net/go/mauview"
+	"maunium.net/go/mautrix/id"
 
 	"maunium.net/go/gomuks/config"
 	"maunium.net/go/gomuks/debug"
-	"maunium.net/go/gomuks/interface"
+	ifc "maunium.net/go/gomuks/interface"
 )
 
 type LoginView struct {
@@ -75,12 +77,20 @@ func (ui *GomuksUI) NewLoginView() mauview.Component {
 	}
 
 	hs := ui.gmx.Config().HS
-	view.homeserver.SetPlaceholder("https://example.com").SetText(hs)
-	view.username.SetPlaceholder("@user:example.com").SetText(string(ui.gmx.Config().UserID))
-	view.password.SetPlaceholder("correct horse battery staple").SetMaskCharacter('*')
+	view.homeserver.SetPlaceholder("https://example.com").SetText(hs).SetTextColor(tcell.ColorWhite)
+	view.username.SetPlaceholder("@user:example.com").SetText(string(ui.gmx.Config().UserID)).SetTextColor(tcell.ColorWhite)
+	view.password.SetPlaceholder("correct horse battery staple").SetMaskCharacter('*').SetTextColor(tcell.ColorWhite)
 
-	view.quitButton.SetOnClick(func() { ui.gmx.Stop(true) }).SetBackgroundColor(tcell.ColorDarkCyan)
-	view.loginButton.SetOnClick(view.Login).SetBackgroundColor(tcell.ColorDarkCyan)
+	view.quitButton.
+		SetOnClick(func() { ui.gmx.Stop(true) }).
+		SetBackgroundColor(tcell.ColorDarkCyan).
+		SetForegroundColor(tcell.ColorWhite).
+		SetFocusedForegroundColor(tcell.ColorWhite)
+	view.loginButton.
+		SetOnClick(view.Login).
+		SetBackgroundColor(tcell.ColorDarkCyan).
+		SetForegroundColor(tcell.ColorWhite).
+		SetFocusedForegroundColor(tcell.ColorWhite)
 
 	view.
 		SetColumns([]int{1, 10, 1, 30, 1}).
@@ -139,7 +149,7 @@ func (view *LoginView) Error(err string) {
 			view.AddComponent(view.error, 1, 11, 3, 1)
 		}
 		view.error.SetText(err)
-		errorHeight := int(math.Ceil(float64(mauview.StringWidth(err)) / 45))
+		errorHeight := int(math.Ceil(float64(runewidth.StringWidth(err)) / 41))
 		view.container.SetHeight(14 + errorHeight)
 		view.SetRow(11, errorHeight)
 	}
@@ -151,15 +161,17 @@ func (view *LoginView) actuallyLogin(hs, mxid, password string) {
 	debug.Printf("Logging into %s as %s...", hs, mxid)
 	view.config.HS = hs
 
-	if err := view.matrix.InitClient(); err != nil {
+	if err := view.matrix.InitClient(false); err != nil {
 		debug.Print("Init error:", err)
 		view.Error(err.Error())
 	} else if err = view.matrix.Login(mxid, password); err != nil {
 		if httpErr, ok := err.(mautrix.HTTPError); ok {
-			if httpErr.RespError != nil {
+			if httpErr.RespError != nil && len(httpErr.RespError.Err) > 0 {
 				view.Error(httpErr.RespError.Err)
-			} else {
+			} else if len(httpErr.Message) > 0 {
 				view.Error(httpErr.Message)
+			} else {
+				view.Error(err.Error())
 			}
 		} else {
 			view.Error(err.Error())

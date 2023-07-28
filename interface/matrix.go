@@ -43,7 +43,7 @@ type UploadedMediaInfo struct {
 type MatrixContainer interface {
 	Client() *mautrix.Client
 	Preferences() *config.UserPreferences
-	InitClient() error
+	InitClient(isStartup bool) error
 	Initialized() bool
 
 	Start()

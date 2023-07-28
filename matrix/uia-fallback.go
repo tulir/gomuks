@@ -97,7 +97,7 @@ func (c *Container) UIAFallback(loginType mautrix.AuthType, sessionID string) er
 	})
 	go server.ListenAndServe()
 	defer server.Close()
-	authURL := c.client.BuildURLWithQuery(mautrix.URLPath{"auth", loginType, "fallback", "web"}, map[string]string{
+	authURL := c.client.BuildURLWithQuery(mautrix.ClientURLPath{"v3", "auth", loginType, "fallback", "web"}, map[string]string{
 		"session": sessionID,
 	})
 	link := url.URL{

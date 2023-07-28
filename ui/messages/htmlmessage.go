@@ -17,9 +17,10 @@
 package messages
 
 import (
+	"go.mau.fi/mauview"
+	"go.mau.fi/tcell"
+
 	"maunium.net/go/gomuks/matrix/muksevt"
-	"maunium.net/go/mauview"
-	"maunium.net/go/tcell"
 
 	"maunium.net/go/gomuks/config"
 	"maunium.net/go/gomuks/ui/messages/html"
@@ -27,9 +28,7 @@ import (
 
 type HTMLMessage struct {
 	Root      html.Entity
-	FocusedBg tcell.Color
 	TextColor tcell.Color
-	focused   bool
 }
 
 func NewHTMLMessage(evt *muksevt.Event, displayname string, root html.Entity) *UIMessage {
@@ -40,15 +39,11 @@ func NewHTMLMessage(evt *muksevt.Event, displayname string, root html.Entity) *U
 
 func (hw *HTMLMessage) Clone() MessageRenderer {
 	return &HTMLMessage{
-		Root:      hw.Root.Clone(),
-		FocusedBg: hw.FocusedBg,
+		Root: hw.Root.Clone(),
 	}
 }
 
-func (hw *HTMLMessage) Draw(screen mauview.Screen) {
-	if hw.focused {
-		screen.SetStyle(tcell.StyleDefault.Background(hw.FocusedBg).Foreground(hw.TextColor))
-	}
+func (hw *HTMLMessage) Draw(screen mauview.Screen, msg *UIMessage) {
 	if hw.TextColor != tcell.ColorDefault {
 		hw.Root.AdjustStyle(func(style tcell.Style) tcell.Style {
 			fg, _, _ := style.Decompose()
@@ -56,18 +51,10 @@ func (hw *HTMLMessage) Draw(screen mauview.Screen) {
 				return style.Foreground(hw.TextColor)
 			}
 			return style
-		})
+		}, html.AdjustStyleReasonNormal)
 	}
 	screen.Clear()
-	hw.Root.Draw(screen)
-}
-
-func (hw *HTMLMessage) Focus() {
-	hw.focused = true
-}
-
-func (hw *HTMLMessage) Blur() {
-	hw.focused = false
+	hw.Root.Draw(screen, html.DrawContext{IsSelected: msg.IsSelected})
 }
 
 func (hw *HTMLMessage) OnKeyEvent(event mauview.KeyEvent) bool {
@@ -89,7 +76,10 @@ func (hw *HTMLMessage) CalculateBuffer(preferences config.UserPreferences, width
 	// TODO account for bare messages in initial startX
 	startX := 0
 	hw.TextColor = msg.TextColor()
-	hw.Root.CalculateBuffer(width, startX, preferences.BareMessageView)
+	hw.Root.CalculateBuffer(width, startX, html.DrawContext{
+		IsSelected:   msg.IsSelected,
+		BareMessages: preferences.BareMessageView,
+	})
 }
 
 func (hw *HTMLMessage) Height() int {

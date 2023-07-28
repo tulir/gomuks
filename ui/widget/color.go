@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"hash/fnv"
 
-	"maunium.net/go/tcell"
+	"go.mau.fi/tcell"
 
 	"maunium.net/go/mautrix/id"
 )
@@ -179,12 +179,14 @@ var colorNames = []string{
 // names specified in tcell.ColorNames.
 //
 // The algorithm to get the color is as follows:
-//  colorNames[ FNV1(string) % len(colorNames) ]
+//
+//	colorNames[ FNV1(string) % len(colorNames) ]
 //
 // With the exception of the three special cases:
-//  --> = green
-//  <-- = red
-//  --- = yellow
+//
+//	--> = green
+//	<-- = red
+//	--- = yellow
 func GetHashColorName(s string) string {
 	switch s {
 	case "-->":

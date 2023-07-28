@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"strings"
 
-	"maunium.net/go/mauview"
+	"go.mau.fi/mauview"
 )
 
 type ContainerEntity struct {
@@ -30,6 +30,10 @@ type ContainerEntity struct {
 	Children []Entity
 	// Number of cells to indent children.
 	Indent int
+}
+
+func (ce *ContainerEntity) IsEmpty() bool {
+	return len(ce.Children) == 0
 }
 
 // PlainText returns the plaintext content in this entity and all its children.
@@ -57,15 +61,15 @@ func (ce *ContainerEntity) PlainText() string {
 }
 
 // AdjustStyle recursively changes the style of this entity and all its children.
-func (ce *ContainerEntity) AdjustStyle(fn AdjustStyleFunc) Entity {
+func (ce *ContainerEntity) AdjustStyle(fn AdjustStyleFunc, reason AdjustStyleReason) Entity {
 	for _, child := range ce.Children {
-		child.AdjustStyle(fn)
+		child.AdjustStyle(fn, reason)
 	}
 	ce.Style = fn(ce.Style)
 	return ce
 }
 
-// clone creates a deep copy of this base entity.
+// Clone creates a deep copy of this base entity.
 func (ce *ContainerEntity) Clone() Entity {
 	children := make([]Entity, len(ce.Children))
 	for i, child := range ce.Children {
@@ -84,8 +88,7 @@ func (ce *ContainerEntity) String() string {
 		return fmt.Sprintf(`&html.ContainerEntity{Base=%s, Indent=%d, Children=[]}`, ce.BaseEntity, ce.Indent)
 	}
 	var buf strings.Builder
-	_, _ = fmt.Fprintf(&buf, `&html.ContainerEntity{Base=%s,
-                      Indent=%d, Children=[`, ce.BaseEntity, ce.Indent)
+	_, _ = fmt.Fprintf(&buf, `&html.ContainerEntity{Base=%s, Indent=%d, Children=[`, ce.BaseEntity, ce.Indent)
 	for _, child := range ce.Children {
 		buf.WriteString("\n    ")
 		buf.WriteString(strings.Join(strings.Split(strings.TrimRight(child.String(), "\n"), "\n"), "\n    "))
@@ -95,7 +98,7 @@ func (ce *ContainerEntity) String() string {
 }
 
 // Draw draws this entity onto the given mauview Screen.
-func (ce *ContainerEntity) Draw(screen mauview.Screen) {
+func (ce *ContainerEntity) Draw(screen mauview.Screen, ctx DrawContext) {
 	if len(ce.Children) == 0 {
 		return
 	}
@@ -107,7 +110,7 @@ func (ce *ContainerEntity) Draw(screen mauview.Screen) {
 			proxyScreen.OffsetY++
 		}
 		proxyScreen.Height = entity.Height()
-		entity.Draw(proxyScreen)
+		entity.Draw(proxyScreen, ctx)
 		proxyScreen.SetStyle(ce.Style)
 		proxyScreen.OffsetY += entity.Height() - 1
 		_, isBreak := entity.(*BreakEntity)
@@ -119,8 +122,8 @@ func (ce *ContainerEntity) Draw(screen mauview.Screen) {
 }
 
 // CalculateBuffer prepares this entity and all its children for rendering with the given parameters
-func (ce *ContainerEntity) CalculateBuffer(width, startX int, bare bool) int {
-	ce.BaseEntity.CalculateBuffer(width, startX, bare)
+func (ce *ContainerEntity) CalculateBuffer(width, startX int, ctx DrawContext) int {
+	ce.BaseEntity.CalculateBuffer(width, startX, ctx)
 	if len(ce.Children) > 0 {
 		ce.height = 0
 		childStartX := ce.startX
@@ -129,7 +132,7 @@ func (ce *ContainerEntity) CalculateBuffer(width, startX int, bare bool) int {
 			if entity.IsBlock() || childStartX == 0 || ce.height == 0 {
 				ce.height++
 			}
-			childStartX = entity.CalculateBuffer(width-ce.Indent, childStartX, bare)
+			childStartX = entity.CalculateBuffer(width-ce.Indent, childStartX, ctx)
 			ce.height += entity.Height() - 1
 			_, isBreak := entity.(*BreakEntity)
 			if prevBreak && isBreak {

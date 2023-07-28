@@ -19,7 +19,7 @@ package html
 import (
 	"strings"
 
-	"maunium.net/go/mauview"
+	"go.mau.fi/mauview"
 )
 
 type HorizontalLineEntity struct {
@@ -36,8 +36,8 @@ func NewHorizontalLineEntity() *HorizontalLineEntity {
 	}}
 }
 
-func (he *HorizontalLineEntity) AdjustStyle(fn AdjustStyleFunc) Entity {
-	he.BaseEntity = he.BaseEntity.AdjustStyle(fn).(*BaseEntity)
+func (he *HorizontalLineEntity) AdjustStyle(fn AdjustStyleFunc, reason AdjustStyleReason) Entity {
+	he.BaseEntity = he.BaseEntity.AdjustStyle(fn, reason).(*BaseEntity)
 	return he
 }
 
@@ -45,7 +45,7 @@ func (he *HorizontalLineEntity) Clone() Entity {
 	return NewHorizontalLineEntity()
 }
 
-func (he *HorizontalLineEntity) Draw(screen mauview.Screen) {
+func (he *HorizontalLineEntity) Draw(screen mauview.Screen, ctx DrawContext) {
 	width, _ := screen.Size()
 	for x := 0; x < width; x++ {
 		screen.SetContent(x, 0, HorizontalLineChar, nil, he.Style)

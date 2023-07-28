@@ -22,8 +22,8 @@ import (
 
 	"github.com/mattn/go-runewidth"
 
-	"maunium.net/go/mauview"
-	"maunium.net/go/tcell"
+	"go.mau.fi/mauview"
+	"go.mau.fi/tcell"
 )
 
 func WriteLineSimple(screen mauview.Screen, line string, x, y int) {
@@ -41,8 +41,7 @@ func WriteLineColor(screen mauview.Screen, align int, line string, x, y, maxWidt
 func WriteLine(screen mauview.Screen, align int, line string, x, y, maxWidth int, style tcell.Style) {
 	offsetX := 0
 	if align == mauview.AlignRight {
-		// TODO is mauview.StringWidth correct here?
-		offsetX = maxWidth - mauview.StringWidth(line)
+		offsetX = maxWidth - runewidth.StringWidth(line)
 	}
 	if offsetX < 0 {
 		offsetX = 0

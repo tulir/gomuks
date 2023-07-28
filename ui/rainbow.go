@@ -1,5 +1,5 @@
 // gomuks - A terminal Matrix client written in Go.
-// Copyright (C) 2020 Tulir Asokan
+// Copyright (C) 2022 Tulir Asokan
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Affero General Public License as published by
@@ -17,23 +17,17 @@
 package ui
 
 import (
-	"bytes"
 	"fmt"
-	"html"
-	"io"
 	"math/rand"
 	"unicode"
 
 	"github.com/rivo/uniseg"
-	"github.com/russross/blackfriday/v2"
+	"github.com/yuin/goldmark"
+	"github.com/yuin/goldmark/ast"
+	"github.com/yuin/goldmark/renderer"
+	"github.com/yuin/goldmark/renderer/html"
+	"github.com/yuin/goldmark/util"
 )
-
-type RainbowRenderer struct {
-	*blackfriday.HTMLRenderer
-	sr *blackfriday.SPRenderer
-
-	ColorID string
-}
 
 func Rand(n int) (str string) {
 	b := make([]byte, n)
@@ -42,69 +36,100 @@ func Rand(n int) (str string) {
 	return
 }
 
-func NewRainbowRenderer(html *blackfriday.HTMLRenderer) *RainbowRenderer {
-	return &RainbowRenderer{
-		HTMLRenderer: html,
-		sr:           blackfriday.NewSmartypantsRenderer(html.Flags),
-		ColorID:      Rand(16),
+type extRainbow struct{}
+type rainbowRenderer struct {
+	HardWraps bool
+	ColorID   string
+}
+
+var ExtensionRainbow = &extRainbow{}
+var defaultRB = &rainbowRenderer{HardWraps: true, ColorID: Rand(16)}
+
+func (er *extRainbow) Extend(m goldmark.Markdown) {
+	m.Renderer().AddOptions(renderer.WithNodeRenderers(util.Prioritized(defaultRB, 0)))
+}
+
+func (rb *rainbowRenderer) RegisterFuncs(reg renderer.NodeRendererFuncRegisterer) {
+	reg.Register(ast.KindText, rb.renderText)
+	reg.Register(ast.KindString, rb.renderString)
+}
+
+type rainbowBufWriter struct {
+	util.BufWriter
+	ColorID string
+}
+
+func (rbw rainbowBufWriter) WriteString(s string) (int, error) {
+	i := 0
+	graphemes := uniseg.NewGraphemes(s)
+	for graphemes.Next() {
+		runes := graphemes.Runes()
+		if len(runes) == 1 && unicode.IsSpace(runes[0]) {
+			i2, err := rbw.BufWriter.WriteRune(runes[0])
+			i += i2
+			if err != nil {
+				return i, err
+			}
+			continue
+		}
+		i2, err := fmt.Fprintf(rbw.BufWriter, "<font color=\"%s\">%s</font>", rbw.ColorID, graphemes.Str())
+		i += i2
+		if err != nil {
+			return i, err
+		}
+	}
+	return i, nil
+}
+
+func (rbw rainbowBufWriter) Write(data []byte) (int, error) {
+	return rbw.WriteString(string(data))
+}
+
+func (rbw rainbowBufWriter) WriteByte(c byte) error {
+	_, err := rbw.WriteRune(rune(c))
+	return err
+}
+
+func (rbw rainbowBufWriter) WriteRune(r rune) (int, error) {
+	if unicode.IsSpace(r) {
+		return rbw.BufWriter.WriteRune(r)
+	} else {
+		return fmt.Fprintf(rbw.BufWriter, "<font color=\"%s\">%c</font>", rbw.ColorID, r)
 	}
 }
 
-func (r *RainbowRenderer) RenderNode(w io.Writer, node *blackfriday.Node, entering bool) blackfriday.WalkStatus {
-	if node.Type == blackfriday.Text {
-		var buf bytes.Buffer
-		if r.Flags&blackfriday.Smartypants != 0 {
-			var tmp bytes.Buffer
-			escapeHTML(&tmp, node.Literal)
-			r.sr.Process(&buf, tmp.Bytes())
+func (rb *rainbowRenderer) renderText(w util.BufWriter, source []byte, node ast.Node, entering bool) (ast.WalkStatus, error) {
+	if !entering {
+		return ast.WalkContinue, nil
+	}
+	n := node.(*ast.Text)
+	segment := n.Segment
+	if n.IsRaw() {
+		html.DefaultWriter.RawWrite(rainbowBufWriter{w, rb.ColorID}, segment.Value(source))
+	} else {
+		html.DefaultWriter.Write(rainbowBufWriter{w, rb.ColorID}, segment.Value(source))
+		if n.HardLineBreak() || (n.SoftLineBreak() && rb.HardWraps) {
+			_, _ = w.WriteString("<br>\n")
+		} else if n.SoftLineBreak() {
+			_ = w.WriteByte('\n')
+		}
+	}
+	return ast.WalkContinue, nil
+}
+
+func (rb *rainbowRenderer) renderString(w util.BufWriter, source []byte, node ast.Node, entering bool) (ast.WalkStatus, error) {
+	if !entering {
+		return ast.WalkContinue, nil
+	}
+	n := node.(*ast.String)
+	if n.IsCode() {
+		_, _ = w.Write(n.Value)
+	} else {
+		if n.IsRaw() {
+			html.DefaultWriter.RawWrite(rainbowBufWriter{w, rb.ColorID}, n.Value)
 		} else {
-			if node.Parent.Type == blackfriday.Link {
-				escLink(&buf, node.Literal)
-			} else {
-				escapeHTML(&buf, node.Literal)
-			}
+			html.DefaultWriter.Write(rainbowBufWriter{w, rb.ColorID}, n.Value)
 		}
-		graphemes := uniseg.NewGraphemes(buf.String())
-		buf.Reset()
-		for graphemes.Next() {
-			runes := graphemes.Runes()
-			if len(runes) == 1 && unicode.IsSpace(runes[0]) {
-				buf.WriteRune(runes[0])
-				continue
-			}
-			_, _ = fmt.Fprintf(&buf, "<font color=\"%s\">%s</font>", r.ColorID, graphemes.Str())
-		}
-		_, _ = w.Write(buf.Bytes())
-		return blackfriday.GoToNext
 	}
-	return r.HTMLRenderer.RenderNode(w, node, entering)
-}
-
-// This stuff is copied directly from blackfriday
-var htmlEscaper = [256][]byte{
-	'&': []byte("&amp;"),
-	'<': []byte("&lt;"),
-	'>': []byte("&gt;"),
-	'"': []byte("&quot;"),
-}
-
-func escapeHTML(w io.Writer, s []byte) {
-	var start, end int
-	for end < len(s) {
-		escSeq := htmlEscaper[s[end]]
-		if escSeq != nil {
-			w.Write(s[start:end])
-			w.Write(escSeq)
-			start = end + 1
-		}
-		end++
-	}
-	if start < len(s) && end <= len(s) {
-		w.Write(s[start:end])
-	}
-}
-
-func escLink(w io.Writer, text []byte) {
-	unesc := html.UnescapeString(string(text))
-	escapeHTML(w, []byte(unesc))
+	return ast.WalkContinue, nil
 }
