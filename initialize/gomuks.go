@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-package main
+package initialize
 
 import (
 	"errors"
@@ -22,7 +22,6 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
-	"runtime"
 	"strings"
 	"syscall"
 	"time"
@@ -33,45 +32,13 @@ import (
 	"maunium.net/go/gomuks/matrix"
 )
 
-// Information to find out exactly which commit gomuks was built from.
-// These are filled at build time with the -X linker flag.
-var (
-	Tag       = "unknown"
-	Commit    = "unknown"
-	BuildTime = "unknown"
-)
-
-var (
-	// Version is the version number of gomuks. Changed manually when making a release.
-	Version = "0.3.0"
-	// VersionString is the gomuks version, plus commit information. Filled in init() using the build-time values.
-	VersionString = ""
-)
-
-func init() {
-	if len(Tag) > 0 && Tag[0] == 'v' {
-		Tag = Tag[1:]
-	}
-	if Tag != Version {
-		suffix := ""
-		if !strings.HasSuffix(Version, "+dev") {
-			suffix = "+dev"
-		}
-		if len(Commit) > 8 {
-			Version = fmt.Sprintf("%s%s.%s", Version, suffix, Commit[:8])
-		} else {
-			Version = fmt.Sprintf("%s%s.unknown", Version, suffix)
-		}
-	}
-	VersionString = fmt.Sprintf("gomuks %s (%s with %s)", Version, BuildTime, runtime.Version())
-}
-
 // Gomuks is the wrapper for everything.
 type Gomuks struct {
-	ui     ifc.GomuksUI
-	matrix *matrix.Container
-	config *config.Config
-	stop   chan bool
+	ui      ifc.GomuksUI
+	matrix  *matrix.Container
+	config  *config.Config
+	stop    chan bool
+	version string
 }
 
 // NewGomuks creates a new Gomuks instance with everything initialized,
@@ -94,7 +61,7 @@ func NewGomuks(uiProvider ifc.UIProvider, configDir, dataDir, cacheDir, download
 }
 
 func (gmx *Gomuks) Version() string {
-	return Version
+	return gmx.version
 }
 
 // Save saves the active session and message history.

@@ -29,10 +29,44 @@ import (
 	flag "maunium.net/go/mauflag"
 
 	"maunium.net/go/gomuks/debug"
+	"maunium.net/go/gomuks/initialize"
 	ifc "maunium.net/go/gomuks/interface"
 	"maunium.net/go/gomuks/matrix"
 	"maunium.net/go/gomuks/ui"
 )
+
+// Information to find out exactly which commit gomuks was built from.
+// These are filled at build time with the -X linker flag.
+var (
+	Tag       = "unknown"
+	Commit    = "unknown"
+	BuildTime = "unknown"
+)
+
+var (
+	// Version is the version number of gomuks. Changed manually when making a release.
+	Version = "0.3.0"
+	// VersionString is the gomuks version, plus commit information. Filled in init() using the build-time values.
+	VersionString = ""
+)
+
+func init() {
+	if len(Tag) > 0 && Tag[0] == 'v' {
+		Tag = Tag[1:]
+	}
+	if Tag != Version {
+		suffix := ""
+		if !strings.HasSuffix(Version, "+dev") {
+			suffix = "+dev"
+		}
+		if len(Commit) > 8 {
+			Version = fmt.Sprintf("%s%s.%s", Version, suffix, Commit[:8])
+		} else {
+			Version = fmt.Sprintf("%s%s.unknown", Version, suffix)
+		}
+	}
+	VersionString = fmt.Sprintf("gomuks %s (%s with %s)", Version, BuildTime, runtime.Version())
+}
 
 var MainUIProvider ifc.UIProvider = ui.NewGomuksUI
 
@@ -123,19 +157,19 @@ func main() {
 	debug.Print("Download directory:", downloadDir)
 
 	matrix.SkipVersionCheck = *skipVersionCheck
-	gmx := NewGomuks(MainUIProvider, configDir, dataDir, cacheDir, downloadDir, *logInForTransfer)
+	gmx := initialize.NewGomuks(MainUIProvider, configDir, dataDir, cacheDir, downloadDir, *logInForTransfer)
 
 	if *clearCache {
 		debug.Print("Clearing cache as requested by CLI flag")
-		gmx.config.Clear()
-		fmt.Printf("Cleared cache at %s\n", gmx.config.CacheDir)
+		gmx.Config().Clear()
+		fmt.Printf("Cleared cache at %s\n", gmx.Config().CacheDir)
 		return
 	} else if *clearData {
 		debug.Print("Clearing all data as requested by CLI flag")
-		gmx.config.Clear()
-		gmx.config.ClearData()
-		_ = os.RemoveAll(gmx.config.Dir)
-		fmt.Printf("Cleared cache at %s, data at %s and config at %s\n", gmx.config.CacheDir, gmx.config.DataDir, gmx.config.Dir)
+		gmx.Config().Clear()
+		gmx.Config().ClearData()
+		_ = os.RemoveAll(gmx.Config().Dir)
+		fmt.Printf("Cleared cache at %s, data at %s and config at %s\n", gmx.Config().CacheDir, gmx.Config().DataDir, gmx.Config().Dir)
 		return
 	} else if *logInForTransfer {
 		debug.Print("Initializing in headless mode as requested by CLI flag")
