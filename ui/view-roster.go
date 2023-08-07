@@ -494,10 +494,6 @@ func (rstr *RosterView) Draw(screen mauview.Screen) {
 }
 
 func (rstr *RosterView) OnKeyEvent(event mauview.KeyEvent) bool {
-	if rstr.parent.matrix.IsHeadless() {
-		return false
-	}
-
 	kb := config.Keybind{
 		Key: event.Key(),
 		Ch:  event.Rune(),

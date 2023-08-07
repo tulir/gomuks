@@ -47,7 +47,6 @@ import (
 	"maunium.net/go/gomuks/lib/open"
 	"maunium.net/go/gomuks/matrix/muksevt"
 	"maunium.net/go/gomuks/matrix/rooms"
-	"maunium.net/go/gomuks/ui"
 )
 
 // Container is a wrapper for a mautrix Client and some other stuff.
@@ -61,20 +60,18 @@ type Container struct {
 	ui      ifc.GomuksUI
 	config  *config.Config
 	history *HistoryManager
-	running,
-	headless bool
-	stop chan bool
+	running bool
+	stop    chan bool
 
 	typing int64
 }
 
 // NewContainer creates a new Container for the given Gomuks instance.
-func NewContainer(gmx ifc.Gomuks, isHeadless bool) *Container {
+func NewContainer(gmx ifc.Gomuks) *Container {
 	c := &Container{
-		config:   gmx.Config(),
-		ui:       gmx.UI(),
-		gmx:      gmx,
-		headless: isHeadless,
+		config: gmx.Config(),
+		ui:     gmx.UI(),
+		gmx:    gmx,
 	}
 
 	return c
@@ -83,10 +80,6 @@ func NewContainer(gmx ifc.Gomuks, isHeadless bool) *Container {
 // Client returns the underlying mautrix Client.
 func (c *Container) Client() *mautrix.Client {
 	return c.client
-}
-
-func (c *Container) IsHeadless() bool {
-	return c.headless
 }
 
 type mxLogger struct{}
@@ -395,11 +388,6 @@ func (c *Container) OnLogin() {
 
 	c.client.Store = c.config
 
-	if c.headless {
-		debug.Print("Importing keys...")
-		c.RunCommand("/import keys.txt")
-	}
-
 	debug.Print("Initializing syncer")
 	c.syncer = NewGomuksSyncer(c.config.Rooms)
 	if c.crypto != nil {
@@ -438,12 +426,6 @@ func (c *Container) OnLogin() {
 			c.syncer.Progress.Close()
 			c.syncer.Progress = StubSyncingModal{}
 			c.syncer.FirstDoneCallback = nil
-			if c.headless {
-				c.RunCommand("/cs fetch")
-				c.RunCommand("/cs self-sign")
-				c.config.Preferences.DisplayMode = config.DisplayModeModern
-				c.gmx.Stop(true)
-			}
 		}
 	}
 	c.syncer.InitDoneCallback = func() {
@@ -457,11 +439,9 @@ func (c *Container) OnLogin() {
 		c.config.Rooms.ForceClean()
 		debug.Print("Saving all data")
 		c.config.SaveAll()
-		if !c.headless {
-			debug.Print("Adding rooms to UI")
-			c.ui.MainView().SetRooms(c.config.Rooms)
-			c.ui.Render()
-		}
+		debug.Print("Adding rooms to UI")
+		c.ui.MainView().SetRooms(c.config.Rooms)
+		c.ui.Render()
 		// The initial sync can be a bit heavy, so we force run the GC here
 		// after cleaning up rooms from memory above.
 		debug.Print("Running GC")
@@ -471,9 +451,7 @@ func (c *Container) OnLogin() {
 	c.client.Syncer = c.syncer
 
 	debug.Print("Setting existing rooms")
-	if !c.headless {
-		c.ui.MainView().SetRooms(c.config.Rooms)
-	}
+	c.ui.MainView().SetRooms(c.config.Rooms)
 
 	debug.Print("OnLogin() done.")
 }
@@ -509,14 +487,6 @@ func (c *Container) Start() {
 			} else {
 				debug.Print("Sync() returned without error")
 			}
-		}
-	}
-}
-
-func (c *Container) RunCommand(text string) {
-	if view, ok := c.ui.MainView().(*ui.MainView); ok {
-		if cmd := view.CmdProcessor().ParseCommand(nil, text); cmd != nil {
-			view.CmdProcessor().HandleCommand(cmd)
 		}
 	}
 }

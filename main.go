@@ -19,7 +19,6 @@ package main
 import (
 	"fmt"
 	"os"
-	"path/filepath"
 	"runtime"
 	"strings"
 	"time"
@@ -72,7 +71,6 @@ var wantVersion = flag.MakeFull("v", "version", "Show the version of gomuks", "f
 var clearCache = flag.MakeFull("c", "clear-cache", "Clear the cache directory instead of starting", "false").Bool()
 var skipVersionCheck = flag.MakeFull("s", "skip-version-check", "Skip the homeserver version checks at startup and login", "false").Bool()
 var clearData = flag.Make().LongKey("clear-all-data").Usage("Clear all data instead of starting").Default("false").Bool()
-var logInForTransfer = flag.Make().LongKey("log-in-for-transfer").Usage("Log in and generate packaged data for transfer").Default("false").Bool()
 var wantHelp, _ = flag.MakeHelpFlag()
 
 func main() {
@@ -90,27 +88,6 @@ func main() {
 	} else if *wantVersion {
 		fmt.Println(VersionString)
 		return
-	}
-	if *logInForTransfer {
-		if currentDir, err := os.Getwd(); err == nil {
-			pack := filepath.Join(currentDir, "transfer")
-			if _, err := os.Stat(pack); err == nil {
-				fmt.Println("with the --log-in-for-transfer flag, gomuks packs your data up into")
-				fmt.Println("the transfer/ directory so you can move it around easily. please make")
-				fmt.Println("sure there is nothing there already, and then run it again.")
-				os.Exit(1)
-			}
-
-			keys := filepath.Join(currentDir, "keys.txt")
-			if _, err := os.Stat(keys); err != nil {
-				fmt.Println("with the --log-in-for-transfer flag, gomuks packs your data up so")
-				fmt.Println("you can move it around easily. please export your existing client")
-				fmt.Println("keys to the file keys.txt, and then run gomuks again.")
-				os.Exit(1)
-			}
-
-			os.Setenv("GOMUKS_ROOT", pack)
-		}
 	}
 
 	debugDir := os.Getenv("DEBUG_DIR")
@@ -155,7 +132,7 @@ func main() {
 	debug.Print("Download directory:", downloadDir)
 
 	matrix.SkipVersionCheck = *skipVersionCheck
-	gmx := initialize.NewGomuks(MainUIProvider, configDir, dataDir, cacheDir, downloadDir, *logInForTransfer)
+	gmx := initialize.NewGomuks(MainUIProvider, configDir, dataDir, cacheDir, downloadDir)
 
 	if *clearCache {
 		debug.Print("Clearing cache as requested by CLI flag")
@@ -169,8 +146,6 @@ func main() {
 		_ = os.RemoveAll(gmx.Config().Dir)
 		fmt.Printf("Cleared cache at %s, data at %s and config at %s\n", gmx.Config().CacheDir, gmx.Config().DataDir, gmx.Config().Dir)
 		return
-	} else if *logInForTransfer {
-		debug.Print("Initializing in headless mode as requested by CLI flag")
 	}
 
 	gmx.Start()
