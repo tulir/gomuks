@@ -9,6 +9,7 @@ import (
 	"maunium.net/go/mautrix"
 	"maunium.net/go/mautrix/crypto"
 	"maunium.net/go/mautrix/crypto/ssss"
+	"maunium.net/go/mautrix/id"
 
 	"maunium.net/go/gomuks/initialize"
 	"maunium.net/go/gomuks/matrix"
@@ -16,10 +17,8 @@ import (
 )
 
 type HeadlessConfig struct {
-	OutputDir,
-	MxID, MxPassword,
-	KeyPath, KeyPassword,
-	RecoveryPhrase string
+	OutputDir, MxPassword, KeyPath, KeyPassword, RecoveryPhrase string
+	MxID                                                        id.UserID
 }
 
 func HeadlessInit(conf HeadlessConfig) error {
@@ -39,9 +38,15 @@ func HeadlessInit(conf HeadlessConfig) error {
 	}
 
 	// login section
+	_, hs, err := conf.MxID.Parse()
+	if err != nil {
+		return err
+	}
+
+	gmx.Config().HS = hs
 	if err := gmx.Matrix().InitClient(false); err != nil {
 		return err
-	} else if err = gmx.Matrix().Login(conf.MxID, conf.MxPassword); err != nil {
+	} else if err = gmx.Matrix().Login(conf.MxID.String(), conf.MxPassword); err != nil {
 		return err
 	}
 
