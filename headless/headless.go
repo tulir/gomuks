@@ -39,7 +39,9 @@ func HeadlessInit(conf HeadlessConfig) error {
 	}
 
 	// login section
-	if err = gmx.Matrix().Login(conf.MxID, conf.MxPassword); err != nil {
+	if err := gmx.Matrix().InitClient(false); err != nil {
+		return err
+	} else if err = gmx.Matrix().Login(conf.MxID, conf.MxPassword); err != nil {
 		return err
 	}
 
