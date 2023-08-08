@@ -1,6 +1,7 @@
 package headless
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"os"
@@ -10,6 +11,7 @@ import (
 	"maunium.net/go/mautrix/crypto/ssss"
 
 	"maunium.net/go/gomuks/initialize"
+	"maunium.net/go/gomuks/matrix"
 	"maunium.net/go/gomuks/ui"
 )
 
@@ -76,8 +78,32 @@ func HeadlessInit(conf HeadlessConfig) error {
 	// sync
 	// how?
 	// this does too much: gmx.Matrix().Start()
+	//
+	// figbert:
+	// just looking to perform the initial sync. is gmx.Matrix().Client().Sync()
+	// the way to go? should i copy+paste the synce initialization from Start()
+	// and OnLogin()?
+	//
+	// tulir:
+	// not sure if there's any easy way to run a single sync, maybe calling
+	// Client.FullSyncRequest + Syncer.ProcessSync manually
+	resp, err := gmx.Matrix().Client().FullSyncRequest(mautrix.ReqSync{
+		Timeout:        30000,
+		Since:          "",
+		FilterID:       "",
+		FullState:      true,
+		SetPresence:    gmx.Matrix().Client().SyncPresence,
+		Context:        context.Background(),
+		StreamResponse: true,
+	})
+	if err != nil {
+		return err
+	}
 
-	return nil
+	gmx.Matrix().(*matrix.Container).InitSyncer()
+	err = gmx.Matrix().(*matrix.Container).ProcessSyncResponse(resp, "")
+
+	return err
 }
 
 func initDirs() (string, string, string, string, error) {

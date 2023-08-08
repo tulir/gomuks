@@ -381,15 +381,9 @@ func (s StubSyncingModal) SetSteps(i int)       {}
 func (s StubSyncingModal) Step()                {}
 func (s StubSyncingModal) Close()               {}
 
-// OnLogin initializes the syncer and updates the room list.
-func (c *Container) OnLogin() {
-	c.cryptoOnLogin()
-	c.ui.OnLogin()
-
-	c.client.Store = c.config
-
-	debug.Print("Initializing syncer")
+func (c *Container) InitSyncer() {
 	c.syncer = NewGomuksSyncer(c.config.Rooms)
+
 	if c.crypto != nil {
 		c.syncer.OnSync(c.crypto.ProcessSyncResponse)
 		c.syncer.OnEventType(event.StateMember, func(source mautrix.EventSource, evt *event.Event) {
@@ -403,6 +397,7 @@ func (c *Container) OnLogin() {
 	} else {
 		c.syncer.OnEventType(event.EventEncrypted, c.HandleEncryptedUnsupported)
 	}
+
 	c.syncer.OnEventType(event.EventMessage, c.HandleMessage)
 	c.syncer.OnEventType(event.EventSticker, c.HandleMessage)
 	c.syncer.OnEventType(event.EventReaction, c.HandleMessage)
@@ -418,16 +413,7 @@ func (c *Container) OnLogin() {
 	c.syncer.OnEventType(event.AccountDataPushRules, c.HandlePushRules)
 	c.syncer.OnEventType(event.AccountDataRoomTags, c.HandleTag)
 	c.syncer.OnEventType(AccountDataGomuksPreferences, c.HandlePreferences)
-	if len(c.config.AuthCache.NextBatch) == 0 {
-		c.syncer.Progress = c.ui.MainView().OpenSyncingModal()
-		c.syncer.Progress.SetMessage("Waiting for /sync response from server")
-		c.syncer.Progress.SetIndeterminate()
-		c.syncer.FirstDoneCallback = func() {
-			c.syncer.Progress.Close()
-			c.syncer.Progress = StubSyncingModal{}
-			c.syncer.FirstDoneCallback = nil
-		}
-	}
+
 	c.syncer.InitDoneCallback = func() {
 		debug.Print("Initial sync done")
 		c.config.AuthCache.InitialSyncDone = true
@@ -448,7 +434,33 @@ func (c *Container) OnLogin() {
 		runtime.GC()
 		dbg.FreeOSMemory()
 	}
+
 	c.client.Syncer = c.syncer
+}
+
+func (c *Container) ProcessSyncResponse(res *mautrix.RespSync, since string) error {
+	return c.syncer.ProcessResponse(res, since)
+}
+
+// OnLogin initializes the syncer and updates the room list.
+func (c *Container) OnLogin() {
+	c.cryptoOnLogin()
+	c.ui.OnLogin()
+
+	c.client.Store = c.config
+
+	debug.Print("Initializing syncer")
+	c.InitSyncer()
+	if len(c.config.AuthCache.NextBatch) == 0 {
+		c.syncer.Progress = c.ui.MainView().OpenSyncingModal()
+		c.syncer.Progress.SetMessage("Waiting for /sync response from server")
+		c.syncer.Progress.SetIndeterminate()
+		c.syncer.FirstDoneCallback = func() {
+			c.syncer.Progress.Close()
+			c.syncer.Progress = StubSyncingModal{}
+			c.syncer.FirstDoneCallback = nil
+		}
+	}
 
 	debug.Print("Setting existing rooms")
 	c.ui.MainView().SetRooms(c.config.Rooms)
