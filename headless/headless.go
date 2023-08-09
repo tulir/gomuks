@@ -14,6 +14,7 @@ import (
 	"maunium.net/go/gomuks/initialize"
 	"maunium.net/go/gomuks/matrix"
 	"maunium.net/go/gomuks/ui"
+	"maunium.net/go/gomuks/config"
 )
 
 type HeadlessConfig struct {
@@ -81,6 +82,9 @@ func HeadlessInit(conf HeadlessConfig) error {
 	if err != nil {
 		return fmt.Errorf("Failed to self-sign: %v", err)
 	}
+
+	// display mode
+	gmx.Config().Preferences.DisplayMode = config.DisplayModeModern
 
 	// sync
 	// how?
