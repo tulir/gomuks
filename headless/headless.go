@@ -11,10 +11,10 @@ import (
 	"maunium.net/go/mautrix/crypto/ssss"
 	"maunium.net/go/mautrix/id"
 
+	"maunium.net/go/gomuks/config"
 	"maunium.net/go/gomuks/initialize"
 	"maunium.net/go/gomuks/matrix"
 	"maunium.net/go/gomuks/ui"
-	"maunium.net/go/gomuks/config"
 )
 
 type HeadlessConfig struct {
@@ -22,9 +22,10 @@ type HeadlessConfig struct {
 	MxID                                                        id.UserID
 }
 
-func HeadlessInit(conf HeadlessConfig) error {
+func HeadlessInit(conf HeadlessConfig, updates chan fmt.Stringer) error {
 	// setup package dir
 	os.Setenv("GOMUKS_ROOT", conf.OutputDir)
+	updates <- ExportDirSetMsg{dir: conf.OutputDir}
 
 	// init boilerplate
 	configDir, dataDir, cacheDir, downloadDir, err := initDirs()
@@ -37,6 +38,7 @@ func HeadlessInit(conf HeadlessConfig) error {
 	if err != nil {
 		return err
 	}
+	updates <- InitializedGomuksMsg{}
 
 	// login section
 	_, hs, err := conf.MxID.Parse()
@@ -50,6 +52,7 @@ func HeadlessInit(conf HeadlessConfig) error {
 	} else if err = gmx.Matrix().Login(conf.MxID.String(), conf.MxPassword); err != nil {
 		return err
 	}
+	updates <- LoggedInMsg{account: conf.MxID}
 
 	// key import
 	data, err := os.ReadFile(conf.KeyPath)
@@ -57,10 +60,11 @@ func HeadlessInit(conf HeadlessConfig) error {
 		return err
 	}
 	mach := gmx.Matrix().Crypto().(*crypto.OlmMachine)
-	_, _, err = mach.ImportKeys(conf.KeyPassword, data)
+	imported, total, err := mach.ImportKeys(conf.KeyPassword, data)
 	if err != nil {
 		return fmt.Errorf("Failed to import sessions: %v", err)
 	}
+	updates <- ImportedKeysMsg{imported: imported, total: total}
 
 	// verify (fetch)
 	key, err := getSSSS(mach, conf.RecoveryPhrase)
@@ -72,6 +76,7 @@ func HeadlessInit(conf HeadlessConfig) error {
 	if err != nil {
 		return fmt.Errorf("Error fetching cross-signing keys: %v", err)
 	}
+	updates <- FetchedVerificationKeysMsg{}
 
 	// verify (sign)
 	if mach.CrossSigningKeys == nil {
@@ -82,22 +87,14 @@ func HeadlessInit(conf HeadlessConfig) error {
 	if err != nil {
 		return fmt.Errorf("Failed to self-sign: %v", err)
 	}
+	updates <- SuccessfullyVerifiedMsg{}
 
 	// display mode
 	gmx.Config().Preferences.DisplayMode = config.DisplayModeModern
+	updates <- ConfiguredDisplayModeMsg{}
 
 	// sync
-	// how?
-	// this does too much: gmx.Matrix().Start()
-	//
-	// figbert:
-	// just looking to perform the initial sync. is gmx.Matrix().Client().Sync()
-	// the way to go? should i copy+paste the synce initialization from Start()
-	// and OnLogin()?
-	//
-	// tulir:
-	// not sure if there's any easy way to run a single sync, maybe calling
-	// Client.FullSyncRequest + Syncer.ProcessSync manually
+	updates <- BeginningSyncMsg{}
 	resp, err := gmx.Matrix().Client().FullSyncRequest(mautrix.ReqSync{
 		Timeout:        30000,
 		Since:          "",
@@ -110,8 +107,10 @@ func HeadlessInit(conf HeadlessConfig) error {
 	if err != nil {
 		return err
 	}
+	updates <- FetchedSyncDataMsg{}
 
 	gmx.Matrix().(*matrix.Container).InitSyncer()
+	updates <- ProcessingSyncMsg{}
 	err = gmx.Matrix().(*matrix.Container).ProcessSyncResponse(resp, "")
 
 	return err
