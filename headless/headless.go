@@ -23,6 +23,8 @@ type Config struct {
 }
 
 func Init(conf Config, updates chan fmt.Stringer) error {
+	defer close(updates)
+
 	// setup package dir
 	os.Setenv("GOMUKS_ROOT", conf.OutputDir)
 	updates <- exportDirSet{dir: conf.OutputDir}
