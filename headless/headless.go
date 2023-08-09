@@ -22,10 +22,10 @@ type Config struct {
 	MxID                                                        id.UserID
 }
 
-func Init(conf Config, updates chan fmt.Stringer) error {
+func Init(conf Config, updates chan fmt.Stringer) Completed {
 	// setup package dir
 	os.Setenv("GOMUKS_ROOT", conf.OutputDir)
-	updates <- ExportDirSetMsg{dir: conf.OutputDir}
+	updates <- exportDirSet{dir: conf.OutputDir}
 
 	// init boilerplate
 	configDir, dataDir, cacheDir, downloadDir, err := initDirs()
@@ -38,7 +38,7 @@ func Init(conf Config, updates chan fmt.Stringer) error {
 	if err != nil {
 		return err
 	}
-	updates <- InitializedGomuksMsg{}
+	updates <- initializedGomuks{}
 
 	// login section
 	_, hs, err := conf.MxID.Parse()
@@ -52,7 +52,7 @@ func Init(conf Config, updates chan fmt.Stringer) error {
 	} else if err = gmx.Matrix().Login(conf.MxID.String(), conf.MxPassword); err != nil {
 		return err
 	}
-	updates <- LoggedInMsg{account: conf.MxID}
+	updates <- loggedIn{account: conf.MxID}
 
 	// key import
 	data, err := os.ReadFile(conf.KeyPath)
@@ -64,7 +64,7 @@ func Init(conf Config, updates chan fmt.Stringer) error {
 	if err != nil {
 		return fmt.Errorf("Failed to import sessions: %v", err)
 	}
-	updates <- ImportedKeysMsg{imported: imported, total: total}
+	updates <- importedKeys{imported: imported, total: total}
 
 	// verify (fetch)
 	key, err := getSSSS(mach, conf.RecoveryPhrase)
@@ -76,7 +76,7 @@ func Init(conf Config, updates chan fmt.Stringer) error {
 	if err != nil {
 		return fmt.Errorf("Error fetching cross-signing keys: %v", err)
 	}
-	updates <- FetchedVerificationKeysMsg{}
+	updates <- fetchedVerificationKeys{}
 
 	// verify (sign)
 	if mach.CrossSigningKeys == nil {
@@ -87,14 +87,14 @@ func Init(conf Config, updates chan fmt.Stringer) error {
 	if err != nil {
 		return fmt.Errorf("Failed to self-sign: %v", err)
 	}
-	updates <- SuccessfullyVerifiedMsg{}
+	updates <- successfullyVerified{}
 
 	// display mode
 	gmx.Config().Preferences.DisplayMode = config.DisplayModeModern
-	updates <- ConfiguredDisplayModeMsg{}
+	updates <- configuredDisplayMode{}
 
 	// sync
-	updates <- BeginningSyncMsg{}
+	updates <- beginningSync{}
 	resp, err := gmx.Matrix().Client().FullSyncRequest(mautrix.ReqSync{
 		Timeout:        30000,
 		Since:          "",
@@ -107,10 +107,10 @@ func Init(conf Config, updates chan fmt.Stringer) error {
 	if err != nil {
 		return err
 	}
-	updates <- FetchedSyncDataMsg{}
+	updates <- fetchedSyncData{}
 
 	gmx.Matrix().(*matrix.Container).InitSyncer()
-	updates <- ProcessingSyncMsg{}
+	updates <- processingSync{}
 	err = gmx.Matrix().(*matrix.Container).ProcessSyncResponse(resp, "")
 
 	return err

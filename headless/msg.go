@@ -2,62 +2,64 @@ package headless
 
 import "fmt"
 
-type ExportDirSetMsg struct{ dir string }
+type exportDirSet struct{ dir string }
 
-func (msg ExportDirSetMsg) String() string {
+func (msg exportDirSet) String() string {
 	return fmt.Sprintf("Set gomuks root directory to %s…", msg.dir)
 }
 
-type InitializedGomuksMsg struct{}
+type initializedGomuks struct{}
 
-func (msg InitializedGomuksMsg) String() string {
+func (msg initializedGomuks) String() string {
 	return "Initialized gomuks…"
 }
 
-type LoggedInMsg struct{ account fmt.Stringer }
+type loggedIn struct{ account fmt.Stringer }
 
-func (msg LoggedInMsg) String() string {
+func (msg loggedIn) String() string {
 	return fmt.Sprintf("Logged in to %s…", msg.account)
 }
 
-type ImportedKeysMsg struct{ imported, total int }
+type importedKeys struct{ imported, total int }
 
-func (msg ImportedKeysMsg) String() string {
+func (msg importedKeys) String() string {
 	return fmt.Sprintf("Successfully imported %d/%d sessions", msg.imported, msg.total)
 }
 
-type FetchedVerificationKeysMsg struct{}
+type fetchedVerificationKeys struct{}
 
-func (msg FetchedVerificationKeysMsg) String() string {
+func (msg fetchedVerificationKeys) String() string {
 	return "Successfully unlocked cross-signing keys…"
 }
 
-type SuccessfullyVerifiedMsg struct{}
+type successfullyVerified struct{}
 
-func (msg SuccessfullyVerifiedMsg) String() string {
+func (msg successfullyVerified) String() string {
 	return "Successfully self-signed. This device is now trusted by other devices…"
 }
 
-type ConfiguredDisplayModeMsg struct{}
+type configuredDisplayMode struct{}
 
-func (msg ConfiguredDisplayModeMsg) String() string {
+func (msg configuredDisplayMode) String() string {
 	return "Configured display mode…"
 }
 
-type BeginningSyncMsg struct{}
+type beginningSync struct{}
 
-func (msg BeginningSyncMsg) String() string {
+func (msg beginningSync) String() string {
 	return "Beginning the sync process…"
 }
 
-type FetchedSyncDataMsg struct{}
+type fetchedSyncData struct{}
 
-func (msg FetchedSyncDataMsg) String() string {
+func (msg fetchedSyncData) String() string {
 	return "Fetched sync data…"
 }
 
-type ProcessingSyncMsg struct{}
+type processingSync struct{}
 
-func (msg ProcessingSyncMsg) String() string {
+func (msg processingSync) String() string {
 	return "Processing sync response…"
 }
+
+type Completed error
