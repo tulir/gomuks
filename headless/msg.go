@@ -61,5 +61,3 @@ type processingSync struct{}
 func (msg processingSync) String() string {
 	return "Processing sync response…"
 }
-
-type Completed error

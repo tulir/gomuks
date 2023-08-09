@@ -22,7 +22,7 @@ type Config struct {
 	MxID                                                        id.UserID
 }
 
-func Init(conf Config, updates chan fmt.Stringer) Completed {
+func Init(conf Config, updates chan fmt.Stringer) error {
 	// setup package dir
 	os.Setenv("GOMUKS_ROOT", conf.OutputDir)
 	updates <- exportDirSet{dir: conf.OutputDir}
