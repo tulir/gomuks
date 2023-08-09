@@ -17,12 +17,12 @@ import (
 	"maunium.net/go/gomuks/ui"
 )
 
-type HeadlessConfig struct {
+type Config struct {
 	OutputDir, MxPassword, KeyPath, KeyPassword, RecoveryPhrase string
 	MxID                                                        id.UserID
 }
 
-func HeadlessInit(conf HeadlessConfig, updates chan fmt.Stringer) error {
+func Init(conf Config, updates chan fmt.Stringer) error {
 	// setup package dir
 	os.Setenv("GOMUKS_ROOT", conf.OutputDir)
 	updates <- ExportDirSetMsg{dir: conf.OutputDir}
