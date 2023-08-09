@@ -62,7 +62,7 @@ func HeadlessInit(conf HeadlessConfig) error {
 	}
 
 	// verify (fetch)
-	key, err := getSSSS(mach, conf.MxPassword, conf.RecoveryPhrase)
+	key, err := getSSSS(mach, conf.RecoveryPhrase)
 	if err != nil {
 		return err
 	}
@@ -137,7 +137,7 @@ func initDirs() (string, string, string, string, error) {
 	return config, data, cache, download, nil
 }
 
-func getSSSS(mach *crypto.OlmMachine, password, recoveryPhrase string) (*ssss.Key, error) {
+func getSSSS(mach *crypto.OlmMachine, recoveryPhrase string) (*ssss.Key, error) {
 	_, keyData, err := mach.SSSS.GetDefaultKeyData()
 	if err != nil {
 		if errors.Is(err, mautrix.MNotFound) {
@@ -147,19 +147,11 @@ func getSSSS(mach *crypto.OlmMachine, password, recoveryPhrase string) (*ssss.Ke
 		}
 	}
 
-	var key *ssss.Key
-	if keyData.Passphrase != nil && keyData.Passphrase.Algorithm == ssss.PassphraseAlgorithmPBKDF2 {
-		key, err = keyData.VerifyPassphrase(password)
-		if errors.Is(err, ssss.ErrIncorrectSSSSKey) {
-			return nil, fmt.Errorf("Incorrect passphrase")
-		}
-	} else {
-		key, err = keyData.VerifyRecoveryKey(recoveryPhrase)
-		if errors.Is(err, ssss.ErrInvalidRecoveryKey) {
-			return nil, fmt.Errorf("Malformed recovery key")
-		} else if errors.Is(err, ssss.ErrIncorrectSSSSKey) {
-			return nil, fmt.Errorf("Incorrect recovery key")
-		}
+	key, err := keyData.VerifyRecoveryKey(recoveryPhrase)
+	if errors.Is(err, ssss.ErrInvalidRecoveryKey) {
+		return nil, fmt.Errorf("Malformed recovery key")
+	} else if errors.Is(err, ssss.ErrIncorrectSSSSKey) {
+		return nil, fmt.Errorf("Incorrect recovery key")
 	}
 	// All the errors should already be handled above, this is just for backup
 	if err != nil {
