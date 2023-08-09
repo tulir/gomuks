@@ -60,15 +60,12 @@ func (s *GomuksSyncer) ProcessResponse(res *mautrix.RespSync, since string) (err
 	debug.Print("Received sync response")
 	s.Progress.SetMessage("Processing sync response")
 	steps := len(res.Rooms.Join) + len(res.Rooms.Invite) + len(res.Rooms.Leave)
-	visualSteps := steps + 2 + len(s.globalListeners)
-	debug.Printf("[SYNC] Creating a progress bar with %s steps (%s rooms, %s global listeners)", visualSteps, steps, len(s.globalListeners))
-	s.Progress.SetSteps(visualSteps)
+	s.Progress.SetSteps(steps + 2 + len(s.globalListeners))
 
 	wait := &sync.WaitGroup{}
 	callback := func() {
 		wait.Done()
 		s.Progress.Step()
-		debug.Print("[SYNC] Stepping progress bar")
 	}
 	wait.Add(len(s.globalListeners))
 	s.notifyGlobalListeners(res, since, callback)
