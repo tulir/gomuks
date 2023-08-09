@@ -147,11 +147,19 @@ func getSSSS(mach *crypto.OlmMachine, recoveryPhrase string) (*ssss.Key, error) 
 		}
 	}
 
-	key, err := keyData.VerifyRecoveryKey(recoveryPhrase)
-	if errors.Is(err, ssss.ErrInvalidRecoveryKey) {
-		return nil, fmt.Errorf("Malformed recovery key")
-	} else if errors.Is(err, ssss.ErrIncorrectSSSSKey) {
-		return nil, fmt.Errorf("Incorrect recovery key")
+	var key *ssss.Key
+	if keyData.Passphrase != nil && keyData.Passphrase.Algorithm == ssss.PassphraseAlgorithmPBKDF2 {
+		key, err = keyData.VerifyPassphrase(recoveryPhrase)
+		if errors.Is(err, ssss.ErrIncorrectSSSSKey) {
+			return nil, fmt.Errorf("Incorrect passphrase")
+		}
+	} else {
+		key, err = keyData.VerifyRecoveryKey(recoveryPhrase)
+		if errors.Is(err, ssss.ErrInvalidRecoveryKey) {
+			return nil, fmt.Errorf("Malformed recovery key")
+		} else if errors.Is(err, ssss.ErrIncorrectSSSSKey) {
+			return nil, fmt.Errorf("Incorrect recovery key")
+		}
 	}
 	// All the errors should already be handled above, this is just for backup
 	if err != nil {
