@@ -18,8 +18,8 @@ import (
 )
 
 type Config struct {
-	OutputDir, MxPassword, KeyPath, KeyPassword, RecoveryPhrase string
-	MxID                                                        id.UserID
+	OutputDir, MxPassword, Homeserver, KeyPath, KeyPassword, RecoveryPhrase string
+	MxID                                                                    id.UserID
 }
 
 func Init(conf Config, updates chan fmt.Stringer) error {
@@ -43,12 +43,7 @@ func Init(conf Config, updates chan fmt.Stringer) error {
 	updates <- initializedGomuks{}
 
 	// login section
-	_, hs, err := conf.MxID.Parse()
-	if err != nil {
-		return err
-	}
-
-	gmx.Config().HS = hs
+	gmx.Config().HS = conf.Homeserver
 	if err := gmx.Matrix().InitClient(false); err != nil {
 		return err
 	} else if err = gmx.Matrix().Login(conf.MxID.String(), conf.MxPassword); err != nil {
