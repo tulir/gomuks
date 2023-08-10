@@ -63,29 +63,6 @@ func Init(conf Config, updates chan fmt.Stringer) error {
 	}
 	updates <- importedKeys{imported: imported, total: total}
 
-	// verify (fetch)
-	key, err := getSSSS(mach, conf.RecoveryPhrase)
-	if err != nil {
-		return err
-	}
-
-	err = mach.FetchCrossSigningKeysFromSSSS(key)
-	if err != nil {
-		return fmt.Errorf("Error fetching cross-signing keys: %v", err)
-	}
-	updates <- fetchedVerificationKeys{}
-
-	// verify (sign)
-	if mach.CrossSigningKeys == nil {
-		return fmt.Errorf("Cross-signing keys not cached")
-	}
-
-	err = mach.SignOwnDevice(mach.OwnIdentity())
-	if err != nil {
-		return fmt.Errorf("Failed to self-sign: %v", err)
-	}
-	updates <- successfullyVerified{}
-
 	// display mode
 	gmx.Config().Preferences.DisplayMode = config.DisplayModeModern
 	updates <- configuredDisplayMode{}
@@ -109,6 +86,30 @@ func Init(conf Config, updates chan fmt.Stringer) error {
 	gmx.Matrix().(*matrix.Container).InitSyncer()
 	updates <- processingSync{}
 	err = gmx.Matrix().(*matrix.Container).ProcessSyncResponse(resp, "")
+	updates <- syncFinished{}
+
+	// verify (fetch)
+	key, err := getSSSS(mach, conf.RecoveryPhrase)
+	if err != nil {
+		return err
+	}
+
+	err = mach.FetchCrossSigningKeysFromSSSS(key)
+	if err != nil {
+		return fmt.Errorf("Error fetching cross-signing keys: %v", err)
+	}
+	updates <- fetchedVerificationKeys{}
+
+	// verify (sign)
+	if mach.CrossSigningKeys == nil {
+		return fmt.Errorf("Cross-signing keys not cached")
+	}
+
+	err = mach.SignOwnDevice(mach.OwnIdentity())
+	if err != nil {
+		return fmt.Errorf("Failed to self-sign: %v", err)
+	}
+	updates <- successfullyVerified{}
 
 	return err
 }
