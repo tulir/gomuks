@@ -53,15 +53,16 @@ import (
 //
 // It is used for all Matrix calls from the UI and Matrix event handlers.
 type Container struct {
-	client  *mautrix.Client
-	crypto  ifc.Crypto
-	syncer  *GomuksSyncer
-	gmx     ifc.Gomuks
-	ui      ifc.GomuksUI
-	config  *config.Config
-	history *HistoryManager
-	running bool
-	stop    chan bool
+	client   *mautrix.Client
+	crypto   ifc.Crypto
+	syncer   *GomuksSyncer
+	gmx      ifc.Gomuks
+	ui       ifc.GomuksUI
+	config   *config.Config
+	history  *HistoryManager
+	running  bool
+	stop     chan bool
+	headless bool
 
 	typing int64
 }
@@ -75,6 +76,10 @@ func NewContainer(gmx ifc.Gomuks) *Container {
 	}
 
 	return c
+}
+
+func (c *Container) SetHeadless() {
+	c.headless = true
 }
 
 // Client returns the underlying mautrix Client.
@@ -686,6 +691,10 @@ func (c *Container) HandleMessage(source mautrix.EventSource, mxEvent *event.Eve
 
 	if !c.config.AuthCache.InitialSyncDone {
 		room.LastReceivedMessage = time.Unix(evt.Timestamp/1000, evt.Timestamp%1000*1000)
+		return
+	}
+
+	if c.headless {
 		return
 	}
 

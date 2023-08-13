@@ -36,6 +36,7 @@ func Init(conf Config, updates chan fmt.Stringer) error {
 	}
 
 	gmx := initialize.NewGomuks(ui.NewGomuksUI, configDir, dataDir, cacheDir, downloadDir)
+	gmx.Matrix().(*matrix.Container).SetHeadless()
 	err = gmx.StartHeadless()
 	if err != nil {
 		return err
