@@ -87,6 +87,9 @@ func Init(conf Config, updates chan fmt.Stringer) error {
 	gmx.Matrix().(*matrix.Container).InitSyncer()
 	updates <- processingSync{}
 	err = gmx.Matrix().(*matrix.Container).ProcessSyncResponse(resp, "")
+	if err != nil {
+		return err
+	}
 	updates <- syncFinished{}
 
 	// verify (fetch)
