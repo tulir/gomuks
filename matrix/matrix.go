@@ -439,6 +439,11 @@ func (c *Container) InitSyncer() {
 		runtime.GC()
 		dbg.FreeOSMemory()
 	}
+	if c.headless {
+		c.syncer.FirstDoneCallback = func() {
+			c.Stop()
+		}
+	}
 
 	c.client.Syncer = c.syncer
 }

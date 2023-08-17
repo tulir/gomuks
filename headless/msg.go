@@ -32,22 +32,16 @@ func (msg configuredDisplayMode) String() string {
 	return "Configured display mode…"
 }
 
-type beginningSync struct{}
+type creatingSyncer struct{}
 
-func (msg beginningSync) String() string {
-	return "Beginning the sync process…"
+func (msg creatingSyncer) String() string {
+	return "Initializing sync utilities…"
 }
 
-type fetchedSyncData struct{}
+type synchronizing struct{}
 
-func (msg fetchedSyncData) String() string {
-	return "Fetched sync data…"
-}
-
-type processingSync struct{}
-
-func (msg processingSync) String() string {
-	return "Processing sync response…"
+func (msg synchronizing) String() string {
+	return "Synchronizing…"
 }
 
 type syncFinished struct{}
