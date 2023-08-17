@@ -18,8 +18,8 @@ import (
 )
 
 type Config struct {
-	OutputDir, MxPassword, Homeserver, KeyPath, KeyPassword, RecoveryPhrase string
-	MxID                                                                    id.UserID
+	OutputDir, MxPassword, Homeserver, KeyPath, KeyPassword, RecoveryCode string
+	MxID                                                                  id.UserID
 }
 
 func Init(conf Config, updates chan fmt.Stringer) error {
@@ -93,7 +93,7 @@ func Init(conf Config, updates chan fmt.Stringer) error {
 	updates <- syncFinished{}
 
 	// verify (fetch)
-	key, err := getSSSS(mach, conf.RecoveryPhrase)
+	key, err := getSSSS(mach, conf.RecoveryCode)
 	if err != nil {
 		return err
 	}
@@ -142,7 +142,7 @@ func initDirs() (string, string, string, string, error) {
 	return config, data, cache, download, nil
 }
 
-func getSSSS(mach *crypto.OlmMachine, recoveryPhrase string) (*ssss.Key, error) {
+func getSSSS(mach *crypto.OlmMachine, recoveryCode string) (*ssss.Key, error) {
 	_, keyData, err := mach.SSSS.GetDefaultKeyData()
 	if err != nil {
 		if errors.Is(err, mautrix.MNotFound) {
@@ -154,12 +154,12 @@ func getSSSS(mach *crypto.OlmMachine, recoveryPhrase string) (*ssss.Key, error) 
 
 	var key *ssss.Key
 	if keyData.Passphrase != nil && keyData.Passphrase.Algorithm == ssss.PassphraseAlgorithmPBKDF2 {
-		key, err = keyData.VerifyPassphrase(recoveryPhrase)
+		key, err = keyData.VerifyPassphrase(recoveryCode)
 		if errors.Is(err, ssss.ErrIncorrectSSSSKey) {
 			return nil, fmt.Errorf("Incorrect passphrase")
 		}
 	} else {
-		key, err = keyData.VerifyRecoveryKey(recoveryPhrase)
+		key, err = keyData.VerifyRecoveryKey(recoveryCode)
 		if errors.Is(err, ssss.ErrInvalidRecoveryKey) {
 			return nil, fmt.Errorf("Malformed recovery key")
 		} else if errors.Is(err, ssss.ErrIncorrectSSSSKey) {
