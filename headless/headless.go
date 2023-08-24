@@ -8,7 +8,6 @@ import (
 	"maunium.net/go/mautrix"
 	"maunium.net/go/mautrix/crypto"
 	"maunium.net/go/mautrix/crypto/ssss"
-	"maunium.net/go/mautrix/id"
 
 	"maunium.net/go/gomuks/config"
 	"maunium.net/go/gomuks/initialize"
@@ -17,8 +16,7 @@ import (
 )
 
 type Config struct {
-	OutputDir, MxPassword, Homeserver, KeyPath, KeyPassword, RecoveryCode string
-	MxID                                                                  id.UserID
+	OutputDir, Session, Code, KeyPath, KeyPassword, RecoveryCode string
 }
 
 func Init(conf Config, updates chan fmt.Stringer) error {
@@ -43,13 +41,13 @@ func Init(conf Config, updates chan fmt.Stringer) error {
 	updates <- initializedGomuks{}
 
 	// login section
-	gmx.Config().HS = conf.Homeserver
+	gmx.Config().HS = "https://matrix.beeper.com"
 	if err := gmx.Matrix().InitClient(false); err != nil {
 		return err
-	} else if err = gmx.Matrix().Login(conf.MxID.String(), conf.MxPassword); err != nil {
+	} else if err = gmx.Matrix().BeeperLogin(conf.Session, conf.Code); err != nil {
 		return err
 	}
-	updates <- loggedIn{account: conf.MxID}
+	updates <- loggedIn{}
 
 	// key import
 	data, err := os.ReadFile(conf.KeyPath)

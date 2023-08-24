@@ -14,10 +14,10 @@ func (msg initializedGomuks) String() string {
 	return "Initialized gomuks…"
 }
 
-type loggedIn struct{ account fmt.Stringer }
+type loggedIn struct{}
 
 func (msg loggedIn) String() string {
-	return fmt.Sprintf("Logged in to %s…", msg.account)
+	return fmt.Sprintf("Logged in…")
 }
 
 type importedKeys struct{ imported, total int }
