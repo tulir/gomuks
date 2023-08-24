@@ -50,6 +50,7 @@ type MatrixContainer interface {
 	Stop()
 
 	Login(user, password string) error
+	BeeperLogin(session, code string) error
 	Logout()
 	UIAFallback(authType mautrix.AuthType, sessionID string) error
 

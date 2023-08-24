@@ -41,6 +41,7 @@ import (
 	"maunium.net/go/mautrix/id"
 	"maunium.net/go/mautrix/pushrules"
 
+	"maunium.net/go/gomuks/beeper"
 	"maunium.net/go/gomuks/config"
 	"maunium.net/go/gomuks/debug"
 	ifc "maunium.net/go/gomuks/interface"
@@ -190,6 +191,22 @@ func (c *Container) Initialized() bool {
 	return c.client != nil
 }
 
+func (c *Container) JWTLogin(token string) error {
+	resp, err := c.client.Login(&mautrix.ReqLogin{
+		Type:                     "org.matrix.login.jwt",
+		Token:                    token,
+		InitialDeviceDisplayName: "gomuks",
+
+		StoreCredentials:   true,
+		StoreHomeserverURL: true,
+	})
+	if err != nil {
+		return err
+	}
+	c.finishLogin(resp)
+	return nil
+}
+
 func (c *Container) PasswordLogin(user, password string) error {
 	resp, err := c.client.Login(&mautrix.ReqLogin{
 		Type: "m.login.password",
@@ -286,6 +303,15 @@ func (c *Container) SingleSignOn() error {
 	}
 	err = <-errChan
 	return err
+}
+
+func (c *Container) BeeperLogin(request, code string) error {
+	resp, err := beeper.SendLoginCode(request, code)
+	if err != nil {
+		return err
+	}
+
+	return c.JWTLogin(resp.LoginToken)
 }
 
 // Login sends a password login request with the given username and password.
