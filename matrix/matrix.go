@@ -464,8 +464,9 @@ func (c *Container) InitSyncer() {
 		debug.Print("Running GC")
 		runtime.GC()
 		dbg.FreeOSMemory()
-
-		if c.headless {
+	}
+	if c.headless {
+		c.syncer.FirstDoneCallback = func() {
 			c.Stop()
 		}
 	}
