@@ -236,7 +236,9 @@ func (c *Container) finishLogin(resp *mautrix.RespLogin) {
 	}
 	c.config.Save()
 
-	go c.Start()
+	if !c.headless {
+		go c.Start()
+	}
 }
 
 func respondHTML(w http.ResponseWriter, status int, message string) {
