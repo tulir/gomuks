@@ -64,6 +64,10 @@ func getUname() string {
 	return currUser.Username
 }
 
+func LogFile() string {
+	return filepath.Join(LogDirectory, "debug.log")
+}
+
 func Initialize() {
 	err := os.MkdirAll(LogDirectory, 0750)
 	if err != nil {

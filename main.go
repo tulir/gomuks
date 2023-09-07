@@ -70,13 +70,14 @@ var MainUIProvider ifc.UIProvider = ui.NewGomuksUI
 var wantVersion = flag.MakeFull("v", "version", "Show the version of gomuks", "false").Bool()
 var clearCache = flag.MakeFull("c", "clear-cache", "Clear the cache directory instead of starting", "false").Bool()
 var skipVersionCheck = flag.MakeFull("s", "skip-version-check", "Skip the homeserver version checks at startup and login", "false").Bool()
+var printLogPath = flag.MakeFull("l", "print-log-path", "Print the log path instead of starting", "false").Bool()
 var clearData = flag.Make().LongKey("clear-all-data").Usage("Clear all data instead of starting").Default("false").Bool()
 var wantHelp, _ = flag.MakeHelpFlag()
 
 func main() {
 	flag.SetHelpTitles(
 		"gomuks - A terminal Matrix client written in Go.",
-		"gomuks [-vcsh] [--clear-all-data|--log-in-for-transfer]",
+		"gomuks [-vcsh] [--clear-all-data|--print-log-path]",
 	)
 	err := flag.Parse()
 	if err != nil {
@@ -100,6 +101,11 @@ func main() {
 		debug.DeadlockDetection = true
 		debug.WriteLogs = true
 	}
+	if *printLogPath {
+		fmt.Println(debug.LogFile())
+		return
+	}
+
 	debug.Initialize()
 	defer debug.Recover()
 
