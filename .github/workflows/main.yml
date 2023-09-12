@@ -1,0 +1,82 @@
+name: Build gomuks
+on:
+  push:
+    paths-ignore:
+      - "**.md"
+  pull_request:
+    paths-ignore:
+      - "**.md"
+concurrency:
+  group: ${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  macos_x86:
+    runs-on: macos-latest
+    name: Build on macOS (x86_64)
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Go
+        uses: actions/setup-go@v4
+      - name: Install libolm
+        run: brew install libolm
+      - name: Build CLI
+        run: ./build.sh
+      - name: Upload macOS Build Artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: gomuks (macOS x86_64)
+          path: gomuks
+          if-no-files-found: error
+  macos_arm:
+    runs-on: macos-latest
+    name: Build on macOS (ARM)
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Go
+        uses: actions/setup-go@v4
+      - name: Install libolm
+        run: brew fetch --force --bottle-tag=arm64_monterey libolm && brew install $(brew --cache --bottle-tag=arm64_monterey libolm)
+      - name: Build CLI
+        run: CGO_ENABLED=1 GOOS=darwin GOARCH=arm64 go build
+      - name: Update RPATH
+        run: |
+          install_name_tool -change /usr/local/opt/libolm/lib/libolm.3.dylib @rpath/libolm.3.dylib gomuks
+          install_name_tool -add_rpath @executable_path gomuks
+          install_name_tool -add_rpath /opt/homebrew/opt/libolm/lib gomuks
+          install_name_tool -add_rpath /usr/local/opt/libolm/lib gomuks
+      - name: Upload macOS Build Artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: gomuks (macOS ARM)
+          path: gomuks
+          if-no-files-found: error
+  linux:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        arch: [x86_64, aarch64, armv7]
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Alpine (${{ matrix.arch }})
+        uses: jirutka/setup-alpine@v1
+        with:
+          arch: ${{ matrix.arch }}
+          packages: >
+            go
+            git
+            build-base
+      - name: Fetch libolm
+        run: git clone --single-branch --branch 3.2.14 https://gitlab.matrix.org/matrix-org/olm.git /olm
+        shell: alpine.sh --root {0}
+      - name: Install libolm
+        run: cd /olm && CFLAGS=-static-libgcc CPPFLAGS="-static-libgcc -static-libstdc++" make install
+        shell: alpine.sh --root {0}
+      - name: Build CLI
+        run: go build
+        shell: alpine.sh {0}
+      - name: Upload a Build Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: gomuks (Linux ${{ matrix.arch }})
+          path: gomuks
+          if-no-files-found: error
