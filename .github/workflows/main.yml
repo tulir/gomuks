@@ -24,7 +24,7 @@ jobs:
       - name: Upload macOS Build Artifacts
         uses: actions/upload-artifact@v3
         with:
-          name: gomuks (macOS x86_64)
+          name: macOS-x86_64
           path: gomuks
           if-no-files-found: error
   macos_arm:
@@ -47,7 +47,7 @@ jobs:
       - name: Upload macOS Build Artifacts
         uses: actions/upload-artifact@v3
         with:
-          name: gomuks (macOS ARM)
+          name: macOS-ARM
           path: gomuks
           if-no-files-found: error
   linux:
@@ -77,6 +77,18 @@ jobs:
       - name: Upload a Build Artifact
         uses: actions/upload-artifact@v3
         with:
-          name: gomuks (Linux ${{ matrix.arch }})
+          name: linux-${{ matrix.arch }}
           path: gomuks
           if-no-files-found: error
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v3
+      - uses: ncipollo/release-action@v1
+        with:
+          artifacts: "macOS-*/*,linux-*/*"
+          body: The most recent gomuks binaries
+          name: "Nightly"
+          allowUpdates: true
+          artifactErrorsFailBuild: true
+          makeLatest: true
