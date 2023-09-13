@@ -20,12 +20,12 @@ jobs:
       - name: Install libolm
         run: brew install libolm
       - name: Build CLI
-        run: ./build.sh
+        run: ./build.sh && mv gomuks gomuks-macos-x86
       - name: Upload macOS Build Artifacts
         uses: actions/upload-artifact@v3
         with:
           name: macOS-x86_64
-          path: gomuks
+          path: gomuks-macos-x86
           if-no-files-found: error
   macos_arm:
     runs-on: macos-latest
@@ -37,13 +37,15 @@ jobs:
       - name: Install libolm
         run: brew fetch --force --bottle-tag=arm64_monterey libolm && brew install $(brew --cache --bottle-tag=arm64_monterey libolm)
       - name: Build CLI
-        run: CGO_ENABLED=1 GOOS=darwin GOARCH=arm64 go build
+        run: CGO_ENABLED=1 GOOS=darwin GOARCH=arm64 ./build.sh
       - name: Update RPATH
         run: |
           install_name_tool -change /usr/local/opt/libolm/lib/libolm.3.dylib @rpath/libolm.3.dylib gomuks
           install_name_tool -add_rpath @executable_path gomuks
           install_name_tool -add_rpath /opt/homebrew/opt/libolm/lib gomuks
           install_name_tool -add_rpath /usr/local/opt/libolm/lib gomuks
+      - name: Rename binary
+        run: mv gomuks gomuks-macos-arm
       - name: Upload macOS Build Artifacts
         uses: actions/upload-artifact@v3
         with:
@@ -72,13 +74,13 @@ jobs:
         run: cd /olm && CFLAGS=-static-libgcc CPPFLAGS="-static-libgcc -static-libstdc++" make install
         shell: alpine.sh --root {0}
       - name: Build CLI
-        run: go build
+        run: ./build.sh && mv gomuks gomuks-linux-${{ matrix.arch }}
         shell: alpine.sh {0}
       - name: Upload a Build Artifact
         uses: actions/upload-artifact@v3
         with:
           name: linux-${{ matrix.arch }}
-          path: gomuks
+          path: gomuks-linux-${{ matrix.arch }}
           if-no-files-found: error
   publish:
     runs-on: ubuntu-latest
