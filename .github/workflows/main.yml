@@ -89,7 +89,7 @@ jobs:
           artifacts: "macOS-*/*,linux-*/*"
           body: The most recent gomuks binaries
           name: "Nightly"
-          commit: ${{ github.sha }}
+          tag: nightly
           allowUpdates: true
           artifactErrorsFailBuild: true
           makeLatest: true
