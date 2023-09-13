@@ -90,6 +90,7 @@ jobs:
           body: The most recent gomuks binaries
           name: "Nightly"
           tag: nightly
+          commit: beepberry
           allowUpdates: true
           artifactErrorsFailBuild: true
           makeLatest: true
