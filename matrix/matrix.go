@@ -180,7 +180,7 @@ func (c *Container) InitClient(isStartup bool) error {
 
 	c.stop = make(chan bool, 1)
 
-	if len(accessToken) > 0 {
+	if len(accessToken) > 0 && !c.headless {
 		go c.Start()
 	}
 	return nil
