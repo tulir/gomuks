@@ -75,7 +75,6 @@ func Init(conf Config, updates chan fmt.Stringer) error {
 		FullState:      true,
 		SetPresence:    gmx.Matrix().Client().SyncPresence,
 		Context:        context.Background(),
-		StreamResponse: true,
 	})
 	if err != nil {
 		return err
