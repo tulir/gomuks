@@ -1,7 +1,6 @@
 package headless
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"os"
@@ -68,25 +67,17 @@ func Init(conf Config, updates chan fmt.Stringer) error {
 
 	// sync
 	updates <- beginningSync{}
-	resp, err := gmx.Matrix().Client().FullSyncRequest(mautrix.ReqSync{
-		Timeout:        30000,
-		Since:          "",
-		FilterID:       "",
-		FullState:      true,
-		SetPresence:    gmx.Matrix().Client().SyncPresence,
-		Context:        context.Background(),
-		StreamResponse: true,
-	})
-	if err != nil {
-		return err
-	}
-	updates <- fetchedSyncData{}
-
 	gmx.Matrix().(*matrix.Container).InitSyncer()
-	updates <- processingSync{}
-	err = gmx.Matrix().(*matrix.Container).ProcessSyncResponse(resp, "")
-	if err != nil {
-		return err
+syncloop:
+	for {
+		select {
+		case <-gmx.Matrix().(*matrix.Container).StopChannel():
+			break syncloop
+		default:
+			if err := gmx.Matrix().Client().Sync(); err != nil {
+				return err
+			}
+		}
 	}
 	updates <- syncFinished{}
 
