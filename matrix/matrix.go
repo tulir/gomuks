@@ -350,10 +350,6 @@ func (c *Container) Logout() {
 	c.ui.OnLogout()
 }
 
-func (c *Container) StopChannel() chan bool {
-	return c.stop
-}
-
 // Stop stops the Matrix syncer.
 func (c *Container) Stop() {
 	if c.running {
@@ -473,7 +469,7 @@ func (c *Container) InitSyncer() {
 	}
 	if c.headless {
 		c.syncer.FirstDoneCallback = func() {
-			c.stop <- true
+			c.Stop()
 		}
 	}
 
