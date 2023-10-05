@@ -26,6 +26,7 @@ import (
 	"github.com/kyokomi/emoji/v2"
 	"github.com/mattn/go-runewidth"
 	"github.com/zyedidia/clipboard"
+	pasteclip "golang.design/x/clipboard"
 
 	"go.mau.fi/mauview"
 	"go.mau.fi/tcell"
@@ -376,7 +377,14 @@ func (view *RoomView) OnKeyEvent(event mauview.KeyEvent) bool {
 	case "send":
 		view.InputSubmit(view.input.GetText())
 		return true
+	case "paste":
+		cb := pasteclip.Read(pasteclip.FmtImage)
+		if cb != nil {
+			view.SendMessageMedia(string(cb))
+		}
+		return true
 	}
+
 	return view.input.OnKeyEvent(event)
 }
 
