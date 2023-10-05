@@ -19,8 +19,8 @@ require (
 	go.mau.fi/cbind v0.0.0-20220415094356-e1d579b7925e
 	go.mau.fi/mauview v0.2.1
 	go.mau.fi/tcell v0.4.0
-	golang.org/x/image v0.1.0
-	golang.org/x/net v0.2.0
+	golang.org/x/image v0.6.0
+	golang.org/x/net v0.6.0
 	gopkg.in/toast.v1 v1.0.0-20180812000517-0a84660828b2
 	gopkg.in/vansante/go-ffprobe.v2 v2.1.1
 	gopkg.in/yaml.v3 v3.0.1
@@ -40,10 +40,13 @@ require (
 	github.com/tidwall/match v1.1.1 // indirect
 	github.com/tidwall/pretty v1.2.0 // indirect
 	github.com/tidwall/sjson v1.2.4 // indirect
+	golang.design/x/clipboard v0.7.0 // indirect
 	golang.org/x/crypto v0.0.0-20220513210258-46612604a0f9 // indirect
-	golang.org/x/sys v0.2.0 // indirect
-	golang.org/x/term v0.2.0 // indirect
-	golang.org/x/text v0.4.0 // indirect
+	golang.org/x/exp v0.0.0-20190731235908-ec7cb31e5a56 // indirect
+	golang.org/x/mobile v0.0.0-20230301163155-e0f57694e12c // indirect
+	golang.org/x/sys v0.5.0 // indirect
+	golang.org/x/term v0.5.0 // indirect
+	golang.org/x/text v0.8.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	maunium.net/go/maulogger/v2 v2.3.2 // indirect
 )

@@ -39,4 +39,5 @@ room:
   'Ctrl+n': scroll_down
   'PageUp': scroll_up
   'PageDown': scroll_down
+  'Ctrl+v': paste
   'Enter': send

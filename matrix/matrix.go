@@ -17,6 +17,7 @@
 package matrix
 
 import (
+	"bytes"
 	"context"
 	"crypto/tls"
 	"encoding/gob"
@@ -32,6 +33,7 @@ import (
 	"reflect"
 	"runtime"
 	dbg "runtime/debug"
+	"strings"
 	"time"
 
 	"maunium.net/go/mautrix"
@@ -996,45 +998,62 @@ func (c *Container) SendEvent(evt *muksevt.Event) (id.EventID, error) {
 	return resp.EventID, nil
 }
 
-func (c *Container) UploadMedia(path string, encrypt bool) (*ifc.UploadedMediaInfo, error) {
-	var err error
-	path, err = filepath.Abs(path)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get absolute path: %w", err)
-	}
-
-	msgtype, info, err := getMediaInfo(path)
-	if err != nil {
-		return nil, err
-	}
-
-	file, err := os.Open(path)
-	if err != nil {
-		return nil, fmt.Errorf("failed to open file: %w", err)
-	}
-
-	stat, err := file.Stat()
-	if err != nil {
-		return nil, fmt.Errorf("failed to get file info: %w", err)
-	}
-
-	uploadFileName := stat.Name()
-	uploadMimeType := info.MimeType
-
+func (c *Container) UploadMedia(media string, encrypt bool) (*ifc.UploadedMediaInfo, error) {
 	var content io.Reader
+	var fileSize int64
+	var uploadFileName string
+	var uploadMimeType string
+	var msgtype event.MessageType
+	var info event.FileInfo
+
+	mime := http.DetectContentType([]byte(media))
+	pasted := strings.HasPrefix(mime, "image")
+
+	if pasted {
+		debug.Print("An image was pasted")
+		content = bytes.NewReader([]byte(media))
+		fileSize = content.(*bytes.Reader).Size()
+		msgtype = event.MsgImage
+		uploadMimeType = mime
+		uploadFileName = "image"
+	} else {
+		path, err := filepath.Abs(media)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get absolute path: %w", err)
+		}
+
+		file, err := os.Open(path)
+		if err != nil {
+			return nil, fmt.Errorf("failed to open file: %w", err)
+		}
+		defer file.Close()
+
+		stat, err := file.Stat()
+		if err != nil {
+			return nil, fmt.Errorf("failed to get file info: %w", err)
+		}
+
+		fileSize = stat.Size()
+		uploadFileName = stat.Name()
+		msgtype, info, err = getMediaInfo(path)
+		if err != nil {
+			return nil, err
+		}
+		uploadMimeType = info.MimeType
+		content = file
+	}
+
 	var encryptionInfo *attachment.EncryptedFile
 	if encrypt {
+		encryptionInfo = attachment.NewEncryptedFile()
+		content = encryptionInfo.EncryptStream(content)
 		uploadMimeType = "application/octet-stream"
 		uploadFileName = ""
-		encryptionInfo = attachment.NewEncryptedFile()
-		content = encryptionInfo.EncryptStream(file)
-	} else {
-		content = file
 	}
 
 	resp, err := c.client.UploadMedia(mautrix.ReqUploadMedia{
 		Content:       content,
-		ContentLength: stat.Size(),
+		ContentLength: fileSize,
 		ContentType:   uploadMimeType,
 		FileName:      uploadFileName,
 	})
@@ -1046,7 +1065,7 @@ func (c *Container) UploadMedia(path string, encrypt bool) (*ifc.UploadedMediaIn
 	return &ifc.UploadedMediaInfo{
 		RespMediaUpload: resp,
 		EncryptionInfo:  encryptionInfo,
-		Name:            stat.Name(),
+		Name:            uploadFileName,
 		MsgType:         msgtype,
 		Info:            &info,
 	}, nil

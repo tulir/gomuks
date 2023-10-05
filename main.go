@@ -26,6 +26,7 @@ import (
 	"strings"
 	"time"
 
+	pasteclip "golang.design/x/clipboard"
 	flag "maunium.net/go/mauflag"
 
 	"maunium.net/go/gomuks/debug"
@@ -101,6 +102,12 @@ func main() {
 
 	matrix.SkipVersionCheck = *skipVersionCheck
 	gmx := NewGomuks(MainUIProvider, configDir, dataDir, cacheDir, downloadDir)
+
+	// initialize clipboard
+	err = pasteclip.Init()
+	if err != nil {
+		debug.Print("Failed to initialize clipboard")
+	}
 
 	if *clearCache {
 		debug.Print("Clearing cache as requested by CLI flag")
