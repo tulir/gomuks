@@ -455,7 +455,7 @@ func (view *RoomView) SetEditing(evt *muksevt.Event) {
 			if view.config.Preferences.DisableMarkdown {
 				text = msgContent.FormattedBody
 			} else {
-				text = editHTMLParser.Parse(msgContent.FormattedBody, make(format.Context))
+				text = editHTMLParser.Parse(msgContent.FormattedBody, format.NewContext())
 			}
 		}
 		if msgContent.MsgType == event.MsgEmote {
