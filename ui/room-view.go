@@ -128,7 +128,7 @@ func NewRoomView(parent *MainView, room *rooms.Room) *RoomView {
 		SetPressKeyDownAtEndFunc(view.EditNext)
 
 	if room.Encrypted {
-		view.input.SetPlaceholder("Send an encrypted message...")
+		view.SetEncrypted()
 	}
 
 	view.topic.
@@ -465,6 +465,10 @@ func (view *RoomView) SetEditing(evt *muksevt.Event) {
 	}
 	view.status.SetText(view.GetStatus())
 	view.input.SetCursorOffset(-1)
+}
+
+func (view *RoomView) SetEncrypted() {
+	view.input.SetPlaceholder("Send an encrypted message...")
 }
 
 type findFilter func(evt *muksevt.Event) bool
