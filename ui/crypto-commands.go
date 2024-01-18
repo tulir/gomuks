@@ -579,7 +579,7 @@ func cmdCrossSigningGenerate(cmd *Command, container ifc.MatrixContainer, mach *
 		if !uia.HasSingleStageFlow(mautrix.AuthTypePassword) {
 			for _, flow := range uia.Flows {
 				if len(flow.Stages) != 1 {
-					return nil
+					continue
 				}
 				cmd.Reply("Opening browser for authentication")
 				err := container.UIAFallback(flow.Stages[0], uia.Session)
