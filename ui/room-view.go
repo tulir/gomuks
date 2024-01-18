@@ -756,7 +756,7 @@ func (view *RoomView) SendReaction(eventID id.EventID, reaction string) {
 	}
 	reaction = variationselector.Add(strings.TrimSpace(reaction))
 	debug.Print("Reacting to", eventID, "in", view.Room.ID, "with", reaction)
-	eventID, err := view.parent.matrix.SendEvent(&muksevt.Event{
+	eventId, err := view.parent.matrix.SendEvent(&muksevt.Event{
 		Event: &event.Event{
 			Type:   event.EventReaction,
 			RoomID: view.Room.ID,
@@ -777,6 +777,7 @@ func (view *RoomView) SendReaction(eventID id.EventID, reaction string) {
 		view.AddServiceMessage(fmt.Sprintf("Failed to send reaction: %v", err))
 		view.parent.parent.Render()
 	}
+	_ = eventId
 }
 
 func (view *RoomView) SendMessage(msgtype event.MessageType, text string) {

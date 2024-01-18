@@ -51,8 +51,8 @@ func (tnl TagNameList) Len() int {
 }
 
 func (tnl TagNameList) Less(i, j int) bool {
-	orderI, _ := tagOrder[tnl[i]]
-	orderJ, _ := tagOrder[tnl[j]]
+	orderI := tagOrder[tnl[i]]
+	orderJ := tagOrder[tnl[j]]
 	if orderI != orderJ {
 		return orderI > orderJ
 	}
@@ -182,9 +182,9 @@ func (list *RoomList) RemoveFromTag(tag string, room *rooms.Room) {
 
 	trl.RemoveIndex(index)
 
-	if trl.IsEmpty() {
-		// delete(list.items, tag)
-	}
+	// if trl.IsEmpty() {
+	// 	delete(list.items, tag)
+	// }
 
 	if room == list.selected {
 		if index > 0 {
@@ -535,7 +535,7 @@ func (list *RoomList) clickRoom(line, column int, mod bool) bool {
 	return false
 }
 
-var nsRegex = regexp.MustCompile("^[a-z]+\\.[a-z]+(?:\\.[a-z]+)*$")
+var nsRegex = regexp.MustCompile(`^[a-z]+\.[a-z]+(?:\.[a-z]+)*$`)
 
 func (list *RoomList) GetTagDisplayName(tag string) string {
 	switch {

@@ -129,9 +129,11 @@ func NewVerificationModal(mainView *MainView, device *crypto.DeviceIdentity, tim
 }
 
 func (vm *VerificationModal) decrementWaitingBar() {
+	ticker := time.NewTicker(time.Second)
+	defer ticker.Stop()
 	for {
 		select {
-		case <-time.Tick(time.Second):
+		case <-ticker.C:
 			if vm.progress <= 0 {
 				vm.waitingBar.SetIndeterminate(true)
 				vm.parent.parent.app.SetRedrawTicker(100 * time.Millisecond)
