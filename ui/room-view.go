@@ -121,14 +121,14 @@ func NewRoomView(parent *MainView, room *rooms.Room) *RoomView {
 	view.input.
 		SetTextColor(tcell.ColorDefault).
 		SetBackgroundColor(tcell.ColorDefault).
-		SetPlaceholder("Send a message...").
+		SetPlaceholder("LMAOOOOOOOOOO....").
 		SetPlaceholderTextColor(tcell.ColorGray).
 		SetTabCompleteFunc(view.InputTabComplete).
 		SetPressKeyUpAtStartFunc(view.EditPrevious).
 		SetPressKeyDownAtEndFunc(view.EditNext)
 
 	if room.Encrypted {
-		view.input.SetPlaceholder("Send an encrypted message...")
+		view.input.SetPlaceholder("ENCRYPTED MSG LOLZ")
 	}
 
 	view.topic.

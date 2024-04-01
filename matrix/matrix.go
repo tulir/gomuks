@@ -612,6 +612,37 @@ func (c *Container) HandleReaction(room *rooms.Room, reactsTo id.EventID, reactE
 	}
 }
 
+func (c *Container) HandleThread(room *rooms.Room, reactsTo id.EventID, reactEvent *muksevt.Event) {
+	rel := reactEvent.Content.AsReaction().RelatesTo
+	var origEvt *muksevt.Event
+	err := c.history.Update(room, reactsTo, func(evt *muksevt.Event) error {
+		if evt.Unsigned.Relations.Annotations.Map == nil {
+			evt.Unsigned.Relations.Annotations.Map = make(map[string]int)
+		}
+		val, _ := evt.Unsigned.Relations.Annotations.Map[rel.Key]
+		evt.Unsigned.Relations.Annotations.Map[rel.Key] = val + 1
+		origEvt = evt
+		return nil
+	})
+	if err != nil {
+		debug.Print("Failed to store reaction in history db:", err)
+		return
+	} else if !c.config.AuthCache.InitialSyncDone || !room.Loaded() {
+		return
+	}
+
+	roomView := c.ui.MainView().GetRoom(reactEvent.RoomID)
+	if roomView == nil {
+		debug.Printf("Failed to handle edit event %v: No room view found.", reactEvent)
+		return
+	}
+
+	roomView.AddReaction(origEvt, rel.Key)
+	if c.syncer.FirstSyncDone {
+		c.ui.Render()
+	}
+}
+
 func (c *Container) HandleEncryptedUnsupported(source mautrix.EventSource, mxEvent *event.Event) {
 	mxEvent.Type = muksevt.EventEncryptionUnsupported
 	origContent, _ := mxEvent.Content.Parsed.(*event.EncryptedEventContent)
