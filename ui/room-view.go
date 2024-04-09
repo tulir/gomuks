@@ -35,7 +35,6 @@ import (
 	"maunium.net/go/mautrix/event"
 	"maunium.net/go/mautrix/format"
 	"maunium.net/go/mautrix/id"
-	"maunium.net/go/mautrix/util/variationselector"
 
 	"maunium.net/go/gomuks/config"
 	"maunium.net/go/gomuks/debug"
@@ -77,7 +76,8 @@ type RoomView struct {
 	selectReason  SelectReason
 	selectContent string
 
-	replying *muksevt.Event
+	replying  *muksevt.Event
+	threading *muksevt.Event
 
 	editing      *muksevt.Event
 	editMoveText string
@@ -191,6 +191,11 @@ func (view *RoomView) OnSelect(message *messages.UIMessage) {
 	switch view.selectReason {
 	case SelectReply:
 		view.replying = message.Event
+		if len(view.selectContent) > 0 {
+			go view.SendMessage(event.MsgText, view.selectContent)
+		}
+	case SelectThread:
+		view.threading = message.Event
 		if len(view.selectContent) > 0 {
 			go view.SendMessage(event.MsgText, view.selectContent)
 		}
@@ -754,7 +759,7 @@ func (view *RoomView) SendReaction(eventID id.EventID, reaction string) {
 	if !view.config.Preferences.DisableEmojis {
 		reaction = emoji.Sprint(reaction)
 	}
-	reaction = variationselector.Add(strings.TrimSpace(reaction))
+	reaction = strings.TrimSpace(reaction)
 	debug.Print("Reacting to", eventID, "in", view.Room.ID, "with", reaction)
 	eventID, err := view.parent.matrix.SendEvent(&muksevt.Event{
 		Event: &event.Event{

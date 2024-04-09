@@ -49,6 +49,59 @@ import (
 	"maunium.net/go/gomuks/matrix/rooms"
 )
 
+// Copied from an older version of mautrix-go.
+type EventSource int
+
+const (
+	EventSourcePresence EventSource = 1 << iota
+	EventSourceJoin
+	EventSourceInvite
+	EventSourceLeave
+	EventSourceAccountData
+	EventSourceTimeline
+	EventSourceState
+	EventSourceEphemeral
+	EventSourceToDevice
+)
+
+func (es EventSource) String() string {
+	switch {
+	case es == EventSourcePresence:
+		return "presence"
+	case es == EventSourceAccountData:
+		return "user account data"
+	case es == EventSourceToDevice:
+		return "to-device"
+	case es&EventSourceJoin != 0:
+		es -= EventSourceJoin
+		switch es {
+		case EventSourceState:
+			return "joined state"
+		case EventSourceTimeline:
+			return "joined timeline"
+		case EventSourceEphemeral:
+			return "room ephemeral (joined)"
+		case EventSourceAccountData:
+			return "room account data (joined)"
+		}
+	case es&EventSourceInvite != 0:
+		es -= EventSourceInvite
+		switch es {
+		case EventSourceState:
+			return "invited state"
+		}
+	case es&EventSourceLeave != 0:
+		es -= EventSourceLeave
+		switch es {
+		case EventSourceState:
+			return "left state"
+		case EventSourceTimeline:
+			return "left timeline"
+		}
+	}
+	return fmt.Sprintf("unknown (%d)", es)
+}
+
 // Container is a wrapper for a mautrix Client and some other stuff.
 //
 // It is used for all Matrix calls from the UI and Matrix event handlers.
@@ -128,7 +181,8 @@ func (c *Container) InitClient(isStartup bool) error {
 		return fmt.Errorf("failed to create mautrix client: %w", err)
 	}
 	c.client.UserAgent = fmt.Sprintf("gomuks/%s %s", c.gmx.Version(), mautrix.DefaultUserAgent)
-	c.client.Logger = mxLogger{}
+	//TODO: Figure out what this needs to be replaced with, if anything
+	//c.client.Logger = mxLogger{}
 	c.client.DeviceID = c.config.DeviceID
 
 	err = c.initCrypto()
@@ -152,7 +206,10 @@ func (c *Container) InitClient(isStartup bool) error {
 
 	if !SkipVersionCheck && (!isStartup || len(c.client.AccessToken) > 0) {
 		debug.Printf("Checking versions that %s supports", c.client.HomeserverURL)
-		resp, err := c.client.Versions()
+		//ADDED by symys
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		resp, err := c.client.Versions(ctx)
 		if err != nil {
 			debug.Print("Error checking supported versions:", err)
 			return fmt.Errorf("failed to check server versions: %w", err)
@@ -186,7 +243,9 @@ func (c *Container) Initialized() bool {
 }
 
 func (c *Container) PasswordLogin(user, password string) error {
-	resp, err := c.client.Login(&mautrix.ReqLogin{
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	resp, err := c.client.Login(ctx, &mautrix.ReqLogin{
 		Type: "m.login.password",
 		Identifier: mautrix.UserIdentifier{
 			Type: "m.id.user",
@@ -250,7 +309,9 @@ func (c *Container) SingleSignOn() error {
 			respondHTML(w, http.StatusBadRequest, "Missing loginToken parameter")
 			return
 		}
-		resp, err := c.client.Login(&mautrix.ReqLogin{
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		resp, err := c.client.Login(ctx, &mautrix.ReqLogin{
 			Type:                     "m.login.token",
 			Token:                    loginToken,
 			InitialDeviceDisplayName: "gomuks",
@@ -285,7 +346,9 @@ func (c *Container) SingleSignOn() error {
 
 // Login sends a password login request with the given username and password.
 func (c *Container) Login(user, password string) error {
-	resp, err := c.client.GetLoginFlows()
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	resp, err := c.client.GetLoginFlows(ctx)
 	if err != nil {
 		return err
 	}
@@ -309,7 +372,9 @@ func (c *Container) Login(user, password string) error {
 
 // Logout revokes the access token, stops the syncer and calls the OnLogout() method of the UI.
 func (c *Container) Logout() {
-	c.client.Logout()
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	c.client.Logout(ctx)
 	c.Stop()
 	c.config.DeleteSession()
 	c.client = nil
@@ -345,7 +410,9 @@ func (c *Container) Stop() {
 // UpdatePushRules fetches the push notification rules from the server and stores them in the current Session object.
 func (c *Container) UpdatePushRules() {
 	debug.Print("Updating push rules...")
-	resp, err := c.client.GetPushRules()
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	resp, err := c.client.GetPushRules(ctx)
 	if err != nil {
 		debug.Print("Failed to fetch push rules:", err)
 		c.config.PushRules = &pushrules.PushRuleset{}
@@ -392,7 +459,7 @@ func (c *Container) OnLogin() {
 	c.syncer = NewGomuksSyncer(c.config.Rooms)
 	if c.crypto != nil {
 		c.syncer.OnSync(c.crypto.ProcessSyncResponse)
-		c.syncer.OnEventType(event.StateMember, func(source mautrix.EventSource, evt *event.Event) {
+		c.syncer.OnEventType(event.StateMember, func(_ context.Context, evt *event.Event) {
 			// Don't spam the crypto module with member events of an initial sync
 			// TODO invalidate all group sessions when clearing cache?
 			if c.config.AuthCache.InitialSyncDone {
@@ -491,8 +558,8 @@ func (c *Container) Start() {
 	}
 }
 
-func (c *Container) HandlePreferences(source mautrix.EventSource, evt *event.Event) {
-	if source&mautrix.EventSourceAccountData == 0 {
+func (c *Container) HandlePreferences(source EventSource, evt *event.Event) {
+	if source&EventSourceAccountData == 0 {
 		return
 	}
 	orig := c.config.Preferences
@@ -520,7 +587,7 @@ func (c *Container) SendPreferencesToMatrix() {
 	}
 }
 
-func (c *Container) HandleRedaction(source mautrix.EventSource, evt *event.Event) {
+func (c *Container) HandleRedaction(source EventSource, evt *event.Event) {
 	room := c.GetOrCreateRoom(evt.RoomID)
 	var redactedEvt *muksevt.Event
 	err := c.history.Update(room, evt.Redacts, func(redacted *muksevt.Event) error {
@@ -643,14 +710,14 @@ func (c *Container) HandleThread(room *rooms.Room, reactsTo id.EventID, reactEve
 	}
 }
 
-func (c *Container) HandleEncryptedUnsupported(source mautrix.EventSource, mxEvent *event.Event) {
+func (c *Container) HandleEncryptedUnsupported(source EventSource, mxEvent *event.Event) {
 	mxEvent.Type = muksevt.EventEncryptionUnsupported
 	origContent, _ := mxEvent.Content.Parsed.(*event.EncryptedEventContent)
 	mxEvent.Content.Parsed = muksevt.EncryptionUnsupportedContent{Original: origContent}
 	c.HandleMessage(source, mxEvent)
 }
 
-func (c *Container) HandleEncrypted(source mautrix.EventSource, mxEvent *event.Event) {
+func (c *Container) HandleEncrypted(source EventSource, mxEvent *event.Event) {
 	evt, err := c.crypto.DecryptMegolmEvent(mxEvent)
 	if err != nil {
 		debug.Printf("Failed to decrypt event %s: %v", mxEvent.ID, err)
@@ -676,12 +743,12 @@ func (c *Container) HandleEncrypted(source mautrix.EventSource, mxEvent *event.E
 }
 
 // HandleMessage is the event handler for the m.room.message timeline event.
-func (c *Container) HandleMessage(source mautrix.EventSource, mxEvent *event.Event) {
+func (c *Container) HandleMessage(source EventSource, mxEvent *event.Event) {
 	room := c.GetOrCreateRoom(mxEvent.RoomID)
-	if source&mautrix.EventSourceLeave != 0 {
+	if source&EventSourceLeave != 0 {
 		room.HasLeft = true
 		return
-	} else if source&mautrix.EventSourceState != 0 {
+	} else if source&EventSourceState != 0 {
 		return
 	}
 
@@ -740,9 +807,9 @@ func (c *Container) HandleMessage(source mautrix.EventSource, mxEvent *event.Eve
 }
 
 // HandleMembership is the event handler for the m.room.member state event.
-func (c *Container) HandleMembership(source mautrix.EventSource, evt *event.Event) {
-	isLeave := source&mautrix.EventSourceLeave != 0
-	isTimeline := source&mautrix.EventSourceTimeline != 0
+func (c *Container) HandleMembership(source EventSource, evt *event.Event) {
+	isLeave := source&EventSourceLeave != 0
+	isTimeline := source&EventSourceTimeline != 0
 	if isLeave {
 		c.GetOrCreateRoom(evt.RoomID).HasLeft = true
 	}
@@ -811,8 +878,8 @@ func (c *Container) parseReadReceipt(evt *event.Event) (largestTimestampEvent id
 	return
 }
 
-func (c *Container) HandleReadReceipt(source mautrix.EventSource, evt *event.Event) {
-	if source&mautrix.EventSourceLeave != 0 {
+func (c *Container) HandleReadReceipt(source EventSource, evt *event.Event) {
+	if source&EventSourceLeave != 0 {
 		return
 	}
 
@@ -844,7 +911,7 @@ func (c *Container) parseDirectChatInfo(evt *event.Event) map[*rooms.Room]id.Use
 	return directChats
 }
 
-func (c *Container) HandleDirectChatInfo(_ mautrix.EventSource, evt *event.Event) {
+func (c *Container) HandleDirectChatInfo(_ EventSource, evt *event.Event) {
 	directChats := c.parseDirectChatInfo(evt)
 	for _, room := range c.config.Rooms.Map {
 		userID, isDirect := directChats[room]
@@ -859,7 +926,7 @@ func (c *Container) HandleDirectChatInfo(_ mautrix.EventSource, evt *event.Event
 }
 
 // HandlePushRules is the event handler for the m.push_rules account data event.
-func (c *Container) HandlePushRules(_ mautrix.EventSource, evt *event.Event) {
+func (c *Container) HandlePushRules(_ EventSource, evt *event.Event) {
 	debug.Print("Received updated push rules")
 	var err error
 	c.config.PushRules, err = pushrules.EventToPushRules(evt)
@@ -871,7 +938,7 @@ func (c *Container) HandlePushRules(_ mautrix.EventSource, evt *event.Event) {
 }
 
 // HandleTag is the event handler for the m.tag account data event.
-func (c *Container) HandleTag(_ mautrix.EventSource, evt *event.Event) {
+func (c *Container) HandleTag(_ EventSource, evt *event.Event) {
 	room := c.GetOrCreateRoom(evt.RoomID)
 
 	tags := evt.Content.AsTag().Tags
@@ -898,7 +965,7 @@ func (c *Container) HandleTag(_ mautrix.EventSource, evt *event.Event) {
 }
 
 // HandleTyping is the event handler for the m.typing event.
-func (c *Container) HandleTyping(_ mautrix.EventSource, evt *event.Event) {
+func (c *Container) HandleTyping(_ EventSource, evt *event.Event) {
 	if !c.config.AuthCache.InitialSyncDone {
 		return
 	}
@@ -954,6 +1021,12 @@ func (c *Container) PrepareMarkdownMessage(roomID id.RoomID, msgtype event.Messa
 	return c.prepareEvent(roomID, &content, rel)
 }
 
+const (
+	//This shouldn't be here, it exists in the new version of the events library
+	//I just am not sure what to do to update that dependency yet
+	RelThread event.RelationType = "m.thread"
+)
+
 func (c *Container) prepareEvent(roomID id.RoomID, content *event.MessageEventContent, rel *ifc.Relation) *muksevt.Event {
 	if rel != nil && rel.Type == event.RelReplace {
 		contentCopy := *content
@@ -966,6 +1039,8 @@ func (c *Container) prepareEvent(roomID id.RoomID, content *event.MessageEventCo
 			Type:    event.RelReplace,
 			EventID: rel.Event.ID,
 		}
+	} else if rel != nil && rel.Type == RelThread {
+		content.SetReply(rel.Event.Event)
 	} else if rel != nil && rel.Type == event.RelReply {
 		content.SetReply(rel.Event.Event)
 	}

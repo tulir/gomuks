@@ -71,9 +71,9 @@ func (s *GomuksSyncer) ProcessResponse(res *mautrix.RespSync, since string) (err
 	s.notifyGlobalListeners(res, since, callback)
 	wait.Wait()
 
-	s.processSyncEvents(nil, res.Presence.Events, mautrix.EventSourcePresence)
+	s.processSyncEvents(nil, res.Presence.Events, EventSourcePresence)
 	s.Progress.Step()
-	s.processSyncEvents(nil, res.AccountData.Events, mautrix.EventSourceAccountData)
+	s.processSyncEvents(nil, res.AccountData.Events, EventSourceAccountData)
 	s.Progress.Step()
 
 	wait.Add(steps)
@@ -117,10 +117,10 @@ func (s *GomuksSyncer) processJoinedRoom(roomID id.RoomID, roomData mautrix.Sync
 	defer debug.Recover()
 	room := s.rooms.GetOrCreate(roomID)
 	room.UpdateSummary(roomData.Summary)
-	s.processSyncEvents(room, roomData.State.Events, mautrix.EventSourceJoin|mautrix.EventSourceState)
-	s.processSyncEvents(room, roomData.Timeline.Events, mautrix.EventSourceJoin|mautrix.EventSourceTimeline)
-	s.processSyncEvents(room, roomData.Ephemeral.Events, mautrix.EventSourceJoin|mautrix.EventSourceEphemeral)
-	s.processSyncEvents(room, roomData.AccountData.Events, mautrix.EventSourceJoin|mautrix.EventSourceAccountData)
+	s.processSyncEvents(room, roomData.State.Events, EventSourceJoin|EventSourceState)
+	s.processSyncEvents(room, roomData.Timeline.Events, EventSourceJoin|EventSourceTimeline)
+	s.processSyncEvents(room, roomData.Ephemeral.Events, EventSourceJoin|EventSourceEphemeral)
+	s.processSyncEvents(room, roomData.AccountData.Events, EventSourceJoin|EventSourceAccountData)
 
 	if len(room.PrevBatch) == 0 {
 		room.PrevBatch = roomData.Timeline.PrevBatch
@@ -133,7 +133,7 @@ func (s *GomuksSyncer) processInvitedRoom(roomID id.RoomID, roomData mautrix.Syn
 	defer debug.Recover()
 	room := s.rooms.GetOrCreate(roomID)
 	room.UpdateSummary(roomData.Summary)
-	s.processSyncEvents(room, roomData.State.Events, mautrix.EventSourceInvite|mautrix.EventSourceState)
+	s.processSyncEvents(room, roomData.State.Events, EventSourceInvite|EventSourceState)
 	callback()
 }
 
@@ -142,8 +142,8 @@ func (s *GomuksSyncer) processLeftRoom(roomID id.RoomID, roomData mautrix.SyncLe
 	room := s.rooms.GetOrCreate(roomID)
 	room.HasLeft = true
 	room.UpdateSummary(roomData.Summary)
-	s.processSyncEvents(room, roomData.State.Events, mautrix.EventSourceLeave|mautrix.EventSourceState)
-	s.processSyncEvents(room, roomData.Timeline.Events, mautrix.EventSourceLeave|mautrix.EventSourceTimeline)
+	s.processSyncEvents(room, roomData.State.Events, EventSourceLeave|EventSourceState)
+	s.processSyncEvents(room, roomData.Timeline.Events, EventSourceLeave|EventSourceTimeline)
 
 	if len(room.PrevBatch) == 0 {
 		room.PrevBatch = roomData.Timeline.PrevBatch
@@ -152,13 +152,13 @@ func (s *GomuksSyncer) processLeftRoom(roomID id.RoomID, roomData mautrix.SyncLe
 	callback()
 }
 
-func (s *GomuksSyncer) processSyncEvents(room *rooms.Room, events []*event.Event, source mautrix.EventSource) {
+func (s *GomuksSyncer) processSyncEvents(room *rooms.Room, events []*event.Event, source EventSource) {
 	for _, evt := range events {
 		s.processSyncEvent(room, evt, source)
 	}
 }
 
-func (s *GomuksSyncer) processSyncEvent(room *rooms.Room, evt *event.Event, source mautrix.EventSource) {
+func (s *GomuksSyncer) processSyncEvent(room *rooms.Room, evt *event.Event, source EventSource) {
 	if room != nil {
 		evt.RoomID = room.ID
 	}
@@ -167,11 +167,11 @@ func (s *GomuksSyncer) processSyncEvent(room *rooms.Room, evt *event.Event, sour
 	switch {
 	case evt.StateKey != nil:
 		evt.Type.Class = event.StateEventType
-	case source == mautrix.EventSourcePresence, source&mautrix.EventSourceEphemeral != 0:
+	case source == EventSourcePresence, source&EventSourceEphemeral != 0:
 		evt.Type.Class = event.EphemeralEventType
-	case source&mautrix.EventSourceAccountData != 0:
+	case source&EventSourceAccountData != 0:
 		evt.Type.Class = event.AccountDataEventType
-	case source == mautrix.EventSourceToDevice:
+	case source == EventSourceToDevice:
 		evt.Type.Class = event.ToDeviceEventType
 	default:
 		evt.Type.Class = event.MessageEventType
@@ -204,7 +204,7 @@ func (s *GomuksSyncer) OnSync(callback mautrix.SyncHandler) {
 	s.globalListeners = append(s.globalListeners, callback)
 }
 
-func (s *GomuksSyncer) notifyListeners(source mautrix.EventSource, evt *event.Event) {
+func (s *GomuksSyncer) notifyListeners(source EventSource, evt *event.Event) {
 	listeners, exists := s.listeners[evt.Type]
 	if !exists {
 		return

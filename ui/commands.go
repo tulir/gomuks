@@ -18,6 +18,7 @@ package ui
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -166,6 +167,7 @@ type SelectReason string
 const (
 	SelectReply    SelectReason = "reply to"
 	SelectReact                 = "react to"
+	SelectThread                = "reply in thread to"
 	SelectRedact                = "redact"
 	SelectEdit                  = "edit"
 	SelectDownload              = "download"
@@ -175,6 +177,10 @@ const (
 
 func cmdReply(cmd *Command) {
 	cmd.Room.StartSelecting(SelectReply, strings.Join(cmd.Args, " "))
+}
+
+func cmdThread(cmd *Command) {
+	cmd.Room.StartSelecting(SelectThread, strings.Join(cmd.Args, " "))
 }
 
 func cmdEdit(cmd *Command) {
@@ -360,7 +366,9 @@ func niceError(err error) string {
 }
 
 func cmdAddAlias(cmd *Command, alias id.RoomAlias) {
-	_, err := cmd.Matrix.Client().CreateAlias(alias, cmd.Room.MxRoom().ID)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	_, err := cmd.Matrix.Client().CreateAlias(ctx, alias, cmd.Room.MxRoom().ID)
 	if err != nil {
 		cmd.Reply("Failed to create alias: %v", niceError(err))
 	} else {
@@ -369,7 +377,9 @@ func cmdAddAlias(cmd *Command, alias id.RoomAlias) {
 }
 
 func cmdRemoveAlias(cmd *Command, alias id.RoomAlias) {
-	_, err := cmd.Matrix.Client().DeleteAlias(alias)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	_, err := cmd.Matrix.Client().DeleteAlias(ctx, alias)
 	if err != nil {
 		cmd.Reply("Failed to delete alias: %v", niceError(err))
 	} else {
@@ -378,7 +388,9 @@ func cmdRemoveAlias(cmd *Command, alias id.RoomAlias) {
 }
 
 func cmdResolveAlias(cmd *Command, alias id.RoomAlias) {
-	resp, err := cmd.Matrix.Client().ResolveAlias(alias)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	resp, err := cmd.Matrix.Client().ResolveAlias(ctx, alias)
 	if err != nil {
 		cmd.Reply("Failed to resolve alias: %v", niceError(err))
 	} else {
@@ -430,6 +442,8 @@ func cmdTag(cmd *Command) {
 		}
 	}
 	var err error
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
 	if len(cmd.Args) > 2 && cmd.Args[2] == "--reset" {
 		tags := event.Tags{
 			cmd.Args[0]: {Order: json.Number(fmt.Sprintf("%f", order))},
@@ -437,9 +451,9 @@ func cmdTag(cmd *Command) {
 		for _, tag := range cmd.Room.MxRoom().RawTags {
 			tags[tag.Tag] = event.Tag{Order: tag.Order}
 		}
-		err = cmd.Matrix.Client().SetTags(cmd.Room.MxRoom().ID, tags)
+		err = cmd.Matrix.Client().SetTags(ctx, cmd.Room.MxRoom().ID, tags)
 	} else {
-		err = cmd.Matrix.Client().AddTag(cmd.Room.MxRoom().ID, cmd.Args[0], order)
+		err = cmd.Matrix.Client().AddTag(ctx, cmd.Room.MxRoom().ID, cmd.Args[0], order)
 	}
 	if err != nil {
 		cmd.Reply("Failed to add tag: %v", err)
@@ -451,7 +465,9 @@ func cmdUntag(cmd *Command) {
 		cmd.Reply("Usage: /untag <tag>")
 		return
 	}
-	err := cmd.Matrix.Client().RemoveTag(cmd.Room.MxRoom().ID, cmd.Args[0])
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	err := cmd.Matrix.Client().RemoveTag(ctx, cmd.Room.MxRoom().ID, cmd.Args[0])
 	if err != nil {
 		cmd.Reply("Failed to remove tag: %v", err)
 	}
@@ -461,7 +477,9 @@ func cmdRoomNick(cmd *Command) {
 	room := cmd.Room.MxRoom()
 	member := room.GetMember(room.SessionUserID)
 	member.Displayname = strings.Join(cmd.Args, " ")
-	_, err := cmd.Matrix.Client().SendStateEvent(room.ID, event.StateMember, string(room.SessionUserID), member)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	_, err := cmd.Matrix.Client().SendStateEvent(ctx, room.ID, event.StateMember, string(room.SessionUserID), member)
 	if err != nil {
 		cmd.Reply("Failed to set room nick: %v", err)
 	}
@@ -561,7 +579,9 @@ func cmdInvite(cmd *Command) {
 		cmd.Reply("Usage: /invite <user id>")
 		return
 	}
-	_, err := cmd.Matrix.Client().InviteUser(cmd.Room.MxRoom().ID, &mautrix.ReqInviteUser{UserID: id.UserID(cmd.Args[0])})
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	_, err := cmd.Matrix.Client().InviteUser(ctx, cmd.Room.MxRoom().ID, &mautrix.ReqInviteUser{UserID: id.UserID(cmd.Args[0])})
 	if err != nil {
 		debug.Print("Error in invite call:", err)
 		cmd.Reply("Failed to invite user: %v", err)
@@ -577,7 +597,9 @@ func cmdBan(cmd *Command) {
 	if len(cmd.Args) >= 2 {
 		reason = strings.Join(cmd.Args[1:], " ")
 	}
-	_, err := cmd.Matrix.Client().BanUser(cmd.Room.MxRoom().ID, &mautrix.ReqBanUser{Reason: reason, UserID: id.UserID(cmd.Args[0])})
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	_, err := cmd.Matrix.Client().BanUser(ctx, cmd.Room.MxRoom().ID, &mautrix.ReqBanUser{Reason: reason, UserID: id.UserID(cmd.Args[0])})
 	if err != nil {
 		debug.Print("Error in ban call:", err)
 		cmd.Reply("Failed to ban user: %v", err)
@@ -590,7 +612,9 @@ func cmdUnban(cmd *Command) {
 		cmd.Reply("Usage: /unban <user>")
 		return
 	}
-	_, err := cmd.Matrix.Client().UnbanUser(cmd.Room.MxRoom().ID, &mautrix.ReqUnbanUser{UserID: id.UserID(cmd.Args[0])})
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	_, err := cmd.Matrix.Client().UnbanUser(ctx, cmd.Room.MxRoom().ID, &mautrix.ReqUnbanUser{UserID: id.UserID(cmd.Args[0])})
 	if err != nil {
 		debug.Print("Error in unban call:", err)
 		cmd.Reply("Failed to unban user: %v", err)
@@ -606,7 +630,9 @@ func cmdKick(cmd *Command) {
 	if len(cmd.Args) >= 2 {
 		reason = strings.Join(cmd.Args[1:], " ")
 	}
-	_, err := cmd.Matrix.Client().KickUser(cmd.Room.MxRoom().ID, &mautrix.ReqKickUser{Reason: reason, UserID: id.UserID(cmd.Args[0])})
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	_, err := cmd.Matrix.Client().KickUser(ctx, cmd.Room.MxRoom().ID, &mautrix.ReqKickUser{Reason: reason, UserID: id.UserID(cmd.Args[0])})
 	if err != nil {
 		debug.Print("Error in kick call:", err)
 		debug.Print("Failed to kick user:", err)
@@ -763,11 +789,13 @@ func cmdPowerLevel(cmd *Command) {
 		}
 	}
 
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
 	if oldValue == value {
 		cmd.Reply("%s is already %d", strings.ToUpper(thing[0:1])+thing[1:], value)
 	} else if oldValue > ownLevel {
 		cmd.Reply("Can't change level which is higher than own level (%d > %d)", oldValue, ownLevel)
-	} else if resp, err := cmd.Matrix.Client().SendStateEvent(cmd.Room.MxRoom().ID, event.StatePowerLevels, "", pl); err != nil {
+	} else if resp, err := cmd.Matrix.Client().SendStateEvent(ctx, cmd.Room.MxRoom().ID, event.StatePowerLevels, "", pl); err != nil {
 		if httpErr, ok := err.(mautrix.HTTPError); ok && httpErr.RespError != nil {
 			err = httpErr.RespError
 		}
@@ -860,7 +888,9 @@ func cmdSendEvent(cmd *Command) {
 	}
 	debug.Print("Sending event to", roomID, eventType, content)
 
-	resp, err := cmd.Matrix.Client().SendMessageEvent(roomID, eventType, content)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	resp, err := cmd.Matrix.Client().SendMessageEvent(ctx, roomID, eventType, content)
 	debug.Print(resp, err)
 	if err != nil {
 		cmd.Reply("Error from server: %v", err)
@@ -899,7 +929,9 @@ func cmdSetState(cmd *Command) {
 		return
 	}
 	debug.Print("Sending state event to", roomID, eventType, stateKey, content)
-	resp, err := cmd.Matrix.Client().SendStateEvent(roomID, eventType, stateKey, content)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	resp, err := cmd.Matrix.Client().SendStateEvent(ctx, roomID, eventType, stateKey, content)
 	if err != nil {
 		cmd.Reply("Error from server: %v", err)
 	} else {

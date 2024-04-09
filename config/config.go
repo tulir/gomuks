@@ -17,8 +17,10 @@
 package config
 
 import (
+	"context"
 	_ "embed"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -371,26 +373,30 @@ func (config *Config) GetUserID() id.UserID {
 
 const FilterVersion = 1
 
-func (config *Config) SaveFilterID(_ id.UserID, filterID string) {
+func (config *Config) SaveFilterID(_ context.Context, _ id.UserID, filterID string) (err error) {
 	config.AuthCache.FilterID = filterID
 	config.AuthCache.FilterVersion = FilterVersion
 	config.SaveAuthCache()
+	return nil
 }
 
-func (config *Config) LoadFilterID(_ id.UserID) string {
+func (config *Config) LoadFilterID(_ context.Context, _ id.UserID) (strOut string, err error) {
 	if config.AuthCache.FilterVersion != FilterVersion {
-		return ""
+		err = errors.New("Error from config.LoadFilterID: FilterVersion mismatch")
+		strOut = ""
 	}
-	return config.AuthCache.FilterID
+	strOut = config.AuthCache.FilterID
+	return
 }
 
-func (config *Config) SaveNextBatch(_ id.UserID, nextBatch string) {
+func (config *Config) SaveNextBatch(_ context.Context, _ id.UserID, nextBatch string) error {
 	config.AuthCache.NextBatch = nextBatch
 	config.SaveAuthCache()
+	return nil
 }
 
-func (config *Config) LoadNextBatch(_ id.UserID) string {
-	return config.AuthCache.NextBatch
+func (config *Config) LoadNextBatch(_ context.Context, _ id.UserID) (strOut string, err error) {
+	return config.AuthCache.NextBatch, nil
 }
 
 func (config *Config) SaveRoom(_ *mautrix.Room) {
