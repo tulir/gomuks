@@ -213,7 +213,7 @@ func (s *GomuksSyncer) notifyListeners(source event.Source, evt *event.Event) {
 		return
 	}
 	for _, fn := range listeners {
-		fn(source, evt)
+		fn(nil, evt)
 	}
 }
 

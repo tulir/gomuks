@@ -797,7 +797,8 @@ func (view *RoomView) getRelationForNewEvent() *ifc.Relation {
 		}
 	} else if view.replying != nil {
 		return &ifc.Relation{
-			Type:  event.RelReply,
+			//symys TODO: actually use the nice reply structure in the new version of mautrix-go
+			Type:  "m.in_reply_to",
 			Event: view.replying,
 		}
 	}

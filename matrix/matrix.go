@@ -814,15 +814,15 @@ func (c *Container) processOwnMembershipChange(evt *event.Event) {
 }
 
 func (c *Container) parseReadReceipt(evt *event.Event) (largestTimestampEvent id.EventID) {
-	var largestTimestamp int64
+	var largestTimestamp time.Time
 
 	for eventID, receipts := range *evt.Content.AsReceipt() {
-		myInfo, ok := receipts.Read[c.config.UserID]
+		myInfo, ok := receipts[event.ReceiptTypeRead][c.config.UserID]
 		if !ok {
 			continue
 		}
 
-		if myInfo.Timestamp > largestTimestamp {
+		if myInfo.Timestamp.After(largestTimestamp) {
 			largestTimestamp = myInfo.Timestamp
 			largestTimestampEvent = eventID
 		}
@@ -996,7 +996,8 @@ func (c *Container) prepareEvent(roomID id.RoomID, content *event.MessageEventCo
 		}
 	} else if rel != nil && rel.Type == RelThread {
 		content.SetReply(rel.Event.Event)
-	} else if rel != nil && rel.Type == event.RelReply {
+		//symys TODO: Use the event.RelatesTo.InReplyTo thing
+	} else if rel != nil && rel.Type == "m.in_reply_to" {
 		content.SetReply(rel.Event.Event)
 	}
 
