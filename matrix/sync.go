@@ -20,6 +20,7 @@ package matrix
 
 import (
 	"context"
+	"fmt"
 	"sync"
 	"time"
 
@@ -80,15 +81,30 @@ func (s *GomuksSyncer) ProcessResponse(_ context.Context, res *mautrix.RespSync,
 	wait.Add(steps)
 
 	for roomID, roomData := range res.Rooms.Join {
-		go s.processJoinedRoom(roomID, roomData, callback)
+		if roomData != nil {
+			go s.processJoinedRoom(roomID, roomData, callback)
+		} else {
+			processJoinedRoomPrintMsg := fmt.Sprintf("roomData is nil, in processResponse, for roomID: %v", roomID)
+			debug.Print(processJoinedRoomPrintMsg)
+		}
 	}
 
 	for roomID, roomData := range res.Rooms.Invite {
-		go s.processInvitedRoom(roomID, roomData, callback)
+		if roomData != nil {
+			go s.processInvitedRoom(roomID, roomData, callback)
+		} else {
+			processJoinedRoomPrintMsg := fmt.Sprintf("roomData is nil, in processResponse, for roomID: %v", roomID)
+			debug.Print(processJoinedRoomPrintMsg)
+		}
 	}
 
 	for roomID, roomData := range res.Rooms.Leave {
-		go s.processLeftRoom(roomID, roomData, callback)
+		if roomData != nil {
+			go s.processLeftRoom(roomID, roomData, callback)
+		} else {
+			processJoinedRoomPrintMsg := fmt.Sprintf("roomData is nil, in processResponse, for roomID: %v", roomID)
+			debug.Print(processJoinedRoomPrintMsg)
+		}
 	}
 
 	wait.Wait()
