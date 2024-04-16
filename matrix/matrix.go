@@ -602,6 +602,9 @@ func (c *Container) HandleReaction(room *rooms.Room, reactsTo id.EventID, reactE
 	rel := reactEvent.Content.AsReaction().RelatesTo
 	var origEvt *muksevt.Event
 	err := c.history.Update(room, reactsTo, func(evt *muksevt.Event) error {
+		if evt.Unsigned.Relations == nil {
+			evt.Unsigned.Relations = &event.Relations{}
+		}
 		if evt.Unsigned.Relations.Annotations.Map == nil {
 			evt.Unsigned.Relations.Annotations.Map = make(map[string]int)
 		}
@@ -1120,7 +1123,9 @@ func (c *Container) UploadMedia(path string, encrypt bool) (*ifc.UploadedMediaIn
 
 func (c *Container) sendTypingAsync(roomID id.RoomID, typing bool, timeout time.Duration) {
 	defer debug.Recover()
-	_, _ = c.client.UserTyping(nil, roomID, typing, timeout)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	_, _ = c.client.UserTyping(ctx, roomID, typing, timeout)
 }
 
 // SendTyping sets whether or not the user is typing in the given room.

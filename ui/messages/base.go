@@ -28,6 +28,7 @@ import (
 	"go.mau.fi/tcell"
 
 	"maunium.net/go/gomuks/config"
+	"maunium.net/go/gomuks/debug"
 	"maunium.net/go/gomuks/matrix/muksevt"
 
 	"maunium.net/go/gomuks/ui/widget"
@@ -97,13 +98,31 @@ const DateFormat = "January _2, 2006"
 const TimeFormat = "15:04:05"
 
 func newUIMessage(evt *muksevt.Event, displayname string, renderer MessageRenderer) *UIMessage {
+	//kept getting nil pointer exceptions from this function
+	//so TODO: Fix that in a more systemic way - symys
 	msgContent := evt.Content.AsMessage()
 	msgtype := msgContent.MsgType
 	if len(msgtype) == 0 {
 		msgtype = event.MessageType(evt.Type.String())
 	}
 
-	reactions := make(ReactionSlice, 0, len(evt.Unsigned.Relations.Annotations.Map))
+	if evt == nil {
+		debug.Print("evt nil in newUIMessage")
+		return nil
+	}
+
+	if evt.Unsigned.Relations == nil {
+		debug.Print("evt.Unsigned nil in newUIMessage")
+		return nil
+	}
+
+	reactLength := 0
+
+	if evt.Unsigned.Relations.Annotations.Map != nil {
+		reactLength = len(evt.Unsigned.Relations.Annotations.Map)
+	}
+
+	reactions := make(ReactionSlice, 0, reactLength)
 	for key, count := range evt.Unsigned.Relations.Annotations.Map {
 		reactions = append(reactions, ReactionItem{
 			Key:   key,

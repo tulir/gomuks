@@ -134,6 +134,7 @@ func (s *GomuksSyncer) notifyGlobalListeners(res *mautrix.RespSync, since string
 
 func (s *GomuksSyncer) processJoinedRoom(roomID id.RoomID, roomData *mautrix.SyncJoinedRoom, callback func()) {
 	defer debug.Recover()
+
 	room := s.rooms.GetOrCreate(roomID)
 	room.UpdateSummary(roomData.Summary)
 	s.processSyncEvents(room, roomData.State.Events, event.SourceJoin|event.SourceState)
