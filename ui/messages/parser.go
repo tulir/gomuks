@@ -48,6 +48,7 @@ func getCachedEvent(mainView ifc.MainView, roomID id.RoomID, eventID id.EventID)
 func ParseEvent(matrix ifc.MatrixContainer, mainView ifc.MainView, room *rooms.Room, evt *muksevt.Event) *UIMessage {
 	msg := directParseEvent(matrix, room, evt)
 	if msg == nil {
+		debug.Printf("nil message in ParseEvent")
 		return nil
 	}
 	if content, ok := evt.Content.Parsed.(*event.MessageEventContent); ok && len(content.GetReplyTo()) > 0 {
@@ -221,9 +222,11 @@ func ParseMessage(matrix ifc.MatrixContainer, room *rooms.Room, evt *muksevt.Eve
 		return NewHTMLMessage(evt, displayname, htmlEntity)
 	case event.MsgImage, event.MsgVideo, event.MsgAudio, event.MsgFile:
 		msg := NewFileMessage(matrix, evt, displayname)
-		if !matrix.Preferences().DisableDownloads {
-			renderer := msg.Renderer.(*FileMessage)
-			renderer.DownloadPreview()
+		if matrix != nil && matrix.Preferences() != nil && msg != nil && !matrix.Preferences().DisableDownloads {
+			if msg.Renderer != nil {
+				renderer := msg.Renderer.(*FileMessage)
+				renderer.DownloadPreview()
+			}
 		}
 		return msg
 	}

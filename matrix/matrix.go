@@ -667,7 +667,8 @@ func (c *Container) HandleEncryptedUnsupported(_ context.Context, mxEvent *event
 	mxEvent.Type = muksevt.EventEncryptionUnsupported
 	origContent, _ := mxEvent.Content.Parsed.(*event.EncryptedEventContent)
 	mxEvent.Content.Parsed = muksevt.EncryptionUnsupportedContent{Original: origContent}
-	c.HandleMessage(nil, mxEvent)
+	ctx := context.TODO()
+	c.HandleMessage(ctx, mxEvent)
 }
 
 func (c *Container) HandleEncrypted(_ context.Context, mxEvent *event.Event) {
@@ -680,7 +681,9 @@ func (c *Container) HandleEncrypted(_ context.Context, mxEvent *event.Event) {
 			Original: origContent,
 			Reason:   err.Error(),
 		}
-		c.HandleMessage(nil, mxEvent)
+
+		ctx := context.TODO()
+		c.HandleMessage(ctx, mxEvent)
 		return
 	}
 	if evt.Type.IsInRoomVerification() {
@@ -691,7 +694,8 @@ func (c *Container) HandleEncrypted(_ context.Context, mxEvent *event.Event) {
 			debug.Printf("[Crypto/Debug] Processed in-room verification event %s of type %s", evt.ID, evt.Type.String())
 		}
 	} else {
-		c.HandleMessage(nil, evt)
+		ctx := context.TODO()
+		c.HandleMessage(ctx, evt)
 	}
 }
 
@@ -778,7 +782,8 @@ func (c *Container) HandleMembership(_ context.Context, evt *event.Event) {
 		return
 	}
 
-	c.HandleMessage(nil, evt)
+	ctx := context.TODO()
+	c.HandleMessage(ctx, evt)
 }
 
 func (c *Container) processOwnMembershipChange(evt *event.Event) {
@@ -1101,7 +1106,9 @@ func (c *Container) UploadMedia(path string, encrypt bool) (*ifc.UploadedMediaIn
 		content = file
 	}
 
-	resp, err := c.client.UploadMedia(nil, mautrix.ReqUploadMedia{
+	ctx := context.TODO()
+
+	resp, err := c.client.UploadMedia(ctx, mautrix.ReqUploadMedia{
 		Content:       content,
 		ContentLength: stat.Size(),
 		ContentType:   uploadMimeType,

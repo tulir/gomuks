@@ -848,10 +848,12 @@ func (view *RoomView) addLocalEcho(evt *muksevt.Event) {
 		view.parent.parent.Render()
 	} else {
 		debug.Print("Event ID received:", eventID)
-		msg.EventID = eventID
-		msg.State = muksevt.StateDefault
-		view.MessageView().setMessageID(msg)
-		view.parent.parent.Render()
+		if msg != nil {
+			msg.EventID = eventID
+			msg.State = muksevt.StateDefault
+			view.MessageView().setMessageID(msg)
+			view.parent.parent.Render()
+		}
 	}
 }
 
