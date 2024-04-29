@@ -111,25 +111,22 @@ func newUIMessage(evt *muksevt.Event, displayname string, renderer MessageRender
 		return nil
 	}
 
-	if evt.Unsigned.Relations == nil {
-		debug.Print("evt.Unsigned nil in newUIMessage")
-		return nil
-	}
-
 	reactLength := 0
-
-	if evt.Unsigned.Relations.Annotations.Map != nil {
-		reactLength = len(evt.Unsigned.Relations.Annotations.Map)
-	}
-
 	reactions := make(ReactionSlice, 0, reactLength)
-	for key, count := range evt.Unsigned.Relations.Annotations.Map {
-		reactions = append(reactions, ReactionItem{
-			Key:   key,
-			Count: count,
-		})
+
+	if evt.Unsigned.Relations != nil {
+		if evt.Unsigned.Relations.Annotations.Map != nil {
+			reactLength = len(evt.Unsigned.Relations.Annotations.Map)
+
+			for key, count := range evt.Unsigned.Relations.Annotations.Map {
+				reactions = append(reactions, ReactionItem{
+					Key:   key,
+					Count: count,
+				})
+			}
+			sort.Sort(reactions)
+		}
 	}
-	sort.Sort(reactions)
 
 	return &UIMessage{
 		SenderID:           evt.Sender,

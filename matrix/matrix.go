@@ -1039,8 +1039,7 @@ func (c *Container) Redact(roomID id.RoomID, eventID id.EventID, reason string) 
 func (c *Container) SendEvent(evt *muksevt.Event) (id.EventID, error) {
 	defer debug.Recover()
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
+	ctx := context.TODO()
 	_, _ = c.client.UserTyping(ctx, evt.RoomID, false, 0)
 	c.typing = 0
 	room := c.GetRoom(evt.RoomID)
