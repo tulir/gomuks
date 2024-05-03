@@ -383,8 +383,7 @@ func (msg *UIMessage) DrawReply(screen mauview.Screen) mauview.Screen {
 	}
 	width, height := screen.Size()
 	replyHeight := msg.ReplyTo.Height()
-	//widget.WriteLineSimpleColor(screen, "In reply to", 1, 0, tcell.ColorGreen)
-	widget.WriteLineSimpleColor(screen, "You srsly be replying to......", 1, 0, tcell.ColorGreen)
+	widget.WriteLineSimpleColor(screen, "In reply to", 1, 0, tcell.ColorGreen)
 	widget.WriteLineSimpleColor(screen, msg.ReplyTo.SenderName, 30, 0, msg.ReplyTo.SenderColor())
 	for y := 0; y < 1+replyHeight; y++ {
 		screen.SetCell(0, y, tcell.StyleDefault, '▊')

@@ -138,6 +138,7 @@ func (c *Container) InitClient(isStartup bool) error {
 	}
 
 	if c.history == nil {
+		//TODO: Handle case where another gomuks instance is already open
 		c.history, err = NewHistoryManager(c.config.HistoryPath)
 		if err != nil {
 			return fmt.Errorf("failed to initialize history: %w", err)
@@ -986,7 +987,6 @@ func (c *Container) PrepareMarkdownMessage(roomID id.RoomID, msgtype event.Messa
 
 const (
 	//This shouldn't be here, it exists in the new version of the events library
-	//I just am not sure what to do to update that dependency yet
 	RelThread event.RelationType = "m.thread"
 )
 

@@ -87,7 +87,7 @@ func directParseEvent(matrix ifc.MatrixContainer, room *rooms.Room, evt *muksevt
 		return NewExpandedTextMessage(evt, displayname, tstring.NewStyleTString(content.Reason, tcell.StyleDefault.Italic(true)))
 	case *muksevt.EncryptionUnsupportedContent:
 		return NewExpandedTextMessage(evt, displayname, tstring.NewStyleTString("gomuks not built with encryption support", tcell.StyleDefault.Italic(true)))
-	case *event.TopicEventContent, *event.RoomNameEventContent, *event.CanonicalAliasEventContent:
+	case *event.TopicEventContent, *event.CreateEventContent, *event.RoomNameEventContent, *event.CanonicalAliasEventContent:
 		return ParseStateEvent(evt, displayname)
 	case *event.MemberEventContent:
 		return ParseMembershipEvent(room, evt)
@@ -157,6 +157,10 @@ func ParseStateEvent(evt *muksevt.Event, displayname string) *UIMessage {
 				AppendStyle(content.Name, tcell.StyleDefault.Underline(true)).
 				AppendColor(".", tcell.ColorGreen)
 		}
+	case *event.CreateEventContent:
+		text = tstring.NewColorTString(displayname, widget.GetHashColor(evt.Sender)).Append(" ")
+		createString := fmt.Sprintf("%v created the room. Federating: %v | Type: %v | Room Version: %v | Predecessor: %v", content.Creator, content.Federate, content.Type, content.RoomVersion, content.Predecessor)
+		text = text.AppendColor(createString, tcell.ColorGreen)
 	case *event.CanonicalAliasEventContent:
 		prevContent := &event.CanonicalAliasEventContent{}
 		if evt.Unsigned.PrevContent != nil {
