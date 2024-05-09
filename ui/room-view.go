@@ -29,6 +29,7 @@ import (
 
 	"go.mau.fi/mauview"
 	"go.mau.fi/tcell"
+	"go.mau.fi/util/variationselector"
 
 	"maunium.net/go/mautrix"
 	"maunium.net/go/mautrix/crypto/attachment"
@@ -45,7 +46,6 @@ import (
 	"maunium.net/go/gomuks/matrix/rooms"
 	"maunium.net/go/gomuks/ui/messages"
 	"maunium.net/go/gomuks/ui/widget"
-	"maunium.net/go/mautrix/util/variationselector"
 )
 
 type RoomView struct {

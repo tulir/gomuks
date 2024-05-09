@@ -123,7 +123,6 @@ func (s *GomuksSyncer) ProcessResponse(_ context.Context, res *mautrix.RespSync,
 
 func (s *GomuksSyncer) notifyGlobalListeners(res *mautrix.RespSync, since string, callback func()) {
 	ctx := context.TODO()
-	defer cancel()
 	for _, listener := range s.globalListeners {
 		go func(listener mautrix.SyncHandler) {
 			listener(ctx, res, since)
@@ -204,10 +203,12 @@ func (s *GomuksSyncer) processSyncEvent(room *rooms.Room, evt *event.Event, sour
 		return
 	}
 
+	ctx := context.TODO()
+
 	if room != nil && evt.Type.IsState() {
 		room.UpdateState(evt)
 	}
-	s.notifyListeners(source, evt)
+	s.notifyListeners(ctx, evt)
 }
 
 // OnEventType allows callers to be notified when there are new events for the given event type.
@@ -224,13 +225,13 @@ func (s *GomuksSyncer) OnSync(callback mautrix.SyncHandler) {
 	s.globalListeners = append(s.globalListeners, callback)
 }
 
-func (s *GomuksSyncer) notifyListeners(source event.Source, evt *event.Event) {
+func (s *GomuksSyncer) notifyListeners(ctx context.Context, evt *event.Event) {
 	listeners, exists := s.listeners[evt.Type]
 	if !exists {
 		return
 	}
 	for _, fn := range listeners {
-		fn(source, evt)
+		fn(ctx, evt)
 	}
 }
 
