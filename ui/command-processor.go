@@ -151,6 +151,7 @@ func NewCommandProcessor(parent *MainView) *CommandProcessor {
 			"accept":     cmdAccept,
 			"reject":     cmdReject,
 			"reply":      cmdReply,
+			"thread":     cmdThread,
 			"redact":     cmdRedact,
 			"react":      cmdReact,
 			"edit":       cmdEdit,

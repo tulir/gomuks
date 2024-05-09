@@ -20,6 +20,7 @@ import (
 	"go.mau.fi/mauview"
 	"go.mau.fi/tcell"
 
+	"maunium.net/go/gomuks/debug"
 	"maunium.net/go/gomuks/matrix/muksevt"
 
 	"maunium.net/go/gomuks/config"
@@ -32,6 +33,9 @@ type HTMLMessage struct {
 }
 
 func NewHTMLMessage(evt *muksevt.Event, displayname string, root html.Entity) *UIMessage {
+	if evt == nil {
+		debug.Print("evt nil in NewHTMLMessage")
+	}
 	return newUIMessage(evt, displayname, &HTMLMessage{
 		Root: root,
 	})

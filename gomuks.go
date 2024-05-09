@@ -159,6 +159,8 @@ func (gmx *Gomuks) Start() {
 			_, _ = fmt.Fprintf(os.Stderr, "See `%s --help` if you want to skip this check or clear all data.\n", os.Args[0])
 			os.Exit(5)
 		} else {
+			errMsg := fmt.Sprintf("FATAL ERROR: %v", err)
+			debug.Print(errMsg)
 			panic(err)
 		}
 	}

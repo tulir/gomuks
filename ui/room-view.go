@@ -29,13 +29,13 @@ import (
 
 	"go.mau.fi/mauview"
 	"go.mau.fi/tcell"
+	"go.mau.fi/util/variationselector"
 
 	"maunium.net/go/mautrix"
 	"maunium.net/go/mautrix/crypto/attachment"
 	"maunium.net/go/mautrix/event"
 	"maunium.net/go/mautrix/format"
 	"maunium.net/go/mautrix/id"
-	"maunium.net/go/mautrix/util/variationselector"
 
 	"maunium.net/go/gomuks/config"
 	"maunium.net/go/gomuks/debug"
@@ -77,7 +77,8 @@ type RoomView struct {
 	selectReason  SelectReason
 	selectContent string
 
-	replying *muksevt.Event
+	replying  *muksevt.Event
+	threading *muksevt.Event
 
 	editing      *muksevt.Event
 	editMoveText string
@@ -121,7 +122,7 @@ func NewRoomView(parent *MainView, room *rooms.Room) *RoomView {
 	view.input.
 		SetTextColor(tcell.ColorDefault).
 		SetBackgroundColor(tcell.ColorDefault).
-		SetPlaceholder("Send a message...").
+		SetPlaceholder("Send a message....").
 		SetPlaceholderTextColor(tcell.ColorGray).
 		SetTabCompleteFunc(view.InputTabComplete).
 		SetPressKeyUpAtStartFunc(view.EditPrevious).
@@ -191,6 +192,11 @@ func (view *RoomView) OnSelect(message *messages.UIMessage) {
 	switch view.selectReason {
 	case SelectReply:
 		view.replying = message.Event
+		if len(view.selectContent) > 0 {
+			go view.SendMessage(event.MsgText, view.selectContent)
+		}
+	case SelectThread:
+		view.threading = message.Event
 		if len(view.selectContent) > 0 {
 			go view.SendMessage(event.MsgText, view.selectContent)
 		}
@@ -455,7 +461,8 @@ func (view *RoomView) SetEditing(evt *muksevt.Event) {
 			if view.config.Preferences.DisableMarkdown {
 				text = msgContent.FormattedBody
 			} else {
-				text = editHTMLParser.Parse(msgContent.FormattedBody, make(format.Context))
+				thisContext := format.Context{}
+				text = editHTMLParser.Parse(msgContent.FormattedBody, thisContext)
 			}
 		}
 		if msgContent.MsgType == event.MsgEmote {
@@ -791,7 +798,8 @@ func (view *RoomView) getRelationForNewEvent() *ifc.Relation {
 		}
 	} else if view.replying != nil {
 		return &ifc.Relation{
-			Type:  event.RelReply,
+			//symys TODO: actually use the nice reply structure in the new version of mautrix-go
+			Type:  "m.in_reply_to",
 			Event: view.replying,
 		}
 	}
@@ -841,10 +849,12 @@ func (view *RoomView) addLocalEcho(evt *muksevt.Event) {
 		view.parent.parent.Render()
 	} else {
 		debug.Print("Event ID received:", eventID)
-		msg.EventID = eventID
-		msg.State = muksevt.StateDefault
-		view.MessageView().setMessageID(msg)
-		view.parent.parent.Render()
+		if msg != nil {
+			msg.EventID = eventID
+			msg.State = muksevt.StateDefault
+			view.MessageView().setMessageID(msg)
+			view.parent.parent.Render()
+		}
 	}
 }
 

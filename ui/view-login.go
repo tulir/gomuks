@@ -17,7 +17,9 @@
 package ui
 
 import (
+	"context"
 	"math"
+	"time"
 
 	"github.com/mattn/go-runewidth"
 
@@ -119,7 +121,9 @@ func (view *LoginView) resolveWellKnown() {
 		return
 	}
 	view.homeserver.SetText("Resolving...")
-	resp, err := mautrix.DiscoverClientAPI(homeserver)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	resp, err := mautrix.DiscoverClientAPI(ctx, homeserver)
 	if err != nil {
 		view.homeserver.SetText("")
 		view.Error(err.Error())

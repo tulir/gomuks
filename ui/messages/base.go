@@ -28,6 +28,7 @@ import (
 	"go.mau.fi/tcell"
 
 	"maunium.net/go/gomuks/config"
+	"maunium.net/go/gomuks/debug"
 	"maunium.net/go/gomuks/matrix/muksevt"
 
 	"maunium.net/go/gomuks/ui/widget"
@@ -97,20 +98,35 @@ const DateFormat = "January _2, 2006"
 const TimeFormat = "15:04:05"
 
 func newUIMessage(evt *muksevt.Event, displayname string, renderer MessageRenderer) *UIMessage {
+	//kept getting nil pointer exceptions from this function
+	//so TODO: Fix that in a more systemic way - symys
 	msgContent := evt.Content.AsMessage()
 	msgtype := msgContent.MsgType
 	if len(msgtype) == 0 {
 		msgtype = event.MessageType(evt.Type.String())
 	}
 
-	reactions := make(ReactionSlice, 0, len(evt.Unsigned.Relations.Annotations.Map))
-	for key, count := range evt.Unsigned.Relations.Annotations.Map {
-		reactions = append(reactions, ReactionItem{
-			Key:   key,
-			Count: count,
-		})
+	if evt == nil {
+		debug.Print("evt nil in newUIMessage")
+		return nil
 	}
-	sort.Sort(reactions)
+
+	reactLength := 0
+	reactions := make(ReactionSlice, 0, reactLength)
+
+	if evt.Unsigned.Relations != nil {
+		if evt.Unsigned.Relations.Annotations.Map != nil {
+			reactLength = len(evt.Unsigned.Relations.Annotations.Map)
+
+			for key, count := range evt.Unsigned.Relations.Annotations.Map {
+				reactions = append(reactions, ReactionItem{
+					Key:   key,
+					Count: count,
+				})
+			}
+			sort.Sort(reactions)
+		}
+	}
 
 	return &UIMessage{
 		SenderID:           evt.Sender,
@@ -368,7 +384,7 @@ func (msg *UIMessage) DrawReply(screen mauview.Screen) mauview.Screen {
 	width, height := screen.Size()
 	replyHeight := msg.ReplyTo.Height()
 	widget.WriteLineSimpleColor(screen, "In reply to", 1, 0, tcell.ColorGreen)
-	widget.WriteLineSimpleColor(screen, msg.ReplyTo.SenderName, 13, 0, msg.ReplyTo.SenderColor())
+	widget.WriteLineSimpleColor(screen, msg.ReplyTo.SenderName, 30, 0, msg.ReplyTo.SenderColor())
 	for y := 0; y < 1+replyHeight; y++ {
 		screen.SetCell(0, y, tcell.StyleDefault, '▊')
 	}

@@ -265,8 +265,12 @@ func (view *MainView) switchRoom(tag string, room *rooms.Room, lock bool) {
 	view.parent.Render()
 
 	if msgView := roomView.MessageView(); len(msgView.messages) < 20 && !msgView.initialHistoryLoaded {
-		msgView.initialHistoryLoaded = true
-		go view.LoadHistory(room.ID)
+		if msgView == nil {
+			debug.Print("nil message view in switchRoom!")
+		} else {
+			msgView.initialHistoryLoaded = true
+			go view.LoadHistory(room.ID)
+		}
 	}
 	if !room.MembersFetched {
 		go func() {

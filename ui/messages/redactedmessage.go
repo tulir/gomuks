@@ -20,6 +20,7 @@ import (
 	"go.mau.fi/mauview"
 	"go.mau.fi/tcell"
 
+	"maunium.net/go/gomuks/debug"
 	"maunium.net/go/gomuks/matrix/muksevt"
 
 	"maunium.net/go/gomuks/config"
@@ -28,6 +29,9 @@ import (
 type RedactedMessage struct{}
 
 func NewRedactedMessage(evt *muksevt.Event, displayname string) *UIMessage {
+	if evt == nil {
+		debug.Print("evt nil in NewRedactedMessage")
+	}
 	return newUIMessage(evt, displayname, &RedactedMessage{})
 }
 

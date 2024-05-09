@@ -358,7 +358,9 @@ func (room *Room) Tags() []RoomTag {
 			return []RoomTag{tagDirect}
 		} else if room.SessionMember != nil && room.SessionMember.Membership == event.MembershipInvite {
 			return []RoomTag{tagInvite}
-		} else if room.SessionMember != nil && room.SessionMember.Membership != event.MembershipJoin {
+		} else if room.SessionMember != nil && room.SessionMember.Membership == event.MembershipLeave {
+			return []RoomTag{tagLeave}
+		} else if room.SessionMember != nil && room.SessionMember.Membership == event.MembershipBan {
 			return []RoomTag{tagLeave}
 		}
 		return []RoomTag{tagDefault}

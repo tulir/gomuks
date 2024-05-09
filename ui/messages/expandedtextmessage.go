@@ -23,6 +23,7 @@ import (
 	"go.mau.fi/mauview"
 	"go.mau.fi/tcell"
 
+	"maunium.net/go/gomuks/debug"
 	"maunium.net/go/gomuks/matrix/muksevt"
 
 	"maunium.net/go/gomuks/config"
@@ -36,6 +37,9 @@ type ExpandedTextMessage struct {
 
 // NewExpandedTextMessage creates a new ExpandedTextMessage object with the provided values and the default state.
 func NewExpandedTextMessage(evt *muksevt.Event, displayname string, text tstring.TString) *UIMessage {
+	if evt == nil {
+		debug.Print("evt nil in NewExpandedTextMessage")
+	}
 	return newUIMessage(evt, displayname, &ExpandedTextMessage{
 		Text: text,
 	})

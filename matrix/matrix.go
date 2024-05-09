@@ -128,7 +128,8 @@ func (c *Container) InitClient(isStartup bool) error {
 		return fmt.Errorf("failed to create mautrix client: %w", err)
 	}
 	c.client.UserAgent = fmt.Sprintf("gomuks/%s %s", c.gmx.Version(), mautrix.DefaultUserAgent)
-	c.client.Logger = mxLogger{}
+	//TODO: Figure out what this needs to be replaced with, if anything
+	//c.client.Logger = mxLogger{}
 	c.client.DeviceID = c.config.DeviceID
 
 	err = c.initCrypto()
@@ -137,6 +138,7 @@ func (c *Container) InitClient(isStartup bool) error {
 	}
 
 	if c.history == nil {
+		//TODO: Handle case where another gomuks instance is already open
 		c.history, err = NewHistoryManager(c.config.HistoryPath)
 		if err != nil {
 			return fmt.Errorf("failed to initialize history: %w", err)
@@ -152,7 +154,10 @@ func (c *Container) InitClient(isStartup bool) error {
 
 	if !SkipVersionCheck && (!isStartup || len(c.client.AccessToken) > 0) {
 		debug.Printf("Checking versions that %s supports", c.client.HomeserverURL)
-		resp, err := c.client.Versions()
+		//ADDED by symys
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		resp, err := c.client.Versions(ctx)
 		if err != nil {
 			debug.Print("Error checking supported versions:", err)
 			return fmt.Errorf("failed to check server versions: %w", err)
@@ -186,7 +191,9 @@ func (c *Container) Initialized() bool {
 }
 
 func (c *Container) PasswordLogin(user, password string) error {
-	resp, err := c.client.Login(&mautrix.ReqLogin{
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	resp, err := c.client.Login(ctx, &mautrix.ReqLogin{
 		Type: "m.login.password",
 		Identifier: mautrix.UserIdentifier{
 			Type: "m.id.user",
@@ -250,7 +257,9 @@ func (c *Container) SingleSignOn() error {
 			respondHTML(w, http.StatusBadRequest, "Missing loginToken parameter")
 			return
 		}
-		resp, err := c.client.Login(&mautrix.ReqLogin{
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		resp, err := c.client.Login(ctx, &mautrix.ReqLogin{
 			Type:                     "m.login.token",
 			Token:                    loginToken,
 			InitialDeviceDisplayName: "gomuks",
@@ -285,7 +294,9 @@ func (c *Container) SingleSignOn() error {
 
 // Login sends a password login request with the given username and password.
 func (c *Container) Login(user, password string) error {
-	resp, err := c.client.GetLoginFlows()
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	resp, err := c.client.GetLoginFlows(ctx)
 	if err != nil {
 		return err
 	}
@@ -309,7 +320,9 @@ func (c *Container) Login(user, password string) error {
 
 // Logout revokes the access token, stops the syncer and calls the OnLogout() method of the UI.
 func (c *Container) Logout() {
-	c.client.Logout()
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	c.client.Logout(ctx)
 	c.Stop()
 	c.config.DeleteSession()
 	c.client = nil
@@ -345,7 +358,9 @@ func (c *Container) Stop() {
 // UpdatePushRules fetches the push notification rules from the server and stores them in the current Session object.
 func (c *Container) UpdatePushRules() {
 	debug.Print("Updating push rules...")
-	resp, err := c.client.GetPushRules()
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	resp, err := c.client.GetPushRules(ctx)
 	if err != nil {
 		debug.Print("Failed to fetch push rules:", err)
 		c.config.PushRules = &pushrules.PushRuleset{}
@@ -392,7 +407,7 @@ func (c *Container) OnLogin() {
 	c.syncer = NewGomuksSyncer(c.config.Rooms)
 	if c.crypto != nil {
 		c.syncer.OnSync(c.crypto.ProcessSyncResponse)
-		c.syncer.OnEventType(event.StateMember, func(source mautrix.EventSource, evt *event.Event) {
+		c.syncer.OnEventType(event.StateMember, func(_ context.Context, evt *event.Event) {
 			// Don't spam the crypto module with member events of an initial sync
 			// TODO invalidate all group sessions when clearing cache?
 			if c.config.AuthCache.InitialSyncDone {
@@ -491,8 +506,9 @@ func (c *Container) Start() {
 	}
 }
 
-func (c *Container) HandlePreferences(source mautrix.EventSource, evt *event.Event) {
-	if source&mautrix.EventSourceAccountData == 0 {
+func (c *Container) HandlePreferences(_ context.Context, evt *event.Event) {
+	source := evt.Mautrix.EventSource
+	if source&event.SourceAccountData == 0 {
 		return
 	}
 	orig := c.config.Preferences
@@ -514,13 +530,15 @@ func (c *Container) Preferences() *config.UserPreferences {
 func (c *Container) SendPreferencesToMatrix() {
 	defer debug.Recover()
 	debug.Printf("Sending updated preferences: %#v", c.config.Preferences)
-	err := c.client.SetAccountData(AccountDataGomuksPreferences.Type, &c.config.Preferences)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	err := c.client.SetAccountData(ctx, AccountDataGomuksPreferences.Type, &c.config.Preferences)
 	if err != nil {
 		debug.Print("Failed to update preferences:", err)
 	}
 }
 
-func (c *Container) HandleRedaction(source mautrix.EventSource, evt *event.Event) {
+func (c *Container) HandleRedaction(_ context.Context, evt *event.Event) {
 	room := c.GetOrCreateRoom(evt.RoomID)
 	var redactedEvt *muksevt.Event
 	err := c.history.Update(room, evt.Redacts, func(redacted *muksevt.Event) error {
@@ -585,6 +603,9 @@ func (c *Container) HandleReaction(room *rooms.Room, reactsTo id.EventID, reactE
 	rel := reactEvent.Content.AsReaction().RelatesTo
 	var origEvt *muksevt.Event
 	err := c.history.Update(room, reactsTo, func(evt *muksevt.Event) error {
+		if evt.Unsigned.Relations == nil {
+			evt.Unsigned.Relations = &event.Relations{}
+		}
 		if evt.Unsigned.Relations.Annotations.Map == nil {
 			evt.Unsigned.Relations.Annotations.Map = make(map[string]int)
 		}
@@ -612,14 +633,46 @@ func (c *Container) HandleReaction(room *rooms.Room, reactsTo id.EventID, reactE
 	}
 }
 
-func (c *Container) HandleEncryptedUnsupported(source mautrix.EventSource, mxEvent *event.Event) {
+func (c *Container) HandleThread(room *rooms.Room, reactsTo id.EventID, reactEvent *muksevt.Event) {
+	rel := reactEvent.Content.AsReaction().RelatesTo
+	var origEvt *muksevt.Event
+	err := c.history.Update(room, reactsTo, func(evt *muksevt.Event) error {
+		if evt.Unsigned.Relations.Annotations.Map == nil {
+			evt.Unsigned.Relations.Annotations.Map = make(map[string]int)
+		}
+		val, _ := evt.Unsigned.Relations.Annotations.Map[rel.Key]
+		evt.Unsigned.Relations.Annotations.Map[rel.Key] = val + 1
+		origEvt = evt
+		return nil
+	})
+	if err != nil {
+		debug.Print("Failed to store reaction in history db:", err)
+		return
+	} else if !c.config.AuthCache.InitialSyncDone || !room.Loaded() {
+		return
+	}
+
+	roomView := c.ui.MainView().GetRoom(reactEvent.RoomID)
+	if roomView == nil {
+		debug.Printf("Failed to handle edit event %v: No room view found.", reactEvent)
+		return
+	}
+
+	roomView.AddReaction(origEvt, rel.Key)
+	if c.syncer.FirstSyncDone {
+		c.ui.Render()
+	}
+}
+
+func (c *Container) HandleEncryptedUnsupported(_ context.Context, mxEvent *event.Event) {
 	mxEvent.Type = muksevt.EventEncryptionUnsupported
 	origContent, _ := mxEvent.Content.Parsed.(*event.EncryptedEventContent)
 	mxEvent.Content.Parsed = muksevt.EncryptionUnsupportedContent{Original: origContent}
-	c.HandleMessage(source, mxEvent)
+	ctx := context.TODO()
+	c.HandleMessage(ctx, mxEvent)
 }
 
-func (c *Container) HandleEncrypted(source mautrix.EventSource, mxEvent *event.Event) {
+func (c *Container) HandleEncrypted(_ context.Context, mxEvent *event.Event) {
 	evt, err := c.crypto.DecryptMegolmEvent(mxEvent)
 	if err != nil {
 		debug.Printf("Failed to decrypt event %s: %v", mxEvent.ID, err)
@@ -629,7 +682,9 @@ func (c *Container) HandleEncrypted(source mautrix.EventSource, mxEvent *event.E
 			Original: origContent,
 			Reason:   err.Error(),
 		}
-		c.HandleMessage(source, mxEvent)
+
+		ctx := context.TODO()
+		c.HandleMessage(ctx, mxEvent)
 		return
 	}
 	if evt.Type.IsInRoomVerification() {
@@ -640,17 +695,19 @@ func (c *Container) HandleEncrypted(source mautrix.EventSource, mxEvent *event.E
 			debug.Printf("[Crypto/Debug] Processed in-room verification event %s of type %s", evt.ID, evt.Type.String())
 		}
 	} else {
-		c.HandleMessage(source, evt)
+		ctx := context.TODO()
+		c.HandleMessage(ctx, evt)
 	}
 }
 
 // HandleMessage is the event handler for the m.room.message timeline event.
-func (c *Container) HandleMessage(source mautrix.EventSource, mxEvent *event.Event) {
+func (c *Container) HandleMessage(_ context.Context, mxEvent *event.Event) {
+	source := mxEvent.Mautrix.EventSource
 	room := c.GetOrCreateRoom(mxEvent.RoomID)
-	if source&mautrix.EventSourceLeave != 0 {
+	if source&event.SourceLeave != 0 {
 		room.HasLeft = true
 		return
-	} else if source&mautrix.EventSourceState != 0 {
+	} else if source&event.SourceState != 0 {
 		return
 	}
 
@@ -709,9 +766,10 @@ func (c *Container) HandleMessage(source mautrix.EventSource, mxEvent *event.Eve
 }
 
 // HandleMembership is the event handler for the m.room.member state event.
-func (c *Container) HandleMembership(source mautrix.EventSource, evt *event.Event) {
-	isLeave := source&mautrix.EventSourceLeave != 0
-	isTimeline := source&mautrix.EventSourceTimeline != 0
+func (c *Container) HandleMembership(_ context.Context, evt *event.Event) {
+	source := evt.Mautrix.EventSource
+	isLeave := source&event.SourceLeave != 0
+	isTimeline := source&event.SourceTimeline != 0
 	if isLeave {
 		c.GetOrCreateRoom(evt.RoomID).HasLeft = true
 	}
@@ -725,7 +783,8 @@ func (c *Container) HandleMembership(source mautrix.EventSource, evt *event.Even
 		return
 	}
 
-	c.HandleMessage(source, evt)
+	ctx := context.TODO()
+	c.HandleMessage(ctx, evt)
 }
 
 func (c *Container) processOwnMembershipChange(evt *event.Event) {
@@ -764,15 +823,15 @@ func (c *Container) processOwnMembershipChange(evt *event.Event) {
 }
 
 func (c *Container) parseReadReceipt(evt *event.Event) (largestTimestampEvent id.EventID) {
-	var largestTimestamp int64
+	var largestTimestamp time.Time
 
 	for eventID, receipts := range *evt.Content.AsReceipt() {
-		myInfo, ok := receipts.Read[c.config.UserID]
+		myInfo, ok := receipts[event.ReceiptTypeRead][c.config.UserID]
 		if !ok {
 			continue
 		}
 
-		if myInfo.Timestamp > largestTimestamp {
+		if myInfo.Timestamp.After(largestTimestamp) {
 			largestTimestamp = myInfo.Timestamp
 			largestTimestampEvent = eventID
 		}
@@ -780,8 +839,9 @@ func (c *Container) parseReadReceipt(evt *event.Event) (largestTimestampEvent id
 	return
 }
 
-func (c *Container) HandleReadReceipt(source mautrix.EventSource, evt *event.Event) {
-	if source&mautrix.EventSourceLeave != 0 {
+func (c *Container) HandleReadReceipt(_ context.Context, evt *event.Event) {
+	source := evt.Mautrix.EventSource
+	if source&event.SourceLeave != 0 {
 		return
 	}
 
@@ -813,7 +873,7 @@ func (c *Container) parseDirectChatInfo(evt *event.Event) map[*rooms.Room]id.Use
 	return directChats
 }
 
-func (c *Container) HandleDirectChatInfo(_ mautrix.EventSource, evt *event.Event) {
+func (c *Container) HandleDirectChatInfo(_ context.Context, evt *event.Event) {
 	directChats := c.parseDirectChatInfo(evt)
 	for _, room := range c.config.Rooms.Map {
 		userID, isDirect := directChats[room]
@@ -828,7 +888,7 @@ func (c *Container) HandleDirectChatInfo(_ mautrix.EventSource, evt *event.Event
 }
 
 // HandlePushRules is the event handler for the m.push_rules account data event.
-func (c *Container) HandlePushRules(_ mautrix.EventSource, evt *event.Event) {
+func (c *Container) HandlePushRules(_ context.Context, evt *event.Event) {
 	debug.Print("Received updated push rules")
 	var err error
 	c.config.PushRules, err = pushrules.EventToPushRules(evt)
@@ -840,7 +900,7 @@ func (c *Container) HandlePushRules(_ mautrix.EventSource, evt *event.Event) {
 }
 
 // HandleTag is the event handler for the m.tag account data event.
-func (c *Container) HandleTag(_ mautrix.EventSource, evt *event.Event) {
+func (c *Container) HandleTag(_ context.Context, evt *event.Event) {
 	room := c.GetOrCreateRoom(evt.RoomID)
 
 	tags := evt.Content.AsTag().Tags
@@ -867,7 +927,7 @@ func (c *Container) HandleTag(_ mautrix.EventSource, evt *event.Event) {
 }
 
 // HandleTyping is the event handler for the m.typing event.
-func (c *Container) HandleTyping(_ mautrix.EventSource, evt *event.Event) {
+func (c *Container) HandleTyping(_ context.Context, evt *event.Event) {
 	if !c.config.AuthCache.InitialSyncDone {
 		return
 	}
@@ -876,8 +936,10 @@ func (c *Container) HandleTyping(_ mautrix.EventSource, evt *event.Event) {
 
 func (c *Container) MarkRead(roomID id.RoomID, eventID id.EventID) {
 	go func() {
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
 		defer debug.Recover()
-		err := c.client.MarkRead(roomID, eventID)
+		err := c.client.MarkRead(ctx, roomID, eventID)
 		if err != nil {
 			debug.Printf("Failed to mark %s in %s as read: %v", eventID, roomID, err)
 		}
@@ -923,6 +985,11 @@ func (c *Container) PrepareMarkdownMessage(roomID id.RoomID, msgtype event.Messa
 	return c.prepareEvent(roomID, &content, rel)
 }
 
+const (
+	//This shouldn't be here, it exists in the new version of the events library
+	RelThread event.RelationType = "m.thread"
+)
+
 func (c *Container) prepareEvent(roomID id.RoomID, content *event.MessageEventContent, rel *ifc.Relation) *muksevt.Event {
 	if rel != nil && rel.Type == event.RelReplace {
 		contentCopy := *content
@@ -935,7 +1002,10 @@ func (c *Container) prepareEvent(roomID id.RoomID, content *event.MessageEventCo
 			Type:    event.RelReplace,
 			EventID: rel.Event.ID,
 		}
-	} else if rel != nil && rel.Type == event.RelReply {
+	} else if rel != nil && rel.Type == RelThread {
+		content.SetReply(rel.Event.Event)
+		//symys TODO: Use the event.RelatesTo.InReplyTo thing
+	} else if rel != nil && rel.Type == "m.in_reply_to" {
 		content.SetReply(rel.Event.Event)
 	}
 
@@ -959,7 +1029,9 @@ func (c *Container) prepareEvent(roomID id.RoomID, content *event.MessageEventCo
 
 func (c *Container) Redact(roomID id.RoomID, eventID id.EventID, reason string) error {
 	defer debug.Recover()
-	_, err := c.client.RedactEvent(roomID, eventID, mautrix.ReqRedact{Reason: reason})
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	_, err := c.client.RedactEvent(ctx, roomID, eventID, mautrix.ReqRedact{Reason: reason})
 	return err
 }
 
@@ -967,7 +1039,8 @@ func (c *Container) Redact(roomID id.RoomID, eventID id.EventID, reason string) 
 func (c *Container) SendEvent(evt *muksevt.Event) (id.EventID, error) {
 	defer debug.Recover()
 
-	_, _ = c.client.UserTyping(evt.RoomID, false, 0)
+	ctx := context.TODO()
+	_, _ = c.client.UserTyping(ctx, evt.RoomID, false, 0)
 	c.typing = 0
 	room := c.GetRoom(evt.RoomID)
 	if room != nil && room.Encrypted && c.crypto != nil && evt.Type != event.EventReaction {
@@ -989,7 +1062,7 @@ func (c *Container) SendEvent(evt *muksevt.Event) (id.EventID, error) {
 		evt.Type = event.EventEncrypted
 		evt.Content = event.Content{Parsed: encrypted}
 	}
-	resp, err := c.client.SendMessageEvent(evt.RoomID, evt.Type, &evt.Content, mautrix.ReqSendEvent{TransactionID: evt.Unsigned.TransactionID})
+	resp, err := c.client.SendMessageEvent(ctx, evt.RoomID, evt.Type, &evt.Content, mautrix.ReqSendEvent{TransactionID: evt.Unsigned.TransactionID})
 	if err != nil {
 		return "", err
 	}
@@ -1032,7 +1105,9 @@ func (c *Container) UploadMedia(path string, encrypt bool) (*ifc.UploadedMediaIn
 		content = file
 	}
 
-	resp, err := c.client.UploadMedia(mautrix.ReqUploadMedia{
+	ctx := context.TODO()
+
+	resp, err := c.client.UploadMedia(ctx, mautrix.ReqUploadMedia{
 		Content:       content,
 		ContentLength: stat.Size(),
 		ContentType:   uploadMimeType,
@@ -1052,9 +1127,11 @@ func (c *Container) UploadMedia(path string, encrypt bool) (*ifc.UploadedMediaIn
 	}, nil
 }
 
-func (c *Container) sendTypingAsync(roomID id.RoomID, typing bool, timeout int64) {
+func (c *Container) sendTypingAsync(roomID id.RoomID, typing bool, timeout time.Duration) {
 	defer debug.Recover()
-	_, _ = c.client.UserTyping(roomID, typing, timeout)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	_, _ = c.client.UserTyping(ctx, roomID, typing, timeout)
 }
 
 // SendTyping sets whether or not the user is typing in the given room.
@@ -1075,7 +1152,9 @@ func (c *Container) SendTyping(roomID id.RoomID, typing bool) {
 
 // CreateRoom attempts to create a new room and join the user.
 func (c *Container) CreateRoom(req *mautrix.ReqCreateRoom) (*rooms.Room, error) {
-	resp, err := c.client.CreateRoom(req)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	resp, err := c.client.CreateRoom(ctx, req)
 	if err != nil {
 		return nil, err
 	}
@@ -1085,7 +1164,9 @@ func (c *Container) CreateRoom(req *mautrix.ReqCreateRoom) (*rooms.Room, error) 
 
 // JoinRoom makes the current user try to join the given room.
 func (c *Container) JoinRoom(roomID id.RoomID, server string) (*rooms.Room, error) {
-	resp, err := c.client.JoinRoom(string(roomID), server, nil)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	resp, err := c.client.JoinRoom(ctx, string(roomID), server, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -1097,7 +1178,9 @@ func (c *Container) JoinRoom(roomID id.RoomID, server string) (*rooms.Room, erro
 
 // LeaveRoom makes the current user leave the given room.
 func (c *Container) LeaveRoom(roomID id.RoomID) error {
-	_, err := c.client.LeaveRoom(roomID)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	_, err := c.client.LeaveRoom(ctx, roomID)
 	if err != nil {
 		return err
 	}
@@ -1110,7 +1193,9 @@ func (c *Container) LeaveRoom(roomID id.RoomID) error {
 
 func (c *Container) FetchMembers(room *rooms.Room) error {
 	debug.Print("Fetching member list for", room.ID)
-	members, err := c.client.Members(room.ID, mautrix.ReqMembers{At: room.LastPrevBatch})
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	members, err := c.client.Members(ctx, room.ID, mautrix.ReqMembers{At: room.LastPrevBatch})
 	if err != nil {
 		return err
 	}
@@ -1137,7 +1222,9 @@ func (c *Container) GetHistory(room *rooms.Room, limit int, dbPointer uint64) ([
 		debug.Printf("Loaded %d events for %s from local cache", len(events), room.ID)
 		return events, newDBPointer, nil
 	}
-	resp, err := c.client.Messages(room.ID, room.PrevBatch, "", 'b', nil, limit)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	resp, err := c.client.Messages(ctx, room.ID, room.PrevBatch, "", 'b', nil, limit)
 	if err != nil {
 		return nil, dbPointer, err
 	}
@@ -1193,7 +1280,9 @@ func (c *Container) GetEvent(room *rooms.Room, eventID id.EventID) (*muksevt.Eve
 		debug.Printf("Found event %s in local cache", eventID)
 		return evt, err
 	}
-	mxEvent, err := c.client.GetEvent(room.ID, eventID)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	mxEvent, err := c.client.GetEvent(ctx, room.ID, eventID)
 	if err != nil {
 		return nil, err
 	}
@@ -1247,7 +1336,9 @@ func (c *Container) DownloadToDisk(uri id.ContentURI, file *attachment.Encrypted
 
 	if _, statErr := os.Stat(cachePath); os.IsNotExist(statErr) {
 		var body io.ReadCloser
-		body, err = c.client.Download(uri)
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		body, err = c.client.Download(ctx, uri)
 		if err != nil {
 			return
 		}
@@ -1306,7 +1397,9 @@ func (c *Container) GetDownloadURL(uri id.ContentURI) string {
 
 func (c *Container) download(uri id.ContentURI, file *attachment.EncryptedFile, cacheFile string) (data []byte, err error) {
 	var body io.ReadCloser
-	body, err = c.client.Download(uri)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	body, err = c.client.Download(ctx, uri)
 	if err != nil {
 		return
 	}

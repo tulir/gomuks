@@ -48,6 +48,7 @@ func getCachedEvent(mainView ifc.MainView, roomID id.RoomID, eventID id.EventID)
 func ParseEvent(matrix ifc.MatrixContainer, mainView ifc.MainView, room *rooms.Room, evt *muksevt.Event) *UIMessage {
 	msg := directParseEvent(matrix, room, evt)
 	if msg == nil {
+		debug.Printf("nil message in ParseEvent")
 		return nil
 	}
 	if content, ok := evt.Content.Parsed.(*event.MessageEventContent); ok && len(content.GetReplyTo()) > 0 {
@@ -86,7 +87,7 @@ func directParseEvent(matrix ifc.MatrixContainer, room *rooms.Room, evt *muksevt
 		return NewExpandedTextMessage(evt, displayname, tstring.NewStyleTString(content.Reason, tcell.StyleDefault.Italic(true)))
 	case *muksevt.EncryptionUnsupportedContent:
 		return NewExpandedTextMessage(evt, displayname, tstring.NewStyleTString("gomuks not built with encryption support", tcell.StyleDefault.Italic(true)))
-	case *event.TopicEventContent, *event.RoomNameEventContent, *event.CanonicalAliasEventContent:
+	case *event.TopicEventContent, *event.CreateEventContent, *event.RoomNameEventContent, *event.CanonicalAliasEventContent:
 		return ParseStateEvent(evt, displayname)
 	case *event.MemberEventContent:
 		return ParseMembershipEvent(room, evt)
@@ -156,6 +157,10 @@ func ParseStateEvent(evt *muksevt.Event, displayname string) *UIMessage {
 				AppendStyle(content.Name, tcell.StyleDefault.Underline(true)).
 				AppendColor(".", tcell.ColorGreen)
 		}
+	case *event.CreateEventContent:
+		text = tstring.NewColorTString(displayname, widget.GetHashColor(evt.Sender)).Append(" ")
+		createString := fmt.Sprintf("%v created the room. Federating: %v | Type: %v | Room Version: %v | Predecessor: %v", content.Creator, content.Federate, content.Type, content.RoomVersion, content.Predecessor)
+		text = text.AppendColor(createString, tcell.ColorGreen)
 	case *event.CanonicalAliasEventContent:
 		prevContent := &event.CanonicalAliasEventContent{}
 		if evt.Unsigned.PrevContent != nil {
@@ -221,9 +226,11 @@ func ParseMessage(matrix ifc.MatrixContainer, room *rooms.Room, evt *muksevt.Eve
 		return NewHTMLMessage(evt, displayname, htmlEntity)
 	case event.MsgImage, event.MsgVideo, event.MsgAudio, event.MsgFile:
 		msg := NewFileMessage(matrix, evt, displayname)
-		if !matrix.Preferences().DisableDownloads {
-			renderer := msg.Renderer.(*FileMessage)
-			renderer.DownloadPreview()
+		if matrix != nil && matrix.Preferences() != nil && msg != nil && !matrix.Preferences().DisableDownloads {
+			if msg.Renderer != nil {
+				renderer := msg.Renderer.(*FileMessage)
+				renderer.DownloadPreview()
+			}
 		}
 		return msg
 	}
