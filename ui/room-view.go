@@ -45,6 +45,7 @@ import (
 	"maunium.net/go/gomuks/matrix/rooms"
 	"maunium.net/go/gomuks/ui/messages"
 	"maunium.net/go/gomuks/ui/widget"
+	"maunium.net/go/mautrix/util/variationselector"
 )
 
 type RoomView struct {
@@ -760,7 +761,7 @@ func (view *RoomView) SendReaction(eventID id.EventID, reaction string) {
 	if !view.config.Preferences.DisableEmojis {
 		reaction = emoji.Sprint(reaction)
 	}
-	reaction = strings.TrimSpace(reaction)
+	reaction = variationselector.Add(strings.TrimSpace(reaction))
 	debug.Print("Reacting to", eventID, "in", view.Room.ID, "with", reaction)
 	eventID, err := view.parent.matrix.SendEvent(&muksevt.Event{
 		Event: &event.Event{

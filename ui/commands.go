@@ -366,8 +366,7 @@ func niceError(err error) string {
 }
 
 func cmdAddAlias(cmd *Command, alias id.RoomAlias) {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
+	ctx := context.TODO()
 	_, err := cmd.Matrix.Client().CreateAlias(ctx, alias, cmd.Room.MxRoom().ID)
 	if err != nil {
 		cmd.Reply("Failed to create alias: %v", niceError(err))

@@ -122,7 +122,7 @@ func (s *GomuksSyncer) ProcessResponse(_ context.Context, res *mautrix.RespSync,
 }
 
 func (s *GomuksSyncer) notifyGlobalListeners(res *mautrix.RespSync, since string, callback func()) {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx := context.TODO()
 	defer cancel()
 	for _, listener := range s.globalListeners {
 		go func(listener mautrix.SyncHandler) {
@@ -230,7 +230,7 @@ func (s *GomuksSyncer) notifyListeners(source event.Source, evt *event.Event) {
 		return
 	}
 	for _, fn := range listeners {
-		fn(nil, evt)
+		fn(source, evt)
 	}
 }
 
