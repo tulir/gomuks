@@ -358,12 +358,9 @@ func (room *Room) Tags() []RoomTag {
 			return []RoomTag{tagDirect}
 		} else if room.SessionMember != nil && room.SessionMember.Membership == event.MembershipInvite {
 			return []RoomTag{tagInvite}
-			//TODO: symys changed the following to == nil, it was != nil
-			//requesting review, since this fixed the bug where random rooms showed up under historical,
-			//but idk if it might have unintended consequences
-		} else if room.SessionMember == nil {
+		} else if room.SessionMember != nil && room.SessionMember.Membership == event.MembershipLeave {
 			return []RoomTag{tagLeave}
-		} else if room.SessionMember != nil && room.SessionMember.Membership != event.MembershipJoin {
+		} else if room.SessionMember != nil && room.SessionMember.Membership == event.MembershipBan {
 			return []RoomTag{tagLeave}
 		}
 		return []RoomTag{tagDefault}
