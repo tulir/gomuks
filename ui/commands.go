@@ -97,8 +97,7 @@ func makeRainbow(cmd *Command, msgtype event.MessageType) {
 	_ = rainbowMark.Convert([]byte(text), &buf)
 
 	htmlBody := strings.TrimRight(buf.String(), "\n")
-	antiParagraphRegex := regexp.MustCompile("^<p>(.+?)</p>$")
-	htmlBody = antiParagraphRegex.ReplaceAllString(htmlBody, "$1")
+	htmlBody = format.UnwrapSingleParagraph(htmlBody)
 	text = format.HTMLToText(htmlBody)
 
 	count := strings.Count(htmlBody, defaultRB.ColorID)
