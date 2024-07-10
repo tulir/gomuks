@@ -25,7 +25,7 @@ require (
 	gopkg.in/vansante/go-ffprobe.v2 v2.1.1
 	gopkg.in/yaml.v3 v3.0.1
 	maunium.net/go/mauflag v1.0.0
-	maunium.net/go/mautrix v0.11.1
+	maunium.net/go/mautrix v0.11.2-0.20240620211416-fa19263891f5
 	mvdan.cc/xurls/v2 v2.4.0
 )
 
