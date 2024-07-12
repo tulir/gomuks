@@ -45,24 +45,6 @@ windows/amd64:
     paths:
     - gomuks.exe
 
-macos/amd64:
-  stage: build
-  tags:
-  - macos
-  - amd64
-  before_script:
-  - export GO_LDFLAGS="-X main.Tag=$CI_COMMIT_TAG -X main.Commit=$CI_COMMIT_SHA -X 'main.BuildTime=`date '+%b %_d %Y, %H:%M:%S'`'"
-  script:
-  - mkdir gomuks-macos-amd64
-  - go build -ldflags "$GO_LDFLAGS" -o gomuks-macos-amd64/gomuks
-  - install_name_tool -change /usr/local/opt/libolm/lib/libolm.3.dylib @rpath/libolm.3.dylib gomuks-macos-amd64/gomuks
-  - install_name_tool -add_rpath @executable_path gomuks-macos-amd64/gomuks
-  - install_name_tool -add_rpath /usr/local/opt/libolm/lib gomuks-macos-amd64/gomuks
-  - cp /usr/local/opt/libolm/lib/libolm.3.dylib gomuks-macos-amd64/
-  artifacts:
-    paths:
-    - gomuks-macos-amd64
-
 macos/arm64:
   stage: build
   tags:

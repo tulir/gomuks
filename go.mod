@@ -10,7 +10,7 @@ require (
 	github.com/lithammer/fuzzysearch v1.1.5
 	github.com/lucasb-eyer/go-colorful v1.2.0
 	github.com/mattn/go-runewidth v0.0.14
-	github.com/mattn/go-sqlite3 v1.14.16
+	github.com/mattn/go-sqlite3 v1.14.22
 	github.com/rivo/uniseg v0.4.2
 	github.com/sasha-s/go-deadlock v0.3.1
 	github.com/yuin/goldmark v1.5.3
