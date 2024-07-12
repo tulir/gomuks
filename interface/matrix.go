@@ -73,7 +73,7 @@ type MatrixContainer interface {
 	UploadMedia(path string, encrypt bool) (*UploadedMediaInfo, error)
 	Download(uri id.ContentURI, file *attachment.EncryptedFile) ([]byte, error)
 	DownloadToDisk(uri id.ContentURI, file *attachment.EncryptedFile, target string) (string, error)
-	GetDownloadURL(uri id.ContentURI) string
+	GetDownloadURL(uri id.ContentURI, file *attachment.EncryptedFile) string
 	GetCachePath(uri id.ContentURI) string
 
 	Crypto() Crypto

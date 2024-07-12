@@ -106,7 +106,7 @@ func (msg *FileMessage) NotificationContent() string {
 }
 
 func (msg *FileMessage) PlainText() string {
-	return fmt.Sprintf("%s: %s", msg.Body, msg.matrix.GetDownloadURL(msg.URL))
+	return fmt.Sprintf("%s: %s", msg.Body, msg.matrix.GetDownloadURL(msg.URL, msg.File))
 }
 
 func (msg *FileMessage) String() string {
@@ -146,7 +146,7 @@ func (msg *FileMessage) CalculateBuffer(prefs config.UserPreferences, width int,
 	}
 
 	if prefs.BareMessageView || prefs.DisableImages || len(msg.imageData) == 0 {
-		url := msg.matrix.GetDownloadURL(msg.URL)
+		url := msg.matrix.GetDownloadURL(msg.URL, msg.File)
 		var urlTString tstring.TString
 		if prefs.EnableInlineURLs() {
 			urlTString = tstring.NewStyleTString(url, tcell.StyleDefault.Url(url).UrlId(msg.eventID.String()))

@@ -26,12 +26,16 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+	"net/http/httptest"
+	"net/url"
 	"os"
 	"path"
 	"path/filepath"
 	"reflect"
 	"runtime"
 	dbg "runtime/debug"
+	"strconv"
+	"strings"
 	"time"
 
 	"maunium.net/go/mautrix"
@@ -62,6 +66,8 @@ type Container struct {
 	history *HistoryManager
 	running bool
 	stop    chan bool
+
+	mediaProxyURL string
 
 	typing int64
 }
@@ -172,12 +178,73 @@ func (c *Container) InitClient(isStartup bool) error {
 		}
 	}
 
+	if c.mediaProxyURL == "" {
+		server := httptest.NewServer(http.HandlerFunc(c.doMediaProxy))
+		c.mediaProxyURL = server.URL
+		debug.Print("Started media proxy server at", c.mediaProxyURL)
+	}
+
 	c.stop = make(chan bool, 1)
 
 	if len(accessToken) > 0 {
 		go c.Start()
 	}
 	return nil
+}
+
+func (c *Container) doMediaProxy(w http.ResponseWriter, r *http.Request) {
+	parts := strings.Split(strings.Trim(r.URL.Path, "/"), "/")
+	if len(parts) != 2 {
+		w.WriteHeader(http.StatusNotFound)
+		_, _ = w.Write([]byte("Invalid path\n"))
+		return
+	}
+	uri := id.ContentURI{
+		Homeserver: parts[0],
+		FileID:     parts[1],
+	}
+	key := r.URL.Query().Get("k")
+	iv := r.URL.Query().Get("iv")
+	hash := r.URL.Query().Get("hash")
+	var file *attachment.EncryptedFile
+	if key != "" && iv != "" && hash != "" {
+		file = &attachment.EncryptedFile{
+			Key: attachment.JSONWebKey{
+				Key:         key,
+				Algorithm:   "A256CTR",
+				Extractable: true,
+				KeyType:     "oct",
+				KeyOps:      []string{"encrypt", "decrypt"},
+			},
+			InitVector: iv,
+			Hashes: attachment.EncryptedFileHashes{
+				SHA256: hash,
+			},
+			Version: "v2",
+		}
+	}
+	data, err := c.Download(uri, file)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		_, _ = w.Write([]byte(fmt.Sprintf("Failed to download media: %v\n", err)))
+		return
+	}
+	mime := http.DetectContentType(data)
+	w.Header().Add("Content-Length", strconv.Itoa(len(data)))
+	w.Header().Add("Content-Type", mime)
+	switch mime {
+	case "text/css", "text/plain", "text/csv",
+		"application/json", "application/ld+json",
+		"image/jpeg", "image/gif", "image/png", "image/apng", "image/webp", "image/avif",
+		"video/mp4", "video/webm", "video/ogg", "video/quicktime",
+		"audio/mp4", "audio/webm", "audio/aac", "audio/mpeg", "audio/ogg", "audio/wave",
+		"audio/wav", "audio/x-wav", "audio/x-pn-wav", "audio/flac", "audio/x-flac":
+		w.Header().Add("Content-Disposition", "inline")
+	default:
+		w.Header().Add("Content-Disposition", "attachment")
+	}
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write(data)
 }
 
 // Initialized returns whether or not the mautrix client is initialized (see InitClient())
@@ -1300,8 +1367,17 @@ func (c *Container) Download(uri id.ContentURI, file *attachment.EncryptedFile) 
 	return
 }
 
-func (c *Container) GetDownloadURL(uri id.ContentURI) string {
-	return c.client.GetDownloadURL(uri)
+func (c *Container) GetDownloadURL(uri id.ContentURI, file *attachment.EncryptedFile) string {
+	addr, _ := url.Parse(c.mediaProxyURL)
+	addr.Path = path.Join(addr.Path, uri.Homeserver, uri.FileID)
+	if file != nil {
+		addr.RawQuery = (&url.Values{
+			"k":    {file.Key.Key},
+			"iv":   {file.InitVector},
+			"hash": {file.Hashes.SHA256},
+		}).Encode()
+	}
+	return addr.String()
 }
 
 func (c *Container) download(uri id.ContentURI, file *attachment.EncryptedFile, cacheFile string) (data []byte, err error) {
