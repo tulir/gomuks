@@ -67,27 +67,6 @@ macos/arm64:
     paths:
     - gomuks-macos-arm64
 
-macos/universal:
-  stage: package
-  tags:
-  - macos
-  dependencies:
-  - macos/amd64
-  - macos/arm64
-  needs:
-  - macos/amd64
-  - macos/arm64
-  variables:
-    GIT_STRATEGY: none
-  script:
-  - lipo -create -output libolm.3.dylib gomuks-macos-arm64/libolm.3.dylib gomuks-macos-amd64/libolm.3.dylib
-  - lipo -create -output gomuks gomuks-macos-arm64/gomuks gomuks-macos-amd64/gomuks
-  artifacts:
-    name: gomuks-macos-universal
-    paths:
-    - libolm.3.dylib
-    - gomuks
-
 debian:
   image: debian
   stage: package
