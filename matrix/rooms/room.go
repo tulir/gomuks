@@ -22,6 +22,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	sync "github.com/sasha-s/go-deadlock"
@@ -493,6 +494,15 @@ func (room *Room) GetCanonicalAlias() id.RoomAlias {
 		return ""
 	}
 	return room.CanonicalAliasCache
+}
+
+// FIXME - implement this idiomatically in Mautrix? caching?
+func (room *Room) GetServer() string {
+	var roomServer string
+	if (strings.Contains(room.ID.String(), ":")) {
+		roomServer = strings.Split(room.ID.String(), ":")[1]
+	}
+	return roomServer
 }
 
 // updateNameFromNameEvent updates the room display name to be the name set in the name event.
