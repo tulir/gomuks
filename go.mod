@@ -15,7 +15,7 @@ require (
 	github.com/sasha-s/go-deadlock v0.3.1
 	github.com/yuin/goldmark v1.5.3
 	github.com/zyedidia/clipboard v1.0.4
-	go.etcd.io/bbolt v1.3.6
+	go.etcd.io/bbolt v1.3.8
 	go.mau.fi/cbind v0.0.0-20220415094356-e1d579b7925e
 	go.mau.fi/mauview v0.2.1
 	go.mau.fi/tcell v0.4.0
@@ -41,7 +41,7 @@ require (
 	github.com/tidwall/pretty v1.2.0 // indirect
 	github.com/tidwall/sjson v1.2.4 // indirect
 	golang.org/x/crypto v0.0.0-20220513210258-46612604a0f9 // indirect
-	golang.org/x/sys v0.2.0 // indirect
+	golang.org/x/sys v0.15.0 // indirect
 	golang.org/x/term v0.2.0 // indirect
 	golang.org/x/text v0.4.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
