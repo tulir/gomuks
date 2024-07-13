@@ -74,6 +74,7 @@ type UIMessage struct {
 	SenderID           id.UserID
 	SenderName         string
 	DefaultSenderColor tcell.Color
+	HideTimestamp      bool
 	Timestamp          time.Time
 	State              muksevt.OutgoingState
 	IsHighlight        bool
@@ -277,6 +278,9 @@ func (msg *UIMessage) Time() time.Time {
 
 // FormatTime returns the formatted time when the message was sent.
 func (msg *UIMessage) FormatTime() string {
+	if msg.HideTimestamp {
+		return ""
+	}
 	return msg.Timestamp.Format(TimeFormat)
 }
 
@@ -289,6 +293,10 @@ func (msg *UIMessage) SameDate(message *UIMessage) bool {
 	year1, month1, day1 := msg.Timestamp.Date()
 	year2, month2, day2 := message.Timestamp.Date()
 	return day1 == day2 && month1 == month2 && year1 == year2
+}
+
+func (msg *UIMessage) SameSender(message *UIMessage) bool {
+	return msg.SenderID.URI().PrimaryIdentifier() == message.SenderID.URI().PrimaryIdentifier()
 }
 
 func (msg *UIMessage) ID() id.EventID {

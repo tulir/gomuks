@@ -175,25 +175,54 @@ func (view *MessageView) AddMessage(ifcMessage ifc.Message, direction MessageDir
 		return dateChange
 	}
 
+	makeSenderChange := func() *messages.UIMessage {
+		senderChange := messages.NewSenderChangeMessage()
+		senderChange.CalculateBuffer(view.config.Preferences, width)
+		return senderChange
+	}
+
 	if direction == AppendMessage {
 		if view.ScrollOffset > 0 {
 			view.ScrollOffset += message.Height()
 		}
 		view.messagesLock.Lock()
-		if len(view.messages) > 0 && !view.messages[len(view.messages)-1].SameDate(message) {
-			view.messages = append(view.messages, makeDateChange(message), message)
-		} else {
-			view.messages = append(view.messages, message)
+		var prevMessage *messages.UIMessage
+		if len(view.messages) > 0 {
+			prevMessage = view.messages[len(view.messages)-1]
 		}
+		if prevMessage != nil && !prevMessage.SameDate(message) {
+			view.messages = append(view.messages, makeDateChange(message))
+			if view.config.Preferences.EnableLineBreaks {
+				view.messages = append(view.messages, makeSenderChange())
+			}
+		}
+		if view.config.Preferences.EnableLineBreaks {
+			if prevMessage != nil && !prevMessage.SameSender(message) {
+				view.messages = append(view.messages, makeSenderChange())
+			}
+		}
+		view.messages = append(view.messages, message)
 		view.messagesLock.Unlock()
 		view.appendBuffer(message)
 	} else if direction == PrependMessage {
 		view.messagesLock.Lock()
-		if len(view.messages) > 0 && !view.messages[0].SameDate(message) {
-			view.messages = append([]*messages.UIMessage{message, makeDateChange(view.messages[0])}, view.messages...)
-		} else {
-			view.messages = append([]*messages.UIMessage{message}, view.messages...)
+		var prevMessage *messages.UIMessage
+		if len(view.messages) > 0 {
+			prevMessage = view.messages[0]
 		}
+		if prevMessage != nil && !prevMessage.SameDate(message) {
+			root := []*messages.UIMessage{makeDateChange(prevMessage)}
+			if view.config.Preferences.EnableLineBreaks {
+				root = append(root, makeSenderChange())
+			}
+			view.messages = append(root, view.messages...)
+		}
+		if view.config.Preferences.EnableLineBreaks {
+			if prevMessage != nil && !prevMessage.SameSender(message) {
+				view.messages = append([]*messages.UIMessage{makeSenderChange()}, view.messages...)
+			}
+		}
+		view.messages = append([]*messages.UIMessage{message}, view.messages...)
 		view.messagesLock.Unlock()
 	} else if oldMsg != nil {
 		view.replaceBuffer(oldMsg, message)

@@ -984,6 +984,7 @@ var toggleMsg = map[string]ToggleMessage{
 	"showurls":      SimpleToggleMessage("show URLs in text format"),
 	"inlineurls":    InvertedToggleMessage("use fancy terminal features to render URLs inside text"),
 	"newline":       NewlineKeybindMessage("should <alt+enter> make a new line or send the message"),
+	"linebreaks":    SimpleToggleMessage("line breaks between senders"),
 }
 
 func makeUsage() string {
@@ -1042,6 +1043,17 @@ func cmdToggle(cmd *Command) {
 			continue
 		case "newline":
 			val = &cmd.Config.Preferences.AltEnterToSend
+		case "linebreaks":
+			switch cmd.Config.Preferences.EnableLineBreaks {
+			case true:
+				cmd.Config.Preferences.EnableLineBreaks = false
+				cmd.Reply("Disabled line breaks between senders. Restart gomuks to apply changes.")
+			default:
+				cmd.Config.Preferences.EnableLineBreaks = true
+				cmd.Reply("Enabled line breaks between senders. Restart gomuks to apply changes.")
+			}
+			continue
+
 		default:
 			cmd.Reply("Unknown toggle %s. Use /toggle without arguments for a list of togglable things.", thing)
 			return
