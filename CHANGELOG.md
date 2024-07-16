@@ -1,3 +1,11 @@
+# v0.3.1 (2024-07-16)
+
+* Bumped minimum Go version to 1.21.
+* Added support for authenticated media.
+* Added `/powerlevel` command for managing power levels.
+* Disabled logging by default.
+* Changed default log directory to `~/.local/state/gomuks` on Linux.
+
 # v0.3.0 (2022-11-19)
 
 * Bumped minimum Go version to 1.18.
