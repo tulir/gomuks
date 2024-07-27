@@ -954,20 +954,6 @@ func (itm InvertedToggleMessage) Name() string {
 	return string(unicode.ToUpper(rune(itm[0]))) + string(itm[1:])
 }
 
-type NewlineKeybindMessage string
-
-func (nkm NewlineKeybindMessage) Format(state bool) string {
-	if state {
-		return "Now using <enter> to create new line and <alt+enter> to send"
-	} else {
-		return "Now using <enter> to send and <alt+enter> to create new line"
-	}
-}
-
-func (nkm NewlineKeybindMessage) Name() string {
-	return string(nkm)
-}
-
 var toggleMsg = map[string]ToggleMessage{
 	"rooms":         HideMessage("Room list sidebar"),
 	"users":         HideMessage("User list sidebar"),
@@ -983,7 +969,6 @@ var toggleMsg = map[string]ToggleMessage{
 	"unverified":    SimpleToggleMessage("sending messages to unverified devices"),
 	"showurls":      SimpleToggleMessage("show URLs in text format"),
 	"inlineurls":    InvertedToggleMessage("use fancy terminal features to render URLs inside text"),
-	"newline":       NewlineKeybindMessage("should <alt+enter> make a new line or send the message"),
 }
 
 func makeUsage() string {
@@ -1040,8 +1025,6 @@ func cmdToggle(cmd *Command) {
 				cmd.Reply("Force-enabled using fancy terminal features to render URLs inside text. Restart gomuks to apply changes.")
 			}
 			continue
-		case "newline":
-			val = &cmd.Config.Preferences.AltEnterToSend
 		default:
 			cmd.Reply("Unknown toggle %s. Use /toggle without arguments for a list of togglable things.", thing)
 			return
