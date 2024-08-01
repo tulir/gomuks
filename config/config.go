@@ -60,6 +60,7 @@ type UserPreferences struct {
 	DisableNotifications bool `yaml:"disable_notifications"`
 	DisableShowURLs      bool `yaml:"disable_show_urls"`
 
+	IgnoredUserList string `yaml:"ignore_user_list"`
 	InlineURLMode string `yaml:"inline_url_mode"`
 }
 
