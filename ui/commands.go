@@ -548,6 +548,11 @@ func cmdHelp(cmd *Command) {
 	view.ShowModal(NewHelpModal(view))
 }
 
+func cmdKeys(cmd *Command) {
+	view := cmd.MainView
+	view.ShowModal(NewKeysModal(view))
+}
+
 func cmdLeave(cmd *Command) {
 	err := cmd.Matrix.LeaveRoom(cmd.Room.MxRoom().ID)
 	debug.Print("Leave room error:", err)
