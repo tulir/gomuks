@@ -1,7 +1,0 @@
-Package: gomuks
-Version: 0.3.1-1
-Section: net
-Priority: optional
-Architecture: amd64
-Maintainer: Tulir Asokan <tulir@maunium.net>
-Description: A terminal based Matrix client written in Go.

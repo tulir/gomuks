@@ -1,6 +1,5 @@
 stages:
 - build
-- package
 
 default:
   before_script:
@@ -14,7 +13,7 @@ cache:
 .build-linux: &build-linux
   stage: build
   before_script:
-  - export GO_LDFLAGS="-s -w -linkmode external -extldflags -static -X main.Tag=$CI_COMMIT_TAG -X main.Commit=$CI_COMMIT_SHA -X 'main.BuildTime=`date '+%b %_d %Y, %H:%M:%S'`'"
+  - export GO_LDFLAGS="-s -w -linkmode external -extldflags -static -X main.Tag=$CI_COMMIT_TAG -X main.Commit=$CI_COMMIT_SHA -X 'main.BuildTime=`date -Iseconds`'"
   script:
   - go build -ldflags "$GO_LDFLAGS" -o gomuks
   artifacts:
@@ -24,10 +23,16 @@ cache:
 linux/amd64:
   <<: *build-linux
   image: dock.mau.dev/tulir/gomuks-build-docker:linux-amd64
+  tags:
+  - linux
+  - amd64
 
 linux/arm:
   <<: *build-linux
   image: dock.mau.dev/tulir/gomuks-build-docker:linux-arm
+  tags:
+  - linux
+  - amd64
 
 linux/arm64:
   <<: *build-linux
@@ -35,15 +40,6 @@ linux/arm64:
   tags:
   - linux
   - arm64
-
-windows/amd64:
-  image: dock.mau.dev/tulir/gomuks-build-docker:windows-amd64
-  stage: build
-  script:
-  - go build -o gomuks.exe
-  artifacts:
-    paths:
-    - gomuks.exe
 
 macos/arm64:
   stage: build
@@ -54,31 +50,15 @@ macos/arm64:
   - export LIBRARY_PATH=/opt/homebrew/lib
   - export CPATH=/opt/homebrew/include
   - export PATH=/opt/homebrew/bin:$PATH
-  - export GO_LDFLAGS="-X main.Tag=$CI_COMMIT_TAG -X main.Commit=$CI_COMMIT_SHA -X 'main.BuildTime=`date '+%b %_d %Y, %H:%M:%S'`'"
+  - export GO_LDFLAGS="-X main.Tag=$CI_COMMIT_TAG -X main.Commit=$CI_COMMIT_SHA -X 'main.BuildTime=`date '-Iseconds'`'"
   script:
-  - mkdir gomuks-macos-arm64
-  - go build -ldflags "$GO_LDFLAGS" -o gomuks-macos-arm64/gomuks
-  - install_name_tool -change /opt/homebrew/opt/libolm/lib/libolm.3.dylib @rpath/libolm.3.dylib gomuks-macos-arm64/gomuks
-  - install_name_tool -add_rpath @executable_path gomuks-macos-arm64/gomuks
-  - install_name_tool -add_rpath /opt/homebrew/opt/libolm/lib gomuks-macos-arm64/gomuks
-  - install_name_tool -add_rpath /usr/local/opt/libolm/lib gomuks-macos-arm64/gomuks
-  - cp /opt/homebrew/opt/libolm/lib/libolm.3.dylib gomuks-macos-arm64/
+  - go build -ldflags "$GO_LDFLAGS" -o gomuks
+  - install_name_tool -change /opt/homebrew/opt/libolm/lib/libolm.3.dylib @rpath/libolm.3.dylib gomuks
+  - install_name_tool -add_rpath @executable_path gomuks
+  - install_name_tool -add_rpath /opt/homebrew/opt/libolm/lib gomuks
+  - install_name_tool -add_rpath /usr/local/opt/libolm/lib gomuks
+  - cp /opt/homebrew/opt/libolm/lib/libolm.3.dylib .
   artifacts:
     paths:
-    - gomuks-macos-arm64
-
-debian:
-  image: debian
-  stage: package
-  dependencies:
-  - linux/amd64
-  only:
-  - tags
-  script:
-  - mkdir -p deb/usr/bin
-  - cp gomuks deb/usr/bin/gomuks
-  - chmod -R -s deb/DEBIAN && chmod -R 0755 deb/DEBIAN
-  - dpkg-deb --build deb gomuks.deb
-  artifacts:
-    paths:
-    - gomuks.deb
+    - gomuks
+    - libolm.3.dylib
