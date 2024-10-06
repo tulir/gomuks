@@ -13,19 +13,18 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo } from "react"
 import { ScaleLoader } from "react-spinners"
+import { useEventAsState } from "./util/eventdispatcher.ts"
 import Client from "./api/client.ts"
 import WSClient from "./api/wsclient.ts"
-import { ClientState } from "./api/types/hievents.ts"
-import { ConnectionEvent } from "./api/rpc.ts"
 import { LoginScreen, VerificationScreen } from "./ui/login"
 import MainScreen from "./ui/MainScreen.tsx"
 
 function App() {
-	const [connState, setConnState] = useState<ConnectionEvent>()
-	const [clientState, setClientState] = useState<ClientState>()
 	const client = useMemo(() => new Client(new WSClient("/_gomuks/websocket")), [])
+	const connState = useEventAsState(client.rpc.connect)
+	const clientState = useEventAsState(client.state)
 	useEffect(() => {
 		((window as unknown) as { client: Client }).client = client
 
@@ -33,12 +32,8 @@ function App() {
 		const unlistenDebug = client.rpc.event.listen(ev => {
 			console.debug("Received event:", ev)
 		})
-		const unlistenConnect = client.rpc.connect.listen(setConnState)
-		const unlistenState = client.state.listen(setClientState)
 		client.rpc.start()
 		return () => {
-			unlistenConnect()
-			unlistenState()
 			unlistenDebug()
 			client.rpc.stop()
 		}
