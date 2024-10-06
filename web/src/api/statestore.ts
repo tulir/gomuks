@@ -13,6 +13,7 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
+import { NonNullCachedEventDispatcher } from "../util/eventdispatcher.ts"
 import type {
 	ContentURI,
 	DBEvent,
@@ -24,7 +25,6 @@ import type {
 	TimelineRowTuple,
 } from "./types/hitypes.ts"
 import type { EventsDecryptedData, SyncCompleteData, SyncRoom } from "./types/hievents.ts"
-import { NonNullCachedEventDispatcher } from "../util/eventdispatcher.ts"
 
 function arraysAreEqual<T>(arr1?: T[], arr2?: T[]): boolean {
 	if (!arr1 || !arr2) {

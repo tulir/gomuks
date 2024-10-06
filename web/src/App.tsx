@@ -14,12 +14,12 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import { useEffect, useMemo, useState } from "react"
+import { ScaleLoader } from "react-spinners"
 import Client from "./api/client.ts"
 import WSClient from "./api/wsclient.ts"
 import { ClientState } from "./api/types/hievents.ts"
 import { ConnectionEvent } from "./api/rpc.ts"
 import { LoginScreen, VerificationScreen } from "./ui/login"
-import { ScaleLoader } from "react-spinners"
 import MainScreen from "./ui/MainScreen.tsx"
 
 function App() {

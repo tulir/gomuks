@@ -2,6 +2,7 @@ import js from "@eslint/js"
 import globals from "globals"
 import reactHooks from "eslint-plugin-react-hooks"
 import reactRefresh from "eslint-plugin-react-refresh"
+import pluginImport from "eslint-plugin-import"
 import tseslint from "typescript-eslint"
 
 export default tseslint.config(
@@ -16,6 +17,7 @@ export default tseslint.config(
 		plugins: {
 			"react-hooks": reactHooks,
 			"react-refresh": reactRefresh,
+			"import": pluginImport,
 		},
 		rules: {
 			...reactHooks.configs.recommended.rules,
@@ -23,6 +25,7 @@ export default tseslint.config(
 				"warn",
 				{allowConstantExport: true},
 			],
+			"import/order": "error",
 			"indent": ["error", "tab", {
 				"FunctionDeclaration": {"parameters": "first"},
 				"FunctionExpression": {"parameters": "first"},

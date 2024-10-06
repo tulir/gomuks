@@ -13,9 +13,9 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import { RPCEvent } from "./types/hievents.ts"
 import { EventDispatcher } from "../util/eventdispatcher.ts"
 import { CancellablePromise } from "../util/promise.ts"
+import { RPCEvent } from "./types/hievents.ts"
 
 export interface RPCClient {
 	connect: EventDispatcher<ConnectionEvent>

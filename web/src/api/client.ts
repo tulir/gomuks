@@ -13,12 +13,12 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
+import { CachedEventDispatcher } from "../util/eventdispatcher.ts"
 import type {
 	ClientWellKnown, DBEvent, EventID, EventRowID, EventType, RoomID, TimelineRowID, UserID,
 } from "./types/hitypes.ts"
 import { ClientState, RPCEvent } from "./types/hievents.ts"
 import { RPCClient } from "./rpc.ts"
-import { CachedEventDispatcher } from "../util/eventdispatcher.ts"
 import { StateStore } from "./statestore.ts"
 
 export default class Client {
