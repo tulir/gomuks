@@ -38,9 +38,9 @@ frontend:
     paths:
     - gomuks
   dependencies:
-  - build frontend
+  - frontend
   needs:
-  - build frontend
+  - frontend
 
 linux/amd64:
   <<: *build-linux
@@ -85,6 +85,6 @@ macos/arm64:
     - gomuks
     - libolm.3.dylib
   dependencies:
-  - build frontend
+  - frontend
   needs:
-  - build frontend
+  - frontend
