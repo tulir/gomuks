@@ -14,14 +14,12 @@ cache:
 frontend:
   image: node:22-alpine
   stage: frontend
-  variables:
-    NODE_ENV: "production"
   cache:
     paths:
     - web/node_modules
   script:
   - cd web
-  - npm install --legacy-peer-deps
+  - npm install --legacy-peer-deps --include=dev
   - npm run build
   artifacts:
     paths:
