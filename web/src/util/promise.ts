@@ -13,27 +13,11 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import { RoomViewProps } from "./RoomView.tsx"
-import "./TimelineEvent.css"
-
-export interface TimelineEventProps extends RoomViewProps {
-	eventRowID: number
-}
-
-const TimelineEvent = ({ room, eventRowID }: TimelineEventProps) => {
-	const evt = room.eventsByRowID.get(eventRowID)
-	if (!evt) {
-		return null
+export class CancellablePromise<T> extends Promise<T> {
+	constructor(
+		executor: (resolve: (value: T) => void, reject: (reason?: Error) => void) => void,
+		readonly cancel: (reason: string) => void,
+	) {
+		super(executor)
 	}
-	// @ts-expect-error TODO add content types
-	const body = (evt.decrypted ?? evt.content).body
-	return <div className="timeline-event">
-		<code>{evt.decrypted_type ?? evt.type}</code>
-		&nbsp;
-		<code>{evt.sender}</code>
-		&nbsp;
-		{body ?? <code>{JSON.stringify(evt.decrypted ?? evt.content, null, "  ")}</code>}
-	</div>
 }
-
-export default TimelineEvent

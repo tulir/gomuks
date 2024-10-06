@@ -13,24 +13,19 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import { useState } from "react"
-import type Client from "./client.ts"
-import type { RoomID } from "./hitypes.ts"
-import RoomList from "./RoomList.tsx"
-import RoomView from "./RoomView.tsx"
-import "./MainScreen.css"
+import { RPCEvent } from "./types/hievents.ts"
+import { EventDispatcher } from "../util/eventdispatcher.ts"
+import { CancellablePromise } from "../util/promise.ts"
 
-export interface MainScreenProps {
-	client: Client
+export interface RPCClient {
+	connect: EventDispatcher<ConnectionEvent>
+	event: EventDispatcher<RPCEvent>
+	start(): void
+	stop(): void
+	request<Req, Resp>(command: string, data: Req): CancellablePromise<Resp>
 }
 
-const MainScreen = ({ client }: MainScreenProps) => {
-	const [activeRoomID, setActiveRoomID] = useState<RoomID | null>(null)
-	const activeRoom = activeRoomID && client.store.rooms.get(activeRoomID)
-	return <main className="matrix-main">
-		<RoomList client={client} setActiveRoom={setActiveRoomID} />
-		{activeRoom && <RoomView client={client} room={activeRoom} />}
-	</main>
+export interface ConnectionEvent {
+	connected: boolean
+	error: Error | null
 }
-
-export default MainScreen

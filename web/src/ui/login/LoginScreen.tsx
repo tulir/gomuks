@@ -14,9 +14,9 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import React, { useCallback, useEffect, useState } from "react"
-import type Client from "../client.ts"
+import type Client from "../../api/client.ts"
 import "./LoginScreen.css"
-import { ClientState } from "../hievents.ts"
+import { ClientState } from "../../api/types/hievents.ts"
 
 export interface LoginScreenProps {
 	client: Client

@@ -13,26 +13,24 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import Client from "./client.ts"
-import { RoomStateStore } from "./statestore.ts"
-import { useNonNullEventAsState } from "./eventdispatcher.ts"
-import "./RoomView.css"
-import TimelineEvent from "./TimelineEvent.tsx"
+import { useState } from "react"
+import type Client from "../api/client.ts"
+import type { RoomID } from "../api/types/hitypes.ts"
+import RoomList from "./RoomList.tsx"
+import RoomView from "./RoomView.tsx"
+import "./MainScreen.css"
 
-export interface RoomViewProps {
+export interface MainScreenProps {
 	client: Client
-	room: RoomStateStore
 }
 
-const RoomView = ({ client, room }: RoomViewProps) => {
-	const roomMeta = useNonNullEventAsState(room.meta)
-	const timeline = useNonNullEventAsState(room.timeline)
-	return <div className="room-view">
-		{roomMeta.room_id}
-		{timeline.map(entry => <TimelineEvent
-			key={entry.event_rowid} client={client} room={room} eventRowID={entry.event_rowid}
-		/>)}
-	</div>
+const MainScreen = ({ client }: MainScreenProps) => {
+	const [activeRoomID, setActiveRoomID] = useState<RoomID | null>(null)
+	const activeRoom = activeRoomID && client.store.rooms.get(activeRoomID)
+	return <main className="matrix-main">
+		<RoomList client={client} setActiveRoom={setActiveRoomID} />
+		{activeRoom && <RoomView client={client} room={activeRoom} />}
+	</main>
 }
 
-export default RoomView
+export default MainScreen

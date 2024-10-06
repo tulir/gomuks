@@ -13,9 +13,10 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import { RPCCommand, RPCEvent } from "./hievents.ts"
-import { CachedEventDispatcher, EventDispatcher } from "./eventdispatcher.ts"
-import { CancellablePromise, ConnectionEvent, RPCClient } from "./rpc.ts"
+import { RPCCommand, RPCEvent } from "./types/hievents.ts"
+import { CachedEventDispatcher, EventDispatcher } from "../util/eventdispatcher.ts"
+import { ConnectionEvent, RPCClient } from "./rpc.ts"
+import { CancellablePromise } from "../util/promise.ts"
 
 export class ErrorResponse extends Error {
 	constructor(public data: unknown) {

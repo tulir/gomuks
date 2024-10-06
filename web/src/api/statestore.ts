@@ -22,9 +22,9 @@ import type {
 	LazyLoadSummary,
 	RoomID,
 	TimelineRowTuple,
-} from "./hitypes.ts"
-import type { EventsDecryptedData, SyncCompleteData, SyncRoom } from "./hievents.ts"
-import { NonNullCachedEventDispatcher } from "./eventdispatcher.ts"
+} from "./types/hitypes.ts"
+import type { EventsDecryptedData, SyncCompleteData, SyncRoom } from "./types/hievents.ts"
+import { NonNullCachedEventDispatcher } from "../util/eventdispatcher.ts"
 
 function arraysAreEqual<T>(arr1?: T[], arr2?: T[]): boolean {
 	if (!arr1 || !arr2) {

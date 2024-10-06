@@ -14,10 +14,10 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import React, { useMemo } from "react"
-import Client from "./client.ts"
-import { DBEvent, RoomID } from "./hitypes.ts"
-import { useNonNullEventAsState } from "./eventdispatcher.ts"
-import { RoomListEntry } from "./statestore.ts"
+import Client from "../api/client.ts"
+import { DBEvent, RoomID } from "../api/types/hitypes.ts"
+import { useNonNullEventAsState } from "../util/eventdispatcher.ts"
+import { RoomListEntry } from "../api/statestore.ts"
 import "./RoomList.css"
 
 export interface RoomListProps {

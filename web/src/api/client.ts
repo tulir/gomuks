@@ -15,10 +15,10 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import type {
 	ClientWellKnown, DBEvent, EventID, EventRowID, EventType, RoomID, TimelineRowID, UserID,
-} from "./hitypes.ts"
-import { ClientState, RPCEvent } from "./hievents.ts"
+} from "./types/hitypes.ts"
+import { ClientState, RPCEvent } from "./types/hievents.ts"
 import { RPCClient } from "./rpc.ts"
-import { CachedEventDispatcher } from "./eventdispatcher.ts"
+import { CachedEventDispatcher } from "../util/eventdispatcher.ts"
 import { StateStore } from "./statestore.ts"
 
 export default class Client {
