@@ -1,0 +1,20 @@
+name: JS
+
+on: [push, pull_request]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./web
+    name: Lint
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: npm install --dev --legacy-peer-deps
+
+      - name: Run ESLint
+        run: eslint ./src

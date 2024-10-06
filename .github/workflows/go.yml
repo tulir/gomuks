@@ -6,7 +6,6 @@ jobs:
   lint:
     runs-on: ubuntu-latest
     strategy:
-      fail-fast: false
       matrix:
         go-version: ["1.22", "1.23"]
     name: Lint and test ${{ matrix.go-version == '1.23' && '(latest)' || '(old)' }}
@@ -25,7 +24,6 @@ jobs:
           sudo apt-get install libolm-dev libolm3
           go install golang.org/x/tools/cmd/goimports@latest
           go install honnef.co/go/tools/cmd/staticcheck@latest
-          pip install pre-commit
           export PATH="$HOME/go/bin:$PATH"
           mkdir -p web/dist
           touch web/dist/empty
@@ -34,7 +32,7 @@ jobs:
         run: go build -v ./...
 
       - name: Lint
-        run: pre-commit run -a
+        uses: pre-commit/action@v3.0.1
 
       - name: Test
         run: go test -v ./...
