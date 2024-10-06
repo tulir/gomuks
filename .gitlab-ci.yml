@@ -21,7 +21,7 @@ frontend:
     - web/node_modules
   script:
   - cd web
-  - npm install
+  - npm install --legacy-peer-deps
   - npm run build
   artifacts:
     paths:
