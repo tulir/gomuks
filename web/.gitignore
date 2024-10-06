@@ -1,0 +1,9 @@
+logs
+*.log
+npm-debug.log*
+tsconfig.tsbuildinfo
+
+node_modules
+dist
+dist-ssr
+*.local

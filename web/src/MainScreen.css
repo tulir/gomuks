@@ -1,0 +1,7 @@
+main.matrix-main {
+	position: fixed;
+	inset: 0;
+
+	display: grid;
+	grid-template: "roomlist roomview" 1fr / 300px 1fr;
+}

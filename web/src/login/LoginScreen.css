@@ -1,0 +1,66 @@
+main.matrix-login {
+	max-width: 30rem;
+	width: 100%;
+	padding: 3rem 6rem;
+
+	box-shadow: 0 0 1rem rgba(0, 0, 0, 0.25);
+	margin: 2rem;
+
+	@media (width < 800px) {
+		padding: 2rem 4rem;
+	}
+
+	@media (width < 500px) {
+		padding: 1rem;
+		box-shadow: none;
+		margin: 0 !important;
+	}
+
+	h1 {
+		margin: 0 0 2rem;
+		text-align: center;
+	}
+
+	button, input {
+		margin-top: .5rem;
+		padding: 1rem;
+		font-size: 1rem;
+		width: 100%;
+		display: block;
+		border-radius: .25rem;
+		box-sizing: border-box;
+	}
+
+	input {
+		border: 1px solid var(--primary-color);
+
+		&:hover {
+			outline: 1px solid var(--primary-color);
+		}
+
+		&:focus {
+			outline: 3px solid var(--primary-color);
+		}
+	}
+
+	form {
+		margin: 2rem 0;
+	}
+
+	button {
+		background-color: var(--primary-color);
+		color: white;
+		font-weight: bold;
+		border: none;
+
+		&:hover, &:focus {
+			background-color: var(--primary-color-dark);
+		}
+	}
+
+	div.error {
+		border: 2px solid var(--error-color);
+		border-radius: .25rem;
+		padding: 1rem;
+	}
+}

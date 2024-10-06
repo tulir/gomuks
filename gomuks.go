@@ -1,0 +1,272 @@
+// gomuks - A Matrix client written in Go.
+// Copyright (C) 2024 Tulir Asokan
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Affero General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU Affero General Public License for more details.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+package main
+
+import (
+	"context"
+	"errors"
+	"fmt"
+	"io/fs"
+	"maps"
+	"net/http"
+	"os"
+	"os/signal"
+	"path/filepath"
+	"runtime"
+	"slices"
+	"sync"
+	"syscall"
+
+	"github.com/coder/websocket"
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/hlog"
+	"go.mau.fi/util/dbutil"
+	"go.mau.fi/util/exerrors"
+	"go.mau.fi/util/exzerolog"
+	"go.mau.fi/util/ptr"
+	"go.mau.fi/util/requestlog"
+	"go.mau.fi/zeroconfig"
+	"maunium.net/go/mautrix/hicli"
+
+	"go.mau.fi/gomuks/web"
+)
+
+type Gomuks struct {
+	Log    *zerolog.Logger
+	Server *http.Server
+	Client *hicli.HiClient
+
+	ConfigDir string
+	DataDir   string
+	CacheDir  string
+	LogDir    string
+
+	stopOnce sync.Once
+	stopChan chan struct{}
+
+	websocketClosers   map[uint64]WebsocketCloseFunc
+	eventListeners     map[uint64]func(*hicli.JSONCommand)
+	nextListenerID     uint64
+	eventListenersLock sync.RWMutex
+}
+
+func NewGomuks() *Gomuks {
+	return &Gomuks{
+		stopChan:         make(chan struct{}),
+		eventListeners:   make(map[uint64]func(*hicli.JSONCommand)),
+		websocketClosers: make(map[uint64]WebsocketCloseFunc),
+	}
+}
+
+func (gmx *Gomuks) LoadConfig() {
+	// We need 4 directories: config, data, cache, logs
+	//
+	// 1. If GOMUKS_ROOT is set, all directories are created under that.
+	// 2. If GOMUKS_*_HOME is set, that value is used as the directory.
+	// 3. Use system-specific defaults as below
+	//
+	// *nix:
+	// - Config: $XDG_CONFIG_HOME/gomuks or $HOME/.config/gomuks
+	// - Data: $XDG_DATA_HOME/gomuks or $HOME/.local/share/gomuks
+	// - Cache: $XDG_CACHE_HOME/gomuks or $HOME/.cache/gomuks
+	// - Logs: $XDG_STATE_HOME/gomuks or $HOME/.local/state/gomuks
+	//
+	// Windows:
+	// - Config and Data: %AppData%\gomuks
+	// - Cache: %LocalAppData%\gomuks
+	// - Logs: %LocalAppData%\gomuks\logs
+	//
+	// macOS:
+	// - Config and Data: $HOME/Library/Application Support/gomuks
+	// - Cache: $HOME/Library/Caches/gomuks
+	// - Logs: $HOME/Library/Logs/gomuks
+	if gomuksRoot := os.Getenv("GOMUKS_ROOT"); gomuksRoot != "" {
+		exerrors.PanicIfNotNil(os.MkdirAll(gomuksRoot, 0700))
+		gmx.CacheDir = filepath.Join(gomuksRoot, "cache")
+		gmx.ConfigDir = filepath.Join(gomuksRoot, "config")
+		gmx.DataDir = filepath.Join(gomuksRoot, "data")
+		gmx.LogDir = filepath.Join(gomuksRoot, "logs")
+	} else {
+		homeDir := exerrors.Must(os.UserHomeDir())
+		if cacheDir := os.Getenv("GOMUKS_CACHE_HOME"); cacheDir != "" {
+			gmx.CacheDir = cacheDir
+		} else {
+			gmx.CacheDir = filepath.Join(exerrors.Must(os.UserCacheDir()), "gomuks")
+		}
+		if configDir := os.Getenv("GOMUKS_CONFIG_HOME"); configDir != "" {
+			gmx.ConfigDir = configDir
+		} else {
+			gmx.ConfigDir = filepath.Join(exerrors.Must(os.UserConfigDir()), "gomuks")
+		}
+		if dataDir := os.Getenv("GOMUKS_DATA_HOME"); dataDir != "" {
+			gmx.DataDir = dataDir
+		} else if dataDir = os.Getenv("XDG_DATA_HOME"); dataDir != "" {
+			gmx.DataDir = filepath.Join(dataDir, "gomuks")
+		} else if runtime.GOOS == "windows" || runtime.GOOS == "darwin" {
+			gmx.DataDir = gmx.ConfigDir
+		} else {
+			gmx.DataDir = filepath.Join(homeDir, ".local", "share", "gomuks")
+		}
+		if logDir := os.Getenv("GOMUKS_LOGS_HOME"); logDir != "" {
+			gmx.LogDir = logDir
+		} else if logDir = os.Getenv("XDG_STATE_HOME"); logDir != "" {
+			gmx.LogDir = filepath.Join(logDir, "gomuks")
+		} else if runtime.GOOS == "darwin" {
+			gmx.DataDir = filepath.Join(homeDir, "Library", "Logs", "gomuks")
+		} else if runtime.GOOS == "windows" {
+			gmx.DataDir = filepath.Join(gmx.CacheDir, "logs")
+		} else {
+			gmx.LogDir = filepath.Join(homeDir, ".local", "state", "gomuks")
+		}
+	}
+	exerrors.PanicIfNotNil(os.MkdirAll(gmx.ConfigDir, 0700))
+	exerrors.PanicIfNotNil(os.MkdirAll(gmx.CacheDir, 0700))
+	exerrors.PanicIfNotNil(os.MkdirAll(gmx.DataDir, 0700))
+	exerrors.PanicIfNotNil(os.MkdirAll(gmx.LogDir, 0700))
+}
+
+func (gmx *Gomuks) SetupLog() {
+	gmx.Log = exerrors.Must((&zeroconfig.Config{
+		MinLevel: ptr.Ptr(zerolog.TraceLevel),
+		Writers: []zeroconfig.WriterConfig{{
+			Type:   zeroconfig.WriterTypeStdout,
+			Format: zeroconfig.LogFormatPrettyColored,
+		}},
+	}).Compile())
+	exzerolog.SetupDefaults(gmx.Log)
+}
+
+func (gmx *Gomuks) StartServer(addr string) {
+	api := http.NewServeMux()
+	api.HandleFunc("GET /websocket", gmx.HandleWebsocket)
+	api.HandleFunc("GET /media/{server}/{media_id}", gmx.DownloadMedia)
+	middlewares := []func(http.Handler) http.Handler{
+		hlog.NewHandler(*gmx.Log),
+		hlog.RequestIDHandler("request_id", "Request-ID"),
+		requestlog.AccessLogger(false),
+	}
+	apiHandler := http.StripPrefix("/_gomuks", api)
+	for _, middleware := range slices.Backward(middlewares) {
+		apiHandler = middleware(apiHandler)
+	}
+	router := http.NewServeMux()
+	router.Handle("/_gomuks/", apiHandler)
+	if frontend, err := fs.Sub(web.Frontend, "dist"); err != nil {
+		gmx.Log.Warn().Msg("Frontend not found")
+	} else {
+		router.Handle("/", http.FileServerFS(frontend))
+	}
+	gmx.Server = &http.Server{
+		Addr:    addr,
+		Handler: router,
+	}
+	go func() {
+		err := gmx.Server.ListenAndServe()
+		if err != nil && !errors.Is(err, http.ErrServerClosed) {
+			panic(err)
+		}
+	}()
+	gmx.Log.Info().Str("address", addr).Msg("Server started")
+}
+
+func (gmx *Gomuks) StartClient() {
+	rawDB, err := dbutil.NewFromConfig("gomuks", dbutil.Config{
+		PoolConfig: dbutil.PoolConfig{
+			Type:         "sqlite3-fk-wal",
+			URI:          fmt.Sprintf("file:%s/gomuks.db?_txlock=immediate", gmx.DataDir),
+			MaxOpenConns: 5,
+			MaxIdleConns: 1,
+		},
+	}, dbutil.ZeroLogger(gmx.Log.With().Str("component", "hicli").Str("db_section", "main").Logger()))
+	if err != nil {
+		gmx.Log.WithLevel(zerolog.FatalLevel).Err(err).Msg("Failed to open database")
+		os.Exit(10)
+	}
+	ctx := gmx.Log.WithContext(context.Background())
+	gmx.Client = hicli.New(
+		rawDB,
+		nil,
+		gmx.Log.With().Str("component", "hicli").Logger(),
+		[]byte("meow"),
+		hicli.JSONEventHandler(gmx.OnEvent).HandleEvent,
+	)
+	userID, err := gmx.Client.DB.Account.GetFirstUserID(ctx)
+	if err != nil {
+		gmx.Log.WithLevel(zerolog.FatalLevel).Err(err).Msg("Failed to get first user ID")
+		os.Exit(11)
+	}
+	err = gmx.Client.Start(ctx, userID, nil)
+	if err != nil {
+		gmx.Log.WithLevel(zerolog.FatalLevel).Err(err).Msg("Failed to start client")
+		os.Exit(12)
+	}
+	gmx.Log.Info().Stringer("user_id", userID).Msg("Client started")
+}
+
+func (gmx *Gomuks) Stop() {
+	gmx.stopOnce.Do(func() {
+		close(gmx.stopChan)
+	})
+}
+
+func (gmx *Gomuks) WaitForInterrupt() {
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
+	select {
+	case <-c:
+	case <-gmx.stopChan:
+	}
+}
+
+func (gmx *Gomuks) directStop() {
+	gmx.eventListenersLock.Lock()
+	closers := slices.Collect(maps.Values(gmx.websocketClosers))
+	gmx.eventListenersLock.Unlock()
+	for _, closer := range closers {
+		closer(websocket.StatusServiceRestart, "Server shutting down")
+	}
+	gmx.Client.Stop()
+	err := gmx.Server.Close()
+	if err != nil {
+		gmx.Log.Error().Err(err).Msg("Failed to close server")
+	}
+}
+
+func (gmx *Gomuks) OnEvent(evt *hicli.JSONCommand) {
+	gmx.eventListenersLock.RLock()
+	defer gmx.eventListenersLock.RUnlock()
+	for _, listener := range gmx.eventListeners {
+		listener(evt)
+	}
+}
+
+type WebsocketCloseFunc func(websocket.StatusCode, string)
+
+func (gmx *Gomuks) SubscribeEvents(closeForRestart WebsocketCloseFunc, cb func(command *hicli.JSONCommand)) func() {
+	gmx.eventListenersLock.Lock()
+	defer gmx.eventListenersLock.Unlock()
+	gmx.nextListenerID++
+	id := gmx.nextListenerID
+	gmx.eventListeners[id] = cb
+	gmx.websocketClosers[id] = closeForRestart
+	return func() {
+		gmx.eventListenersLock.Lock()
+		defer gmx.eventListenersLock.Unlock()
+		delete(gmx.eventListeners, id)
+		delete(gmx.websocketClosers, id)
+	}
+}

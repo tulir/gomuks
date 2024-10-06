@@ -1,0 +1,50 @@
+div.room-list {
+	grid-area: roomlist;
+	overflow-y: auto;
+
+	div.room-entry {
+		width: 100%;
+		display: flex;
+		gap: 4px;
+		border-radius: 4px;
+		user-select: none;
+		cursor: pointer;
+
+		&:hover {
+			background-color: #EEE;
+		}
+
+		> div.room-entry-left {
+			height: 48px;
+			width: 48px;
+
+			> img.room-avatar {
+				width: 40px;
+				height: 40px;
+				border-radius: 50%;
+				padding: 4px;
+			}
+		}
+
+		> div.room-entry-right {
+			width: 100%;
+			display: flex;
+			flex-direction: column;
+			overflow: hidden;
+			justify-content: space-around;
+
+			> div.room-name {
+				font-weight: bold;
+				overflow: hidden;
+				white-space: nowrap;
+				text-overflow: ellipsis;
+			}
+
+			> div.message-preview {
+				text-overflow: ellipsis;
+				white-space: nowrap;
+				overflow: hidden;
+			}
+		}
+	}
+}
