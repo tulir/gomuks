@@ -27,6 +27,8 @@ jobs:
           go install honnef.co/go/tools/cmd/staticcheck@latest
           pip install pre-commit
           export PATH="$HOME/go/bin:$PATH"
+          mkdir -p web/dist
+          touch web/dist/empty
 
       - name: Build
         run: go build -v ./...
