@@ -11,7 +11,7 @@ require (
 	go.mau.fi/util v0.8.1-0.20241003092848-3b49d3e0b9ee
 	go.mau.fi/zeroconfig v0.1.3
 	maunium.net/go/mauflag v1.0.0
-	maunium.net/go/mautrix v0.21.1-0.20241006181705-64692eb06e11
+	maunium.net/go/mautrix v0.21.1-0.20241007191346-1d8891fdb40e
 )
 
 require (

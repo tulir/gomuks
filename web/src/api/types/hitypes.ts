@@ -110,6 +110,11 @@ export interface DBEvent {
 	last_edit_rowid?: EventRowID
 }
 
+export interface PaginationResponse {
+	events: DBEvent[]
+	has_more: boolean
+}
+
 export interface EventUnsigned {
 	prev_content?: unknown
 	prev_sender?: UserID

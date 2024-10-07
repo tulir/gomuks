@@ -67,6 +67,17 @@ export class RoomStateStore {
 		this.meta = new NonNullCachedEventDispatcher(meta)
 	}
 
+	applyPagination(history: DBEvent[]) {
+		// Pagination comes in newest to oldest, timeline is in the opposite order
+		history.reverse()
+		const newTimeline = history.map(evt => {
+			this.eventsByRowID.set(evt.rowid, evt)
+			this.eventsByID.set(evt.event_id, evt)
+			return { timeline_rowid: evt.timeline_rowid, event_rowid: evt.rowid }
+		})
+		this.timeline.emit([...newTimeline, ...this.timeline.current])
+	}
+
 	applySync(sync: SyncRoom) {
 		if (visibleMetaIsEqual(this.meta.current, sync.meta)) {
 			this.meta.current = sync.meta

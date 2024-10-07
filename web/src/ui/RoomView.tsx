@@ -29,6 +29,7 @@ const RoomView = ({ client, room }: RoomViewProps) => {
 	const timeline = useNonNullEventAsState(room.timeline)
 	return <div className="room-view">
 		{roomMeta.room_id}
+		<button onClick={() => client.loadMoreHistory(roomMeta.room_id)}>Load history</button>
 		{timeline.map(entry => <TimelineEvent
 			key={entry.event_rowid} client={client} room={room} eventRowID={entry.event_rowid}
 		/>)}

@@ -15,7 +15,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import { CachedEventDispatcher } from "../util/eventdispatcher.ts"
 import type {
-	ClientWellKnown, DBEvent, EventID, EventRowID, EventType, RoomID, TimelineRowID, UserID,
+	ClientWellKnown, DBEvent, EventID, EventRowID, EventType, PaginationResponse, RoomID, TimelineRowID, UserID,
 } from "./types/hitypes.ts"
 import { ClientState, RPCEvent } from "./types/hievents.ts"
 import { RPCClient } from "./rpc.ts"
@@ -59,11 +59,24 @@ export default class Client {
 		return this.request("get_events_by_row_ids", { row_ids })
 	}
 
-	paginate(room_id: RoomID, max_timeline_id: TimelineRowID, limit: number): Promise<DBEvent[]> {
+	async loadMoreHistory(roomID: RoomID): Promise<void> {
+		const room = this.store.rooms.get(roomID)
+		if (!room) {
+			throw new Error("Room not found")
+		}
+		const oldestRowID = room.timeline.current[0]?.timeline_rowid
+		const resp = await this.paginate(roomID, oldestRowID ?? 0, 100)
+		if (room.timeline.current[0]?.timeline_rowid !== oldestRowID) {
+			throw new Error("Timeline changed while loading history")
+		}
+		room.applyPagination(resp.events)
+	}
+
+	paginate(room_id: RoomID, max_timeline_id: TimelineRowID, limit: number): Promise<PaginationResponse> {
 		return this.request("paginate", { room_id, max_timeline_id, limit })
 	}
 
-	paginateServer(room_id: RoomID, limit: number): Promise<DBEvent[]> {
+	paginateServer(room_id: RoomID, limit: number): Promise<PaginationResponse> {
 		return this.request("paginate_server", { room_id, limit })
 	}
 
