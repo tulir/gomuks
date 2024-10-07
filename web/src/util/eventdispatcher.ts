@@ -13,7 +13,7 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import { useEffect, useState } from "react"
+import { useEffect, useState, useSyncExternalStore } from "react"
 
 export function useEventAsState<T>(dispatcher?: EventDispatcher<T>): T | null {
 	const [state, setState] = useState<T | null>(null)
@@ -21,16 +21,30 @@ export function useEventAsState<T>(dispatcher?: EventDispatcher<T>): T | null {
 	return state
 }
 
+export function useCachedEventAsState<T>(dispatcher: CachedEventDispatcher<T>): T | null {
+	return useSyncExternalStore(
+		dispatcher.listenChange,
+		() => dispatcher.current,
+	)
+}
+
 export function useNonNullEventAsState<T>(dispatcher: NonNullCachedEventDispatcher<T>): T {
-	const [state, setState] = useState<T>(dispatcher.current)
-	useEffect(() => dispatcher.listen(setState), [dispatcher])
-	return state
+	return useSyncExternalStore(
+		dispatcher.listenChange,
+		() => dispatcher.current,
+	)
 }
 
 export class EventDispatcher<T> {
 	#listeners: ((data: T) => void)[] = []
 
+	listenChange = (listener: () => void) => this.#listen(listener)
+
 	listen(listener: (data: T) => void): () => void {
+		return this.#listen(listener)
+	}
+
+	#listen(listener: (data: T) => void): () => void {
 		this.#listeners.push(listener)
 		return () => {
 			const idx = this.#listeners.indexOf(listener)

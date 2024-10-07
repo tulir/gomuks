@@ -13,28 +13,29 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
+import { use, useMemo } from "react"
 import { RoomStateStore } from "../../api/statestore.ts"
-import "./TimelineEvent.css"
+import { useNonNullEventAsState } from "../../util/eventdispatcher.ts"
+import { ClientContext } from "../ClientContext.ts"
+import TimelineEvent from "./TimelineEvent.tsx"
 
-export interface TimelineEventProps {
+interface TimelineViewProps {
 	room: RoomStateStore
-	eventRowID: number
 }
 
-const TimelineEvent = ({ room, eventRowID }: TimelineEventProps) => {
-	const evt = room.eventsByRowID.get(eventRowID)
-	if (!evt) {
-		return null
-	}
-	// @ts-expect-error TODO add content types
-	const body = (evt.decrypted ?? evt.content).body
-	return <div className="timeline-event">
-		<code>{evt.decrypted_type ?? evt.type}</code>
-		&nbsp;
-		<code>{evt.sender}</code>
-		&nbsp;
-		{body ?? <code>{JSON.stringify(evt.decrypted ?? evt.content, null, "  ")}</code>}
+const TimelineView = ({ room }: TimelineViewProps) => {
+	const timeline = useNonNullEventAsState(room.timeline)
+	const client = use(ClientContext)!
+	const loadHistory = useMemo(() =>  () => {
+		client.loadMoreHistory(room.roomID)
+			.catch(err => console.error("Failed to load history", err))
+	}, [client, room.roomID])
+	return <div className="timeline-view">
+		<button onClick={loadHistory}>Load history</button>
+		{timeline.map(entry => <TimelineEvent
+			key={entry.event_rowid} room={room} eventRowID={entry.event_rowid}
+		/>)}
 	</div>
 }
 
-export default TimelineEvent
+export default TimelineView

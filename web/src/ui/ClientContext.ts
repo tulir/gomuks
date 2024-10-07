@@ -13,19 +13,7 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import { EventDispatcher, CachedEventDispatcher } from "../util/eventdispatcher.ts"
-import { CancellablePromise } from "../util/promise.ts"
-import { RPCEvent } from "./types/hievents.ts"
+import { createContext } from "react"
+import type Client from "../api/client.ts"
 
-export interface RPCClient {
-	connect: CachedEventDispatcher<ConnectionEvent>
-	event: EventDispatcher<RPCEvent>
-	start(): void
-	stop(): void
-	request<Req, Resp>(command: string, data: Req): CancellablePromise<Resp>
-}
-
-export interface ConnectionEvent {
-	connected: boolean
-	error: Error | null
-}
+export const ClientContext = createContext<Client | null>(null)

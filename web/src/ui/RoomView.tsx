@@ -13,26 +13,20 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import Client from "../api/client.ts"
 import { RoomStateStore } from "../api/statestore.ts"
 import { useNonNullEventAsState } from "../util/eventdispatcher.ts"
 import "./RoomView.css"
-import TimelineEvent from "./timeline/TimelineEvent.tsx"
+import TimelineView from "./timeline/TimelineView.tsx"
 
-export interface RoomViewProps {
-	client: Client
+interface RoomViewProps {
 	room: RoomStateStore
 }
 
-const RoomView = ({ client, room }: RoomViewProps) => {
+const RoomView = ({ room }: RoomViewProps) => {
 	const roomMeta = useNonNullEventAsState(room.meta)
-	const timeline = useNonNullEventAsState(room.timeline)
 	return <div className="room-view">
 		{roomMeta.room_id}
-		<button onClick={() => client.loadMoreHistory(roomMeta.room_id)}>Load history</button>
-		{timeline.map(entry => <TimelineEvent
-			key={entry.event_rowid} client={client} room={room} eventRowID={entry.event_rowid}
-		/>)}
+		<TimelineView room={room} />
 	</div>
 }
 

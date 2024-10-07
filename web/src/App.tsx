@@ -20,6 +20,7 @@ import Client from "./api/client.ts"
 import WSClient from "./api/wsclient.ts"
 import { LoginScreen, VerificationScreen } from "./ui/login"
 import MainScreen from "./ui/MainScreen.tsx"
+import { ClientContext } from "./ui/ClientContext.ts"
 
 function App() {
 	const client = useMemo(() => new Client(new WSClient("/_gomuks/websocket")), [])
@@ -55,7 +56,7 @@ function App() {
 	} else if (!clientState.is_verified) {
 		return <VerificationScreen client={client} clientState={clientState}/>
 	} else {
-		return <MainScreen client={client} />
+		return <ClientContext value={client}><MainScreen /></ClientContext>
 	}
 }
 

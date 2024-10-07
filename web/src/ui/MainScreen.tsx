@@ -13,23 +13,19 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import { useState } from "react"
-import type Client from "../api/client.ts"
+import { useState, use } from "react"
 import type { RoomID } from "../api/types/hitypes.ts"
-import RoomList from "./RoomList.tsx"
+import RoomList from "./roomlist/RoomList.tsx"
 import RoomView from "./RoomView.tsx"
+import { ClientContext } from "./ClientContext.ts"
 import "./MainScreen.css"
 
-export interface MainScreenProps {
-	client: Client
-}
-
-const MainScreen = ({ client }: MainScreenProps) => {
+const MainScreen = () => {
 	const [activeRoomID, setActiveRoomID] = useState<RoomID | null>(null)
-	const activeRoom = activeRoomID && client.store.rooms.get(activeRoomID)
+	const activeRoom = activeRoomID && use(ClientContext)!.store.rooms.get(activeRoomID)
 	return <main className="matrix-main">
-		<RoomList client={client} setActiveRoom={setActiveRoomID} />
-		{activeRoom && <RoomView client={client} room={activeRoom} />}
+		<RoomList setActiveRoom={setActiveRoomID} />
+		{activeRoom && <RoomView key={activeRoomID} room={activeRoom} />}
 	</main>
 }
 

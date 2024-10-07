@@ -58,12 +58,14 @@ function visibleMetaIsEqual(meta1: DBRoom, meta2: DBRoom): boolean {
 }
 
 export class RoomStateStore {
+	readonly roomID: RoomID
 	readonly meta: NonNullCachedEventDispatcher<DBRoom>
 	readonly timeline = new NonNullCachedEventDispatcher<TimelineRowTuple[]>([])
 	readonly eventsByRowID: Map<EventRowID, DBEvent> = new Map()
 	readonly eventsByID: Map<EventID, DBEvent> = new Map()
 
 	constructor(meta: DBRoom) {
+		this.roomID = meta.room_id
 		this.meta = new NonNullCachedEventDispatcher(meta)
 	}
 

@@ -13,47 +13,10 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import React, { useMemo } from "react"
-import Client from "../api/client.ts"
-import { DBEvent, RoomID } from "../api/types/hitypes.ts"
-import { useNonNullEventAsState } from "../util/eventdispatcher.ts"
-import { RoomListEntry } from "../api/statestore.ts"
-import "./RoomList.css"
-
-export interface RoomListProps {
-	client: Client
-	setActiveRoom: (room_id: RoomID) => void
-}
-
-const RoomList = ({ client, setActiveRoom }: RoomListProps) => {
-	const roomList = useNonNullEventAsState(client.store.roomList)
-	const clickRoom = useMemo(() => (evt: React.MouseEvent) => {
-		const roomID = evt.currentTarget.getAttribute("data-room-id")
-		if (roomID) {
-			setActiveRoom(roomID)
-		} else {
-			console.warn("No room ID :(", evt.currentTarget)
-		}
-	}, [setActiveRoom])
-
-	return <div className="room-list">
-		{reverseMap(roomList, room =>
-			<RoomEntry
-				key={room.room_id}
-				client={client}
-				room={room}
-				setActiveRoom={clickRoom}
-			/>,
-		)}
-	</div>
-}
-
-function reverseMap<T, O>(arg: T[], fn: (a: T) => O) {
-	return arg.map((_, i, arr) => fn(arr[arr.length - i - 1]))
-}
+import type { RoomListEntry } from "../../api/statestore.ts"
+import type { DBEvent } from "../../api/types/hitypes.ts"
 
 export interface RoomListEntryProps {
-	client: Client
 	room: RoomListEntry
 	setActiveRoom: (evt: React.MouseEvent) => void
 }
@@ -85,7 +48,7 @@ const getAvatarURL = (avatar?: string): string | undefined => {
 	return `_gomuks/media/${match[1]}/${match[2]}`
 }
 
-const RoomEntry = ({ room, setActiveRoom }: RoomListEntryProps) => {
+const Entry = ({ room, setActiveRoom }: RoomListEntryProps) => {
 	const previewText = makePreviewText(room.preview_event)
 	return <div className="room-entry" onClick={setActiveRoom} data-room-id={room.room_id}>
 		<div className="room-entry-left">
@@ -98,4 +61,4 @@ const RoomEntry = ({ room, setActiveRoom }: RoomListEntryProps) => {
 	</div>
 }
 
-export default RoomList
+export default Entry
