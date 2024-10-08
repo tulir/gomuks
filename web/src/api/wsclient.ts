@@ -13,29 +13,14 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import { CachedEventDispatcher, EventDispatcher } from "../util/eventdispatcher.ts"
-import { CancellablePromise } from "../util/promise.ts"
-import { RPCCommand, RPCEvent } from "./types/hievents.ts"
-import { ConnectionEvent, RPCClient } from "./rpc.ts"
+import type { RPCCommand } from "./types/hievents.ts"
+import RPCClient from "./rpc.ts"
 
-export class ErrorResponse extends Error {
-	constructor(public data: unknown) {
-		super(`${data}`)
-	}
-}
-
-export default class WSClient implements RPCClient {
+export default class WSClient extends RPCClient {
 	#conn: WebSocket | null = null
-	readonly connect: CachedEventDispatcher<ConnectionEvent> = new CachedEventDispatcher()
-	readonly event: EventDispatcher<RPCEvent> = new EventDispatcher()
-	readonly #pendingRequests: Map<number, {
-		resolve: (data: unknown) => void,
-		reject: (err: Error) => void
-	}> = new Map()
-	#nextRequestID: number = 1
 
 	constructor(readonly addr: string) {
-
+		super()
 	}
 
 	start() {
@@ -55,37 +40,15 @@ export default class WSClient implements RPCClient {
 		this.#conn?.close(1000, "Client closed")
 	}
 
-	#cancelRequest(request_id: number, reason: string) {
-		if (!this.#pendingRequests.has(request_id)) {
-			console.debug("Tried to cancel unknown request", request_id)
-			return
-		}
-		this.request("cancel", { request_id, reason }).then(
-			() => console.debug("Cancelled request", request_id, "for", reason),
-			err => console.debug("Failed to cancel request", request_id, "for", reason, err),
-		)
+	get isConnected() {
+		return this.#conn?.readyState === WebSocket.OPEN
 	}
 
-	request<Req, Resp>(command: string, data: Req): CancellablePromise<Resp> {
+	send(data: string) {
 		if (!this.#conn) {
-			return new CancellablePromise((_resolve, reject) => {
-				reject(new Error("Websocket not connected"))
-			}, () => {
-			})
+			throw new Error("Websocket not connected")
 		}
-		const request_id = this.#nextRequestID++
-		return new CancellablePromise((resolve, reject) => {
-			if (!this.#conn) {
-				reject(new Error("Websocket not connected"))
-				return
-			}
-			this.#pendingRequests.set(request_id, { resolve: resolve as ((value: unknown) => void), reject })
-			this.#conn.send(JSON.stringify({
-				command,
-				request_id,
-				data,
-			}))
-		}, this.#cancelRequest.bind(this, request_id))
+		this.#conn.send(data)
 	}
 
 	#onMessage = (ev: MessageEvent) => {
@@ -101,21 +64,7 @@ export default class WSClient implements RPCClient {
 			this.#conn?.close(1003, "Malformed JSON")
 			return
 		}
-		if (parsed.command === "response" || parsed.command === "error") {
-			const target = this.#pendingRequests.get(parsed.request_id)
-			if (!target) {
-				console.error("Received response for unknown request:", parsed)
-				return
-			}
-			this.#pendingRequests.delete(parsed.request_id)
-			if (parsed.command === "response") {
-				target.resolve(parsed.data)
-			} else {
-				target.reject(new ErrorResponse(parsed.data))
-			}
-		} else {
-			this.event.emit(parsed as RPCEvent)
-		}
+		this.onCommand(parsed)
 	}
 
 	#dispatchConnectionStatus(connected: boolean, error: Error | null) {
@@ -128,10 +77,10 @@ export default class WSClient implements RPCClient {
 	}
 
 	#clearPending = () => {
-		for (const { reject } of this.#pendingRequests.values()) {
+		for (const { reject } of this.pendingRequests.values()) {
 			reject(new Error("Websocket closed"))
 		}
-		this.#pendingRequests.clear()
+		this.pendingRequests.clear()
 	}
 
 	#onError = (ev: Event) => {

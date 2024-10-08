@@ -31,14 +31,14 @@ export const LoginScreen = ({ client }: LoginScreenProps) => {
 
 	const login = useCallback((evt: React.FormEvent) => {
 		evt.preventDefault()
-		client.login(homeserverURL, username, password).then(
+		client.rpc.login(homeserverURL, username, password).then(
 			() => {},
 			err => setError(err.toString()),
 		)
 	}, [homeserverURL, username, password, client])
 
 	const resolveHomeserver = useCallback(() => {
-		client.discoverHomeserver(username).then(
+		client.rpc.discoverHomeserver(username).then(
 			resp => setHomeserverURL(resp["m.homeserver"].base_url),
 			err => setError(`Failed to resolve homeserver: ${err}`),
 		)

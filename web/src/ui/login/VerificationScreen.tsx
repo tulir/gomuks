@@ -26,7 +26,7 @@ export const VerificationScreen = ({ client, clientState }: LoginScreenProps) =>
 
 	const verify = useCallback((evt: React.FormEvent) => {
 		evt.preventDefault()
-		client.verify(recoveryKey).then(
+		client.rpc.verify(recoveryKey).then(
 			() => {},
 			err => setError(err.toString()),
 		)

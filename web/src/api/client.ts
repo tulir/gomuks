@@ -15,10 +15,10 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import { CachedEventDispatcher } from "../util/eventdispatcher.ts"
 import type {
-	ClientWellKnown, DBEvent, EventID, EventRowID, EventType, PaginationResponse, RoomID, TimelineRowID, UserID,
+	RoomID,
 } from "./types/hitypes.ts"
-import { ClientState, RPCEvent } from "./types/hievents.ts"
-import { RPCClient } from "./rpc.ts"
+import type { ClientState, RPCEvent } from "./types/hievents.ts"
+import type RPCClient from "./rpc.ts"
 import { StateStore } from "./statestore.ts"
 
 export default class Client {
@@ -39,56 +39,16 @@ export default class Client {
 		}
 	}
 
-	request<Req, Resp>(command: string, data: Req): Promise<Resp> {
-		return this.rpc.request(command, data)
-	}
-
-	sendMessage(room_id: RoomID, event_type: EventType, content: Record<string, unknown>): Promise<DBEvent> {
-		return this.request("send_message", { room_id, event_type, content })
-	}
-
-	ensureGroupSessionShared(room_id: RoomID): Promise<boolean> {
-		return this.request("ensure_group_session_shared", { room_id })
-	}
-
-	getEvent(room_id: RoomID, event_id: EventID): Promise<DBEvent> {
-		return this.request("get_event", { room_id, event_id })
-	}
-
-	getEventsByRowIDs(row_ids: EventRowID[]): Promise<DBEvent[]> {
-		return this.request("get_events_by_row_ids", { row_ids })
-	}
-
 	async loadMoreHistory(roomID: RoomID): Promise<void> {
 		const room = this.store.rooms.get(roomID)
 		if (!room) {
 			throw new Error("Room not found")
 		}
 		const oldestRowID = room.timeline.current[0]?.timeline_rowid
-		const resp = await this.paginate(roomID, oldestRowID ?? 0, 100)
+		const resp = await this.rpc.paginate(roomID, oldestRowID ?? 0, 100)
 		if (room.timeline.current[0]?.timeline_rowid !== oldestRowID) {
 			throw new Error("Timeline changed while loading history")
 		}
 		room.applyPagination(resp.events)
-	}
-
-	paginate(room_id: RoomID, max_timeline_id: TimelineRowID, limit: number): Promise<PaginationResponse> {
-		return this.request("paginate", { room_id, max_timeline_id, limit })
-	}
-
-	paginateServer(room_id: RoomID, limit: number): Promise<PaginationResponse> {
-		return this.request("paginate_server", { room_id, limit })
-	}
-
-	discoverHomeserver(user_id: UserID): Promise<ClientWellKnown> {
-		return this.request("discover_homeserver", { user_id })
-	}
-
-	login(homeserver_url: string, username: string, password: string): Promise<boolean> {
-		return this.request("login", { homeserver_url, username, password })
-	}
-
-	verify(recovery_key: string): Promise<boolean> {
-		return this.request("verify", { recovery_key })
 	}
 }
