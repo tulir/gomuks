@@ -18,6 +18,7 @@ import {
 	DBRoom,
 	DeviceID,
 	EventRowID,
+	EventType,
 	RoomID,
 	TimelineRowTuple,
 	UserID,
@@ -61,6 +62,7 @@ export interface SyncRoom {
 	meta: DBRoom
 	timeline: TimelineRowTuple[]
 	events: DBEvent[]
+	state: Record<EventType, Record<string, EventRowID>>
 	reset: boolean
 }
 

@@ -20,6 +20,7 @@ import type {
 	DBRoom,
 	EventID,
 	EventRowID,
+	EventType,
 	LazyLoadSummary,
 	RoomID,
 	TimelineRowTuple,
@@ -61,6 +62,7 @@ export class RoomStateStore {
 	readonly roomID: RoomID
 	readonly meta: NonNullCachedEventDispatcher<DBRoom>
 	readonly timeline = new NonNullCachedEventDispatcher<TimelineRowTuple[]>([])
+	state: Map<EventType, Map<string, EventRowID>> = new Map()
 	readonly eventsByRowID: Map<EventRowID, DBEvent> = new Map()
 	readonly eventsByID: Map<EventID, DBEvent> = new Map()
 
@@ -73,11 +75,15 @@ export class RoomStateStore {
 		// Pagination comes in newest to oldest, timeline is in the opposite order
 		history.reverse()
 		const newTimeline = history.map(evt => {
-			this.eventsByRowID.set(evt.rowid, evt)
-			this.eventsByID.set(evt.event_id, evt)
+			this.applyEvent(evt)
 			return { timeline_rowid: evt.timeline_rowid, event_rowid: evt.rowid }
 		})
 		this.timeline.emit([...newTimeline, ...this.timeline.current])
+	}
+
+	applyEvent(evt: DBEvent) {
+		this.eventsByRowID.set(evt.rowid, evt)
+		this.eventsByID.set(evt.event_id, evt)
 	}
 
 	applySync(sync: SyncRoom) {
@@ -87,8 +93,17 @@ export class RoomStateStore {
 			this.meta.emit(sync.meta)
 		}
 		for (const evt of sync.events) {
-			this.eventsByRowID.set(evt.rowid, evt)
-			this.eventsByID.set(evt.event_id, evt)
+			this.applyEvent(evt)
+		}
+		for (const [evtType, changedEvts] of Object.entries(sync.state)) {
+			let stateMap = this.state.get(evtType)
+			if (!stateMap) {
+				stateMap = new Map()
+				this.state.set(evtType, stateMap)
+			}
+			for (const [key, rowID] of Object.entries(changedEvts)) {
+				stateMap.set(key, rowID)
+			}
 		}
 		if (sync.reset) {
 			this.timeline.emit(sync.timeline)

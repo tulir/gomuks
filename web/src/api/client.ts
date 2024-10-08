@@ -15,6 +15,8 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import { CachedEventDispatcher } from "../util/eventdispatcher.ts"
 import type {
+	EventRowID,
+	EventType,
 	RoomID,
 } from "./types/hitypes.ts"
 import type { ClientState, RPCEvent } from "./types/hievents.ts"
@@ -37,6 +39,28 @@ export default class Client {
 		} else if (ev.command === "events_decrypted") {
 			this.store.applyDecrypted(ev.data)
 		}
+	}
+
+	async loadRoomState(roomID: RoomID, refetch = false): Promise<void> {
+		const room = this.store.rooms.get(roomID)
+		if (!room) {
+			throw new Error("Room not found")
+		}
+		const state = await this.rpc.getRoomState(roomID, room.meta.current.has_member_list, refetch)
+		const newStateMap: Map<EventType, Map<string, EventRowID>> = new Map()
+		for (const evt of state) {
+			if (evt.state_key === undefined) {
+				throw new Error(`Event ${evt.event_id} is missing state key`)
+			}
+			room.applyEvent(evt)
+			let stateMap = newStateMap.get(evt.type)
+			if (!stateMap) {
+				stateMap = new Map()
+				newStateMap.set(evt.type, stateMap)
+			}
+			stateMap.set(evt.state_key, evt.rowid)
+		}
+		room.state = newStateMap
 	}
 
 	async loadMoreHistory(roomID: RoomID): Promise<void> {

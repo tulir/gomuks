@@ -110,6 +110,13 @@ export interface DBEvent {
 	last_edit_rowid?: EventRowID
 }
 
+export interface DBAccountData {
+	user_id: UserID
+	room_id?: RoomID
+	type: EventType
+	content: unknown
+}
+
 export interface PaginationResponse {
 	events: DBEvent[]
 	has_more: boolean

@@ -28,6 +28,7 @@ import (
 	"github.com/coder/websocket"
 	"github.com/rs/zerolog"
 
+	"maunium.net/go/mautrix/event"
 	"maunium.net/go/mautrix/hicli"
 	"maunium.net/go/mautrix/hicli/database"
 	"maunium.net/go/mautrix/id"
@@ -224,6 +225,7 @@ func (gmx *Gomuks) sendInitialData(ctx context.Context, conn *websocket.Conn) {
 				Meta:     room,
 				Events:   make([]*database.Event, 0, 2),
 				Timeline: make([]database.TimelineRowTuple, 0),
+				State:    map[event.Type]map[string]database.EventRowID{},
 			}
 			payload.Rooms[room.ID] = syncRoom
 			if room.PreviewEventRowID != 0 {
