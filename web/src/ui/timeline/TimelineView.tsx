@@ -18,6 +18,7 @@ import { RoomStateStore } from "../../api/statestore.ts"
 import { useNonNullEventAsState } from "../../util/eventdispatcher.ts"
 import { ClientContext } from "../ClientContext.ts"
 import TimelineEvent from "./TimelineEvent.tsx"
+import "./TimelineView.css"
 
 interface TimelineViewProps {
 	room: RoomStateStore

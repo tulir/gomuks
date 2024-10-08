@@ -15,6 +15,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import type { RoomListEntry } from "../../api/statestore.ts"
 import type { DBEvent } from "../../api/types/hitypes.ts"
+import { getMediaURL } from "../../api/media.ts"
 
 export interface RoomListEntryProps {
 	room: RoomListEntry
@@ -35,24 +36,11 @@ function makePreviewText(evt?: DBEvent): string {
 	return ""
 }
 
-const avatarRegex = /^mxc:\/\/([a-zA-Z0-9.:-]+)\/([a-zA-Z0-9_-]+)$/
-
-const getAvatarURL = (avatar?: string): string | undefined => {
-	if (!avatar) {
-		return undefined
-	}
-	const match = avatar.match(avatarRegex)
-	if (!match) {
-		return undefined
-	}
-	return `_gomuks/media/${match[1]}/${match[2]}`
-}
-
 const Entry = ({ room, setActiveRoom }: RoomListEntryProps) => {
 	const previewText = makePreviewText(room.preview_event)
 	return <div className="room-entry" onClick={setActiveRoom} data-room-id={room.room_id}>
 		<div className="room-entry-left">
-			<img className="room-avatar" src={getAvatarURL(room.avatar)} alt=""/>
+			<img className="room-avatar" src={getMediaURL(room.avatar)} alt=""/>
 		</div>
 		<div className="room-entry-right">
 			<div className="room-name">{room.name}</div>

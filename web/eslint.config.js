@@ -43,7 +43,7 @@ export default tseslint.config(
 			}],
 			"array-bracket-spacing": ["error", "never"],
 			"one-var-declaration-per-line": ["error", "initializations"],
-			"quotes": ["error", "double"],
+			"quotes": ["error", "double", { allowTemplateLiterals: true }],
 			"semi": ["error", "never"],
 			"comma-dangle": ["error", "always-multiline"],
 			"max-len": ["warn", 120],

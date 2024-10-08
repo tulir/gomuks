@@ -13,12 +13,32 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
+import React from "react"
 import { RoomStateStore } from "../../api/statestore.ts"
+import { DBEvent } from "../../api/types/hitypes.ts"
+import { EventContentProps } from "./content/props.ts"
+import HiddenEvent from "./content/HiddenEvent.tsx"
 import "./TimelineEvent.css"
+import MessageBody from "./content/MessageBody.tsx"
 
 export interface TimelineEventProps {
 	room: RoomStateStore
 	eventRowID: number
+}
+
+function getBodyType(evt: DBEvent): React.FunctionComponent<EventContentProps> {
+	switch (evt.type) {
+	case "m.room.encrypted":
+		switch (evt.decrypted_type) {
+		case "m.room.message":
+			return MessageBody
+		}
+		break
+	case "m.room.message":
+		return MessageBody
+	case "m.sticker":
+	}
+	return HiddenEvent
 }
 
 const TimelineEvent = ({ room, eventRowID }: TimelineEventProps) => {
@@ -26,14 +46,17 @@ const TimelineEvent = ({ room, eventRowID }: TimelineEventProps) => {
 	if (!evt) {
 		return null
 	}
-	// @ts-expect-error TODO add content types
-	const body = (evt.decrypted ?? evt.content).body
+	const BodyType = getBodyType(evt)
+	if (BodyType === HiddenEvent) {
+		return <div className="timeline-event">
+			<BodyType room={room} event={evt}/>
+		</div>
+	}
 	return <div className="timeline-event">
-		<code>{evt.decrypted_type ?? evt.type}</code>
-		&nbsp;
-		<code>{evt.sender}</code>
-		&nbsp;
-		{body ?? <code>{JSON.stringify(evt.decrypted ?? evt.content, null, "  ")}</code>}
+		<div className="event-sender">
+			{evt.sender}
+		</div>
+		<BodyType room={room} event={evt}/>
 	</div>
 }
 
