@@ -103,8 +103,8 @@ export default abstract class RPCClient {
 		}, this.cancelRequest.bind(this, request_id))
 	}
 
-	sendMessage(room_id: RoomID, event_type: EventType, content: Record<string, unknown>): Promise<DBEvent> {
-		return this.request("send_message", { room_id, event_type, content })
+	sendMessage(room_id: RoomID, type: EventType, content: Record<string, unknown>): Promise<DBEvent> {
+		return this.request("send_message", { room_id, type, content })
 	}
 
 	ensureGroupSessionShared(room_id: RoomID): Promise<boolean> {

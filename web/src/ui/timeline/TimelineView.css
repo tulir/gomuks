@@ -1,3 +1,4 @@
 div.timeline-view {
 	padding: 1rem;
+	overflow-y: scroll;
 }

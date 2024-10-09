@@ -1,3 +1,17 @@
 div.room-view {
-	overflow-y: scroll;
+	overflow: hidden;
+	height: 100%;
+	display: grid;
+	grid-template:
+		"header" 2rem
+		"messageview" 1fr
+		"input" 2rem
+		/ 1fr;
+}
+
+form.message-composer {
+	display: flex;
+	> input {
+		flex: 1;
+	}
 }

@@ -13,20 +13,42 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
+import React, { use, useState } from "react"
 import { RoomStateStore } from "../api/statestore.ts"
 import { useNonNullEventAsState } from "../util/eventdispatcher.ts"
-import "./RoomView.css"
 import TimelineView from "./timeline/TimelineView.tsx"
+import { ClientContext } from "./ClientContext.ts"
+import "./RoomView.css"
 
 interface RoomViewProps {
 	room: RoomStateStore
 }
 
 const RoomView = ({ room }: RoomViewProps) => {
+	const [text, setText] = useState("")
+	const client = use(ClientContext)!
 	const roomMeta = useNonNullEventAsState(room.meta)
+	const sendMessage = (evt: React.FormEvent) => {
+		evt.preventDefault()
+		client.rpc.sendMessage(room.roomID, "m.room.message", {
+			body: text,
+			msgtype: "m.text",
+		}).catch(err => window.alert("Failed to send message: " + err))
+	}
 	return <div className="room-view">
-		{roomMeta.room_id}
+		<div className="room-header">
+			{roomMeta.room_id}
+		</div>
 		<TimelineView room={room} />
+		<form className="message-composer" onSubmit={sendMessage}>
+			<input
+				type="text"
+				value={text}
+				onChange={evt => setText(evt.target.value)}
+				placeholder="Send a message"
+			/>
+			<button type="submit">Send</button>
+		</form>
 	</div>
 }
 
