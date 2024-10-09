@@ -22,11 +22,11 @@ import type {
 	EventRowID,
 	EventType,
 	PaginationResponse,
+	RPCCommand,
+	RPCEvent,
 	RoomID,
 	TimelineRowID,
 	UserID,
-	RPCCommand,
-	RPCEvent,
 } from "./types"
 
 export interface ConnectionEvent {

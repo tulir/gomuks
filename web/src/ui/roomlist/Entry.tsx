@@ -13,9 +13,9 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
+import { getMediaURL } from "../../api/media.ts"
 import type { RoomListEntry } from "../../api/statestore.ts"
 import type { DBEvent } from "../../api/types/hitypes.ts"
-import { getMediaURL } from "../../api/media.ts"
 
 export interface RoomListEntryProps {
 	room: RoomListEntry

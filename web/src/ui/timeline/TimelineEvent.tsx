@@ -16,10 +16,10 @@
 import React from "react"
 import { RoomStateStore } from "../../api/statestore.ts"
 import { DBEvent, MemberEventContent } from "../../api/types"
-import { EventContentProps } from "./content/props.ts"
 import HiddenEvent from "./content/HiddenEvent.tsx"
-import "./TimelineEvent.css"
 import MessageBody from "./content/MessageBody.tsx"
+import { EventContentProps } from "./content/props.ts"
+import "./TimelineEvent.css"
 
 export interface TimelineEventProps {
 	room: RoomStateStore

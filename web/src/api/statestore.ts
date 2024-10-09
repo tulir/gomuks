@@ -22,12 +22,12 @@ import type {
 	EventID,
 	EventRowID,
 	EventType,
+	EventsDecryptedData,
 	LazyLoadSummary,
 	RoomID,
-	TimelineRowTuple,
-	EventsDecryptedData,
 	SyncCompleteData,
 	SyncRoom,
+	TimelineRowTuple,
 } from "./types"
 
 function arraysAreEqual<T>(arr1?: T[], arr2?: T[]): boolean {

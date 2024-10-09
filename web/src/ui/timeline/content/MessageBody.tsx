@@ -15,8 +15,8 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import sanitizeHtml from "sanitize-html"
-import { ContentURI } from "../../../api/types"
 import { getMediaURL } from "../../../api/media.ts"
+import { ContentURI } from "../../../api/types"
 import { sanitizeHtmlParams } from "../../../util/html.ts"
 import { EventContentProps } from "./props.ts"
 

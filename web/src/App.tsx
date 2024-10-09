@@ -15,12 +15,12 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import { useEffect, useMemo } from "react"
 import { ScaleLoader } from "react-spinners"
-import { useEventAsState } from "./util/eventdispatcher.ts"
 import Client from "./api/client.ts"
 import WSClient from "./api/wsclient.ts"
-import { LoginScreen, VerificationScreen } from "./ui/login"
-import MainScreen from "./ui/MainScreen.tsx"
 import { ClientContext } from "./ui/ClientContext.ts"
+import MainScreen from "./ui/MainScreen.tsx"
+import { LoginScreen, VerificationScreen } from "./ui/login"
+import { useEventAsState } from "./util/eventdispatcher.ts"
 
 function App() {
 	const client = useMemo(() => new Client(new WSClient("/_gomuks/websocket")), [])

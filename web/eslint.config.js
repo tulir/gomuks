@@ -19,13 +19,29 @@ export default tseslint.config(
 			"react-refresh": reactRefresh,
 			"import": pluginImport,
 		},
+		settings: {
+			"import/extensions": [".ts", ".tsx", ".css"],
+		},
 		rules: {
 			...reactHooks.configs.recommended.rules,
 			"react-refresh/only-export-components": [
 				"warn",
 				{allowConstantExport: true},
 			],
-			"import/order": "error",
+			"import/order": ["error", {
+				"newlines-between": "never",
+				"alphabetize": {"order": "asc", "orderImportKind": "asc"},
+				"named": true,
+				"warnOnUnassignedImports": true,
+				"pathGroups": [{
+					"pattern": "*.css",
+					"patternOptions": {"matchBase": true},
+					"group": "sibling",
+					"position": "after",
+				}],
+			}],
+			"import/first": "error",
+			"import/newline-after-import": "error",
 			"indent": ["error", "tab", {
 				"FunctionDeclaration": {"parameters": "first"},
 				"FunctionExpression": {"parameters": "first"},
@@ -43,7 +59,7 @@ export default tseslint.config(
 			}],
 			"array-bracket-spacing": ["error", "never"],
 			"one-var-declaration-per-line": ["error", "initializations"],
-			"quotes": ["error", "double", { allowTemplateLiterals: true }],
+			"quotes": ["error", "double", {allowTemplateLiterals: true}],
 			"semi": ["error", "never"],
 			"comma-dangle": ["error", "always-multiline"],
 			"max-len": ["warn", 120],
