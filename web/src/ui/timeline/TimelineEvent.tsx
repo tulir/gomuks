@@ -15,7 +15,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import React from "react"
 import { RoomStateStore } from "../../api/statestore.ts"
-import { DBEvent } from "../../api/types/hitypes.ts"
+import { DBEvent, MemberEventContent } from "../../api/types"
 import { EventContentProps } from "./content/props.ts"
 import HiddenEvent from "./content/HiddenEvent.tsx"
 import "./TimelineEvent.css"

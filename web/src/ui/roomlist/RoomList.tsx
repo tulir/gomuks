@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import React, { use, useMemo } from "react"
-import type { RoomID } from "../../api/types/hitypes.ts"
+import type { RoomID } from "../../api/types"
 import { useNonNullEventAsState } from "../../util/eventdispatcher.ts"
 import { ClientContext } from "../ClientContext.ts"
 import Entry from "./Entry.tsx"

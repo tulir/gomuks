@@ -14,8 +14,8 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import React, { useCallback, useState } from "react"
-import "./LoginScreen.css"
 import { LoginScreenProps } from "./LoginScreen.tsx"
+import "./LoginScreen.css"
 
 export const VerificationScreen = ({ client, clientState }: LoginScreenProps) => {
 	if (!clientState.is_logged_in) {

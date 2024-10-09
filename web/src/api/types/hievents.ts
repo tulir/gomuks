@@ -14,14 +14,16 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import {
-	DBEvent,
-	DBRoom,
 	DeviceID,
-	EventRowID,
 	EventType,
 	RoomID,
-	TimelineRowTuple,
 	UserID,
+} from "./mxtypes.ts"
+import {
+	DBEvent,
+	DBRoom,
+	EventRowID,
+	TimelineRowTuple,
 } from "./hitypes.ts"
 
 export interface RPCCommand<T> {

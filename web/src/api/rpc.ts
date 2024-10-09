@@ -23,9 +23,11 @@ import type {
 	EventType,
 	PaginationResponse,
 	RoomID,
-	TimelineRowID, UserID,
-} from "./types/hitypes.ts"
-import { RPCCommand, RPCEvent } from "./types/hievents.ts"
+	TimelineRowID,
+	UserID,
+	RPCCommand,
+	RPCEvent,
+} from "./types"
 
 export interface ConnectionEvent {
 	connected: boolean

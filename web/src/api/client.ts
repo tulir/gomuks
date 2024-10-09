@@ -18,8 +18,9 @@ import type {
 	EventRowID,
 	EventType,
 	RoomID,
-} from "./types/hitypes.ts"
-import type { ClientState, RPCEvent } from "./types/hievents.ts"
+	ClientState,
+	RPCEvent,
+} from "./types"
 import type RPCClient from "./rpc.ts"
 import { StateStore } from "./statestore.ts"
 

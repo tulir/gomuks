@@ -13,7 +13,7 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import type { RPCCommand } from "./types/hievents.ts"
+import type { RPCCommand } from "./types"
 import RPCClient from "./rpc.ts"
 
 export default class WSClient extends RPCClient {

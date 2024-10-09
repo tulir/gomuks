@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import { useState, use } from "react"
-import type { RoomID } from "../api/types/hitypes.ts"
+import type { RoomID } from "../api/types"
 import RoomList from "./roomlist/RoomList.tsx"
 import RoomView from "./RoomView.tsx"
 import { ClientContext } from "./ClientContext.ts"

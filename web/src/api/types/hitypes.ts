@@ -13,18 +13,22 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
+import {
+	ContentURI,
+	CreateEventContent,
+	EncryptedEventContent,
+	EncryptionEventContent,
+	EventID,
+	EventType,
+	LazyLoadSummary,
+	RelationType,
+	RoomAlias,
+	RoomID,
+	UserID,
+} from "./mxtypes.ts"
+
 export type EventRowID = number
 export type TimelineRowID = number
-export type RoomID = string
-export type EventID = string
-export type UserID = string
-export type DeviceID = string
-export type EventType = string
-export type ContentURI = string
-export type RoomAlias = string
-export type RoomVersion = "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" | "10" | "11"
-export type RoomType = "" | "m.space"
-export type RelationType = "m.annotation" | "m.reference" | "m.replace" | "m.thread"
 
 export interface TimelineRowTuple {
 	timeline_rowid: TimelineRowID
@@ -36,30 +40,6 @@ export enum RoomNameQuality {
 	Participants,
 	CanonicalAlias,
 	Explicit,
-}
-
-export interface RoomPredecessor {
-	room_id: RoomID
-	event_id: EventID
-}
-
-export interface CreateEventContent {
-	type: RoomType
-	"m.federate": boolean
-	room_version: RoomVersion
-	predecessor: RoomPredecessor
-}
-
-export interface LazyLoadSummary {
-	heroes?: UserID[]
-	"m.joined_member_count"?: number
-	"m.invited_member_count"?: number
-}
-
-export interface EncryptionEventContent {
-	algorithm: string
-	rotation_period_ms?: number
-	rotation_period_msgs?: number
 }
 
 export interface DBRoom {
@@ -80,14 +60,6 @@ export interface DBRoom {
 	sorting_timestamp: number
 
 	prev_batch: string
-}
-
-export interface EncryptedEventContent {
-	algorithm: "m.megolm.v1.aes-sha2"
-	ciphertext: string
-	session_id: string
-	sender_key?: string
-	device_id?: DeviceID
 }
 
 export interface DBEvent {

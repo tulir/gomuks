@@ -15,8 +15,8 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import React, { useCallback, useEffect, useState } from "react"
 import type Client from "../../api/client.ts"
+import { ClientState } from "../../api/types"
 import "./LoginScreen.css"
-import { ClientState } from "../../api/types/hievents.ts"
 
 export interface LoginScreenProps {
 	client: Client
