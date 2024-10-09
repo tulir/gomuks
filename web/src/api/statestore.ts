@@ -74,6 +74,14 @@ export class RoomStateStore {
 		this.meta = new NonNullCachedEventDispatcher(meta)
 	}
 
+	getStateEvent(type: EventType, stateKey: string): DBEvent | undefined {
+		const rowID = this.state.get(type)?.get(stateKey)
+		if (!rowID) {
+			return
+		}
+		return this.eventsByRowID.get(rowID)
+	}
+
 	applyPagination(history: DBEvent[]) {
 		// Pagination comes in newest to oldest, timeline is in the opposite order
 		history.reverse()

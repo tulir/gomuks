@@ -40,6 +40,8 @@ const TimelineEvent = ({ room, eventRowID }: TimelineEventProps) => {
 	if (!evt) {
 		return null
 	}
+	const memberEvt = room.getStateEvent("m.room.member", evt.sender)
+	const memberEvtContent = memberEvt?.content as MemberEventContent | undefined
 	const BodyType = getBodyType(evt)
 	if (BodyType === HiddenEvent) {
 		return <div className="timeline-event">
@@ -48,7 +50,7 @@ const TimelineEvent = ({ room, eventRowID }: TimelineEventProps) => {
 	}
 	return <div className="timeline-event">
 		<div className="event-sender">
-			{evt.sender}
+			{memberEvtContent?.displayname ?? evt.sender}
 		</div>
 		<BodyType room={room} event={evt}/>
 	</div>
