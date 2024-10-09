@@ -26,12 +26,9 @@ function makePreviewText(evt?: DBEvent): string {
 	if (!evt) {
 		return ""
 	}
-	if (evt.type === "m.room.message") {
+	if (evt.type === "m.room.message" || evt.type === "m.sticker") {
 		// @ts-expect-error TODO add content types
 		return evt.content.body
-	} else if (evt.decrypted_type === "m.room.message") {
-		// @ts-expect-error TODO add content types
-		return evt.decrypted.body
 	}
 	return ""
 }

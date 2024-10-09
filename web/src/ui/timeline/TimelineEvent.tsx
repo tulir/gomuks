@@ -28,12 +28,6 @@ export interface TimelineEventProps {
 
 function getBodyType(evt: DBEvent): React.FunctionComponent<EventContentProps> {
 	switch (evt.type) {
-	case "m.room.encrypted":
-		switch (evt.decrypted_type) {
-		case "m.room.message":
-			return MessageBody
-		}
-		break
 	case "m.room.message":
 		return MessageBody
 	case "m.sticker":

@@ -60,7 +60,7 @@ interface LocationMessageEventContent extends BaseMessageEventContent {
 type MessageEventContent = TextMessageEventContent | MediaMessageEventContent | LocationMessageEventContent
 
 const MessageBody = ({ event }: EventContentProps) => {
-	const content = (event.decrypted ?? event.content) as MessageEventContent
+	const content = event.content as MessageEventContent
 	switch (content.msgtype) {
 	case "m.text":
 	case "m.emote":

@@ -82,6 +82,14 @@ export interface DBRoom {
 	prev_batch: string
 }
 
+export interface EncryptedEventContent {
+	algorithm: "m.megolm.v1.aes-sha2"
+	ciphertext: string
+	session_id: string
+	sender_key?: string
+	device_id?: DeviceID
+}
+
 export interface DBEvent {
 	rowid: EventRowID
 	timeline_rowid: TimelineRowID
@@ -96,6 +104,7 @@ export interface DBEvent {
 	content: unknown
 	decrypted?: unknown
 	decrypted_type?: EventType
+	encrypted?: EncryptedEventContent
 	unsigned: EventUnsigned
 
 	transaction_id?: string

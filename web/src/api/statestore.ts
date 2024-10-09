@@ -18,6 +18,7 @@ import type {
 	ContentURI,
 	DBEvent,
 	DBRoom,
+	EncryptedEventContent,
 	EventID,
 	EventRowID,
 	EventType,
@@ -82,6 +83,11 @@ export class RoomStateStore {
 	}
 
 	applyEvent(evt: DBEvent) {
+		if (evt.type === "m.room.encrypted" && evt.decrypted && evt.decrypted_type) {
+			evt.type = evt.decrypted_type
+			evt.encrypted = evt.content as EncryptedEventContent
+			evt.content = evt.decrypted
+		}
 		this.eventsByRowID.set(evt.rowid, evt)
 		this.eventsByID.set(evt.event_id, evt)
 	}
