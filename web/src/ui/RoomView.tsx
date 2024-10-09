@@ -30,6 +30,7 @@ const RoomView = ({ room }: RoomViewProps) => {
 	const roomMeta = useNonNullEventAsState(room.meta)
 	const sendMessage = (evt: React.FormEvent) => {
 		evt.preventDefault()
+		setText("")
 		client.rpc.sendMessage(room.roomID, "m.room.message", {
 			body: text,
 			msgtype: "m.text",
