@@ -32,20 +32,36 @@ const TimelineView = ({ room }: TimelineViewProps) => {
 			.catch(err => console.error("Failed to load history", err))
 	}, [client, room.roomID])
 	const bottomRef = useRef<HTMLDivElement>(null)
-	const isAtBottom = useRef(true)
+	const timelineViewRef = useRef<HTMLDivElement>(null)
+	const prevOldestTimelineRow = useRef(0)
+	const oldScrollHeight = useRef(0)
+	const scrolledToBottom = useRef(true)
+
+	// When the user scrolls the timeline manually, remember if they were at the bottom,
+	// so that we can keep them at the bottom when new events are added.
 	const handleScroll = useMemo(() => () => {
-		if (!bottomRef.current?.parentElement) {
+		if (!timelineViewRef.current) {
 			return
 		}
-		const timelineView = bottomRef.current.parentElement
-		isAtBottom.current = timelineView.scrollTop + timelineView.clientHeight + 1 >= timelineView.scrollHeight
+		const timelineView = timelineViewRef.current
+		scrolledToBottom.current = timelineView.scrollTop + timelineView.clientHeight + 1 >= timelineView.scrollHeight
 	}, [])
+	// Save the scroll height prior to updating the timeline, so that we can adjust the scroll position if needed.
+	if (timelineViewRef.current) {
+		oldScrollHeight.current = timelineViewRef.current.scrollHeight
+	}
 	useEffect(() => {
-		if (bottomRef.current && isAtBottom.current) {
+		if (bottomRef.current && scrolledToBottom.current) {
+			// For any timeline changes, if we were at the bottom, scroll to the new bottom
 			bottomRef.current.scrollIntoView()
+		} else if (timelineViewRef.current && prevOldestTimelineRow.current > timeline[0]?.timeline_rowid) {
+			// When new entries are added to the top of the timeline, scroll down to keep the same position
+			timelineViewRef.current.scrollTop += timelineViewRef.current.scrollHeight - oldScrollHeight.current
 		}
+		prevOldestTimelineRow.current = timeline[0]?.timeline_rowid ?? 0
 	}, [timeline])
-	return <div className="timeline-view" onScroll={handleScroll}>
+
+	return <div className="timeline-view" onScroll={handleScroll} ref={timelineViewRef}>
 		<button onClick={loadHistory}>Load history</button>
 		{timeline.map(entry => <TimelineEvent
 			key={entry.event_rowid} room={room} eventRowID={entry.event_rowid}
