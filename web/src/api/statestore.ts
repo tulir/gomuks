@@ -66,6 +66,7 @@ export class RoomStateStore {
 	readonly meta: NonNullCachedEventDispatcher<DBRoom>
 	readonly timeline = new NonNullCachedEventDispatcher<TimelineRowTuple[]>([])
 	state: Map<EventType, Map<string, EventRowID>> = new Map()
+	stateLoaded = false
 	readonly eventsByRowID: Map<EventRowID, DBEvent> = new Map()
 	readonly eventsByID: Map<EventID, DBEvent> = new Map()
 

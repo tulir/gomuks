@@ -13,7 +13,7 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import { use, useState } from "react"
+import { use, useCallback, useState } from "react"
 import type { RoomID } from "../api/types"
 import { ClientContext } from "./ClientContext.ts"
 import RoomView from "./RoomView.tsx"
@@ -22,9 +22,17 @@ import "./MainScreen.css"
 
 const MainScreen = () => {
 	const [activeRoomID, setActiveRoomID] = useState<RoomID | null>(null)
-	const activeRoom = activeRoomID && use(ClientContext)!.store.rooms.get(activeRoomID)
+	const client = use(ClientContext)!
+	const activeRoom = activeRoomID && client.store.rooms.get(activeRoomID)
+	const setActiveRoom = useCallback((roomID: RoomID) => {
+		setActiveRoomID(roomID)
+		if (client.store.rooms.get(roomID)?.stateLoaded === false) {
+			client.loadRoomState(roomID)
+				.catch(err => console.error("Failed to load room state", err))
+		}
+	}, [client])
 	return <main className="matrix-main">
-		<RoomList setActiveRoom={setActiveRoomID} />
+		<RoomList setActiveRoom={setActiveRoom} />
 		{activeRoom && <RoomView key={activeRoomID} room={activeRoom} />}
 	</main>
 }

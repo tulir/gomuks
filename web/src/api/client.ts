@@ -62,6 +62,7 @@ export default class Client {
 			stateMap.set(evt.state_key, evt.rowid)
 		}
 		room.state = newStateMap
+		room.stateLoaded = true
 	}
 
 	async loadMoreHistory(roomID: RoomID): Promise<void> {
