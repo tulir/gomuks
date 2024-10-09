@@ -13,7 +13,7 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import { use, useMemo } from "react"
+import { use, useEffect, useMemo, useRef } from "react"
 import { RoomStateStore } from "../../api/statestore.ts"
 import { useNonNullEventAsState } from "../../util/eventdispatcher.ts"
 import { ClientContext } from "../ClientContext.ts"
@@ -31,11 +31,26 @@ const TimelineView = ({ room }: TimelineViewProps) => {
 		client.loadMoreHistory(room.roomID)
 			.catch(err => console.error("Failed to load history", err))
 	}, [client, room.roomID])
-	return <div className="timeline-view">
+	const bottomRef = useRef<HTMLDivElement>(null)
+	const isAtBottom = useRef(true)
+	const handleScroll = useMemo(() => () => {
+		if (!bottomRef.current?.parentElement) {
+			return
+		}
+		const timelineView = bottomRef.current.parentElement
+		isAtBottom.current = timelineView.scrollTop + timelineView.clientHeight + 1 >= timelineView.scrollHeight
+	}, [])
+	useEffect(() => {
+		if (bottomRef.current && isAtBottom.current) {
+			bottomRef.current.scrollIntoView()
+		}
+	}, [timeline])
+	return <div className="timeline-view" onScroll={handleScroll}>
 		<button onClick={loadHistory}>Load history</button>
 		{timeline.map(entry => <TimelineEvent
 			key={entry.event_rowid} room={room} eventRowID={entry.event_rowid}
 		/>)}
+		<div ref={bottomRef}/>
 	</div>
 }
 
