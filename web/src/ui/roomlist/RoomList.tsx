@@ -13,7 +13,7 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import React, { use, useMemo } from "react"
+import React, { use, useCallback } from "react"
 import type { RoomID } from "../../api/types"
 import { useNonNullEventAsState } from "../../util/eventdispatcher.ts"
 import { ClientContext } from "../ClientContext.ts"
@@ -26,7 +26,7 @@ interface RoomListProps {
 
 const RoomList = ({ setActiveRoom }: RoomListProps) => {
 	const roomList = useNonNullEventAsState(use(ClientContext)!.store.roomList)
-	const clickRoom = useMemo(() => (evt: React.MouseEvent) => {
+	const clickRoom = useCallback((evt: React.MouseEvent) => {
 		const roomID = evt.currentTarget.getAttribute("data-room-id")
 		if (roomID) {
 			setActiveRoom(roomID)

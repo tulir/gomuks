@@ -13,7 +13,7 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import { use, useEffect, useMemo, useRef } from "react"
+import { use, useCallback, useEffect, useRef } from "react"
 import { RoomStateStore } from "../../api/statestore.ts"
 import { useNonNullEventAsState } from "../../util/eventdispatcher.ts"
 import { ClientContext } from "../ClientContext.ts"
@@ -27,7 +27,7 @@ interface TimelineViewProps {
 const TimelineView = ({ room }: TimelineViewProps) => {
 	const timeline = useNonNullEventAsState(room.timeline)
 	const client = use(ClientContext)!
-	const loadHistory = useMemo(() =>  () => {
+	const loadHistory = useCallback(() => {
 		client.loadMoreHistory(room.roomID)
 			.catch(err => console.error("Failed to load history", err))
 	}, [client, room.roomID])
@@ -39,7 +39,7 @@ const TimelineView = ({ room }: TimelineViewProps) => {
 
 	// When the user scrolls the timeline manually, remember if they were at the bottom,
 	// so that we can keep them at the bottom when new events are added.
-	const handleScroll = useMemo(() => () => {
+	const handleScroll = useCallback(() => {
 		if (!timelineViewRef.current) {
 			return
 		}
