@@ -62,11 +62,15 @@ const TimelineView = ({ room }: TimelineViewProps) => {
 	}, [timeline])
 
 	return <div className="timeline-view" onScroll={handleScroll} ref={timelineViewRef}>
-		<button onClick={loadHistory}>Load history</button>
-		{timeline.map(entry => <TimelineEvent
-			key={entry.event_rowid} room={room} eventRowID={entry.event_rowid}
-		/>)}
-		<div ref={bottomRef}/>
+		<div className="timeline-beginning">
+			<button onClick={loadHistory}>Load history</button>
+		</div>
+		<div className="timeline-list">
+			{timeline.map(entry => <TimelineEvent
+				key={entry.event_rowid} room={room} eventRowID={entry.event_rowid}
+			/>)}
+			<div className="timeline-bottom-ref" ref={bottomRef}/>
+		</div>
 	</div>
 }
 
