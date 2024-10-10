@@ -53,14 +53,12 @@ const TimelineEvent = ({ room, eventRowID }: TimelineEventProps) => {
 		<div className="sender-avatar">
 			<img loading="lazy" src={getMediaURL(memberEvtContent?.avatar_url)} alt="" />
 		</div>
-		<div className="sender-and-content">
-			<div className="event-sender-and-time">
-				<span className="event-sender">{memberEvtContent?.displayname ?? evt.sender}</span>
-				<span className="event-time">{new Date(evt.timestamp).toLocaleTimeString()}</span>
-			</div>
-			<div className="event-content">
-				<BodyType room={room} event={evt}/>
-			</div>
+		<div className="event-sender-and-time">
+			<span className="event-sender">{memberEvtContent?.displayname ?? evt.sender}</span>
+			<span className="event-time">{new Date(evt.timestamp).toLocaleTimeString()}</span>
+		</div>
+		<div className="event-content">
+			<BodyType room={room} event={evt}/>
 		</div>
 	</div>
 }

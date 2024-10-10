@@ -2,14 +2,19 @@ div.timeline-event {
 	width: 100%;
 	max-width: 100%;
 	overflow: hidden;
-	display: flex;
-	gap: .5rem;
+	display: grid;
 	margin-top: .25rem;
+	grid-template:
+		"avatar gap sender" auto
+		"avatar gap content" auto
+		/ 40px .25rem 1fr;
 
 	> div.sender-avatar {
+		grid-area: avatar;
+
 		width: 40px;
 		height: 40px;
-		padding-top: 2px;
+		margin-top: 2px;
 
 		> img {
 			width: 100%;
@@ -19,22 +24,24 @@ div.timeline-event {
 		}
 	}
 
-	> div.sender-and-content {
-		flex: 1;
+	> div.event-sender-and-time {
+		grid-area: sender;
 
-		> div.event-sender-and-time {
-			display: flex;
-			align-items: center;
-			gap: .5rem;
+		display: flex;
+		align-items: center;
+		gap: .5rem;
 
-			span.event-sender {
-				font-weight: bold;
-			}
-
-			span.event-time {
-				font-size: .8rem;
-			}
+		span.event-sender {
+			font-weight: bold;
 		}
+
+		span.event-time {
+			font-size: .8rem;
+		}
+	}
+
+	> div.event-content {
+		grid-area: content;
 	}
 }
 
