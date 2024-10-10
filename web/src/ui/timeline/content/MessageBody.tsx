@@ -71,7 +71,7 @@ const MessageBody = ({ event }: EventContentProps) => {
 	case "m.emote":
 	case "m.notice":
 		if (content.format === "org.matrix.custom.html") {
-			return <div dangerouslySetInnerHTML={{
+			return <div className="html-body" dangerouslySetInnerHTML={{
 				__html: sanitizeHtml(content.formatted_body!, sanitizeHtmlParams),
 			}}/>
 		}

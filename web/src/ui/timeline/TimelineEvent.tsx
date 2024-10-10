@@ -14,8 +14,8 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import React from "react"
-import { RoomStateStore } from "../../api/statestore.ts"
 import { getMediaURL } from "../../api/media.ts"
+import { RoomStateStore } from "../../api/statestore.ts"
 import { DBEvent, MemberEventContent } from "../../api/types"
 import HiddenEvent from "./content/HiddenEvent.tsx"
 import MessageBody from "./content/MessageBody.tsx"
