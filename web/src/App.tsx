@@ -27,18 +27,10 @@ function App() {
 	const client = useMemo(() => new Client(new WSClient("/_gomuks/websocket")), [])
 	const connState = useEventAsState(client.rpc.connect)
 	const clientState = useEventAsState(client.state)
+	;((window as unknown) as { client: Client }).client = client
 	useEffect(() => {
-		((window as unknown) as { client: Client }).client = client
-
-		// TODO remove this debug log
-		const unlistenDebug = client.rpc.event.listen(ev => {
-			console.debug("Received event:", ev)
-		})
 		client.rpc.start()
-		return () => {
-			unlistenDebug()
-			client.rpc.stop()
-		}
+		return () => client.rpc.stop()
 	}, [client])
 
 	if (connState?.error) {
@@ -59,7 +51,7 @@ function App() {
 	} else {
 		return <ClientContext value={client}>
 			<LightboxWrapper>
-				<MainScreen />
+				<MainScreen/>
 			</LightboxWrapper>
 		</ClientContext>
 	}
