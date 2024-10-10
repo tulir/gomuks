@@ -42,10 +42,12 @@ div.timeline-event {
 
 	> div.event-content {
 		grid-area: content;
+		overflow: hidden;
 	}
 }
 
 div.html-body {
+	overflow: hidden;
 	img[data-mx-emoticon] {
 		vertical-align: middle;
 	}
@@ -53,6 +55,12 @@ div.html-body {
 	blockquote {
 		border-left: 2px solid #ccc;
 		padding-left: .5rem;
+	}
+
+	pre {
+		width: 100%;
+		max-height: max(50vh, 400px);
+		overflow: auto;
 	}
 
 	p, ul, ol, dl, table, pre, blockquote {
