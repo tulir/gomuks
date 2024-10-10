@@ -20,6 +20,7 @@ import HiddenEvent from "./content/HiddenEvent.tsx"
 import MessageBody from "./content/MessageBody.tsx"
 import { EventContentProps } from "./content/props.ts"
 import "./TimelineEvent.css"
+import { getMediaURL } from "../../api/media.ts"
 
 export interface TimelineEventProps {
 	room: RoomStateStore
@@ -43,16 +44,24 @@ const TimelineEvent = ({ room, eventRowID }: TimelineEventProps) => {
 	const memberEvt = room.getStateEvent("m.room.member", evt.sender)
 	const memberEvtContent = memberEvt?.content as MemberEventContent | undefined
 	const BodyType = getBodyType(evt)
-	if (BodyType === HiddenEvent) {
-		return <div className="timeline-event">
-			<BodyType room={room} event={evt}/>
-		</div>
-	}
+	// if (BodyType === HiddenEvent) {
+	// 	return <div className="timeline-event">
+	// 		<BodyType room={room} event={evt}/>
+	// 	</div>
+	// }
 	return <div className="timeline-event">
-		<div className="event-sender">
-			{memberEvtContent?.displayname ?? evt.sender}
+		<div className="sender-avatar">
+			<img src={getMediaURL(memberEvtContent?.avatar_url)} alt="" />
 		</div>
-		<BodyType room={room} event={evt}/>
+		<div className="sender-and-content">
+			<div className="event-sender-and-time">
+				<span className="event-sender">{memberEvtContent?.displayname ?? evt.sender}</span>
+				<span className="event-time">{new Date(evt.timestamp).toLocaleTimeString()}</span>
+			</div>
+			<div className="event-content">
+				<BodyType room={room} event={evt}/>
+			</div>
+		</div>
 	</div>
 }
 

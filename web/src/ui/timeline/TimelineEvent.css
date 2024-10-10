@@ -2,6 +2,40 @@ div.timeline-event {
 	width: 100%;
 	max-width: 100%;
 	overflow: hidden;
+	display: flex;
+	gap: .5rem;
+	margin-top: .25rem;
+
+	> div.sender-avatar {
+		width: 40px;
+		height: 40px;
+		padding-top: 2px;
+
+		> img {
+			width: 100%;
+			height: 100%;
+			border-radius: 50%;
+			object-fit: cover;
+		}
+	}
+
+	> div.sender-and-content {
+		flex: 1;
+
+		> div.event-sender-and-time {
+			display: flex;
+			align-items: center;
+			gap: .5rem;
+
+			span.event-sender {
+				font-weight: bold;
+			}
+
+			span.event-time {
+				font-size: .8rem;
+			}
+		}
+	}
 }
 
 div.media-container {
