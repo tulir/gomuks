@@ -10,3 +10,7 @@ div.media-container {
 		max-height: 100%;
 	}
 }
+
+img[data-mx-emoticon] {
+	vertical-align: middle;
+}
