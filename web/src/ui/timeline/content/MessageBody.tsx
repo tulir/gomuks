@@ -79,15 +79,15 @@ const MessageBody = ({ event }: EventContentProps) => {
 	case "m.image": {
 		const openLightbox = use(LightboxContext)
 		const style = calculateMediaSize(content.info?.w, content.info?.h)
-		if (content.url) {
-			return <div className="media-container" style={style.container}>
-				<img style={style.media} src={getMediaURL(content.url)} alt={content.body} onClick={openLightbox}/>
-			</div>
-		} else if (content.file) {
-			return <div className="media-container" style={style.container}>
-				<img style={style.media} src={getMediaURL(content.file.url)} alt={content.body} onClick={openLightbox}/>
-			</div>
-		}
+		return <div className="media-container" style={style.container}>
+			<img
+				loading="lazy"
+				style={style.media}
+				src={getMediaURL(content.url ?? content.file?.url)}
+				alt={content.body}
+				onClick={openLightbox}
+			/>
+		</div>
 	}
 	}
 	return <code>{`{ "type": "${event.type}" }`}</code>

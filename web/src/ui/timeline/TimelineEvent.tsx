@@ -15,12 +15,12 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import React from "react"
 import { RoomStateStore } from "../../api/statestore.ts"
+import { getMediaURL } from "../../api/media.ts"
 import { DBEvent, MemberEventContent } from "../../api/types"
 import HiddenEvent from "./content/HiddenEvent.tsx"
 import MessageBody from "./content/MessageBody.tsx"
 import { EventContentProps } from "./content/props.ts"
 import "./TimelineEvent.css"
-import { getMediaURL } from "../../api/media.ts"
 
 export interface TimelineEventProps {
 	room: RoomStateStore
@@ -51,7 +51,7 @@ const TimelineEvent = ({ room, eventRowID }: TimelineEventProps) => {
 	// }
 	return <div className="timeline-event">
 		<div className="sender-avatar">
-			<img src={getMediaURL(memberEvtContent?.avatar_url)} alt="" />
+			<img loading="lazy" src={getMediaURL(memberEvtContent?.avatar_url)} alt="" />
 		</div>
 		<div className="sender-and-content">
 			<div className="event-sender-and-time">

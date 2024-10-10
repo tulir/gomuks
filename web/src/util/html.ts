@@ -85,6 +85,7 @@ export const transformTags: NonNullable<sanitizeHtml.IOptions["transformTags"]> 
 		}
 
 		attribs.src = getMediaURL(src)!
+		attribs.loading = "lazy"
 		return { tagName, attribs }
 	},
 	"code": function(tagName: string, attribs: sanitizeHtml.Attributes) {
@@ -188,7 +189,7 @@ export const sanitizeHtmlParams: sanitizeHtml.IOptions = {
 		// eslint-disable-next-line id-length
 		a: ["href", "name", "target", "rel"], // remote target: custom to matrix
 		// img tags also accept width/height, we just map those to max-width & max-height during transformation
-		img: ["src", "alt", "title", "style", "data-mx-emoticon"],
+		img: ["src", "alt", "title", "style", "loading", "data-mx-emoticon"],
 		ol: ["start"],
 		code: ["class"], // We don't actually allow all classes, we filter them in transformTags
 	},
