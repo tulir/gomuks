@@ -13,7 +13,7 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import { use } from "react"
+import { use, useMemo } from "react"
 import sanitizeHtml from "sanitize-html"
 import { getMediaURL } from "../../../api/media.ts"
 import { ContentURI } from "../../../api/types"
@@ -67,24 +67,26 @@ const MessageBody = ({ event }: EventContentProps) => {
 	if (event.type === "m.sticker") {
 		content.msgtype = "m.image"
 	}
+	const __html = useMemo(() => {
+		if (content.format === "org.matrix.custom.html") {
+			return sanitizeHtml(content.formatted_body!, sanitizeHtmlParams)
+		}
+		return undefined
+	}, [content.format, content.formatted_body])
 	switch (content.msgtype) {
 	case "m.text":
 	case "m.emote":
 	case "m.notice":
-		if (content.format === "org.matrix.custom.html") {
-			return <div className="html-body" dangerouslySetInnerHTML={{
-				__html: sanitizeHtml(content.formatted_body!, sanitizeHtmlParams),
-			}}/>
+		if (__html) {
+			return <div className="html-body" dangerouslySetInnerHTML={{ __html }}/>
 		}
 		return content.body
 	case "m.image": {
 		const openLightbox = use(LightboxContext)
 		const style = calculateMediaSize(content.info?.w, content.info?.h)
 		let caption = null
-		if (content.format === "org.matrix.custom.html") {
-			caption = <div className="html-body" dangerouslySetInnerHTML={{
-				__html: sanitizeHtml(content.formatted_body!, sanitizeHtmlParams),
-			}}/>
+		if (__html) {
+			caption = <div className="html-body" dangerouslySetInnerHTML={{ __html }}/>
 		} else if (content.body && content.filename && content.body !== content.filename) {
 			caption = content.body
 		}
