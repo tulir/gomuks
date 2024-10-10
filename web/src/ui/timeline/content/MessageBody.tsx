@@ -35,6 +35,7 @@ interface TextMessageEventContent extends BaseMessageEventContent {
 
 interface MediaMessageEventContent extends BaseMessageEventContent {
 	msgtype: "m.image" | "m.file" | "m.audio" | "m.video"
+	filename?: string
 	url?: ContentURI
 	file?: {
 		url: ContentURI
@@ -79,15 +80,26 @@ const MessageBody = ({ event }: EventContentProps) => {
 	case "m.image": {
 		const openLightbox = use(LightboxContext)
 		const style = calculateMediaSize(content.info?.w, content.info?.h)
-		return <div className="media-container" style={style.container}>
-			<img
-				loading="lazy"
-				style={style.media}
-				src={getMediaURL(content.url ?? content.file?.url)}
-				alt={content.body}
-				onClick={openLightbox}
-			/>
-		</div>
+		let caption = null
+		if (content.format === "org.matrix.custom.html") {
+			caption = <div className="html-body" dangerouslySetInnerHTML={{
+				__html: sanitizeHtml(content.formatted_body!, sanitizeHtmlParams),
+			}}/>
+		} else if (content.body && content.filename && content.body !== content.filename) {
+			caption = content.body
+		}
+		return <>
+			<div className="media-container" style={style.container}>
+				<img
+					loading="lazy"
+					style={style.media}
+					src={getMediaURL(content.url ?? content.file?.url)}
+					alt={content.body}
+					onClick={openLightbox}
+				/>
+			</div>
+			{caption}
+		</>
 	}
 	}
 	return <code>{`{ "type": "${event.type}" }`}</code>
