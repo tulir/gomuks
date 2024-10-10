@@ -43,6 +43,7 @@ const RoomView = ({ room }: RoomViewProps) => {
 		<TimelineView room={room} />
 		<form className="message-composer" onSubmit={sendMessage}>
 			<input
+				autoFocus
 				type="text"
 				value={text}
 				onChange={evt => setText(evt.target.value)}
