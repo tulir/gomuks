@@ -13,12 +13,13 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-
+import { CSSProperties } from "react"
 import sanitizeHtml from "sanitize-html"
 import { getMediaURL } from "../../../api/media.ts"
 import { ContentURI } from "../../../api/types"
 import { sanitizeHtmlParams } from "../../../util/html.ts"
 import { EventContentProps } from "./props.ts"
+import { calculateMediaSize } from "../../../util/mediasize.ts"
 
 interface BaseMessageEventContent {
 	msgtype: string
@@ -61,6 +62,9 @@ type MessageEventContent = TextMessageEventContent | MediaMessageEventContent | 
 
 const MessageBody = ({ event }: EventContentProps) => {
 	const content = event.content as MessageEventContent
+	if (event.type === "m.sticker") {
+		content.msgtype = "m.image"
+	}
 	switch (content.msgtype) {
 	case "m.text":
 	case "m.emote":
@@ -71,12 +75,18 @@ const MessageBody = ({ event }: EventContentProps) => {
 			}}/>
 		}
 		return content.body
-	case "m.image":
+	case "m.image": {
+		const style = calculateMediaSize(content.info?.w, content.info?.h)
 		if (content.url) {
-			return <img src={getMediaURL(content.url)} alt={content.body}/>
+			return <div className="media-container" style={style.container}>
+				<img style={style.media} src={getMediaURL(content.url)} alt={content.body}/>
+			</div>
 		} else if (content.file) {
-			return <img src={getMediaURL(content.file.url)} alt={content.body}/>
+			return <div className="media-container" style={style.container}>
+				<img style={style.media} src={getMediaURL(content.file.url)} alt={content.body}/>
+			</div>
 		}
+	}
 	}
 	return <code>{`{ "type": "${event.type}" }`}</code>
 }

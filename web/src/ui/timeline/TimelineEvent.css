@@ -2,9 +2,11 @@ div.timeline-event {
 	width: 100%;
 	max-width: 100%;
 	overflow: hidden;
+}
 
-	img {
-		max-width: 50%;
-		max-height: 25vh;
+div.media-container {
+	> img {
+		max-width: 100%;
+		max-height: 100%;
 	}
 }

@@ -29,8 +29,8 @@ export interface TimelineEventProps {
 function getBodyType(evt: DBEvent): React.FunctionComponent<EventContentProps> {
 	switch (evt.type) {
 	case "m.room.message":
-		return MessageBody
 	case "m.sticker":
+		return MessageBody
 	}
 	return HiddenEvent
 }

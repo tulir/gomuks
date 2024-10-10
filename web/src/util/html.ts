@@ -19,6 +19,7 @@
 // https://github.com/matrix-org/matrix-react-sdk/blob/develop/src/Linkify.tsx#L245
 import sanitizeHtml from "sanitize-html"
 import { getMediaURL } from "../api/media.ts"
+import { calculateMediaSize } from "./mediasize.ts"
 
 const COLOR_REGEX = /^#[0-9a-fA-F]{6}$/
 
@@ -73,16 +74,14 @@ export const transformTags: NonNullable<sanitizeHtml.IOptions["transformTags"]> 
 
 		const requestedWidth = Number(attribs.width)
 		const requestedHeight = Number(attribs.height)
-		const width = Math.min(requestedWidth || 800, 800)
-		const height = Math.min(requestedHeight || 600, 600)
-		// specify width/height as max values instead of absolute ones to allow object-fit to do its thing
-		// we only allow our own styles for this tag so overwrite the attribute
-		attribs.style = `max-width: ${width}px; max-height: ${height}px;`
-		if (requestedWidth) {
-			attribs.style += "width: 100%;"
+		if (requestedHeight && requestedHeight <= 48) {
+			attribs.style = `height: ${requestedHeight}px; width: auto; max-width: ${2 * requestedHeight}px;`
 		}
-		if (requestedHeight) {
-			attribs.style += "height: 100%;"
+		const style = calculateMediaSize(requestedWidth, requestedHeight)
+		if (style.media.aspectRatio) {
+			attribs.style = `width: ${style.container.width}; height: ${style.container.height};`
+		} else {
+			attribs.style = `height: 24px; width: auto; max-width: 48px;`
 		}
 
 		attribs.src = getMediaURL(src)!
