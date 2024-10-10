@@ -1,0 +1,13 @@
+div.overlay {
+	position: fixed;
+	inset: 0;
+	background-color: rgba(0, 0, 0, 0.75);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+
+	&.lightbox > img {
+		max-width: 75%;
+		max-height: 75%;
+	}
+}

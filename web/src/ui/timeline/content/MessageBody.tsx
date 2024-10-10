@@ -13,13 +13,14 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import { CSSProperties } from "react"
+import { use } from "react"
 import sanitizeHtml from "sanitize-html"
 import { getMediaURL } from "../../../api/media.ts"
 import { ContentURI } from "../../../api/types"
 import { sanitizeHtmlParams } from "../../../util/html.ts"
-import { EventContentProps } from "./props.ts"
 import { calculateMediaSize } from "../../../util/mediasize.ts"
+import { LightboxContext } from "../../Lightbox.tsx"
+import { EventContentProps } from "./props.ts"
 
 interface BaseMessageEventContent {
 	msgtype: string
@@ -76,14 +77,15 @@ const MessageBody = ({ event }: EventContentProps) => {
 		}
 		return content.body
 	case "m.image": {
+		const openLightbox = use(LightboxContext)
 		const style = calculateMediaSize(content.info?.w, content.info?.h)
 		if (content.url) {
 			return <div className="media-container" style={style.container}>
-				<img style={style.media} src={getMediaURL(content.url)} alt={content.body}/>
+				<img style={style.media} src={getMediaURL(content.url)} alt={content.body} onClick={openLightbox}/>
 			</div>
 		} else if (content.file) {
 			return <div className="media-container" style={style.container}>
-				<img style={style.media} src={getMediaURL(content.file.url)} alt={content.body}/>
+				<img style={style.media} src={getMediaURL(content.file.url)} alt={content.body} onClick={openLightbox}/>
 			</div>
 		}
 	}
