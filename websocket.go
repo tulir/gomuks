@@ -23,6 +23,7 @@ import (
 	"net/http"
 	"runtime/debug"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/coder/websocket"
@@ -45,7 +46,10 @@ func writeCmd(ctx context.Context, conn *websocket.Conn, cmd *hicli.JSONCommand)
 	return writer.Close()
 }
 
-const StatusEventsStuck = 4001
+const (
+	StatusEventsStuck = 4001
+	StatusPingTimeout = 4002
+)
 
 func (gmx *Gomuks) HandleWebsocket(w http.ResponseWriter, r *http.Request) {
 	if r.Header.Get("Sec-Fetch-Mode") != "websocket" {
@@ -115,9 +119,14 @@ func (gmx *Gomuks) HandleWebsocket(w http.ResponseWriter, r *http.Request) {
 		}
 	})
 
+	lastDataReceived := &atomic.Int64{}
+	lastDataReceived.Store(time.Now().UnixMilli())
+	const RecvTimeout = 60 * time.Second
 	go func() {
 		defer recoverPanic("event loop")
 		defer closeOnce.Do(forceClose)
+		ticker := time.NewTicker(60 * time.Second)
+		defer ticker.Stop()
 		ctxDone := ctx.Done()
 		for {
 			select {
@@ -128,6 +137,12 @@ func (gmx *Gomuks) HandleWebsocket(w http.ResponseWriter, r *http.Request) {
 					return
 				} else {
 					log.Trace().Int64("req_id", cmd.RequestID).Msg("Sent outgoing event")
+				}
+			case <-ticker.C:
+				if time.Now().UnixMilli()-lastDataReceived.Load() > RecvTimeout.Milliseconds() {
+					log.Warn().Msg("No data received in a minute, closing connection")
+					_ = conn.Close(StatusPingTimeout, "Ping timeout")
+					return
 				}
 			case <-ctxDone:
 				return
@@ -191,6 +206,7 @@ func (gmx *Gomuks) HandleWebsocket(w http.ResponseWriter, r *http.Request) {
 			_ = conn.Close(websocket.StatusUnsupportedData, "Non-text message")
 			return
 		}
+		lastDataReceived.Store(time.Now().UnixMilli())
 		var cmd hicli.JSONCommand
 		err = json.NewDecoder(reader).Decode(&cmd)
 		if err != nil {

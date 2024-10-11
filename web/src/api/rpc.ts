@@ -47,7 +47,7 @@ export default abstract class RPCClient {
 		resolve: (data: unknown) => void,
 		reject: (err: Error) => void
 	}> = new Map()
-	protected nextRequestID: number = 1
+	#requestIDCounter: number = 1
 
 	protected abstract isConnected: boolean
 	protected abstract send(data: string): void
@@ -83,6 +83,10 @@ export default abstract class RPCClient {
 		)
 	}
 
+	protected get nextRequestID(): number {
+		return this.#requestIDCounter++
+	}
+
 	request<Req, Resp>(command: string, data: Req): CancellablePromise<Resp> {
 		if (!this.isConnected) {
 			return new CancellablePromise((_resolve, reject) => {
@@ -90,7 +94,7 @@ export default abstract class RPCClient {
 			}, () => {
 			})
 		}
-		const request_id = this.nextRequestID++
+		const request_id = this.nextRequestID
 		return new CancellablePromise((resolve, reject) => {
 			if (!this.isConnected) {
 				reject(new Error("Websocket not connected"))

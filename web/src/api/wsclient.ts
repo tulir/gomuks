@@ -16,8 +16,13 @@
 import RPCClient from "./rpc.ts"
 import type { RPCCommand } from "./types"
 
+const PING_INTERVAL = 15_000
+const RECV_TIMEOUT = 4 * PING_INTERVAL
+
 export default class WSClient extends RPCClient {
 	#conn: WebSocket | null = null
+	#lastMessage: number = 0
+	#pingInterval: number | null = null
 
 	constructor(readonly addr: string) {
 		super()
@@ -25,18 +30,32 @@ export default class WSClient extends RPCClient {
 
 	start() {
 		try {
+			this.#lastMessage = Date.now()
 			console.info("Connecting to websocket", this.addr)
 			this.#conn = new WebSocket(this.addr)
 			this.#conn.onmessage = this.#onMessage
 			this.#conn.onopen = this.#onOpen
 			this.#conn.onerror = this.#onError
 			this.#conn.onclose = this.#onClose
+			this.#pingInterval = setInterval(this.#pingLoop, PING_INTERVAL)
 		} catch (err) {
 			this.#dispatchConnectionStatus(false, err as Error)
 		}
 	}
 
+	#pingLoop = () => {
+		if (Date.now() - this.#lastMessage > RECV_TIMEOUT) {
+			console.warn("Websocket ping timeout, last message at", this.#lastMessage)
+			this.#conn?.close(4002, "Ping timeout")
+			return
+		}
+		this.send(JSON.stringify({ command: "ping", request_id: this.nextRequestID }))
+	}
+
 	stop() {
+		if (this.#pingInterval !== null) {
+			clearInterval(this.#pingInterval)
+		}
 		this.#conn?.close(1000, "Client closed")
 	}
 
@@ -52,6 +71,7 @@ export default class WSClient extends RPCClient {
 	}
 
 	#onMessage = (ev: MessageEvent) => {
+		this.#lastMessage = Date.now()
 		let parsed: RPCCommand<unknown>
 		try {
 			parsed = JSON.parse(ev.data)
