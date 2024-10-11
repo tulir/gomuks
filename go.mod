@@ -8,7 +8,7 @@ require (
 	github.com/coder/websocket v1.8.12
 	github.com/mattn/go-sqlite3 v1.14.23
 	github.com/rs/zerolog v1.33.0
-	go.mau.fi/util v0.8.1-0.20241003092848-3b49d3e0b9ee
+	go.mau.fi/util v0.8.1-0.20241007163534-d608488d5cff
 	go.mau.fi/zeroconfig v0.1.3
 	maunium.net/go/mauflag v1.0.0
 	maunium.net/go/mautrix v0.21.1-0.20241010172818-50f4a2eec193

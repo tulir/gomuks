@@ -36,6 +36,7 @@ import (
 	"github.com/rs/zerolog/hlog"
 	"go.mau.fi/util/dbutil"
 	"go.mau.fi/util/exerrors"
+	"go.mau.fi/util/exhttp"
 	"go.mau.fi/util/exzerolog"
 	"go.mau.fi/util/ptr"
 	"go.mau.fi/util/requestlog"
@@ -159,15 +160,12 @@ func (gmx *Gomuks) StartServer(addr string) {
 	api := http.NewServeMux()
 	api.HandleFunc("GET /websocket", gmx.HandleWebsocket)
 	api.HandleFunc("GET /media/{server}/{media_id}", gmx.DownloadMedia)
-	middlewares := []func(http.Handler) http.Handler{
+	apiHandler := exhttp.ApplyMiddleware(
+		http.StripPrefix("/_gomuks", api),
 		hlog.NewHandler(*gmx.Log),
 		hlog.RequestIDHandler("request_id", "Request-ID"),
 		requestlog.AccessLogger(false),
-	}
-	apiHandler := http.StripPrefix("/_gomuks", api)
-	for _, middleware := range slices.Backward(middlewares) {
-		apiHandler = middleware(apiHandler)
-	}
+	)
 	router := http.NewServeMux()
 	router.Handle("/_gomuks/", apiHandler)
 	if frontend, err := fs.Sub(web.Frontend, "dist"); err != nil {
