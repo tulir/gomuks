@@ -18,9 +18,7 @@ package main
 
 import (
 	"context"
-	"errors"
 	"fmt"
-	"io/fs"
 	"maps"
 	"net/http"
 	"os"
@@ -33,17 +31,10 @@ import (
 
 	"github.com/coder/websocket"
 	"github.com/rs/zerolog"
-	"github.com/rs/zerolog/hlog"
 	"go.mau.fi/util/dbutil"
 	"go.mau.fi/util/exerrors"
-	"go.mau.fi/util/exhttp"
 	"go.mau.fi/util/exzerolog"
-	"go.mau.fi/util/ptr"
-	"go.mau.fi/util/requestlog"
-	"go.mau.fi/zeroconfig"
 	"maunium.net/go/mautrix/hicli"
-
-	"go.mau.fi/gomuks/web"
 )
 
 type Gomuks struct {
@@ -56,6 +47,8 @@ type Gomuks struct {
 	CacheDir  string
 	TempDir   string
 	LogDir    string
+
+	Config Config
 
 	stopOnce sync.Once
 	stopChan chan struct{}
@@ -74,7 +67,7 @@ func NewGomuks() *Gomuks {
 	}
 }
 
-func (gmx *Gomuks) LoadConfig() {
+func (gmx *Gomuks) InitDirectories() {
 	// We need 4 directories: config, data, cache, logs
 	//
 	// 1. If GOMUKS_ROOT is set, all directories are created under that.
@@ -146,44 +139,8 @@ func (gmx *Gomuks) LoadConfig() {
 }
 
 func (gmx *Gomuks) SetupLog() {
-	gmx.Log = exerrors.Must((&zeroconfig.Config{
-		MinLevel: ptr.Ptr(zerolog.TraceLevel),
-		Writers: []zeroconfig.WriterConfig{{
-			Type:   zeroconfig.WriterTypeStdout,
-			Format: zeroconfig.LogFormatPrettyColored,
-		}},
-	}).Compile())
+	gmx.Log = exerrors.Must(gmx.Config.Logging.Compile())
 	exzerolog.SetupDefaults(gmx.Log)
-}
-
-func (gmx *Gomuks) StartServer(addr string) {
-	api := http.NewServeMux()
-	api.HandleFunc("GET /websocket", gmx.HandleWebsocket)
-	api.HandleFunc("GET /media/{server}/{media_id}", gmx.DownloadMedia)
-	apiHandler := exhttp.ApplyMiddleware(
-		http.StripPrefix("/_gomuks", api),
-		hlog.NewHandler(*gmx.Log),
-		hlog.RequestIDHandler("request_id", "Request-ID"),
-		requestlog.AccessLogger(false),
-	)
-	router := http.NewServeMux()
-	router.Handle("/_gomuks/", apiHandler)
-	if frontend, err := fs.Sub(web.Frontend, "dist"); err != nil {
-		gmx.Log.Warn().Msg("Frontend not found")
-	} else {
-		router.Handle("/", http.FileServerFS(frontend))
-	}
-	gmx.Server = &http.Server{
-		Addr:    addr,
-		Handler: router,
-	}
-	go func() {
-		err := gmx.Server.ListenAndServe()
-		if err != nil && !errors.Is(err, http.ErrServerClosed) {
-			panic(err)
-		}
-	}()
-	gmx.Log.Info().Str("address", addr).Msg("Server started")
 }
 
 func (gmx *Gomuks) StartClient() {

@@ -27,7 +27,6 @@ import (
 
 	"github.com/coder/websocket"
 	"github.com/rs/zerolog"
-
 	"maunium.net/go/mautrix/event"
 	"maunium.net/go/mautrix/hicli"
 	"maunium.net/go/mautrix/hicli/database"
@@ -49,6 +48,10 @@ func writeCmd(ctx context.Context, conn *websocket.Conn, cmd *hicli.JSONCommand)
 const StatusEventsStuck = 4001
 
 func (gmx *Gomuks) HandleWebsocket(w http.ResponseWriter, r *http.Request) {
+	if r.Header.Get("Sec-Fetch-Mode") != "websocket" {
+		ErrInvalidHeader.WithMessage("Invalid Sec-Fetch-Dest header").Write(w)
+		return
+	}
 	var conn *websocket.Conn
 	log := zerolog.Ctx(r.Context())
 	recoverPanic := func(context string) bool {

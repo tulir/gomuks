@@ -8,8 +8,10 @@ require (
 	github.com/coder/websocket v1.8.12
 	github.com/mattn/go-sqlite3 v1.14.23
 	github.com/rs/zerolog v1.33.0
-	go.mau.fi/util v0.8.1-0.20241007163534-d608488d5cff
+	go.mau.fi/util v0.8.1-0.20241011175353-d86e4c6b8fa7
 	go.mau.fi/zeroconfig v0.1.3
+	golang.org/x/crypto v0.27.0
+	gopkg.in/yaml.v3 v3.0.1
 	maunium.net/go/mauflag v1.0.0
 	maunium.net/go/mautrix v0.21.1-0.20241010172818-50f4a2eec193
 )
@@ -25,7 +27,6 @@ require (
 	github.com/tidwall/match v1.1.1 // indirect
 	github.com/tidwall/pretty v1.2.0 // indirect
 	github.com/tidwall/sjson v1.2.5 // indirect
-	golang.org/x/crypto v0.27.0 // indirect
 	golang.org/x/exp v0.0.0-20240909161429-701f63a606c0 // indirect
 	golang.org/x/net v0.29.0 // indirect
 	golang.org/x/sys v0.25.0 // indirect

@@ -48,7 +48,6 @@ var (
 
 var wantHelp, _ = flag.MakeHelpFlag()
 var version = flag.MakeFull("v", "version", "View gomuks version and quit.", "false").Bool()
-var listenAddress = flag.MakeFull("l", "listen", "Address to listen on.", "localhost:29325").String()
 
 func main() {
 	hicli.InitialDeviceDisplayName = "gomuks web"
@@ -72,14 +71,19 @@ func main() {
 	}
 
 	gmx := NewGomuks()
-	gmx.LoadConfig()
+	gmx.InitDirectories()
+	err = gmx.LoadConfig()
+	if err != nil {
+		_, _ = fmt.Fprintln(os.Stderr, "Failed to load config:", err)
+		os.Exit(9)
+	}
 	gmx.SetupLog()
 	gmx.Log.Info().
 		Str("version", Version).
 		Str("go_version", runtime.Version()).
 		Time("built_at", ParsedBuildTime).
 		Msg("Initializing gomuks")
-	gmx.StartServer(*listenAddress)
+	gmx.StartServer()
 	gmx.StartClient()
 	gmx.Log.Info().Msg("Initialization complete")
 	gmx.WaitForInterrupt()
