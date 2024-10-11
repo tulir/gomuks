@@ -96,7 +96,7 @@ const MessageBody = ({ event }: EventContentProps) => {
 					loading="lazy"
 					style={style.media}
 					src={getMediaURL(content.url ?? content.file?.url)}
-					alt={content.body}
+					alt={content.filename ?? content.body}
 					onClick={openLightbox}
 				/>
 			</div>
