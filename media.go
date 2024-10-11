@@ -106,7 +106,7 @@ func (gmx *Gomuks) DownloadMedia(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tempFile, err := os.CreateTemp("", "gomuks-download-*")
+	tempFile, err := os.CreateTemp(gmx.TempDir, "download-*")
 	if err != nil {
 		log.Err(err).Msg("Failed to create temporary file")
 		mautrix.MUnknown.WithMessage(fmt.Sprintf("Failed to create temp file: %v", err)).Write(w)

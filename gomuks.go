@@ -53,6 +53,7 @@ type Gomuks struct {
 	ConfigDir string
 	DataDir   string
 	CacheDir  string
+	TempDir   string
 	LogDir    string
 
 	stopOnce sync.Once
@@ -133,8 +134,12 @@ func (gmx *Gomuks) LoadConfig() {
 			gmx.LogDir = filepath.Join(homeDir, ".local", "state", "gomuks")
 		}
 	}
+	if gmx.TempDir = os.Getenv("GOMUKS_TMPDIR"); gmx.TempDir == "" {
+		gmx.TempDir = filepath.Join(gmx.CacheDir, "tmp")
+	}
 	exerrors.PanicIfNotNil(os.MkdirAll(gmx.ConfigDir, 0700))
 	exerrors.PanicIfNotNil(os.MkdirAll(gmx.CacheDir, 0700))
+	exerrors.PanicIfNotNil(os.MkdirAll(gmx.TempDir, 0700))
 	exerrors.PanicIfNotNil(os.MkdirAll(gmx.DataDir, 0700))
 	exerrors.PanicIfNotNil(os.MkdirAll(gmx.LogDir, 0700))
 }
