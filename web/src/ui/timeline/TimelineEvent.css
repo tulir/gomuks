@@ -63,6 +63,10 @@ div.html-body {
 		overflow: auto;
 	}
 
+	h1, h2, h3, h4, h5, h6 {
+		margin: 0 0 .5rem;
+	}
+
 	p, ul, ol, dl, table, pre, blockquote {
 		&:not(:last-child) {
 			margin: 0 0 .25rem;

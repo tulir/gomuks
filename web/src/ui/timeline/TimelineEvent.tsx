@@ -39,6 +39,10 @@ function getBodyType(evt: MemDBEvent): React.FunctionComponent<EventContentProps
 	return HiddenEvent
 }
 
+const fullTimeFormatter = new Intl.DateTimeFormat("en-GB", { dateStyle: "full", timeStyle: "medium" })
+const formatShortTime = (time: Date) =>
+	`${time.getHours().toString().padStart(2, "0")}:${time.getMinutes().toString().padStart(2, "0")}`
+
 const TimelineEvent = ({ room, eventRowID }: TimelineEventProps) => {
 	const evt = room.eventsByRowID.get(eventRowID)
 	if (!evt) {
@@ -52,13 +56,14 @@ const TimelineEvent = ({ room, eventRowID }: TimelineEventProps) => {
 	// 		<BodyType room={room} event={evt}/>
 	// 	</div>
 	// }
+	const eventTS = new Date(evt.timestamp)
 	return <div className="timeline-event">
 		<div className="sender-avatar">
 			<img loading="lazy" src={getMediaURL(memberEvtContent?.avatar_url)} alt="" />
 		</div>
 		<div className="event-sender-and-time">
 			<span className="event-sender">{memberEvtContent?.displayname ?? evt.sender}</span>
-			<span className="event-time">{new Date(evt.timestamp).toLocaleTimeString()}</span>
+			<span className="event-time" title={fullTimeFormatter.format(eventTS)}>{formatShortTime(eventTS)}</span>
 		</div>
 		<div className="event-content">
 			<BodyType room={room} event={evt}/>
