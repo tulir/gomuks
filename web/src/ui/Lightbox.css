@@ -6,8 +6,35 @@ div.overlay {
 	align-items: center;
 	justify-content: center;
 
+	&.lightbox > div.controls {
+		position: fixed;
+		top: .5rem;
+		right: .5rem;
+		display: flex;
+		z-index: 1;
+
+		> button, > a {
+			display: flex;
+			justify-content: center;
+			align-items: center;
+			background: none;
+			border: none;
+			color: #ccc;
+			width: 48px;
+			height: 48px;
+			padding: 0;
+
+			> svg {
+				width: 32px;
+				height: 32px;
+			}
+		}
+	}
+
 	&.lightbox > img {
 		max-width: 75%;
 		max-height: 75%;
+
+		transition: rotate 0.2s;
 	}
 }

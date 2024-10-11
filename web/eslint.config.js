@@ -20,7 +20,7 @@ export default tseslint.config(
 			"import": pluginImport,
 		},
 		settings: {
-			"import/extensions": [".ts", ".tsx", ".css"],
+			"import/extensions": [".ts", ".tsx", ".css", ".svg"],
 		},
 		rules: {
 			...reactHooks.configs.recommended.rules,
@@ -34,6 +34,11 @@ export default tseslint.config(
 				"named": true,
 				"warnOnUnassignedImports": true,
 				"pathGroups": [{
+					"pattern": "*.svg?react",
+					"patternOptions": {"matchBase": true},
+					"group": "sibling",
+					"position": "after",
+				}, {
 					"pattern": "*.css",
 					"patternOptions": {"matchBase": true},
 					"group": "sibling",

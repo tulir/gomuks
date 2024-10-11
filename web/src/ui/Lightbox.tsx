@@ -14,6 +14,12 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import React, { Component, RefObject, createContext, createRef, useCallback, useState } from "react"
+import DownloadIcon from "../icons/download.svg?react"
+import CloseIcon from "../icons/close.svg?react"
+import RotateLeftIcon from "../icons/rotate-left.svg?react"
+import RotateRightIcon from "../icons/rotate-right.svg?react"
+import ZoomInIcon from "../icons/zoom-in.svg?react"
+import ZoomOutIcon from "../icons/zoom-out.svg?react"
 import "./Lightbox.css"
 
 const isTouchDevice = window.ontouchstart !== undefined
@@ -56,7 +62,9 @@ export interface LightboxProps extends LightboxParams {
 }
 
 export class Lightbox extends Component<LightboxProps> {
-	transform = { zoom: 1, x: 0, y: 0 }
+	translate = { x: 0, y: 0 }
+	zoom = 1
+	rotate = 0
 	maybePanning = false
 	readonly ref: RefObject<HTMLImageElement | null>
 
@@ -65,8 +73,12 @@ export class Lightbox extends Component<LightboxProps> {
 		this.ref = createRef<HTMLImageElement>()
 	}
 
-	transformString = () => {
-		return `translate(${this.transform.x}px, ${this.transform.y}px) scale(${this.transform.zoom})`
+	get style() {
+		return {
+			translate: `${this.translate.x}px ${this.translate.y}px`,
+			rotate: `${this.rotate}deg`,
+			scale: `${this.zoom}`,
+		}
 	}
 
 	onClick = () => {
@@ -77,7 +89,9 @@ export class Lightbox extends Component<LightboxProps> {
 			this.ref.current.style.cursor = "auto"
 			this.maybePanning = false
 		} else {
-			this.transform = { zoom: 1, x: 0, y: 0 }
+			this.translate = { x: 0, y: 0 }
+			this.rotate = 0
+			this.zoom = 1
 			this.props.onClose()
 		}
 	}
@@ -87,14 +101,16 @@ export class Lightbox extends Component<LightboxProps> {
 			return
 		}
 		evt.preventDefault()
-		const oldZoom = this.transform.zoom
+		const oldZoom = this.zoom
 		const delta = -evt.deltaY / 1000
-		const newDelta = this.transform.zoom + delta * this.transform.zoom
-		this.transform.zoom = Math.min(Math.max(newDelta, 0.01), 10)
-		const zoomDelta = this.transform.zoom - oldZoom
-		this.transform.x += zoomDelta * (this.ref.current.clientWidth / 2 - evt.nativeEvent.offsetX)
-		this.transform.y += zoomDelta * (this.ref.current.clientHeight / 2 - evt.nativeEvent.offsetY)
-		this.ref.current.style.transform = this.transformString()
+		const newDelta = this.zoom + delta * this.zoom
+		this.zoom = Math.min(Math.max(newDelta, 0.01), 10)
+		const zoomDelta = this.zoom - oldZoom
+		this.translate.x += zoomDelta * (this.ref.current.clientWidth / 2 - evt.nativeEvent.offsetX)
+		this.translate.y += zoomDelta * (this.ref.current.clientHeight / 2 - evt.nativeEvent.offsetY)
+		const style = this.style
+		this.ref.current.style.translate = style.translate
+		this.ref.current.style.scale = style.scale
 	}
 
 	onMouseDown = (evt: React.MouseEvent) => {
@@ -114,17 +130,28 @@ export class Lightbox extends Component<LightboxProps> {
 			return
 		}
 		evt.preventDefault()
-		this.transform.x += evt.movementX
-		this.transform.y += evt.movementY
-		this.ref.current.style.transform = this.transformString()
+		this.translate.x += evt.movementX
+		this.translate.y += evt.movementY
+		this.ref.current.style.translate = this.style.translate
 		this.ref.current.style.cursor = "grabbing"
 	}
 
-	get style() {
-		return {
-			transform: this.transformString(),
+	transformer = (callback: () => void)=> (evt: React.MouseEvent) => {
+		evt.stopPropagation()
+		if (!this.ref.current) {
+			return
 		}
+		callback()
+		const style = this.style
+		this.ref.current.style.rotate = style.rotate
+		this.ref.current.style.scale = style.scale
 	}
+
+	stopPropagation = (evt: React.MouseEvent) => evt.stopPropagation()
+	zoomIn = this.transformer(() => this.zoom = Math.min(this.zoom * 1.1, 10))
+	zoomOut = this.transformer(() => this.zoom = Math.max(this.zoom / 1.1, 0.01))
+	rotateLeft = this.transformer(() => this.rotate -= 90)
+	rotateRight = this.transformer(() => this.rotate += 90)
 
 	render() {
 		return <div
@@ -132,6 +159,16 @@ export class Lightbox extends Component<LightboxProps> {
 			onClick={this.onClick}
 			onMouseMove={isTouchDevice ? undefined : this.onMouseMove}
 		>
+			<div className="controls" onClick={this.stopPropagation}>
+				<button onClick={this.zoomOut}><ZoomOutIcon/></button>
+				<button onClick={this.zoomIn}><ZoomInIcon/></button>
+				<button onClick={this.rotateLeft}><RotateLeftIcon/></button>
+				<button onClick={this.rotateRight}><RotateRightIcon/></button>
+				<a href={this.props.src} target="_blank" rel="noopener noreferrer">
+					<DownloadIcon/>
+				</a>
+				<button onClick={this.props.onClose}><CloseIcon/></button>
+			</div>
 			<img
 				onMouseDown={isTouchDevice ? undefined : this.onMouseDown}
 				onWheel={isTouchDevice ? undefined : this.onWheel}
