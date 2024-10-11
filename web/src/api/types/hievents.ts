@@ -14,9 +14,9 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import {
-	DBEvent,
 	DBRoom,
 	EventRowID,
+	RawDBEvent,
 	TimelineRowTuple,
 } from "./hitypes.ts"
 import {
@@ -42,7 +42,7 @@ export interface TypingEvent extends RPCCommand<TypingEventData> {
 }
 
 export interface SendCompleteData {
-	event: DBEvent
+	event: RawDBEvent
 	error: string | null
 }
 
@@ -53,7 +53,7 @@ export interface SendCompleteEvent extends RPCCommand<SendCompleteData> {
 export interface EventsDecryptedData {
 	room_id: RoomID
 	preview_event_rowid?: EventRowID
-	events: DBEvent[]
+	events: RawDBEvent[]
 }
 
 export interface EventsDecryptedEvent extends RPCCommand<EventsDecryptedData> {
@@ -63,7 +63,7 @@ export interface EventsDecryptedEvent extends RPCCommand<EventsDecryptedData> {
 export interface SyncRoom {
 	meta: DBRoom
 	timeline: TimelineRowTuple[]
-	events: DBEvent[]
+	events: RawDBEvent[]
 	state: Record<EventType, Record<string, EventRowID>>
 	reset: boolean
 }

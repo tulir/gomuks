@@ -16,7 +16,6 @@
 import { NonNullCachedEventDispatcher } from "../util/eventdispatcher.ts"
 import type {
 	ContentURI,
-	DBEvent,
 	DBRoom,
 	EncryptedEventContent,
 	EventID,
@@ -24,6 +23,8 @@ import type {
 	EventType,
 	EventsDecryptedData,
 	LazyLoadSummary,
+	MemDBEvent,
+	RawDBEvent,
 	RoomID,
 	SyncCompleteData,
 	SyncRoom,
@@ -67,15 +68,15 @@ export class RoomStateStore {
 	readonly timeline = new NonNullCachedEventDispatcher<TimelineRowTuple[]>([])
 	state: Map<EventType, Map<string, EventRowID>> = new Map()
 	stateLoaded = false
-	readonly eventsByRowID: Map<EventRowID, DBEvent> = new Map()
-	readonly eventsByID: Map<EventID, DBEvent> = new Map()
+	readonly eventsByRowID: Map<EventRowID, MemDBEvent> = new Map()
+	readonly eventsByID: Map<EventID, MemDBEvent> = new Map()
 
 	constructor(meta: DBRoom) {
 		this.roomID = meta.room_id
 		this.meta = new NonNullCachedEventDispatcher(meta)
 	}
 
-	getStateEvent(type: EventType, stateKey: string): DBEvent | undefined {
+	getStateEvent(type: EventType, stateKey: string): MemDBEvent | undefined {
 		const rowID = this.state.get(type)?.get(stateKey)
 		if (!rowID) {
 			return
@@ -83,7 +84,7 @@ export class RoomStateStore {
 		return this.eventsByRowID.get(rowID)
 	}
 
-	applyPagination(history: DBEvent[]) {
+	applyPagination(history: RawDBEvent[]) {
 		// Pagination comes in newest to oldest, timeline is in the opposite order
 		history.reverse()
 		const newTimeline = history.map(evt => {
@@ -93,14 +94,18 @@ export class RoomStateStore {
 		this.timeline.emit([...newTimeline, ...this.timeline.current])
 	}
 
-	applyEvent(evt: DBEvent) {
+	applyEvent(evt: RawDBEvent) {
+		const memEvt = evt as MemDBEvent
+		memEvt.mem = true
 		if (evt.type === "m.room.encrypted" && evt.decrypted && evt.decrypted_type) {
-			evt.type = evt.decrypted_type
-			evt.encrypted = evt.content as EncryptedEventContent
-			evt.content = evt.decrypted
+			memEvt.type = evt.decrypted_type
+			memEvt.encrypted = evt.content as EncryptedEventContent
+			memEvt.content = evt.decrypted
 		}
-		this.eventsByRowID.set(evt.rowid, evt)
-		this.eventsByID.set(evt.event_id, evt)
+		delete evt.decrypted
+		delete evt.decrypted_type
+		this.eventsByRowID.set(memEvt.rowid, memEvt)
+		this.eventsByID.set(memEvt.event_id, memEvt)
 	}
 
 	applySync(sync: SyncRoom) {
@@ -133,8 +138,7 @@ export class RoomStateStore {
 		let timelineChanged = false
 		for (const evt of decrypted.events) {
 			timelineChanged = timelineChanged || !!this.timeline.current.find(rt => rt.event_rowid === evt.rowid)
-			this.eventsByRowID.set(evt.rowid, evt)
-			this.eventsByID.set(evt.event_id, evt)
+			this.applyEvent(evt)
 		}
 		if (timelineChanged) {
 			this.timeline.emit([...this.timeline.current])
@@ -148,7 +152,7 @@ export class RoomStateStore {
 export interface RoomListEntry {
 	room_id: RoomID
 	sorting_timestamp: number
-	preview_event?: DBEvent
+	preview_event?: MemDBEvent
 	name: string
 	avatar?: ContentURI
 }

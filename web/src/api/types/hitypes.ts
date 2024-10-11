@@ -62,7 +62,7 @@ export interface DBRoom {
 	prev_batch: string
 }
 
-export interface DBEvent {
+export interface BaseDBEvent {
 	rowid: EventRowID
 	timeline_rowid: TimelineRowID
 
@@ -73,10 +73,8 @@ export interface DBEvent {
 	state_key?: string
 	timestamp: number
 
-	content: unknown
-	decrypted?: unknown
-	decrypted_type?: EventType
-	encrypted?: EncryptedEventContent
+	//eslint-disable-next-line @typescript-eslint/no-explicit-any
+	content: Record<string, any>
 	unsigned: EventUnsigned
 
 	transaction_id?: string
@@ -91,6 +89,17 @@ export interface DBEvent {
 	last_edit_rowid?: EventRowID
 }
 
+export interface RawDBEvent extends BaseDBEvent {
+	//eslint-disable-next-line @typescript-eslint/no-explicit-any
+	decrypted?: Record<string, any>
+	decrypted_type?: EventType
+}
+
+export interface MemDBEvent extends BaseDBEvent {
+	mem: true
+	encrypted?: EncryptedEventContent
+}
+
 export interface DBAccountData {
 	user_id: UserID
 	room_id?: RoomID
@@ -99,7 +108,7 @@ export interface DBAccountData {
 }
 
 export interface PaginationResponse {
-	events: DBEvent[]
+	events: RawDBEvent[]
 	has_more: boolean
 }
 

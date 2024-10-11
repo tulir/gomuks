@@ -16,7 +16,7 @@
 import React from "react"
 import { getMediaURL } from "../../api/media.ts"
 import { RoomStateStore } from "../../api/statestore.ts"
-import { DBEvent, MemberEventContent } from "../../api/types"
+import { MemDBEvent, MemberEventContent } from "../../api/types"
 import HiddenEvent from "./content/HiddenEvent.tsx"
 import MessageBody from "./content/MessageBody.tsx"
 import { EventContentProps } from "./content/props.ts"
@@ -27,7 +27,10 @@ export interface TimelineEventProps {
 	eventRowID: number
 }
 
-function getBodyType(evt: DBEvent): React.FunctionComponent<EventContentProps> {
+function getBodyType(evt: MemDBEvent): React.FunctionComponent<EventContentProps> {
+	if (evt.content["m.relates_to"]?.relation_type === "m.replace") {
+		return HiddenEvent
+	}
 	switch (evt.type) {
 	case "m.room.message":
 	case "m.sticker":

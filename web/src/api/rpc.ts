@@ -17,13 +17,13 @@ import { CachedEventDispatcher, EventDispatcher } from "../util/eventdispatcher.
 import { CancellablePromise } from "../util/promise.ts"
 import type {
 	ClientWellKnown,
-	DBEvent,
 	EventID,
 	EventRowID,
 	EventType,
 	PaginationResponse,
 	RPCCommand,
 	RPCEvent,
+	RawDBEvent,
 	RoomID,
 	TimelineRowID,
 	UserID,
@@ -105,7 +105,7 @@ export default abstract class RPCClient {
 		}, this.cancelRequest.bind(this, request_id))
 	}
 
-	sendMessage(room_id: RoomID, type: EventType, content: Record<string, unknown>): Promise<DBEvent> {
+	sendMessage(room_id: RoomID, type: EventType, content: Record<string, unknown>): Promise<RawDBEvent> {
 		return this.request("send_message", { room_id, type, content })
 	}
 
@@ -113,15 +113,15 @@ export default abstract class RPCClient {
 		return this.request("ensure_group_session_shared", { room_id })
 	}
 
-	getRoomState(room_id: RoomID, fetch_members = false, refetch = false): Promise<DBEvent[]> {
+	getRoomState(room_id: RoomID, fetch_members = false, refetch = false): Promise<RawDBEvent[]> {
 		return this.request("get_room_state", { room_id, fetch_members, refetch })
 	}
 
-	getEvent(room_id: RoomID, event_id: EventID): Promise<DBEvent> {
+	getEvent(room_id: RoomID, event_id: EventID): Promise<RawDBEvent> {
 		return this.request("get_event", { room_id, event_id })
 	}
 
-	getEventsByRowIDs(row_ids: EventRowID[]): Promise<DBEvent[]> {
+	getEventsByRowIDs(row_ids: EventRowID[]): Promise<RawDBEvent[]> {
 		return this.request("get_events_by_row_ids", { row_ids })
 	}
 

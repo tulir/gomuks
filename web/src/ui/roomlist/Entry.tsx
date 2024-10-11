@@ -15,19 +15,18 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import { getMediaURL } from "../../api/media.ts"
 import type { RoomListEntry } from "../../api/statestore.ts"
-import type { DBEvent } from "../../api/types/hitypes.ts"
+import type { MemDBEvent } from "../../api/types"
 
 export interface RoomListEntryProps {
 	room: RoomListEntry
 	setActiveRoom: (evt: React.MouseEvent) => void
 }
 
-function makePreviewText(evt?: DBEvent): string {
+function makePreviewText(evt?: MemDBEvent): string {
 	if (!evt) {
 		return ""
 	}
-	if (evt.type === "m.room.message" || evt.type === "m.sticker") {
-		// @ts-expect-error TODO add content types
+	if ((evt.type === "m.room.message" || evt.type === "m.sticker") && typeof evt.content.body === "string") {
 		return evt.content.body
 	}
 	return ""

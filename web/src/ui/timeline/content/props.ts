@@ -14,9 +14,9 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import { RoomStateStore } from "../../../api/statestore.ts"
-import { DBEvent } from "../../../api/types/hitypes.ts"
+import { MemDBEvent } from "../../../api/types"
 
 export interface EventContentProps {
 	room: RoomStateStore
-	event: DBEvent
+	event: MemDBEvent
 }
