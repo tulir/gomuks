@@ -189,7 +189,7 @@ export const sanitizeHtmlParams: sanitizeHtml.IOptions = {
 		// custom ones first:
 		font: ["color", "data-mx-bg-color", "data-mx-color", "style"], // custom to matrix
 		span: [
-			"data-mx-maths", "data-mx-bg-color", "data-mx-color", "data-mx-spoiler", "style", "title"
+			"data-mx-maths", "data-mx-bg-color", "data-mx-color", "data-mx-spoiler", "style", "title",
 		], // custom to matrix
 		div: ["data-mx-maths"],
 		// eslint-disable-next-line id-length

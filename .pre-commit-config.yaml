@@ -24,3 +24,16 @@ repos:
     rev: v0.3.1
     hooks:
       - id: prevent-literal-http-methods
+
+  - repo: local
+    hooks:
+      - id: eslint
+        name: eslint
+        entry: .pre-commit-eslint.sh
+        language: system
+        types_or: [ts, tsx]
+      - id: typescript
+        name: typescript
+        entry: .pre-commit-tsc.sh
+        language: system
+        types_or: [ts, tsx]
