@@ -71,7 +71,9 @@ const TimelineEvent = ({ room, evt, prevEvt }: TimelineEventProps) => {
 	const wrapperClassNames = ["timeline-event"]
 	if (BodyType === HiddenEvent) {
 		wrapperClassNames.push("hidden-event")
-	} else if (prevEvt?.sender === evt.sender && getBodyType(prevEvt) !== HiddenEvent) {
+	} else if (prevEvt?.sender === evt.sender &&
+		prevEvt.timestamp + 15 * 60 * 1000 > evt.timestamp &&
+		getBodyType(prevEvt) !== HiddenEvent) {
 		wrapperClassNames.push("same-sender")
 	}
 	const fullTime = fullTimeFormatter.format(eventTS)

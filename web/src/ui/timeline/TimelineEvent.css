@@ -52,7 +52,6 @@ div.timeline-event {
 		grid-template:
 			"timestamp content" auto
 			/ 2.75rem 1fr;
-		margin-top: 0;
 
 		> div.sender-avatar, > div.event-sender-and-time {
 			display: none;
