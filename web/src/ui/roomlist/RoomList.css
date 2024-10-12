@@ -6,12 +6,16 @@ div.room-list {
 		width: 100%;
 		display: flex;
 		gap: 4px;
-		border-radius: 4px;
+		/*border-radius: 4px;*/
 		user-select: none;
 		cursor: pointer;
 
 		&:hover {
 			background-color: #EEE;
+		}
+
+		&.active {
+			background-color: #DDD;
 		}
 
 		> div.room-entry-left {

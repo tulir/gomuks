@@ -22,9 +22,10 @@ import "./RoomList.css"
 
 interface RoomListProps {
 	setActiveRoom: (room_id: RoomID) => void
+	activeRoomID: RoomID
 }
 
-const RoomList = ({ setActiveRoom }: RoomListProps) => {
+const RoomList = ({ setActiveRoom, activeRoomID }: RoomListProps) => {
 	const roomList = useNonNullEventAsState(use(ClientContext)!.store.roomList)
 	const clickRoom = useCallback((evt: React.MouseEvent) => {
 		const roomID = evt.currentTarget.getAttribute("data-room-id")
@@ -37,7 +38,7 @@ const RoomList = ({ setActiveRoom }: RoomListProps) => {
 
 	return <div className="room-list">
 		{reverseMap(roomList, room =>
-			<Entry key={room.room_id} room={room} setActiveRoom={clickRoom}/>,
+			<Entry key={room.room_id} isActive={room.room_id === activeRoomID} room={room} setActiveRoom={clickRoom}/>,
 		)}
 	</div>
 }

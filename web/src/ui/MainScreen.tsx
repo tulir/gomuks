@@ -32,7 +32,7 @@ const MainScreen = () => {
 		}
 	}, [client])
 	return <main className="matrix-main">
-		<RoomList setActiveRoom={setActiveRoom} />
+		<RoomList setActiveRoom={setActiveRoom} activeRoomID={activeRoomID} />
 		{activeRoom && <RoomView key={activeRoomID} room={activeRoom} />}
 	</main>
 }

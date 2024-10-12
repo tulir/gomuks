@@ -20,6 +20,7 @@ import type { MemDBEvent } from "../../api/types"
 export interface RoomListEntryProps {
 	room: RoomListEntry
 	setActiveRoom: (evt: React.MouseEvent) => void
+	isActive: boolean
 }
 
 function makePreviewText(evt?: MemDBEvent): string {
@@ -32,9 +33,13 @@ function makePreviewText(evt?: MemDBEvent): string {
 	return ""
 }
 
-const Entry = ({ room, setActiveRoom }: RoomListEntryProps) => {
+const Entry = ({ room, setActiveRoom, isActive }: RoomListEntryProps) => {
 	const previewText = makePreviewText(room.preview_event)
-	return <div className="room-entry" onClick={setActiveRoom} data-room-id={room.room_id}>
+	return <div
+		className={`room-entry ${isActive ? "active" : ""}`}
+		onClick={setActiveRoom}
+		data-room-id={room.room_id}
+	>
 		<div className="room-entry-left">
 			<img loading="lazy" className="avatar room-avatar" src={getMediaURL(room.avatar)} alt=""/>
 		</div>
