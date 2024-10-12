@@ -14,12 +14,14 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import { EventContentProps } from "./props.ts"
+import LockIcon from "../../../icons/lock.svg?react"
+import LockClockIcon from "../../../icons/lock.svg?react"
 
 const EncryptedBody = ({ event }: EventContentProps) => {
 	if (event.decryption_error) {
-		return `Failed to decrypt: ${event.decryption_error}`
+		return <div className="decryption-error-body"><LockIcon/> Failed to decrypt: {event.decryption_error}</div>
 	}
-	return `Waiting for message`
+	return <div className="decryption-pending-body"><LockClockIcon/> Waiting for message</div>
 }
 
 export default EncryptedBody

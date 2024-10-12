@@ -126,6 +126,26 @@ div.date-separator {
 	}
 }
 
+div.decryption-error-body {
+	display: flex;
+	align-items: center;
+
+	> svg {
+		height: 20px;
+		color: red;
+	}
+}
+
+div.redacted-body, div.decryption-pending-body {
+	display: flex;
+	align-items: center;
+	color: #888;
+
+	> svg {
+		height: 20px;
+	}
+}
+
 div.html-body {
 	overflow: hidden;
 	img[data-mx-emoticon] {
