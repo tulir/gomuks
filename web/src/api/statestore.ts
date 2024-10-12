@@ -194,6 +194,7 @@ export interface RoomListEntry {
 	room_id: RoomID
 	sorting_timestamp: number
 	preview_event?: MemDBEvent
+	preview_sender?: MemDBEvent
 	name: string
 	avatar?: ContentURI
 }
@@ -212,10 +213,13 @@ export class StateStore {
 		if (!room) {
 			room = this.rooms.get(entry.meta.room_id)
 		}
+		const preview_event = room?.eventsByRowID.get(entry.meta.preview_event_rowid)
+		const preview_sender = preview_event && room?.getStateEvent("m.room.member", preview_event.sender)
 		return {
 			room_id: entry.meta.room_id,
 			sorting_timestamp: entry.meta.sorting_timestamp,
-			preview_event: room?.eventsByRowID.get(entry.meta.preview_event_rowid),
+			preview_event,
+			preview_sender,
 			name: entry.meta.name ?? "Unnamed room",
 			avatar: entry.meta.avatar,
 		}

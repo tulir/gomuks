@@ -45,6 +45,16 @@ div.room-list {
 				text-overflow: ellipsis;
 				white-space: nowrap;
 				overflow: hidden;
+
+				> span.sender-name {
+					display: block;
+					max-width: 6rem;
+					overflow: hidden;
+				}
+
+				> span.preview-text {
+					display: block;
+				}
 			}
 		}
 	}

@@ -254,11 +254,19 @@ func (gmx *Gomuks) sendInitialData(ctx context.Context, conn *websocket.Conn) {
 					return
 				}
 				if previewEvent != nil {
+					previewMember, err := gmx.Client.DB.CurrentState.Get(ctx, room.ID, event.StateMember, previewEvent.Sender.String())
+					if err != nil {
+						log.Err(err).Msg("Failed to get preview member event for room")
+					} else if previewMember != nil {
+						syncRoom.Events = append(syncRoom.Events, previewMember)
+						syncRoom.State[event.StateMember] = map[string]database.EventRowID{
+							*previewMember.StateKey: previewMember.RowID,
+						}
+					}
 					if previewEvent.LastEditRowID != nil {
 						lastEdit, err := gmx.Client.DB.Event.GetByRowID(ctx, *previewEvent.LastEditRowID)
 						if err != nil {
 							log.Err(err).Msg("Failed to get last edit for preview event")
-							return
 						} else if lastEdit != nil {
 							syncRoom.Events = append(syncRoom.Events, lastEdit)
 						}

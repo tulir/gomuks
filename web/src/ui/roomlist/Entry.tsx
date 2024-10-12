@@ -15,7 +15,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import { getMediaURL } from "../../api/media.ts"
 import type { RoomListEntry } from "../../api/statestore.ts"
-import type { MemDBEvent } from "../../api/types"
+import type { MemDBEvent, MemberEventContent } from "../../api/types"
 
 export interface RoomListEntryProps {
 	room: RoomListEntry
@@ -23,18 +23,25 @@ export interface RoomListEntryProps {
 	isActive: boolean
 }
 
-function makePreviewText(evt?: MemDBEvent): string {
+function makePreviewText(evt?: MemDBEvent, senderMemberEvt?: MemDBEvent): [string, string] {
 	if (!evt) {
-		return ""
+		return ["", ""]
 	}
 	if ((evt.type === "m.room.message" || evt.type === "m.sticker") && typeof evt.content.body === "string") {
-		return evt.content.body
+		let displayname = (senderMemberEvt?.content as MemberEventContent)?.displayname
+		if (!displayname) {
+			displayname = evt.sender.slice(1).split(":")[0]
+		}
+		return [
+			`${displayname}: ${evt.content.body}`,
+			`${displayname.length > 16 ? displayname.slice(0, 12) + "…" : displayname}: ${evt.content.body}`,
+		]
 	}
-	return ""
+	return ["", ""]
 }
 
 const Entry = ({ room, setActiveRoom, isActive }: RoomListEntryProps) => {
-	const previewText = makePreviewText(room.preview_event)
+	const [previewText, croppedPreviewText] = makePreviewText(room.preview_event, room.preview_sender)
 	return <div
 		className={`room-entry ${isActive ? "active" : ""}`}
 		onClick={setActiveRoom}
@@ -45,7 +52,7 @@ const Entry = ({ room, setActiveRoom, isActive }: RoomListEntryProps) => {
 		</div>
 		<div className="room-entry-right">
 			<div className="room-name">{room.name}</div>
-			{previewText && <div className="message-preview" title={previewText}>{previewText}</div>}
+			{previewText && <div className="message-preview" title={previewText}>{croppedPreviewText}</div>}
 		</div>
 	</div>
 }
