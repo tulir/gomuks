@@ -62,6 +62,13 @@ interface LocationMessageEventContent extends BaseMessageEventContent {
 
 type MessageEventContent = TextMessageEventContent | MediaMessageEventContent | LocationMessageEventContent
 
+const onClickHTML = (evt: React.MouseEvent<HTMLDivElement>) => {
+	if ((evt.target as HTMLElement).closest("span[data-mx-spoiler]")?.classList.toggle("spoiler-revealed")) {
+		// When unspoilering, don't trigger links and other clickables inside the spoiler
+		evt.preventDefault()
+	}
+}
+
 const MessageBody = ({ event }: EventContentProps) => {
 	const content = event.content as MessageEventContent
 	if (event.type === "m.sticker") {
@@ -78,7 +85,7 @@ const MessageBody = ({ event }: EventContentProps) => {
 	case "m.emote":
 	case "m.notice":
 		if (__html) {
-			return <div className="html-body" dangerouslySetInnerHTML={{ __html }}/>
+			return <div onClick={onClickHTML} className="html-body" dangerouslySetInnerHTML={{ __html }}/>
 		}
 		return content.body
 	case "m.image": {
@@ -86,7 +93,7 @@ const MessageBody = ({ event }: EventContentProps) => {
 		const style = calculateMediaSize(content.info?.w, content.info?.h)
 		let caption = null
 		if (__html) {
-			caption = <div className="html-body" dangerouslySetInnerHTML={{ __html }}/>
+			caption = <div onClick={onClickHTML} className="html-body" dangerouslySetInnerHTML={{ __html }}/>
 		} else if (content.body && content.filename && content.body !== content.filename) {
 			caption = content.body
 		}

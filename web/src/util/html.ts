@@ -106,6 +106,10 @@ export const transformTags: NonNullable<sanitizeHtml.IOptions["transformTags"]> 
 			delete attribs.style
 		}
 
+		if (tagName === "span") {
+			attribs.title = attribs["data-mx-spoiler"]
+		}
+
 		// Sanitise and transform data-mx-color and data-mx-bg-color to their CSS
 		// equivalents
 		const customCSSMapper: Record<string, string> = {
@@ -184,7 +188,9 @@ export const sanitizeHtmlParams: sanitizeHtml.IOptions = {
 		// but strip during the transformation.
 		// custom ones first:
 		font: ["color", "data-mx-bg-color", "data-mx-color", "style"], // custom to matrix
-		span: ["data-mx-maths", "data-mx-bg-color", "data-mx-color", "data-mx-spoiler", "style"], // custom to matrix
+		span: [
+			"data-mx-maths", "data-mx-bg-color", "data-mx-color", "data-mx-spoiler", "style", "title"
+		], // custom to matrix
 		div: ["data-mx-maths"],
 		// eslint-disable-next-line id-length
 		a: ["href", "name", "target", "rel"], // remote target: custom to matrix

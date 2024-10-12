@@ -98,6 +98,20 @@ div.html-body {
 		vertical-align: middle;
 	}
 
+	span[data-mx-spoiler] {
+		filter: blur(4px);
+		transition: filter .5s;
+		cursor: pointer;
+
+		&.spoiler-revealed {
+			filter: none;
+		}
+
+		&:not(.spoiler-revealed) a {
+			pointer-events: none;
+		}
+	}
+
 	blockquote {
 		border-left: 2px solid #ccc;
 		padding-left: .5rem;
