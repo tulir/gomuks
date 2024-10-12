@@ -13,38 +13,33 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import { getMediaURL } from "../api/media.ts"
+import React, { use, useCallback, useState } from "react"
 import { RoomStateStore } from "../api/statestore.ts"
-import { useNonNullEventAsState } from "../util/eventdispatcher.ts"
-import MessageComposer from "./MessageComposer.tsx"
-import TimelineView from "./timeline/TimelineView.tsx"
-import "./RoomView.css"
+import { ClientContext } from "./ClientContext.ts"
 
-interface RoomViewProps {
+interface MessageComposerProps {
 	room: RoomStateStore
 }
 
-const RoomHeader = ({ room }: RoomViewProps) => {
-	const roomMeta = useNonNullEventAsState(room.meta)
-	return <div className="room-header">
-		<img
-			className="avatar"
-			loading="lazy"
-			src={getMediaURL(roomMeta.avatar)}
-			alt=""
+const MessageComposer = ({ room }: MessageComposerProps) => {
+	const client = use(ClientContext)!
+	const [text, setText] = useState("")
+	const sendMessage = useCallback((evt: React.FormEvent) => {
+		evt.preventDefault()
+		setText("")
+		client.rpc.sendMessage(room.roomID, text)
+			.catch(err => window.alert("Failed to send message: " + err))
+	}, [text, room, client])
+	return <form className="message-composer" onSubmit={sendMessage}>
+		<input
+			autoFocus
+			type="text"
+			value={text}
+			onChange={evt => setText(evt.target.value)}
+			placeholder="Send a message"
 		/>
-		<span className="room-name">
-			{roomMeta.name ?? roomMeta.room_id}
-		</span>
-	</div>
+		<button type="submit">Send</button>
+	</form>
 }
 
-const RoomView = ({ room }: RoomViewProps) => {
-	return <div className="room-view">
-		<RoomHeader room={room}/>
-		<TimelineView room={room}/>
-		<MessageComposer room={room}/>
-	</div>
-}
-
-export default RoomView
+export default MessageComposer
