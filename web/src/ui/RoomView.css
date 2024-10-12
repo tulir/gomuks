@@ -2,10 +2,11 @@ div.room-view {
 	overflow: hidden;
 	height: 100%;
 	display: grid;
+	border-left: 2px solid #ccc;
 	grid-template:
 		"header" 3rem
 		"messageview" 1fr
-		"input" 2rem
+		"input" auto
 		/ 1fr;
 
 	> div.room-header {
@@ -18,12 +19,5 @@ div.room-view {
 		> span.room-name {
 			font-weight: bold;
 		}
-	}
-}
-
-form.message-composer {
-	display: flex;
-	> input {
-		flex: 1;
 	}
 }

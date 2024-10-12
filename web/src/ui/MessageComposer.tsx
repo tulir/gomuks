@@ -16,6 +16,7 @@
 import React, { use, useCallback, useState } from "react"
 import { RoomStateStore } from "../api/statestore.ts"
 import { ClientContext } from "./ClientContext.ts"
+import "./MessageComposer.css"
 
 interface MessageComposerProps {
 	room: RoomStateStore
@@ -30,16 +31,21 @@ const MessageComposer = ({ room }: MessageComposerProps) => {
 		client.rpc.sendMessage(room.roomID, text)
 			.catch(err => window.alert("Failed to send message: " + err))
 	}, [text, room, client])
-	return <form className="message-composer" onSubmit={sendMessage}>
-		<input
+	return <div className="message-composer" onSubmit={sendMessage}>
+		<textarea
 			autoFocus
-			type="text"
+			rows={text.split("\n").length}
 			value={text}
+			onKeyDown={evt => {
+				if (evt.key === "Enter" && !evt.shiftKey) {
+					sendMessage(evt)
+				}
+			}}
 			onChange={evt => setText(evt.target.value)}
 			placeholder="Send a message"
 		/>
 		<button type="submit">Send</button>
-	</form>
+	</div>
 }
 
 export default MessageComposer
