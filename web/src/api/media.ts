@@ -14,6 +14,8 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import { UserID } from "./types"
+
 const mediaRegex = /^mxc:\/\/([a-zA-Z0-9.:-]+)\/([a-zA-Z0-9_-]+)$/
 
 export const getMediaURL = (mxc?: string): string | undefined => {
@@ -25,4 +27,18 @@ export const getMediaURL = (mxc?: string): string | undefined => {
 		return undefined
 	}
 	return `_gomuks/media/${match[1]}/${match[2]}`
+}
+
+export const getAvatarURL = (_userID: UserID, mxc?: string): string | undefined => {
+	if (!mxc) {
+		return undefined
+		// return `_gomuks/avatar/${encodeURIComponent(userID)}`
+	}
+	const match = mxc.match(mediaRegex)
+	if (!match) {
+		return undefined
+		// return `_gomuks/avatar/${encodeURIComponent(userID)}`
+	}
+	return `_gomuks/media/${match[1]}/${match[2]}`
+	// return `_gomuks/avatar/${encodeURIComponent(userID)}/${match[1]}/${match[2]}`
 }

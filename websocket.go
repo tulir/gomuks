@@ -252,17 +252,18 @@ func (gmx *Gomuks) sendInitialData(ctx context.Context, conn *websocket.Conn) {
 				if err != nil {
 					log.Err(err).Msg("Failed to get preview event for room")
 					return
-				} else if previewEvent != nil {
-					syncRoom.Events = append(syncRoom.Events, previewEvent)
 				}
-				if previewEvent != nil && previewEvent.LastEditRowID != nil {
-					lastEdit, err := gmx.Client.DB.Event.GetByRowID(ctx, *previewEvent.LastEditRowID)
-					if err != nil {
-						log.Err(err).Msg("Failed to get last edit for preview event")
-						return
-					} else if lastEdit != nil {
-						syncRoom.Events = append(syncRoom.Events, lastEdit)
+				if previewEvent != nil {
+					if previewEvent.LastEditRowID != nil {
+						lastEdit, err := gmx.Client.DB.Event.GetByRowID(ctx, *previewEvent.LastEditRowID)
+						if err != nil {
+							log.Err(err).Msg("Failed to get last edit for preview event")
+							return
+						} else if lastEdit != nil {
+							syncRoom.Events = append(syncRoom.Events, lastEdit)
+						}
 					}
+					syncRoom.Events = append(syncRoom.Events, previewEvent)
 				}
 			}
 		}

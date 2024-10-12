@@ -104,7 +104,7 @@ const MessageBody = ({ event }: EventContentProps) => {
 		</>
 	}
 	}
-	return <code>{`{ "type": "${event.type}" }`}</code>
+	return <code>{`{ "type": "${event.type}", "content": { "msgtype": "${content.msgtype}" } }`}</code>
 }
 
 export default MessageBody

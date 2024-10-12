@@ -14,8 +14,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import { use, useCallback, useEffect, useRef } from "react"
-import { RoomStateStore } from "../../api/statestore.ts"
-import { useNonNullEventAsState } from "../../util/eventdispatcher.ts"
+import { RoomStateStore, useRoomTimeline } from "../../api/statestore.ts"
 import { ClientContext } from "../ClientContext.ts"
 import TimelineEvent from "./TimelineEvent.tsx"
 import "./TimelineView.css"
@@ -25,15 +24,17 @@ interface TimelineViewProps {
 }
 
 const TimelineView = ({ room }: TimelineViewProps) => {
-	const timeline = useNonNullEventAsState(room.timeline)
+	const timeline = useRoomTimeline(room)
 	const client = use(ClientContext)!
 	const loadHistory = useCallback(() => {
 		client.loadMoreHistory(room.roomID)
 			.catch(err => console.error("Failed to load history", err))
 	}, [client, room.roomID])
 	const bottomRef = useRef<HTMLDivElement>(null)
+	const topRef = useRef<HTMLDivElement>(null)
 	const timelineViewRef = useRef<HTMLDivElement>(null)
 	const prevOldestTimelineRow = useRef(0)
+	const paginationRequestedForRow = useRef(-1)
 	const oldScrollHeight = useRef(0)
 	const scrolledToBottom = useRef(true)
 
@@ -54,21 +55,40 @@ const TimelineView = ({ room }: TimelineViewProps) => {
 		if (bottomRef.current && scrolledToBottom.current) {
 			// For any timeline changes, if we were at the bottom, scroll to the new bottom
 			bottomRef.current.scrollIntoView()
-		} else if (timelineViewRef.current && prevOldestTimelineRow.current > timeline[0]?.timeline_rowid) {
+		} else if (timelineViewRef.current && prevOldestTimelineRow.current > (timeline[0]?.timeline_rowid ?? 0)) {
 			// When new entries are added to the top of the timeline, scroll down to keep the same position
 			timelineViewRef.current.scrollTop += timelineViewRef.current.scrollHeight - oldScrollHeight.current
 		}
 		prevOldestTimelineRow.current = timeline[0]?.timeline_rowid ?? 0
 	}, [timeline])
+	useEffect(() => {
+		const topElem = topRef.current
+		if (!topElem) {
+			return
+		}
+		const observer = new IntersectionObserver(entries => {
+			if (entries[0]?.isIntersecting && paginationRequestedForRow.current !== prevOldestTimelineRow.current) {
+				paginationRequestedForRow.current = prevOldestTimelineRow.current
+				loadHistory()
+			}
+		}, {
+			root: topElem.parentElement!.parentElement,
+			rootMargin: "0px",
+			threshold: 1.0,
+		})
+		observer.observe(topElem)
+		return () => observer.unobserve(topElem)
+	}, [loadHistory, topRef])
 
 	return <div className="timeline-view" onScroll={handleScroll} ref={timelineViewRef}>
 		<div className="timeline-beginning">
 			<button onClick={loadHistory}>Load history</button>
 		</div>
 		<div className="timeline-list">
-			{timeline.map(entry => <TimelineEvent
-				key={entry.event_rowid} room={room} eventRowID={entry.event_rowid}
-			/>)}
+			<div className="timeline-top-ref" ref={topRef}/>
+			{timeline.map(entry => entry ? <TimelineEvent
+				key={entry.rowid} room={room} evt={entry}
+			/> : null)}
 			<div className="timeline-bottom-ref" ref={bottomRef}/>
 		</div>
 	</div>

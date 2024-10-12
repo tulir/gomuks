@@ -14,27 +14,37 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import React from "react"
-import { getMediaURL } from "../../api/media.ts"
+import { getAvatarURL } from "../../api/media.ts"
 import { RoomStateStore } from "../../api/statestore.ts"
 import { MemDBEvent, MemberEventContent } from "../../api/types"
+import EncryptedBody from "./content/EncryptedBody.tsx"
 import HiddenEvent from "./content/HiddenEvent.tsx"
 import MessageBody from "./content/MessageBody.tsx"
+import RedactedBody from "./content/RedactedBody.tsx"
 import { EventContentProps } from "./content/props.ts"
 import "./TimelineEvent.css"
 
 export interface TimelineEventProps {
 	room: RoomStateStore
-	eventRowID: number
+	evt: MemDBEvent
 }
 
 function getBodyType(evt: MemDBEvent): React.FunctionComponent<EventContentProps> {
-	if (evt.content["m.relates_to"]?.relation_type === "m.replace") {
+	if (evt.relation_type === "m.replace") {
 		return HiddenEvent
 	}
 	switch (evt.type) {
 	case "m.room.message":
 	case "m.sticker":
+		if (evt.redacted_by) {
+			return RedactedBody
+		}
 		return MessageBody
+	case "m.room.encrypted":
+		if (evt.redacted_by) {
+			return RedactedBody
+		}
+		return EncryptedBody
 	}
 	return HiddenEvent
 }
@@ -43,30 +53,34 @@ const fullTimeFormatter = new Intl.DateTimeFormat("en-GB", { dateStyle: "full", 
 const formatShortTime = (time: Date) =>
 	`${time.getHours().toString().padStart(2, "0")}:${time.getMinutes().toString().padStart(2, "0")}`
 
-const TimelineEvent = ({ room, eventRowID }: TimelineEventProps) => {
-	const evt = room.eventsByRowID.get(eventRowID)
-	if (!evt) {
-		return null
-	}
+const EventReactions = ({ reactions }: { reactions: Record<string, number> }) => {
+	return <div className="event-reactions">
+		{Object.entries(reactions).map(([reaction, count]) => <span key={reaction} className="reaction">
+			{reaction} {count}
+		</span>)}
+	</div>
+}
+
+const TimelineEvent = ({ room, evt }: TimelineEventProps) => {
 	const memberEvt = room.getStateEvent("m.room.member", evt.sender)
 	const memberEvtContent = memberEvt?.content as MemberEventContent | undefined
 	const BodyType = getBodyType(evt)
-	// if (BodyType === HiddenEvent) {
-	// 	return <div className="timeline-event">
-	// 		<BodyType room={room} event={evt}/>
-	// 	</div>
-	// }
 	const eventTS = new Date(evt.timestamp)
-	return <div className="timeline-event">
-		<div className="sender-avatar">
-			<img loading="lazy" src={getMediaURL(memberEvtContent?.avatar_url)} alt="" />
+	const editEventTS = evt.last_edit ? new Date(evt.last_edit.timestamp) : null
+	return <div className={`timeline-event ${BodyType === HiddenEvent ? "hidden-event" : ""}`}>
+		<div className="sender-avatar" title={evt.sender}>
+			<img loading="lazy" src={getAvatarURL(evt.sender, memberEvtContent?.avatar_url)} alt="" />
 		</div>
 		<div className="event-sender-and-time">
 			<span className="event-sender">{memberEvtContent?.displayname ?? evt.sender}</span>
 			<span className="event-time" title={fullTimeFormatter.format(eventTS)}>{formatShortTime(eventTS)}</span>
+			{editEventTS ? <span className="event-edited" title={`Edited at ${fullTimeFormatter.format(editEventTS)}`}>
+				(edited at {formatShortTime(editEventTS)})
+			</span> : null}
 		</div>
 		<div className="event-content">
 			<BodyType room={room} event={evt}/>
+			{evt.reactions ? <EventReactions reactions={evt.reactions}/> : null}
 		</div>
 	</div>
 }

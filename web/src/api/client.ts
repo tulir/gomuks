@@ -70,11 +70,19 @@ export default class Client {
 		if (!room) {
 			throw new Error("Room not found")
 		}
-		const oldestRowID = room.timeline.current[0]?.timeline_rowid
-		const resp = await this.rpc.paginate(roomID, oldestRowID ?? 0, 100)
-		if (room.timeline.current[0]?.timeline_rowid !== oldestRowID) {
-			throw new Error("Timeline changed while loading history")
+		if (room.paginating) {
+			return
 		}
-		room.applyPagination(resp.events)
+		room.paginating = true
+		try {
+			const oldestRowID = room.timeline[0]?.timeline_rowid
+			const resp = await this.rpc.paginate(roomID, oldestRowID ?? 0, 100)
+			if (room.timeline[0]?.timeline_rowid !== oldestRowID) {
+				throw new Error("Timeline changed while loading history")
+			}
+			room.applyPagination(resp.events)
+		} finally {
+			room.paginating = false
+		}
 	}
 }

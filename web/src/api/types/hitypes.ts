@@ -62,6 +62,9 @@ export interface DBRoom {
 	prev_batch: string
 }
 
+//eslint-disable-next-line @typescript-eslint/no-explicit-any
+export type UnknownEventContent = Record<string, any>
+
 export interface BaseDBEvent {
 	rowid: EventRowID
 	timeline_rowid: TimelineRowID
@@ -73,8 +76,7 @@ export interface BaseDBEvent {
 	state_key?: string
 	timestamp: number
 
-	//eslint-disable-next-line @typescript-eslint/no-explicit-any
-	content: Record<string, any>
+	content: UnknownEventContent
 	unsigned: EventUnsigned
 
 	transaction_id?: string
@@ -90,14 +92,15 @@ export interface BaseDBEvent {
 }
 
 export interface RawDBEvent extends BaseDBEvent {
-	//eslint-disable-next-line @typescript-eslint/no-explicit-any
-	decrypted?: Record<string, any>
+	decrypted?: UnknownEventContent
 	decrypted_type?: EventType
 }
 
 export interface MemDBEvent extends BaseDBEvent {
 	mem: true
 	encrypted?: EncryptedEventContent
+	orig_content?: UnknownEventContent
+	last_edit?: MemDBEvent
 }
 
 export interface DBAccountData {
