@@ -29,11 +29,11 @@ repos:
     hooks:
       - id: eslint
         name: eslint
-        entry: .pre-commit-eslint.sh
-        language: system
+        entry: ./.pre-commit-eslint.sh
+        language: script
         types_or: [ts, tsx]
       - id: typescript
         name: typescript
-        entry: .pre-commit-tsc.sh
-        language: system
+        entry: ./.pre-commit-tsc.sh
+        language: script
         types_or: [ts, tsx]
