@@ -32,10 +32,8 @@ const RoomView = ({ room }: RoomViewProps) => {
 	const sendMessage = (evt: React.FormEvent) => {
 		evt.preventDefault()
 		setText("")
-		client.rpc.sendMessage(room.roomID, "m.room.message", {
-			body: text,
-			msgtype: "m.text",
-		}).catch(err => window.alert("Failed to send message: " + err))
+		client.rpc.sendMessage(room.roomID, text)
+			.catch(err => window.alert("Failed to send message: " + err))
 	}
 	return <div className="room-view">
 		<div className="room-header">
