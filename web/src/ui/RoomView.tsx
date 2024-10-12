@@ -14,6 +14,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import React, { use, useState } from "react"
+import { getMediaURL } from "../api/media.ts"
 import { RoomStateStore } from "../api/statestore.ts"
 import { useNonNullEventAsState } from "../util/eventdispatcher.ts"
 import { ClientContext } from "./ClientContext.ts"
@@ -38,9 +39,17 @@ const RoomView = ({ room }: RoomViewProps) => {
 	}
 	return <div className="room-view">
 		<div className="room-header">
-			{roomMeta.room_id}
+			<img
+				className="avatar"
+				loading="lazy"
+				src={getMediaURL(roomMeta.avatar)}
+				alt=""
+			/>
+			<span className="room-name">
+				{roomMeta.name ?? roomMeta.room_id}
+			</span>
 		</div>
-		<TimelineView room={room} />
+		<TimelineView room={room}/>
 		<form className="message-composer" onSubmit={sendMessage}>
 			<input
 				autoFocus

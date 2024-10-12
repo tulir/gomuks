@@ -15,13 +15,10 @@ div.room-list {
 		}
 
 		> div.room-entry-left {
-			height: 48px;
-			width: 48px;
+			height: 3rem;
+			width: 3rem;
 
 			> img.room-avatar {
-				width: 40px;
-				height: 40px;
-				border-radius: 50%;
 				padding: 4px;
 			}
 		}
@@ -47,4 +44,11 @@ div.room-list {
 			}
 		}
 	}
+}
+
+img.avatar {
+	width: 2.5rem;
+	height: 2.5rem;
+	border-radius: 50%;
+	object-fit: cover;
 }

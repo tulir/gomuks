@@ -36,7 +36,7 @@ const Entry = ({ room, setActiveRoom }: RoomListEntryProps) => {
 	const previewText = makePreviewText(room.preview_event)
 	return <div className="room-entry" onClick={setActiveRoom} data-room-id={room.room_id}>
 		<div className="room-entry-left">
-			<img loading="lazy" className="room-avatar" src={getMediaURL(room.avatar)} alt=""/>
+			<img loading="lazy" className="avatar room-avatar" src={getMediaURL(room.avatar)} alt=""/>
 		</div>
 		<div className="room-entry-right">
 			<div className="room-name">{room.name}</div>

@@ -69,7 +69,12 @@ const TimelineEvent = ({ room, evt }: TimelineEventProps) => {
 	const editEventTS = evt.last_edit ? new Date(evt.last_edit.timestamp) : null
 	return <div className={`timeline-event ${BodyType === HiddenEvent ? "hidden-event" : ""}`}>
 		<div className="sender-avatar" title={evt.sender}>
-			<img loading="lazy" src={getAvatarURL(evt.sender, memberEvtContent?.avatar_url)} alt="" />
+			<img
+				className="avatar"
+				loading="lazy"
+				src={getAvatarURL(evt.sender, memberEvtContent?.avatar_url)}
+				alt=""
+			/>
 		</div>
 		<div className="event-sender-and-time">
 			<span className="event-sender">{memberEvtContent?.displayname ?? evt.sender}</span>
