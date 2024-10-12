@@ -5,9 +5,9 @@ div.timeline-event {
 	display: grid;
 	margin-top: .25rem;
 	grid-template:
-		"avatar gap sender" auto
-		"avatar gap content" auto
-		/ 2.5rem .25rem 1fr;
+		"avatar gap sender sender" auto
+		"avatar gap content status" auto
+		/ 2.5rem .25rem 1fr 2rem;
 
 	> div.sender-avatar {
 		grid-area: avatar;
@@ -48,10 +48,30 @@ div.timeline-event {
 		overflow: hidden;
 	}
 
+	> div.event-send-status {
+		grid-area: status;
+		display: flex;
+		justify-content: right;
+		align-items: end;
+		max-height: 1.25rem;
+
+		> svg {
+			height: 16px;
+		}
+
+		&.error {
+			color: red;
+		}
+
+		&.sending, &.sent {
+			color: #ccc;
+		}
+	}
+
 	&.same-sender {
 		grid-template:
-			"timestamp content" auto
-			/ 2.75rem 1fr;
+			"timestamp content status" auto
+			/ 2.75rem 1fr 2rem;
 
 		> div.sender-avatar, > div.event-sender-and-time {
 			display: none;
@@ -64,8 +84,8 @@ div.timeline-event {
 
 	&.hidden-event {
 		grid-template:
-			"timestamp avatar content" auto
-			/ 2.75rem 1.5rem 1fr;
+			"timestamp avatar content status" auto
+			/ 2.75rem 1.5rem 1fr 2rem;
 		margin-top: 0;
 
 		> div.sender-avatar {

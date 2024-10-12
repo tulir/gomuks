@@ -28,7 +28,7 @@ const MessageComposer = ({ room }: MessageComposerProps) => {
 	const sendMessage = useCallback((evt: React.FormEvent) => {
 		evt.preventDefault()
 		setText("")
-		client.rpc.sendMessage(room.roomID, text)
+		client.sendMessage(room.roomID, text)
 			.catch(err => window.alert("Failed to send message: " + err))
 	}, [text, room, client])
 	return <div className="message-composer" onSubmit={sendMessage}>

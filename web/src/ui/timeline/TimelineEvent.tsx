@@ -22,6 +22,9 @@ import HiddenEvent from "./content/HiddenEvent.tsx"
 import MessageBody from "./content/MessageBody.tsx"
 import RedactedBody from "./content/RedactedBody.tsx"
 import { EventContentProps } from "./content/props.ts"
+import ErrorIcon from "../../icons/error.svg?react"
+import PendingIcon from "../../icons/pending.svg?react"
+import SentIcon from "../../icons/sent.svg?react"
 import "./TimelineEvent.css"
 
 export interface TimelineEventProps {
@@ -60,6 +63,16 @@ const EventReactions = ({ reactions }: { reactions: Record<string, number> }) =>
 			{reaction} {count}
 		</span>)}
 	</div>
+}
+
+const EventSendStatus = ({ evt }: { evt: MemDBEvent }) => {
+	if (evt.send_error && evt.send_error !== "not sent") {
+		return <div className="event-send-status error" title={evt.send_error}><ErrorIcon /></div>
+	} else if (evt.event_id.startsWith("~")) {
+		return <div className="event-send-status sending"><PendingIcon /></div>
+	} else {
+		return <div className="event-send-status sent"><SentIcon /></div>
+	}
 }
 
 const TimelineEvent = ({ room, evt, prevEvt }: TimelineEventProps) => {
@@ -102,6 +115,7 @@ const TimelineEvent = ({ room, evt, prevEvt }: TimelineEventProps) => {
 			<BodyType room={room} event={evt}/>
 			{evt.reactions ? <EventReactions reactions={evt.reactions}/> : null}
 		</div>
+		{evt.transaction_id ? <EventSendStatus evt={evt}/> : null}
 	</div>
 }
 

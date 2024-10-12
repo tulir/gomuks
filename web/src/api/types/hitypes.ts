@@ -86,6 +86,7 @@ export interface BaseDBEvent {
 	relation_type?: RelationType
 
 	decryption_error?: string
+	send_error?: string
 
 	reactions?: Record<string, number>
 	last_edit_rowid?: EventRowID
@@ -98,6 +99,7 @@ export interface RawDBEvent extends BaseDBEvent {
 
 export interface MemDBEvent extends BaseDBEvent {
 	mem: true
+	pending: boolean
 	encrypted?: EncryptedEventContent
 	orig_content?: UnknownEventContent
 	last_edit?: MemDBEvent

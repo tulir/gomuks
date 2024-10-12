@@ -39,6 +39,21 @@ export default class Client {
 			this.store.applySync(ev.data)
 		} else if (ev.command === "events_decrypted") {
 			this.store.applyDecrypted(ev.data)
+		} else if (ev.command === "send_complete") {
+			this.store.applySendComplete(ev.data)
+		}
+	}
+
+	async sendMessage(roomID: RoomID, text: string, mediaPath?: string): Promise<void> {
+		const room = this.store.rooms.get(roomID)
+		if (!room) {
+			throw new Error("Room not found")
+		}
+		const dbEvent = await this.rpc.sendMessage(roomID, text, mediaPath)
+		if (!room.eventsByRowID.has(dbEvent.rowid)) {
+			room.pendingEvents.push(dbEvent.rowid)
+			room.applyEvent(dbEvent, true)
+			room.notifyTimelineSubscribers()
 		}
 	}
 

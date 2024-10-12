@@ -27,6 +27,7 @@ import type {
 	MemDBEvent,
 	RawDBEvent,
 	RoomID,
+	SendCompleteData,
 	SyncCompleteData,
 	SyncRoom,
 	TimelineRowTuple,
@@ -82,6 +83,7 @@ export class RoomStateStore {
 	readonly eventsByRowID: Map<EventRowID, MemDBEvent> = new Map()
 	readonly eventsByID: Map<EventID, MemDBEvent> = new Map()
 	readonly timelineSubscribers: Set<() => void> = new Set()
+	readonly pendingEvents: EventRowID[] = []
 	paginating = false
 
 	constructor(meta: DBRoom) {
@@ -102,7 +104,9 @@ export class RoomStateStore {
 			}
 			evt.timeline_rowid = rt.timeline_rowid
 			return evt
-		})
+		}).concat(this.pendingEvents
+			.map(rowID => this.eventsByRowID.get(rowID))
+			.filter(evt => !!evt))
 		for (const sub of this.timelineSubscribers) {
 			sub()
 		}
@@ -127,9 +131,13 @@ export class RoomStateStore {
 		this.notifyTimelineSubscribers()
 	}
 
-	applyEvent(evt: RawDBEvent) {
+	applyEvent(evt: RawDBEvent, pending: boolean = false) {
 		const memEvt = evt as MemDBEvent
 		memEvt.mem = true
+		memEvt.pending = pending
+		if (pending) {
+			memEvt.timeline_rowid = 1000000000000000 + memEvt.timestamp
+		}
 		if (evt.type === "m.room.encrypted" && evt.decrypted && evt.decrypted_type) {
 			memEvt.type = evt.decrypted_type
 			memEvt.encrypted = evt.content as EncryptedEventContent
@@ -146,6 +154,21 @@ export class RoomStateStore {
 		}
 		this.eventsByRowID.set(memEvt.rowid, memEvt)
 		this.eventsByID.set(memEvt.event_id, memEvt)
+		if (!pending) {
+			const pendingIdx = this.pendingEvents.indexOf(evt.rowid)
+			if (pendingIdx !== -1) {
+				this.pendingEvents.splice(pendingIdx, 1)
+			}
+		}
+	}
+
+	applySendComplete(evt: RawDBEvent) {
+		const existingEvt = this.eventsByRowID.get(evt.rowid)
+		if (existingEvt && !existingEvt.pending) {
+			return
+		}
+		this.applyEvent(evt, true)
+		this.notifyTimelineSubscribers()
 	}
 
 	applySync(sync: SyncRoom) {
@@ -169,6 +192,7 @@ export class RoomStateStore {
 		}
 		if (sync.reset) {
 			this.timeline = sync.timeline
+			this.pendingEvents.splice(0, this.pendingEvents.length)
 		} else {
 			this.timeline.push(...sync.timeline)
 		}
@@ -266,6 +290,15 @@ export class StateStore {
 		if (updatedRoomList) {
 			this.roomList.emit(updatedRoomList)
 		}
+	}
+
+	applySendComplete(data: SendCompleteData) {
+		const room = this.rooms.get(data.event.room_id)
+		if (!room) {
+			// TODO log or something?
+			return
+		}
+		room.applySendComplete(data.event)
 	}
 
 	applyDecrypted(decrypted: EventsDecryptedData) {
