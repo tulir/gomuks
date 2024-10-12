@@ -15,6 +15,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import { use, useCallback, useEffect, useRef } from "react"
 import { RoomStateStore, useRoomTimeline } from "../../api/statestore.ts"
+import { MemDBEvent } from "../../api/types"
 import { ClientContext } from "../ClientContext.ts"
 import TimelineEvent from "./TimelineEvent.tsx"
 import "./TimelineView.css"
@@ -80,15 +81,23 @@ const TimelineView = ({ room }: TimelineViewProps) => {
 		return () => observer.unobserve(topElem)
 	}, [loadHistory, topRef])
 
+	let prevEvt: MemDBEvent | null = null
 	return <div className="timeline-view" onScroll={handleScroll} ref={timelineViewRef}>
 		<div className="timeline-beginning">
 			<button onClick={loadHistory}>Load history</button>
 		</div>
 		<div className="timeline-list">
 			<div className="timeline-top-ref" ref={topRef}/>
-			{timeline.map(entry => entry ? <TimelineEvent
-				key={entry.rowid} room={room} evt={entry}
-			/> : null)}
+			{timeline.map(entry => {
+				if (!entry) {
+					return null
+				}
+				const thisEvt = <TimelineEvent
+					key={entry.rowid} room={room} evt={entry} prevEvt={prevEvt}
+				/>
+				prevEvt = entry
+				return thisEvt
+			})}
 			<div className="timeline-bottom-ref" ref={bottomRef}/>
 		</div>
 	</div>

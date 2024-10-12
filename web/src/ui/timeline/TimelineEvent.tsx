@@ -27,6 +27,7 @@ import "./TimelineEvent.css"
 export interface TimelineEventProps {
 	room: RoomStateStore
 	evt: MemDBEvent
+	prevEvt: MemDBEvent | null
 }
 
 function getBodyType(evt: MemDBEvent): React.FunctionComponent<EventContentProps> {
@@ -61,13 +62,22 @@ const EventReactions = ({ reactions }: { reactions: Record<string, number> }) =>
 	</div>
 }
 
-const TimelineEvent = ({ room, evt }: TimelineEventProps) => {
+const TimelineEvent = ({ room, evt, prevEvt }: TimelineEventProps) => {
 	const memberEvt = room.getStateEvent("m.room.member", evt.sender)
 	const memberEvtContent = memberEvt?.content as MemberEventContent | undefined
 	const BodyType = getBodyType(evt)
 	const eventTS = new Date(evt.timestamp)
 	const editEventTS = evt.last_edit ? new Date(evt.last_edit.timestamp) : null
-	return <div className={`timeline-event ${BodyType === HiddenEvent ? "hidden-event" : ""}`}>
+	const wrapperClassNames = ["timeline-event"]
+	if (BodyType === HiddenEvent) {
+		wrapperClassNames.push("hidden-event")
+	} else if (prevEvt?.sender === evt.sender && getBodyType(prevEvt) !== HiddenEvent) {
+		wrapperClassNames.push("same-sender")
+	}
+	const fullTime = fullTimeFormatter.format(eventTS)
+	const shortTime = formatShortTime(eventTS)
+	const editTime = editEventTS ? `Edited at ${fullTimeFormatter.format(editEventTS)}` : null
+	return <div className={wrapperClassNames.join(" ")}>
 		<div className="sender-avatar" title={evt.sender}>
 			<img
 				className="avatar"
@@ -78,10 +88,13 @@ const TimelineEvent = ({ room, evt }: TimelineEventProps) => {
 		</div>
 		<div className="event-sender-and-time">
 			<span className="event-sender">{memberEvtContent?.displayname ?? evt.sender}</span>
-			<span className="event-time" title={fullTimeFormatter.format(eventTS)}>{formatShortTime(eventTS)}</span>
-			{editEventTS ? <span className="event-edited" title={`Edited at ${fullTimeFormatter.format(editEventTS)}`}>
+			<span className="event-time" title={fullTime}>{shortTime}</span>
+			{(editEventTS && editTime) ? <span className="event-edited" title={editTime}>
 				(edited at {formatShortTime(editEventTS)})
 			</span> : null}
+		</div>
+		<div className="event-time-only">
+			<span className="event-time" title={editTime ? `${fullTime} - ${editTime}` : fullTime}>{shortTime}</span>
 		</div>
 		<div className="event-content">
 			<BodyType room={room} event={evt}/>

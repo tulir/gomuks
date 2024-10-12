@@ -33,15 +33,40 @@ div.timeline-event {
 		}
 	}
 
+	> div.event-time-only {
+		grid-area: timestamp;
+		display: none;
+		align-items: end;
+		justify-content: center;
+		font-size: .8rem;
+		max-height: 1.25rem;
+		margin-right: .25rem;
+	}
+
 	> div.event-content {
 		grid-area: content;
 		overflow: hidden;
 	}
 
+	&.same-sender {
+		grid-template:
+			"timestamp content" auto
+			/ 2.75rem 1fr;
+		margin-top: 0;
+
+		> div.sender-avatar, > div.event-sender-and-time {
+			display: none;
+		}
+
+		> div.event-time-only {
+			display: flex;
+		}
+	}
+
 	&.hidden-event {
 		grid-template:
-			"sender avatar content" auto
-			/ 2.5rem 1.5rem 1fr;
+			"timestamp avatar content" auto
+			/ 2.75rem 1.5rem 1fr;
 		margin-top: 0;
 
 		> div.sender-avatar {
@@ -58,9 +83,11 @@ div.timeline-event {
 		}
 
 		> div.event-sender-and-time {
-			> span.event-sender, > span.event-edited {
-				display: none;
-			}
+			display: none;
+		}
+
+		> div.event-time-only {
+			display: flex;
 		}
 	}
 }
