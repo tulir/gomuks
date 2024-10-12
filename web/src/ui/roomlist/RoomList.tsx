@@ -22,7 +22,7 @@ import "./RoomList.css"
 
 interface RoomListProps {
 	setActiveRoom: (room_id: RoomID) => void
-	activeRoomID: RoomID
+	activeRoomID: RoomID | null
 }
 
 const RoomList = ({ setActiveRoom, activeRoomID }: RoomListProps) => {

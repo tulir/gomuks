@@ -14,8 +14,8 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import React, { Component, RefObject, createContext, createRef, useCallback, useState } from "react"
-import DownloadIcon from "../icons/download.svg?react"
 import CloseIcon from "../icons/close.svg?react"
+import DownloadIcon from "../icons/download.svg?react"
 import RotateLeftIcon from "../icons/rotate-left.svg?react"
 import RotateRightIcon from "../icons/rotate-right.svg?react"
 import ZoomInIcon from "../icons/zoom-in.svg?react"
