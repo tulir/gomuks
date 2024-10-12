@@ -9,6 +9,10 @@ div.timeline-event {
 		"avatar gap content status" auto
 		/ 2.5rem .25rem 1fr 2rem;
 
+	&:hover {
+		background-color: #eee;
+	}
+
 	> div.sender-avatar {
 		grid-area: avatar;
 
@@ -108,6 +112,17 @@ div.timeline-event {
 		> div.event-time-only {
 			display: flex;
 		}
+	}
+}
+
+div.date-separator {
+	display: flex;
+	align-items: center;
+	gap: .5rem;
+
+	> hr {
+		flex: 1;
+		opacity: .2;
 	}
 }
 

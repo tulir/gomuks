@@ -54,6 +54,7 @@ function getBodyType(evt: MemDBEvent): React.FunctionComponent<EventContentProps
 }
 
 const fullTimeFormatter = new Intl.DateTimeFormat("en-GB", { dateStyle: "full", timeStyle: "medium" })
+const dateFormatter = new Intl.DateTimeFormat("en-GB", { dateStyle: "full" })
 const formatShortTime = (time: Date) =>
 	`${time.getHours().toString().padStart(2, "0")}:${time.getMinutes().toString().padStart(2, "0")}`
 
@@ -67,11 +68,11 @@ const EventReactions = ({ reactions }: { reactions: Record<string, number> }) =>
 
 const EventSendStatus = ({ evt }: { evt: MemDBEvent }) => {
 	if (evt.send_error && evt.send_error !== "not sent") {
-		return <div className="event-send-status error" title={evt.send_error}><ErrorIcon /></div>
+		return <div className="event-send-status error" title={evt.send_error}><ErrorIcon/></div>
 	} else if (evt.event_id.startsWith("~")) {
-		return <div className="event-send-status sending"><PendingIcon /></div>
+		return <div className="event-send-status sending"><PendingIcon/></div>
 	} else {
-		return <div className="event-send-status sent"><SentIcon /></div>
+		return <div className="event-send-status sent"><SentIcon/></div>
 	}
 }
 
@@ -92,7 +93,7 @@ const TimelineEvent = ({ room, evt, prevEvt }: TimelineEventProps) => {
 	const fullTime = fullTimeFormatter.format(eventTS)
 	const shortTime = formatShortTime(eventTS)
 	const editTime = editEventTS ? `Edited at ${fullTimeFormatter.format(editEventTS)}` : null
-	return <div className={wrapperClassNames.join(" ")}>
+	const mainEvent = <div className={wrapperClassNames.join(" ")}>
 		<div className="sender-avatar" title={evt.sender}>
 			<img
 				className="avatar"
@@ -117,6 +118,22 @@ const TimelineEvent = ({ room, evt, prevEvt }: TimelineEventProps) => {
 		</div>
 		{evt.transaction_id ? <EventSendStatus evt={evt}/> : null}
 	</div>
+	let dateSeparator = null
+	const prevEvtDate = prevEvt ? new Date(prevEvt.timestamp) : null
+	if (prevEvtDate && (
+		eventTS.getDay() !== prevEvtDate.getDay() ||
+		eventTS.getMonth() !== prevEvtDate.getMonth() ||
+		eventTS.getFullYear() !== prevEvtDate.getFullYear())) {
+		dateSeparator = <div className="date-separator">
+			<hr role="none"/>
+			{dateFormatter.format(eventTS)}
+			<hr role="none"/>
+		</div>
+	}
+	return <>
+		{dateSeparator}
+		{mainEvent}
+	</>
 }
 
 export default TimelineEvent
