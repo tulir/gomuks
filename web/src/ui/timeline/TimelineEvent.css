@@ -199,8 +199,25 @@ div.html-body {
 }
 
 div.media-container {
+	&.video-container {
+		width: 100%;
+		height: 240px;
+	}
+
+	> a {
+		display: flex;
+		align-items: center;
+		text-decoration: none;
+		color: inherit;
+	}
+
 	> img {
 		max-width: 100%;
 		max-height: 100%;
+	}
+	> video {
+		min-width: 320px;
+		max-width: 100%;
+		height: 100%;
 	}
 }

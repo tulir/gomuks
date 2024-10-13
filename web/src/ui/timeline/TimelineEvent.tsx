@@ -41,7 +41,6 @@ function getBodyType(evt: MemDBEvent): React.FunctionComponent<EventContentProps
 	}
 	switch (evt.type) {
 	case "m.room.message":
-	case "m.sticker":
 		if (evt.redacted_by) {
 			return RedactedBody
 		}
@@ -56,11 +55,16 @@ function getBodyType(evt: MemDBEvent): React.FunctionComponent<EventContentProps
 		case "m.file":
 			return MediaMessageBody
 		case "m.location":
-			// return LocationMessageBody
-			// fallthrough
+		// return LocationMessageBody
+		// fallthrough
 		default:
 			return UnknownMessageBody
 		}
+	case "m.sticker":
+		if (evt.redacted_by) {
+			return RedactedBody
+		}
+		return MediaMessageBody
 	case "m.room.encrypted":
 		if (evt.redacted_by) {
 			return RedactedBody

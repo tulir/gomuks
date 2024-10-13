@@ -79,22 +79,32 @@ export interface MediaMessageEventContent extends BaseMessageEventContent {
 	msgtype: "m.image" | "m.file" | "m.audio" | "m.video"
 	filename?: string
 	url?: ContentURI
-	file?: {
-		url: ContentURI
-		k: string
-		v: "v2"
-		ext: true
-		alg: "A256CTR"
-		key_ops: string[]
-		kty: "oct"
-	}
-	info?: {
-		mimetype?: string
-		size?: number
-		w?: number
-		h?: number
-		duration?: number
-	}
+	file?: EncryptedFile
+	info?: MediaInfo
+}
+
+export interface EncryptedFile {
+	url: ContentURI
+	k: string
+	v: "v2"
+	ext: true
+	alg: "A256CTR"
+	key_ops: string[]
+	kty: "oct"
+}
+
+export interface MediaInfo {
+	mimetype?: string
+	size?: number
+	w?: number
+	h?: number
+	duration?: number
+	thumbnail_url?: ContentURI
+	thumbnail_file?: EncryptedFile
+	thumbnail_info?: MediaInfo
+
+	"fi.mau.hide_controls"?: boolean
+	"fi.mau.loop"?: boolean
 }
 
 export interface LocationMessageEventContent extends BaseMessageEventContent {

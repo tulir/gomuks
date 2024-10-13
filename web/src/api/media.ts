@@ -18,7 +18,7 @@ import { UserID } from "./types"
 
 const mediaRegex = /^mxc:\/\/([a-zA-Z0-9.:-]+)\/([a-zA-Z0-9_-]+)$/
 
-export const getMediaURL = (mxc?: string): string | undefined => {
+export const getMediaURL = (mxc?: string, encrypted: boolean = false): string | undefined => {
 	if (!mxc) {
 		return undefined
 	}
@@ -26,7 +26,11 @@ export const getMediaURL = (mxc?: string): string | undefined => {
 	if (!match) {
 		return undefined
 	}
-	return `_gomuks/media/${match[1]}/${match[2]}`
+	return `_gomuks/media/${match[1]}/${match[2]}?encrypted=${encrypted}`
+}
+
+export const getEncryptedMediaURL = (mxc?: string): string | undefined => {
+	return getMediaURL(mxc, true)
 }
 
 export const getAvatarURL = (_userID: UserID, mxc?: string): string | undefined => {

@@ -37,14 +37,14 @@ export default tseslint.config(
 				"named": true,
 				"warnOnUnassignedImports": true,
 				"pathGroups": [{
-					"pattern": "@/**",
-					"group": "parent",
-					"position": "before",
-				}, {
 					"pattern": "*.svg?react",
 					"patternOptions": {"matchBase": true},
 					"group": "sibling",
 					"position": "after",
+				}, {
+					"pattern": "@/**",
+					"group": "parent",
+					"position": "before",
 				}, {
 					"pattern": "*.css",
 					"patternOptions": {"matchBase": true},
