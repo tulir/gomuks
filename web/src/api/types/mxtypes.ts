@@ -62,3 +62,43 @@ export interface MemberEventContent {
 	avatar_url?: ContentURI
 	reason?: string
 }
+
+export interface BaseMessageEventContent {
+	msgtype: string
+	body: string
+	formatted_body?: string
+	format?: "org.matrix.custom.html"
+}
+
+export interface TextMessageEventContent extends BaseMessageEventContent {
+	msgtype: "m.text" | "m.notice" | "m.emote"
+}
+
+export interface MediaMessageEventContent extends BaseMessageEventContent {
+	msgtype: "m.image" | "m.file" | "m.audio" | "m.video"
+	filename?: string
+	url?: ContentURI
+	file?: {
+		url: ContentURI
+		k: string
+		v: "v2"
+		ext: true
+		alg: "A256CTR"
+		key_ops: string[]
+		kty: "oct"
+	}
+	info?: {
+		mimetype?: string
+		size?: number
+		w?: number
+		h?: number
+		duration?: number
+	}
+}
+
+export interface LocationMessageEventContent extends BaseMessageEventContent {
+	msgtype: "m.location"
+	geo_uri: string
+}
+
+export type MessageEventContent = TextMessageEventContent | MediaMessageEventContent | LocationMessageEventContent

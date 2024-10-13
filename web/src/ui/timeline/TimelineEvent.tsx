@@ -18,9 +18,10 @@ import { getAvatarURL } from "../../api/media.ts"
 import { RoomStateStore } from "../../api/statestore.ts"
 import { MemDBEvent, MemberEventContent } from "../../api/types"
 import { ClientContext } from "../ClientContext.ts"
+import ReplyBody from "./ReplyBody.tsx"
 import EncryptedBody from "./content/EncryptedBody.tsx"
 import HiddenEvent from "./content/HiddenEvent.tsx"
-import MessageBody from "./content/MessageBody.tsx"
+import { MediaMessageBody, TextMessageBody, UnknownMessageBody } from "./content/MessageBody.tsx"
 import RedactedBody from "./content/RedactedBody.tsx"
 import { EventContentProps } from "./content/props.ts"
 import ErrorIcon from "../../icons/error.svg?react"
@@ -44,7 +45,22 @@ function getBodyType(evt: MemDBEvent): React.FunctionComponent<EventContentProps
 		if (evt.redacted_by) {
 			return RedactedBody
 		}
-		return MessageBody
+		switch (evt.content.msgtype) {
+		case "m.text":
+		case "m.notice":
+		case "m.emote":
+			return TextMessageBody
+		case "m.image":
+		case "m.video":
+		case "m.audio":
+		case "m.file":
+			return MediaMessageBody
+		case "m.location":
+			// return LocationMessageBody
+			// fallthrough
+		default:
+			return UnknownMessageBody
+		}
 	case "m.room.encrypted":
 		if (evt.redacted_by) {
 			return RedactedBody
@@ -97,6 +113,7 @@ const TimelineEvent = ({ room, evt, prevEvt }: TimelineEventProps) => {
 	const fullTime = fullTimeFormatter.format(eventTS)
 	const shortTime = formatShortTime(eventTS)
 	const editTime = editEventTS ? `Edited at ${fullTimeFormatter.format(editEventTS)}` : null
+	const replyTo = evt.content["m.relates_to"]?.["m.in_reply_to"]?.event_id
 	const mainEvent = <div className={wrapperClassNames.join(" ")}>
 		<div className="sender-avatar" title={evt.sender}>
 			<img
@@ -117,6 +134,8 @@ const TimelineEvent = ({ room, evt, prevEvt }: TimelineEventProps) => {
 			<span className="event-time" title={editTime ? `${fullTime} - ${editTime}` : fullTime}>{shortTime}</span>
 		</div>
 		<div className="event-content">
+			{typeof replyTo === "string" && BodyType !== HiddenEvent
+				? <ReplyBody room={room} eventID={replyTo}/> : null}
 			<BodyType room={room} event={evt}/>
 			{evt.reactions ? <EventReactions reactions={evt.reactions}/> : null}
 		</div>

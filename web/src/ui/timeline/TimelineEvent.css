@@ -93,16 +93,8 @@ div.timeline-event {
 		margin-top: 0;
 
 		> div.sender-avatar {
-			margin-top: 0;
 			width: 1.5rem;
 			height: 1.5rem;
-			display: flex;
-			align-items: center;
-
-			> img {
-				width: 1rem;
-				height: 1rem;
-			}
 		}
 
 		> div.event-sender-and-time {
@@ -112,6 +104,17 @@ div.timeline-event {
 		> div.event-time-only {
 			display: flex;
 		}
+	}
+}
+
+div.hidden-event > div.sender-avatar, blockquote.reply-body > div.reply-sender > div.sender-avatar {
+	margin-top: 0;
+	display: flex;
+	align-items: center;
+
+	> img {
+		width: 1rem;
+		height: 1rem;
 	}
 }
 
@@ -144,6 +147,10 @@ div.redacted-body, div.decryption-pending-body {
 	> svg {
 		height: 20px;
 	}
+}
+
+div.plaintext-body {
+	white-space: pre-wrap;
 }
 
 div.html-body {
