@@ -31,7 +31,7 @@ const MessageComposer = ({ room }: MessageComposerProps) => {
 		client.sendMessage(room.roomID, text)
 			.catch(err => window.alert("Failed to send message: " + err))
 	}, [text, room, client])
-	return <div className="message-composer" onSubmit={sendMessage}>
+	return <div className="message-composer">
 		<textarea
 			autoFocus
 			rows={text.split("\n").length}
@@ -43,8 +43,9 @@ const MessageComposer = ({ room }: MessageComposerProps) => {
 			}}
 			onChange={evt => setText(evt.target.value)}
 			placeholder="Send a message"
+			id="message-composer"
 		/>
-		<button type="submit">Send</button>
+		<button onClick={sendMessage}>Send</button>
 	</div>
 }
 

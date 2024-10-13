@@ -2,6 +2,7 @@ div.room-view {
 	overflow: hidden;
 	height: 100%;
 	display: grid;
+	outline: none;
 	grid-template:
 		"header" 3rem
 		"messageview" 1fr

@@ -39,8 +39,14 @@ const RoomHeader = ({ room }: RoomViewProps) => {
 	</div>
 }
 
+const onKeyDownRoomView = (evt: React.KeyboardEvent) => {
+	if (evt.target === evt.currentTarget) {
+		document.getElementById("message-composer")?.focus()
+	}
+}
+
 const RoomView = ({ room }: RoomViewProps) => {
-	return <div className="room-view">
+	return <div className="room-view" onKeyDown={onKeyDownRoomView} tabIndex={-1}>
 		<RoomHeader room={room}/>
 		<TimelineView room={room}/>
 		<MessageComposer room={room}/>
