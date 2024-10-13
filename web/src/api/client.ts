@@ -15,15 +15,8 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import { CachedEventDispatcher } from "../util/eventdispatcher.ts"
 import RPCClient, { SendMessageParams } from "./rpc.ts"
-import { StateStore } from "./statestore"
-import type {
-	ClientState,
-	EventRowID,
-	EventType,
-	RPCEvent,
-	RoomID,
-	UserID,
-} from "./types"
+import { RoomStateStore, StateStore } from "./statestore"
+import type { ClientState, EventID, EventRowID, EventType, RPCEvent, RoomID, UserID } from "./types"
 
 export default class Client {
 	readonly state = new CachedEventDispatcher<ClientState>()
@@ -47,6 +40,24 @@ export default class Client {
 		} else if (ev.command === "send_complete") {
 			this.store.applySendComplete(ev.data)
 		}
+	}
+
+	requestEvent(room: RoomStateStore | RoomID | undefined, eventID: EventID) {
+		if (typeof room === "string") {
+			room = this.store.rooms.get(room)
+		}
+		if (!room || room.eventsByID.has(eventID)) {
+			return
+		}
+		const sub = room.getEventSubscriber(eventID)
+		if (sub.requested) {
+			return
+		}
+		sub.requested = true
+		this.rpc.getEvent(room.roomID, eventID).then(
+			evt => room.applyEvent(evt),
+			err => console.error(`Failed to fetch event ${eventID}`, err),
+		)
 	}
 
 	async sendMessage(params: SendMessageParams): Promise<void> {

@@ -13,31 +13,39 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
+import { use } from "react"
 import { getAvatarURL } from "@/api/media.ts"
-import type { RoomStateStore } from "@/api/statestore"
+import { RoomStateStore, useRoomEvent } from "@/api/statestore"
 import type { EventID, MemDBEvent, MemberEventContent } from "@/api/types"
+import { ClientContext } from "../ClientContext.ts"
 import { TextMessageBody } from "./content/MessageBody.tsx"
 import CloseButton from "@/icons/close.svg?react"
 import "./ReplyBody.css"
 
-interface BaseReplyBodyProps {
+interface ReplyBodyProps {
 	room: RoomStateStore
-	eventID?: EventID
-	event?: MemDBEvent
+	event: MemDBEvent
 	onClose?: () => void
 }
 
-type ReplyBodyProps = BaseReplyBodyProps & ({eventID: EventID } | {event: MemDBEvent })
+interface ReplyIDBodyProps {
+	room: RoomStateStore
+	eventID: EventID
+}
 
-const ReplyBody = ({ room, eventID, event, onClose }: ReplyBodyProps) => {
+export const ReplyIDBody = ({ room, eventID }: ReplyIDBodyProps) => {
+	const event = useRoomEvent(room, eventID)
 	if (!event) {
-		event = room.eventsByID.get(eventID!)
-		if (!event) {
-			return <blockquote className="reply-body">
-				Reply to {eventID}
-			</blockquote>
-		}
+		// This caches whether the event is requested or not, so it doesn't need to be wrapped in an effect.
+		use(ClientContext)!.requestEvent(room, eventID)
+		return <blockquote className="reply-body">
+			Reply to {eventID}
+		</blockquote>
 	}
+	return <ReplyBody room={room} event={event}/>
+}
+
+export const ReplyBody = ({ room, event, onClose }: ReplyBodyProps) => {
 	const memberEvt = room.getStateEvent("m.room.member", event.sender)
 	const memberEvtContent = memberEvt?.content as MemberEventContent | undefined
 	return <blockquote className={`reply-body ${onClose ? "composer" : ""}`}>
@@ -56,5 +64,3 @@ const ReplyBody = ({ room, eventID, event, onClose }: ReplyBodyProps) => {
 		<TextMessageBody room={room} event={event}/>
 	</blockquote>
 }
-
-export default ReplyBody

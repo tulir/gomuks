@@ -19,7 +19,7 @@ import { RoomStateStore } from "@/api/statestore"
 import { MemDBEvent, MemberEventContent } from "@/api/types"
 import { ClientContext } from "../ClientContext.ts"
 import { LightboxContext } from "../Lightbox.tsx"
-import ReplyBody from "./ReplyBody.tsx"
+import { ReplyIDBody } from "./ReplyBody.tsx"
 import EncryptedBody from "./content/EncryptedBody.tsx"
 import HiddenEvent from "./content/HiddenEvent.tsx"
 import MemberBody from "./content/MemberBody.tsx"
@@ -153,7 +153,7 @@ const TimelineEvent = ({ room, evt, prevEvt, setReplyTo }: TimelineEventProps) =
 		</div>
 		<div className="event-content">
 			{typeof replyTo === "string" && BodyType !== HiddenEvent
-				? <ReplyBody room={room} eventID={replyTo}/> : null}
+				? <ReplyIDBody room={room} eventID={replyTo}/> : null}
 			<BodyType room={room} sender={memberEvt} event={evt}/>
 			{evt.reactions ? <EventReactions reactions={evt.reactions}/> : null}
 		</div>

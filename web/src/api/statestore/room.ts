@@ -60,7 +60,35 @@ function visibleMetaIsEqual(meta1: DBRoom, meta2: DBRoom): boolean {
 		meta1.has_member_list === meta2.has_member_list
 }
 
-type SubscribeFunc = (callback: () => void) => () => void
+type Subscriber = () => void
+type SubscribeFunc = (callback: Subscriber) => () => void
+
+class Subscribable {
+	readonly subscribers: Set<Subscriber> = new Set()
+
+	constructor(private onEmpty?: () => void) {
+	}
+
+	subscribe: SubscribeFunc = callback => {
+		this.subscribers.add(callback)
+		return () => {
+			this.subscribers.delete(callback)
+			if (this.subscribers.size === 0) {
+				this.onEmpty?.()
+			}
+		}
+	}
+
+	notify() {
+		for (const sub of this.subscribers) {
+			sub()
+		}
+	}
+}
+
+class EventSubscribable extends Subscribable {
+	requested: boolean = false
+}
 
 export class RoomStateStore {
 	readonly roomID: RoomID
@@ -71,18 +99,14 @@ export class RoomStateStore {
 	stateLoaded = false
 	readonly eventsByRowID: Map<EventRowID, MemDBEvent> = new Map()
 	readonly eventsByID: Map<EventID, MemDBEvent> = new Map()
-	readonly timelineSubscribers: Set<() => void> = new Set()
+	readonly timelineSub = new Subscribable()
+	readonly eventSubs: Map<EventID, EventSubscribable> = new Map()
 	readonly pendingEvents: EventRowID[] = []
 	paginating = false
 
 	constructor(meta: DBRoom) {
 		this.roomID = meta.room_id
 		this.meta = new NonNullCachedEventDispatcher(meta)
-	}
-
-	subscribeTimeline: SubscribeFunc = callback => {
-		this.timelineSubscribers.add(callback)
-		return () => this.timelineSubscribers.delete(callback)
 	}
 
 	notifyTimelineSubscribers() {
@@ -96,9 +120,16 @@ export class RoomStateStore {
 		}).concat(this.pendingEvents
 			.map(rowID => this.eventsByRowID.get(rowID))
 			.filter(evt => !!evt))
-		for (const sub of this.timelineSubscribers) {
-			sub()
+		this.timelineSub.notify()
+	}
+
+	getEventSubscriber(eventID: EventID): EventSubscribable {
+		let sub = this.eventSubs.get(eventID)
+		if (!sub) {
+			sub = new EventSubscribable(() => this.eventsByID.has(eventID) && this.eventSubs.delete(eventID))
+			this.eventSubs.set(eventID, sub)
 		}
+		return sub
 	}
 
 	getStateEvent(type: EventType, stateKey: string): MemDBEvent | undefined {
@@ -149,6 +180,7 @@ export class RoomStateStore {
 				this.pendingEvents.splice(pendingIdx, 1)
 			}
 		}
+		this.eventSubs.get(evt.event_id)?.notify()
 	}
 
 	applySendComplete(evt: RawDBEvent) {

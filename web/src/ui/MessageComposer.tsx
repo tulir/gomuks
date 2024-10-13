@@ -17,7 +17,7 @@ import React, { use, useCallback, useRef, useState } from "react"
 import { RoomStateStore } from "@/api/statestore"
 import { MemDBEvent, Mentions } from "@/api/types"
 import { ClientContext } from "./ClientContext.ts"
-import ReplyBody from "./timeline/ReplyBody.tsx"
+import { ReplyBody } from "./timeline/ReplyBody.tsx"
 import "./MessageComposer.css"
 
 interface MessageComposerProps {
