@@ -51,6 +51,8 @@ const (
 	StatusPingTimeout = 4002
 )
 
+var emptyObject = json.RawMessage("{}")
+
 func (gmx *Gomuks) HandleWebsocket(w http.ResponseWriter, r *http.Request) {
 	if r.Header.Get("Sec-Fetch-Mode") != "websocket" {
 		ErrInvalidHeader.WithMessage("Invalid Sec-Fetch-Dest header").Write(w)
@@ -156,6 +158,9 @@ func (gmx *Gomuks) HandleWebsocket(w http.ResponseWriter, r *http.Request) {
 				closeOnce.Do(forceClose)
 			}
 		}()
+		if cmd.Data == nil {
+			cmd.Data = emptyObject
+		}
 		log.Trace().
 			Int64("req_id", cmd.RequestID).
 			Str("command", cmd.Command).
