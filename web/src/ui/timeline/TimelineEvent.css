@@ -34,6 +34,7 @@ div.timeline-event {
 
 		> span.event-time, > span.event-edited {
 			font-size: .8rem;
+			color: #888;
 		}
 	}
 
@@ -43,6 +44,7 @@ div.timeline-event {
 		align-items: end;
 		justify-content: center;
 		font-size: .8rem;
+		color: #888;
 		max-height: 1.25rem;
 		margin-right: .25rem;
 	}
