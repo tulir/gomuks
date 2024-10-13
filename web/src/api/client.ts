@@ -15,7 +15,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import { CachedEventDispatcher } from "../util/eventdispatcher.ts"
 import RPCClient, { SendMessageParams } from "./rpc.ts"
-import { StateStore } from "./statestore.ts"
+import { StateStore } from "./statestore"
 import type {
 	ClientState,
 	EventRowID,

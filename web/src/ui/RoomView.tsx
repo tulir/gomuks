@@ -15,7 +15,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import { use, useCallback, useState } from "react"
 import { getMediaURL } from "@/api/media.ts"
-import { RoomStateStore } from "@/api/statestore.ts"
+import { RoomStateStore } from "@/api/statestore"
 import { MemDBEvent } from "@/api/types"
 import { useNonNullEventAsState } from "@/util/eventdispatcher.ts"
 import { LightboxContext } from "./Lightbox.tsx"

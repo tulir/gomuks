@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import { use, useCallback, useEffect, useRef } from "react"
-import { RoomStateStore, useRoomTimeline } from "@/api/statestore.ts"
+import { RoomStateStore, useRoomTimeline } from "@/api/statestore"
 import { MemDBEvent } from "@/api/types"
 import { ClientContext } from "../ClientContext.ts"
 import TimelineEvent from "./TimelineEvent.tsx"

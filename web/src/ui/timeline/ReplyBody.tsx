@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import { getAvatarURL } from "@/api/media.ts"
-import type { RoomStateStore } from "@/api/statestore.ts"
+import type { RoomStateStore } from "@/api/statestore"
 import type { EventID, MemDBEvent, MemberEventContent } from "@/api/types"
 import { TextMessageBody } from "./content/MessageBody.tsx"
 import CloseButton from "@/icons/close.svg?react"

@@ -13,11 +13,13 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import { RoomStateStore } from "@/api/statestore"
-import { MemDBEvent } from "@/api/types"
+import { useSyncExternalStore } from "react"
+import type { MemDBEvent } from "../types"
+import { RoomStateStore } from "./room.ts"
 
-export interface EventContentProps {
-	room: RoomStateStore
-	event: MemDBEvent
-	sender?: MemDBEvent
+export function useRoomTimeline(room: RoomStateStore): (MemDBEvent | null)[] {
+	return useSyncExternalStore(
+		room.subscribeTimeline,
+		() => room.timelineCache,
+	)
 }

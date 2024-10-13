@@ -15,7 +15,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import React, { use, useCallback } from "react"
 import { getAvatarURL } from "@/api/media.ts"
-import { RoomStateStore } from "@/api/statestore.ts"
+import { RoomStateStore } from "@/api/statestore"
 import { MemDBEvent, MemberEventContent } from "@/api/types"
 import { ClientContext } from "../ClientContext.ts"
 import { LightboxContext } from "../Lightbox.tsx"

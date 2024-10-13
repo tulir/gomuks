@@ -14,9 +14,9 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import { use } from "react"
-import { getMediaURL } from "../../api/media.ts"
-import type { RoomListEntry } from "../../api/statestore.ts"
-import type { MemDBEvent, MemberEventContent } from "../../api/types"
+import { getMediaURL } from "@/api/media.ts"
+import type { RoomListEntry } from "@/api/statestore"
+import type { MemDBEvent, MemberEventContent } from "@/api/types"
 import { ClientContext } from "../ClientContext.ts"
 
 export interface RoomListEntryProps {
