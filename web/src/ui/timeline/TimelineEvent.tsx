@@ -13,10 +13,11 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import React from "react"
+import React, { use } from "react"
 import { getAvatarURL } from "../../api/media.ts"
 import { RoomStateStore } from "../../api/statestore.ts"
 import { MemDBEvent, MemberEventContent } from "../../api/types"
+import { ClientContext } from "../ClientContext.ts"
 import EncryptedBody from "./content/EncryptedBody.tsx"
 import HiddenEvent from "./content/HiddenEvent.tsx"
 import MessageBody from "./content/MessageBody.tsx"
@@ -70,13 +71,16 @@ const EventSendStatus = ({ evt }: { evt: MemDBEvent }) => {
 	if (evt.send_error && evt.send_error !== "not sent") {
 		return <div className="event-send-status error" title={evt.send_error}><ErrorIcon/></div>
 	} else if (evt.event_id.startsWith("~")) {
-		return <div className="event-send-status sending"><PendingIcon/></div>
+		return <div title="Waiting for /send to return" className="event-send-status sending"><PendingIcon/></div>
+	} else if (evt.pending) {
+		return <div title="Waiting to receive event in /sync" className="event-send-status sent"><SentIcon/></div>
 	} else {
-		return <div className="event-send-status sent"><SentIcon/></div>
+		return <div title="Event sent and remote echo received" className="event-send-status sent"><SentIcon/></div>
 	}
 }
 
 const TimelineEvent = ({ room, evt, prevEvt }: TimelineEventProps) => {
+	const client = use(ClientContext)!
 	const memberEvt = room.getStateEvent("m.room.member", evt.sender)
 	const memberEvtContent = memberEvt?.content as MemberEventContent | undefined
 	const BodyType = getBodyType(evt)
@@ -116,7 +120,7 @@ const TimelineEvent = ({ room, evt, prevEvt }: TimelineEventProps) => {
 			<BodyType room={room} event={evt}/>
 			{evt.reactions ? <EventReactions reactions={evt.reactions}/> : null}
 		</div>
-		{evt.transaction_id ? <EventSendStatus evt={evt}/> : null}
+		{evt.sender === client.userID && evt.transaction_id ? <EventSendStatus evt={evt}/> : null}
 	</div>
 	let dateSeparator = null
 	const prevEvtDate = prevEvt ? new Date(prevEvt.timestamp) : null

@@ -22,6 +22,7 @@ import type {
 	EventType,
 	RPCEvent,
 	RoomID,
+	UserID,
 } from "./types"
 
 export default class Client {
@@ -30,6 +31,10 @@ export default class Client {
 
 	constructor(readonly rpc: RPCClient) {
 		this.rpc.event.listen(this.#handleEvent)
+	}
+
+	get userID(): UserID {
+		return this.state.current?.is_logged_in ? this.state.current.user_id : ""
 	}
 
 	#handleEvent = (ev: RPCEvent) => {

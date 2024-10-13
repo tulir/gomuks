@@ -13,9 +13,11 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
+import { use } from "react"
 import { getMediaURL } from "../../api/media.ts"
 import type { RoomListEntry } from "../../api/statestore.ts"
 import type { MemDBEvent, MemberEventContent } from "../../api/types"
+import { ClientContext } from "../ClientContext.ts"
 
 export interface RoomListEntryProps {
 	room: RoomListEntry
@@ -23,13 +25,16 @@ export interface RoomListEntryProps {
 	isActive: boolean
 }
 
-function makePreviewText(evt?: MemDBEvent, senderMemberEvt?: MemDBEvent): [string, string] {
+function usePreviewText(evt?: MemDBEvent, senderMemberEvt?: MemDBEvent): [string, string] {
 	if (!evt) {
 		return ["", ""]
 	}
 	if ((evt.type === "m.room.message" || evt.type === "m.sticker") && typeof evt.content.body === "string") {
+		const client = use(ClientContext)!
 		let displayname = (senderMemberEvt?.content as MemberEventContent)?.displayname
-		if (!displayname) {
+		if (evt.sender === client.userID) {
+			displayname = "You"
+		} else if (!displayname) {
 			displayname = evt.sender.slice(1).split(":")[0]
 		}
 		return [
@@ -41,7 +46,7 @@ function makePreviewText(evt?: MemDBEvent, senderMemberEvt?: MemDBEvent): [strin
 }
 
 const Entry = ({ room, setActiveRoom, isActive }: RoomListEntryProps) => {
-	const [previewText, croppedPreviewText] = makePreviewText(room.preview_event, room.preview_sender)
+	const [previewText, croppedPreviewText] = usePreviewText(room.preview_event, room.preview_sender)
 	return <div
 		className={`room-entry ${isActive ? "active" : ""}`}
 		onClick={setActiveRoom}
