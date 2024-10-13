@@ -40,6 +40,9 @@ export const LightboxWrapper = ({ children }: { children: React.ReactNode }) => 
 		if ((params as React.MouseEvent).target) {
 			const evt = params as React.MouseEvent<HTMLImageElement>
 			const target = evt.currentTarget as HTMLImageElement
+			if (!target.src) {
+				return
+			}
 			setParams({
 				src: target.src,
 				alt: target.alt,
