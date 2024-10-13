@@ -44,7 +44,7 @@ const RoomHeader = ({ room }: RoomViewProps) => {
 }
 
 const onKeyDownRoomView = (evt: React.KeyboardEvent) => {
-	if (evt.target === evt.currentTarget) {
+	if (evt.target === evt.currentTarget && !evt.ctrlKey && !evt.altKey) {
 		document.getElementById("message-composer")?.focus()
 	}
 }
