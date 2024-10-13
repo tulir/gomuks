@@ -14,6 +14,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import { useSyncExternalStore } from "react"
+import unhomoglyph from "unhomoglyph"
 import { NonNullCachedEventDispatcher } from "../util/eventdispatcher.ts"
 import type {
 	ContentURI,
@@ -220,7 +221,18 @@ export interface RoomListEntry {
 	preview_event?: MemDBEvent
 	preview_sender?: MemDBEvent
 	name: string
+	search_name: string
 	avatar?: ContentURI
+}
+
+// eslint-disable-next-line no-misleading-character-class
+const removeHiddenCharsRegex = /[\u2000-\u200F\u202A-\u202F\u0300-\u036F\uFEFF\u061C\u2800\u2062-\u2063\s]/g
+
+export function toSearchableString(str: string): string {
+	return unhomoglyph(str.normalize("NFD").replace(removeHiddenCharsRegex, ""))
+		.toLowerCase()
+		.replace(/[\\'!"#$%&()*+,\-./:;<=>?@[\]^_`{|}~\u2000-\u206f\u2e00-\u2e7f]/g, "")
+		.toLowerCase()
 }
 
 export class StateStore {
@@ -239,12 +251,14 @@ export class StateStore {
 		}
 		const preview_event = room?.eventsByRowID.get(entry.meta.preview_event_rowid)
 		const preview_sender = preview_event && room?.getStateEvent("m.room.member", preview_event.sender)
+		const name = entry.meta.name ?? "Unnamed room"
 		return {
 			room_id: entry.meta.room_id,
 			sorting_timestamp: entry.meta.sorting_timestamp,
 			preview_event,
 			preview_sender,
-			name: entry.meta.name ?? "Unnamed room",
+			name,
+			search_name: toSearchableString(name),
 			avatar: entry.meta.avatar,
 		}
 	}

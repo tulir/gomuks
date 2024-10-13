@@ -2,12 +2,25 @@ div.room-list-wrapper {
 	grid-area: roomlist;
 	background: linear-gradient(in hsl longer hue, red 0 0, magenta);
 	box-sizing: border-box;
-	overflow-y: auto;
+	overflow: hidden;
+	scrollbar-color: rgba(0, 0, 0, 0.4) rgba(0, 0, 0, 0.1);
+	display: flex;
+	flex-direction: column;
 }
 
 div.room-list {
 	background-color: hsla(0, 0%, 96%, .9);
-	min-height: 100vh;
+	overflow-y: auto;
+	flex: 1;
+}
+
+input.room-search {
+	width: 100%;
+	padding: 1rem;
+	box-sizing: border-box;
+	border: none;
+	background-color: hsla(0, 0%, 96%, .9);
+	outline: none;
 }
 
 div.room-entry {
@@ -19,11 +32,11 @@ div.room-entry {
 	cursor: pointer;
 
 	&:hover {
-		background-color: rgba(5, 38, 87, 0.1);
+		background-color: rgba(0, 0, 0, 0.075);
 	}
 
 	&.active {
-		background-color: rgba(5, 38, 87, 0.15);
+		background-color: rgba(0, 0, 0, 0.125);
 	}
 
 	> div.room-entry-left {

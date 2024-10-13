@@ -23,6 +23,7 @@ export interface RoomListEntryProps {
 	room: RoomListEntry
 	setActiveRoom: (evt: React.MouseEvent) => void
 	isActive: boolean
+	hidden: boolean
 }
 
 function usePreviewText(evt?: MemDBEvent, senderMemberEvt?: MemDBEvent): [string, string] {
@@ -45,10 +46,10 @@ function usePreviewText(evt?: MemDBEvent, senderMemberEvt?: MemDBEvent): [string
 	return ["", ""]
 }
 
-const Entry = ({ room, setActiveRoom, isActive }: RoomListEntryProps) => {
+const Entry = ({ room, setActiveRoom, isActive, hidden }: RoomListEntryProps) => {
 	const [previewText, croppedPreviewText] = usePreviewText(room.preview_event, room.preview_sender)
 	return <div
-		className={`room-entry ${isActive ? "active" : ""}`}
+		className={`room-entry ${isActive ? "active" : ""} ${hidden ? "hidden" : ""}`}
 		onClick={setActiveRoom}
 		data-room-id={room.room_id}
 	>

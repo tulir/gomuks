@@ -30,3 +30,7 @@ button {
 	--error-color: red;
 	--error-color-light: #ff6666;
 }
+
+.hidden {
+	display: none !important;
+}

@@ -13,7 +13,8 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import React, { use, useCallback } from "react"
+import React, { use, useCallback, useState } from "react"
+import { toSearchableString } from "@/api/statestore.ts"
 import type { RoomID } from "@/api/types"
 import { useNonNullEventAsState } from "@/util/eventdispatcher.ts"
 import { ClientContext } from "../ClientContext.ts"
@@ -27,6 +28,8 @@ interface RoomListProps {
 
 const RoomList = ({ setActiveRoom, activeRoomID }: RoomListProps) => {
 	const roomList = useNonNullEventAsState(use(ClientContext)!.store.roomList)
+	const [roomFilter, setRoomFilter] = useState("")
+	const [realRoomFilter, setRealRoomFilter] = useState("")
 	const clickRoom = useCallback((evt: React.MouseEvent) => {
 		const roomID = evt.currentTarget.getAttribute("data-room-id")
 		if (roomID) {
@@ -36,12 +39,25 @@ const RoomList = ({ setActiveRoom, activeRoomID }: RoomListProps) => {
 		}
 	}, [setActiveRoom])
 
+	const updateRoomFilter = useCallback((evt: React.ChangeEvent<HTMLInputElement>) => {
+		setRoomFilter(evt.target.value)
+		setRealRoomFilter(toSearchableString(evt.target.value))
+	}, [])
+
 	return <div className="room-list-wrapper">
+		<input
+			value={roomFilter}
+			onChange={updateRoomFilter}
+			className="room-search"
+			type="text"
+			placeholder="Search rooms"
+		/>
 		<div className="room-list">
 			{reverseMap(roomList, room =>
 				<Entry
 					key={room.room_id}
 					isActive={room.room_id === activeRoomID}
+					hidden={roomFilter ? !room.search_name.includes(realRoomFilter) : false}
 					room={room}
 					setActiveRoom={clickRoom}
 				/>,
