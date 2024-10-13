@@ -90,7 +90,6 @@ div.timeline-event {
 		grid-template:
 			"timestamp avatar content status" auto
 			/ 2.75rem 1.5rem 1fr 2rem;
-		margin-top: 0;
 
 		> div.sender-avatar {
 			width: 1.5rem;
@@ -104,6 +103,10 @@ div.timeline-event {
 		> div.event-time-only {
 			display: flex;
 		}
+
+		+ div.timeline-event.hidden-event {
+			margin-top: 0;
+		}
 	}
 }
 
@@ -111,11 +114,6 @@ div.hidden-event > div.sender-avatar, blockquote.reply-body > div.reply-sender >
 	margin-top: 0;
 	display: flex;
 	align-items: center;
-
-	> img {
-		width: 1rem;
-		height: 1rem;
-	}
 }
 
 div.date-separator {

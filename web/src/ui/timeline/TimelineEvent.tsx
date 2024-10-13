@@ -14,13 +14,15 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import React, { use, useCallback } from "react"
-import { getAvatarURL } from "../../api/media.ts"
-import { RoomStateStore } from "../../api/statestore.ts"
-import { MemDBEvent, MemberEventContent } from "../../api/types"
+import { getAvatarURL } from "@/api/media.ts"
+import { RoomStateStore } from "@/api/statestore.ts"
+import { MemDBEvent, MemberEventContent } from "@/api/types"
 import { ClientContext } from "../ClientContext.ts"
+import { LightboxContext } from "../Lightbox.tsx"
 import ReplyBody from "./ReplyBody.tsx"
 import EncryptedBody from "./content/EncryptedBody.tsx"
 import HiddenEvent from "./content/HiddenEvent.tsx"
+import MemberBody from "./content/MemberBody.tsx"
 import { MediaMessageBody, TextMessageBody, UnknownMessageBody } from "./content/MessageBody.tsx"
 import RedactedBody from "./content/RedactedBody.tsx"
 import { EventContentProps } from "./content/props.ts"
@@ -71,6 +73,8 @@ function getBodyType(evt: MemDBEvent): React.FunctionComponent<EventContentProps
 			return RedactedBody
 		}
 		return EncryptedBody
+	case "m.room.member":
+		return MemberBody
 	}
 	return HiddenEvent
 }
@@ -100,6 +104,10 @@ const EventSendStatus = ({ evt }: { evt: MemDBEvent }) => {
 	}
 }
 
+function isSmallEvent(bodyType: React.FunctionComponent<EventContentProps>): boolean {
+	return bodyType === HiddenEvent || bodyType === MemberBody
+}
+
 const TimelineEvent = ({ room, evt, prevEvt, setReplyTo }: TimelineEventProps) => {
 	const wrappedSetReplyTo = useCallback(() => setReplyTo(evt), [evt, setReplyTo])
 	const client = use(ClientContext)!
@@ -109,12 +117,15 @@ const TimelineEvent = ({ room, evt, prevEvt, setReplyTo }: TimelineEventProps) =
 	const eventTS = new Date(evt.timestamp)
 	const editEventTS = evt.last_edit ? new Date(evt.last_edit.timestamp) : null
 	const wrapperClassNames = ["timeline-event"]
-	if (BodyType === HiddenEvent) {
+	let smallAvatar = false
+	if (isSmallEvent(BodyType)) {
 		wrapperClassNames.push("hidden-event")
+		smallAvatar = true
 	} else if (prevEvt?.sender === evt.sender &&
 		prevEvt.timestamp + 15 * 60 * 1000 > evt.timestamp &&
-		getBodyType(prevEvt) !== HiddenEvent) {
+		!isSmallEvent(getBodyType(prevEvt))) {
 		wrapperClassNames.push("same-sender")
+		smallAvatar = true
 	}
 	const fullTime = fullTimeFormatter.format(eventTS)
 	const shortTime = formatShortTime(eventTS)
@@ -123,9 +134,10 @@ const TimelineEvent = ({ room, evt, prevEvt, setReplyTo }: TimelineEventProps) =
 	const mainEvent = <div className={wrapperClassNames.join(" ")}>
 		<div className="sender-avatar" title={evt.sender}>
 			<img
-				className="avatar"
+				className={`${smallAvatar ? "small" : ""} avatar`}
 				loading="lazy"
 				src={getAvatarURL(evt.sender, memberEvtContent?.avatar_url)}
+				onClick={use(LightboxContext)!}
 				alt=""
 			/>
 		</div>
@@ -142,7 +154,7 @@ const TimelineEvent = ({ room, evt, prevEvt, setReplyTo }: TimelineEventProps) =
 		<div className="event-content">
 			{typeof replyTo === "string" && BodyType !== HiddenEvent
 				? <ReplyBody room={room} eventID={replyTo}/> : null}
-			<BodyType room={room} event={evt}/>
+			<BodyType room={room} sender={memberEvt} event={evt}/>
 			{evt.reactions ? <EventReactions reactions={evt.reactions}/> : null}
 		</div>
 		{evt.sender === client.userID && evt.transaction_id ? <EventSendStatus evt={evt}/> : null}

@@ -44,7 +44,7 @@ const ReplyBody = ({ room, eventID, event, onClose }: ReplyBodyProps) => {
 		<div className="reply-sender">
 			<div className="sender-avatar" title={event.sender}>
 				<img
-					className="avatar"
+					className="small avatar"
 					loading="lazy"
 					src={getAvatarURL(event.sender, memberEvtContent?.avatar_url)}
 					alt=""

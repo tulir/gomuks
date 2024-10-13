@@ -85,4 +85,9 @@ img.avatar {
 	height: 2.5rem;
 	border-radius: 50%;
 	object-fit: cover;
+
+	&.small {
+		width: 1rem;
+		height: 1rem;
+	}
 }

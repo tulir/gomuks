@@ -13,11 +13,12 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import { useCallback, useState } from "react"
+import { use, useCallback, useState } from "react"
 import { getMediaURL } from "@/api/media.ts"
 import { RoomStateStore } from "@/api/statestore.ts"
 import { MemDBEvent } from "@/api/types"
 import { useNonNullEventAsState } from "@/util/eventdispatcher.ts"
+import { LightboxContext } from "./Lightbox.tsx"
 import MessageComposer from "./MessageComposer.tsx"
 import TimelineView from "./timeline/TimelineView.tsx"
 import "./RoomView.css"
@@ -33,6 +34,7 @@ const RoomHeader = ({ room }: RoomViewProps) => {
 			className="avatar"
 			loading="lazy"
 			src={getMediaURL(roomMeta.avatar)}
+			onClick={use(LightboxContext)!}
 			alt=""
 		/>
 		<span className="room-name">
