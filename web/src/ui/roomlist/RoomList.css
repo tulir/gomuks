@@ -1,60 +1,67 @@
-div.room-list {
+div.room-list-wrapper {
 	grid-area: roomlist;
+	background: linear-gradient(in hsl longer hue, red 0 0, magenta);
+	box-sizing: border-box;
 	overflow-y: auto;
+}
 
-	div.room-entry {
+div.room-list {
+	background-color: hsla(0, 0%, 96%, .9);
+	min-height: 100vh;
+}
+
+div.room-entry {
+	width: 100%;
+	display: flex;
+	gap: 4px;
+	/*border-radius: 4px;*/
+	user-select: none;
+	cursor: pointer;
+
+	&:hover {
+		background-color: rgba(5, 38, 87, 0.1);
+	}
+
+	&.active {
+		background-color: rgba(5, 38, 87, 0.15);
+	}
+
+	> div.room-entry-left {
+		height: 3rem;
+		width: 3rem;
+
+		> img.room-avatar {
+			padding: 4px;
+		}
+	}
+
+	> div.room-entry-right {
 		width: 100%;
 		display: flex;
-		gap: 4px;
-		/*border-radius: 4px;*/
-		user-select: none;
-		cursor: pointer;
+		flex-direction: column;
+		overflow: hidden;
+		justify-content: space-around;
 
-		&:hover {
-			background-color: #EEE;
-		}
-
-		&.active {
-			background-color: #DDD;
-		}
-
-		> div.room-entry-left {
-			height: 3rem;
-			width: 3rem;
-
-			> img.room-avatar {
-				padding: 4px;
-			}
-		}
-
-		> div.room-entry-right {
-			width: 100%;
-			display: flex;
-			flex-direction: column;
+		> div.room-name {
+			font-weight: bold;
 			overflow: hidden;
-			justify-content: space-around;
+			white-space: nowrap;
+			text-overflow: ellipsis;
+		}
 
-			> div.room-name {
-				font-weight: bold;
+		> div.message-preview {
+			text-overflow: ellipsis;
+			white-space: nowrap;
+			overflow: hidden;
+
+			> span.sender-name {
+				display: block;
+				max-width: 6rem;
 				overflow: hidden;
-				white-space: nowrap;
-				text-overflow: ellipsis;
 			}
 
-			> div.message-preview {
-				text-overflow: ellipsis;
-				white-space: nowrap;
-				overflow: hidden;
-
-				> span.sender-name {
-					display: block;
-					max-width: 6rem;
-					overflow: hidden;
-				}
-
-				> span.preview-text {
-					display: block;
-				}
+			> span.preview-text {
+				display: block;
 			}
 		}
 	}

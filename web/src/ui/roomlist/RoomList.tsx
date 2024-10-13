@@ -14,8 +14,8 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import React, { use, useCallback } from "react"
-import type { RoomID } from "../../api/types"
-import { useNonNullEventAsState } from "../../util/eventdispatcher.ts"
+import type { RoomID } from "@/api/types"
+import { useNonNullEventAsState } from "@/util/eventdispatcher.ts"
 import { ClientContext } from "../ClientContext.ts"
 import Entry from "./Entry.tsx"
 import "./RoomList.css"
@@ -36,10 +36,17 @@ const RoomList = ({ setActiveRoom, activeRoomID }: RoomListProps) => {
 		}
 	}, [setActiveRoom])
 
-	return <div className="room-list">
-		{reverseMap(roomList, room =>
-			<Entry key={room.room_id} isActive={room.room_id === activeRoomID} room={room} setActiveRoom={clickRoom}/>,
-		)}
+	return <div className="room-list-wrapper">
+		<div className="room-list">
+			{reverseMap(roomList, room =>
+				<Entry
+					key={room.room_id}
+					isActive={room.room_id === activeRoomID}
+					room={room}
+					setActiveRoom={clickRoom}
+				/>,
+			)}
+		</div>
 	</div>
 }
 

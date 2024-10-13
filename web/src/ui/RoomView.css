@@ -2,7 +2,6 @@ div.room-view {
 	overflow: hidden;
 	height: 100%;
 	display: grid;
-	border-left: 2px solid #ccc;
 	grid-template:
 		"header" 3rem
 		"messageview" 1fr
@@ -14,7 +13,7 @@ div.room-view {
 		align-items: center;
 		gap: .5rem;
 		padding-left: 1rem;
-		border-bottom: 2px solid #ccc;
+		border-bottom: 1px solid #ccc;
 
 		> span.room-name {
 			font-weight: bold;
