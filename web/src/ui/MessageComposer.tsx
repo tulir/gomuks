@@ -13,39 +13,68 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import React, { use, useCallback, useState } from "react"
-import { RoomStateStore } from "../api/statestore.ts"
+import React, { use, useCallback, useRef, useState } from "react"
+import { RoomStateStore } from "@/api/statestore.ts"
+import { MemDBEvent, Mentions } from "@/api/types"
 import { ClientContext } from "./ClientContext.ts"
+import ReplyBody from "./timeline/ReplyBody.tsx"
 import "./MessageComposer.css"
 
 interface MessageComposerProps {
 	room: RoomStateStore
+	setTextRows: (rows: number) => void
+	replyTo: MemDBEvent | null
+	closeReply: () => void
 }
 
-const MessageComposer = ({ room }: MessageComposerProps) => {
+const MessageComposer = ({ room, replyTo, setTextRows, closeReply }: MessageComposerProps) => {
 	const client = use(ClientContext)!
 	const [text, setText] = useState("")
+	const textRows = useRef(1)
 	const sendMessage = useCallback((evt: React.FormEvent) => {
 		evt.preventDefault()
+		if (text === "") {
+			return
+		}
 		setText("")
-		client.sendMessage(room.roomID, text)
+		setTextRows(1)
+		textRows.current = 1
+		closeReply()
+		const room_id = room.roomID
+		const mentions: Mentions = {
+			user_ids: [],
+			room: false,
+		}
+		if (replyTo) {
+			mentions.user_ids.push(replyTo.sender)
+		}
+		client.sendMessage({ room_id, text, reply_to: replyTo?.event_id, mentions })
 			.catch(err => window.alert("Failed to send message: " + err))
-	}, [text, room, client])
+	}, [setTextRows, closeReply, replyTo, text, room, client])
+	const onKeyDown = useCallback((evt: React.KeyboardEvent) => {
+		if (evt.key === "Enter" && !evt.shiftKey) {
+			sendMessage(evt)
+		}
+	}, [sendMessage])
+	const onChange = useCallback((evt: React.ChangeEvent<HTMLTextAreaElement>) => {
+		setText(evt.target.value)
+		textRows.current = evt.target.value.split("\n").length
+		setTextRows(textRows.current)
+	}, [setTextRows])
 	return <div className="message-composer">
-		<textarea
-			autoFocus
-			rows={text.split("\n").length}
-			value={text}
-			onKeyDown={evt => {
-				if (evt.key === "Enter" && !evt.shiftKey) {
-					sendMessage(evt)
-				}
-			}}
-			onChange={evt => setText(evt.target.value)}
-			placeholder="Send a message"
-			id="message-composer"
-		/>
-		<button onClick={sendMessage}>Send</button>
+		{replyTo && <ReplyBody room={room} event={replyTo} onClose={closeReply}/>}
+		<div className="input-area">
+			<textarea
+				autoFocus
+				rows={textRows.current}
+				value={text}
+				onKeyDown={onKeyDown}
+				onChange={onChange}
+				placeholder="Send a message"
+				id="message-composer"
+			/>
+			<button onClick={sendMessage}>Send</button>
+		</div>
 	</div>
 }
 

@@ -13,7 +13,7 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import React, { use, useCallback, useState } from "react"
+import React, { use, useCallback, useRef, useState } from "react"
 import { toSearchableString } from "@/api/statestore.ts"
 import type { RoomID } from "@/api/types"
 import { useNonNullEventAsState } from "@/util/eventdispatcher.ts"
@@ -28,6 +28,7 @@ interface RoomListProps {
 
 const RoomList = ({ setActiveRoom, activeRoomID }: RoomListProps) => {
 	const roomList = useNonNullEventAsState(use(ClientContext)!.store.roomList)
+	const roomFilterRef = useRef<HTMLInputElement>(null)
 	const [roomFilter, setRoomFilter] = useState("")
 	const [realRoomFilter, setRealRoomFilter] = useState("")
 	const clickRoom = useCallback((evt: React.MouseEvent) => {
@@ -51,6 +52,7 @@ const RoomList = ({ setActiveRoom, activeRoomID }: RoomListProps) => {
 			className="room-search"
 			type="text"
 			placeholder="Search rooms"
+			ref={roomFilterRef}
 		/>
 		<div className="room-list">
 			{reverseMap(roomList, room =>

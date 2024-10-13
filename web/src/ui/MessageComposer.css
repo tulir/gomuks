@@ -1,18 +1,23 @@
 div.message-composer {
-	display: flex;
 	border-top: 1px solid #ccc;
-	> textarea {
-		flex: 1;
-		resize: none;
-		font-family: sans-serif;
-		height: auto;
-		padding: .5rem;
-		border: none;
-		outline: none;
-	}
-	> button {
-		padding: .5rem;
-		border: none;
-		background: none;
+
+	> div.input-area {
+		display: flex;
+
+		> textarea {
+			flex: 1;
+			resize: none;
+			font-family: sans-serif;
+			height: auto;
+			padding: .5rem;
+			border: none;
+			outline: none;
+		}
+
+		> button {
+			padding: .5rem;
+			border: none;
+			background: none;
+		}
 	}
 }

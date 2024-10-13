@@ -20,6 +20,7 @@ import type {
 	EventID,
 	EventRowID,
 	EventType,
+	Mentions,
 	PaginationResponse,
 	RPCCommand,
 	RPCEvent,
@@ -39,6 +40,14 @@ export class ErrorResponse extends Error {
 	constructor(public data: unknown) {
 		super(`${data}`)
 	}
+}
+
+export interface SendMessageParams {
+	room_id: RoomID
+	text: string
+	media_path?: string
+	reply_to?: EventID
+	mentions?: Mentions
 }
 
 export default abstract class RPCClient {
@@ -110,8 +119,8 @@ export default abstract class RPCClient {
 		}, this.cancelRequest.bind(this, request_id))
 	}
 
-	sendMessage(room_id: RoomID, text: string, media_path?: string): Promise<RawDBEvent> {
-		return this.request("send_message", { room_id, text, media_path })
+	sendMessage(params: SendMessageParams): Promise<RawDBEvent> {
+		return this.request("send_message", params)
 	}
 
 	sendEvent(room_id: RoomID, type: EventType, content: Record<string, unknown>): Promise<RawDBEvent> {

@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import { CachedEventDispatcher } from "../util/eventdispatcher.ts"
-import type RPCClient from "./rpc.ts"
+import RPCClient, { SendMessageParams } from "./rpc.ts"
 import { StateStore } from "./statestore.ts"
 import type {
 	ClientState,
@@ -49,12 +49,12 @@ export default class Client {
 		}
 	}
 
-	async sendMessage(roomID: RoomID, text: string, mediaPath?: string): Promise<void> {
-		const room = this.store.rooms.get(roomID)
+	async sendMessage(params: SendMessageParams): Promise<void> {
+		const room = this.store.rooms.get(params.room_id)
 		if (!room) {
 			throw new Error("Room not found")
 		}
-		const dbEvent = await this.rpc.sendMessage(roomID, text, mediaPath)
+		const dbEvent = await this.rpc.sendMessage(params)
 		if (!room.eventsByRowID.has(dbEvent.rowid)) {
 			room.pendingEvents.push(dbEvent.rowid)
 			room.applyEvent(dbEvent, true)

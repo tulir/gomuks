@@ -64,11 +64,17 @@ export interface MemberEventContent {
 	reason?: string
 }
 
+export interface Mentions {
+	user_ids: UserID[]
+	room: boolean
+}
+
 export interface BaseMessageEventContent {
 	msgtype: string
 	body: string
 	formatted_body?: string
 	format?: "org.matrix.custom.html"
+	"m.mentions"?: Mentions
 }
 
 export interface TextMessageEventContent extends BaseMessageEventContent {

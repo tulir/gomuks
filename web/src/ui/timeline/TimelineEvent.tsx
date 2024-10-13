@@ -13,7 +13,7 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import React, { use } from "react"
+import React, { use, useCallback } from "react"
 import { getAvatarURL } from "../../api/media.ts"
 import { RoomStateStore } from "../../api/statestore.ts"
 import { MemDBEvent, MemberEventContent } from "../../api/types"
@@ -33,6 +33,7 @@ export interface TimelineEventProps {
 	room: RoomStateStore
 	evt: MemDBEvent
 	prevEvt: MemDBEvent | null
+	setReplyTo: (evt: MemDBEvent) => void
 }
 
 function getBodyType(evt: MemDBEvent): React.FunctionComponent<EventContentProps> {
@@ -99,7 +100,8 @@ const EventSendStatus = ({ evt }: { evt: MemDBEvent }) => {
 	}
 }
 
-const TimelineEvent = ({ room, evt, prevEvt }: TimelineEventProps) => {
+const TimelineEvent = ({ room, evt, prevEvt, setReplyTo }: TimelineEventProps) => {
+	const wrappedSetReplyTo = useCallback(() => setReplyTo(evt), [evt, setReplyTo])
 	const client = use(ClientContext)!
 	const memberEvt = room.getStateEvent("m.room.member", evt.sender)
 	const memberEvtContent = memberEvt?.content as MemberEventContent | undefined
@@ -127,14 +129,14 @@ const TimelineEvent = ({ room, evt, prevEvt }: TimelineEventProps) => {
 				alt=""
 			/>
 		</div>
-		<div className="event-sender-and-time">
+		<div className="event-sender-and-time" onClick={wrappedSetReplyTo}>
 			<span className="event-sender">{memberEvtContent?.displayname ?? evt.sender}</span>
 			<span className="event-time" title={fullTime}>{shortTime}</span>
 			{(editEventTS && editTime) ? <span className="event-edited" title={editTime}>
 				(edited at {formatShortTime(editEventTS)})
 			</span> : null}
 		</div>
-		<div className="event-time-only">
+		<div className="event-time-only" onClick={wrappedSetReplyTo}>
 			<span className="event-time" title={editTime ? `${fullTime} - ${editTime}` : fullTime}>{shortTime}</span>
 		</div>
 		<div className="event-content">

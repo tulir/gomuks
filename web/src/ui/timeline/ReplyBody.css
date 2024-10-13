@@ -3,7 +3,7 @@ blockquote.reply-body {
 	border-left: 2px solid #aaa;
 	padding: .25rem .5rem;
 
-	&:hover {
+	&:hover, &.composer {
 		border-color: black;
 
 		> div.message-text {
@@ -17,7 +17,6 @@ blockquote.reply-body {
 		-webkit-box-orient: vertical;
 		overflow: hidden;
 		color: #666;
-
 	}
 
 	> div.reply-sender {
@@ -28,6 +27,25 @@ blockquote.reply-body {
 			width: 1rem;
 			height: 1rem;
 			margin-right: .25rem;
+		}
+
+		> button.close-reply {
+			display: flex;
+			margin-left: auto;
+			align-items: center;
+			background: none;
+			border: none;
+			border-radius: .25rem;
+			padding: 0;
+
+			> svg {
+				height: 24px;
+				width: 24px;
+			}
+
+			&:hover {
+				background-color: #ccc;
+			}
 		}
 	}
 }

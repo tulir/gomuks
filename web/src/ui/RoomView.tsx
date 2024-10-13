@@ -13,9 +13,11 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import { getMediaURL } from "../api/media.ts"
-import { RoomStateStore } from "../api/statestore.ts"
-import { useNonNullEventAsState } from "../util/eventdispatcher.ts"
+import { useCallback, useState } from "react"
+import { getMediaURL } from "@/api/media.ts"
+import { RoomStateStore } from "@/api/statestore.ts"
+import { MemDBEvent } from "@/api/types"
+import { useNonNullEventAsState } from "@/util/eventdispatcher.ts"
 import MessageComposer from "./MessageComposer.tsx"
 import TimelineView from "./timeline/TimelineView.tsx"
 import "./RoomView.css"
@@ -46,10 +48,13 @@ const onKeyDownRoomView = (evt: React.KeyboardEvent) => {
 }
 
 const RoomView = ({ room }: RoomViewProps) => {
+	const [replyTo, setReplyTo] = useState<MemDBEvent | null>(null)
+	const [textRows, setTextRows] = useState(1)
+	const closeReply = useCallback(() => setReplyTo(null), [])
 	return <div className="room-view" onKeyDown={onKeyDownRoomView} tabIndex={-1}>
 		<RoomHeader room={room}/>
-		<TimelineView room={room}/>
-		<MessageComposer room={room}/>
+		<TimelineView room={room} textRows={textRows} replyTo={replyTo} setReplyTo={setReplyTo}/>
+		<MessageComposer room={room} setTextRows={setTextRows} replyTo={replyTo} closeReply={closeReply}/>
 	</div>
 }
 

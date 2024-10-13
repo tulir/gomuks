@@ -14,17 +14,20 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import { use, useCallback, useEffect, useRef } from "react"
-import { RoomStateStore, useRoomTimeline } from "../../api/statestore.ts"
-import { MemDBEvent } from "../../api/types"
+import { RoomStateStore, useRoomTimeline } from "@/api/statestore.ts"
+import { MemDBEvent } from "@/api/types"
 import { ClientContext } from "../ClientContext.ts"
 import TimelineEvent from "./TimelineEvent.tsx"
 import "./TimelineView.css"
 
 interface TimelineViewProps {
 	room: RoomStateStore
+	textRows: number
+	replyTo: MemDBEvent | null
+	setReplyTo: (evt: MemDBEvent) => void
 }
 
-const TimelineView = ({ room }: TimelineViewProps) => {
+const TimelineView = ({ room, textRows, replyTo, setReplyTo }: TimelineViewProps) => {
 	const timeline = useRoomTimeline(room)
 	const client = use(ClientContext)!
 	const loadHistory = useCallback(() => {
@@ -61,7 +64,7 @@ const TimelineView = ({ room }: TimelineViewProps) => {
 			timelineViewRef.current.scrollTop += timelineViewRef.current.scrollHeight - oldScrollHeight.current
 		}
 		prevOldestTimelineRow.current = timeline[0]?.timeline_rowid ?? 0
-	}, [timeline])
+	}, [textRows, replyTo, timeline])
 	useEffect(() => {
 		const topElem = topRef.current
 		if (!topElem) {
@@ -93,7 +96,7 @@ const TimelineView = ({ room }: TimelineViewProps) => {
 					return null
 				}
 				const thisEvt = <TimelineEvent
-					key={entry.rowid} room={room} evt={entry} prevEvt={prevEvt}
+					key={entry.rowid} room={room} evt={entry} prevEvt={prevEvt} setReplyTo={setReplyTo}
 				/>
 				prevEvt = entry
 				return thisEvt
