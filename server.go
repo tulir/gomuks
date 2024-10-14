@@ -24,6 +24,7 @@ import (
 	"errors"
 	"io/fs"
 	"net/http"
+	_ "net/http/pprof"
 	"strings"
 	"time"
 
@@ -52,6 +53,9 @@ func (gmx *Gomuks) StartServer() {
 		gmx.AuthMiddleware,
 	)
 	router := http.NewServeMux()
+	if gmx.Config.Web.DebugEndpoints {
+		router.Handle("/debug/", http.DefaultServeMux)
+	}
 	router.Handle("/_gomuks/", apiHandler)
 	if frontend, err := fs.Sub(web.Frontend, "dist"); err != nil {
 		gmx.Log.Warn().Msg("Frontend not found")

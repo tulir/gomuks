@@ -36,10 +36,11 @@ type Config struct {
 }
 
 type WebConfig struct {
-	ListenAddress string `yaml:"listen_address"`
-	Username      string `yaml:"username"`
-	PasswordHash  string `yaml:"password_hash"`
-	TokenKey      string `yaml:"token_key"`
+	ListenAddress  string `yaml:"listen_address"`
+	Username       string `yaml:"username"`
+	PasswordHash   string `yaml:"password_hash"`
+	TokenKey       string `yaml:"token_key"`
+	DebugEndpoints bool   `yaml:"debug_endpoints"`
 }
 
 var defaultConfig = Config{
