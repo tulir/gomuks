@@ -33,7 +33,7 @@ div.timeline-event {
 		}
 
 		> span.event-time, > span.event-edited {
-			font-size: .8rem;
+			font-size: .7rem;
 			color: #888;
 		}
 	}
@@ -42,7 +42,7 @@ div.timeline-event {
 		grid-area: timestamp;
 		display: none;
 		align-items: end;
-		font-size: .8rem;
+		font-size: .7rem;
 		color: #888;
 		max-height: 1.25rem;
 		margin-left: .25rem;
@@ -147,6 +147,12 @@ div.redacted-body, div.decryption-pending-body {
 	> svg {
 		height: 20px;
 	}
+}
+
+div.member-body {
+	display: flex;
+	align-items: center;
+	gap: .25rem;
 }
 
 div.plaintext-body {
