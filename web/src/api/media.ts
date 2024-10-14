@@ -13,20 +13,15 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-
+import { parseMXC } from "@/util/validation.ts"
 import { UserID } from "./types"
 
-const mediaRegex = /^mxc:\/\/([a-zA-Z0-9.:-]+)\/([a-zA-Z0-9_-]+)$/
-
 export const getMediaURL = (mxc?: string, encrypted: boolean = false): string | undefined => {
-	if (!mxc) {
+	const [server, mediaID] = parseMXC(mxc)
+	if (!mediaID) {
 		return undefined
 	}
-	const match = mxc.match(mediaRegex)
-	if (!match) {
-		return undefined
-	}
-	return `_gomuks/media/${match[1]}/${match[2]}?encrypted=${encrypted}`
+	return `_gomuks/media/${server}/${mediaID}?encrypted=${encrypted}`
 }
 
 export const getEncryptedMediaURL = (mxc?: string): string | undefined => {
@@ -34,15 +29,11 @@ export const getEncryptedMediaURL = (mxc?: string): string | undefined => {
 }
 
 export const getAvatarURL = (_userID: UserID, mxc?: string): string | undefined => {
-	if (!mxc) {
+	const [server, mediaID] = parseMXC(mxc)
+	if (!mediaID) {
 		return undefined
 		// return `_gomuks/avatar/${encodeURIComponent(userID)}`
 	}
-	const match = mxc.match(mediaRegex)
-	if (!match) {
-		return undefined
-		// return `_gomuks/avatar/${encodeURIComponent(userID)}`
-	}
-	return `_gomuks/media/${match[1]}/${match[2]}`
-	// return `_gomuks/avatar/${encodeURIComponent(userID)}/${match[1]}/${match[2]}`
+	return `_gomuks/media/${server}/${mediaID}`
+	// return `_gomuks/avatar/${encodeURIComponent(userID)}/${server}/${mediaID}`
 }

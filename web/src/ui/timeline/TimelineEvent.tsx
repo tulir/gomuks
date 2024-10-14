@@ -17,6 +17,7 @@ import React, { use, useCallback } from "react"
 import { getAvatarURL } from "@/api/media.ts"
 import { RoomStateStore } from "@/api/statestore"
 import { MemDBEvent, MemberEventContent } from "@/api/types"
+import { isEventID } from "@/util/validation.ts"
 import { ClientContext } from "../ClientContext.ts"
 import { LightboxContext } from "../Lightbox.tsx"
 import { ReplyIDBody } from "./ReplyBody.tsx"
@@ -152,8 +153,7 @@ const TimelineEvent = ({ room, evt, prevEvt, setReplyTo }: TimelineEventProps) =
 			<span className="event-time" title={editTime ? `${fullTime} - ${editTime}` : fullTime}>{shortTime}</span>
 		</div>
 		<div className="event-content">
-			{typeof replyTo === "string" && BodyType !== HiddenEvent
-				? <ReplyIDBody room={room} eventID={replyTo}/> : null}
+			{isEventID(replyTo) && BodyType !== HiddenEvent ? <ReplyIDBody room={room} eventID={replyTo}/> : null}
 			<BodyType room={room} sender={memberEvt} event={evt}/>
 			{evt.reactions ? <EventReactions reactions={evt.reactions}/> : null}
 		</div>
