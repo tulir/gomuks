@@ -49,6 +49,7 @@ export interface DBRoom {
 	name?: string
 	name_quality: RoomNameQuality
 	avatar?: ContentURI
+	explicit_avatar: boolean
 	topic?: string
 	canonical_alias?: RoomAlias
 	lazy_load_summary?: LazyLoadSummary
