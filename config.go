@@ -80,6 +80,8 @@ func (gmx *Gomuks) LoadConfig() error {
 		_, err = fmt.Scanln(&gmx.Config.Web.Username)
 		if err != nil {
 			return fmt.Errorf("failed to read username: %w", err)
+		} else if len(gmx.Config.Web.Username) == 0 || len(gmx.Config.Web.Username) > 32 {
+			return fmt.Errorf("username must be 1-32 characters long")
 		}
 		fmt.Print("Password: ")
 		var passwd string

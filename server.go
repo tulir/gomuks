@@ -83,7 +83,7 @@ type tokenData struct {
 }
 
 func (gmx *Gomuks) validateAuth(token string) bool {
-	if len(token) > 100 {
+	if len(token) > 500 {
 		return false
 	}
 	parts := strings.Split(token, ".")
