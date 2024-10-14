@@ -162,7 +162,7 @@ func isUserFetch(header http.Header) bool {
 
 func (gmx *Gomuks) AuthMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Header.Get("Sec-Fetch-Site") != "same-origin" && !isUserFetch(r.Header) {
+		if r.Header.Get("Sec-WebSocket-Key") == "" && r.Header.Get("Sec-Fetch-Site") != "same-origin" && !isUserFetch(r.Header) {
 			ErrInvalidHeader.WithMessage("Invalid Sec-Fetch-Site header").Write(w)
 			return
 		}
