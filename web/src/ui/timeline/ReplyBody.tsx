@@ -39,7 +39,7 @@ export const ReplyIDBody = ({ room, eventID }: ReplyIDBodyProps) => {
 		// This caches whether the event is requested or not, so it doesn't need to be wrapped in an effect.
 		use(ClientContext)!.requestEvent(room, eventID)
 		return <blockquote className="reply-body">
-			Reply to {eventID}
+			Reply to unknown event<br/><code>{eventID}</code>
 		</blockquote>
 	}
 	return <ReplyBody room={room} event={event}/>
