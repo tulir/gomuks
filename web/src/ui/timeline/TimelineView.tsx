@@ -13,9 +13,10 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import { use, useCallback, useEffect, useRef } from "react"
+import { use, useCallback, useEffect, useLayoutEffect, useRef } from "react"
 import { RoomStateStore, useRoomTimeline } from "@/api/statestore"
 import { MemDBEvent } from "@/api/types"
+import useFocus from "@/util/focus.ts"
 import { ClientContext } from "../ClientContext.ts"
 import TimelineEvent from "./TimelineEvent.tsx"
 import "./TimelineView.css"
@@ -33,14 +34,14 @@ const TimelineView = ({ room, textRows, replyTo, setReplyTo }: TimelineViewProps
 	const loadHistory = useCallback(() => {
 		client.loadMoreHistory(room.roomID)
 			.catch(err => console.error("Failed to load history", err))
-	}, [client, room.roomID])
+	}, [client, room])
 	const bottomRef = useRef<HTMLDivElement>(null)
 	const topRef = useRef<HTMLDivElement>(null)
 	const timelineViewRef = useRef<HTMLDivElement>(null)
 	const prevOldestTimelineRow = useRef(0)
-	const paginationRequestedForRow = useRef(-1)
 	const oldScrollHeight = useRef(0)
 	const scrolledToBottom = useRef(true)
+	const focused = useFocus()
 
 	// When the user scrolls the timeline manually, remember if they were at the bottom,
 	// so that we can keep them at the bottom when new events are added.
@@ -55,7 +56,7 @@ const TimelineView = ({ room, textRows, replyTo, setReplyTo }: TimelineViewProps
 	if (timelineViewRef.current) {
 		oldScrollHeight.current = timelineViewRef.current.scrollHeight
 	}
-	useEffect(() => {
+	useLayoutEffect(() => {
 		if (bottomRef.current && scrolledToBottom.current) {
 			// For any timeline changes, if we were at the bottom, scroll to the new bottom
 			bottomRef.current.scrollIntoView()
@@ -66,13 +67,29 @@ const TimelineView = ({ room, textRows, replyTo, setReplyTo }: TimelineViewProps
 		prevOldestTimelineRow.current = timeline[0]?.timeline_rowid ?? 0
 	}, [textRows, replyTo, timeline])
 	useEffect(() => {
+		const newestEvent = timeline[timeline.length - 1]
+		if (
+			scrolledToBottom.current
+			&& focused
+			&& newestEvent
+			&& newestEvent.timeline_rowid > 0
+			&& room.readUpToRow < newestEvent.timeline_rowid
+		) {
+			room.readUpToRow = newestEvent.timeline_rowid
+			client.rpc.markRead(room.roomID, newestEvent.event_id, "m.read").then(
+				() => console.log("Marked read up to", newestEvent.event_id, newestEvent.timeline_rowid),
+				err => console.error(`Failed to send read receipt for ${newestEvent.event_id}:`, err),
+			)
+		}
+	}, [focused, client, room, timeline])
+	useEffect(() => {
 		const topElem = topRef.current
 		if (!topElem) {
 			return
 		}
 		const observer = new IntersectionObserver(entries => {
-			if (entries[0]?.isIntersecting && paginationRequestedForRow.current !== prevOldestTimelineRow.current) {
-				paginationRequestedForRow.current = prevOldestTimelineRow.current
+			if (entries[0]?.isIntersecting && room.paginationRequestedForRow !== prevOldestTimelineRow.current) {
+				room.paginationRequestedForRow = prevOldestTimelineRow.current
 				loadHistory()
 			}
 		}, {
@@ -82,7 +99,7 @@ const TimelineView = ({ room, textRows, replyTo, setReplyTo }: TimelineViewProps
 		})
 		observer.observe(topElem)
 		return () => observer.unobserve(topElem)
-	}, [loadHistory, topRef])
+	}, [room, loadHistory])
 
 	let prevEvt: MemDBEvent | null = null
 	return <div className="timeline-view" onScroll={handleScroll} ref={timelineViewRef}>

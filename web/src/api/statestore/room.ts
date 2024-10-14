@@ -14,6 +14,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import { NonNullCachedEventDispatcher } from "@/util/eventdispatcher.ts"
+import Subscribable from "@/util/subscribable.ts"
 import type {
 	DBRoom,
 	EncryptedEventContent,
@@ -60,32 +61,6 @@ function visibleMetaIsEqual(meta1: DBRoom, meta2: DBRoom): boolean {
 		meta1.has_member_list === meta2.has_member_list
 }
 
-type Subscriber = () => void
-type SubscribeFunc = (callback: Subscriber) => () => void
-
-class Subscribable {
-	readonly subscribers: Set<Subscriber> = new Set()
-
-	constructor(private onEmpty?: () => void) {
-	}
-
-	subscribe: SubscribeFunc = callback => {
-		this.subscribers.add(callback)
-		return () => {
-			this.subscribers.delete(callback)
-			if (this.subscribers.size === 0) {
-				this.onEmpty?.()
-			}
-		}
-	}
-
-	notify() {
-		for (const sub of this.subscribers) {
-			sub()
-		}
-	}
-}
-
 class EventSubscribable extends Subscribable {
 	requested: boolean = false
 }
@@ -103,6 +78,8 @@ export class RoomStateStore {
 	readonly eventSubs: Map<EventID, EventSubscribable> = new Map()
 	readonly pendingEvents: EventRowID[] = []
 	paginating = false
+	paginationRequestedForRow = -1
+	readUpToRow = -1
 
 	constructor(meta: DBRoom) {
 		this.roomID = meta.room_id
