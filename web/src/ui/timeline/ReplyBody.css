@@ -3,6 +3,10 @@ blockquote.reply-body {
 	border-left: 2px solid #aaa;
 	padding: .25rem .5rem;
 
+	pre {
+		display: inline;
+	}
+
 	&:hover, &.composer {
 		border-color: black;
 
