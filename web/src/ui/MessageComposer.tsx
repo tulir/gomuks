@@ -13,9 +13,9 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import React, { use, useCallback, useRef, useState } from "react"
+import React, { use, useCallback, useLayoutEffect, useRef, useState } from "react"
 import { RoomStateStore } from "@/api/statestore"
-import { MemDBEvent, Mentions } from "@/api/types"
+import { MemDBEvent, Mentions, RoomID } from "@/api/types"
 import { ClientContext } from "./ClientContext.ts"
 import { ReplyBody } from "./timeline/ReplyBody.tsx"
 import "./MessageComposer.css"
@@ -27,18 +27,34 @@ interface MessageComposerProps {
 	closeReply: () => void
 }
 
+const draftStore = {
+	get: (roomID: RoomID) => localStorage.getItem(`draft-${roomID}`) ?? "",
+	set: (roomID: RoomID, text: string) => localStorage.setItem(`draft-${roomID}`, text),
+	clear: (roomID: RoomID)=> localStorage.removeItem(`draft-${roomID}`),
+}
+
 const MessageComposer = ({ room, replyTo, setTextRows, closeReply }: MessageComposerProps) => {
 	const client = use(ClientContext)!
 	const [text, setText] = useState("")
 	const textRows = useRef(1)
+	const fullSetText = useCallback((text: string, setDraft: boolean) => {
+		setText(text)
+		textRows.current = text === "" ? 1 : text.split("\n").length
+		setTextRows(textRows.current)
+		if (setDraft) {
+			if (text === "") {
+				draftStore.clear(room.roomID)
+			} else {
+				draftStore.set(room.roomID, text)
+			}
+		}
+	}, [setTextRows, room.roomID])
 	const sendMessage = useCallback((evt: React.FormEvent) => {
 		evt.preventDefault()
 		if (text === "") {
 			return
 		}
-		setText("")
-		setTextRows(1)
-		textRows.current = 1
+		fullSetText("", true)
 		closeReply()
 		const room_id = room.roomID
 		const mentions: Mentions = {
@@ -50,17 +66,20 @@ const MessageComposer = ({ room, replyTo, setTextRows, closeReply }: MessageComp
 		}
 		client.sendMessage({ room_id, text, reply_to: replyTo?.event_id, mentions })
 			.catch(err => window.alert("Failed to send message: " + err))
-	}, [setTextRows, closeReply, replyTo, text, room, client])
+	}, [fullSetText, closeReply, replyTo, text, room, client])
 	const onKeyDown = useCallback((evt: React.KeyboardEvent) => {
 		if (evt.key === "Enter" && !evt.shiftKey) {
 			sendMessage(evt)
 		}
 	}, [sendMessage])
 	const onChange = useCallback((evt: React.ChangeEvent<HTMLTextAreaElement>) => {
-		setText(evt.target.value)
-		textRows.current = evt.target.value.split("\n").length
-		setTextRows(textRows.current)
-	}, [setTextRows])
+		fullSetText(evt.target.value, true)
+	}, [fullSetText])
+	// To ensure the cursor jumps to the end, do this in an effect rather than as the initial value of useState
+	// To try to avoid the input bar flashing, use useLayoutEffect instead of useEffect
+	useLayoutEffect(() => {
+		fullSetText(draftStore.get(room.roomID), false)
+	}, [room.roomID, fullSetText])
 	return <div className="message-composer">
 		{replyTo && <ReplyBody room={room} event={replyTo} onClose={closeReply}/>}
 		<div className="input-area">
