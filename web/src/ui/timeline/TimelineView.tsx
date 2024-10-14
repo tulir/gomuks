@@ -74,6 +74,7 @@ const TimelineView = ({ room, textRows, replyTo, setReplyTo }: TimelineViewProps
 			&& newestEvent
 			&& newestEvent.timeline_rowid > 0
 			&& room.readUpToRow < newestEvent.timeline_rowid
+			&& newestEvent.sender !== client.userID
 		) {
 			room.readUpToRow = newestEvent.timeline_rowid
 			client.rpc.markRead(room.roomID, newestEvent.event_id, "m.read").then(
