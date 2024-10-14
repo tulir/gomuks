@@ -131,6 +131,10 @@ export default abstract class RPCClient {
 		return this.request("mark_read", { room_id, event_id, receipt_type })
 	}
 
+	setTyping(room_id: RoomID, timeout: number): Promise<boolean> {
+		return this.request("set_typing", { room_id, timeout })
+	}
+
 	ensureGroupSessionShared(room_id: RoomID): Promise<boolean> {
 		return this.request("ensure_group_session_shared", { room_id })
 	}

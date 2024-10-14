@@ -37,6 +37,7 @@ const MessageComposer = ({ room, replyTo, setTextRows, closeReply }: MessageComp
 	const client = use(ClientContext)!
 	const [text, setText] = useState("")
 	const textRows = useRef(1)
+	const typingSentAt = useRef(0)
 	const fullSetText = useCallback((text: string, setDraft: boolean) => {
 		setText(text)
 		textRows.current = text === "" ? 1 : text.split("\n").length
@@ -74,12 +75,29 @@ const MessageComposer = ({ room, replyTo, setTextRows, closeReply }: MessageComp
 	}, [sendMessage])
 	const onChange = useCallback((evt: React.ChangeEvent<HTMLTextAreaElement>) => {
 		fullSetText(evt.target.value, true)
-	}, [fullSetText])
+		const now = Date.now()
+		if (evt.target.value !== "" && typingSentAt.current + 5_000 < now) {
+			typingSentAt.current = now
+			client.rpc.setTyping(room.roomID, 10_000)
+				.catch(err => console.error("Failed to send typing notification:", err))
+		} else if (evt.target.value == "" && typingSentAt.current > 0) {
+			typingSentAt.current = 0
+			client.rpc.setTyping(room.roomID, 0)
+				.catch(err => console.error("Failed to send stop typing notification:", err))
+		}
+	}, [client, room.roomID, fullSetText])
 	// To ensure the cursor jumps to the end, do this in an effect rather than as the initial value of useState
 	// To try to avoid the input bar flashing, use useLayoutEffect instead of useEffect
 	useLayoutEffect(() => {
 		fullSetText(draftStore.get(room.roomID), false)
-	}, [room.roomID, fullSetText])
+		return () => {
+			if (typingSentAt.current > 0) {
+				typingSentAt.current = 0
+				client.rpc.setTyping(room.roomID, 0)
+					.catch(err => console.error("Failed to send stop typing notification due to room switch:", err))
+			}
+		}
+	}, [client, room.roomID, fullSetText])
 	return <div className="message-composer">
 		{replyTo && <ReplyBody room={room} event={replyTo} onClose={closeReply}/>}
 		<div className="input-area">
