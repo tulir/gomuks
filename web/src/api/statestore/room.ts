@@ -176,7 +176,7 @@ export class RoomStateStore {
 			if (editTarget?.last_edit_rowid === memEvt.rowid && !editTarget.last_edit) {
 				editTarget.last_edit = memEvt
 				editTarget.orig_content = editTarget.content
-				editTarget.content = memEvt.content
+				editTarget.content = memEvt.content["m.new_content"]
 			}
 		}
 		this.eventsByRowID.set(memEvt.rowid, memEvt)
