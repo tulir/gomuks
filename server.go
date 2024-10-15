@@ -76,7 +76,7 @@ func (gmx *Gomuks) StartServer() {
 }
 
 var (
-	ErrInvalidHeader = mautrix.RespError{ErrCode: "FI.MAU.GOMUKS.INVALID_HEADER", StatusCode: http.StatusBadRequest}
+	ErrInvalidHeader = mautrix.RespError{ErrCode: "FI.MAU.GOMUKS.INVALID_HEADER", StatusCode: http.StatusForbidden}
 	ErrMissingCookie = mautrix.RespError{ErrCode: "FI.MAU.GOMUKS.MISSING_COOKIE", Err: "Missing gomuks_auth cookie", StatusCode: http.StatusUnauthorized}
 	ErrInvalidCookie = mautrix.RespError{ErrCode: "FI.MAU.GOMUKS.INVALID_COOKIE", Err: "Invalid gomuks_auth cookie", StatusCode: http.StatusUnauthorized}
 )
@@ -166,7 +166,13 @@ func isUserFetch(header http.Header) bool {
 
 func (gmx *Gomuks) AuthMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Header.Get("Sec-WebSocket-Key") == "" && r.Header.Get("Sec-Fetch-Site") != "same-origin" && !isUserFetch(r.Header) {
+		if r.Header.Get("Sec-Fetch-Site") != "" && r.Header.Get("Sec-Fetch-Site") != "same-origin" && !isUserFetch(r.Header) {
+			hlog.FromRequest(r).Debug().
+				Str("site", r.Header.Get("Sec-Fetch-Site")).
+				Str("dest", r.Header.Get("Sec-Fetch-Dest")).
+				Str("mode", r.Header.Get("Sec-Fetch-Mode")).
+				Str("user", r.Header.Get("Sec-Fetch-User")).
+				Msg("Invalid Sec-Fetch-Site header")
 			ErrInvalidHeader.WithMessage("Invalid Sec-Fetch-Site header").Write(w)
 			return
 		}
