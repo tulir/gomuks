@@ -2,6 +2,7 @@ div.timeline-event {
 	width: 100%;
 	max-width: 100%;
 	overflow: hidden;
+	overflow-wrap: anywhere;
 	display: grid;
 	margin-top: .5rem;
 	grid-template:
