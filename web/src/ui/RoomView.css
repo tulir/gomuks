@@ -13,11 +13,26 @@ div.room-view {
 		display: flex;
 		align-items: center;
 		gap: .5rem;
-		padding-left: 1rem;
+		margin-left: .5rem;
 		border-bottom: 1px solid #ccc;
 
 		> span.room-name {
 			font-weight: bold;
+		}
+
+		> button.back {
+			background: none;
+			border: none;
+			height: 2.5rem;
+			width: 2.5rem;
+			padding: 0;
+			display: flex;
+			justify-content: center;
+			align-items: center;
+
+			&:hover, &:focus {
+				background-color: #eee;
+			}
 		}
 	}
 }

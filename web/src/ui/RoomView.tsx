@@ -21,15 +21,18 @@ import { useNonNullEventAsState } from "@/util/eventdispatcher.ts"
 import { LightboxContext } from "./Lightbox.tsx"
 import MessageComposer from "./MessageComposer.tsx"
 import TimelineView from "./timeline/TimelineView.tsx"
+import BackIcon from "@/icons/back.svg?react"
 import "./RoomView.css"
 
 interface RoomViewProps {
 	room: RoomStateStore
+	clearActiveRoom: () => void
 }
 
-const RoomHeader = ({ room }: RoomViewProps) => {
+const RoomHeader = ({ room, clearActiveRoom }: RoomViewProps) => {
 	const roomMeta = useNonNullEventAsState(room.meta)
 	return <div className="room-header">
+		<button className="back" onClick={clearActiveRoom}><BackIcon/></button>
 		<img
 			className="avatar"
 			loading="lazy"
@@ -49,12 +52,12 @@ const onKeyDownRoomView = (evt: React.KeyboardEvent) => {
 	}
 }
 
-const RoomView = ({ room }: RoomViewProps) => {
+const RoomView = ({ room, clearActiveRoom }: RoomViewProps) => {
 	const [replyTo, setReplyTo] = useState<MemDBEvent | null>(null)
 	const [textRows, setTextRows] = useState(1)
 	const closeReply = useCallback(() => setReplyTo(null), [])
 	return <div className="room-view" onKeyDown={onKeyDownRoomView} tabIndex={-1}>
-		<RoomHeader room={room}/>
+		<RoomHeader room={room} clearActiveRoom={clearActiveRoom}/>
 		<TimelineView room={room} textRows={textRows} replyTo={replyTo} setReplyTo={setReplyTo}/>
 		<MessageComposer room={room} setTextRows={setTextRows} replyTo={replyTo} closeReply={closeReply}/>
 	</div>

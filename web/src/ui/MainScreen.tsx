@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import { use, useCallback, useState } from "react"
-import type { RoomID } from "../api/types"
+import type { RoomID } from "@/api/types"
 import { ClientContext } from "./ClientContext.ts"
 import RoomView from "./RoomView.tsx"
 import RoomList from "./roomlist/RoomList.tsx"
@@ -31,9 +31,10 @@ const MainScreen = () => {
 				.catch(err => console.error("Failed to load room state", err))
 		}
 	}, [client])
-	return <main className="matrix-main">
+	const clearActiveRoom = useCallback(() => setActiveRoomID(null), [])
+	return <main className={`matrix-main ${activeRoom ? "room-selected" : ""}`}>
 		<RoomList setActiveRoom={setActiveRoom} activeRoomID={activeRoomID} />
-		{activeRoom && <RoomView key={activeRoomID} room={activeRoom} />}
+		{activeRoom && <RoomView key={activeRoomID} clearActiveRoom={clearActiveRoom} room={activeRoom} />}
 	</main>
 }
 
