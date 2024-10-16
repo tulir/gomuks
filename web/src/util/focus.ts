@@ -17,7 +17,7 @@ import { NonNullCachedEventDispatcher, useNonNullEventAsState } from "@/util/eve
 
 const focused = new NonNullCachedEventDispatcher(document.hasFocus())
 window.addEventListener("focus", () => focused.emit(true))
-window.addEventListener("blur", () => focused.emit(true))
+window.addEventListener("blur", () => focused.emit(false))
 
 export default function useFocus() {
 	return useNonNullEventAsState(focused)
