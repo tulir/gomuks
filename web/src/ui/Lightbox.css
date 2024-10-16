@@ -17,8 +17,6 @@ div.overlay {
 			display: flex;
 			justify-content: center;
 			align-items: center;
-			background: none;
-			border: none;
 			color: #ccc;
 			width: 48px;
 			height: 48px;

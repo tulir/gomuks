@@ -13,7 +13,7 @@ div.room-view {
 		display: flex;
 		align-items: center;
 		gap: .5rem;
-		margin-left: .5rem;
+		padding-left: .5rem;
 		border-bottom: 1px solid #ccc;
 
 		> span.room-name {
@@ -21,8 +21,6 @@ div.room-view {
 		}
 
 		> button.back {
-			background: none;
-			border: none;
 			height: 2.5rem;
 			width: 2.5rem;
 			padding: 0;

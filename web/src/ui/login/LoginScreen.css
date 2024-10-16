@@ -51,7 +51,6 @@ main.matrix-login {
 		background-color: var(--primary-color);
 		color: white;
 		font-weight: bold;
-		border: none;
 
 		&:hover, &:focus {
 			background-color: var(--primary-color-dark);

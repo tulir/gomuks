@@ -3,6 +3,8 @@ body {
 	margin: 0;
 	padding: 0;
 	background-color: #EEE;
+	line-height: 1.5;
+	font-size: 16px;
 }
 
 #root {
@@ -21,6 +23,8 @@ pre, code {
 button {
 	cursor: pointer;
 	font-size: 1em;
+	background: none;
+	border: none;
 }
 
 :root {
