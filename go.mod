@@ -6,14 +6,14 @@ toolchain go1.23.2
 
 require (
 	github.com/coder/websocket v1.8.12
-	github.com/mattn/go-sqlite3 v1.14.23
+	github.com/mattn/go-sqlite3 v1.14.24
 	github.com/rs/zerolog v1.33.0
-	go.mau.fi/util v0.8.1-0.20241011175353-d86e4c6b8fa7
+	go.mau.fi/util v0.8.1
 	go.mau.fi/zeroconfig v0.1.3
-	golang.org/x/crypto v0.27.0
+	golang.org/x/crypto v0.28.0
 	gopkg.in/yaml.v3 v3.0.1
 	maunium.net/go/mauflag v1.0.0
-	maunium.net/go/mautrix v0.21.1-0.20241014231904-21eaeeaecf69
+	maunium.net/go/mautrix v0.21.2-0.20241016143340-1d4c2d255455
 )
 
 require (
@@ -29,9 +29,9 @@ require (
 	github.com/tidwall/match v1.1.1 // indirect
 	github.com/tidwall/pretty v1.2.0 // indirect
 	github.com/tidwall/sjson v1.2.5 // indirect
-	github.com/yuin/goldmark v1.7.4 // indirect
-	golang.org/x/exp v0.0.0-20240909161429-701f63a606c0 // indirect
-	golang.org/x/net v0.29.0 // indirect
-	golang.org/x/sys v0.25.0 // indirect
+	github.com/yuin/goldmark v1.7.7 // indirect
+	golang.org/x/exp v0.0.0-20241009180824-f66d83c29e7c // indirect
+	golang.org/x/net v0.30.0 // indirect
+	golang.org/x/sys v0.26.0 // indirect
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1 // indirect
 )
