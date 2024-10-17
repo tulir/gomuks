@@ -16,10 +16,10 @@ import (
 	"github.com/rs/zerolog"
 	"go.mau.fi/util/jsontime"
 	"go.mau.fi/util/ptr"
-
 	"maunium.net/go/mautrix"
-	"maunium.net/go/mautrix/hicli/database"
 	"maunium.net/go/mautrix/id"
+
+	"go.mau.fi/gomuks/pkg/hicli/database"
 )
 
 var ErrBadGateway = mautrix.RespError{

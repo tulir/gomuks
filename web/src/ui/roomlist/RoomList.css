@@ -78,6 +78,26 @@ div.room-entry {
 			}
 		}
 	}
+
+	> div.room-entry-unreads {
+		display: flex;
+		align-items: center;
+		width: 3rem;
+
+		> div.unread-count {
+			width: 1.5rem;
+			height: 1.5rem;
+			border-radius: 50%;
+			background-color: green;
+			text-align: center;
+			color: white;
+			font-weight: bold;
+
+			&.highlighted {
+				background-color: darkred;
+			}
+		}
+	}
 }
 
 img.avatar {

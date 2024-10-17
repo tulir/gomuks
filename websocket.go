@@ -28,10 +28,12 @@ import (
 
 	"github.com/coder/websocket"
 	"github.com/rs/zerolog"
+	"go.mau.fi/util/exerrors"
 	"maunium.net/go/mautrix/event"
-	"maunium.net/go/mautrix/hicli"
-	"maunium.net/go/mautrix/hicli/database"
 	"maunium.net/go/mautrix/id"
+
+	"go.mau.fi/gomuks/pkg/hicli"
+	"go.mau.fi/gomuks/pkg/hicli/database"
 )
 
 func writeCmd(ctx context.Context, conn *websocket.Conn, cmd *hicli.JSONCommand) error {
@@ -120,6 +122,17 @@ func (gmx *Gomuks) HandleWebsocket(w http.ResponseWriter, r *http.Request) {
 	lastDataReceived := &atomic.Int64{}
 	lastDataReceived.Store(time.Now().UnixMilli())
 	const RecvTimeout = 60 * time.Second
+	lastImageAuthTokenSent := time.Now()
+	sendImageAuthToken := func() {
+		err := writeCmd(ctx, conn, &hicli.JSONCommand{
+			Command: "image_auth_token",
+			Data:    exerrors.Must(json.Marshal(gmx.generateImageToken())),
+		})
+		if err != nil {
+			log.Err(err).Msg("Failed to write image auth token message")
+			return
+		}
+	}
 	go func() {
 		defer recoverPanic("event loop")
 		defer closeOnce.Do(forceClose)
@@ -137,6 +150,10 @@ func (gmx *Gomuks) HandleWebsocket(w http.ResponseWriter, r *http.Request) {
 					log.Trace().Int64("req_id", cmd.RequestID).Msg("Sent outgoing event")
 				}
 			case <-ticker.C:
+				if time.Since(lastImageAuthTokenSent) > 30*time.Minute {
+					sendImageAuthToken()
+					lastImageAuthTokenSent = time.Now()
+				}
 				if time.Now().UnixMilli()-lastDataReceived.Load() > RecvTimeout.Milliseconds() {
 					log.Warn().Msg("No data received in a minute, closing connection")
 					_ = conn.Close(StatusPingTimeout, "Ping timeout")
@@ -187,6 +204,7 @@ func (gmx *Gomuks) HandleWebsocket(w http.ResponseWriter, r *http.Request) {
 		log.Err(initErr).Msg("Failed to write init message")
 		return
 	}
+	go sendImageAuthToken()
 	go gmx.sendInitialData(ctx, conn)
 	log.Debug().Msg("Connection initialization complete")
 	var closeErr websocket.CloseError
@@ -242,10 +260,11 @@ func (gmx *Gomuks) sendInitialData(ctx context.Context, conn *websocket.Conn) {
 			}
 			maxTS = room.SortingTimestamp.Time
 			syncRoom := &hicli.SyncRoom{
-				Meta:     room,
-				Events:   make([]*database.Event, 0, 2),
-				Timeline: make([]database.TimelineRowTuple, 0),
-				State:    map[event.Type]map[string]database.EventRowID{},
+				Meta:          room,
+				Events:        make([]*database.Event, 0, 2),
+				Timeline:      make([]database.TimelineRowTuple, 0),
+				State:         map[event.Type]map[string]database.EventRowID{},
+				Notifications: make([]hicli.SyncNotification, 0),
 			}
 			payload.Rooms[room.ID] = syncRoom
 			if room.PreviewEventRowID != 0 {
@@ -255,6 +274,7 @@ func (gmx *Gomuks) sendInitialData(ctx context.Context, conn *websocket.Conn) {
 					return
 				}
 				if previewEvent != nil {
+					gmx.Client.ReprocessExistingEvent(ctx, previewEvent)
 					previewMember, err := gmx.Client.DB.CurrentState.Get(ctx, room.ID, event.StateMember, previewEvent.Sender.String())
 					if err != nil {
 						log.Err(err).Msg("Failed to get preview member event for room")
@@ -269,6 +289,7 @@ func (gmx *Gomuks) sendInitialData(ctx context.Context, conn *websocket.Conn) {
 						if err != nil {
 							log.Err(err).Msg("Failed to get last edit for preview event")
 						} else if lastEdit != nil {
+							gmx.Client.ReprocessExistingEvent(ctx, lastEdit)
 							syncRoom.Events = append(syncRoom.Events, lastEdit)
 						}
 					}

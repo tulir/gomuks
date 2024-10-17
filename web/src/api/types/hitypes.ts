@@ -59,12 +59,27 @@ export interface DBRoom {
 
 	preview_event_rowid: EventRowID
 	sorting_timestamp: number
+	unread_highlights: number
+	unread_notifications: number
+	unread_messages: number
 
 	prev_batch: string
 }
 
 //eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type UnknownEventContent = Record<string, any>
+
+export enum UnreadType {
+	None = 0b0000,
+	Normal = 0b0001,
+	Notify = 0b0010,
+	Highlight = 0b0100,
+	Sound = 0b1000,
+}
+
+export interface LocalContent {
+	sanitized_html?: TrustedHTML
+}
 
 export interface BaseDBEvent {
 	rowid: EventRowID
@@ -79,6 +94,7 @@ export interface BaseDBEvent {
 
 	content: UnknownEventContent
 	unsigned: EventUnsigned
+	local_content?: LocalContent
 
 	transaction_id?: string
 
@@ -91,6 +107,7 @@ export interface BaseDBEvent {
 
 	reactions?: Record<string, number>
 	last_edit_rowid?: EventRowID
+	unread_type: UnreadType
 }
 
 export interface RawDBEvent extends BaseDBEvent {

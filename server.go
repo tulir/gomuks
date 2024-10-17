@@ -82,11 +82,12 @@ var (
 )
 
 type tokenData struct {
-	Username string        `json:"username"`
-	Expiry   jsontime.Unix `json:"expiry"`
+	Username  string        `json:"username"`
+	Expiry    jsontime.Unix `json:"expiry"`
+	ImageOnly bool          `json:"image_only,omitempty"`
 }
 
-func (gmx *Gomuks) validateAuth(token string) bool {
+func (gmx *Gomuks) validateAuth(token string, imageOnly bool) bool {
 	if len(token) > 500 {
 		return false
 	}
@@ -110,19 +111,31 @@ func (gmx *Gomuks) validateAuth(token string) bool {
 
 	var td tokenData
 	err = json.Unmarshal(rawJSON, &td)
-	return err == nil && td.Username == gmx.Config.Web.Username && td.Expiry.After(time.Now())
+	return err == nil && td.Username == gmx.Config.Web.Username && td.Expiry.After(time.Now()) && td.ImageOnly == imageOnly
 }
 
 func (gmx *Gomuks) generateToken() (string, time.Time) {
 	expiry := time.Now().Add(7 * 24 * time.Hour)
-	data := exerrors.Must(json.Marshal(tokenData{
+	return gmx.signToken(tokenData{
 		Username: gmx.Config.Web.Username,
 		Expiry:   jsontime.U(expiry),
-	}))
+	}), expiry
+}
+
+func (gmx *Gomuks) generateImageToken() string {
+	return gmx.signToken(tokenData{
+		Username:  gmx.Config.Web.Username,
+		Expiry:    jsontime.U(time.Now().Add(1 * time.Hour)),
+		ImageOnly: true,
+	})
+}
+
+func (gmx *Gomuks) signToken(td tokenData) string {
+	data := exerrors.Must(json.Marshal(td))
 	hasher := hmac.New(sha256.New, []byte(gmx.Config.Web.TokenKey))
 	hasher.Write(data)
 	checksum := hasher.Sum(nil)
-	return base64.RawURLEncoding.EncodeToString(data) + "." + base64.RawURLEncoding.EncodeToString(checksum), expiry
+	return base64.RawURLEncoding.EncodeToString(data) + "." + base64.RawURLEncoding.EncodeToString(checksum)
 }
 
 func (gmx *Gomuks) writeTokenCookie(w http.ResponseWriter) {
@@ -137,7 +150,7 @@ func (gmx *Gomuks) writeTokenCookie(w http.ResponseWriter) {
 
 func (gmx *Gomuks) Authenticate(w http.ResponseWriter, r *http.Request) {
 	authCookie, err := r.Cookie("gomuks_auth")
-	if err == nil && gmx.validateAuth(authCookie.Value) {
+	if err == nil && gmx.validateAuth(authCookie.Value, false) {
 		gmx.writeTokenCookie(w)
 		w.WriteHeader(http.StatusOK)
 	} else if username, password, ok := r.BasicAuth(); !ok {
@@ -164,9 +177,23 @@ func isUserFetch(header http.Header) bool {
 		header.Get("Sec-Fetch-User") == "?1"
 }
 
+func isImageFetch(header http.Header) bool {
+	return header.Get("Sec-Fetch-Site") == "cross-site" &&
+		header.Get("Sec-Fetch-Mode") == "no-cors" &&
+		header.Get("Sec-Fetch-Dest") == "image"
+}
+
 func (gmx *Gomuks) AuthMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Header.Get("Sec-Fetch-Site") != "" && r.Header.Get("Sec-Fetch-Site") != "same-origin" && !isUserFetch(r.Header) {
+		if strings.HasPrefix(r.URL.Path, "/media") &&
+			isImageFetch(r.Header) &&
+			gmx.validateAuth(r.URL.Query().Get("image_auth"), true) &&
+			r.URL.Query().Get("encrypted") == "false" {
+			next.ServeHTTP(w, r)
+			return
+		} else if r.Header.Get("Sec-Fetch-Site") != "" &&
+			r.Header.Get("Sec-Fetch-Site") != "same-origin" &&
+			!isUserFetch(r.Header) {
 			hlog.FromRequest(r).Debug().
 				Str("site", r.Header.Get("Sec-Fetch-Site")).
 				Str("dest", r.Header.Get("Sec-Fetch-Dest")).
@@ -181,7 +208,7 @@ func (gmx *Gomuks) AuthMiddleware(next http.Handler) http.Handler {
 			if err != nil {
 				ErrMissingCookie.Write(w)
 				return
-			} else if !gmx.validateAuth(authCookie.Value) {
+			} else if !gmx.validateAuth(authCookie.Value, false) {
 				ErrInvalidCookie.Write(w)
 				return
 			}

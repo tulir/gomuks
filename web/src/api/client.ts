@@ -39,6 +39,8 @@ export default class Client {
 			this.store.applyDecrypted(ev.data)
 		} else if (ev.command === "send_complete") {
 			this.store.applySendComplete(ev.data)
+		} else if (ev.command === "image_auth_token") {
+			this.store.imageAuthToken = ev.data
 		}
 	}
 

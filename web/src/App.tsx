@@ -29,6 +29,8 @@ function App() {
 	const clientState = useEventAsState(client.state)
 	;((window as unknown) as { client: Client }).client = client
 	useEffect(() => {
+		Notification.requestPermission()
+			.then(permission => console.log("Notification permission:", permission))
 		client.rpc.start()
 		return () => client.rpc.stop()
 	}, [client])

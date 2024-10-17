@@ -27,7 +27,8 @@ import (
 	_ "go.mau.fi/util/dbutil/litestream"
 	flag "maunium.net/go/mauflag"
 	"maunium.net/go/mautrix"
-	"maunium.net/go/mautrix/hicli"
+
+	"go.mau.fi/gomuks/pkg/hicli"
 )
 
 var (

@@ -34,7 +34,8 @@ import (
 	"go.mau.fi/util/dbutil"
 	"go.mau.fi/util/exerrors"
 	"go.mau.fi/util/exzerolog"
-	"maunium.net/go/mautrix/hicli"
+
+	"go.mau.fi/gomuks/pkg/hicli"
 )
 
 type Gomuks struct {
@@ -144,6 +145,7 @@ func (gmx *Gomuks) SetupLog() {
 }
 
 func (gmx *Gomuks) StartClient() {
+	hicli.HTMLSanitizerImgSrcTemplate = "_gomuks/media/%s/%s"
 	rawDB, err := dbutil.NewFromConfig("gomuks", dbutil.Config{
 		PoolConfig: dbutil.PoolConfig{
 			Type:         "sqlite3-fk-wal",

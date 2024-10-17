@@ -166,7 +166,20 @@ div.html-body {
 		vertical-align: middle;
 	}
 
-	span[data-mx-spoiler] {
+	img.hicli-custom-emoji {
+		vertical-align: middle;
+		height: 24px;
+		width: auto;
+		max-width: 72px;
+	}
+
+	img.hicli-sizeless-inline-img {
+		height: 24px;
+		width: auto;
+		max-width: 72px;
+	}
+
+	span[data-mx-spoiler], span.hicli-spoiler {
 		filter: blur(4px);
 		transition: filter .5s;
 		cursor: pointer;

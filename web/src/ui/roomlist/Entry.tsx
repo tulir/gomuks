@@ -60,6 +60,11 @@ const Entry = ({ room, setActiveRoom, isActive, hidden }: RoomListEntryProps) =>
 			<div className="room-name">{room.name}</div>
 			{previewText && <div className="message-preview" title={previewText}>{croppedPreviewText}</div>}
 		</div>
+		{room.unread ? <div className="room-entry-unreads">
+			<div className={`unread-count ${room.highlighted ? "highlighted" : ""}`}>
+				{room.unread}
+			</div>
+		</div> : null}
 	</div>
 }
 

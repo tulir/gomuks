@@ -13,11 +13,9 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import { CSSProperties, use, useMemo } from "react"
-import sanitizeHtml from "sanitize-html"
+import { CSSProperties, use } from "react"
 import { getEncryptedMediaURL, getMediaURL } from "@/api/media.ts"
 import type { EventType, MediaMessageEventContent, MessageEventContent } from "@/api/types"
-import { sanitizeHtmlParams } from "@/util/html.ts"
 import { calculateMediaSize } from "@/util/mediasize.ts"
 import { LightboxContext } from "../../Lightbox.tsx"
 import { EventContentProps } from "./props.ts"
@@ -32,14 +30,10 @@ const onClickHTML = (evt: React.MouseEvent<HTMLDivElement>) => {
 
 export const TextMessageBody = ({ event }: EventContentProps) => {
 	const content = event.content as MessageEventContent
-	const __html = useMemo(() => {
-		if (content.format === "org.matrix.custom.html") {
-			return sanitizeHtml(content.formatted_body!, sanitizeHtmlParams)
-		}
-		return undefined
-	}, [content.format, content.formatted_body])
-	if (__html) {
-		return <div onClick={onClickHTML} className="message-text html-body" dangerouslySetInnerHTML={{ __html }}/>
+	if (event.local_content?.sanitized_html) {
+		return <div onClick={onClickHTML} className="message-text html-body" dangerouslySetInnerHTML={{
+			__html: event.local_content!.sanitized_html!,
+		}}/>
 	}
 	return <div className="message-text plaintext-body">{content.body}</div>
 }

@@ -24,7 +24,11 @@ import { ReplyIDBody } from "./ReplyBody.tsx"
 import EncryptedBody from "./content/EncryptedBody.tsx"
 import HiddenEvent from "./content/HiddenEvent.tsx"
 import MemberBody from "./content/MemberBody.tsx"
-import { MediaMessageBody, TextMessageBody, UnknownMessageBody } from "./content/MessageBody.tsx"
+import {
+	MediaMessageBody,
+	TextMessageBody,
+	UnknownMessageBody,
+} from "./content/MessageBody.tsx"
 import RedactedBody from "./content/RedactedBody.tsx"
 import { EventContentProps } from "./content/props.ts"
 import ErrorIcon from "../../icons/error.svg?react"

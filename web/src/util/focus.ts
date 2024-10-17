@@ -15,7 +15,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import { NonNullCachedEventDispatcher, useNonNullEventAsState } from "@/util/eventdispatcher.ts"
 
-const focused = new NonNullCachedEventDispatcher(document.hasFocus())
+export const focused = new NonNullCachedEventDispatcher(document.hasFocus())
 window.addEventListener("focus", () => focused.emit(true))
 window.addEventListener("blur", () => focused.emit(false))
 

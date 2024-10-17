@@ -14,9 +14,11 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import unhomoglyph from "unhomoglyph"
+import { getMediaURL } from "@/api/media.ts"
 import { NonNullCachedEventDispatcher } from "@/util/eventdispatcher.ts"
+import { focused } from "@/util/focus.ts"
 import type {
-	ContentURI,
+	ContentURI, EventRowID,
 	EventsDecryptedData,
 	MemDBEvent,
 	RoomID,
@@ -34,6 +36,8 @@ export interface RoomListEntry {
 	name: string
 	search_name: string
 	avatar?: ContentURI
+	unread: number
+	highlighted: boolean
 }
 
 // eslint-disable-next-line no-misleading-character-class
@@ -49,9 +53,13 @@ export function toSearchableString(str: string): string {
 export class StateStore {
 	readonly rooms: Map<RoomID, RoomStateStore> = new Map()
 	readonly roomList = new NonNullCachedEventDispatcher<RoomListEntry[]>([])
+	switchRoom?: (roomID: RoomID) => void
+	imageAuthToken?: string
 
 	#roomListEntryChanged(entry: SyncRoom, oldEntry: RoomStateStore): boolean {
 		return entry.meta.sorting_timestamp !== oldEntry.meta.current.sorting_timestamp ||
+			entry.meta.unread_notifications !== oldEntry.meta.current.unread_notifications ||
+			entry.meta.unread_highlights !== oldEntry.meta.current.unread_highlights ||
 			entry.meta.preview_event_rowid !== oldEntry.meta.current.preview_event_rowid ||
 			entry.events.findIndex(evt => evt.rowid === entry.meta.preview_event_rowid) !== -1
 	}
@@ -71,6 +79,8 @@ export class StateStore {
 			name,
 			search_name: toSearchableString(name),
 			avatar: entry.meta.avatar,
+			unread: entry.meta.unread_notifications,
+			highlighted: entry.meta.unread_highlights > 0,
 		}
 	}
 
@@ -89,6 +99,12 @@ export class StateStore {
 			room.applySync(data)
 			if (roomListEntryChanged) {
 				changedRoomListEntries.set(roomID, this.#makeRoomListEntry(data, room))
+			}
+
+			if (Notification.permission === "granted" && !focused.current) {
+				for (const notification of data.notifications) {
+					this.showNotification(room, notification.event_rowid, notification.sound)
+				}
 			}
 		}
 
@@ -114,6 +130,40 @@ export class StateStore {
 		}
 		if (updatedRoomList) {
 			this.roomList.emit(updatedRoomList)
+		}
+	}
+
+	showNotification(room: RoomStateStore, rowid: EventRowID, sound: boolean) {
+		const evt = room.eventsByRowID.get(rowid)
+		if (!evt || typeof evt.content.body !== "string") {
+			return
+		}
+		let body = evt.content.body
+		if (body.length > 200) {
+			body = body.slice(0, 150) + " […]"
+		}
+		const memberEvt = room.getStateEvent("m.room.member", evt.sender)
+		const icon = `${getMediaURL(memberEvt?.content.avatar_url)}&image_auth=${this.imageAuthToken}`
+		const roomName = room.meta.current.name ?? "Unnamed room"
+		const senderName = memberEvt?.content.displayname ?? evt.sender
+		const title = senderName === roomName ? senderName : `${senderName} (${roomName})`
+		const notif = new Notification(title, {
+			body,
+			icon,
+			badge: "/gomuks.png",
+			// timestamp: evt.timestamp,
+			// image: ...,
+			tag: rowid.toString(),
+		})
+		notif.onclick = () => this.onClickNotification(room.roomID)
+		if (sound) {
+			// TODO play sound
+		}
+	}
+
+	onClickNotification(roomID: RoomID) {
+		if (this.switchRoom) {
+			this.switchRoom(roomID)
 		}
 	}
 

@@ -31,6 +31,7 @@ const MainScreen = () => {
 				.catch(err => console.error("Failed to load room state", err))
 		}
 	}, [client])
+	client.store.switchRoom = setActiveRoom
 	const clearActiveRoom = useCallback(() => setActiveRoomID(null), [])
 	return <main className={`matrix-main ${activeRoom ? "room-selected" : ""}`}>
 		<RoomList setActiveRoom={setActiveRoom} activeRoomID={activeRoomID} />

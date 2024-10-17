@@ -60,12 +60,22 @@ export interface EventsDecryptedEvent extends RPCCommand<EventsDecryptedData> {
 	command: "events_decrypted"
 }
 
+export interface ImageAuthTokenEvent extends RPCCommand<string> {
+	command: "image_auth_token"
+}
+
 export interface SyncRoom {
 	meta: DBRoom
 	timeline: TimelineRowTuple[]
 	events: RawDBEvent[]
 	state: Record<EventType, Record<string, EventRowID>>
 	reset: boolean
+	notifications: SyncNotification[]
+}
+
+export interface SyncNotification {
+	event_rowid: EventRowID
+	sound: boolean
 }
 
 export interface SyncCompleteData {
@@ -97,4 +107,5 @@ export type RPCEvent =
 	TypingEvent |
 	SendCompleteEvent |
 	EventsDecryptedEvent |
-	SyncCompleteEvent
+	SyncCompleteEvent |
+	ImageAuthTokenEvent
