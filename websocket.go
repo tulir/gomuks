@@ -29,11 +29,8 @@ import (
 	"github.com/coder/websocket"
 	"github.com/rs/zerolog"
 	"go.mau.fi/util/exerrors"
-	"maunium.net/go/mautrix/event"
-	"maunium.net/go/mautrix/id"
 
 	"go.mau.fi/gomuks/pkg/hicli"
-	"go.mau.fi/gomuks/pkg/hicli/database"
 )
 
 func writeCmd(ctx context.Context, conn *websocket.Conn, cmd *hicli.JSONCommand) error {
@@ -238,65 +235,10 @@ func (gmx *Gomuks) HandleWebsocket(w http.ResponseWriter, r *http.Request) {
 }
 
 func (gmx *Gomuks) sendInitialData(ctx context.Context, conn *websocket.Conn) {
-	maxTS := time.Now().Add(1 * time.Hour)
 	log := zerolog.Ctx(ctx)
 	var roomCount int
-	const BatchSize = 100
-	for {
-		rooms, err := gmx.Client.DB.Room.GetBySortTS(ctx, maxTS, BatchSize)
-		if err != nil {
-			if ctx.Err() == nil {
-				log.Err(err).Msg("Failed to get initial rooms to send to client")
-			}
-			return
-		}
-		roomCount += len(rooms)
-		payload := hicli.SyncComplete{
-			Rooms: make(map[id.RoomID]*hicli.SyncRoom, len(rooms)-1),
-		}
-		for _, room := range rooms {
-			if room.SortingTimestamp == rooms[len(rooms)-1].SortingTimestamp {
-				break
-			}
-			maxTS = room.SortingTimestamp.Time
-			syncRoom := &hicli.SyncRoom{
-				Meta:          room,
-				Events:        make([]*database.Event, 0, 2),
-				Timeline:      make([]database.TimelineRowTuple, 0),
-				State:         map[event.Type]map[string]database.EventRowID{},
-				Notifications: make([]hicli.SyncNotification, 0),
-			}
-			payload.Rooms[room.ID] = syncRoom
-			if room.PreviewEventRowID != 0 {
-				previewEvent, err := gmx.Client.DB.Event.GetByRowID(ctx, room.PreviewEventRowID)
-				if err != nil {
-					log.Err(err).Msg("Failed to get preview event for room")
-					return
-				}
-				if previewEvent != nil {
-					gmx.Client.ReprocessExistingEvent(ctx, previewEvent)
-					previewMember, err := gmx.Client.DB.CurrentState.Get(ctx, room.ID, event.StateMember, previewEvent.Sender.String())
-					if err != nil {
-						log.Err(err).Msg("Failed to get preview member event for room")
-					} else if previewMember != nil {
-						syncRoom.Events = append(syncRoom.Events, previewMember)
-						syncRoom.State[event.StateMember] = map[string]database.EventRowID{
-							*previewMember.StateKey: previewMember.RowID,
-						}
-					}
-					if previewEvent.LastEditRowID != nil {
-						lastEdit, err := gmx.Client.DB.Event.GetByRowID(ctx, *previewEvent.LastEditRowID)
-						if err != nil {
-							log.Err(err).Msg("Failed to get last edit for preview event")
-						} else if lastEdit != nil {
-							gmx.Client.ReprocessExistingEvent(ctx, lastEdit)
-							syncRoom.Events = append(syncRoom.Events, lastEdit)
-						}
-					}
-					syncRoom.Events = append(syncRoom.Events, previewEvent)
-				}
-			}
-		}
+	for payload := range gmx.Client.GetInitialSync(ctx, 100) {
+		roomCount += len(payload.Rooms)
 		marshaledPayload, err := json.Marshal(&payload)
 		if err != nil {
 			log.Err(err).Msg("Failed to marshal initial rooms to send to client")
@@ -310,9 +252,6 @@ func (gmx *Gomuks) sendInitialData(ctx context.Context, conn *websocket.Conn) {
 		if err != nil {
 			log.Err(err).Msg("Failed to send initial rooms to client")
 			return
-		}
-		if len(rooms) < BatchSize {
-			break
 		}
 	}
 	log.Info().Int("room_count", roomCount).Msg("Sent initial rooms to client")
