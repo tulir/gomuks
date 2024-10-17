@@ -695,7 +695,8 @@ func (h *HiClient) processStateAndTimeline(
 			return fmt.Errorf("failed to save room data: %w", err)
 		}
 	}
-	if roomChanged || len(timelineRowTuples) > 0 || len(allNewEvents) > 0 {
+	// TODO why is *old* unread count sometimes zero when processing the read receipt that is making it zero?
+	if roomChanged || len(newOwnReceipts) > 0 || len(timelineRowTuples) > 0 || len(allNewEvents) > 0 {
 		ctx.Value(syncContextKey).(*syncContext).evt.Rooms[room.ID] = &SyncRoom{
 			Meta:          room,
 			Timeline:      timelineRowTuples,
