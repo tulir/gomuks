@@ -489,7 +489,7 @@ func (h *HiClient) processStateAndTimeline(
 	decryptionQueue := make(map[id.SessionID]*database.SessionRequest)
 	allNewEvents := make([]*database.Event, 0, len(state.Events)+len(timeline.Events))
 	newNotifications := make([]SyncNotification, 0)
-	recalculatePreviewEvent := false
+	var recalculatePreviewEvent, unreadMessagesWereMaybeRedacted bool
 	var newUnreadCounts database.UnreadCounts
 	addOldEvent := func(rowID database.EventRowID, evtID id.EventID) (dbEvt *database.Event, err error) {
 		if rowID != 0 {
@@ -512,6 +512,9 @@ func (h *HiClient) processStateAndTimeline(
 		}
 		if dbEvt == nil {
 			return nil
+		}
+		if dbEvt.UnreadType > 0 {
+			unreadMessagesWereMaybeRedacted = true
 		}
 		if dbEvt.RelationType == event.RelReplace || dbEvt.RelationType == event.RelAnnotation {
 			_, err = addOldEvent(0, dbEvt.RelatesTo)
@@ -677,7 +680,7 @@ func (h *HiClient) processStateAndTimeline(
 			return fmt.Errorf("failed to save receipts: %w", err)
 		}
 	}
-	if len(newOwnReceipts) > 0 && newUnreadCounts.IsZero() {
+	if !room.UnreadCounts.IsZero() && ((len(newOwnReceipts) > 0 && newUnreadCounts.IsZero()) || unreadMessagesWereMaybeRedacted) {
 		updatedRoom.UnreadCounts, err = h.DB.Room.CalculateUnreads(ctx, room.ID, h.Account.UserID)
 		if err != nil {
 			return fmt.Errorf("failed to recalculate unread counts: %w", err)

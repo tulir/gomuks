@@ -467,15 +467,15 @@ func (e *Event) sqlVariables() []any {
 }
 
 func (e *Event) GetNonPushUnreadType() UnreadType {
-	if e.RelationType == event.RelReplace {
+	if e.RelationType == event.RelReplace || e.RedactedBy != "" {
 		return UnreadTypeNone
 	}
 	switch e.Type {
-	case event.EventMessage.Type, event.EventSticker.Type:
+	case event.EventMessage.Type, event.EventSticker.Type, event.EventUnstablePollStart.Type:
 		return UnreadTypeNormal
 	case event.EventEncrypted.Type:
 		switch e.DecryptedType {
-		case event.EventMessage.Type, event.EventSticker.Type:
+		case event.EventMessage.Type, event.EventSticker.Type, event.EventUnstablePollStart.Type:
 			return UnreadTypeNormal
 		}
 	}

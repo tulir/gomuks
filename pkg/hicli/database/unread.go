@@ -31,7 +31,7 @@ const (
 				JOIN event ON receipt.event_id=event.event_id
 				WHERE receipt.room_id = $1 AND receipt.user_id = $2
 			)
-		)
+		) AND unread_type > 0 AND redacted_by IS NULL
 	`
 )
 
