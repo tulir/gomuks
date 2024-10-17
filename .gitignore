@@ -1,7 +1,7 @@
 .idea/
 target/
 .tmp/
-gomuks
+/gomuks
 start
 run
 *.exe
