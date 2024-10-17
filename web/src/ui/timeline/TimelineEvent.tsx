@@ -16,7 +16,7 @@
 import React, { use, useCallback } from "react"
 import { getAvatarURL } from "@/api/media.ts"
 import { RoomStateStore } from "@/api/statestore"
-import { MemDBEvent, MemberEventContent } from "@/api/types"
+import { MemDBEvent, MemberEventContent, UnreadType } from "@/api/types"
 import { isEventID } from "@/util/validation.ts"
 import { ClientContext } from "../ClientContext.ts"
 import { LightboxContext } from "../Lightbox.tsx"
@@ -24,11 +24,7 @@ import { ReplyIDBody } from "./ReplyBody.tsx"
 import EncryptedBody from "./content/EncryptedBody.tsx"
 import HiddenEvent from "./content/HiddenEvent.tsx"
 import MemberBody from "./content/MemberBody.tsx"
-import {
-	MediaMessageBody,
-	TextMessageBody,
-	UnknownMessageBody,
-} from "./content/MessageBody.tsx"
+import { MediaMessageBody, TextMessageBody, UnknownMessageBody } from "./content/MessageBody.tsx"
 import RedactedBody from "./content/RedactedBody.tsx"
 import { EventContentProps } from "./content/props.ts"
 import ErrorIcon from "../../icons/error.svg?react"
@@ -122,6 +118,9 @@ const TimelineEvent = ({ room, evt, prevEvt, setReplyTo }: TimelineEventProps) =
 	const eventTS = new Date(evt.timestamp)
 	const editEventTS = evt.last_edit ? new Date(evt.last_edit.timestamp) : null
 	const wrapperClassNames = ["timeline-event"]
+	if (evt.unread_type & UnreadType.Highlight) {
+		wrapperClassNames.push("highlight")
+	}
 	let smallAvatar = false
 	if (isSmallEvent(BodyType)) {
 		wrapperClassNames.push("hidden-event")

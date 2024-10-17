@@ -10,8 +10,16 @@ div.timeline-event {
 		"avatar gap content status" auto
 		/ 2.5rem .5rem 1fr 2rem;
 
+	&.highlight {
+		background-color: rgba(255, 255, 0, .1);
+	}
+
 	&:hover {
 		background-color: #eee;
+
+		&.highlight {
+			background-color: #eec;
+		}
 	}
 
 	> div.sender-avatar {
