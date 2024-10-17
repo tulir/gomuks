@@ -57,6 +57,8 @@ func (h *HiClient) getAndDecodeSecret(ctx context.Context, secret id.Secret) ([]
 	secretData, err := h.CryptoStore.GetSecret(ctx, secret)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get secret %s: %w", secret, err)
+	} else if secretData == "" {
+		return nil, fmt.Errorf("secret %s not found", secret)
 	}
 	data, err := base64.StdEncoding.DecodeString(secretData)
 	if err != nil {
