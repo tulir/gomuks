@@ -82,19 +82,36 @@ div.room-entry {
 	> div.room-entry-unreads {
 		display: flex;
 		align-items: center;
+		justify-content: center;
 		width: 3rem;
 
 		> div.unread-count {
-			width: 1.5rem;
-			height: 1.5rem;
+			display: flex;
+			align-items: center;
+			justify-content: center;
 			border-radius: 50%;
-			background-color: green;
-			text-align: center;
 			color: white;
-			font-weight: bold;
+
+			background-color: rgba(0, 0, 0, 0.35);
+			width: 1rem;
+			height: 1rem;
+			line-height: 1;
+			font-size: .75em;
+
+			&.notified, &.highlighted {
+				width: 1.5rem;
+				height: 1.5rem;
+				padding-bottom: 0;
+				font-size: 1em;
+				font-weight: bold;
+			}
+
+			&.notified:not(.highlighted) {
+				background-color: rgba(50, 150, 0, 0.7);
+			}
 
 			&.highlighted {
-				background-color: darkred;
+				background-color: rgba(200, 0, 0, 0.7);
 			}
 		}
 	}

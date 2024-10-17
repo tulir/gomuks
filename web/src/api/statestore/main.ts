@@ -36,8 +36,9 @@ export interface RoomListEntry {
 	name: string
 	search_name: string
 	avatar?: ContentURI
-	unread: number
-	highlighted: boolean
+	unread_messages: number
+	unread_notifications: number
+	unread_highlights: number
 }
 
 // eslint-disable-next-line no-misleading-character-class
@@ -58,6 +59,7 @@ export class StateStore {
 
 	#roomListEntryChanged(entry: SyncRoom, oldEntry: RoomStateStore): boolean {
 		return entry.meta.sorting_timestamp !== oldEntry.meta.current.sorting_timestamp ||
+			entry.meta.unread_messages !== oldEntry.meta.current.unread_messages ||
 			entry.meta.unread_notifications !== oldEntry.meta.current.unread_notifications ||
 			entry.meta.unread_highlights !== oldEntry.meta.current.unread_highlights ||
 			entry.meta.preview_event_rowid !== oldEntry.meta.current.preview_event_rowid ||
@@ -79,8 +81,9 @@ export class StateStore {
 			name,
 			search_name: toSearchableString(name),
 			avatar: entry.meta.avatar,
-			unread: entry.meta.unread_notifications,
-			highlighted: entry.meta.unread_highlights > 0,
+			unread_messages: entry.meta.unread_messages,
+			unread_notifications: entry.meta.unread_notifications,
+			unread_highlights: entry.meta.unread_highlights,
 		}
 	}
 
