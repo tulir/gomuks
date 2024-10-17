@@ -171,7 +171,9 @@ func (gmx *Gomuks) Authenticate(w http.ResponseWriter, r *http.Request) {
 }
 
 func isUserFetch(header http.Header) bool {
-	return header.Get("Sec-Fetch-Site") == "none" &&
+	return (header.Get("Sec-Fetch-Site") == "none" ||
+		header.Get("Sec-Fetch-Site") == "same-site" ||
+		header.Get("Sec-Fetch-Site") == "same-origin") &&
 		header.Get("Sec-Fetch-Mode") == "navigate" &&
 		header.Get("Sec-Fetch-Dest") == "document" &&
 		header.Get("Sec-Fetch-User") == "?1"
