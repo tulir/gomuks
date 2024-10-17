@@ -156,11 +156,6 @@ func (h *HiClient) receiptsToList(content *event.ReceiptEventContent) ([]*databa
 	return receiptList, newOwnReceipts
 }
 
-type receiptsToSave struct {
-	roomID   id.RoomID
-	receipts []*database.Receipt
-}
-
 func (h *HiClient) processSyncJoinedRoom(ctx context.Context, roomID id.RoomID, room *mautrix.SyncJoinedRoom) error {
 	existingRoomData, err := h.DB.Room.Get(ctx, roomID)
 	if err != nil {
@@ -181,7 +176,7 @@ func (h *HiClient) processSyncJoinedRoom(ctx context.Context, roomID id.RoomID, 
 			return fmt.Errorf("failed to save account data event %s: %w", evt.Type.Type, err)
 		}
 	}
-	var receipts []receiptsToSave
+	var receiptsList []*database.Receipt
 	var newOwnReceipts []id.EventID
 	for _, evt := range room.Ephemeral.Events {
 		evt.Type.Class = event.EphemeralEventType
@@ -192,9 +187,9 @@ func (h *HiClient) processSyncJoinedRoom(ctx context.Context, roomID id.RoomID, 
 		}
 		switch evt.Type {
 		case event.EphemeralEventReceipt:
-			var receiptsList []*database.Receipt
-			receiptsList, newOwnReceipts = h.receiptsToList(evt.Content.AsReceipt())
-			receipts = append(receipts, receiptsToSave{roomID, receiptsList})
+			list, ownList := h.receiptsToList(evt.Content.AsReceipt())
+			receiptsList = append(receiptsList, list...)
+			newOwnReceipts = append(newOwnReceipts, ownList...)
 		case event.EphemeralEventTyping:
 			go h.EventHandler(&Typing{
 				RoomID:             roomID,
@@ -202,15 +197,17 @@ func (h *HiClient) processSyncJoinedRoom(ctx context.Context, roomID id.RoomID, 
 			})
 		}
 	}
-	err = h.processStateAndTimeline(ctx, existingRoomData, &room.State, &room.Timeline, &room.Summary, newOwnReceipts, room.UnreadNotifications)
+	err = h.processStateAndTimeline(
+		ctx,
+		existingRoomData,
+		&room.State,
+		&room.Timeline,
+		&room.Summary,
+		receiptsList,
+		newOwnReceipts,
+	)
 	if err != nil {
 		return err
-	}
-	for _, rs := range receipts {
-		err = h.DB.Receipt.PutMany(ctx, rs.roomID, rs.receipts...)
-		if err != nil {
-			return fmt.Errorf("failed to save receipts: %w", err)
-		}
 	}
 	return nil
 }
@@ -222,8 +219,9 @@ func (h *HiClient) processSyncLeftRoom(ctx context.Context, roomID id.RoomID, ro
 	} else if existingRoomData == nil {
 		return nil
 	}
-	// TODO delete room instead of processing?
-	return h.processStateAndTimeline(ctx, existingRoomData, &room.State, &room.Timeline, &room.Summary, nil, nil)
+	// TODO delete room
+	return nil
+	//return h.processStateAndTimeline(ctx, existingRoomData, &room.State, &room.Timeline, &room.Summary, nil, nil)
 }
 
 func isDecryptionErrorRetryable(err error) bool {
@@ -333,7 +331,7 @@ func (h *HiClient) cacheMedia(ctx context.Context, evt *event.Event, rowID datab
 }
 
 func (h *HiClient) calculateLocalContent(ctx context.Context, dbEvt *database.Event, evt *event.Event) *database.LocalContent {
-	if evt.Type != event.EventMessage && evt.Type != event.EventSticker {
+	if evt.Type != event.EventMessage {
 		return nil
 	}
 	_ = evt.Content.ParseRaw(evt.Type)
@@ -468,21 +466,15 @@ func (h *HiClient) processStateAndTimeline(
 	state *mautrix.SyncEventsList,
 	timeline *mautrix.SyncTimeline,
 	summary *mautrix.LazyLoadSummary,
+	receipts []*database.Receipt,
 	newOwnReceipts []id.EventID,
-	serverNotificationCounts *mautrix.UnreadNotificationCounts,
 ) error {
 	updatedRoom := &database.Room{
 		ID: room.ID,
 
-		SortingTimestamp:    room.SortingTimestamp,
-		NameQuality:         room.NameQuality,
-		UnreadHighlights:    room.UnreadHighlights,
-		UnreadNotifications: room.UnreadNotifications,
-		UnreadMessages:      room.UnreadMessages,
-	}
-	if serverNotificationCounts != nil {
-		updatedRoom.UnreadHighlights = serverNotificationCounts.HighlightCount
-		updatedRoom.UnreadNotifications = serverNotificationCounts.NotificationCount
+		SortingTimestamp: room.SortingTimestamp,
+		NameQuality:      room.NameQuality,
+		UnreadCounts:     room.UnreadCounts,
 	}
 	heroesChanged := false
 	if summary.Heroes == nil && summary.JoinedMemberCount == nil && summary.InvitedMemberCount == nil {
@@ -498,6 +490,7 @@ func (h *HiClient) processStateAndTimeline(
 	allNewEvents := make([]*database.Event, 0, len(state.Events)+len(timeline.Events))
 	newNotifications := make([]SyncNotification, 0)
 	recalculatePreviewEvent := false
+	var newUnreadCounts database.UnreadCounts
 	addOldEvent := func(rowID database.EventRowID, evtID id.EventID) (dbEvt *database.Event, err error) {
 		if rowID != 0 {
 			dbEvt, err = h.DB.Event.GetByRowID(ctx, rowID)
@@ -538,11 +531,14 @@ func (h *HiClient) processStateAndTimeline(
 		if err != nil {
 			return -1, err
 		}
-		if isUnread && dbEvt.UnreadType.Is(database.UnreadTypeNotify) {
-			newNotifications = append(newNotifications, SyncNotification{
-				RowID: dbEvt.RowID,
-				Sound: dbEvt.UnreadType.Is(database.UnreadTypeSound),
-			})
+		if isUnread {
+			if dbEvt.UnreadType.Is(database.UnreadTypeNotify) {
+				newNotifications = append(newNotifications, SyncNotification{
+					RowID: dbEvt.RowID,
+					Sound: dbEvt.UnreadType.Is(database.UnreadTypeSound),
+				})
+			}
+			newUnreadCounts.AddOne(dbEvt.UnreadType)
 		}
 		if isTimeline {
 			if dbEvt.CanUseForPreview() {
@@ -604,6 +600,9 @@ func (h *HiClient) processStateAndTimeline(
 		for i := len(timeline.Events) - 1; i >= 0; i-- {
 			if slices.Contains(newOwnReceipts, timeline.Events[i].ID) {
 				readUpToIndex = i
+				// Reset unread counts if we see our own read receipt in the timeline.
+				// It'll be updated with new unreads (if any) at the end.
+				updatedRoom.UnreadCounts = database.UnreadCounts{}
 				break
 			}
 		}
@@ -670,6 +669,21 @@ func (h *HiClient) processStateAndTimeline(
 		if !dmAvatarURL.IsEmpty() && !room.ExplicitAvatar {
 			updatedRoom.Avatar = &dmAvatarURL
 		}
+	}
+
+	if len(receipts) > 0 {
+		err = h.DB.Receipt.PutMany(ctx, room.ID, receipts...)
+		if err != nil {
+			return fmt.Errorf("failed to save receipts: %w", err)
+		}
+	}
+	if len(newOwnReceipts) > 0 && newUnreadCounts.IsZero() {
+		updatedRoom.UnreadCounts, err = h.DB.Room.CalculateUnreads(ctx, room.ID, h.Account.UserID)
+		if err != nil {
+			return fmt.Errorf("failed to recalculate unread counts: %w", err)
+		}
+	} else {
+		updatedRoom.UnreadCounts.Add(newUnreadCounts)
 	}
 	if timeline.PrevBatch != "" && (room.PrevBatch == "" || timeline.Limited) {
 		updatedRoom.PrevBatch = timeline.PrevBatch

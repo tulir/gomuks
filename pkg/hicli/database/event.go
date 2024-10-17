@@ -284,20 +284,6 @@ type LocalContent struct {
 	HTMLVersion   int    `json:"html_version,omitempty"`
 }
 
-type UnreadType int
-
-func (ut UnreadType) Is(flag UnreadType) bool {
-	return ut&flag != 0
-}
-
-const (
-	UnreadTypeNone      UnreadType = 0b0000
-	UnreadTypeNormal    UnreadType = 0b0001
-	UnreadTypeNotify    UnreadType = 0b0010
-	UnreadTypeHighlight UnreadType = 0b0100
-	UnreadTypeSound     UnreadType = 0b1000
-)
-
 type Event struct {
 	RowID         EventRowID    `json:"rowid"`
 	TimelineRowID TimelineRowID `json:"timeline_rowid"`

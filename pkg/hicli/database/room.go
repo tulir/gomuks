@@ -145,11 +145,9 @@ type Room struct {
 	EncryptionEvent *event.EncryptionEventContent `json:"encryption_event,omitempty"`
 	HasMemberList   bool                          `json:"has_member_list"`
 
-	PreviewEventRowID   EventRowID         `json:"preview_event_rowid"`
-	SortingTimestamp    jsontime.UnixMilli `json:"sorting_timestamp"`
-	UnreadHighlights    int                `json:"unread_highlights"`
-	UnreadNotifications int                `json:"unread_notifications"`
-	UnreadMessages      int                `json:"unread_messages"`
+	PreviewEventRowID EventRowID         `json:"preview_event_rowid"`
+	SortingTimestamp  jsontime.UnixMilli `json:"sorting_timestamp"`
+	UnreadCounts
 
 	PrevBatch string `json:"prev_batch"`
 }

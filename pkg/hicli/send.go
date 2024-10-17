@@ -133,6 +133,7 @@ func (h *HiClient) Send(ctx context.Context, roomID id.RoomID, evtType event.Typ
 		Reactions:       map[string]int{},
 		LastEditRowID:   ptr.Ptr(database.EventRowID(0)),
 	}
+	dbEvt.LocalContent = h.calculateLocalContent(ctx, dbEvt, dbEvt.AsRawMautrix())
 	_, err = h.DB.Event.Insert(ctx, dbEvt)
 	if err != nil {
 		return nil, fmt.Errorf("failed to insert event into database: %w", err)
