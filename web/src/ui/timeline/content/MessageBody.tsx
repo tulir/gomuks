@@ -22,7 +22,7 @@ import { EventContentProps } from "./props.ts"
 import DownloadIcon from "@/icons/download.svg?react"
 
 const onClickHTML = (evt: React.MouseEvent<HTMLDivElement>) => {
-	if ((evt.target as HTMLElement).closest("span[data-mx-spoiler]")?.classList.toggle("spoiler-revealed")) {
+	if ((evt.target as HTMLElement).closest("span.hicli-spoiler")?.classList.toggle("spoiler-revealed")) {
 		// When unspoilering, don't trigger links and other clickables inside the spoiler
 		evt.preventDefault()
 	}

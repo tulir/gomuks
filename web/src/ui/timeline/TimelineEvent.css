@@ -179,7 +179,7 @@ div.html-body {
 		max-width: 72px;
 	}
 
-	span[data-mx-spoiler], span.hicli-spoiler {
+	span.hicli-spoiler {
 		filter: blur(4px);
 		transition: filter .5s;
 		cursor: pointer;
