@@ -469,9 +469,13 @@ Loop:
 			tagName, _ := tz.TagName()
 			tag := atom.Lookup(tagName)
 			if tagIsAllowed(tag) && ts.pop(tag) {
-				built.WriteString("</")
-				built.Write(tagName)
-				built.WriteByte('>')
+				if tag == atom.Font {
+					built.WriteString("</span>")
+				} else {
+					built.WriteString("</")
+					built.Write(tagName)
+					built.WriteByte('>')
+				}
 			}
 		case html.TextToken:
 			if ts.contains(atom.Pre, atom.Code, atom.A) {
