@@ -70,6 +70,11 @@ func (p *pushRoom) GetPowerLevels() *event.PowerLevelsEventContent {
 			Stringer("room_id", p.roomID).
 			Msg("Failed to get power levels in push rule evaluator")
 		return nil
+	} else if evt == nil {
+		zerolog.Ctx(p.ctx).Warn().
+			Stringer("room_id", p.roomID).
+			Msg("Power level event not found in push rule evaluator")
+		return nil
 	}
 	err = json.Unmarshal(evt.Content, &p.pl)
 	if err != nil {
