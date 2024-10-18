@@ -15,16 +15,24 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import { CSSProperties } from "react"
 
-const imageContainerWidth = 320
-const imageContainerHeight = 240
-const imageContainerAspectRatio = imageContainerWidth / imageContainerHeight
-
 export interface CalculatedMediaSize {
 	container: CSSProperties
 	media: CSSProperties
 }
 
-export function calculateMediaSize(width?: number, height?: number): CalculatedMediaSize {
+export interface ImageContainerSize {
+	width: number
+	height: number
+}
+
+export const defaultImageContainerSize: ImageContainerSize = { width: 320, height: 240 }
+
+export function calculateMediaSize(
+	width?: number,
+	height?: number,
+	imageContainer: ImageContainerSize | undefined = defaultImageContainerSize,
+): CalculatedMediaSize {
+	const { width: imageContainerWidth, height: imageContainerHeight } = imageContainer ?? defaultImageContainerSize
 	if (!width || !height) {
 		return {
 			container: {
@@ -34,6 +42,8 @@ export function calculateMediaSize(width?: number, height?: number): CalculatedM
 			media: {},
 		}
 	}
+	const imageContainerAspectRatio = imageContainerWidth / imageContainerHeight
+
 	const origWidth = width
 	const origHeight = height
 	if (width > imageContainerWidth || height > imageContainerHeight) {

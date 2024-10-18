@@ -21,6 +21,7 @@ import type {
 	EventRowID,
 	EventType,
 	Mentions,
+	MessageEventContent,
 	PaginationResponse,
 	RPCCommand,
 	RPCEvent,
@@ -44,6 +45,7 @@ export class ErrorResponse extends Error {
 
 export interface SendMessageParams {
 	room_id: RoomID
+	base_content?: MessageEventContent
 	text: string
 	media_path?: string
 	reply_to?: EventID

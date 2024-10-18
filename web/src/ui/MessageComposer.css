@@ -3,6 +3,9 @@ div.message-composer {
 
 	> div.input-area {
 		display: flex;
+		align-items: center;
+		line-height: 1.25;
+		margin-right: .25rem;
 
 		> textarea {
 			flex: 1;
@@ -15,6 +18,20 @@ div.message-composer {
 		}
 
 		> button {
+			height: 2rem;
+			width: 2rem;
+			padding: .25rem;
+		}
+	}
+
+	> div.composer-media {
+		display: flex;
+		padding: .5rem;
+		justify-content: space-between;
+
+		> button {
+			height: 2.5rem;
+			width: 2.5rem;
 			padding: .5rem;
 		}
 	}

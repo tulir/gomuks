@@ -43,6 +43,7 @@ func (gmx *Gomuks) StartServer() {
 	api := http.NewServeMux()
 	api.HandleFunc("GET /websocket", gmx.HandleWebsocket)
 	api.HandleFunc("POST /auth", gmx.Authenticate)
+	api.HandleFunc("POST /upload", gmx.UploadMedia)
 	api.HandleFunc("GET /media/{server}/{media_id}", gmx.DownloadMedia)
 	apiHandler := exhttp.ApplyMiddleware(
 		api,

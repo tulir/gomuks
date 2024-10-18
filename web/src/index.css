@@ -25,6 +25,15 @@ button {
 	font-size: 1em;
 	background: none;
 	border: none;
+	border-radius: .25rem;
+
+	&:disabled {
+		cursor: default;
+	}
+
+	&:hover:not(:disabled) {
+		background-color: rgba(0, 0, 0, .2);
+	}
 }
 
 :root {

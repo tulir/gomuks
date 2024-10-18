@@ -32,7 +32,7 @@ var (
 	rainbowWithHTML = goldmark.New(format.Extensions, format.HTMLOptions, goldmark.WithExtensions(rainbow.Extension))
 )
 
-func (h *HiClient) SendMessage(ctx context.Context, roomID id.RoomID, text, mediaPath string, replyTo id.EventID, mentions *event.Mentions) (*database.Event, error) {
+func (h *HiClient) SendMessage(ctx context.Context, roomID id.RoomID, base *event.MessageEventContent, text string, replyTo id.EventID, mentions *event.Mentions) (*database.Event, error) {
 	var content event.MessageEventContent
 	if strings.HasPrefix(text, "/rainbow ") {
 		text = strings.TrimPrefix(text, "/rainbow ")
@@ -44,8 +44,19 @@ func (h *HiClient) SendMessage(ctx context.Context, roomID id.RoomID, text, medi
 	} else if strings.HasPrefix(text, "/html ") {
 		text = strings.TrimPrefix(text, "/html ")
 		content = format.RenderMarkdown(text, false, true)
-	} else {
+	} else if text != "" {
 		content = format.RenderMarkdown(text, true, false)
+	}
+	if base != nil {
+		if text != "" {
+			base.Body = content.Body
+			base.Format = content.Format
+			base.FormattedBody = content.FormattedBody
+		}
+		content = *base
+	}
+	if content.Mentions == nil {
+		content.Mentions = &event.Mentions{}
 	}
 	if mentions != nil {
 		content.Mentions.Room = mentions.Room
@@ -84,16 +95,21 @@ func (h *HiClient) SetTyping(ctx context.Context, roomID id.RoomID, timeout time
 	return err
 }
 
-func (h *HiClient) Send(ctx context.Context, roomID id.RoomID, evtType event.Type, content any) (*database.Event, error) {
-	roomMeta, err := h.DB.Room.Get(ctx, roomID)
+func (h *HiClient) Send(
+	ctx context.Context,
+	roomID id.RoomID,
+	evtType event.Type,
+	content any,
+) (*database.Event, error) {
+	room, err := h.DB.Room.Get(ctx, roomID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get room metadata: %w", err)
-	} else if roomMeta == nil {
+	} else if room == nil {
 		return nil, fmt.Errorf("unknown room")
 	}
 	txnID := "hicli-" + h.Client.TxnID()
 	dbEvt := &database.Event{
-		RoomID:          roomID,
+		RoomID:          room.ID,
 		ID:              id.EventID(fmt.Sprintf("~%s", txnID)),
 		Sender:          h.Account.UserID,
 		Timestamp:       jsontime.UnixMilliNow(),
@@ -104,7 +120,7 @@ func (h *HiClient) Send(ctx context.Context, roomID id.RoomID, evtType event.Typ
 		Reactions:       map[string]int{},
 		LastEditRowID:   ptr.Ptr(database.EventRowID(0)),
 	}
-	if roomMeta.EncryptionEvent != nil && evtType != event.EventReaction {
+	if room.EncryptionEvent != nil && evtType != event.EventReaction {
 		dbEvt.Type = event.EventEncrypted.Type
 		dbEvt.DecryptedType = evtType.Type
 		dbEvt.Decrypted, err = json.Marshal(content)
@@ -128,7 +144,7 @@ func (h *HiClient) Send(ctx context.Context, roomID id.RoomID, evtType event.Typ
 	}
 	ctx = context.WithoutCancel(ctx)
 	go func() {
-		err := h.SetTyping(ctx, roomID, 0)
+		err := h.SetTyping(ctx, room.ID, 0)
 		if err != nil {
 			zerolog.Ctx(ctx).Err(err).Msg("Failed to stop typing while sending message")
 		}
@@ -150,7 +166,7 @@ func (h *HiClient) Send(ctx context.Context, roomID id.RoomID, evtType event.Typ
 		}()
 		if dbEvt.Decrypted != nil {
 			var encryptedContent *event.EncryptedEventContent
-			encryptedContent, err = h.Encrypt(ctx, roomMeta, evtType, dbEvt.Decrypted)
+			encryptedContent, err = h.Encrypt(ctx, room, evtType, dbEvt.Decrypted)
 			if err != nil {
 				dbEvt.SendError = fmt.Sprintf("failed to encrypt: %v", err)
 				zerolog.Ctx(ctx).Err(err).Msg("Failed to encrypt event")
@@ -172,7 +188,7 @@ func (h *HiClient) Send(ctx context.Context, roomID id.RoomID, evtType event.Typ
 			}
 		}
 		var resp *mautrix.RespSendEvent
-		resp, err = h.Client.SendMessageEvent(ctx, roomID, evtType, dbEvt.Content, mautrix.ReqSendEvent{
+		resp, err = h.Client.SendMessageEvent(ctx, room.ID, evtType, dbEvt.Content, mautrix.ReqSendEvent{
 			Timestamp:     dbEvt.Timestamp.UnixMilli(),
 			TransactionID: txnID,
 			DontEncrypt:   true,

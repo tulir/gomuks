@@ -7,6 +7,7 @@ toolchain go1.23.2
 require (
 	github.com/chzyer/readline v1.5.1
 	github.com/coder/websocket v1.8.12
+	github.com/gabriel-vasile/mimetype v1.4.6
 	github.com/lucasb-eyer/go-colorful v1.2.0
 	github.com/mattn/go-sqlite3 v1.14.24
 	github.com/rivo/uniseg v0.4.7
@@ -14,13 +15,14 @@ require (
 	github.com/tidwall/gjson v1.18.0
 	github.com/tidwall/sjson v1.2.5
 	github.com/yuin/goldmark v1.7.7
-	go.mau.fi/util v0.8.1
+	go.mau.fi/util v0.8.2-0.20241018231932-9da45c4e6e04
 	go.mau.fi/zeroconfig v0.1.3
 	golang.org/x/crypto v0.28.0
+	golang.org/x/image v0.21.0
 	golang.org/x/net v0.30.0
 	gopkg.in/yaml.v3 v3.0.1
 	maunium.net/go/mauflag v1.0.0
-	maunium.net/go/mautrix v0.21.2-0.20241018110725-6c07832ed7b5
+	maunium.net/go/mautrix v0.21.2-0.20241018174905-3277c529a2e5
 	mvdan.cc/xurls/v2 v2.5.0
 )
 

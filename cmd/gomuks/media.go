@@ -22,17 +22,31 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"image"
+	_ "image/gif"
+	_ "image/jpeg"
+	_ "image/png"
 	"io"
 	"mime"
 	"net/http"
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 
+	"github.com/gabriel-vasile/mimetype"
 	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/hlog"
+	_ "golang.org/x/image/webp"
+
+	"go.mau.fi/util/exhttp"
+	"go.mau.fi/util/ffmpeg"
 	"go.mau.fi/util/jsontime"
 	"go.mau.fi/util/ptr"
+	"go.mau.fi/util/random"
 	"maunium.net/go/mautrix"
+	"maunium.net/go/mautrix/crypto/attachment"
+	"maunium.net/go/mautrix/event"
 	"maunium.net/go/mautrix/id"
 
 	"go.mau.fi/gomuks/pkg/hicli/database"
@@ -57,7 +71,7 @@ func (gmx *Gomuks) downloadMediaFromCache(ctx context.Context, w http.ResponseWr
 		return true
 	}
 	log := zerolog.Ctx(ctx)
-	cacheFile, err := os.Open(gmx.cacheEntryToPath(entry))
+	cacheFile, err := os.Open(gmx.cacheEntryToPath(entry.Hash[:]))
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) && !force {
 			return false
@@ -78,8 +92,8 @@ func (gmx *Gomuks) downloadMediaFromCache(ctx context.Context, w http.ResponseWr
 	return true
 }
 
-func (gmx *Gomuks) cacheEntryToPath(entry *database.CachedMedia) string {
-	hashPath := hex.EncodeToString(entry.Hash[:])
+func (gmx *Gomuks) cacheEntryToPath(hash []byte) string {
+	hashPath := hex.EncodeToString(hash[:])
 	return filepath.Join(gmx.CacheDir, "media", hashPath[0:2], hashPath[2:4], hashPath[4:])
 }
 
@@ -223,7 +237,7 @@ func (gmx *Gomuks) DownloadMedia(w http.ResponseWriter, r *http.Request) {
 		mautrix.MUnknown.WithMessage(fmt.Sprintf("Failed to save cache entry: %v", err)).Write(w)
 		return
 	}
-	cachePath := gmx.cacheEntryToPath(cacheEntry)
+	cachePath := gmx.cacheEntryToPath(cacheEntry.Hash[:])
 	err = os.MkdirAll(filepath.Dir(cachePath), 0700)
 	if err != nil {
 		log.Err(err).Msg("Failed to create cache directory")
@@ -237,4 +251,270 @@ func (gmx *Gomuks) DownloadMedia(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	gmx.downloadMediaFromCache(ctx, w, cacheEntry, true)
+}
+
+func (gmx *Gomuks) UploadMedia(w http.ResponseWriter, r *http.Request) {
+	log := hlog.FromRequest(r)
+	tempFile, err := os.CreateTemp(gmx.TempDir, "upload-*")
+	if err != nil {
+		log.Err(err).Msg("Failed to create temporary file")
+		mautrix.MUnknown.WithMessage(fmt.Sprintf("Failed to create temp file: %v", err)).Write(w)
+		return
+	}
+	defer func() {
+		_ = tempFile.Close()
+		_ = os.Remove(tempFile.Name())
+	}()
+	hasher := sha256.New()
+	_, err = io.Copy(tempFile, io.TeeReader(r.Body, hasher))
+	if err != nil {
+		log.Err(err).Msg("Failed to copy upload media to temporary file")
+		mautrix.MUnknown.WithMessage(fmt.Sprintf("Failed to copy media to temp file: %v", err)).Write(w)
+		return
+	}
+	_ = tempFile.Close()
+
+	checksum := hasher.Sum(nil)
+	cachePath := gmx.cacheEntryToPath(checksum)
+	if _, err = os.Stat(cachePath); err == nil {
+		log.Debug().Str("path", cachePath).Msg("Media already exists in cache, removing temp file")
+	} else {
+		err = os.MkdirAll(filepath.Dir(cachePath), 0700)
+		if err != nil {
+			log.Err(err).Msg("Failed to create cache directory")
+			mautrix.MUnknown.WithMessage(fmt.Sprintf("Failed to create cache directory: %v", err)).Write(w)
+			return
+		}
+		err = os.Rename(tempFile.Name(), cachePath)
+		if err != nil {
+			log.Err(err).Msg("Failed to rename temporary file")
+			mautrix.MUnknown.WithMessage(fmt.Sprintf("Failed to rename temp file: %v", err)).Write(w)
+			return
+		}
+	}
+
+	cacheFile, err := os.Open(cachePath)
+	if err != nil {
+		log.Err(err).Msg("Failed to open cache file")
+		mautrix.MUnknown.WithMessage(fmt.Sprintf("Failed to open cache file: %v", err)).Write(w)
+		return
+	}
+
+	msgType, info, defaultFileName, err := gmx.generateFileInfo(r.Context(), cacheFile)
+	if err != nil {
+		log.Err(err).Msg("Failed to generate file info")
+		mautrix.MUnknown.WithMessage(fmt.Sprintf("Failed to generate file info: %v", err)).Write(w)
+		return
+	}
+	encrypt, _ := strconv.ParseBool(r.URL.Query().Get("encrypt"))
+	if msgType == event.MsgVideo {
+		err = gmx.generateVideoThumbnail(r.Context(), cacheFile.Name(), encrypt, info)
+		if err != nil {
+			log.Warn().Err(err).Msg("Failed to generate video thumbnail")
+		}
+	}
+	fileName := r.URL.Query().Get("filename")
+	if fileName == "" {
+		fileName = defaultFileName
+	}
+	content := &event.MessageEventContent{
+		MsgType:  msgType,
+		Body:     fileName,
+		Info:     info,
+		FileName: fileName,
+	}
+	content.File, content.URL, err = gmx.uploadFile(r.Context(), checksum, cacheFile, encrypt, int64(info.Size), info.MimeType, fileName)
+	if err != nil {
+		log.Err(err).Msg("Failed to upload media")
+		writeMaybeRespError(err, w)
+		return
+	}
+	exhttp.WriteJSONResponse(w, http.StatusOK, content)
+}
+
+func (gmx *Gomuks) uploadFile(ctx context.Context, checksum []byte, cacheFile *os.File, encrypt bool, fileSize int64, mimeType, fileName string) (*event.EncryptedFileInfo, id.ContentURIString, error) {
+	cm := &database.CachedMedia{
+		FileName: fileName,
+		MimeType: mimeType,
+		Size:     fileSize,
+		Hash:     (*[32]byte)(checksum),
+	}
+	var cacheReader io.ReadSeekCloser = cacheFile
+	if encrypt {
+		cm.EncFile = attachment.NewEncryptedFile()
+		cacheReader = cm.EncFile.EncryptStream(cacheReader)
+		mimeType = "application/octet-stream"
+		fileName = ""
+	}
+	resp, err := gmx.Client.Client.UploadMedia(ctx, mautrix.ReqUploadMedia{
+		Content:       cacheReader,
+		ContentLength: fileSize,
+		ContentType:   mimeType,
+		FileName:      fileName,
+	})
+	err2 := cacheReader.Close()
+	if err != nil {
+		return nil, "", err
+	} else if err2 != nil {
+		return nil, "", fmt.Errorf("failed to close cache reader: %w", err)
+	}
+	cm.MXC = resp.ContentURI
+	err = gmx.Client.DB.CachedMedia.Put(ctx, cm)
+	if err != nil {
+		zerolog.Ctx(ctx).Err(err).
+			Stringer("mxc", cm.MXC).
+			Hex("checksum", checksum).
+			Msg("Failed to save cache entry")
+	}
+	if cm.EncFile != nil {
+		return &event.EncryptedFileInfo{
+			EncryptedFile: *cm.EncFile,
+			URL:           resp.ContentURI.CUString(),
+		}, "", nil
+	} else {
+		return nil, resp.ContentURI.CUString(), nil
+	}
+}
+
+func (gmx *Gomuks) generateFileInfo(ctx context.Context, file *os.File) (event.MessageType, *event.FileInfo, string, error) {
+	fileInfo, err := file.Stat()
+	if err != nil {
+		return "", nil, "", fmt.Errorf("failed to stat cache file: %w", err)
+	}
+	mimeType, err := mimetype.DetectReader(file)
+	if err != nil {
+		return "", nil, "", fmt.Errorf("failed to detect mime type: %w", err)
+	}
+	_, err = file.Seek(0, io.SeekStart)
+	if err != nil {
+		return "", nil, "", fmt.Errorf("failed to seek to start of file: %w", err)
+	}
+	info := &event.FileInfo{
+		MimeType: mimeType.String(),
+		Size:     int(fileInfo.Size()),
+	}
+	var msgType event.MessageType
+	var defaultFileName string
+	switch strings.Split(mimeType.String(), "/")[0] {
+	case "image":
+		msgType = event.MsgImage
+		defaultFileName = "image" + mimeType.Extension()
+		cfg, _, err := image.DecodeConfig(file)
+		if err != nil {
+			zerolog.Ctx(ctx).Warn().Err(err).Msg("Failed to decode image config")
+		}
+		info.Width = cfg.Width
+		info.Height = cfg.Height
+	case "video":
+		msgType = event.MsgVideo
+		defaultFileName = "video" + mimeType.Extension()
+	case "audio":
+		msgType = event.MsgAudio
+		defaultFileName = "audio" + mimeType.Extension()
+	default:
+		msgType = event.MsgFile
+		defaultFileName = "file" + mimeType.Extension()
+	}
+	if msgType == event.MsgVideo || msgType == event.MsgAudio {
+		probe, err := ffmpeg.Probe(ctx, file.Name())
+		if err != nil {
+			zerolog.Ctx(ctx).Warn().Err(err).Msg("Failed to probe video")
+		} else if probe != nil && probe.Format != nil {
+			info.Duration = int(probe.Format.Duration * 1000)
+			for _, stream := range probe.Streams {
+				if stream.Width != 0 {
+					info.Width = stream.Width
+					info.Height = stream.Height
+					break
+				}
+			}
+		}
+	}
+	_, err = file.Seek(0, io.SeekStart)
+	if err != nil {
+		return "", nil, "", fmt.Errorf("failed to seek to start of file: %w", err)
+	}
+	return msgType, info, defaultFileName, nil
+}
+
+func (gmx *Gomuks) generateVideoThumbnail(ctx context.Context, filePath string, encrypt bool, saveInto *event.FileInfo) error {
+	tempPath := filepath.Join(gmx.TempDir, "thumbnail-"+random.String(12)+".jpeg")
+	defer os.Remove(tempPath)
+	err := ffmpeg.ConvertPathWithDestination(
+		ctx, filePath, tempPath, nil,
+		[]string{"-frames:v", "1", "-update", "1", "-f", "image2"},
+		false,
+	)
+	if err != nil {
+		return err
+	}
+	tempFile, err := os.Open(tempPath)
+	if err != nil {
+		return fmt.Errorf("failed to open file: %w", err)
+	}
+	defer tempFile.Close()
+	fileInfo, err := tempFile.Stat()
+	if err != nil {
+		return fmt.Errorf("failed to stat file: %w", err)
+	}
+	hasher := sha256.New()
+	_, err = io.Copy(hasher, tempFile)
+	if err != nil {
+		return fmt.Errorf("failed to hash file: %w", err)
+	}
+	thumbnailInfo := &event.FileInfo{
+		MimeType: "image/jpeg",
+		Size:     int(fileInfo.Size()),
+	}
+	_, err = tempFile.Seek(0, io.SeekStart)
+	if err != nil {
+		return fmt.Errorf("failed to seek to start of file: %w", err)
+	}
+	cfg, _, err := image.DecodeConfig(tempFile)
+	if err != nil {
+		zerolog.Ctx(ctx).Warn().Err(err).Msg("Failed to decode thumbnail image config")
+	} else {
+		thumbnailInfo.Width = cfg.Width
+		thumbnailInfo.Height = cfg.Height
+	}
+	_ = tempFile.Close()
+	checksum := hasher.Sum(nil)
+	cachePath := gmx.cacheEntryToPath(checksum)
+	if _, err = os.Stat(cachePath); err == nil {
+		zerolog.Ctx(ctx).Debug().Str("path", cachePath).Msg("Media already exists in cache, removing temp file")
+	} else {
+		err = os.MkdirAll(filepath.Dir(cachePath), 0700)
+		if err != nil {
+			return fmt.Errorf("failed to create cache directory: %w", err)
+		}
+		err = os.Rename(tempPath, cachePath)
+		if err != nil {
+			return fmt.Errorf("failed to rename file: %w", err)
+		}
+	}
+	tempFile, err = os.Open(cachePath)
+	if err != nil {
+		return fmt.Errorf("failed to open renamed file: %w", err)
+	}
+	saveInto.ThumbnailFile, saveInto.ThumbnailURL, err = gmx.uploadFile(ctx, checksum, tempFile, encrypt, fileInfo.Size(), "image/jpeg", "thumbnail.jpeg")
+	if err != nil {
+		return fmt.Errorf("failed to upload: %w", err)
+	}
+	saveInto.ThumbnailInfo = thumbnailInfo
+	return nil
+}
+
+func writeMaybeRespError(err error, w http.ResponseWriter) {
+	var httpErr mautrix.HTTPError
+	if errors.As(err, &httpErr) {
+		if httpErr.WrappedError != nil {
+			ErrBadGateway.WithMessage(httpErr.WrappedError.Error()).Write(w)
+		} else if httpErr.RespError != nil {
+			httpErr.RespError.Write(w)
+		} else {
+			mautrix.MUnknown.WithMessage("Server returned non-JSON error").Write(w)
+		}
+	} else {
+		mautrix.MUnknown.WithMessage(err.Error()).Write(w)
+	}
 }

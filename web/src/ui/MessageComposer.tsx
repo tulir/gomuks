@@ -14,10 +14,15 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import React, { use, useCallback, useLayoutEffect, useRef, useState } from "react"
+import { ScaleLoader } from "react-spinners"
 import { RoomStateStore } from "@/api/statestore"
-import { MemDBEvent, Mentions, RoomID } from "@/api/types"
+import { MediaMessageEventContent, MemDBEvent, Mentions, RoomID } from "@/api/types"
 import { ClientContext } from "./ClientContext.ts"
 import { ReplyBody } from "./timeline/ReplyBody.tsx"
+import { useMediaContent } from "./timeline/content/useMediaContent.tsx"
+import AttachIcon from "@/icons/attach.svg?react"
+import CloseIcon from "@/icons/close.svg?react"
+import SendIcon from "@/icons/send.svg?react"
 import "./MessageComposer.css"
 
 interface MessageComposerProps {
@@ -36,6 +41,9 @@ const draftStore = {
 const MessageComposer = ({ room, replyTo, setTextRows, closeReply }: MessageComposerProps) => {
 	const client = use(ClientContext)!
 	const [text, setText] = useState("")
+	const [media, setMedia] = useState(null)
+	const [loadingMedia, setLoadingMedia] = useState(false)
+	const fileInput = useRef<HTMLInputElement>(null)
 	const textRows = useRef(1)
 	const typingSentAt = useRef(0)
 	const fullSetText = useCallback((text: string, setDraft: boolean) => {
@@ -52,10 +60,11 @@ const MessageComposer = ({ room, replyTo, setTextRows, closeReply }: MessageComp
 	}, [setTextRows, room.roomID])
 	const sendMessage = useCallback((evt: React.FormEvent) => {
 		evt.preventDefault()
-		if (text === "") {
+		if (text === "" && !media) {
 			return
 		}
 		fullSetText("", true)
+		setMedia(null)
 		closeReply()
 		const room_id = room.roomID
 		const mentions: Mentions = {
@@ -65,9 +74,9 @@ const MessageComposer = ({ room, replyTo, setTextRows, closeReply }: MessageComp
 		if (replyTo) {
 			mentions.user_ids.push(replyTo.sender)
 		}
-		client.sendMessage({ room_id, text, reply_to: replyTo?.event_id, mentions })
+		client.sendMessage({ room_id, base_content: media ?? undefined, text, reply_to: replyTo?.event_id, mentions })
 			.catch(err => window.alert("Failed to send message: " + err))
-	}, [fullSetText, closeReply, replyTo, text, room, client])
+	}, [fullSetText, closeReply, replyTo, media, text, room, client])
 	const onKeyDown = useCallback((evt: React.KeyboardEvent) => {
 		if (evt.key === "Enter" && !evt.shiftKey) {
 			sendMessage(evt)
@@ -86,6 +95,31 @@ const MessageComposer = ({ room, replyTo, setTextRows, closeReply }: MessageComp
 				.catch(err => console.error("Failed to send stop typing notification:", err))
 		}
 	}, [client, room.roomID, fullSetText])
+	const openFilePicker = useCallback(() => {
+		fileInput.current!.click()
+	}, [])
+	const clearMedia = useCallback(() => {
+		setMedia(null)
+	}, [])
+	const onAttachFile = useCallback((evt: React.ChangeEvent<HTMLInputElement>) => {
+		setLoadingMedia(true)
+		const file = evt.target.files![0]
+		const encrypt = !!room.meta.current.encryption_event
+		fetch(`/_gomuks/upload?encrypt=${encrypt}&filename=${encodeURIComponent(file.name)}`, {
+			method: "POST",
+			body: file,
+		})
+			.then(async res => {
+				const json = await res.json()
+				if (!res.ok) {
+					throw new Error(json.error)
+				} else {
+					setMedia(json)
+				}
+			})
+			.catch(err => window.alert("Failed to upload file: " + err))
+			.finally(() => setLoadingMedia(false))
+	}, [room])
 	// To ensure the cursor jumps to the end, do this in an effect rather than as the initial value of useState
 	// To try to avoid the input bar flashing, use useLayoutEffect instead of useEffect
 	useLayoutEffect(() => {
@@ -100,6 +134,8 @@ const MessageComposer = ({ room, replyTo, setTextRows, closeReply }: MessageComp
 	}, [client, room.roomID, fullSetText])
 	return <div className="message-composer">
 		{replyTo && <ReplyBody room={room} event={replyTo} onClose={closeReply}/>}
+		{loadingMedia && <div className="composer-media"><ScaleLoader/></div>}
+		{media && <ComposerMedia content={media} clearMedia={clearMedia}/>}
 		<div className="input-area">
 			<textarea
 				autoFocus
@@ -110,8 +146,32 @@ const MessageComposer = ({ room, replyTo, setTextRows, closeReply }: MessageComp
 				placeholder="Send a message"
 				id="message-composer"
 			/>
-			<button onClick={sendMessage}>Send</button>
+			<button
+				onClick={openFilePicker}
+				disabled={!!media || loadingMedia}
+				title={media ? "You can only attach one file at a time" : ""}
+			><AttachIcon/></button>
+			<button onClick={sendMessage} disabled={(!text && !media) || loadingMedia}><SendIcon/></button>
+			<input ref={fileInput} onChange={onAttachFile} type="file" value="" style={{ display: "none" }}/>
 		</div>
+	</div>
+}
+
+interface ComposerMediaProps {
+	content: MediaMessageEventContent
+	clearMedia: () => void
+}
+
+const ComposerMedia = ({ content, clearMedia }: ComposerMediaProps) => {
+	// TODO stickers?
+	const [mediaContent, containerClass, containerStyle] = useMediaContent(
+		content, "m.room.message", { height: 120, width: 360 },
+	)
+	return <div className="composer-media">
+		<div className={`media-container ${containerClass}`} style={containerStyle}>
+			{mediaContent}
+		</div>
+		<button onClick={clearMedia}><CloseIcon/></button>
 	</div>
 }
 
