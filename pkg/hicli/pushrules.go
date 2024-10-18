@@ -8,6 +8,7 @@ package hicli
 
 import (
 	"context"
+	"encoding/json"
 
 	"github.com/rs/zerolog"
 	"maunium.net/go/mautrix"
@@ -23,6 +24,7 @@ type pushRoom struct {
 	roomID id.RoomID
 	h      *HiClient
 	ll     *mautrix.LazyLoadSummary
+	pl     *event.PowerLevelsEventContent
 }
 
 func (p *pushRoom) GetOwnDisplayname() string {
@@ -58,7 +60,31 @@ func (p *pushRoom) GetEvent(id id.EventID) *event.Event {
 	return evt.AsRawMautrix()
 }
 
-var _ pushrules.EventfulRoom = (*pushRoom)(nil)
+func (p *pushRoom) GetPowerLevels() *event.PowerLevelsEventContent {
+	if p.pl != nil {
+		return p.pl
+	}
+	evt, err := p.h.DB.CurrentState.Get(p.ctx, p.roomID, event.StatePowerLevels, "")
+	if err != nil {
+		zerolog.Ctx(p.ctx).Err(err).
+			Stringer("room_id", p.roomID).
+			Msg("Failed to get power levels in push rule evaluator")
+		return nil
+	}
+	err = json.Unmarshal(evt.Content, &p.pl)
+	if err != nil {
+		zerolog.Ctx(p.ctx).Err(err).
+			Stringer("room_id", p.roomID).
+			Msg("Failed to unmarshal power levels in push rule evaluator")
+		return nil
+	}
+	return p.pl
+}
+
+var (
+	_ pushrules.EventfulRoom      = (*pushRoom)(nil)
+	_ pushrules.PowerLevelfulRoom = (*pushRoom)(nil)
+)
 
 func (h *HiClient) evaluatePushRules(ctx context.Context, llSummary *mautrix.LazyLoadSummary, baseType database.UnreadType, evt *event.Event) database.UnreadType {
 	should := h.PushRules.Load().GetMatchingRule(&pushRoom{
