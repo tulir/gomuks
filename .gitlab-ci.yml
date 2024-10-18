@@ -31,7 +31,7 @@ frontend:
   before_script:
   - export GO_LDFLAGS="-s -w -linkmode external -extldflags -static -X main.Tag=$CI_COMMIT_TAG -X main.Commit=$CI_COMMIT_SHA -X 'main.BuildTime=`date -Iseconds`'"
   script:
-  - go build -ldflags "$GO_LDFLAGS" ./cmd/gomuks -o gomuks
+  - go build -ldflags "$GO_LDFLAGS" -o gomuks ./cmd/gomuks
   artifacts:
     paths:
     - gomuks
@@ -72,7 +72,7 @@ macos/arm64:
   - export PATH=/opt/homebrew/bin:$PATH
   - export GO_LDFLAGS="-X main.Tag=$CI_COMMIT_TAG -X main.Commit=$CI_COMMIT_SHA -X 'main.BuildTime=`date '-Iseconds'`'"
   script:
-  - go build -ldflags "$GO_LDFLAGS" ./cmd/gomuks -o gomuks
+  - go build -ldflags "$GO_LDFLAGS" -o gomuks ./cmd/gomuks
   - install_name_tool -change /opt/homebrew/opt/libolm/lib/libolm.3.dylib @rpath/libolm.3.dylib gomuks
   - install_name_tool -add_rpath @executable_path gomuks
   - install_name_tool -add_rpath /opt/homebrew/opt/libolm/lib gomuks
