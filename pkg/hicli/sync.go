@@ -109,7 +109,7 @@ func (h *HiClient) processSyncResponse(ctx context.Context, resp *mautrix.RespSy
 			if err != nil && !errors.Is(err, event.ErrContentAlreadyParsed) {
 				zerolog.Ctx(ctx).Warn().Err(err).Msg("Failed to parse push rules in sync")
 			} else if pushRules, ok := evt.Content.Parsed.(*pushrules.EventContent); ok {
-				h.PushRules.Store(pushRules.Ruleset)
+				h.receiveNewPushRules(ctx, pushRules.Ruleset)
 				zerolog.Ctx(ctx).Debug().Msg("Updated push rules from sync")
 			}
 		}

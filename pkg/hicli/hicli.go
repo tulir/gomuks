@@ -226,16 +226,6 @@ func (h *HiClient) Sync() {
 	}
 }
 
-func (h *HiClient) LoadPushRules(ctx context.Context) {
-	rules, err := h.Client.GetPushRules(ctx)
-	if err != nil {
-		zerolog.Ctx(ctx).Err(err).Msg("Failed to load push rules")
-		return
-	}
-	h.PushRules.Store(rules)
-	zerolog.Ctx(ctx).Debug().Msg("Updated push rules from fetch")
-}
-
 func (h *HiClient) Stop() {
 	h.Client.StopSync()
 	if fn := h.stopSync.Swap(nil); fn != nil {

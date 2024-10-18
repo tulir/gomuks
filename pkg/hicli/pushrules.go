@@ -109,3 +109,18 @@ func (h *HiClient) evaluatePushRules(ctx context.Context, llSummary *mautrix.Laz
 	}
 	return baseType
 }
+
+func (h *HiClient) LoadPushRules(ctx context.Context) {
+	rules, err := h.Client.GetPushRules(ctx)
+	if err != nil {
+		zerolog.Ctx(ctx).Err(err).Msg("Failed to load push rules")
+		return
+	}
+	h.receiveNewPushRules(ctx, rules)
+	zerolog.Ctx(ctx).Debug().Msg("Updated push rules from fetch")
+}
+
+func (h *HiClient) receiveNewPushRules(ctx context.Context, rules *pushrules.PushRuleset) {
+	h.PushRules.Store(rules)
+	// TODO set mute flag in rooms
+}
