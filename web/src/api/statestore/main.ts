@@ -142,8 +142,8 @@ export class StateStore {
 			return
 		}
 		let body = evt.content.body
-		if (body.length > 200) {
-			body = body.slice(0, 150) + " […]"
+		if (body.length > 400) {
+			body = body.slice(0, 350) + " […]"
 		}
 		const memberEvt = room.getStateEvent("m.room.member", evt.sender)
 		const icon = `${getMediaURL(memberEvt?.content.avatar_url)}&image_auth=${this.imageAuthToken}`
