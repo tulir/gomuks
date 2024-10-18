@@ -59,11 +59,12 @@ const (
 				unsigned=excluded.unsigned
 		RETURNING rowid
 	`
-	updateEventSendErrorQuery    = `UPDATE event SET send_error = $2 WHERE rowid = $1`
-	updateEventIDQuery           = `UPDATE event SET event_id = $2, send_error = NULL WHERE rowid=$1`
-	updateEventDecryptedQuery    = `UPDATE event SET decrypted = $2, decrypted_type = $3, decryption_error = NULL, unread_type = $4, local_content = $5 WHERE rowid = $1`
-	updateEventLocalContentQuery = `UPDATE event SET local_content = $2 WHERE rowid = $1`
-	getEventReactionsQuery       = getEventBaseQuery + `
+	updateEventSendErrorQuery        = `UPDATE event SET send_error = $2 WHERE rowid = $1`
+	updateEventIDQuery               = `UPDATE event SET event_id = $2, send_error = NULL WHERE rowid=$1`
+	updateEventDecryptedQuery        = `UPDATE event SET decrypted = $2, decrypted_type = $3, decryption_error = NULL, unread_type = $4, local_content = $5 WHERE rowid = $1`
+	updateEventLocalContentQuery     = `UPDATE event SET local_content = $2 WHERE rowid = $1`
+	updateEventEncryptedContentQuery = `UPDATE event SET content = $2, megolm_session_id = $3 WHERE rowid = $1`
+	getEventReactionsQuery           = getEventBaseQuery + `
 		WHERE room_id = ?
 		  AND type = 'm.reaction'
 		  AND relation_type = 'm.annotation'
@@ -148,6 +149,10 @@ func (eq *EventQuery) UpdateDecrypted(ctx context.Context, evt *Event) error {
 
 func (eq *EventQuery) UpdateLocalContent(ctx context.Context, evt *Event) error {
 	return eq.Exec(ctx, updateEventLocalContentQuery, evt.RowID, dbutil.JSONPtr(evt.LocalContent))
+}
+
+func (eq *EventQuery) UpdateEncryptedContent(ctx context.Context, evt *Event) error {
+	return eq.Exec(ctx, updateEventEncryptedContentQuery, evt.RowID, unsafeJSONString(evt.Content), evt.MegolmSessionID)
 }
 
 func (eq *EventQuery) FillReactionCounts(ctx context.Context, roomID id.RoomID, events []*Event) error {
