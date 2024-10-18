@@ -69,7 +69,7 @@ function useChangeDescription(
 		if (sender === target) {
 			return "left the room"
 		}
-		return <>kicked {content.displayname}</>
+		return <>kicked {content.avatar_url && targetAvatar} {content.displayname ?? target}</>
 	}
 	return "made an unknown membership change"
 }
