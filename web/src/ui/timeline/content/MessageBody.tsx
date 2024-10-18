@@ -31,7 +31,11 @@ const onClickHTML = (evt: React.MouseEvent<HTMLDivElement>) => {
 export const TextMessageBody = ({ event }: EventContentProps) => {
 	const content = event.content as MessageEventContent
 	if (event.local_content?.sanitized_html) {
-		return <div onClick={onClickHTML} className="message-text html-body" dangerouslySetInnerHTML={{
+		const classNames = ["message-text", "html-body"]
+		if (event.local_content.was_plaintext) {
+			classNames.push("plaintext-body")
+		}
+		return <div onClick={onClickHTML} className={classNames.join(" ")} dangerouslySetInnerHTML={{
 			__html: event.local_content!.sanitized_html!,
 		}}/>
 	}

@@ -282,6 +282,7 @@ func (m EventRowID) GetMassInsertValues() [1]any {
 type LocalContent struct {
 	SanitizedHTML string `json:"sanitized_html,omitempty"`
 	HTMLVersion   int    `json:"html_version,omitempty"`
+	WasPlaintext  bool   `json:"was_plaintext,omitempty"`
 }
 
 type Event struct {

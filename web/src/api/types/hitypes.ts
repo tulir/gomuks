@@ -79,6 +79,8 @@ export enum UnreadType {
 
 export interface LocalContent {
 	sanitized_html?: TrustedHTML
+	html_version?: number
+	was_plaintext?: boolean
 }
 
 export interface BaseDBEvent {

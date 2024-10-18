@@ -344,14 +344,20 @@ func (h *HiClient) calculateLocalContent(ctx context.Context, dbEvt *database.Ev
 	}
 	if content != nil {
 		var sanitizedHTML string
-		if content.Format == event.FormatHTML {
+		var wasPlaintext bool
+		if content.Format == event.FormatHTML && content.FormattedBody != "" {
 			sanitizedHTML, _ = sanitizeAndLinkifyHTML(content.FormattedBody)
 		} else {
 			var builder strings.Builder
 			linkifyAndWriteBytes(&builder, []byte(content.Body))
 			sanitizedHTML = builder.String()
+			wasPlaintext = true
 		}
-		return &database.LocalContent{SanitizedHTML: sanitizedHTML, HTMLVersion: CurrentHTMLSanitizerVersion}
+		return &database.LocalContent{
+			SanitizedHTML: sanitizedHTML,
+			HTMLVersion:   CurrentHTMLSanitizerVersion,
+			WasPlaintext:  wasPlaintext,
+		}
 	}
 	return nil
 }
