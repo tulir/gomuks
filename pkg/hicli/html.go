@@ -174,8 +174,35 @@ func writeMention(w *strings.Builder, mention []byte) {
 }
 
 func writeURL(w *strings.Builder, addr []byte) {
-	parsedURL, err := url.Parse(string(addr))
+	addrString := string(addr)
+	parsedURL, err := url.Parse(addrString)
 	if err != nil {
+		writeEscapedBytes(w, addr)
+		return
+	}
+	if parsedURL.Scheme == "" && parsedURL.Host == "" {
+		if parsedURL.RawQuery == "" && parsedURL.Fragment == "" && strings.LastIndexByte(parsedURL.Path, '/') == -1 && strings.IndexByte(parsedURL.Path, '@') > 0 {
+			parsedURL.Scheme = "mailto"
+			parsedURL.Opaque = parsedURL.Path
+			parsedURL.Path = ""
+		} else {
+			parsedURL, err = url.Parse("https://" + addrString)
+			if err != nil {
+				writeEscapedBytes(w, addr)
+				return
+			}
+		}
+	} else if parsedURL.Scheme == "" {
+		parsedURL.Scheme = "https"
+	}
+	switch parsedURL.Scheme {
+	case "bitcoin", "ftp", "geo", "http", "im", "irc", "ircs", "magnet", "mailto",
+		"mms", "news", "nntp", "openpgp4fpr", "sip", "sftp", "sms", "smsto", "ssh",
+		"tel", "urn", "webcal", "wtai", "xmpp", "https":
+	case "mxc", "matrix":
+		// TODO
+		fallthrough
+	default:
 		writeEscapedBytes(w, addr)
 		return
 	}
@@ -184,9 +211,6 @@ func writeURL(w *strings.Builder, addr []byte) {
 		writeAttribute(w, "href", matrixURI.String())
 		writeAttribute(w, "class", matrixURIClassName(matrixURI)+" hicli-matrix-uri-plaintext")
 	} else {
-		if parsedURL.Scheme == "" {
-			parsedURL.Scheme = "https"
-		}
 		writeAttribute(w, "target", "_blank")
 		writeAttribute(w, "rel", "noreferrer noopener")
 		writeAttribute(w, "href", parsedURL.String())
