@@ -110,9 +110,11 @@ const MessageComposer = ({ room, scrollToBottomRef, setReplyToRef }: MessageComp
 				.catch(err => console.error("Failed to send stop typing notification:", err))
 		}
 	}, [client, room.roomID])
-	const onAttachFile = useCallback((evt: React.ChangeEvent<HTMLInputElement>) => {
+	const doUploadFile = useCallback((file: File | null | undefined) => {
+		if (!file) {
+			return
+		}
 		setLoadingMedia(true)
-		const file = evt.target.files![0]
 		const encrypt = !!room.meta.current.encryption_event
 		fetch(`/_gomuks/upload?encrypt=${encrypt}&filename=${encodeURIComponent(file.name)}`, {
 			method: "POST",
@@ -129,6 +131,15 @@ const MessageComposer = ({ room, scrollToBottomRef, setReplyToRef }: MessageComp
 			.catch(err => window.alert("Failed to upload file: " + err))
 			.finally(() => setLoadingMedia(false))
 	}, [room])
+	const onAttachFile = useCallback(
+		(evt: React.ChangeEvent<HTMLInputElement>) => doUploadFile(evt.target.files?.[0]),
+		[doUploadFile],
+	)
+	useEffect(() => {
+		const listener = (evt: ClipboardEvent) => doUploadFile(evt.clipboardData?.files?.[0])
+		document.addEventListener("paste", listener)
+		return () => document.removeEventListener("paste", listener)
+	}, [doUploadFile])
 	// To ensure the cursor jumps to the end, do this in an effect rather than as the initial value of useState
 	// To try to avoid the input bar flashing, use useLayoutEffect instead of useEffect
 	useLayoutEffect(() => {
