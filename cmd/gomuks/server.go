@@ -213,6 +213,10 @@ func (gmx *Gomuks) AuthMiddleware(next http.Handler) http.Handler {
 				ErrMissingCookie.Write(w)
 				return
 			} else if !gmx.validateAuth(authCookie.Value, false) {
+				http.SetCookie(w, &http.Cookie{
+					Name:   "gomuks_auth",
+					MaxAge: -1,
+				})
 				ErrInvalidCookie.Write(w)
 				return
 			}
