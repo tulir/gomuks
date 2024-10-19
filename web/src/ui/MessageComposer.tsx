@@ -180,7 +180,10 @@ const MessageComposer = ({ room, scrollToBottomRef, setReplyToRef }: MessageComp
 	}, [room, state])
 	const openFilePicker = useCallback(() => fileInput.current!.click(), [])
 	const clearMedia = useCallback(() => setState({ media: null }), [])
-	const closeReply = useCallback(() => setState({ replyTo: null }), [])
+	const closeReply = useCallback((evt: React.MouseEvent) => {
+		evt.stopPropagation()
+		setState({ replyTo: null })
+	}, [])
 	return <div className="message-composer">
 		{replyToEvt && <ReplyBody room={room} event={replyToEvt} onClose={closeReply}/>}
 		{loadingMedia && <div className="composer-media"><ScaleLoader/></div>}

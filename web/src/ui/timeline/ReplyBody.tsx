@@ -25,7 +25,7 @@ import "./ReplyBody.css"
 interface ReplyBodyProps {
 	room: RoomStateStore
 	event: MemDBEvent
-	onClose?: () => void
+	onClose?: (evt: React.MouseEvent) => void
 }
 
 interface ReplyIDBodyProps {
@@ -45,10 +45,31 @@ export const ReplyIDBody = ({ room, eventID }: ReplyIDBodyProps) => {
 	return <ReplyBody room={room} event={event}/>
 }
 
+const onClickReply = (evt: React.MouseEvent) => {
+	const targetEvt = document.querySelector(`div[data-event-id="${evt.currentTarget.getAttribute("data-reply-to")}"]`)
+	if (targetEvt) {
+		targetEvt.scrollIntoView({
+			block: "center",
+		})
+		targetEvt.classList.add("jump-highlight")
+		setTimeout(() => {
+			targetEvt.classList.add("jump-highlight-fadeout")
+			targetEvt.classList.remove("jump-highlight")
+			setTimeout(() => {
+				targetEvt.classList.remove("jump-highlight-fadeout")
+			}, 1500)
+		}, 3000)
+	}
+}
+
 export const ReplyBody = ({ room, event, onClose }: ReplyBodyProps) => {
 	const memberEvt = room.getStateEvent("m.room.member", event.sender)
 	const memberEvtContent = memberEvt?.content as MemberEventContent | undefined
-	return <blockquote className={`reply-body ${onClose ? "composer" : ""}`}>
+	return <blockquote
+		data-reply-to={event.event_id}
+		className={`reply-body ${onClose ? "composer" : ""}`}
+		onClick={onClickReply}
+	>
 		<div className="reply-sender">
 			<div className="sender-avatar" title={event.sender}>
 				<img

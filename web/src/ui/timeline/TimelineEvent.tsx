@@ -135,7 +135,7 @@ const TimelineEvent = ({ room, evt, prevEvt, setReplyToRef }: TimelineEventProps
 	const shortTime = formatShortTime(eventTS)
 	const editTime = editEventTS ? `Edited at ${fullTimeFormatter.format(editEventTS)}` : null
 	const replyTo = (evt.orig_content ?? evt.content)["m.relates_to"]?.["m.in_reply_to"]?.event_id
-	const mainEvent = <div className={wrapperClassNames.join(" ")}>
+	const mainEvent = <div data-event-id={evt.event_id} className={wrapperClassNames.join(" ")}>
 		<div className="sender-avatar" title={evt.sender}>
 			<img
 				className={`${smallAvatar ? "small" : ""} avatar`}

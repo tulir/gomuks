@@ -14,11 +14,23 @@ div.timeline-event {
 		background-color: rgba(255, 255, 0, .1);
 	}
 
+	&.jump-highlight {
+		background-color: rgba(0, 255, 0, .2);
+	}
+
+	&.jump-highlight-fadeout {
+		transition: background-color 1s;
+	}
+
 	&:hover {
 		background-color: #eee;
 
 		&.highlight {
 			background-color: #eec;
+		}
+
+		&.jump-highlight {
+			background-color: #cec;
 		}
 	}
 
