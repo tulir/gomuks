@@ -4,10 +4,10 @@ div.message-composer {
 	> div.input-area {
 		display: flex;
 		align-items: center;
-		line-height: 1.25;
 		margin-right: .25rem;
 
 		> textarea {
+			line-height: 1.25;
 			flex: 1;
 			resize: none;
 			font-family: sans-serif;
