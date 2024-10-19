@@ -22,6 +22,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/chzyer/readline"
 	"github.com/rs/zerolog"
 	"go.mau.fi/util/ptr"
 	"go.mau.fi/util/random"
@@ -77,20 +78,17 @@ func (gmx *Gomuks) LoadConfig() error {
 	}
 	if gmx.Config.Web.Username == "" || gmx.Config.Web.PasswordHash == "" {
 		fmt.Println("Please create a username and password for authenticating the web app")
-		fmt.Print("Username: ")
-		_, err = fmt.Scanln(&gmx.Config.Web.Username)
+		gmx.Config.Web.Username, err = readline.Line("Username: ")
 		if err != nil {
 			return fmt.Errorf("failed to read username: %w", err)
 		} else if len(gmx.Config.Web.Username) == 0 || len(gmx.Config.Web.Username) > 32 {
 			return fmt.Errorf("username must be 1-32 characters long")
 		}
-		fmt.Print("Password: ")
-		var passwd string
-		_, err = fmt.Scanln(&passwd)
+		passwd, err := readline.Password("Password: ")
 		if err != nil {
 			return fmt.Errorf("failed to read password: %w", err)
 		}
-		hash, err := bcrypt.GenerateFromPassword([]byte(passwd), 12)
+		hash, err := bcrypt.GenerateFromPassword(passwd, 12)
 		if err != nil {
 			return fmt.Errorf("failed to hash password: %w", err)
 		}
