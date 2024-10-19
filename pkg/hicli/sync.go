@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"slices"
 	"strings"
+	"time"
 
 	"github.com/rs/zerolog"
 	"github.com/tidwall/gjson"
@@ -165,7 +166,12 @@ func (h *HiClient) processSyncJoinedRoom(ctx context.Context, roomID id.RoomID, 
 		if err != nil {
 			return fmt.Errorf("failed to ensure room row exists: %w", err)
 		}
-		existingRoomData = &database.Room{ID: roomID, SortingTimestamp: jsontime.UnixMilliNow()}
+		existingRoomData = &database.Room{
+			ID: roomID,
+			// Hack to set a default value for SortingTimestamp which is before all existing rooms,
+			// but not the same for all rooms without a timestamp.
+			SortingTimestamp: jsontime.UM(time.UnixMilli(time.Now().Unix())),
+		}
 	}
 
 	for _, evt := range room.AccountData.Events {
@@ -466,6 +472,8 @@ func (h *HiClient) processEvent(
 	return dbEvt, err
 }
 
+var unsetSortingTimestamp = time.UnixMilli(1000000000000)
+
 func (h *HiClient) processStateAndTimeline(
 	ctx context.Context,
 	room *database.Room,
@@ -628,6 +636,9 @@ func (h *HiClient) processStateAndTimeline(
 			if evt.StateKey != nil {
 				setNewState(evt.Type, *evt.StateKey, timelineIDs[i])
 			}
+		}
+		if updatedRoom.SortingTimestamp.Before(unsetSortingTimestamp) && len(timeline.Events) > 0 {
+			updatedRoom.SortingTimestamp = jsontime.UM(time.UnixMilli(timeline.Events[len(timeline.Events)-1].Timestamp))
 		}
 		for _, entry := range decryptionQueue {
 			err = h.DB.SessionRequest.Put(ctx, entry)
