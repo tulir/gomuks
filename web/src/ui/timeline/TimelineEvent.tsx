@@ -146,7 +146,7 @@ const TimelineEvent = ({ room, evt, prevEvt, setReplyToRef }: TimelineEventProps
 			/>
 		</div>
 		<div className="event-sender-and-time" onClick={wrappedSetReplyTo}>
-			<span className="event-sender">{memberEvtContent?.displayname ?? evt.sender}</span>
+			<span className="event-sender">{memberEvtContent?.displayname || evt.sender}</span>
 			<span className="event-time" title={fullTime}>{shortTime}</span>
 			{(editEventTS && editTime) ? <span className="event-edited" title={editTime}>
 				(edited at {formatShortTime(editEventTS)})

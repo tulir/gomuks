@@ -176,8 +176,18 @@ div.member-body {
 	gap: .25rem;
 }
 
-div.plaintext-body {
-	white-space: pre-wrap;
+div.message-text {
+	&.plaintext-body {
+		white-space: pre-wrap;
+	}
+
+	&.notice-message {
+		opacity: .6;
+	}
+
+	&.emote-message::before {
+		content: "* " attr(data-event-sender) " ";
+	}
 }
 
 div.html-body {

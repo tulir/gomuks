@@ -79,7 +79,7 @@ export const ReplyBody = ({ room, event, onClose }: ReplyBodyProps) => {
 					alt=""
 				/>
 			</div>
-			<span className="event-sender">{memberEvtContent?.displayname ?? event.sender}</span>
+			<span className="event-sender">{memberEvtContent?.displayname || event.sender}</span>
 			{onClose && <button className="close-reply" onClick={onClose}><CloseButton/></button>}
 		</div>
 		<TextMessageBody room={room} event={event}/>

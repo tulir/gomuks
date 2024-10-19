@@ -13,7 +13,7 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import type { MediaMessageEventContent, MessageEventContent } from "@/api/types"
+import { MediaMessageEventContent, MemberEventContent, MessageEventContent } from "@/api/types"
 import { EventContentProps } from "./props.ts"
 import { useMediaContent } from "./useMediaContent.tsx"
 
@@ -24,18 +24,31 @@ const onClickHTML = (evt: React.MouseEvent<HTMLDivElement>) => {
 	}
 }
 
-export const TextMessageBody = ({ event }: EventContentProps) => {
+export const TextMessageBody = ({ event, room }: EventContentProps) => {
 	const content = event.content as MessageEventContent
+	const classNames = ["message-text"]
+	let eventSenderName: string | undefined
+	if (content.msgtype === "m.notice") {
+		classNames.push("notice-message")
+	} else if (content.msgtype === "m.emote") {
+		classNames.push("emote-message")
+		const memberEvt = room.getStateEvent("m.room.member", event.sender)
+		const memberEvtContent = memberEvt?.content as MemberEventContent | undefined
+		eventSenderName = memberEvtContent?.displayname || event.sender
+	}
 	if (event.local_content?.sanitized_html) {
-		const classNames = ["message-text", "html-body"]
+		classNames.push("html-body")
 		if (event.local_content.was_plaintext) {
 			classNames.push("plaintext-body")
 		}
-		return <div onClick={onClickHTML} className={classNames.join(" ")} dangerouslySetInnerHTML={{
-			__html: event.local_content!.sanitized_html!,
-		}}/>
+		return <div
+			onClick={onClickHTML}
+			className={classNames.join(" ")}
+			data-event-sender={eventSenderName}
+			dangerouslySetInnerHTML={{ __html: event.local_content!.sanitized_html! }}
+		/>
 	}
-	return <div className="message-text plaintext-body">{content.body}</div>
+	return <div className={classNames.join(" ")} data-event-sender={eventSenderName}>{content.body}</div>
 }
 
 export const MediaMessageBody = ({ event, room }: EventContentProps) => {
