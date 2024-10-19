@@ -166,7 +166,8 @@ func (gmx *Gomuks) Authenticate(w http.ResponseWriter, r *http.Request) {
 			gmx.writeTokenCookie(w)
 			w.WriteHeader(http.StatusCreated)
 		} else {
-			w.WriteHeader(http.StatusForbidden)
+			w.Header().Set("WWW-Authenticate", `Basic realm="gomuks web" charset="UTF-8"`)
+			w.WriteHeader(http.StatusUnauthorized)
 		}
 	}
 }
