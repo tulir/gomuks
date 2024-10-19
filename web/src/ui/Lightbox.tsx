@@ -167,7 +167,7 @@ export class Lightbox extends Component<LightboxProps> {
 				<button onClick={this.zoomIn}><ZoomInIcon/></button>
 				<button onClick={this.rotateLeft}><RotateLeftIcon/></button>
 				<button onClick={this.rotateRight}><RotateRightIcon/></button>
-				<a href={this.props.src} target="_blank" rel="noopener noreferrer">
+				<a className="button" href={this.props.src} target="_blank" rel="noopener noreferrer">
 					<DownloadIcon/>
 				</a>
 				<button onClick={this.props.onClose}><CloseIcon/></button>

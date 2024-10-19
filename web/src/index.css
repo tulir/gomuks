@@ -20,7 +20,7 @@ pre, code {
 	font-family: "Fira Code", monospace;
 }
 
-button {
+button, a.button {
 	cursor: pointer;
 	font-size: 1em;
 	background: none;
@@ -33,6 +33,14 @@ button {
 
 	&:hover:not(:disabled) {
 		background-color: rgba(0, 0, 0, .2);
+	}
+}
+
+a {
+	text-decoration: none;
+
+	&:hover:not(.button) {
+		text-decoration: underline;
 	}
 }
 
