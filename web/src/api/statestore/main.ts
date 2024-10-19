@@ -158,6 +158,8 @@ export class StateStore {
 			// image: ...,
 			tag: rowid.toString(),
 		})
+		room.openNotifications.set(rowid, notif)
+		notif.onclose = () => room.openNotifications.delete(rowid)
 		notif.onclick = () => this.onClickNotification(room.roomID)
 		if (sound) {
 			// TODO play sound

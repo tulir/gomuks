@@ -76,6 +76,7 @@ export class RoomStateStore {
 	readonly eventsByID: Map<EventID, MemDBEvent> = new Map()
 	readonly timelineSub = new Subscribable()
 	readonly eventSubs: Map<EventID, EventSubscribable> = new Map()
+	readonly openNotifications: Map<EventRowID, Notification> = new Map()
 	readonly pendingEvents: EventRowID[] = []
 	paginating = false
 	paginationRequestedForRow = -1
@@ -202,6 +203,12 @@ export class RoomStateStore {
 			this.pendingEvents.splice(0, this.pendingEvents.length)
 		} else {
 			this.timeline.push(...sync.timeline)
+		}
+		if (sync.meta.unread_notifications === 0 && sync.meta.unread_highlights === 0) {
+			for (const notif of this.openNotifications.values()) {
+				notif.close()
+			}
+			this.openNotifications.clear()
 		}
 		this.notifyTimelineSubscribers()
 	}
