@@ -38,6 +38,8 @@ interface ComposerState {
 	uninited?: boolean
 }
 
+const isMobileDevice = window.ontouchstart !== undefined && window.innerWidth < 800
+
 const emptyComposer: ComposerState = { text: "", media: null, replyTo: null }
 const uninitedComposer: ComposerState = { ...emptyComposer, uninited: true }
 const composerReducer = (state: ComposerState, action: Partial<ComposerState>) =>
@@ -185,7 +187,7 @@ const MessageComposer = ({ room, scrollToBottomRef, setReplyToRef }: MessageComp
 		{state.media && <ComposerMedia content={state.media} clearMedia={clearMedia}/>}
 		<div className="input-area">
 			<textarea
-				autoFocus
+				autoFocus={!isMobileDevice}
 				ref={textInput}
 				rows={textRows.current}
 				value={state.text}
