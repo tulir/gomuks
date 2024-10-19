@@ -24,9 +24,12 @@ export function useRoomTimeline(room: RoomStateStore): (MemDBEvent | null)[] {
 	)
 }
 
-export function useRoomEvent(room: RoomStateStore, eventID: EventID): MemDBEvent | null {
+const noopSubscribe = () => () => {}
+const returnNull = () => null
+
+export function useRoomEvent(room: RoomStateStore, eventID: EventID | null): MemDBEvent | null {
 	return useSyncExternalStore(
-		room.getEventSubscriber(eventID).subscribe,
-		() => room.eventsByID.get(eventID) ?? null,
+		eventID ? room.getEventSubscriber(eventID).subscribe : noopSubscribe,
+		eventID ? (() => room.eventsByID.get(eventID) ?? null) : returnNull,
 	)
 }

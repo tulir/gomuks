@@ -16,7 +16,7 @@
 import React, { use, useCallback } from "react"
 import { getAvatarURL } from "@/api/media.ts"
 import { RoomStateStore } from "@/api/statestore"
-import { MemDBEvent, MemberEventContent, UnreadType } from "@/api/types"
+import { EventID, MemDBEvent, MemberEventContent, UnreadType } from "@/api/types"
 import { isEventID } from "@/util/validation.ts"
 import { ClientContext } from "../ClientContext.ts"
 import { LightboxContext } from "../Lightbox.tsx"
@@ -36,7 +36,7 @@ export interface TimelineEventProps {
 	room: RoomStateStore
 	evt: MemDBEvent
 	prevEvt: MemDBEvent | null
-	setReplyTo: (evt: MemDBEvent) => void
+	setReplyToRef: React.RefObject<(evt: EventID | null) => void>
 }
 
 function getBodyType(evt: MemDBEvent): React.FunctionComponent<EventContentProps> {
@@ -109,8 +109,8 @@ function isSmallEvent(bodyType: React.FunctionComponent<EventContentProps>): boo
 	return bodyType === HiddenEvent || bodyType === MemberBody
 }
 
-const TimelineEvent = ({ room, evt, prevEvt, setReplyTo }: TimelineEventProps) => {
-	const wrappedSetReplyTo = useCallback(() => setReplyTo(evt), [evt, setReplyTo])
+const TimelineEvent = ({ room, evt, prevEvt, setReplyToRef }: TimelineEventProps) => {
+	const wrappedSetReplyTo = useCallback(() => setReplyToRef.current(evt.event_id), [evt, setReplyToRef])
 	const client = use(ClientContext)!
 	const memberEvt = room.getStateEvent("m.room.member", evt.sender)
 	const memberEvtContent = memberEvt?.content as MemberEventContent | undefined

@@ -13,10 +13,10 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import { use, useCallback, useState } from "react"
+import { use, useRef } from "react"
 import { getMediaURL } from "@/api/media.ts"
 import { RoomStateStore } from "@/api/statestore"
-import { MemDBEvent } from "@/api/types"
+import { EventID } from "@/api/types"
 import { useNonNullEventAsState } from "@/util/eventdispatcher.ts"
 import { LightboxContext } from "./Lightbox.tsx"
 import MessageComposer from "./MessageComposer.tsx"
@@ -53,13 +53,12 @@ const onKeyDownRoomView = (evt: React.KeyboardEvent) => {
 }
 
 const RoomView = ({ room, clearActiveRoom }: RoomViewProps) => {
-	const [replyTo, setReplyTo] = useState<MemDBEvent | null>(null)
-	const [textRows, setTextRows] = useState(1)
-	const closeReply = useCallback(() => setReplyTo(null), [])
+	const scrollToBottomRef = useRef<() => void>(() => {})
+	const setReplyToRef = useRef<(evt: EventID | null) => void>(() => {})
 	return <div className="room-view" onKeyDown={onKeyDownRoomView} tabIndex={-1}>
 		<RoomHeader room={room} clearActiveRoom={clearActiveRoom}/>
-		<TimelineView room={room} textRows={textRows} replyTo={replyTo} setReplyTo={setReplyTo}/>
-		<MessageComposer room={room} setTextRows={setTextRows} replyTo={replyTo} closeReply={closeReply}/>
+		<TimelineView room={room} scrollToBottomRef={scrollToBottomRef} setReplyToRef={setReplyToRef}/>
+		<MessageComposer room={room} scrollToBottomRef={scrollToBottomRef} setReplyToRef={setReplyToRef}/>
 	</div>
 }
 

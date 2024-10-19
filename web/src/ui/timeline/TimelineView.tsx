@@ -13,9 +13,9 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import { use, useCallback, useEffect, useLayoutEffect, useRef } from "react"
+import React, { use, useCallback, useEffect, useLayoutEffect, useRef } from "react"
 import { RoomStateStore, useRoomTimeline } from "@/api/statestore"
-import { MemDBEvent } from "@/api/types"
+import { EventID, MemDBEvent } from "@/api/types"
 import useFocus from "@/util/focus.ts"
 import { ClientContext } from "../ClientContext.ts"
 import TimelineEvent from "./TimelineEvent.tsx"
@@ -23,12 +23,11 @@ import "./TimelineView.css"
 
 interface TimelineViewProps {
 	room: RoomStateStore
-	textRows: number
-	replyTo: MemDBEvent | null
-	setReplyTo: (evt: MemDBEvent) => void
+	scrollToBottomRef: React.RefObject<() => void>
+	setReplyToRef: React.RefObject<(evt: EventID | null) => void>
 }
 
-const TimelineView = ({ room, textRows, replyTo, setReplyTo }: TimelineViewProps) => {
+const TimelineView = ({ room, scrollToBottomRef, setReplyToRef }: TimelineViewProps) => {
 	const timeline = useRoomTimeline(room)
 	const client = use(ClientContext)!
 	const loadHistory = useCallback(() => {
@@ -56,6 +55,8 @@ const TimelineView = ({ room, textRows, replyTo, setReplyTo }: TimelineViewProps
 	if (timelineViewRef.current) {
 		oldScrollHeight.current = timelineViewRef.current.scrollHeight
 	}
+	scrollToBottomRef.current = () =>
+		bottomRef.current && scrolledToBottom.current && bottomRef.current.scrollIntoView()
 	useLayoutEffect(() => {
 		if (bottomRef.current && scrolledToBottom.current) {
 			// For any timeline changes, if we were at the bottom, scroll to the new bottom
@@ -65,7 +66,7 @@ const TimelineView = ({ room, textRows, replyTo, setReplyTo }: TimelineViewProps
 			timelineViewRef.current.scrollTop += timelineViewRef.current.scrollHeight - oldScrollHeight.current
 		}
 		prevOldestTimelineRow.current = timeline[0]?.timeline_rowid ?? 0
-	}, [textRows, replyTo, timeline])
+	}, [timeline])
 	useEffect(() => {
 		const newestEvent = timeline[timeline.length - 1]
 		if (
@@ -114,7 +115,7 @@ const TimelineView = ({ room, textRows, replyTo, setReplyTo }: TimelineViewProps
 					return null
 				}
 				const thisEvt = <TimelineEvent
-					key={entry.rowid} room={room} evt={entry} prevEvt={prevEvt} setReplyTo={setReplyTo}
+					key={entry.rowid} room={room} evt={entry} prevEvt={prevEvt} setReplyToRef={setReplyToRef}
 				/>
 				prevEvt = entry
 				return thisEvt
