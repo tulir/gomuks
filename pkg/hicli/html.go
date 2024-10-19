@@ -179,11 +179,18 @@ func writeURL(w *strings.Builder, addr []byte) {
 		writeEscapedBytes(w, addr)
 		return
 	}
-	if parsedURL.Scheme == "" {
-		parsedURL.Scheme = "https"
+	w.WriteString(`<a`)
+	if matrixURI, err := id.ProcessMatrixToURL(parsedURL); err == nil {
+		writeAttribute(w, "href", matrixURI.String())
+		writeAttribute(w, "class", matrixURIClassName(matrixURI)+" hicli-matrix-uri-plaintext")
+	} else {
+		if parsedURL.Scheme == "" {
+			parsedURL.Scheme = "https"
+		}
+		writeAttribute(w, "target", "_blank")
+		writeAttribute(w, "rel", "noreferrer noopener")
+		writeAttribute(w, "href", parsedURL.String())
 	}
-	w.WriteString(`<a target="_blank" rel="noreferrer noopener"`)
-	writeAttribute(w, "href", parsedURL.String())
 	w.WriteByte('>')
 	writeEscapedBytes(w, addr)
 	w.WriteString("</a>")
