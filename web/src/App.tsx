@@ -24,7 +24,7 @@ import { LoginScreen, VerificationScreen } from "./ui/login"
 import { useEventAsState } from "./util/eventdispatcher.ts"
 
 function App() {
-	const client = useMemo(() => new Client(new WSClient("/_gomuks/websocket")), [])
+	const client = useMemo(() => new Client(new WSClient("_gomuks/websocket")), [])
 	const connState = useEventAsState(client.rpc.connect)
 	const clientState = useEventAsState(client.state)
 	;((window as unknown) as { client: Client }).client = client
