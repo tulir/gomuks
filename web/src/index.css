@@ -5,6 +5,11 @@ body {
 	background-color: #EEE;
 	line-height: 1.5;
 	font-size: 16px;
+	touch-action: none;
+}
+
+html {
+	touch-action: none;
 }
 
 #root {
