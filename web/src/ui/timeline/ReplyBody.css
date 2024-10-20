@@ -5,6 +5,10 @@ blockquote.reply-body {
 
 	pre {
 		display: inline;
+
+		&.chroma .line {
+			display: inline;
+		}
 	}
 
 	&:hover, &.composer {
