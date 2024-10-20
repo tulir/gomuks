@@ -118,7 +118,7 @@ const MessageComposer = ({ room, scrollToBottomRef, setReplyToRef }: MessageComp
 		}
 		setLoadingMedia(true)
 		const encrypt = !!room.meta.current.encryption_event
-		fetch(`/_gomuks/upload?encrypt=${encrypt}&filename=${encodeURIComponent(file.name)}`, {
+		fetch(`_gomuks/upload?encrypt=${encrypt}&filename=${encodeURIComponent(file.name)}`, {
 			method: "POST",
 			body: file,
 		})
