@@ -1,4 +1,4 @@
--- v0 -> v3 (compatible with v1+): Latest revision
+-- v0 -> v4 (compatible with v1+): Latest revision
 CREATE TABLE account (
 	user_id        TEXT NOT NULL PRIMARY KEY,
 	device_id      TEXT NOT NULL,
@@ -11,6 +11,7 @@ CREATE TABLE account (
 CREATE TABLE room (
 	room_id              TEXT    NOT NULL PRIMARY KEY,
 	creation_content     TEXT,
+	tombstone_content    TEXT,
 
 	name                 TEXT,
 	name_quality         INTEGER NOT NULL DEFAULT 0,

@@ -21,7 +21,7 @@ import (
 
 const (
 	getRoomBaseQuery = `
-		SELECT room_id, creation_content, name, name_quality, avatar, explicit_avatar, topic, canonical_alias,
+		SELECT room_id, creation_content, tombstone_content, name, name_quality, avatar, explicit_avatar, topic, canonical_alias,
 		       lazy_load_summary, encryption_event, has_member_list, preview_event_rowid, sorting_timestamp,
 		       unread_highlights, unread_notifications, unread_messages, prev_batch
 		FROM room
@@ -35,21 +35,22 @@ const (
 	upsertRoomFromSyncQuery = `
 		UPDATE room
 		SET creation_content = COALESCE(room.creation_content, $2),
-			name = COALESCE($3, room.name),
-			name_quality = CASE WHEN $3 IS NOT NULL THEN $4 ELSE room.name_quality END,
-			avatar = COALESCE($5, room.avatar),
-			explicit_avatar = CASE WHEN $5 IS NOT NULL THEN $6 ELSE room.explicit_avatar END,
-			topic = COALESCE($7, room.topic),
-			canonical_alias = COALESCE($8, room.canonical_alias),
-			lazy_load_summary = COALESCE($9, room.lazy_load_summary),
-			encryption_event = COALESCE($10, room.encryption_event),
-			has_member_list = room.has_member_list OR $11,
-			preview_event_rowid = COALESCE($12, room.preview_event_rowid),
-			sorting_timestamp = COALESCE($13, room.sorting_timestamp),
-			unread_highlights = COALESCE($14, room.unread_highlights),
-			unread_notifications = COALESCE($15, room.unread_notifications),
-			unread_messages = COALESCE($16, room.unread_messages),
-			prev_batch = COALESCE($17, room.prev_batch)
+		    tombstone_content = COALESCE(room.tombstone_content, $3),
+			name = COALESCE($4, room.name),
+			name_quality = CASE WHEN $4 IS NOT NULL THEN $5 ELSE room.name_quality END,
+			avatar = COALESCE($6, room.avatar),
+			explicit_avatar = CASE WHEN $6 IS NOT NULL THEN $7 ELSE room.explicit_avatar END,
+			topic = COALESCE($8, room.topic),
+			canonical_alias = COALESCE($9, room.canonical_alias),
+			lazy_load_summary = COALESCE($10, room.lazy_load_summary),
+			encryption_event = COALESCE($11, room.encryption_event),
+			has_member_list = room.has_member_list OR $12,
+			preview_event_rowid = COALESCE($13, room.preview_event_rowid),
+			sorting_timestamp = COALESCE($14, room.sorting_timestamp),
+			unread_highlights = COALESCE($15, room.unread_highlights),
+			unread_notifications = COALESCE($16, room.unread_notifications),
+			unread_messages = COALESCE($17, room.unread_messages),
+			prev_batch = COALESCE($18, room.prev_batch)
 		WHERE room_id = $1
 	`
 	setRoomPrevBatchQuery = `
@@ -130,8 +131,9 @@ const (
 const PrevBatchPaginationComplete = "fi.mau.gomuks.pagination_complete"
 
 type Room struct {
-	ID              id.RoomID                 `json:"room_id"`
-	CreationContent *event.CreateEventContent `json:"creation_content,omitempty"`
+	ID              id.RoomID                    `json:"room_id"`
+	CreationContent *event.CreateEventContent    `json:"creation_content,omitempty"`
+	Tombstone       *event.TombstoneEventContent `json:"tombstone,omitempty"`
 
 	Name           *string        `json:"name,omitempty"`
 	NameQuality    NameQuality    `json:"name_quality"`
@@ -153,6 +155,14 @@ type Room struct {
 }
 
 func (r *Room) CheckChangesAndCopyInto(other *Room) (hasChanges bool) {
+	if r.CreationContent != nil {
+		other.CreationContent = r.CreationContent
+		hasChanges = true
+	}
+	if r.Tombstone != nil {
+		other.Tombstone = r.Tombstone
+		hasChanges = true
+	}
 	if r.Name != nil && r.NameQuality >= other.NameQuality {
 		other.Name = r.Name
 		other.NameQuality = r.NameQuality
@@ -216,6 +226,7 @@ func (r *Room) Scan(row dbutil.Scannable) (*Room, error) {
 	err := row.Scan(
 		&r.ID,
 		dbutil.JSON{Data: &r.CreationContent},
+		dbutil.JSON{Data: &r.Tombstone},
 		&r.Name,
 		&r.NameQuality,
 		&r.Avatar,
@@ -245,6 +256,7 @@ func (r *Room) sqlVariables() []any {
 	return []any{
 		r.ID,
 		dbutil.JSONPtr(r.CreationContent),
+		dbutil.JSONPtr(r.Tombstone),
 		r.Name,
 		r.NameQuality,
 		r.Avatar,

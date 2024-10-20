@@ -816,7 +816,8 @@ func processImportantEvent(ctx context.Context, evt *event.Event, existingRoomDa
 		return
 	}
 	switch evt.Type {
-	case event.StateCreate, event.StateRoomName, event.StateCanonicalAlias, event.StateRoomAvatar, event.StateTopic, event.StateEncryption:
+	case event.StateCreate, event.StateTombstone, event.StateRoomName, event.StateCanonicalAlias,
+		event.StateRoomAvatar, event.StateTopic, event.StateEncryption:
 		if *evt.StateKey != "" {
 			return
 		}
@@ -834,6 +835,8 @@ func processImportantEvent(ctx context.Context, evt *event.Event, existingRoomDa
 	switch evt.Type {
 	case event.StateCreate:
 		updatedRoom.CreationContent, _ = evt.Content.Parsed.(*event.CreateEventContent)
+	case event.StateTombstone:
+		updatedRoom.Tombstone, _ = evt.Content.Parsed.(*event.TombstoneEventContent)
 	case event.StateEncryption:
 		newEncryption, _ := evt.Content.Parsed.(*event.EncryptionEventContent)
 		if existingRoomData.EncryptionEvent == nil || existingRoomData.EncryptionEvent.Algorithm == newEncryption.Algorithm {
