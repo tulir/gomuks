@@ -330,7 +330,7 @@ func matrixURIClassName(uri *id.MatrixURI) string {
 	}
 }
 
-func writeA(w *strings.Builder, attr []html.Attribute) {
+func writeA(w *strings.Builder, attr []html.Attribute) (mxc id.ContentURI) {
 	w.WriteString("<a")
 	href := parseAAttributes(attr)
 	if href == "" {
@@ -365,8 +365,9 @@ func writeA(w *strings.Builder, attr []html.Attribute) {
 		newTab = false
 		writeAttribute(w, "class", matrixURIClassName(uri))
 	case "mxc":
-		mxc := id.ContentURIString(href).ParseOrIgnore()
+		mxc = id.ContentURIString(href).ParseOrIgnore()
 		if !mxc.IsValid() {
+			mxc = id.ContentURI{}
 			return
 		}
 		href = fmt.Sprintf(HTMLSanitizerImgSrcTemplate, mxc.Homeserver, mxc.FileID)
@@ -378,11 +379,12 @@ func writeA(w *strings.Builder, attr []html.Attribute) {
 		writeAttribute(w, "target", "_blank")
 		writeAttribute(w, "rel", "noreferrer noopener")
 	}
+	return
 }
 
 var HTMLSanitizerImgSrcTemplate = "mxc://%s/%s"
 
-func writeImg(w *strings.Builder, attr []html.Attribute) {
+func writeImg(w *strings.Builder, attr []html.Attribute) id.ContentURI {
 	src, alt, title, isCustomEmoji, width, height := parseImgAttributes(attr)
 	w.WriteString("<img")
 	writeAttribute(w, "alt", alt)
@@ -391,7 +393,7 @@ func writeImg(w *strings.Builder, attr []html.Attribute) {
 	}
 	mxc := id.ContentURIString(src).ParseOrIgnore()
 	if !mxc.IsValid() {
-		return
+		return id.ContentURI{}
 	}
 	writeAttribute(w, "src", fmt.Sprintf(HTMLSanitizerImgSrcTemplate, mxc.Homeserver, mxc.FileID))
 	writeAttribute(w, "loading", "lazy")
@@ -403,6 +405,7 @@ func writeImg(w *strings.Builder, attr []html.Attribute) {
 	} else {
 		writeAttribute(w, "class", "hicli-sizeless-inline-img")
 	}
+	return mxc
 }
 
 func writeSpan(w *strings.Builder, attr []html.Attribute) {
@@ -454,9 +457,10 @@ func (ts *tagStack) pop(tag atom.Atom) bool {
 	return false
 }
 
-func sanitizeAndLinkifyHTML(body string) (string, error) {
+func sanitizeAndLinkifyHTML(body string) (string, []id.ContentURI, error) {
 	tz := html.NewTokenizer(strings.NewReader(body))
 	var built strings.Builder
+	var inlineImages []id.ContentURI
 	ts := make(tagStack, 2)
 Loop:
 	for {
@@ -466,7 +470,7 @@ Loop:
 			if errors.Is(err, io.EOF) {
 				break Loop
 			}
-			return "", err
+			return "", nil, err
 		case html.StartTagToken, html.SelfClosingTagToken:
 			token := tz.Token()
 			if !tagIsAllowed(token.DataAtom) {
@@ -478,9 +482,15 @@ Loop:
 			}
 			switch token.DataAtom {
 			case atom.A:
-				writeA(&built, token.Attr)
+				mxc := writeA(&built, token.Attr)
+				if !mxc.IsEmpty() {
+					inlineImages = append(inlineImages, mxc)
+				}
 			case atom.Img:
-				writeImg(&built, token.Attr)
+				mxc := writeImg(&built, token.Attr)
+				if !mxc.IsEmpty() {
+					inlineImages = append(inlineImages, mxc)
+				}
 			case atom.Span, atom.Font:
 				writeSpan(&built, token.Attr)
 			default:
@@ -524,5 +534,5 @@ Loop:
 		built.WriteString(t.String())
 		built.WriteByte('>')
 	}
-	return built.String(), nil
+	return built.String(), inlineImages, nil
 }

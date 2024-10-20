@@ -137,10 +137,16 @@ func (h *HiClient) Send(
 		}
 		dbEvt.RelatesTo, dbEvt.RelationType = database.GetRelatesToFromBytes(dbEvt.Content)
 	}
-	dbEvt.LocalContent = h.calculateLocalContent(ctx, dbEvt, dbEvt.AsRawMautrix())
+	var inlineImages []id.ContentURI
+	mautrixEvt := dbEvt.AsRawMautrix()
+	dbEvt.LocalContent, inlineImages = h.calculateLocalContent(ctx, dbEvt, mautrixEvt)
 	_, err = h.DB.Event.Insert(ctx, dbEvt)
 	if err != nil {
 		return nil, fmt.Errorf("failed to insert event into database: %w", err)
+	}
+	h.cacheMedia(ctx, mautrixEvt, dbEvt.RowID)
+	for _, uri := range inlineImages {
+		h.addMediaCache(ctx, dbEvt.RowID, uri.CUString(), nil, nil, "")
 	}
 	ctx = context.WithoutCancel(ctx)
 	go func() {
