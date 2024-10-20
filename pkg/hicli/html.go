@@ -199,25 +199,55 @@ func writeURL(w *strings.Builder, addr []byte) {
 	case "bitcoin", "ftp", "geo", "http", "im", "irc", "ircs", "magnet", "mailto",
 		"mms", "news", "nntp", "openpgp4fpr", "sip", "sftp", "sms", "smsto", "ssh",
 		"tel", "urn", "webcal", "wtai", "xmpp", "https":
-	case "mxc", "matrix":
-		// TODO
-		fallthrough
+		w.WriteString(`<a`)
+		if matrixURI, err := id.ProcessMatrixToURL(parsedURL); err == nil {
+			writeAttribute(w, "href", matrixURI.String())
+			writeAttribute(w, "class", matrixURIClassName(matrixURI)+" hicli-matrix-uri-plaintext")
+		} else {
+			writeAttribute(w, "target", "_blank")
+			writeAttribute(w, "rel", "noreferrer noopener")
+			writeAttribute(w, "href", parsedURL.String())
+		}
+		w.WriteByte('>')
+		writeEscapedBytes(w, addr)
+		w.WriteString("</a>")
+	case "mxc":
+		mxc := id.ContentURIString(parsedURL.String()).ParseOrIgnore()
+		if !mxc.IsValid() {
+			writeEscapedBytes(w, addr)
+			return
+		}
+		w.WriteString("<a")
+		writeAttribute(w, "class", "hicli-mxc-url")
+		writeAttribute(w, "data-mxc", mxc.String())
+		writeAttribute(w, "href", fmt.Sprintf(HTMLSanitizerImgSrcTemplate, mxc.Homeserver, mxc.FileID))
+		w.WriteByte('>')
+		writeEscapedBytes(w, addr)
+		w.WriteString("</a>")
+	case "matrix":
+		uri, err := id.ProcessMatrixURI(parsedURL)
+		if err != nil {
+			writeEscapedBytes(w, addr)
+			return
+		}
+		w.WriteString("<a")
+		writeAttribute(w, "class", matrixURIClassName(uri))
+		writeAttribute(w, "href", uri.String())
+		w.WriteByte('>')
+		writeEscapedBytes(w, addr)
+		w.WriteString("</a>")
 	default:
 		writeEscapedBytes(w, addr)
-		return
 	}
-	w.WriteString(`<a`)
-	if matrixURI, err := id.ProcessMatrixToURL(parsedURL); err == nil {
-		writeAttribute(w, "href", matrixURI.String())
-		writeAttribute(w, "class", matrixURIClassName(matrixURI)+" hicli-matrix-uri-plaintext")
-	} else {
-		writeAttribute(w, "target", "_blank")
-		writeAttribute(w, "rel", "noreferrer noopener")
-		writeAttribute(w, "href", parsedURL.String())
+}
+
+func init() {
+	if !slices.Contains(xurls.SchemesNoAuthority, "matrix") {
+		xurls.SchemesNoAuthority = append(xurls.SchemesNoAuthority, "matrix")
 	}
-	w.WriteByte('>')
-	writeEscapedBytes(w, addr)
-	w.WriteString("</a>")
+	if !slices.Contains(xurls.Schemes, "mxc") {
+		xurls.Schemes = append(xurls.Schemes, "mxc")
+	}
 }
 
 func linkifyAndWriteBytes(w *strings.Builder, s []byte) {
@@ -370,6 +400,8 @@ func writeA(w *strings.Builder, attr []html.Attribute) (mxc id.ContentURI) {
 			mxc = id.ContentURI{}
 			return
 		}
+		writeAttribute(w, "class", "hicli-mxc-url")
+		writeAttribute(w, "data-mxc", mxc.String())
 		href = fmt.Sprintf(HTMLSanitizerImgSrcTemplate, mxc.Homeserver, mxc.FileID)
 	default:
 		return
