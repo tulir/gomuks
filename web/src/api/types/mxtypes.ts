@@ -37,6 +37,11 @@ export interface CreateEventContent {
 	predecessor: RoomPredecessor
 }
 
+export interface TombstoneEventContent {
+	body: string
+	replacement_room: RoomID
+}
+
 export interface LazyLoadSummary {
 	heroes?: UserID[]
 	"m.joined_member_count"?: number

@@ -18,7 +18,8 @@ import { getMediaURL } from "@/api/media.ts"
 import { NonNullCachedEventDispatcher } from "@/util/eventdispatcher.ts"
 import { focused } from "@/util/focus.ts"
 import type {
-	ContentURI, EventRowID,
+	ContentURI,
+	EventRowID,
 	EventsDecryptedData,
 	MemDBEvent,
 	RoomID,
@@ -57,6 +58,25 @@ export class StateStore {
 	switchRoom?: (roomID: RoomID) => void
 	imageAuthToken?: string
 
+	#shouldHideRoom(entry: SyncRoom): boolean {
+		const cc = entry.meta.creation_content
+		if ((cc?.type ?? "") !== "") {
+			// The room is not a normal room
+			return true
+		}
+		const replacementRoom = entry.meta.tombstone?.replacement_room
+		if (
+			replacementRoom
+			&& this.rooms.get(replacementRoom)?.meta.current.creation_content?.predecessor?.room_id
+			=== entry.meta.room_id
+		) {
+			// The room is tombstoned and the replacement room is valid.
+			return true
+		}
+		// Otherwise don't hide the room.
+		return false
+	}
+
 	#roomListEntryChanged(entry: SyncRoom, oldEntry: RoomStateStore): boolean {
 		return entry.meta.sorting_timestamp !== oldEntry.meta.current.sorting_timestamp ||
 			entry.meta.unread_messages !== oldEntry.meta.current.unread_messages ||
@@ -66,7 +86,10 @@ export class StateStore {
 			entry.events.findIndex(evt => evt.rowid === entry.meta.preview_event_rowid) !== -1
 	}
 
-	#makeRoomListEntry(entry: SyncRoom, room?: RoomStateStore): RoomListEntry {
+	#makeRoomListEntry(entry: SyncRoom, room?: RoomStateStore): RoomListEntry | null {
+		if (this.#shouldHideRoom(entry)) {
+			return null
+		}
 		if (!room) {
 			room = this.rooms.get(entry.meta.room_id)
 		}
@@ -89,7 +112,7 @@ export class StateStore {
 
 	applySync(sync: SyncCompleteData) {
 		const resyncRoomList = this.roomList.current.length === 0
-		const changedRoomListEntries = new Map<RoomID, RoomListEntry>()
+		const changedRoomListEntries = new Map<RoomID, RoomListEntry | null>()
 		for (const [roomID, data] of Object.entries(sync.rooms)) {
 			let isNewRoom = false
 			let room = this.rooms.get(roomID)
@@ -103,6 +126,16 @@ export class StateStore {
 			if (roomListEntryChanged) {
 				changedRoomListEntries.set(roomID, this.#makeRoomListEntry(data, room))
 			}
+			if (!resyncRoomList) {
+				// When we join a valid replacement room, hide the tombstoned room.
+				const predecessorID = data.meta.creation_content?.predecessor?.room_id
+				if (
+					isNewRoom
+					&& typeof predecessorID === "string"
+					&& this.rooms.get(predecessorID)?.meta.current.tombstone?.replacement_room === roomID) {
+					changedRoomListEntries.set(predecessorID, null)
+				}
+			}
 
 			if (Notification.permission === "granted" && !focused.current) {
 				for (const notification of data.notifications) {
@@ -113,11 +146,16 @@ export class StateStore {
 
 		let updatedRoomList: RoomListEntry[] | undefined
 		if (resyncRoomList) {
-			updatedRoomList = Object.values(sync.rooms).map(entry => this.#makeRoomListEntry(entry))
+			updatedRoomList = Object.values(sync.rooms)
+				.map(entry => this.#makeRoomListEntry(entry))
+				.filter(entry => entry !== null)
 			updatedRoomList.sort((r1, r2) => r1.sorting_timestamp - r2.sorting_timestamp)
 		} else if (changedRoomListEntries.size > 0) {
 			updatedRoomList = this.roomList.current.filter(entry => !changedRoomListEntries.has(entry.room_id))
 			for (const entry of changedRoomListEntries.values()) {
+				if (!entry) {
+					continue
+				}
 				if (updatedRoomList.length === 0 || entry.sorting_timestamp >=
 					updatedRoomList[updatedRoomList.length - 1].sorting_timestamp) {
 					updatedRoomList.push(entry)

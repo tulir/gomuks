@@ -24,6 +24,7 @@ import {
 	RelationType,
 	RoomAlias,
 	RoomID,
+	TombstoneEventContent,
 	UserID,
 } from "./mxtypes.ts"
 
@@ -44,7 +45,8 @@ export enum RoomNameQuality {
 
 export interface DBRoom {
 	room_id: RoomID
-	creation_content: CreateEventContent
+	creation_content?: CreateEventContent
+	tombstone?: TombstoneEventContent
 
 	name?: string
 	name_quality: RoomNameQuality
