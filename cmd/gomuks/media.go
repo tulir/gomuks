@@ -104,6 +104,15 @@ func cacheEntryToHeaders(w http.ResponseWriter, entry *database.Media) {
 	w.Header().Set("Content-Security-Policy", "sandbox; default-src 'none'; script-src 'none';")
 }
 
+type noErrorWriter struct {
+	io.Writer
+}
+
+func (new *noErrorWriter) Write(p []byte) (n int, err error) {
+	n, _ = new.Writer.Write(p)
+	return
+}
+
 func (gmx *Gomuks) DownloadMedia(w http.ResponseWriter, r *http.Request) {
 	mxc := id.ContentURI{
 		Homeserver: r.PathValue("server"),
@@ -207,9 +216,23 @@ func (gmx *Gomuks) DownloadMedia(w http.ResponseWriter, r *http.Request) {
 		}
 		reader = cacheEntry.EncFile.DecryptStream(reader)
 	}
+	if cacheEntry.FileName == "" {
+		_, params, _ := mime.ParseMediaType(resp.Header.Get("Content-Disposition"))
+		cacheEntry.FileName = params["filename"]
+	}
+	if cacheEntry.MimeType == "" {
+		cacheEntry.MimeType = resp.Header.Get("Content-Type")
+	}
+	cacheEntry.Size = resp.ContentLength
 	fileHasher := sha256.New()
-	hashReader := io.TeeReader(reader, fileHasher)
-	cacheEntry.Size, err = io.Copy(tempFile, hashReader)
+	wrappedReader := io.TeeReader(reader, fileHasher)
+	if cacheEntry.Size > 0 && cacheEntry.EncFile == nil {
+		cacheEntryToHeaders(w, cacheEntry)
+		w.WriteHeader(http.StatusOK)
+		wrappedReader = io.TeeReader(wrappedReader, &noErrorWriter{w})
+		w = nil
+	}
+	cacheEntry.Size, err = io.Copy(tempFile, wrappedReader)
 	if err != nil {
 		log.Err(err).Msg("Failed to copy media to temporary file")
 		mautrix.MUnknown.WithMessage(fmt.Sprintf("Failed to copy media to temp file: %v", err)).Write(w)
@@ -222,13 +245,6 @@ func (gmx *Gomuks) DownloadMedia(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	_ = tempFile.Close()
-	if cacheEntry.FileName == "" {
-		_, params, _ := mime.ParseMediaType(resp.Header.Get("Content-Disposition"))
-		cacheEntry.FileName = params["filename"]
-	}
-	if cacheEntry.MimeType == "" {
-		cacheEntry.MimeType = resp.Header.Get("Content-Type")
-	}
 	cacheEntry.Hash = (*[32]byte)(fileHasher.Sum(nil))
 	cacheEntry.Error = nil
 	err = gmx.Client.DB.Media.Put(ctx, cacheEntry)
@@ -250,7 +266,9 @@ func (gmx *Gomuks) DownloadMedia(w http.ResponseWriter, r *http.Request) {
 		mautrix.MUnknown.WithMessage(fmt.Sprintf("Failed to rename temp file: %v", err)).Write(w)
 		return
 	}
-	gmx.downloadMediaFromCache(ctx, w, cacheEntry, true)
+	if w != nil {
+		gmx.downloadMediaFromCache(ctx, w, cacheEntry, true)
+	}
 }
 
 func (gmx *Gomuks) UploadMedia(w http.ResponseWriter, r *http.Request) {
