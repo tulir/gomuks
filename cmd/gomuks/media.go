@@ -57,7 +57,7 @@ var ErrBadGateway = mautrix.RespError{
 	StatusCode: http.StatusBadGateway,
 }
 
-func (gmx *Gomuks) downloadMediaFromCache(ctx context.Context, w http.ResponseWriter, entry *database.CachedMedia, force bool) bool {
+func (gmx *Gomuks) downloadMediaFromCache(ctx context.Context, w http.ResponseWriter, entry *database.Media, force bool) bool {
 	if !entry.UseCache() {
 		if force {
 			mautrix.MNotFound.WithMessage("Media not found in cache").Write(w)
@@ -97,7 +97,7 @@ func (gmx *Gomuks) cacheEntryToPath(hash []byte) string {
 	return filepath.Join(gmx.CacheDir, "media", hashPath[0:2], hashPath[2:4], hashPath[4:])
 }
 
-func cacheEntryToHeaders(w http.ResponseWriter, entry *database.CachedMedia) {
+func cacheEntryToHeaders(w http.ResponseWriter, entry *database.Media) {
 	w.Header().Set("Content-Type", entry.MimeType)
 	w.Header().Set("Content-Length", strconv.FormatInt(entry.Size, 10))
 	w.Header().Set("Content-Disposition", mime.FormatMediaType(entry.ContentDisposition(), map[string]string{"filename": entry.FileName}))
@@ -122,7 +122,7 @@ func (gmx *Gomuks) DownloadMedia(w http.ResponseWriter, r *http.Request) {
 		Logger()
 	log := &logVal
 	ctx := log.WithContext(r.Context())
-	cacheEntry, err := gmx.Client.DB.CachedMedia.Get(ctx, mxc)
+	cacheEntry, err := gmx.Client.DB.Media.Get(ctx, mxc)
 	if err != nil {
 		log.Err(err).Msg("Failed to get cached media entry")
 		mautrix.MUnknown.WithMessage(fmt.Sprintf("Failed to get cached media entry: %v", err)).Write(w)
@@ -152,7 +152,7 @@ func (gmx *Gomuks) DownloadMedia(w http.ResponseWriter, r *http.Request) {
 		log.Err(err).Msg("Failed to download media")
 		var httpErr mautrix.HTTPError
 		if cacheEntry == nil {
-			cacheEntry = &database.CachedMedia{
+			cacheEntry = &database.Media{
 				MXC: mxc,
 			}
 		}
@@ -179,7 +179,7 @@ func (gmx *Gomuks) DownloadMedia(w http.ResponseWriter, r *http.Request) {
 			cacheEntry.Error.Matrix = ptr.Ptr(ErrBadGateway.WithMessage(err.Error()))
 			cacheEntry.Error.StatusCode = http.StatusBadGateway
 		}
-		err = gmx.Client.DB.CachedMedia.Put(ctx, cacheEntry)
+		err = gmx.Client.DB.Media.Put(ctx, cacheEntry)
 		if err != nil {
 			log.Err(err).Msg("Failed to save errored cache entry")
 		}
@@ -190,7 +190,7 @@ func (gmx *Gomuks) DownloadMedia(w http.ResponseWriter, r *http.Request) {
 		_ = resp.Body.Close()
 	}()
 	if cacheEntry == nil {
-		cacheEntry = &database.CachedMedia{
+		cacheEntry = &database.Media{
 			MXC:      mxc,
 			MimeType: resp.Header.Get("Content-Type"),
 			Size:     resp.ContentLength,
@@ -231,7 +231,7 @@ func (gmx *Gomuks) DownloadMedia(w http.ResponseWriter, r *http.Request) {
 	}
 	cacheEntry.Hash = (*[32]byte)(fileHasher.Sum(nil))
 	cacheEntry.Error = nil
-	err = gmx.Client.DB.CachedMedia.Put(ctx, cacheEntry)
+	err = gmx.Client.DB.Media.Put(ctx, cacheEntry)
 	if err != nil {
 		log.Err(err).Msg("Failed to save cache entry")
 		mautrix.MUnknown.WithMessage(fmt.Sprintf("Failed to save cache entry: %v", err)).Write(w)
@@ -333,7 +333,7 @@ func (gmx *Gomuks) UploadMedia(w http.ResponseWriter, r *http.Request) {
 }
 
 func (gmx *Gomuks) uploadFile(ctx context.Context, checksum []byte, cacheFile *os.File, encrypt bool, fileSize int64, mimeType, fileName string) (*event.EncryptedFileInfo, id.ContentURIString, error) {
-	cm := &database.CachedMedia{
+	cm := &database.Media{
 		FileName: fileName,
 		MimeType: mimeType,
 		Size:     fileSize,
@@ -359,7 +359,7 @@ func (gmx *Gomuks) uploadFile(ctx context.Context, checksum []byte, cacheFile *o
 		return nil, "", fmt.Errorf("failed to close cache reader: %w", err)
 	}
 	cm.MXC = resp.ContentURI
-	err = gmx.Client.DB.CachedMedia.Put(ctx, cm)
+	err = gmx.Client.DB.Media.Put(ctx, cm)
 	if err != nil {
 		zerolog.Ctx(ctx).Err(err).
 			Stringer("mxc", cm.MXC).

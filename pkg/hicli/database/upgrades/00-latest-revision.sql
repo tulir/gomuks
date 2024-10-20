@@ -1,4 +1,4 @@
--- v0 -> v4 (compatible with v1+): Latest revision
+-- v0 -> v5 (compatible with v5+): Latest revision
 CREATE TABLE account (
 	user_id        TEXT NOT NULL PRIMARY KEY,
 	device_id      TEXT NOT NULL,
@@ -192,17 +192,23 @@ BEGIN
 	  AND reactions IS NOT NULL;
 END;
 
-CREATE TABLE cached_media (
-	mxc         TEXT NOT NULL PRIMARY KEY,
-	event_rowid INTEGER,
-	enc_file    TEXT,
-	file_name   TEXT,
-	mime_type   TEXT,
-	size        INTEGER,
-	hash        BLOB,
-	error       TEXT,
+CREATE TABLE media (
+	mxc       TEXT NOT NULL PRIMARY KEY,
+	enc_file  TEXT,
+	file_name TEXT,
+	mime_type TEXT,
+	size      INTEGER,
+	hash      BLOB,
+	error     TEXT
+) STRICT;
 
-	CONSTRAINT cached_media_event_fkey FOREIGN KEY (event_rowid) REFERENCES event (rowid) ON DELETE SET NULL
+CREATE TABLE media_reference (
+	event_rowid INTEGER NOT NULL,
+	media_mxc   TEXT    NOT NULL,
+
+	PRIMARY KEY (event_rowid, media_mxc),
+	CONSTRAINT media_reference_event_fkey FOREIGN KEY (event_rowid) REFERENCES event (rowid) ON DELETE CASCADE,
+	CONSTRAINT media_reference_media_fkey FOREIGN KEY (media_mxc) REFERENCES media (mxc) ON DELETE CASCADE
 ) STRICT;
 
 CREATE TABLE session_request (

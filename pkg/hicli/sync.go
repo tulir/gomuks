@@ -282,10 +282,9 @@ func (h *HiClient) addMediaCache(
 	if !parsedMXC.IsValid() {
 		return
 	}
-	cm := &database.CachedMedia{
-		MXC:        parsedMXC,
-		EventRowID: eventRowID,
-		FileName:   fileName,
+	cm := &database.Media{
+		MXC:      parsedMXC,
+		FileName: fileName,
 	}
 	if file != nil {
 		cm.EncFile = &file.EncryptedFile
@@ -293,12 +292,20 @@ func (h *HiClient) addMediaCache(
 	if info != nil {
 		cm.MimeType = info.MimeType
 	}
-	err := h.DB.CachedMedia.Put(ctx, cm)
+	err := h.DB.Media.Put(ctx, cm)
 	if err != nil {
 		zerolog.Ctx(ctx).Warn().Err(err).
 			Stringer("mxc", parsedMXC).
 			Int64("event_rowid", int64(eventRowID)).
-			Msg("Failed to add cached media entry")
+			Msg("Failed to add database media entry")
+		return
+	}
+	err = h.DB.Media.AddReference(ctx, eventRowID, parsedMXC)
+	if err != nil {
+		zerolog.Ctx(ctx).Warn().Err(err).
+			Stringer("mxc", parsedMXC).
+			Int64("event_rowid", int64(eventRowID)).
+			Msg("Failed to add database media reference")
 	}
 }
 

@@ -23,7 +23,7 @@ type Database struct {
 	Timeline       TimelineQuery
 	SessionRequest SessionRequestQuery
 	Receipt        ReceiptQuery
-	CachedMedia    CachedMediaQuery
+	Media          MediaQuery
 }
 
 func New(rawDB *dbutil.Database) *Database {
@@ -40,7 +40,7 @@ func New(rawDB *dbutil.Database) *Database {
 		Timeline:       TimelineQuery{QueryHelper: eventQH},
 		SessionRequest: SessionRequestQuery{QueryHelper: dbutil.MakeQueryHelper(rawDB, newSessionRequest)},
 		Receipt:        ReceiptQuery{QueryHelper: dbutil.MakeQueryHelper(rawDB, newReceipt)},
-		CachedMedia:    CachedMediaQuery{QueryHelper: dbutil.MakeQueryHelper(rawDB, newCachedMedia)},
+		Media:          MediaQuery{QueryHelper: dbutil.MakeQueryHelper(rawDB, newMedia)},
 	}
 }
 
@@ -60,8 +60,8 @@ func newReceipt(_ *dbutil.QueryHelper[*Receipt]) *Receipt {
 	return &Receipt{}
 }
 
-func newCachedMedia(_ *dbutil.QueryHelper[*CachedMedia]) *CachedMedia {
-	return &CachedMedia{}
+func newMedia(_ *dbutil.QueryHelper[*Media]) *Media {
+	return &Media{}
 }
 
 func newAccountData(_ *dbutil.QueryHelper[*AccountData]) *AccountData {
