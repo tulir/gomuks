@@ -52,6 +52,7 @@ export const EmojiAutocompleter = ({ params, state, setState, setAutocomplete }:
 			endPos: params.startPos + emoji.u.length,
 			frozenQuery: params.frozenQuery ?? params.query,
 		})
+		document.querySelector(`div.autocompletion-item[data-index='${index}']`)?.scrollIntoView({ block: "nearest" })
 	})
 	const onClick = useEvent((evt: React.MouseEvent<HTMLDivElement>) => {
 		const idx = evt.currentTarget.getAttribute("data-index")
