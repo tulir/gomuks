@@ -146,6 +146,7 @@ func (gmx *Gomuks) writeTokenCookie(w http.ResponseWriter) {
 		Value:    token,
 		Expires:  expiry,
 		HttpOnly: true,
+		SameSite: http.SameSiteLaxMode,
 	})
 }
 
