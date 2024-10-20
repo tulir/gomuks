@@ -27,6 +27,8 @@ import type {
 	RPCEvent,
 	RawDBEvent,
 	ReceiptType,
+	ResolveAliasResponse,
+	RoomAlias,
 	RoomID,
 	TimelineRowID,
 	UserID,
@@ -159,6 +161,10 @@ export default abstract class RPCClient {
 
 	paginateServer(room_id: RoomID, limit: number): Promise<PaginationResponse> {
 		return this.request("paginate_server", { room_id, limit })
+	}
+
+	resolveAlias(alias: RoomAlias): Promise<ResolveAliasResponse> {
+		return this.request("resolve_alias", { alias })
 	}
 
 	discoverHomeserver(user_id: UserID): Promise<ClientWellKnown> {

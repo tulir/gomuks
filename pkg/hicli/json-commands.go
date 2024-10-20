@@ -79,6 +79,10 @@ func (h *HiClient) handleJSONCommand(ctx context.Context, req *JSONCommand) (any
 		return unmarshalAndCall(req.Data, func(params *ensureGroupSessionSharedParams) (bool, error) {
 			return true, h.EnsureGroupSessionShared(ctx, params.RoomID)
 		})
+	case "resolve_alias":
+		return unmarshalAndCall(req.Data, func(params *resolveAliasParams) (*mautrix.RespAliasResolve, error) {
+			return h.Client.ResolveAlias(ctx, params.Alias)
+		})
 	case "login":
 		return unmarshalAndCall(req.Data, func(params *loginParams) (bool, error) {
 			return true, h.LoginPassword(ctx, params.HomeserverURL, params.Username, params.Password)
@@ -156,6 +160,10 @@ type getRoomStateParams struct {
 
 type ensureGroupSessionSharedParams struct {
 	RoomID id.RoomID `json:"room_id"`
+}
+
+type resolveAliasParams struct {
+	Alias id.RoomAlias `json:"alias"`
 }
 
 type loginParams struct {

@@ -139,6 +139,11 @@ export interface PaginationResponse {
 	has_more: boolean
 }
 
+export interface ResolveAliasResponse {
+	room_id: RoomID
+	servers: string[]
+}
+
 export interface EventUnsigned {
 	prev_content?: unknown
 	prev_sender?: UserID
