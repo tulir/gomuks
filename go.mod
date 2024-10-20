@@ -21,6 +21,7 @@ require (
 	golang.org/x/crypto v0.28.0
 	golang.org/x/image v0.21.0
 	golang.org/x/net v0.30.0
+	golang.org/x/text v0.19.0
 	gopkg.in/yaml.v3 v3.0.1
 	maunium.net/go/mauflag v1.0.0
 	maunium.net/go/mautrix v0.21.2-0.20241020164413-e17cb8385518

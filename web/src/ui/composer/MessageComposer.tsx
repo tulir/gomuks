@@ -16,10 +16,13 @@
 import React, { use, useCallback, useEffect, useLayoutEffect, useReducer, useRef, useState } from "react"
 import { ScaleLoader } from "react-spinners"
 import { RoomStateStore, useRoomEvent } from "@/api/statestore"
-import { EventID, MediaMessageEventContent, Mentions, RoomID } from "@/api/types"
-import { ClientContext } from "./ClientContext.ts"
-import { ReplyBody } from "./timeline/ReplyBody.tsx"
-import { useMediaContent } from "./timeline/content/useMediaContent.tsx"
+import type { EventID, MediaMessageEventContent, Mentions, RoomID } from "@/api/types"
+import useEvent from "@/util/useEvent.ts"
+import { ClientContext } from "../ClientContext.ts"
+import { ReplyBody } from "../timeline/ReplyBody.tsx"
+import { useMediaContent } from "../timeline/content/useMediaContent.tsx"
+import type { AutocompleteQuery } from "./Autocompleter.tsx"
+import { charToAutocompleteType, emojiQueryRegex, getAutocompleter } from "./getAutocompleter.ts"
 import AttachIcon from "@/icons/attach.svg?react"
 import CloseIcon from "@/icons/close.svg?react"
 import SendIcon from "@/icons/send.svg?react"
@@ -31,7 +34,7 @@ interface MessageComposerProps {
 	setReplyToRef: React.RefObject<(evt: EventID | null) => void>
 }
 
-interface ComposerState {
+export interface ComposerState {
 	text: string
 	media: MediaMessageEventContent | null
 	replyTo: EventID | null
@@ -61,8 +64,11 @@ const draftStore = {
 	clear: (roomID: RoomID)=> localStorage.removeItem(`draft-${roomID}`),
 }
 
+type CaretEvent<T> = React.MouseEvent<T> | React.KeyboardEvent<T> | React.ChangeEvent<T>
+
 const MessageComposer = ({ room, scrollToBottomRef, setReplyToRef }: MessageComposerProps) => {
 	const client = use(ClientContext)!
+	const [autocomplete, setAutocomplete] = useState<AutocompleteQuery | null>(null)
 	const [state, setState] = useReducer(composerReducer, uninitedComposer)
 	const [loadingMedia, setLoadingMedia] = useState(false)
 	const fileInput = useRef<HTMLInputElement>(null)
@@ -73,12 +79,13 @@ const MessageComposer = ({ room, scrollToBottomRef, setReplyToRef }: MessageComp
 	setReplyToRef.current = useCallback((evt: EventID | null) => {
 		setState({ replyTo: evt })
 	}, [])
-	const sendMessage = useCallback((evt: React.FormEvent) => {
+	const sendMessage = useEvent((evt: React.FormEvent) => {
 		evt.preventDefault()
 		if (state.text === "" && !state.media) {
 			return
 		}
 		setState(emptyComposer)
+		setAutocomplete(null)
 		const mentions: Mentions = {
 			user_ids: [],
 			room: false,
@@ -93,13 +100,53 @@ const MessageComposer = ({ room, scrollToBottomRef, setReplyToRef }: MessageComp
 			reply_to: replyToEvt?.event_id,
 			mentions,
 		}).catch(err => window.alert("Failed to send message: " + err))
-	}, [replyToEvt, state, room, client])
-	const onKeyDown = useCallback((evt: React.KeyboardEvent) => {
+	})
+	const onComposerCaretChange = useEvent((evt: CaretEvent<HTMLTextAreaElement>, newText?: string) => {
+		const area = evt.currentTarget
+		if (area.selectionStart <= (autocomplete?.startPos ?? 0)) {
+			if (autocomplete) {
+				setAutocomplete(null)
+			}
+			return
+		}
+		if (autocomplete?.frozenQuery) {
+			if (area.selectionEnd !== autocomplete.endPos) {
+				setAutocomplete(null)
+			}
+		} else if (autocomplete) {
+			const newQuery = (newText ?? state.text).slice(autocomplete.startPos, area.selectionEnd)
+			if (newQuery.includes(" ") || (autocomplete.type === "emoji" && !emojiQueryRegex.test(newQuery))) {
+				setAutocomplete(null)
+			} else if (newQuery !== autocomplete.query) {
+				setAutocomplete({ ...autocomplete, query: newQuery, endPos: area.selectionEnd })
+			}
+		} else if (area.selectionStart === area.selectionEnd) {
+			const acType = charToAutocompleteType(newText?.slice(area.selectionStart - 1, area.selectionStart))
+			if (acType && (area.selectionStart === 1 || newText?.[area.selectionStart - 2] === " ")) {
+				setAutocomplete({
+					type: acType,
+					query: "",
+					startPos: area.selectionStart - 1,
+					endPos: area.selectionEnd,
+				})
+			}
+		}
+	})
+	const onComposerKeyDown = useEvent((evt: React.KeyboardEvent) => {
 		if (evt.key === "Enter" && !evt.shiftKey) {
 			sendMessage(evt)
 		}
-	}, [sendMessage])
-	const onChange = useCallback((evt: React.ChangeEvent<HTMLTextAreaElement>) => {
+		if (autocomplete && !evt.ctrlKey && !evt.altKey) {
+			if (!evt.shiftKey && (evt.key === "Tab" || evt.key === "Down")) {
+				setAutocomplete({ ...autocomplete, selected: (autocomplete.selected ?? -1) + 1 })
+				evt.preventDefault()
+			} else if ((evt.shiftKey && evt.key === "Tab") || (!evt.shiftKey && evt.key === "Up")) {
+				setAutocomplete({ ...autocomplete, selected: (autocomplete.selected ?? 0) - 1 })
+				evt.preventDefault()
+			}
+		}
+	})
+	const onChange = useEvent((evt: React.ChangeEvent<HTMLTextAreaElement>) => {
 		setState({ text: evt.target.value })
 		const now = Date.now()
 		if (evt.target.value !== "" && typingSentAt.current + 5_000 < now) {
@@ -111,7 +158,8 @@ const MessageComposer = ({ room, scrollToBottomRef, setReplyToRef }: MessageComp
 			client.rpc.setTyping(room.roomID, 0)
 				.catch(err => console.error("Failed to send stop typing notification:", err))
 		}
-	}, [client, room.roomID])
+		onComposerCaretChange(evt, evt.target.value)
+	})
 	const doUploadFile = useCallback((file: File | null | undefined) => {
 		if (!file) {
 			return
@@ -133,9 +181,8 @@ const MessageComposer = ({ room, scrollToBottomRef, setReplyToRef }: MessageComp
 			.catch(err => window.alert("Failed to upload file: " + err))
 			.finally(() => setLoadingMedia(false))
 	}, [room])
-	const onAttachFile = useCallback(
+	const onAttachFile = useEvent(
 		(evt: React.ChangeEvent<HTMLInputElement>) => doUploadFile(evt.target.files?.[0]),
-		[doUploadFile],
 	)
 	useEffect(() => {
 		const listener = (evt: ClipboardEvent) => doUploadFile(evt.clipboardData?.files?.[0])
@@ -147,6 +194,7 @@ const MessageComposer = ({ room, scrollToBottomRef, setReplyToRef }: MessageComp
 	useLayoutEffect(() => {
 		const draft = draftStore.get(room.roomID)
 		setState(draft ?? emptyComposer)
+		setAutocomplete(null)
 		return () => {
 			if (typingSentAt.current > 0) {
 				typingSentAt.current = 0
@@ -168,6 +216,7 @@ const MessageComposer = ({ room, scrollToBottomRef, setReplyToRef }: MessageComp
 		// This has to be called unconditionally, because setting rows = 1 messes up the scroll state otherwise
 		scrollToBottomRef.current?.()
 	}, [state, scrollToBottomRef])
+	// Saving to localStorage could be done in the reducer, but that's not very proper, so do it in an effect.
 	useEffect(() => {
 		if (state.uninited) {
 			return
@@ -184,7 +233,15 @@ const MessageComposer = ({ room, scrollToBottomRef, setReplyToRef }: MessageComp
 		evt.stopPropagation()
 		setState({ replyTo: null })
 	}, [])
+	const Autocompleter = getAutocompleter(autocomplete)
 	return <div className="message-composer">
+		{Autocompleter && autocomplete && <div className="autocompletions-wrapper"><Autocompleter
+			params={autocomplete}
+			room={room}
+			state={state}
+			setState={setState}
+			setAutocomplete={setAutocomplete}
+		/></div>}
 		{replyToEvt && <ReplyBody room={room} event={replyToEvt} onClose={closeReply}/>}
 		{loadingMedia && <div className="composer-media"><ScaleLoader/></div>}
 		{state.media && <ComposerMedia content={state.media} clearMedia={clearMedia}/>}
@@ -194,7 +251,9 @@ const MessageComposer = ({ room, scrollToBottomRef, setReplyToRef }: MessageComp
 				ref={textInput}
 				rows={textRows.current}
 				value={state.text}
-				onKeyDown={onKeyDown}
+				onKeyDown={onComposerKeyDown}
+				onKeyUp={onComposerCaretChange}
+				onClick={onComposerCaretChange}
 				onChange={onChange}
 				placeholder="Send a message"
 				id="message-composer"

@@ -1,0 +1,24 @@
+div.autocompletions-wrapper {
+	position: relative;
+}
+
+div.autocompletions {
+	position: absolute;
+	bottom: 1px;
+	border-top: 1px solid #ccc;
+	border-right: 1px solid #ccc;
+	background-color: #fff;
+	padding: .5rem;
+	max-height: 20rem;
+	overflow: auto;
+
+	> .autocompletion-item {
+		padding: .25rem;
+		border-radius: .25rem;
+		cursor: pointer;
+
+		&.selected, &:hover {
+			background-color: #f0f0f0;
+		}
+	}
+}
