@@ -30,6 +30,9 @@ div.room-entry {
 	/*border-radius: 4px;*/
 	user-select: none;
 	cursor: pointer;
+	height: 3rem;
+	contain-intrinsic-height: 3rem;
+	content-visibility: auto;
 
 	&:hover {
 		background-color: rgba(0, 0, 0, 0.075);
