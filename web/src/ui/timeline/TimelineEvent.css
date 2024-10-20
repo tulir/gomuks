@@ -98,7 +98,7 @@ div.timeline-event {
 		grid-template:
 			"timestamp content status" auto
 			/ 3rem 1fr 2rem;
-		margin-top: 0;
+		margin-top: .25rem;
 
 		> div.sender-avatar, > div.event-sender-and-time {
 			display: none;

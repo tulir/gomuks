@@ -28,6 +28,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/alecthomas/chroma/v2/styles"
 	"github.com/rs/zerolog/hlog"
 	"go.mau.fi/util/exerrors"
 	"go.mau.fi/util/exhttp"
@@ -36,6 +37,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 	"maunium.net/go/mautrix"
 
+	"go.mau.fi/gomuks/pkg/hicli"
 	"go.mau.fi/gomuks/web"
 )
 
@@ -45,6 +47,7 @@ func (gmx *Gomuks) StartServer() {
 	api.HandleFunc("POST /auth", gmx.Authenticate)
 	api.HandleFunc("POST /upload", gmx.UploadMedia)
 	api.HandleFunc("GET /media/{server}/{media_id}", gmx.DownloadMedia)
+	api.HandleFunc("GET /codeblock/{style}", gmx.GetCodeblockCSS)
 	apiHandler := exhttp.ApplyMiddleware(
 		api,
 		hlog.NewHandler(*gmx.Log),
@@ -225,4 +228,19 @@ func (gmx *Gomuks) AuthMiddleware(next http.Handler) http.Handler {
 		}
 		next.ServeHTTP(w, r)
 	})
+}
+
+func (gmx *Gomuks) GetCodeblockCSS(w http.ResponseWriter, r *http.Request) {
+	styleName := r.PathValue("style")
+	if !strings.HasSuffix(styleName, ".css") {
+		w.WriteHeader(http.StatusNotFound)
+		return
+	}
+	style := styles.Get(strings.TrimSuffix(styleName, ".css"))
+	if style == nil {
+		w.WriteHeader(http.StatusNotFound)
+		return
+	}
+	w.Header().Set("Content-Type", "text/css")
+	_ = hicli.CodeBlockFormatter.WriteCSS(w, style)
 }

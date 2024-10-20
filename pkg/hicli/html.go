@@ -17,6 +17,10 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/alecthomas/chroma/v2"
+	chromahtml "github.com/alecthomas/chroma/v2/formatters/html"
+	"github.com/alecthomas/chroma/v2/lexers"
+	"github.com/alecthomas/chroma/v2/styles"
 	"golang.org/x/net/html"
 	"golang.org/x/net/html/atom"
 	"maunium.net/go/mautrix/id"
@@ -45,7 +49,7 @@ func isSelfClosing(tag atom.Atom) bool {
 	}
 }
 
-var languageRegex = regexp.MustCompile(`^language-[a-zA-Z0-9-]+$`)
+var languageRegex = regexp.MustCompile(`^language-([a-zA-Z0-9-]+)$`)
 var allowedColorRegex = regexp.MustCompile(`^#[0-9a-fA-F]{6}$`)
 
 // This is approximately a mirror of web/src/util/mediasize.ts in gomuks
@@ -489,9 +493,23 @@ func (ts *tagStack) pop(tag atom.Atom) bool {
 	return false
 }
 
+func getCodeBlockLanguage(token html.Token) string {
+	for _, attr := range token.Attr {
+		if attr.Key == "class" {
+			match := languageRegex.FindStringSubmatch(attr.Val)
+			if len(match) == 2 {
+				return match[1]
+			}
+		}
+	}
+	return ""
+}
+
 func sanitizeAndLinkifyHTML(body string) (string, []id.ContentURI, error) {
 	tz := html.NewTokenizer(strings.NewReader(body))
 	var built strings.Builder
+	var codeBlock *strings.Builder
+	var codeBlockLanguage string
 	var inlineImages []id.ContentURI
 	ts := make(tagStack, 2)
 Loop:
@@ -505,6 +523,13 @@ Loop:
 			return "", nil, err
 		case html.StartTagToken, html.SelfClosingTagToken:
 			token := tz.Token()
+			if codeBlock != nil {
+				if token.DataAtom == atom.Code {
+					codeBlockLanguage = getCodeBlockLanguage(token)
+				}
+				// Don't allow any tags inside code blocks
+				continue
+			}
 			if !tagIsAllowed(token.DataAtom) {
 				continue
 			}
@@ -513,6 +538,9 @@ Loop:
 				continue
 			}
 			switch token.DataAtom {
+			case atom.Pre:
+				codeBlock = &strings.Builder{}
+				continue
 			case atom.A:
 				mxc := writeA(&built, token.Attr)
 				if !mxc.IsEmpty() {
@@ -541,7 +569,11 @@ Loop:
 		case html.EndTagToken:
 			tagName, _ := tz.TagName()
 			tag := atom.Lookup(tagName)
-			if tagIsAllowed(tag) && ts.pop(tag) {
+			if tag == atom.Pre && codeBlock != nil {
+				writeCodeBlock(&built, codeBlockLanguage, codeBlock)
+				codeBlockLanguage = ""
+				codeBlock = nil
+			} else if tagIsAllowed(tag) && ts.pop(tag) {
 				if tag == atom.Font {
 					built.WriteString("</span>")
 				} else {
@@ -551,7 +583,9 @@ Loop:
 				}
 			}
 		case html.TextToken:
-			if ts.contains(atom.Pre, atom.Code, atom.A) {
+			if codeBlock != nil {
+				codeBlock.Write(tz.Text())
+			} else if ts.contains(atom.Pre, atom.Code, atom.A) {
 				writeEscapedBytes(&built, tz.Text())
 			} else {
 				linkifyAndWriteBytes(&built, tz.Text())
@@ -567,4 +601,33 @@ Loop:
 		built.WriteByte('>')
 	}
 	return built.String(), inlineImages, nil
+}
+
+var CodeBlockFormatter = chromahtml.New(
+	chromahtml.WithClasses(true),
+	chromahtml.WithLineNumbers(true),
+)
+
+func writeCodeBlock(w *strings.Builder, language string, block *strings.Builder) {
+	lexer := lexers.Get(language)
+	if lexer == nil {
+		lexer = lexers.Fallback
+	}
+	lexer = chroma.Coalesce(lexer)
+	iter, err := lexer.Tokenise(nil, block.String())
+	if err != nil {
+		w.WriteString("<pre><code")
+		if language != "" {
+			writeAttribute(w, "class", "language-"+language)
+		}
+		w.WriteByte('>')
+		writeEscapedString(w, block.String())
+		w.WriteString("</code></pre>")
+		return
+	}
+	err = CodeBlockFormatter.Format(w, styles.Fallback, iter)
+	if err != nil {
+		// This should never fail
+		panic(err)
+	}
 }

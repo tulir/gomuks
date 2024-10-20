@@ -18,6 +18,13 @@ import { createRoot } from "react-dom/client"
 import App from "./App.tsx"
 import "./index.css"
 
+const styleTags = document.createElement("style")
+styleTags.textContent = `
+@import "_gomuks/codeblock/github-dark.css" (prefers-color-scheme: dark);
+@import "_gomuks/codeblock/github.css" (prefers-color-scheme: light);
+`
+document.head.appendChild(styleTags)
+
 fetch("/_gomuks/auth", { method: "POST" }).then(resp => {
 	if (resp.ok) {
 		createRoot(document.getElementById("root")!).render(

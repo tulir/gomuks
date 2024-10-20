@@ -5,6 +5,7 @@ go 1.23.0
 toolchain go1.23.2
 
 require (
+	github.com/alecthomas/chroma/v2 v2.14.0
 	github.com/chzyer/readline v1.5.1
 	github.com/coder/websocket v1.8.12
 	github.com/gabriel-vasile/mimetype v1.4.6
@@ -29,6 +30,7 @@ require (
 require (
 	filippo.io/edwards25519 v1.1.0 // indirect
 	github.com/coreos/go-systemd/v22 v22.5.0 // indirect
+	github.com/dlclark/regexp2 v1.11.0 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.19 // indirect
 	github.com/petermattis/goid v0.0.0-20240813172612-4fcff4a6cae7 // indirect
