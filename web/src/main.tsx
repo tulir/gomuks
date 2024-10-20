@@ -25,7 +25,7 @@ styleTags.textContent = `
 `
 document.head.appendChild(styleTags)
 
-fetch("/_gomuks/auth", { method: "POST" }).then(resp => {
+fetch("_gomuks/auth", { method: "POST" }).then(resp => {
 	if (resp.ok) {
 		createRoot(document.getElementById("root")!).render(
 			<StrictMode>
