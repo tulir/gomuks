@@ -92,6 +92,10 @@ var (
 )
 
 func (h *HiClient) evaluatePushRules(ctx context.Context, llSummary *mautrix.LazyLoadSummary, baseType database.UnreadType, evt *event.Event) database.UnreadType {
+	if !h.firstSyncReceived && baseType == database.UnreadTypeNone {
+		// Skip evaluating push rules that are unlikely to match for the initial sync
+		return baseType
+	}
 	should := h.PushRules.Load().GetMatchingRule(&pushRoom{
 		ctx:    ctx,
 		roomID: evt.RoomID,
