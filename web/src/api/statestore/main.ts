@@ -46,8 +46,7 @@ export interface RoomListEntry {
 const removeHiddenCharsRegex = /[\u2000-\u200F\u202A-\u202F\u0300-\u036F\uFEFF\u061C\u2800\u2062-\u2063\s]/g
 
 export function toSearchableString(str: string): string {
-	return unhomoglyph(str.normalize("NFD").replace(removeHiddenCharsRegex, ""))
-		.toLowerCase()
+	return unhomoglyph(str.normalize("NFD").toLowerCase().replace(removeHiddenCharsRegex, ""))
 		.replace(/[\\'!"#$%&()*+,\-./:;<=>?@[\]^_`{|}~\u2000-\u206f\u2e00-\u2e7f]/g, "")
 		.toLowerCase()
 }
