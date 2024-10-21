@@ -16,7 +16,7 @@
 import { RoomStateStore } from "@/api/statestore"
 import { MemDBEvent } from "@/api/types"
 
-export interface EventContentProps {
+export default interface EventContentProps {
 	room: RoomStateStore
 	event: MemDBEvent
 	sender?: MemDBEvent

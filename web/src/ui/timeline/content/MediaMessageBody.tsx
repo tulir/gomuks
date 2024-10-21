@@ -13,10 +13,24 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
+import { MediaMessageEventContent } from "@/api/types"
+import TextMessageBody from "./TextMessageBody.tsx"
 import EventContentProps from "./props.ts"
+import { useMediaContent } from "./useMediaContent.tsx"
 
-const HiddenEvent = ({ event }: EventContentProps) => {
-	return <code>{`{ "type": "${event.type}" }`}</code>
+const MediaMessageBody = ({ event, room }: EventContentProps) => {
+	const content = event.content as MediaMessageEventContent
+	let caption = null
+	if (content.body && content.filename && content.body !== content.filename) {
+		caption = <TextMessageBody event={event} room={room} />
+	}
+	const [mediaContent, containerClass, containerStyle] = useMediaContent(content, event.type)
+	return <>
+		<div className={`media-container ${containerClass}`} style={containerStyle}>
+			{mediaContent}
+		</div>
+		{caption}
+	</>
 }
 
-export default HiddenEvent
+export default MediaMessageBody

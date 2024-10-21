@@ -13,9 +13,8 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import { MediaMessageEventContent, MemberEventContent, MessageEventContent } from "@/api/types"
-import { EventContentProps } from "./props.ts"
-import { useMediaContent } from "./useMediaContent.tsx"
+import { MemberEventContent, MessageEventContent } from "@/api/types"
+import EventContentProps from "./props.ts"
 
 const onClickHTML = (evt: React.MouseEvent<HTMLDivElement>) => {
 	if ((evt.target as HTMLElement).closest("span.hicli-spoiler")?.classList.toggle("spoiler-revealed")) {
@@ -24,7 +23,7 @@ const onClickHTML = (evt: React.MouseEvent<HTMLDivElement>) => {
 	}
 }
 
-export const TextMessageBody = ({ event, room }: EventContentProps) => {
+const TextMessageBody = ({ event, room }: EventContentProps) => {
 	const content = event.content as MessageEventContent
 	const classNames = ["message-text"]
 	let eventSenderName: string | undefined
@@ -51,22 +50,4 @@ export const TextMessageBody = ({ event, room }: EventContentProps) => {
 	return <div className={classNames.join(" ")} data-event-sender={eventSenderName}>{content.body}</div>
 }
 
-export const MediaMessageBody = ({ event, room }: EventContentProps) => {
-	const content = event.content as MediaMessageEventContent
-	let caption = null
-	if (content.body && content.filename && content.body !== content.filename) {
-		caption = <TextMessageBody event={event} room={room} />
-	}
-	const [mediaContent, containerClass, containerStyle] = useMediaContent(content, event.type)
-	return <>
-		<div className={`media-container ${containerClass}`} style={containerStyle}>
-			{mediaContent}
-		</div>
-		{caption}
-	</>
-}
-
-export const UnknownMessageBody = ({ event }: EventContentProps) => {
-	const content = event.content as MessageEventContent
-	return <code>{`{ "type": "${event.type}", "content": { "msgtype": "${content.msgtype}" } }`}</code>
-}
+export default TextMessageBody

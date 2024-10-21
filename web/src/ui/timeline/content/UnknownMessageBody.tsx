@@ -13,10 +13,12 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
+import { MessageEventContent } from "@/api/types"
 import EventContentProps from "./props.ts"
 
-const HiddenEvent = ({ event }: EventContentProps) => {
-	return <code>{`{ "type": "${event.type}" }`}</code>
+const UnknownMessageBody = ({ event }: EventContentProps) => {
+	const content = event.content as MessageEventContent
+	return <code>{`{ "type": "${event.type}", "content": { "msgtype": "${content.msgtype}" } }`}</code>
 }
 
-export default HiddenEvent
+export default UnknownMessageBody

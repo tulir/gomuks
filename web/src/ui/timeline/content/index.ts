@@ -2,10 +2,21 @@ import React from "react"
 import { MemDBEvent } from "@/api/types"
 import EncryptedBody from "./EncryptedBody.tsx"
 import HiddenEvent from "./HiddenEvent.tsx"
+import MediaMessageBody from "./MediaMessageBody.tsx"
 import MemberBody from "./MemberBody.tsx"
-import { MediaMessageBody, TextMessageBody, UnknownMessageBody } from "./MessageBody.tsx"
 import RedactedBody from "./RedactedBody.tsx"
-import { EventContentProps } from "./props.ts"
+import TextMessageBody from "./TextMessageBody.tsx"
+import UnknownMessageBody from "./UnknownMessageBody.tsx"
+import EventContentProps from "./props.ts"
+
+export { default as EncryptedBody } from "./EncryptedBody.tsx"
+export { default as HiddenEvent } from "./HiddenEvent.tsx"
+export { default as MediaMessageBody } from "./MediaMessageBody.tsx"
+export { default as MemberBody } from "./MemberBody.tsx"
+export { default as RedactedBody } from "./RedactedBody.tsx"
+export { default as TextMessageBody } from "./TextMessageBody.tsx"
+export { default as UnknownMessageBody } from "./UnknownMessageBody.tsx"
+export type { default as EventContentProps } from "./props.ts"
 
 export default function getBodyType(evt: MemDBEvent, forReply = false): React.FunctionComponent<EventContentProps> {
 	if (evt.relation_type === "m.replace") {
