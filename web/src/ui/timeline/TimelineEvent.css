@@ -198,6 +198,11 @@ div.message-text {
 div.html-body {
 	overflow: hidden;
 
+	pre.chroma {
+		/* TODO this may need to be undone if the color scheme is customizable */
+		background-color: inherit;
+	}
+
 	img.hicli-custom-emoji {
 		vertical-align: middle;
 		height: 24px;
