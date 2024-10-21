@@ -16,7 +16,7 @@
 import { CachedEventDispatcher } from "../util/eventdispatcher.ts"
 import RPCClient, { SendMessageParams } from "./rpc.ts"
 import { RoomStateStore, StateStore } from "./statestore"
-import type { ClientState, EventID, EventRowID, EventType, RPCEvent, RoomID, UserID } from "./types"
+import type { ClientState, EventID, RPCEvent, RoomID, UserID } from "./types"
 
 export default class Client {
 	readonly state = new CachedEventDispatcher<ClientState>()
@@ -81,21 +81,7 @@ export default class Client {
 			throw new Error("Room not found")
 		}
 		const state = await this.rpc.getRoomState(roomID, room.meta.current.has_member_list, refetch)
-		const newStateMap: Map<EventType, Map<string, EventRowID>> = new Map()
-		for (const evt of state) {
-			if (evt.state_key === undefined) {
-				throw new Error(`Event ${evt.event_id} is missing state key`)
-			}
-			room.applyEvent(evt)
-			let stateMap = newStateMap.get(evt.type)
-			if (!stateMap) {
-				stateMap = new Map()
-				newStateMap.set(evt.type, stateMap)
-			}
-			stateMap.set(evt.state_key, evt.rowid)
-		}
-		room.state = newStateMap
-		room.stateLoaded = true
+		room.applyFullState(state)
 	}
 
 	async loadMoreHistory(roomID: RoomID): Promise<void> {

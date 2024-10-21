@@ -234,6 +234,29 @@ export class RoomStateStore {
 		this.notifyTimelineSubscribers()
 	}
 
+	applyFullState(state: RawDBEvent[]) {
+		const newStateMap: Map<EventType, Map<string, EventRowID>> = new Map()
+		for (const evt of state) {
+			if (evt.state_key === undefined) {
+				throw new Error(`Event ${evt.event_id} is missing state key`)
+			}
+			this.applyEvent(evt)
+			let stateMap = newStateMap.get(evt.type)
+			if (!stateMap) {
+				stateMap = new Map()
+				newStateMap.set(evt.type, stateMap)
+			}
+			stateMap.set(evt.state_key, evt.rowid)
+		}
+		this.state = newStateMap
+		this.stateLoaded = true
+		for (const [evtType, stateMap] of newStateMap) {
+			for (const [key] of stateMap) {
+				this.notifyStateSubscribers(evtType, key)
+			}
+		}
+	}
+
 	applyDecrypted(decrypted: EventsDecryptedData) {
 		let timelineChanged = false
 		for (const evt of decrypted.events) {
