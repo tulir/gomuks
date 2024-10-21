@@ -141,7 +141,11 @@ div.event-content > div.event-reactions {
 	gap: .25rem;
 	margin: .25rem 0;
 
-	> span.reaction {
+	> div.reaction {
+		display: flex;
+		align-items: center;
+		gap: .25rem;
+
 		background-color: #efe;
 		border: 1px solid #ada;
 		border-radius: 2rem;
@@ -151,6 +155,10 @@ div.event-content > div.event-reactions {
 		text-overflow: ellipsis;
 		overflow: hidden;
 		max-width: 20rem;
+
+		> img.reaction-emoji {
+			height: 1.5rem;
+		}
 	}
 }
 

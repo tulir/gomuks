@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import React, { use, useCallback } from "react"
-import { getAvatarURL } from "@/api/media.ts"
+import { getAvatarURL, getMediaURL } from "@/api/media.ts"
 import { RoomStateStore, useRoomState } from "@/api/statestore"
 import { EventID, MemDBEvent, MemberEventContent, UnreadType } from "@/api/types"
 import { isEventID } from "@/util/validation.ts"
@@ -41,9 +41,13 @@ const formatShortTime = (time: Date) =>
 
 const EventReactions = ({ reactions }: { reactions: Record<string, number> }) => {
 	return <div className="event-reactions">
-		{Object.entries(reactions).map(([reaction, count]) => count > 0 ? <span key={reaction} className="reaction" title={reaction}>
-			<span className="reaction">{reaction}</span> <span className="reaction-count">{count}</span>
-		</span> : null)}
+		{Object.entries(reactions).map(([reaction, count]) => count > 0 ?
+			<div key={reaction} className="reaction" title={reaction}>
+				{reaction.startsWith("mxc://")
+					? <img className="reaction-emoji" src={getMediaURL(reaction)} alt=""/>
+					: <span className="reaction-emoji">{reaction}</span>}
+				<span className="reaction-count">{count}</span>
+			</div> : null)}
 	</div>
 }
 
