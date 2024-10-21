@@ -1,6 +1,7 @@
 stages:
 - frontend
 - build
+- docker
 
 default:
   before_script:
@@ -28,8 +29,15 @@ frontend:
 
 .build-linux: &build-linux
   stage: build
+  cache:
+    paths:
+    - .cache
   before_script:
-  - export GO_LDFLAGS="-s -w -linkmode external -extldflags -static -X main.Tag=$CI_COMMIT_TAG -X main.Commit=$CI_COMMIT_SHA -X 'main.BuildTime=`date -Iseconds`'"
+  - mkdir -p .cache
+  - export GOPATH="$CI_PROJECT_DIR/.cache"
+  - export GOCACHE="$CI_PROJECT_DIR/.cache/build"
+  - export MAUTRIX_VERSION=$(cat go.mod | grep 'maunium.net/go/mautrix ' | awk '{ print $2 }')
+  - export GO_LDFLAGS="-s -w -linkmode external -extldflags -static -X main.Tag=$CI_COMMIT_TAG -X main.Commit=$CI_COMMIT_SHA -X 'main.BuildTime=`date -Iseconds`' -X 'maunium.net/go/mautrix.GoModVersion=$MAUTRIX_VERSION'"
   script:
   - go build -ldflags "$GO_LDFLAGS" -o gomuks ./cmd/gomuks
   artifacts:
@@ -39,6 +47,18 @@ frontend:
   - frontend
   needs:
   - frontend
+
+.build-docker: &build-docker
+  image: docker:stable
+  stage: docker
+  before_script:
+  - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+  script:
+  - docker pull $CI_REGISTRY_IMAGE:latest || true
+  - docker build --pull --cache-from $CI_REGISTRY_IMAGE:latest --tag $CI_REGISTRY_IMAGE:$CI_COMMIT_SHA-$DOCKER_ARCH . --file Dockerfile.ci
+  - docker push $CI_REGISTRY_IMAGE:$CI_COMMIT_SHA-$DOCKER_ARCH
+  after_script:
+  - docker rmi $CI_REGISTRY_IMAGE:$CI_COMMIT_SHA-$DOCKER_ARCH
 
 linux/amd64:
   <<: *build-linux
@@ -67,17 +87,18 @@ macos/arm64:
   - macos
   - arm64
   before_script:
-  - export LIBRARY_PATH=/opt/homebrew/lib
-  - export CPATH=/opt/homebrew/include
   - export PATH=/opt/homebrew/bin:$PATH
-  - export GO_LDFLAGS="-X main.Tag=$CI_COMMIT_TAG -X main.Commit=$CI_COMMIT_SHA -X 'main.BuildTime=`date '-Iseconds'`'"
+  - export MAUTRIX_VERSION=$(cat go.mod | grep 'maunium.net/go/mautrix ' | awk '{ print $2 }')
+  - export GO_LDFLAGS="-X main.Tag=$CI_COMMIT_TAG -X main.Commit=$CI_COMMIT_SHA -X 'main.BuildTime=`date -Iseconds`' -X 'maunium.net/go/mautrix.GoModVersion=$MAUTRIX_VERSION'"
+  - export LIBRARY_PATH=$(brew --prefix)/lib
+  - export CPATH=$(brew --prefix)/include
   script:
   - go build -ldflags "$GO_LDFLAGS" -o gomuks ./cmd/gomuks
-  - install_name_tool -change /opt/homebrew/opt/libolm/lib/libolm.3.dylib @rpath/libolm.3.dylib gomuks
+  - install_name_tool -change $(brew --prefix)/opt/libolm/lib/libolm.3.dylib @rpath/libolm.3.dylib gomuks
   - install_name_tool -add_rpath @executable_path gomuks
   - install_name_tool -add_rpath /opt/homebrew/opt/libolm/lib gomuks
   - install_name_tool -add_rpath /usr/local/opt/libolm/lib gomuks
-  - cp /opt/homebrew/opt/libolm/lib/libolm.3.dylib .
+  - cp $(brew --prefix)/opt/libolm/lib/libolm.3.dylib .
   artifacts:
     paths:
     - gomuks
@@ -86,3 +107,50 @@ macos/arm64:
   - frontend
   needs:
   - frontend
+
+docker/amd64:
+  <<: *build-docker
+  tags:
+  - linux
+  - amd64
+  dependencies:
+  - linux/amd64
+  needs:
+  - linux/amd64
+  variables:
+    DOCKER_ARCH: amd64
+
+docker/arm64:
+  <<: *build-docker
+  tags:
+  - linux
+  - arm64
+  dependencies:
+  - linux/arm64
+  needs:
+  - linux/arm64
+  variables:
+    DOCKER_ARCH: arm64
+
+docker/manifest:
+  stage: docker
+  variables:
+    GIT_STRATEGY: none
+  before_script:
+  - "mkdir -p $HOME/.docker && echo '{\"experimental\": \"enabled\"}' > $HOME/.docker/config.json"
+  - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+  needs:
+  - docker/amd64
+  - docker/arm64
+  script:
+  - docker pull $CI_REGISTRY_IMAGE:$CI_COMMIT_SHA-amd64
+  - docker pull $CI_REGISTRY_IMAGE:$CI_COMMIT_SHA-arm64
+  - |
+    if [[ "$CI_COMMIT_BRANCH" == "main" ]]; then
+      export MANIFEST_NAME="$CI_REGISTRY_IMAGE:latest"
+    else
+      export MANIFEST_NAME="$CI_REGISTRY_IMAGE:${CI_COMMIT_REF_NAME//\//_}"
+    fi
+    docker manifest create $MANIFEST_NAME $CI_REGISTRY_IMAGE:$CI_COMMIT_SHA-amd64 $CI_REGISTRY_IMAGE:$CI_COMMIT_SHA-arm64
+    docker manifest push $MANIFEST_NAME
+  - docker rmi $CI_REGISTRY_IMAGE:$CI_COMMIT_SHA-amd64 $CI_REGISTRY_IMAGE:$CI_COMMIT_SHA-arm64

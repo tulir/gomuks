@@ -1,0 +1,11 @@
+FROM alpine:3.20
+
+RUN apk add --no-cache ca-certificates jq curl
+
+ARG EXECUTABLE=./gomuks
+COPY $EXECUTABLE /usr/bin/gomuks
+VOLUME /data
+WORKDIR /data
+ENV GOMUKS_ROOT=/data
+
+CMD ["/usr/bin/gomuks"]
