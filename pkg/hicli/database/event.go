@@ -156,13 +156,16 @@ func (eq *EventQuery) UpdateEncryptedContent(ctx context.Context, evt *Event) er
 }
 
 func (eq *EventQuery) FillReactionCounts(ctx context.Context, roomID id.RoomID, events []*Event) error {
-	eventIDs := make([]id.EventID, 0)
+	eventIDs := make([]id.EventID, 0, len(events))
 	eventMap := make(map[id.EventID]*Event)
-	for i, evt := range events {
+	for _, evt := range events {
 		if evt.Reactions == nil {
-			eventIDs[i] = evt.ID
+			eventIDs = append(eventIDs, evt.ID)
 			eventMap[evt.ID] = evt
 		}
+	}
+	if len(eventIDs) == 0 {
+		return nil
 	}
 	result, err := eq.GetReactions(ctx, roomID, eventIDs...)
 	if err != nil {
