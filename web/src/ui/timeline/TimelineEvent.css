@@ -150,6 +150,11 @@ div.date-separator {
 	}
 }
 
+div.render-error-body {
+	font-style: italic;
+	color: #555;
+}
+
 div.decryption-error-body {
 	display: flex;
 	align-items: center;

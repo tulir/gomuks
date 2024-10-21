@@ -9,6 +9,7 @@ import TextMessageBody from "./TextMessageBody.tsx"
 import UnknownMessageBody from "./UnknownMessageBody.tsx"
 import EventContentProps from "./props.ts"
 
+export { default as ContentErrorBoundary } from "./ContentErrorBoundary.tsx"
 export { default as EncryptedBody } from "./EncryptedBody.tsx"
 export { default as HiddenEvent } from "./HiddenEvent.tsx"
 export { default as MediaMessageBody } from "./MediaMessageBody.tsx"

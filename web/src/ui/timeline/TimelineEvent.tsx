@@ -21,7 +21,7 @@ import { isEventID } from "@/util/validation.ts"
 import { ClientContext } from "../ClientContext.ts"
 import { LightboxContext } from "../Lightbox.tsx"
 import { ReplyIDBody } from "./ReplyBody.tsx"
-import getBodyType, { EventContentProps, HiddenEvent, MemberBody } from "./content"
+import getBodyType, { ContentErrorBoundary, EventContentProps, HiddenEvent, MemberBody } from "./content"
 import ErrorIcon from "../../icons/error.svg?react"
 import PendingIcon from "../../icons/pending.svg?react"
 import SentIcon from "../../icons/sent.svg?react"
@@ -111,7 +111,9 @@ const TimelineEvent = ({ room, evt, prevEvt, setReplyToRef }: TimelineEventProps
 		</div>
 		<div className="event-content">
 			{isEventID(replyTo) && BodyType !== HiddenEvent ? <ReplyIDBody room={room} eventID={replyTo}/> : null}
-			<BodyType room={room} sender={memberEvt} event={evt}/>
+			<ContentErrorBoundary>
+				<BodyType room={room} sender={memberEvt} event={evt}/>
+			</ContentErrorBoundary>
 			{evt.reactions ? <EventReactions reactions={evt.reactions}/> : null}
 		</div>
 		{evt.sender === client.userID && evt.transaction_id ? <EventSendStatus evt={evt}/> : null}
