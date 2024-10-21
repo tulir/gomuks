@@ -14,13 +14,22 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import { useSyncExternalStore } from "react"
-import type { EventID, MemDBEvent } from "../types"
+import type { EventID, EventType, MemDBEvent } from "../types"
 import { RoomStateStore } from "./room.ts"
 
 export function useRoomTimeline(room: RoomStateStore): (MemDBEvent | null)[] {
 	return useSyncExternalStore(
 		room.timelineSub.subscribe,
 		() => room.timelineCache,
+	)
+}
+
+export function useRoomState(
+	room: RoomStateStore, type: EventType, stateKey: string | undefined = "",
+): MemDBEvent | null {
+	return useSyncExternalStore(
+		stateKey === undefined ? noopSubscribe : room.getStateSubscriber(type, stateKey).subscribe,
+		stateKey === undefined ? returnNull : (() => room.getStateEvent(type, stateKey) ?? null),
 	)
 }
 

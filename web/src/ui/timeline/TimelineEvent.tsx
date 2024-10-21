@@ -15,7 +15,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import React, { use, useCallback } from "react"
 import { getAvatarURL } from "@/api/media.ts"
-import { RoomStateStore } from "@/api/statestore"
+import { RoomStateStore, useRoomState } from "@/api/statestore"
 import { EventID, MemDBEvent, MemberEventContent, UnreadType } from "@/api/types"
 import { isEventID } from "@/util/validation.ts"
 import { ClientContext } from "../ClientContext.ts"
@@ -66,7 +66,7 @@ function isSmallEvent(bodyType: React.FunctionComponent<EventContentProps>): boo
 const TimelineEvent = ({ room, evt, prevEvt, setReplyToRef }: TimelineEventProps) => {
 	const wrappedSetReplyTo = useCallback(() => setReplyToRef.current(evt.event_id), [evt, setReplyToRef])
 	const client = use(ClientContext)!
-	const memberEvt = room.getStateEvent("m.room.member", evt.sender)
+	const memberEvt = useRoomState(room, "m.room.member", evt.sender)
 	const memberEvtContent = memberEvt?.content as MemberEventContent | undefined
 	const BodyType = getBodyType(evt)
 	const eventTS = new Date(evt.timestamp)

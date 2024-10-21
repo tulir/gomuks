@@ -13,7 +13,7 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import { MemberEventContent, MessageEventContent } from "@/api/types"
+import { MessageEventContent } from "@/api/types"
 import EventContentProps from "./props.ts"
 
 const onClickHTML = (evt: React.MouseEvent<HTMLDivElement>) => {
@@ -23,7 +23,7 @@ const onClickHTML = (evt: React.MouseEvent<HTMLDivElement>) => {
 	}
 }
 
-const TextMessageBody = ({ event, room }: EventContentProps) => {
+const TextMessageBody = ({ event, sender }: EventContentProps) => {
 	const content = event.content as MessageEventContent
 	const classNames = ["message-text"]
 	let eventSenderName: string | undefined
@@ -31,9 +31,7 @@ const TextMessageBody = ({ event, room }: EventContentProps) => {
 		classNames.push("notice-message")
 	} else if (content.msgtype === "m.emote") {
 		classNames.push("emote-message")
-		const memberEvt = room.getStateEvent("m.room.member", event.sender)
-		const memberEvtContent = memberEvt?.content as MemberEventContent | undefined
-		eventSenderName = memberEvtContent?.displayname || event.sender
+		eventSenderName = sender?.content?.displayname || event.sender
 	}
 	if (event.local_content?.sanitized_html) {
 		classNames.push("html-body")

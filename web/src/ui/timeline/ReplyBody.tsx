@@ -15,7 +15,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import { use } from "react"
 import { getAvatarURL } from "@/api/media.ts"
-import { RoomStateStore, useRoomEvent } from "@/api/statestore"
+import { RoomStateStore, useRoomEvent, useRoomState } from "@/api/statestore"
 import type { EventID, MemDBEvent, MemberEventContent } from "@/api/types"
 import { ClientContext } from "../ClientContext.ts"
 import getBodyType, { ContentErrorBoundary } from "./content"
@@ -63,7 +63,7 @@ const onClickReply = (evt: React.MouseEvent) => {
 }
 
 export const ReplyBody = ({ room, event, onClose }: ReplyBodyProps) => {
-	const memberEvt = room.getStateEvent("m.room.member", event.sender)
+	const memberEvt = useRoomState(room, "m.room.member", event.sender)
 	const memberEvtContent = memberEvt?.content as MemberEventContent | undefined
 	const BodyType = getBodyType(event, true)
 	return <blockquote
@@ -84,7 +84,7 @@ export const ReplyBody = ({ room, event, onClose }: ReplyBodyProps) => {
 			{onClose && <button className="close-reply" onClick={onClose}><CloseButton/></button>}
 		</div>
 		<ContentErrorBoundary>
-			<BodyType room={room} event={event}/>
+			<BodyType room={room} event={event} sender={memberEvt}/>
 		</ContentErrorBoundary>
 	</blockquote>
 }

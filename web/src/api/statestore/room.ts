@@ -75,6 +75,7 @@ export class RoomStateStore {
 	readonly eventsByRowID: Map<EventRowID, MemDBEvent> = new Map()
 	readonly eventsByID: Map<EventID, MemDBEvent> = new Map()
 	readonly timelineSub = new Subscribable()
+	readonly stateSubs: Map<EventID, Subscribable> = new Map()
 	readonly eventSubs: Map<EventID, EventSubscribable> = new Map()
 	readonly openNotifications: Map<EventRowID, Notification> = new Map()
 	readonly pendingEvents: EventRowID[] = []
@@ -106,6 +107,21 @@ export class RoomStateStore {
 		if (!sub) {
 			sub = new EventSubscribable(() => this.eventsByID.has(eventID) && this.eventSubs.delete(eventID))
 			this.eventSubs.set(eventID, sub)
+		}
+		return sub
+	}
+
+	notifyStateSubscribers(eventType: EventType, stateKey: string) {
+		const subKey = `${eventType}:${stateKey}`
+		this.stateSubs.get(subKey)?.notify()
+	}
+
+	getStateSubscriber(eventType: EventType, stateKey: string): Subscribable {
+		const subKey = `${eventType}:${stateKey}`
+		let sub = this.stateSubs.get(subKey)
+		if (!sub) {
+			sub = new Subscribable(() => this.stateSubs.delete(subKey))
+			this.stateSubs.set(subKey, sub)
 		}
 		return sub
 	}
@@ -200,6 +216,7 @@ export class RoomStateStore {
 			}
 			for (const [key, rowID] of Object.entries(changedEvts)) {
 				stateMap.set(key, rowID)
+				this.notifyStateSubscribers(evtType, key)
 			}
 		}
 		if (sync.reset) {

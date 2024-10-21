@@ -18,11 +18,11 @@ import TextMessageBody from "./TextMessageBody.tsx"
 import EventContentProps from "./props.ts"
 import { useMediaContent } from "./useMediaContent.tsx"
 
-const MediaMessageBody = ({ event, room }: EventContentProps) => {
+const MediaMessageBody = ({ event, room, sender }: EventContentProps) => {
 	const content = event.content as MediaMessageEventContent
 	let caption = null
 	if (content.body && content.filename && content.body !== content.filename) {
-		caption = <TextMessageBody event={event} room={room} />
+		caption = <TextMessageBody event={event} room={room} sender={sender} />
 	}
 	const [mediaContent, containerClass, containerStyle] = useMediaContent(content, event.type)
 	return <>
