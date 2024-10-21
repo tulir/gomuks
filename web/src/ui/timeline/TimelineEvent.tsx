@@ -41,9 +41,9 @@ const formatShortTime = (time: Date) =>
 
 const EventReactions = ({ reactions }: { reactions: Record<string, number> }) => {
 	return <div className="event-reactions">
-		{Object.entries(reactions).map(([reaction, count]) => <span key={reaction} className="reaction">
-			{reaction} {count}
-		</span>)}
+		{Object.entries(reactions).map(([reaction, count]) => count > 0 ? <span key={reaction} className="reaction" title={reaction}>
+			<span className="reaction">{reaction}</span> <span className="reaction-count">{count}</span>
+		</span> : null)}
 	</div>
 }
 

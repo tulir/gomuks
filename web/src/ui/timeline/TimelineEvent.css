@@ -136,6 +136,24 @@ div.timeline-event {
 	}
 }
 
+div.event-content > div.event-reactions {
+	display: flex;
+	gap: .25rem;
+	margin: .25rem 0;
+
+	> span.reaction {
+		background-color: #efe;
+		border: 1px solid #ada;
+		border-radius: 2rem;
+		padding: 0 .5rem;
+
+		white-space: nowrap;
+		text-overflow: ellipsis;
+		overflow: hidden;
+		max-width: 20rem;
+	}
+}
+
 div.hidden-event > div.sender-avatar, blockquote.reply-body > div.reply-sender > div.sender-avatar {
 	margin-top: 0;
 	display: flex;
