@@ -21,11 +21,9 @@ import { isEventID } from "@/util/validation.ts"
 import { ClientContext } from "../ClientContext.ts"
 import { LightboxContext } from "../Lightbox.tsx"
 import { ReplyIDBody } from "./ReplyBody.tsx"
-import EncryptedBody from "./content/EncryptedBody.tsx"
 import HiddenEvent from "./content/HiddenEvent.tsx"
 import MemberBody from "./content/MemberBody.tsx"
-import { MediaMessageBody, TextMessageBody, UnknownMessageBody } from "./content/MessageBody.tsx"
-import RedactedBody from "./content/RedactedBody.tsx"
+import getBodyType from "./content/getBodyType.ts"
 import { EventContentProps } from "./content/props.ts"
 import ErrorIcon from "../../icons/error.svg?react"
 import PendingIcon from "../../icons/pending.svg?react"
@@ -37,47 +35,6 @@ export interface TimelineEventProps {
 	evt: MemDBEvent
 	prevEvt: MemDBEvent | null
 	setReplyToRef: React.RefObject<(evt: EventID | null) => void>
-}
-
-function getBodyType(evt: MemDBEvent): React.FunctionComponent<EventContentProps> {
-	if (evt.relation_type === "m.replace") {
-		return HiddenEvent
-	}
-	switch (evt.type) {
-	case "m.room.message":
-		if (evt.redacted_by) {
-			return RedactedBody
-		}
-		switch (evt.content.msgtype) {
-		case "m.text":
-		case "m.notice":
-		case "m.emote":
-			return TextMessageBody
-		case "m.image":
-		case "m.video":
-		case "m.audio":
-		case "m.file":
-			return MediaMessageBody
-		case "m.location":
-		// return LocationMessageBody
-		// fallthrough
-		default:
-			return UnknownMessageBody
-		}
-	case "m.sticker":
-		if (evt.redacted_by) {
-			return RedactedBody
-		}
-		return MediaMessageBody
-	case "m.room.encrypted":
-		if (evt.redacted_by) {
-			return RedactedBody
-		}
-		return EncryptedBody
-	case "m.room.member":
-		return MemberBody
-	}
-	return HiddenEvent
 }
 
 const fullTimeFormatter = new Intl.DateTimeFormat("en-GB", { dateStyle: "full", timeStyle: "medium" })

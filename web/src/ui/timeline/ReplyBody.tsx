@@ -18,7 +18,7 @@ import { getAvatarURL } from "@/api/media.ts"
 import { RoomStateStore, useRoomEvent } from "@/api/statestore"
 import type { EventID, MemDBEvent, MemberEventContent } from "@/api/types"
 import { ClientContext } from "../ClientContext.ts"
-import { TextMessageBody } from "./content/MessageBody.tsx"
+import getBodyType from "./content/getBodyType.ts"
 import CloseButton from "@/icons/close.svg?react"
 import "./ReplyBody.css"
 
@@ -65,6 +65,7 @@ const onClickReply = (evt: React.MouseEvent) => {
 export const ReplyBody = ({ room, event, onClose }: ReplyBodyProps) => {
 	const memberEvt = room.getStateEvent("m.room.member", event.sender)
 	const memberEvtContent = memberEvt?.content as MemberEventContent | undefined
+	const BodyType = getBodyType(event, true)
 	return <blockquote
 		data-reply-to={event.event_id}
 		className={`reply-body ${onClose ? "composer" : ""}`}
@@ -82,6 +83,6 @@ export const ReplyBody = ({ room, event, onClose }: ReplyBodyProps) => {
 			<span className="event-sender">{memberEvtContent?.displayname || event.sender}</span>
 			{onClose && <button className="close-reply" onClick={onClose}><CloseButton/></button>}
 		</div>
-		<TextMessageBody room={room} event={event}/>
+		<BodyType room={room} event={event}/>
 	</blockquote>
 }
