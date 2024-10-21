@@ -30,11 +30,17 @@ blockquote.reply-body {
 	> div.reply-sender {
 		display: flex;
 		align-items: center;
+		text-wrap: nowrap;
 
 		> div.sender-avatar {
 			width: 1rem;
 			height: 1rem;
 			margin-right: .25rem;
+		}
+
+		> span.event-sender {
+			overflow: hidden;
+			text-overflow: ellipsis;
 		}
 
 		> button.close-reply {

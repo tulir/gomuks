@@ -48,9 +48,12 @@ div.timeline-event {
 		display: flex;
 		align-items: center;
 		gap: .25rem;
+		text-wrap: nowrap;
 
 		> span.event-sender {
 			font-weight: bold;
+			overflow: hidden;
+			text-overflow: ellipsis;
 		}
 
 		> span.event-time, > span.event-edited {
