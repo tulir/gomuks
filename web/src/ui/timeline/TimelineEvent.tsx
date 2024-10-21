@@ -136,4 +136,4 @@ const TimelineEvent = ({ room, evt, prevEvt, setReplyToRef }: TimelineEventProps
 	</>
 }
 
-export default TimelineEvent
+export default React.memo(TimelineEvent)

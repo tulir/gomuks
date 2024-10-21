@@ -13,7 +13,7 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import { use } from "react"
+import { memo, use, useLayoutEffect, useRef, useState } from "react"
 import { getMediaURL } from "@/api/media.ts"
 import type { RoomListEntry } from "@/api/statestore"
 import type { MemDBEvent, MemberEventContent } from "@/api/types"
@@ -26,7 +26,7 @@ export interface RoomListEntryProps {
 	hidden: boolean
 }
 
-function usePreviewText(evt?: MemDBEvent, senderMemberEvt?: MemDBEvent): [string, string] {
+function usePreviewText(evt?: MemDBEvent, senderMemberEvt?: MemDBEvent | null): [string, string] {
 	if (!evt) {
 		return ["", ""]
 	}
@@ -46,13 +46,13 @@ function usePreviewText(evt?: MemDBEvent, senderMemberEvt?: MemDBEvent): [string
 	return ["", ""]
 }
 
-const Entry = ({ room, setActiveRoom, isActive, hidden }: RoomListEntryProps) => {
+interface InnerProps {
+	room: RoomListEntry
+}
+
+const EntryInner = ({ room }: InnerProps) => {
 	const [previewText, croppedPreviewText] = usePreviewText(room.preview_event, room.preview_sender)
-	return <div
-		className={`room-entry ${isActive ? "active" : ""} ${hidden ? "hidden" : ""}`}
-		onClick={setActiveRoom}
-		data-room-id={room.room_id}
-	>
+	return <>
 		<div className="room-entry-left">
 			<img loading="lazy" className="avatar room-avatar" src={getMediaURL(room.avatar)} alt=""/>
 		</div>
@@ -68,7 +68,33 @@ const Entry = ({ room, setActiveRoom, isActive, hidden }: RoomListEntryProps) =>
 				{room.unread_messages || room.unread_notifications || room.unread_highlights}
 			</div>
 		</div> : null}
+	</>
+}
+
+const Entry = ({ room, setActiveRoom, isActive, hidden }: RoomListEntryProps) => {
+	const [isVisible, setVisible] = useState(false)
+	const divRef = useRef<HTMLDivElement>(null)
+	useLayoutEffect(() => {
+		const div = divRef.current
+		if (!div) {
+			return
+		}
+		const listener = (evt: unknown) => {
+			if (!(evt as ContentVisibilityAutoStateChangeEvent).skipped) {
+				setVisible(true)
+			}
+		}
+		div.addEventListener("contentvisibilityautostatechange", listener)
+		return () => div.removeEventListener("contentvisibilityautostatechange", listener)
+	}, [])
+	return <div
+		ref={divRef}
+		className={`room-entry ${isActive ? "active" : ""} ${hidden ? "hidden" : ""}`}
+		onClick={setActiveRoom}
+		data-room-id={room.room_id}
+	>
+		{isVisible ? <EntryInner room={room}/> : null}
 	</div>
 }
 
-export default Entry
+export default memo(Entry)

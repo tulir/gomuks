@@ -153,10 +153,14 @@ export class RoomStateStore {
 		} else if (memEvt.relation_type === "m.replace" && memEvt.relates_to) {
 			const editTarget = this.eventsByID.get(memEvt.relates_to)
 			if (editTarget?.last_edit_rowid === memEvt.rowid && !editTarget.last_edit) {
-				editTarget.last_edit = memEvt
-				editTarget.orig_content = editTarget.content
-				editTarget.content = memEvt.content["m.new_content"]
-				editTarget.local_content = memEvt.local_content
+				this.eventsByRowID.set(editTarget.rowid, {
+					...editTarget,
+					last_edit: memEvt,
+					orig_content: editTarget.content,
+					content: memEvt.content["m.new_content"],
+					local_content: memEvt.local_content,
+				})
+				this.eventSubs.get(editTarget.event_id)?.notify()
 			}
 		}
 		this.eventsByRowID.set(memEvt.rowid, memEvt)
