@@ -197,9 +197,6 @@ div.message-text {
 
 div.html-body {
 	overflow: hidden;
-	img[data-mx-emoticon] {
-		vertical-align: middle;
-	}
 
 	img.hicli-custom-emoji {
 		vertical-align: middle;
