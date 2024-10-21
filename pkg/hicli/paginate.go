@@ -220,6 +220,10 @@ func (h *HiClient) PaginateServer(ctx context.Context, roomID id.RoomID, limit i
 				return fmt.Errorf("failed to save session request for %s: %w", entry.SessionID, err)
 			}
 		}
+		err = h.DB.Event.FillReactionCounts(ctx, roomID, events)
+		if err != nil {
+			return fmt.Errorf("failed to fill last edit row IDs: %w", err)
+		}
 		err = h.DB.Event.FillLastEditRowIDs(ctx, roomID, events)
 		if err != nil {
 			return fmt.Errorf("failed to fill last edit row IDs: %w", err)

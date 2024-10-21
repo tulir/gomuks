@@ -430,6 +430,7 @@ func (h *HiClient) processEvent(
 		}
 	}
 	dbEvt := database.MautrixToEvent(evt)
+	dbEvt.Reactions = make(map[string]int)
 	contentWithoutFallback := removeReplyFallback(evt)
 	if contentWithoutFallback != nil {
 		dbEvt.Content = contentWithoutFallback
