@@ -92,7 +92,8 @@ const TimelineEvent = ({ room, evt, prevEvt, setReplyToRef }: TimelineEventProps
 	const fullTime = fullTimeFormatter.format(eventTS)
 	const shortTime = formatShortTime(eventTS)
 	const editTime = editEventTS ? `Edited at ${fullTimeFormatter.format(editEventTS)}` : null
-	const replyTo = evt.content?.["m.relates_to"]?.["m.in_reply_to"]?.event_id
+	const relatesTo = (evt.orig_content ?? evt.content)?.["m.relates_to"]
+	const replyTo = relatesTo?.["m.in_reply_to"]?.event_id
 	const mainEvent = <div data-event-id={evt.event_id} className={wrapperClassNames.join(" ")}>
 		<div className="sender-avatar" title={evt.sender}>
 			<img
@@ -117,7 +118,7 @@ const TimelineEvent = ({ room, evt, prevEvt, setReplyToRef }: TimelineEventProps
 			{isEventID(replyTo) && BodyType !== HiddenEvent ? <ReplyIDBody
 				room={room}
 				eventID={replyTo}
-				isThread={evt.content?.["m.relates_to"]?.rel_type === "m.thread"}
+				isThread={relatesTo?.rel_type === "m.thread"}
 			/> : null}
 			<ContentErrorBoundary>
 				<BodyType room={room} sender={memberEvt} event={evt}/>
