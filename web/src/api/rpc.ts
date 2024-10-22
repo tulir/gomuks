@@ -27,6 +27,7 @@ import type {
 	RPCEvent,
 	RawDBEvent,
 	ReceiptType,
+	RelatesTo,
 	ResolveAliasResponse,
 	RoomAlias,
 	RoomID,
@@ -50,7 +51,7 @@ export interface SendMessageParams {
 	base_content?: MessageEventContent
 	text: string
 	media_path?: string
-	reply_to?: EventID
+	relates_to?: RelatesTo
 	mentions?: Mentions
 }
 

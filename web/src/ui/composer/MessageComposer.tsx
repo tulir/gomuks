@@ -16,7 +16,7 @@
 import React, { use, useCallback, useEffect, useLayoutEffect, useReducer, useRef, useState } from "react"
 import { ScaleLoader } from "react-spinners"
 import { RoomStateStore, useRoomEvent } from "@/api/statestore"
-import type { EventID, MediaMessageEventContent, Mentions, RoomID } from "@/api/types"
+import type { EventID, MediaMessageEventContent, Mentions, RelatesTo, RoomID } from "@/api/types"
 import useEvent from "@/util/useEvent.ts"
 import { ClientContext } from "../ClientContext.ts"
 import { ReplyBody } from "../timeline/ReplyBody.tsx"
@@ -90,14 +90,27 @@ const MessageComposer = ({ room, scrollToBottomRef, setReplyToRef }: MessageComp
 			user_ids: [],
 			room: false,
 		}
+		let relates_to: RelatesTo | undefined = undefined
 		if (replyToEvt) {
 			mentions.user_ids.push(replyToEvt.sender)
+			relates_to = {
+				"m.in_reply_to": {
+					event_id: replyToEvt.event_id,
+				},
+			}
+			if (replyToEvt.content["m.relates_to"]?.rel_type === "m.thread"
+				&& typeof replyToEvt.content["m.relates_to"]?.event_id === "string") {
+				relates_to.rel_type = "m.thread"
+				relates_to.event_id = replyToEvt.content["m.relates_to"].event_id
+				// TODO set this to true if replying to the last event in a thread?
+				relates_to.is_falling_back = false
+			}
 		}
 		client.sendMessage({
 			room_id: room.roomID,
 			base_content: state.media ?? undefined,
 			text: state.text,
-			reply_to: replyToEvt?.event_id,
+			relates_to,
 			mentions,
 		}).catch(err => window.alert("Failed to send message: " + err))
 	})

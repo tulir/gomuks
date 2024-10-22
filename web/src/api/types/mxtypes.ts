@@ -74,12 +74,24 @@ export interface Mentions {
 	room: boolean
 }
 
+export interface RelatesTo {
+	rel_type?: RelationType
+	event_id?: EventID
+	key?: string
+
+	is_falling_back?: boolean
+	"m.in_reply_to"?: {
+		event_id?: EventID
+	}
+}
+
 export interface BaseMessageEventContent {
 	msgtype: string
 	body: string
 	formatted_body?: string
 	format?: "org.matrix.custom.html"
 	"m.mentions"?: Mentions
+	"m.relates_to"?: RelatesTo
 }
 
 export interface TextMessageEventContent extends BaseMessageEventContent {

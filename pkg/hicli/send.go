@@ -32,7 +32,14 @@ var (
 	rainbowWithHTML = goldmark.New(format.Extensions, format.HTMLOptions, goldmark.WithExtensions(rainbow.Extension))
 )
 
-func (h *HiClient) SendMessage(ctx context.Context, roomID id.RoomID, base *event.MessageEventContent, text string, replyTo id.EventID, mentions *event.Mentions) (*database.Event, error) {
+func (h *HiClient) SendMessage(
+	ctx context.Context,
+	roomID id.RoomID,
+	base *event.MessageEventContent,
+	text string,
+	relatesTo *event.RelatesTo,
+	mentions *event.Mentions,
+) (*database.Event, error) {
 	var content event.MessageEventContent
 	if strings.HasPrefix(text, "/rainbow ") {
 		text = strings.TrimPrefix(text, "/rainbow ")
@@ -66,8 +73,16 @@ func (h *HiClient) SendMessage(ctx context.Context, roomID id.RoomID, base *even
 			}
 		}
 	}
-	if replyTo != "" {
-		content.RelatesTo = (&event.RelatesTo{}).SetReplyTo(replyTo)
+	if relatesTo != nil {
+		if relatesTo.Type == event.RelReplace {
+			contentCopy := content
+			content = event.MessageEventContent{
+				NewContent: &contentCopy,
+				RelatesTo:  relatesTo,
+			}
+		} else {
+			content.RelatesTo = relatesTo
+		}
 	}
 	return h.Send(ctx, roomID, event.EventMessage, &content)
 }
