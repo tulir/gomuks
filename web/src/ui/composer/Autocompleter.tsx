@@ -42,6 +42,9 @@ const positiveMod = (val: number, div: number) => (val % div + div) % div
 export const EmojiAutocompleter = ({ params, state, setState, setAutocomplete }: AutocompleterProps) => {
 	const emojis = useFilteredEmojis((params.frozenQuery ?? params.query).slice(1), true)
 	const onSelect = useEvent((index: number) => {
+		if (emojis.length === 0) {
+			return
+		}
 		index = positiveMod(index, emojis.length)
 		const emoji = emojis[index]
 		setState({

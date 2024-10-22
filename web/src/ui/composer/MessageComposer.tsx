@@ -150,10 +150,10 @@ const MessageComposer = ({ room, scrollToBottomRef, setReplyToRef }: MessageComp
 			sendMessage(evt)
 		}
 		if (autocomplete && !evt.ctrlKey && !evt.altKey) {
-			if (!evt.shiftKey && (evt.key === "Tab" || evt.key === "Down")) {
+			if (!evt.shiftKey && (evt.key === "Tab" || evt.key === "ArrowDown")) {
 				setAutocomplete({ ...autocomplete, selected: (autocomplete.selected ?? -1) + 1 })
 				evt.preventDefault()
-			} else if ((evt.shiftKey && evt.key === "Tab") || (!evt.shiftKey && evt.key === "Up")) {
+			} else if ((evt.shiftKey && evt.key === "Tab") || (!evt.shiftKey && evt.key === "ArrowUp")) {
 				setAutocomplete({ ...autocomplete, selected: (autocomplete.selected ?? 0) - 1 })
 				evt.preventDefault()
 			}
