@@ -138,6 +138,7 @@ div.timeline-event {
 
 div.event-content > div.event-reactions {
 	display: flex;
+	flex-wrap: wrap;
 	gap: .25rem;
 	margin: .25rem 0;
 
