@@ -25,7 +25,7 @@ function useChangeDescription(
 	const targetAvatar = <img
 		className="small avatar"
 		loading="lazy"
-		src={getAvatarURL(target, content?.avatar_url)}
+		src={getAvatarURL(target, content)}
 		onClick={use(LightboxContext)!}
 		alt=""
 	/>
@@ -50,7 +50,7 @@ function useChangeDescription(
 					className="small avatar"
 					loading="lazy"
 					height={16}
-					src={getAvatarURL(target, prevContent?.avatar_url)}
+					src={getAvatarURL(target, prevContent)}
 					onClick={use(LightboxContext)!}
 					alt=""
 				/> to {targetAvatar}

@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import { memo, use, useLayoutEffect, useRef, useState } from "react"
-import { getMediaURL } from "@/api/media.ts"
+import { getAvatarURL } from "@/api/media.ts"
 import type { RoomListEntry } from "@/api/statestore"
 import type { MemDBEvent, MemberEventContent } from "@/api/types"
 import { ClientContext } from "../ClientContext.ts"
@@ -54,7 +54,12 @@ const EntryInner = ({ room }: InnerProps) => {
 	const [previewText, croppedPreviewText] = usePreviewText(room.preview_event, room.preview_sender)
 	return <>
 		<div className="room-entry-left">
-			<img loading="lazy" className="avatar room-avatar" src={getMediaURL(room.avatar)} alt=""/>
+			<img
+				loading="lazy"
+				className="avatar room-avatar"
+				src={getAvatarURL(room.dm_user_id ?? room.room_id, { avatar_url: room.avatar, displayname: room.name })}
+				alt=""
+			/>
 		</div>
 		<div className="room-entry-right">
 			<div className="room-name">{room.name}</div>

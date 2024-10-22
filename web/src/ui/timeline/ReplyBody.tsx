@@ -78,7 +78,7 @@ export const ReplyBody = ({ room, event, onClose, isThread }: ReplyBodyProps) =>
 				<img
 					className="small avatar"
 					loading="lazy"
-					src={getAvatarURL(event.sender, memberEvtContent?.avatar_url)}
+					src={getAvatarURL(event.sender, memberEvtContent)}
 					alt=""
 				/>
 			</div>

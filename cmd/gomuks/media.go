@@ -113,6 +113,46 @@ func (new *noErrorWriter) Write(p []byte) (n int, err error) {
 	return
 }
 
+// note: this should stay in sync with makeAvatarFallback in web/src/api/media.ts
+const fallbackAvatarTemplate = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000">
+  <circle cx="500" cy="500" r="500" fill="%s"/>
+  <text x="500" y="750" text-anchor="middle" fill="#fff" font-weight="bold" font-size="666"
+    font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif"
+  >%s</text>
+</svg>`
+
+type avatarResponseWriter struct {
+	http.ResponseWriter
+	bgColor   string
+	character string
+	data      []byte
+	errored   bool
+}
+
+func (w *avatarResponseWriter) WriteHeader(statusCode int) {
+	if statusCode != http.StatusOK {
+		w.data = []byte(fmt.Sprintf(fallbackAvatarTemplate, w.bgColor, w.character))
+		w.Header().Set("Content-Type", "image/svg+xml")
+		w.Header().Set("Content-Length", strconv.Itoa(len(w.data)))
+		w.Header().Del("Content-Disposition")
+		w.errored = true
+		statusCode = http.StatusOK
+	}
+	w.ResponseWriter.WriteHeader(statusCode)
+}
+
+func (w *avatarResponseWriter) Write(p []byte) (n int, err error) {
+	if w.errored {
+		if w.data != nil {
+			_, err = w.ResponseWriter.Write(w.data)
+			w.data = nil
+		}
+		n = len(p)
+		return
+	}
+	return w.ResponseWriter.Write(p)
+}
+
 func (gmx *Gomuks) DownloadMedia(w http.ResponseWriter, r *http.Request) {
 	mxc := id.ContentURI{
 		Homeserver: r.PathValue("server"),
@@ -123,6 +163,18 @@ func (gmx *Gomuks) DownloadMedia(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	query := r.URL.Query()
+	fallback := query.Get("fallback")
+	if fallback != "" {
+		fallbackParts := strings.Split(fallback, ":")
+		if len(fallbackParts) == 2 {
+			w = &avatarResponseWriter{
+				ResponseWriter: w,
+				bgColor:        fallbackParts[0],
+				character:      fallbackParts[1],
+			}
+		}
+	}
+
 	encrypted, _ := strconv.ParseBool(query.Get("encrypted"))
 
 	logVal := zerolog.Ctx(r.Context()).With().

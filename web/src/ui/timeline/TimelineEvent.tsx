@@ -98,7 +98,7 @@ const TimelineEvent = ({ room, evt, prevEvt, setReplyToRef }: TimelineEventProps
 			<img
 				className={`${smallAvatar ? "small" : ""} avatar`}
 				loading="lazy"
-				src={getAvatarURL(evt.sender, memberEvtContent?.avatar_url)}
+				src={getAvatarURL(evt.sender, memberEvtContent)}
 				onClick={use(LightboxContext)!}
 				alt=""
 			/>

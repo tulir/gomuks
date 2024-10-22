@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import unhomoglyph from "unhomoglyph"
-import { getMediaURL } from "@/api/media.ts"
+import { getAvatarURL } from "@/api/media.ts"
 import { NonNullCachedEventDispatcher } from "@/util/eventdispatcher.ts"
 import { focused } from "@/util/focus.ts"
 import type {
@@ -26,11 +26,13 @@ import type {
 	SendCompleteData,
 	SyncCompleteData,
 	SyncRoom,
+	UserID,
 } from "../types"
 import { RoomStateStore } from "./room.ts"
 
 export interface RoomListEntry {
 	room_id: RoomID
+	dm_user_id?: UserID
 	sorting_timestamp: number
 	preview_event?: MemDBEvent
 	preview_sender?: MemDBEvent
@@ -97,6 +99,8 @@ export class StateStore {
 		const name = entry.meta.name ?? "Unnamed room"
 		return {
 			room_id: entry.meta.room_id,
+			dm_user_id: entry.meta.lazy_load_summary?.heroes?.length === 1
+				? entry.meta.lazy_load_summary.heroes[0] : undefined,
 			sorting_timestamp: entry.meta.sorting_timestamp,
 			preview_event,
 			preview_sender,
@@ -183,7 +187,7 @@ export class StateStore {
 			body = body.slice(0, 350) + " […]"
 		}
 		const memberEvt = room.getStateEvent("m.room.member", evt.sender)
-		const icon = `${getMediaURL(memberEvt?.content.avatar_url)}&image_auth=${this.imageAuthToken}`
+		const icon = `${getAvatarURL(evt.sender, memberEvt?.content)}&image_auth=${this.imageAuthToken}`
 		const roomName = room.meta.current.name ?? "Unnamed room"
 		const senderName = memberEvt?.content.displayname ?? evt.sender
 		const title = senderName === roomName ? senderName : `${senderName} (${roomName})`
