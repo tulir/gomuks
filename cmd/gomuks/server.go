@@ -22,6 +22,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io/fs"
 	"net/http"
 	_ "net/http/pprof"
@@ -64,7 +65,7 @@ func (gmx *Gomuks) StartServer() {
 	if frontend, err := fs.Sub(web.Frontend, "dist"); err != nil {
 		gmx.Log.Warn().Msg("Frontend not found")
 	} else {
-		router.Handle("/", http.FileServerFS(frontend))
+		router.Handle("/", FrontendCacheMiddleware(http.FileServerFS(frontend)))
 	}
 	gmx.Server = &http.Server{
 		Addr:    gmx.Config.Web.ListenAddress,
@@ -77,6 +78,26 @@ func (gmx *Gomuks) StartServer() {
 		}
 	}()
 	gmx.Log.Info().Str("address", gmx.Config.Web.ListenAddress).Msg("Server started")
+}
+
+func FrontendCacheMiddleware(next http.Handler) http.Handler {
+	var frontendCacheETag string
+	if Commit != "unknown" && !ParsedBuildTime.IsZero() {
+		frontendCacheETag = fmt.Sprintf(`"%s-%s"`, Commit, ParsedBuildTime.Format(time.RFC3339))
+	}
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Header.Get("If-None-Match") == frontendCacheETag {
+			w.WriteHeader(http.StatusNotModified)
+			return
+		}
+		if strings.HasPrefix(r.URL.Path, "/assets/") {
+			w.Header().Set("Cache-Control", "max-age=604800, immutable")
+		}
+		if frontendCacheETag != "" {
+			w.Header().Set("ETag", frontendCacheETag)
+		}
+		next.ServeHTTP(w, r)
+	})
 }
 
 var (

@@ -57,7 +57,7 @@ var ErrBadGateway = mautrix.RespError{
 	StatusCode: http.StatusBadGateway,
 }
 
-func (gmx *Gomuks) downloadMediaFromCache(ctx context.Context, w http.ResponseWriter, entry *database.Media, force bool) bool {
+func (gmx *Gomuks) downloadMediaFromCache(ctx context.Context, w http.ResponseWriter, r *http.Request, entry *database.Media, force bool) bool {
 	if !entry.UseCache() {
 		if force {
 			mautrix.MNotFound.WithMessage("Media not found in cache").Write(w)
@@ -68,6 +68,9 @@ func (gmx *Gomuks) downloadMediaFromCache(ctx context.Context, w http.ResponseWr
 	if entry.Error != nil {
 		w.Header().Set("Mau-Cached-Error", "true")
 		entry.Error.Write(w)
+		return true
+	} else if r.Header.Get("If-None-Match") == entry.ETag() {
+		w.WriteHeader(http.StatusNotModified)
 		return true
 	}
 	log := zerolog.Ctx(ctx)
@@ -102,6 +105,8 @@ func cacheEntryToHeaders(w http.ResponseWriter, entry *database.Media) {
 	w.Header().Set("Content-Length", strconv.FormatInt(entry.Size, 10))
 	w.Header().Set("Content-Disposition", mime.FormatMediaType(entry.ContentDisposition(), map[string]string{"filename": entry.FileName}))
 	w.Header().Set("Content-Security-Policy", "sandbox; default-src 'none'; script-src 'none';")
+	w.Header().Set("Cache-Control", "max-age=2592000, immutable")
+	w.Header().Set("ETag", entry.ETag())
 }
 
 type noErrorWriter struct {
@@ -193,7 +198,7 @@ func (gmx *Gomuks) DownloadMedia(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if gmx.downloadMediaFromCache(ctx, w, cacheEntry, false) {
+	if gmx.downloadMediaFromCache(ctx, w, r, cacheEntry, false) {
 		return
 	}
 
@@ -319,7 +324,7 @@ func (gmx *Gomuks) DownloadMedia(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if w != nil {
-		gmx.downloadMediaFromCache(ctx, w, cacheEntry, true)
+		gmx.downloadMediaFromCache(ctx, w, r, cacheEntry, true)
 	}
 }
 

@@ -9,6 +9,7 @@ package database
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"net/http"
 	"slices"
 	"time"
@@ -93,6 +94,8 @@ func (me *MediaError) Write(w http.ResponseWriter) {
 	}
 	me.Matrix.ExtraData["fi.mau.hicli.error_ts"] = me.ReceivedAt.UnixMilli()
 	me.Matrix.ExtraData["fi.mau.hicli.next_retry_ts"] = me.ReceivedAt.Add(me.backoff()).UnixMilli()
+	w.Header().Set("Mau-Errored-At", me.ReceivedAt.Format(http.TimeFormat))
+	w.Header().Set("Cache-Control", fmt.Sprintf("max-age=%d", max(int(time.Until(me.ReceivedAt.Add(me.backoff())).Seconds()), 0)))
 	me.Matrix.WithStatus(me.StatusCode).Write(w)
 }
 
@@ -104,6 +107,13 @@ type Media struct {
 	Size     int64
 	Hash     *[32]byte
 	Error    *MediaError
+}
+
+func (m *Media) ETag() string {
+	if m.Hash == nil {
+		return ""
+	}
+	return fmt.Sprintf(`"%x"`, m.Hash)
 }
 
 func (m *Media) UseCache() bool {
