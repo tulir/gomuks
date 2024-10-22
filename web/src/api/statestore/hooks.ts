@@ -28,7 +28,7 @@ export function useRoomState(
 	room: RoomStateStore, type: EventType, stateKey: string | undefined = "",
 ): MemDBEvent | null {
 	return useSyncExternalStore(
-		stateKey === undefined ? noopSubscribe : room.getStateSubscriber(type, stateKey).subscribe,
+		stateKey === undefined ? noopSubscribe : room.stateSubs.getSubscriber(room.stateSubKey(type, stateKey)),
 		stateKey === undefined ? returnNull : (() => room.getStateEvent(type, stateKey) ?? null),
 	)
 }
@@ -38,7 +38,7 @@ const returnNull = () => null
 
 export function useRoomEvent(room: RoomStateStore, eventID: EventID | null): MemDBEvent | null {
 	return useSyncExternalStore(
-		eventID ? room.getEventSubscriber(eventID).subscribe : noopSubscribe,
+		eventID ? room.eventSubs.getSubscriber(eventID) : noopSubscribe,
 		eventID ? (() => room.eventsByID.get(eventID) ?? null) : returnNull,
 	)
 }

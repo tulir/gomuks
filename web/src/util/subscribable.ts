@@ -20,21 +20,48 @@ export type SubscribeFunc = (callback: Subscriber) => () => void
 export default class Subscribable {
 	readonly subscribers: Set<Subscriber> = new Set()
 
-	constructor(private onEmpty?: () => void) {
-	}
-
 	subscribe: SubscribeFunc = callback => {
 		this.subscribers.add(callback)
-		return () => {
-			this.subscribers.delete(callback)
-			if (this.subscribers.size === 0) {
-				this.onEmpty?.()
-			}
-		}
+		return () => this.subscribers.delete(callback)
 	}
 
 	notify() {
 		for (const sub of this.subscribers) {
+			sub()
+		}
+	}
+}
+
+export class MultiSubscribable {
+	readonly subscribers: Map<string, Set<Subscriber>> = new Map()
+	readonly subscribeFuncs: Map<string, SubscribeFunc> = new Map()
+
+	getSubscriber(key: string): SubscribeFunc {
+		let subscribe = this.subscribeFuncs.get(key)
+		if (!subscribe) {
+			const subs = new Set<Subscriber>()
+			subscribe = callback => {
+				subs.add(callback)
+				return () => {
+					subs.delete(callback)
+					// if (subs.size === 0 && Object.is(subs, this.subscribers.get(key))) {
+					// 	this.subscribers.delete(key)
+					// 	this.subscribeFuncs.delete(key)
+					// }
+				}
+			}
+			this.subscribers.set(key, subs)
+			this.subscribeFuncs.set(key, subscribe)
+		}
+		return subscribe
+	}
+
+	notify(key: string) {
+		const subs = this.subscribers.get(key)
+		if (!subs) {
+			return
+		}
+		for (const sub of subs) {
 			sub()
 		}
 	}

@@ -48,14 +48,10 @@ export default class Client {
 		if (typeof room === "string") {
 			room = this.store.rooms.get(room)
 		}
-		if (!room || room.eventsByID.has(eventID)) {
+		if (!room || room.eventsByID.has(eventID) || room.requestedEvents.has(eventID)) {
 			return
 		}
-		const sub = room.getEventSubscriber(eventID)
-		if (sub.requested) {
-			return
-		}
-		sub.requested = true
+		room.requestedEvents.add(eventID)
 		this.rpc.getEvent(room.roomID, eventID).then(
 			evt => room.applyEvent(evt),
 			err => console.error(`Failed to fetch event ${eventID}`, err),
