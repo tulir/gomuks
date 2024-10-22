@@ -28,7 +28,7 @@ export default function getBodyType(evt: MemDBEvent, forReply = false): React.Fu
 		if (evt.redacted_by) {
 			return RedactedBody
 		}
-		switch (evt.content.msgtype) {
+		switch (evt.content?.msgtype) {
 		case "m.text":
 		case "m.notice":
 		case "m.emote":

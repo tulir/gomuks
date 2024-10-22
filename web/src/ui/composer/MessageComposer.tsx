@@ -98,10 +98,10 @@ const MessageComposer = ({ room, scrollToBottomRef, setReplyToRef }: MessageComp
 					event_id: replyToEvt.event_id,
 				},
 			}
-			if (replyToEvt.content["m.relates_to"]?.rel_type === "m.thread"
-				&& typeof replyToEvt.content["m.relates_to"]?.event_id === "string") {
+			if (replyToEvt.content?.["m.relates_to"]?.rel_type === "m.thread"
+				&& typeof replyToEvt.content?.["m.relates_to"]?.event_id === "string") {
 				relates_to.rel_type = "m.thread"
-				relates_to.event_id = replyToEvt.content["m.relates_to"].event_id
+				relates_to.event_id = replyToEvt.content?.["m.relates_to"].event_id
 				// TODO set this to true if replying to the last event in a thread?
 				relates_to.is_falling_back = false
 			}
@@ -259,7 +259,7 @@ const MessageComposer = ({ room, scrollToBottomRef, setReplyToRef }: MessageComp
 			room={room}
 			event={replyToEvt}
 			onClose={closeReply}
-			isThread={replyToEvt.content["m.relates_to"]?.rel_type === "m.thread"}
+			isThread={replyToEvt.content?.["m.relates_to"]?.rel_type === "m.thread"}
 		/>}
 		{loadingMedia && <div className="composer-media"><ScaleLoader/></div>}
 		{state.media && <ComposerMedia content={state.media} clearMedia={clearMedia}/>}
