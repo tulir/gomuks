@@ -27,6 +27,12 @@ blockquote.reply-body {
 		color: #666;
 	}
 
+	&.thread > div.reply-sender > span.event-sender::after {
+		content: " (thread)";
+		font-size: .75rem;
+		color: #666;
+	}
+
 	> div.reply-sender {
 		display: flex;
 		align-items: center;

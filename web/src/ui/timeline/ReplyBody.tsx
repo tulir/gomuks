@@ -25,15 +25,17 @@ import "./ReplyBody.css"
 interface ReplyBodyProps {
 	room: RoomStateStore
 	event: MemDBEvent
+	isThread: boolean
 	onClose?: (evt: React.MouseEvent) => void
 }
 
 interface ReplyIDBodyProps {
 	room: RoomStateStore
 	eventID: EventID
+	isThread: boolean
 }
 
-export const ReplyIDBody = ({ room, eventID }: ReplyIDBodyProps) => {
+export const ReplyIDBody = ({ room, eventID, isThread }: ReplyIDBodyProps) => {
 	const event = useRoomEvent(room, eventID)
 	if (!event) {
 		// This caches whether the event is requested or not, so it doesn't need to be wrapped in an effect.
@@ -42,7 +44,7 @@ export const ReplyIDBody = ({ room, eventID }: ReplyIDBodyProps) => {
 			Reply to unknown event<br/><code>{eventID}</code>
 		</blockquote>
 	}
-	return <ReplyBody room={room} event={event}/>
+	return <ReplyBody room={room} event={event} isThread={isThread}/>
 }
 
 const onClickReply = (evt: React.MouseEvent) => {
@@ -62,13 +64,13 @@ const onClickReply = (evt: React.MouseEvent) => {
 	}
 }
 
-export const ReplyBody = ({ room, event, onClose }: ReplyBodyProps) => {
+export const ReplyBody = ({ room, event, onClose, isThread }: ReplyBodyProps) => {
 	const memberEvt = useRoomState(room, "m.room.member", event.sender)
 	const memberEvtContent = memberEvt?.content as MemberEventContent | undefined
 	const BodyType = getBodyType(event, true)
 	return <blockquote
 		data-reply-to={event.event_id}
-		className={`reply-body ${onClose ? "composer" : ""}`}
+		className={`reply-body ${onClose ? "composer" : ""} ${isThread ? "thread" : ""}`}
 		onClick={onClickReply}
 	>
 		<div className="reply-sender">

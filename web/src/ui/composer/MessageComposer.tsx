@@ -255,7 +255,12 @@ const MessageComposer = ({ room, scrollToBottomRef, setReplyToRef }: MessageComp
 			setState={setState}
 			setAutocomplete={setAutocomplete}
 		/></div>}
-		{replyToEvt && <ReplyBody room={room} event={replyToEvt} onClose={closeReply}/>}
+		{replyToEvt && <ReplyBody
+			room={room}
+			event={replyToEvt}
+			onClose={closeReply}
+			isThread={replyToEvt.content["m.relates_to"]?.rel_type === "m.thread"}
+		/>}
 		{loadingMedia && <div className="composer-media"><ScaleLoader/></div>}
 		{state.media && <ComposerMedia content={state.media} clearMedia={clearMedia}/>}
 		<div className="input-area">
