@@ -1,6 +1,12 @@
 div.message-composer {
 	border-top: 1px solid #ccc;
 
+	blockquote.reply-body {
+		pre, a.hicli-matrix-uri {
+			text-wrap: auto !important;
+		}
+	}
+
 	> div.input-area {
 		display: flex;
 		align-items: center;
