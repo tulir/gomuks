@@ -4,6 +4,9 @@ import svgr from "vite-plugin-svgr"
 
 export default defineConfig({
 	base: "./",
+	build: {
+		target: ["esnext", "firefox132"],
+	},
 	plugins: [
 		react(),
 		svgr({
