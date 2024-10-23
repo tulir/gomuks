@@ -16,7 +16,7 @@
 import { useRef } from "react"
 import data from "./data.json"
 
-interface Emoji {
+export interface Emoji {
 	u: string // Unicode codepoint
 	c: number // Category number
 	t: string // Emoji title
