@@ -28,7 +28,8 @@ type SyncNotification struct {
 }
 
 type SyncComplete struct {
-	Rooms map[id.RoomID]*SyncRoom `json:"rooms"`
+	Rooms     map[id.RoomID]*SyncRoom `json:"rooms"`
+	LeftRooms []id.RoomID             `json:"left_rooms"`
 }
 
 func (c *SyncComplete) IsEmpty() bool {

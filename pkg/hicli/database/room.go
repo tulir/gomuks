@@ -56,6 +56,9 @@ const (
 	setRoomPrevBatchQuery = `
 		UPDATE room SET prev_batch = $2 WHERE room_id = $1
 	`
+	deleteRoomQuery = `
+		DELETE FROM room WHERE room_id = $1
+	`
 	updateRoomPreviewIfLaterOnTimelineQuery = `
 		UPDATE room
 		SET preview_event_rowid = $2
@@ -93,6 +96,10 @@ func (rq *RoomQuery) GetBySortTS(ctx context.Context, maxTS time.Time, limit int
 
 func (rq *RoomQuery) Upsert(ctx context.Context, room *Room) error {
 	return rq.Exec(ctx, upsertRoomFromSyncQuery, room.sqlVariables()...)
+}
+
+func (rq *RoomQuery) Delete(ctx context.Context, roomID id.RoomID) error {
+	return rq.Exec(ctx, deleteRoomQuery, roomID)
 }
 
 func (rq *RoomQuery) CreateRow(ctx context.Context, roomID id.RoomID) error {

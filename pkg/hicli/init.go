@@ -62,7 +62,8 @@ func (h *HiClient) GetInitialSync(ctx context.Context, batchSize int) iter.Seq[*
 				return
 			}
 			payload := SyncComplete{
-				Rooms: make(map[id.RoomID]*SyncRoom, len(rooms)-1),
+				Rooms:     make(map[id.RoomID]*SyncRoom, len(rooms)-1),
+				LeftRooms: make([]id.RoomID, 0),
 			}
 			for _, room := range rooms {
 				if room.SortingTimestamp == rooms[len(rooms)-1].SortingTimestamp {

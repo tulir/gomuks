@@ -146,6 +146,10 @@ export class StateStore {
 				}
 			}
 		}
+		for (const roomID of sync.left_rooms) {
+			this.rooms.delete(roomID)
+			changedRoomListEntries.set(roomID, null)
+		}
 
 		let updatedRoomList: RoomListEntry[] | undefined
 		if (resyncRoomList) {

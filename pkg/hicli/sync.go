@@ -224,15 +224,14 @@ func (h *HiClient) processSyncJoinedRoom(ctx context.Context, roomID id.RoomID, 
 }
 
 func (h *HiClient) processSyncLeftRoom(ctx context.Context, roomID id.RoomID, room *mautrix.SyncLeftRoom) error {
-	existingRoomData, err := h.DB.Room.Get(ctx, roomID)
+	zerolog.Ctx(ctx).Debug().Stringer("room_id", roomID).Msg("Deleting left room")
+	err := h.DB.Room.Delete(ctx, roomID)
 	if err != nil {
-		return fmt.Errorf("failed to get room data: %w", err)
-	} else if existingRoomData == nil {
-		return nil
+		return fmt.Errorf("failed to delete room: %w", err)
 	}
-	// TODO delete room
+	payload := ctx.Value(syncContextKey).(*syncContext).evt
+	payload.LeftRooms = append(payload.LeftRooms, roomID)
 	return nil
-	//return h.processStateAndTimeline(ctx, existingRoomData, &room.State, &room.Timeline, &room.Summary, nil, nil)
 }
 
 func isDecryptionErrorRetryable(err error) bool {

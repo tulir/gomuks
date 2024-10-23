@@ -80,6 +80,7 @@ export interface SyncNotification {
 
 export interface SyncCompleteData {
 	rooms: Record<RoomID, SyncRoom>
+	left_rooms: RoomID[]
 }
 
 export interface SyncCompleteEvent extends RPCCommand<SyncCompleteData> {
