@@ -226,6 +226,10 @@ func (gmx *Gomuks) DownloadMedia(w http.ResponseWriter, r *http.Request) {
 
 	resp, err := gmx.Client.Client.Download(ctx, mxc)
 	if err != nil {
+		if ctx.Err() != nil {
+			w.WriteHeader(499)
+			return
+		}
 		log.Err(err).Msg("Failed to download media")
 		var httpErr mautrix.HTTPError
 		if cacheEntry == nil {
@@ -236,6 +240,7 @@ func (gmx *Gomuks) DownloadMedia(w http.ResponseWriter, r *http.Request) {
 		if cacheEntry.Error == nil {
 			cacheEntry.Error = &database.MediaError{
 				ReceivedAt: jsontime.UnixMilliNow(),
+				Attempts:   1,
 			}
 		} else {
 			cacheEntry.Error.Attempts++

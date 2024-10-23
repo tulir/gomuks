@@ -94,11 +94,12 @@ func New(rawDB, cryptoDB *dbutil.Database, log zerolog.Logger, pickleKey []byte,
 			Transport: &http.Transport{
 				DialContext:         (&net.Dialer{Timeout: 10 * time.Second}).DialContext,
 				TLSHandshakeTimeout: 10 * time.Second,
-				// This needs to be relatively high to allow initial syncs
-				ResponseHeaderTimeout: 180 * time.Second,
+				// This needs to be relatively high to allow initial syncs,
+				// it's lowered after the first sync in postProcessSyncResponse
+				ResponseHeaderTimeout: 300 * time.Second,
 				ForceAttemptHTTP2:     true,
 			},
-			Timeout: 180 * time.Second,
+			Timeout: 300 * time.Second,
 		},
 		Syncer:     (*hiSyncer)(c),
 		Store:      (*hiStore)(c),
