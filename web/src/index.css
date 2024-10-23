@@ -26,7 +26,7 @@ pre, code {
 }
 
 button, a.button {
-	cursor: pointer;
+	cursor: default;
 	font-size: 1em;
 	background: none;
 	border: none;

@@ -240,6 +240,7 @@ div.html-body {
 		color: inherit;
 		text-decoration: none !important;
 		text-wrap: nowrap;
+		cursor: default;
 
 		overflow: hidden;
 		max-width: 15rem;
@@ -266,7 +267,7 @@ div.html-body {
 	span.hicli-spoiler {
 		filter: blur(4px);
 		transition: filter .5s;
-		cursor: pointer;
+		/*cursor: pointer;*/
 
 		&.spoiler-revealed {
 			filter: none;

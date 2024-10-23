@@ -29,7 +29,7 @@ div.room-entry {
 	gap: 4px;
 	/*border-radius: 4px;*/
 	user-select: none;
-	cursor: pointer;
+	/*cursor: pointer;*/
 	height: 3rem;
 	contain-intrinsic-height: 3rem;
 	content-visibility: auto;
