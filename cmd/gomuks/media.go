@@ -204,6 +204,9 @@ func (gmx *Gomuks) DownloadMedia(w http.ResponseWriter, r *http.Request) {
 	} else if (cacheEntry == nil || cacheEntry.EncFile == nil) && encrypted {
 		mautrix.MNotFound.WithMessage("Media encryption keys not found in cache").Write(w)
 		return
+	} else if cacheEntry != nil && cacheEntry.EncFile != nil && !encrypted {
+		mautrix.MNotFound.WithMessage("Tried to download encrypted media without encrypted flag").Write(w)
+		return
 	}
 
 	if gmx.downloadMediaFromCache(ctx, w, r, cacheEntry, false) {
