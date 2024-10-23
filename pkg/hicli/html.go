@@ -574,6 +574,8 @@ Loop:
 				codeBlockLanguage = ""
 				codeBlock = nil
 			} else if tagIsAllowed(tag) && ts.pop(tag) {
+				// TODO instead of only popping when the last tag in the stack matches, this should go through the stack
+				//      and close all tags until it finds the matching tag
 				if tag == atom.Font {
 					built.WriteString("</span>")
 				} else {
