@@ -233,6 +233,23 @@ div.html-body {
 		background-color: inherit;
 	}
 
+	a.hicli-matrix-uri-user, a.hicli-matrix-uri-room-alias {
+		background-color: #ccc;
+		border-radius: 1rem;
+		padding: 0 .25rem;
+		color: inherit;
+		text-decoration: none !important;
+		text-wrap: nowrap;
+
+		overflow: hidden;
+		max-width: 15rem;
+		text-overflow: ellipsis;
+		/* Required to allow setting max width and hiding overflow */
+		display: inline-block;
+		/* Required to not mess up the rest of the text's vertical alignment when using inline-block */
+		vertical-align: bottom;
+	}
+
 	img.hicli-custom-emoji {
 		vertical-align: middle;
 		height: 24px;
