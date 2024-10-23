@@ -14,9 +14,9 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import React, { use, useCallback, useRef, useState } from "react"
-import { toSearchableString } from "@/api/statestore"
 import type { RoomID } from "@/api/types"
 import { useNonNullEventAsState } from "@/util/eventdispatcher.ts"
+import toSearchableString from "@/util/searchablestring.ts"
 import { ClientContext } from "../ClientContext.ts"
 import Entry from "./Entry.tsx"
 import "./RoomList.css"

@@ -13,10 +13,10 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import unhomoglyph from "unhomoglyph"
 import { getAvatarURL } from "@/api/media.ts"
 import { NonNullCachedEventDispatcher } from "@/util/eventdispatcher.ts"
 import { focused } from "@/util/focus.ts"
+import toSearchableString from "@/util/searchablestring.ts"
 import type {
 	ContentURI,
 	EventRowID,
@@ -42,15 +42,6 @@ export interface RoomListEntry {
 	unread_messages: number
 	unread_notifications: number
 	unread_highlights: number
-}
-
-// eslint-disable-next-line no-misleading-character-class
-const removeHiddenCharsRegex = /[\u2000-\u200F\u202A-\u202F\u0300-\u036F\uFEFF\u061C\u2800\u2062-\u2063\s]/g
-
-export function toSearchableString(str: string): string {
-	return unhomoglyph(str.normalize("NFD").toLowerCase().replace(removeHiddenCharsRegex, ""))
-		.replace(/[\\'!"#$%&()*+,\-./:;<=>?@[\]^_`{|}~\u2000-\u206f\u2e00-\u2e7f]/g, "")
-		.toLowerCase()
 }
 
 export class StateStore {

@@ -14,10 +14,12 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import { JSX, useEffect } from "react"
+import { getAvatarURL } from "@/api/media.ts"
 import { RoomStateStore } from "@/api/statestore"
 import { Emoji, useFilteredEmojis } from "@/util/emoji"
 import useEvent from "@/util/useEvent.ts"
 import type { ComposerState } from "./MessageComposer.tsx"
+import { AutocompleteUser, useFilteredMembers } from "./userautocomplete.ts"
 import "./Autocompleter.css"
 
 export interface AutocompleteQuery {
@@ -100,10 +102,24 @@ export const EmojiAutocompleter = ({ params, ...rest }: AutocompleterProps) => {
 	return useAutocompleter({ params, ...rest, items, ...emojiFuncs })
 }
 
-export const UserAutocompleter = ({ params }: AutocompleterProps) => {
-	return <div className="autocompletions">
-		Autocomplete {params.type} {params.query}
-	</div>
+const userFuncs = {
+	getText: (user: AutocompleteUser) =>
+		`[${user.displayName}](https://matrix.to/#/${encodeURIComponent(user.userID)}) `,
+	getKey: (user: AutocompleteUser) => user.userID,
+	render: (user: AutocompleteUser) => <>
+		<img
+			className="small avatar"
+			loading="lazy"
+			src={getAvatarURL(user.userID, { displayname: user.displayName, avatar_url: user.avatarURL })}
+			alt=""
+		/>
+		{user.displayName}
+	</>,
+}
+
+export const UserAutocompleter = ({ params, room, ...rest }: AutocompleterProps) => {
+	const items = useFilteredMembers(room, (params.frozenQuery ?? params.query).slice(1))
+	return useAutocompleter({ params, room, ...rest, items, ...userFuncs })
 }
 
 export const RoomAutocompleter = ({ params }: AutocompleterProps) => {
