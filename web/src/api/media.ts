@@ -40,9 +40,17 @@ function makeFallbackAvatar(backgroundColor: string, fallbackCharacter: string):
   <circle cx="500" cy="500" r="500" fill="${backgroundColor}"/>
   <text x="500" y="750" text-anchor="middle" fill="#fff" font-weight="bold" font-size="666"
     font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif"
-  >${fallbackCharacter}</text>
+  >${escapeHTMLChar(fallbackCharacter)}</text>
 </svg>`)
+}
 
+function escapeHTMLChar(char: string): string {
+	switch (char) {
+	case "&": return "&amp;"
+	case "<": return "&lt;"
+	case ">": return "&gt;"
+	default: return char
+	}
 }
 
 export const getAvatarURL = (userID: UserID, content?: Partial<MemberEventContent>): string | undefined => {

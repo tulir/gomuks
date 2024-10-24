@@ -38,6 +38,7 @@ import (
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/hlog"
 	_ "golang.org/x/image/webp"
+	"golang.org/x/net/html"
 
 	"go.mau.fi/util/exhttp"
 	"go.mau.fi/util/ffmpeg"
@@ -147,7 +148,7 @@ func isAllowedAvatarMime(mime string) bool {
 
 func (w *avatarResponseWriter) WriteHeader(statusCode int) {
 	if statusCode != http.StatusOK && statusCode != http.StatusNotModified {
-		data := []byte(fmt.Sprintf(fallbackAvatarTemplate, w.bgColor, w.character))
+		data := []byte(fmt.Sprintf(fallbackAvatarTemplate, w.bgColor, html.EscapeString(w.character)))
 		w.Header().Set("Content-Type", "image/svg+xml")
 		w.Header().Set("Content-Length", strconv.Itoa(len(data)))
 		w.Header().Del("Content-Disposition")
