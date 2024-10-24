@@ -102,9 +102,15 @@ export const EmojiAutocompleter = ({ params, ...rest }: AutocompleterProps) => {
 	return useAutocompleter({ params, ...rest, items, ...emojiFuncs })
 }
 
+const escapeDisplayname = (input: string) => input
+	.replace("\n", " ")
+	.replace(/([\\`*_[\]])/g, "\\$1")
+	.replace("<", "&lt;")
+	.replace(">", "&gt;")
+
 const userFuncs = {
 	getText: (user: AutocompleteUser) =>
-		`[${user.displayName}](https://matrix.to/#/${encodeURIComponent(user.userID)}) `,
+		`[${escapeDisplayname(user.displayName)}](https://matrix.to/#/${encodeURIComponent(user.userID)}) `,
 	getKey: (user: AutocompleteUser) => user.userID,
 	render: (user: AutocompleteUser) => <>
 		<img
