@@ -8,6 +8,7 @@ import RedactedBody from "./RedactedBody.tsx"
 import TextMessageBody from "./TextMessageBody.tsx"
 import UnknownMessageBody from "./UnknownMessageBody.tsx"
 import EventContentProps from "./props.ts"
+import "./index.css"
 
 export { default as ContentErrorBoundary } from "./ContentErrorBoundary.tsx"
 export { default as EncryptedBody } from "./EncryptedBody.tsx"
