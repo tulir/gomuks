@@ -110,6 +110,26 @@ func (h *HiClient) SetTyping(ctx context.Context, roomID id.RoomID, timeout time
 	return err
 }
 
+func (h *HiClient) SetState(
+	ctx context.Context,
+	roomID id.RoomID,
+	evtType event.Type,
+	stateKey string,
+	content any,
+) (id.EventID, error) {
+	room, err := h.DB.Room.Get(ctx, roomID)
+	if err != nil {
+		return "", fmt.Errorf("failed to get room metadata: %w", err)
+	} else if room == nil {
+		return "", fmt.Errorf("unknown room")
+	}
+	resp, err := h.Client.SendStateEvent(ctx, room.ID, evtType, stateKey, content)
+	if err != nil {
+		return "", err
+	}
+	return resp.EventID, nil
+}
+
 func (h *HiClient) Send(
 	ctx context.Context,
 	roomID id.RoomID,

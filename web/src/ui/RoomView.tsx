@@ -16,10 +16,10 @@
 import { use, useRef } from "react"
 import { getAvatarURL } from "@/api/media.ts"
 import { RoomStateStore } from "@/api/statestore"
-import { EventID } from "@/api/types"
 import { useNonNullEventAsState } from "@/util/eventdispatcher.ts"
 import { LightboxContext } from "./Lightbox.tsx"
 import MessageComposer from "./composer/MessageComposer.tsx"
+import { RoomContext, RoomContextData } from "./roomcontext.ts"
 import TimelineView from "./timeline/TimelineView.tsx"
 import BackIcon from "@/icons/back.svg?react"
 import "./RoomView.css"
@@ -55,12 +55,16 @@ const onKeyDownRoomView = (evt: React.KeyboardEvent) => {
 }
 
 const RoomView = ({ room, clearActiveRoom }: RoomViewProps) => {
-	const scrollToBottomRef = useRef<() => void>(() => {})
-	const setReplyToRef = useRef<(evt: EventID | null) => void>(() => {})
+	const roomContextDataRef = useRef<RoomContextData | undefined>(undefined)
+	if (roomContextDataRef.current === undefined) {
+		roomContextDataRef.current = new RoomContextData(room)
+	}
 	return <div className="room-view" onKeyDown={onKeyDownRoomView} tabIndex={-1}>
-		<RoomHeader room={room} clearActiveRoom={clearActiveRoom}/>
-		<TimelineView room={room} scrollToBottomRef={scrollToBottomRef} setReplyToRef={setReplyToRef}/>
-		<MessageComposer room={room} scrollToBottomRef={scrollToBottomRef} setReplyToRef={setReplyToRef}/>
+		<RoomContext value={roomContextDataRef.current}>
+			<RoomHeader room={room} clearActiveRoom={clearActiveRoom}/>
+			<TimelineView/>
+			<MessageComposer/>
+		</RoomContext>
 	</div>
 }
 

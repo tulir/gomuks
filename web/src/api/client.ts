@@ -58,6 +58,23 @@ export default class Client {
 		)
 	}
 
+	async pinMessage(room: RoomStateStore, evtID: EventID, wantPinned: boolean) {
+		const pinnedEvents = room.getPinnedEvents()
+		const currentlyPinned = pinnedEvents.includes(evtID)
+		if (currentlyPinned === wantPinned) {
+			return
+		}
+		if (wantPinned) {
+			pinnedEvents.push(evtID)
+		} else {
+			const idx = pinnedEvents.indexOf(evtID)
+			if (idx !== -1) {
+				pinnedEvents.splice(idx, 1)
+			}
+		}
+		await this.rpc.setState(room.roomID, "m.room.pinned_events", "", { pinned: pinnedEvents })
+	}
+
 	async sendMessage(params: SendMessageParams): Promise<void> {
 		const room = this.store.rooms.get(params.room_id)
 		if (!room) {

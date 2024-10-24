@@ -13,13 +13,15 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import React, { use, useCallback } from "react"
+import React, { use } from "react"
 import { getAvatarURL, getMediaURL } from "@/api/media.ts"
-import { RoomStateStore, useRoomState } from "@/api/statestore"
-import { EventID, MemDBEvent, MemberEventContent, UnreadType } from "@/api/types"
+import { useRoomState } from "@/api/statestore"
+import { MemDBEvent, MemberEventContent, UnreadType } from "@/api/types"
 import { isEventID } from "@/util/validation.ts"
 import { ClientContext } from "../ClientContext.ts"
 import { LightboxContext } from "../Lightbox.tsx"
+import { useRoomContext } from "../roomcontext.ts"
+import EventMenu from "./EventMenu.tsx"
 import { ReplyIDBody } from "./ReplyBody.tsx"
 import getBodyType, { ContentErrorBoundary, EventContentProps, HiddenEvent, MemberBody } from "./content"
 import ErrorIcon from "../../icons/error.svg?react"
@@ -28,10 +30,8 @@ import SentIcon from "../../icons/sent.svg?react"
 import "./TimelineEvent.css"
 
 export interface TimelineEventProps {
-	room: RoomStateStore
 	evt: MemDBEvent
 	prevEvt: MemDBEvent | null
-	setReplyToRef: React.RefObject<(evt: EventID | null) => void>
 }
 
 const fullTimeFormatter = new Intl.DateTimeFormat("en-GB", { dateStyle: "full", timeStyle: "medium" })
@@ -67,10 +67,10 @@ function isSmallEvent(bodyType: React.FunctionComponent<EventContentProps>): boo
 	return bodyType === HiddenEvent || bodyType === MemberBody
 }
 
-const TimelineEvent = ({ room, evt, prevEvt, setReplyToRef }: TimelineEventProps) => {
-	const wrappedSetReplyTo = useCallback(() => setReplyToRef.current(evt.event_id), [evt, setReplyToRef])
+const TimelineEvent = ({ evt, prevEvt }: TimelineEventProps) => {
+	const roomCtx = useRoomContext()
 	const client = use(ClientContext)!
-	const memberEvt = useRoomState(room, "m.room.member", evt.sender)
+	const memberEvt = useRoomState(roomCtx.store, "m.room.member", evt.sender)
 	const memberEvtContent = memberEvt?.content as MemberEventContent | undefined
 	const BodyType = getBodyType(evt)
 	const eventTS = new Date(evt.timestamp)
@@ -95,6 +95,9 @@ const TimelineEvent = ({ room, evt, prevEvt, setReplyToRef }: TimelineEventProps
 	const relatesTo = (evt.orig_content ?? evt.content)?.["m.relates_to"]
 	const replyTo = relatesTo?.["m.in_reply_to"]?.event_id
 	const mainEvent = <div data-event-id={evt.event_id} className={wrapperClassNames.join(" ")}>
+		<div className="context-menu-container">
+			<EventMenu evt={evt}/>
+		</div>
 		<div className="sender-avatar" title={evt.sender}>
 			<img
 				className={`${smallAvatar ? "small" : ""} avatar`}
@@ -104,24 +107,24 @@ const TimelineEvent = ({ room, evt, prevEvt, setReplyToRef }: TimelineEventProps
 				alt=""
 			/>
 		</div>
-		<div className="event-sender-and-time" onClick={wrappedSetReplyTo}>
+		<div className="event-sender-and-time">
 			<span className="event-sender">{memberEvtContent?.displayname || evt.sender}</span>
 			<span className="event-time" title={fullTime}>{shortTime}</span>
 			{(editEventTS && editTime) ? <span className="event-edited" title={editTime}>
 				(edited at {formatShortTime(editEventTS)})
 			</span> : null}
 		</div>
-		<div className="event-time-only" onClick={wrappedSetReplyTo}>
+		<div className="event-time-only">
 			<span className="event-time" title={editTime ? `${fullTime} - ${editTime}` : fullTime}>{shortTime}</span>
 		</div>
 		<div className="event-content">
 			{isEventID(replyTo) && BodyType !== HiddenEvent ? <ReplyIDBody
-				room={room}
+				room={roomCtx.store}
 				eventID={replyTo}
 				isThread={relatesTo?.rel_type === "m.thread"}
 			/> : null}
 			<ContentErrorBoundary>
-				<BodyType room={room} sender={memberEvt} event={evt}/>
+				<BodyType room={roomCtx.store} sender={memberEvt} event={evt}/>
 			</ContentErrorBoundary>
 			{evt.reactions ? <EventReactions reactions={evt.reactions}/> : null}
 		</div>

@@ -111,6 +111,14 @@ export class RoomStateStore {
 		return this.eventsByRowID.get(rowID)
 	}
 
+	getPinnedEvents(): EventID[] {
+		const pinnedList = this.getStateEvent("m.room.pinned_events", "")?.content?.pinned
+		if (Array.isArray(pinnedList)) {
+			return pinnedList.filter(evtID => typeof evtID === "string")
+		}
+		return []
+	}
+
 	applyPagination(history: RawDBEvent[]) {
 		// Pagination comes in newest to oldest, timeline is in the opposite order
 		history.reverse()

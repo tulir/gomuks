@@ -15,10 +15,11 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import React, { use, useCallback, useEffect, useLayoutEffect, useReducer, useRef, useState } from "react"
 import { ScaleLoader } from "react-spinners"
-import { RoomStateStore, useRoomEvent } from "@/api/statestore"
+import { useRoomEvent } from "@/api/statestore"
 import type { EventID, MediaMessageEventContent, Mentions, RelatesTo, RoomID } from "@/api/types"
 import useEvent from "@/util/useEvent.ts"
 import { ClientContext } from "../ClientContext.ts"
+import { useRoomContext } from "../roomcontext.ts"
 import { ReplyBody } from "../timeline/ReplyBody.tsx"
 import { useMediaContent } from "../timeline/content/useMediaContent.tsx"
 import type { AutocompleteQuery } from "./Autocompleter.tsx"
@@ -27,12 +28,6 @@ import AttachIcon from "@/icons/attach.svg?react"
 import CloseIcon from "@/icons/close.svg?react"
 import SendIcon from "@/icons/send.svg?react"
 import "./MessageComposer.css"
-
-interface MessageComposerProps {
-	room: RoomStateStore
-	scrollToBottomRef: React.RefObject<() => void>
-	setReplyToRef: React.RefObject<(evt: EventID | null) => void>
-}
 
 export interface ComposerState {
 	text: string
@@ -66,7 +61,9 @@ const draftStore = {
 
 type CaretEvent<T> = React.MouseEvent<T> | React.KeyboardEvent<T> | React.ChangeEvent<T>
 
-const MessageComposer = ({ room, scrollToBottomRef, setReplyToRef }: MessageComposerProps) => {
+const MessageComposer = () => {
+	const roomCtx = useRoomContext()
+	const room = roomCtx.store
 	const client = use(ClientContext)!
 	const [autocomplete, setAutocomplete] = useState<AutocompleteQuery | null>(null)
 	const [state, setState] = useReducer(composerReducer, uninitedComposer)
@@ -76,8 +73,9 @@ const MessageComposer = ({ room, scrollToBottomRef, setReplyToRef }: MessageComp
 	const textRows = useRef(1)
 	const typingSentAt = useRef(0)
 	const replyToEvt = useRoomEvent(room, state.replyTo)
-	setReplyToRef.current = useCallback((evt: EventID | null) => {
+	roomCtx.setReplyTo = useCallback((evt: EventID | null) => {
 		setState({ replyTo: evt })
+		textInput.current?.focus()
 	}, [])
 	const sendMessage = useEvent((evt: React.FormEvent) => {
 		evt.preventDefault()
@@ -227,8 +225,8 @@ const MessageComposer = ({ room, scrollToBottomRef, setReplyToRef }: MessageComp
 		textInput.current.rows = newTextRows
 		textRows.current = newTextRows
 		// This has to be called unconditionally, because setting rows = 1 messes up the scroll state otherwise
-		scrollToBottomRef.current?.()
-	}, [state, scrollToBottomRef])
+		roomCtx.scrollToBottom()
+	}, [state, roomCtx])
 	// Saving to localStorage could be done in the reducer, but that's not very proper, so do it in an effect.
 	useEffect(() => {
 		if (state.uninited) {

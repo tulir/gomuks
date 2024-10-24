@@ -132,6 +132,12 @@ export default abstract class RPCClient {
 		return this.request("send_event", { room_id, type, content })
 	}
 
+	setState(
+		room_id: RoomID, type: EventType, state_key: string, content: Record<string, unknown>,
+	): Promise<EventID> {
+		return this.request("set_state", { room_id, type, state_key, content })
+	}
+
 	markRead(room_id: RoomID, event_id: EventID, receipt_type: ReceiptType = "m.read"): Promise<boolean> {
 		return this.request("mark_read", { room_id, event_id, receipt_type })
 	}

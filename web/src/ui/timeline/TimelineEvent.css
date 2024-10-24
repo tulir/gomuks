@@ -1,12 +1,11 @@
 div.timeline-event {
 	width: 100%;
 	max-width: 100%;
-	overflow: hidden;
-	overflow-wrap: anywhere;
 	display: grid;
 	margin-top: .5rem;
 	grid-template:
-		"avatar gap sender sender" auto
+		"cmc    cmc cmc     cmc"    0
+		"avatar gap sender  sender" auto
 		"avatar gap content status" auto
 		/ 2.5rem .5rem 1fr 2rem;
 
@@ -75,6 +74,7 @@ div.timeline-event {
 	> div.event-content {
 		grid-area: content;
 		overflow: hidden;
+		overflow-wrap: anywhere;
 	}
 
 	> div.event-send-status {
@@ -97,8 +97,19 @@ div.timeline-event {
 		}
 	}
 
+	> div.context-menu-container {
+		grid-area: cmc;
+		position: relative;
+		display: none;
+	}
+
+	&:hover > div.context-menu-container {
+		display: block;
+	}
+
 	&.same-sender {
 		grid-template:
+			"cmc       cmc     cmc"    0
 			"timestamp content status" auto
 			/ 3rem 1fr 2rem;
 		margin-top: .25rem;
@@ -114,6 +125,7 @@ div.timeline-event {
 
 	&.hidden-event {
 		grid-template:
+			"cmc       cmc    cmc     cmc"    0
 			"timestamp avatar content status" auto
 			/ 3rem 1.5rem 1fr 2rem;
 

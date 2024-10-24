@@ -13,28 +13,25 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import React, { use, useCallback, useEffect, useLayoutEffect, useRef } from "react"
-import { RoomStateStore, useRoomTimeline } from "@/api/statestore"
-import { EventID, MemDBEvent } from "@/api/types"
+import { use, useCallback, useEffect, useLayoutEffect, useRef } from "react"
+import { useRoomTimeline } from "@/api/statestore"
+import { MemDBEvent } from "@/api/types"
 import useFocus from "@/util/focus.ts"
 import { ClientContext } from "../ClientContext.ts"
+import { useRoomContext } from "../roomcontext.ts"
 import TimelineEvent from "./TimelineEvent.tsx"
 import "./TimelineView.css"
 
-interface TimelineViewProps {
-	room: RoomStateStore
-	scrollToBottomRef: React.RefObject<() => void>
-	setReplyToRef: React.RefObject<(evt: EventID | null) => void>
-}
-
-const TimelineView = ({ room, scrollToBottomRef, setReplyToRef }: TimelineViewProps) => {
+const TimelineView = () => {
+	const roomCtx = useRoomContext()
+	const room = roomCtx.store
 	const timeline = useRoomTimeline(room)
 	const client = use(ClientContext)!
 	const loadHistory = useCallback(() => {
 		client.loadMoreHistory(room.roomID)
 			.catch(err => console.error("Failed to load history", err))
 	}, [client, room])
-	const bottomRef = useRef<HTMLDivElement>(null)
+	const bottomRef = roomCtx.timelineBottomRef
 	const topRef = useRef<HTMLDivElement>(null)
 	const timelineViewRef = useRef<HTMLDivElement>(null)
 	const prevOldestTimelineRow = useRef(0)
@@ -55,8 +52,6 @@ const TimelineView = ({ room, scrollToBottomRef, setReplyToRef }: TimelineViewPr
 	if (timelineViewRef.current) {
 		oldScrollHeight.current = timelineViewRef.current.scrollHeight
 	}
-	scrollToBottomRef.current = () =>
-		bottomRef.current && scrolledToBottom.current && bottomRef.current.scrollIntoView()
 	useLayoutEffect(() => {
 		if (bottomRef.current && scrolledToBottom.current) {
 			// For any timeline changes, if we were at the bottom, scroll to the new bottom
@@ -66,7 +61,7 @@ const TimelineView = ({ room, scrollToBottomRef, setReplyToRef }: TimelineViewPr
 			timelineViewRef.current.scrollTop += timelineViewRef.current.scrollHeight - oldScrollHeight.current
 		}
 		prevOldestTimelineRow.current = timeline[0]?.timeline_rowid ?? 0
-	}, [timeline])
+	}, [bottomRef, timeline])
 	useEffect(() => {
 		const newestEvent = timeline[timeline.length - 1]
 		if (
@@ -115,7 +110,7 @@ const TimelineView = ({ room, scrollToBottomRef, setReplyToRef }: TimelineViewPr
 					return null
 				}
 				const thisEvt = <TimelineEvent
-					key={entry.rowid} room={room} evt={entry} prevEvt={prevEvt} setReplyToRef={setReplyToRef}
+					key={entry.rowid} evt={entry} prevEvt={prevEvt}
 				/>
 				prevEvt = entry
 				return thisEvt

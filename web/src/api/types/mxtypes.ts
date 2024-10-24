@@ -69,6 +69,25 @@ export interface MemberEventContent {
 	reason?: string
 }
 
+export interface PowerLevelEventContent {
+	users?: Record<UserID, number>
+	users_default?: number
+	events?: Record<EventType, number>
+	events_default?: number
+	state_default?: number
+	notifications?: {
+		room?: number
+	}
+	ban?: number
+	redact?: number
+	invite?: number
+	kick?: number
+}
+
+export interface PinnedEventsContent {
+	pinned?: EventID[]
+}
+
 export interface Mentions {
 	user_ids: UserID[]
 	room: boolean
