@@ -31,6 +31,7 @@ import type {
 	ResolveAliasResponse,
 	RoomAlias,
 	RoomID,
+	RoomStateGUID,
 	TimelineRowID,
 	UserID,
 } from "./types"
@@ -138,6 +139,10 @@ export default abstract class RPCClient {
 		return this.request("set_state", { room_id, type, state_key, content })
 	}
 
+	setAccountData(type: EventType, content: unknown, room_id?: RoomID): Promise<boolean> {
+		return this.request("set_account_data", { type, content, room_id })
+	}
+
 	markRead(room_id: RoomID, event_id: EventID, receipt_type: ReceiptType = "m.read"): Promise<boolean> {
 		return this.request("mark_read", { room_id, event_id, receipt_type })
 	}
@@ -148,6 +153,10 @@ export default abstract class RPCClient {
 
 	ensureGroupSessionShared(room_id: RoomID): Promise<boolean> {
 		return this.request("ensure_group_session_shared", { room_id })
+	}
+
+	getSpecificRoomState(keys: RoomStateGUID[]): Promise<RawDBEvent[]> {
+		return this.request("get_specific_room_state", { keys })
 	}
 
 	getRoomState(room_id: RoomID, fetch_members = false, refetch = false): Promise<RawDBEvent[]> {

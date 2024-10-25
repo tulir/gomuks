@@ -220,6 +220,20 @@ export class RoomStateStore {
 		this.notifyTimelineSubscribers()
 	}
 
+	applyState(evt: RawDBEvent) {
+		if (evt.state_key === undefined) {
+			throw new Error(`Event ${evt.event_id} is missing state key`)
+		}
+		this.applyEvent(evt)
+		let stateMap = this.state.get(evt.type)
+		if (!stateMap) {
+			stateMap = new Map()
+			this.state.set(evt.type, stateMap)
+		}
+		stateMap.set(evt.state_key, evt.rowid)
+		this.stateSubs.notify(this.stateSubKey(evt.type, evt.state_key))
+	}
+
 	applyFullState(state: RawDBEvent[]) {
 		const newStateMap: Map<EventType, Map<string, EventRowID>> = new Map()
 		for (const evt of state) {

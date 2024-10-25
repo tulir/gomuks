@@ -17,6 +17,7 @@ import { getAvatarURL } from "@/api/media.ts"
 import { NonNullCachedEventDispatcher } from "@/util/eventdispatcher.ts"
 import { focused } from "@/util/focus.ts"
 import toSearchableString from "@/util/searchablestring.ts"
+import { MultiSubscribable } from "@/util/subscribable.ts"
 import type {
 	ContentURI,
 	EventRowID,
@@ -26,6 +27,7 @@ import type {
 	SendCompleteData,
 	SyncCompleteData,
 	SyncRoom,
+	UnknownEventContent,
 	UserID,
 } from "../types"
 import { RoomStateStore } from "./room.ts"
@@ -47,6 +49,9 @@ export interface RoomListEntry {
 export class StateStore {
 	readonly rooms: Map<RoomID, RoomStateStore> = new Map()
 	readonly roomList = new NonNullCachedEventDispatcher<RoomListEntry[]>([])
+	readonly accountData: Map<string, UnknownEventContent> = new Map()
+	readonly accountDataSubs = new MultiSubscribable()
+	#frequentlyUsedEmoji: Map<string, number> | null = null
 	switchRoom?: (roomID: RoomID) => void
 	imageAuthToken?: string
 
@@ -137,6 +142,13 @@ export class StateStore {
 				}
 			}
 		}
+		for (const ad of Object.values(sync.account_data)) {
+			if (ad.type === "io.element.recent_emoji") {
+				this.#frequentlyUsedEmoji = null
+			}
+			this.accountData.set(ad.type, ad.content)
+			this.accountDataSubs.notify(ad.type)
+		}
 		for (const roomID of sync.left_rooms) {
 			this.rooms.delete(roomID)
 			changedRoomListEntries.set(roomID, null)
@@ -170,6 +182,22 @@ export class StateStore {
 		if (updatedRoomList) {
 			this.roomList.emit(updatedRoomList)
 		}
+	}
+
+	get frequentlyUsedEmoji(): Map<string, number> {
+		if (this.#frequentlyUsedEmoji === null) {
+			const emojiData = this.accountData.get("io.element.recent_emoji")
+			try {
+				const recentList = emojiData?.recent_emoji as [string, number][] | undefined
+				this.#frequentlyUsedEmoji = new Map(recentList?.toSorted(
+					([, count1], [, count2]) => count2 - count1,
+				))
+			} catch (err) {
+				console.warn("Failed to parse recent emoji data", err, emojiData?.recent_emoji)
+				this.#frequentlyUsedEmoji = new Map()
+			}
+		}
+		return this.#frequentlyUsedEmoji
 	}
 
 	showNotification(room: RoomStateStore, rowid: EventRowID, sound: boolean) {

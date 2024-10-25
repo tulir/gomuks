@@ -13,11 +13,12 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import { JSX, useEffect } from "react"
+import { JSX, use, useEffect } from "react"
 import { getAvatarURL } from "@/api/media.ts"
 import { RoomStateStore } from "@/api/statestore"
 import { Emoji, useFilteredEmojis } from "@/util/emoji"
 import useEvent from "@/util/useEvent.ts"
+import { ClientContext } from "../ClientContext.ts"
 import type { ComposerState } from "./MessageComposer.tsx"
 import { AutocompleteUser, useFilteredMembers } from "./userautocomplete.ts"
 import "./Autocompleter.css"
@@ -98,7 +99,11 @@ const emojiFuncs = {
 }
 
 export const EmojiAutocompleter = ({ params, ...rest }: AutocompleterProps) => {
-	const items = useFilteredEmojis((params.frozenQuery ?? params.query).slice(1), true)
+	const client = use(ClientContext)!
+	const items = useFilteredEmojis((params.frozenQuery ?? params.query).slice(1), {
+		sorted: true,
+		frequentlyUsed: client.store.frequentlyUsedEmoji,
+	})
 	return useAutocompleter({ params, ...rest, items, ...emojiFuncs })
 }
 

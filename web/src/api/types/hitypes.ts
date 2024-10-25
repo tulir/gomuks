@@ -130,14 +130,14 @@ export interface MemDBEvent extends BaseDBEvent {
 export interface DBAccountData {
 	user_id: UserID
 	type: EventType
-	content: unknown
+	content: UnknownEventContent
 }
 
 export interface DBRoomAccountData {
 	user_id: UserID
 	room_id: RoomID
 	type: EventType
-	content: unknown
+	content: UnknownEventContent
 }
 
 export interface PaginationResponse {
@@ -162,4 +162,10 @@ export interface ClientWellKnown {
 	"m.identity_server": {
 		base_url: string
 	}
+}
+
+export interface RoomStateGUID {
+	room_id: RoomID
+	type: EventType
+	state_key: string
 }

@@ -164,3 +164,28 @@ export interface LocationMessageEventContent extends BaseMessageEventContent {
 }
 
 export type MessageEventContent = TextMessageEventContent | MediaMessageEventContent | LocationMessageEventContent
+
+export type ImagePackUsage = "emoticon" | "sticker"
+
+export interface ImagePackEntry {
+	url: ContentURI
+	info?: MediaInfo
+	usage?: ImagePackUsage[]
+}
+
+export interface ImagePack {
+	images: Record<string, ImagePackEntry>
+	pack: {
+		display_name?: string
+		avatar_url?: ContentURI
+		usage?: ImagePackUsage[]
+	}
+}
+
+export interface ImagePackRooms {
+	rooms: Record<RoomID, Record<string, Record<string, never>>>
+}
+
+export interface ElementRecentEmoji {
+	recent_emoji: [string, number][]
+}

@@ -13,28 +13,39 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import { useRef } from "react"
+import { useMemo, useRef } from "react"
 import { EventID, ReactionEventContent } from "@/api/types"
 import data from "./data.json"
 
-export interface PartialEmoji {
-	u: string // Unicode codepoint or custom emoji mxc:// URI
-	c?: number | string // Category number or custom emoji pack name
-	t?: string // Emoji title
-	n?: string // Primary shortcode
-	s?: string[] // Shortcodes without underscores
+export interface EmojiMetadata {
+	c: number | string // Category number or custom emoji pack name
+	t: string // Emoji title
+	n: string // Primary shortcode
+	s: string[] // Shortcodes without underscores
 }
 
-export type Emoji = Required<PartialEmoji>
+export interface EmojiText {
+	u: string // Unicode codepoint or custom emoji mxc:// URI
+}
+
+export type PartialEmoji = EmojiText & Partial<EmojiMetadata>
+export type Emoji = EmojiText & EmojiMetadata
 
 export const emojis: Emoji[] = data.e
+export const emojiMap = new Map<string, Emoji>()
 export const categories = data.c
+
+export const CATEGORY_FREQUENTLY_USED = "Frequently Used"
+
+for (const emoji of emojis) {
+	emojiMap.set(emoji.u, emoji)
+}
 
 function filter(emojis: Emoji[], query: string): Emoji[] {
 	return emojis.filter(emoji => emoji.s.some(shortcode => shortcode.includes(query)))
 }
 
-function filterAndSort(emojis: Emoji[], query: string): Emoji[] {
+function filterAndSort(emojis: Emoji[], query: string, frequentlyUsed?: Map<string, number>): Emoji[] {
 	return emojis
 		.map(emoji => {
 			const matchIndex = emoji.s.reduce((minIndex, shortcode) => {
@@ -44,7 +55,10 @@ function filterAndSort(emojis: Emoji[], query: string): Emoji[] {
 			return { emoji, matchIndex }
 		})
 		.filter(({ matchIndex }) => matchIndex !== -1)
-		.sort((e1, e2) => e1.matchIndex - e2.matchIndex)
+		.sort((e1, e2) =>
+			e1.matchIndex === e2.matchIndex
+				? (frequentlyUsed?.get(e2.emoji.u) ?? 0) - (frequentlyUsed?.get(e1.emoji.u) ?? 0)
+				: e1.matchIndex - e2.matchIndex)
 		.map(({ emoji }) => emoji)
 }
 
@@ -80,16 +94,41 @@ interface filteredEmojiCache {
 	result: Emoji[]
 }
 
-export function useFilteredEmojis(query: string, sorted = false): Emoji[] {
+interface useFilteredEmojisParams {
+	sorted?: boolean
+	frequentlyUsed?: Map<string, number>
+	frequentlyUsedAsCategory?: boolean
+}
+
+export function useFilteredEmojis(query: string, params: useFilteredEmojisParams = {}): Emoji[] {
 	query = query.toLowerCase().replaceAll("_", "")
-	const prev = useRef<filteredEmojiCache>({ query: "", result: emojis })
+	const allEmojis: Emoji[] = useMemo(() => {
+		let output: Emoji[] = []
+		if (params.frequentlyUsedAsCategory && params.frequentlyUsed) {
+			output = Array.from(params.frequentlyUsed.keys()
+				.map(key => {
+					const emoji = emojiMap.get(key)
+					if (!emoji) {
+						return undefined
+					}
+					return { ...emoji, c: CATEGORY_FREQUENTLY_USED } as Emoji
+				})
+				.filter((emoji, index): emoji is Emoji => emoji !== undefined && index < 24))
+		}
+		if (output.length === 0) {
+			return emojis
+		}
+		return output.concat(emojis)
+	}, [params.frequentlyUsed, params.frequentlyUsedAsCategory])
+	const prev = useRef<filteredEmojiCache>({ query: "", result: allEmojis })
 	if (!query) {
 		prev.current.query = ""
-		prev.current.result = emojis
+		prev.current.result = allEmojis
 	} else if (prev.current.query !== query) {
-		prev.current.result = (sorted ? filterAndSort : filter)(
-			query.startsWith(prev.current.query) ? prev.current.result : emojis,
+		prev.current.result = (params.sorted ? filterAndSort : filter)(
+			query.startsWith(prev.current.query) ? prev.current.result : allEmojis,
 			query,
+			params.frequentlyUsed,
 		)
 		prev.current.query = query
 	}

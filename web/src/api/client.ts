@@ -16,7 +16,7 @@
 import { CachedEventDispatcher } from "../util/eventdispatcher.ts"
 import RPCClient, { SendMessageParams } from "./rpc.ts"
 import { RoomStateStore, StateStore } from "./statestore"
-import type { ClientState, EventID, EventType, RPCEvent, RoomID, UserID } from "./types"
+import type { ClientState, EventID, EventType, RPCEvent, RoomID, RoomStateGUID, UserID } from "./types"
 
 export default class Client {
 	readonly state = new CachedEventDispatcher<ClientState>()
@@ -98,6 +98,46 @@ export default class Client {
 			room.pendingEvents.push(dbEvent.rowid)
 			room.applyEvent(dbEvent, true)
 			room.notifyTimelineSubscribers()
+		}
+	}
+
+	async incrementFrequentlyUsedEmoji(targetEmoji: string) {
+		let recentEmoji = this.store.accountData.get("io.element.recent_emoji")?.recent_emoji as
+			[string, number][] | undefined
+		if (!Array.isArray(recentEmoji)) {
+			recentEmoji = []
+		}
+		let found = false
+		for (const [idx, [emoji, count]] of recentEmoji.entries()) {
+			if (emoji === targetEmoji) {
+				recentEmoji.splice(idx, 1)
+				recentEmoji.unshift([emoji, count + 1])
+				found = true
+				break
+			}
+		}
+		if (!found) {
+			recentEmoji.unshift([targetEmoji, 1])
+		}
+		if (recentEmoji.length > 100) {
+			recentEmoji.pop()
+		}
+		const newContent = { recent_emoji: recentEmoji }
+		this.store.accountData.set("io.element.recent_emoji", newContent)
+		await this.rpc.setAccountData("io.element.recent_emoji", newContent)
+	}
+
+	async loadSpecificRoomState(keys: RoomStateGUID[]): Promise<void> {
+		const missingKeys = keys.filter(key => {
+			const room = this.store.rooms.get(key.room_id)
+			return room && room.getStateEvent(key.type, key.state_key) === undefined
+		})
+		if (missingKeys.length === 0) {
+			return
+		}
+		const events = await this.rpc.getSpecificRoomState(missingKeys)
+		for (const evt of events) {
+			this.store.rooms.get(evt.room_id)?.applyState(evt)
 		}
 	}
 

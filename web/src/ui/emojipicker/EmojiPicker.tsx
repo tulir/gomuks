@@ -15,7 +15,8 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import { CSSProperties, JSX, use, useCallback, useState } from "react"
 import { getMediaURL } from "@/api/media.ts"
-import { Emoji, PartialEmoji, categories, useFilteredEmojis } from "@/util/emoji"
+import { CATEGORY_FREQUENTLY_USED, Emoji, PartialEmoji, categories, useFilteredEmojis } from "@/util/emoji"
+import { ClientContext } from "../ClientContext.ts"
 import { ModalCloseContext } from "../modal/Modal.tsx"
 import CloseIcon from "@/icons/close.svg?react"
 import ActivitiesIcon from "@/icons/emoji-categories/activities.svg?react"
@@ -65,8 +66,12 @@ interface EmojiPickerProps {
 }
 
 export const EmojiPicker = ({ style, selected, onSelect, allowFreeform, closeOnSelect }: EmojiPickerProps) => {
+	const client = use(ClientContext)!
 	const [query, setQuery] = useState("")
-	const emojis = useFilteredEmojis(query)
+	const emojis = useFilteredEmojis(query, {
+		frequentlyUsed: client.store.frequentlyUsedEmoji,
+		frequentlyUsedAsCategory: true,
+	})
 	const [previewEmoji, setPreviewEmoji] = useState<Emoji>()
 	const clearQuery = useCallback(() => setQuery(""), [])
 	const cats: JSX.Element[] = []
@@ -75,16 +80,14 @@ export const EmojiPicker = ({ style, selected, onSelect, allowFreeform, closeOnS
 	const close = use(ModalCloseContext)
 	const onSelectWrapped = (emoji: PartialEmoji) => {
 		onSelect(emoji, selected?.includes(emoji.u))
+		if (emoji.c) {
+			client.incrementFrequentlyUsedEmoji(emoji.u)
+				.catch(err => console.error("Failed to increment frequently used emoji", err))
+		}
 		if (closeOnSelect) {
 			close()
 		}
 	}
-	cats.push(<div className="emoji-category" data-emoji-category="Frequently Used">
-		<h4 className="emoji-category-name">Frequently Used</h4>
-		<div className="emoji-category-list">
-			{/* TODO */}
-		</div>
-	</div>)
 	for (const emoji of emojis) {
 		if (emoji.c === 2) {
 			continue
@@ -103,7 +106,7 @@ export const EmojiPicker = ({ style, selected, onSelect, allowFreeform, closeOnS
 			currentCat = []
 		}
 		currentCat.push(<button
-			key={emoji.u}
+			key={emoji.c === CATEGORY_FREQUENTLY_USED ? `freq-${emoji.u}` : emoji.u}
 			className={`emoji ${selected?.includes(emoji.u) ? "selected" : ""}`}
 			onMouseOver={() => setPreviewEmoji(emoji)}
 			onMouseOut={() => setPreviewEmoji(undefined)}
@@ -128,7 +131,8 @@ export const EmojiPicker = ({ style, selected, onSelect, allowFreeform, closeOnS
 		<div className="emoji-category-bar">
 			<button
 				className="emoji-category-icon"
-				title="Frequently Used"
+				title={CATEGORY_FREQUENTLY_USED}
+				onClick={onClickCategoryButton}
 			>{<RecentIcon/>}</button>
 			{sortedEmojiCategories.map(cat =>
 				<button
