@@ -36,7 +36,6 @@ const TimelineView = () => {
 	const timelineViewRef = useRef<HTMLDivElement>(null)
 	const prevOldestTimelineRow = useRef(0)
 	const oldScrollHeight = useRef(0)
-	const scrolledToBottom = useRef(true)
 	const focused = useFocus()
 
 	// When the user scrolls the timeline manually, remember if they were at the bottom,
@@ -46,15 +45,15 @@ const TimelineView = () => {
 			return
 		}
 		const timelineView = timelineViewRef.current
-		scrolledToBottom.current = timelineView.scrollTop + timelineView.clientHeight + 1 >= timelineView.scrollHeight
-	}, [])
+		roomCtx.scrolledToBottom = timelineView.scrollTop + timelineView.clientHeight + 1 >= timelineView.scrollHeight
+	}, [roomCtx])
 	// Save the scroll height prior to updating the timeline, so that we can adjust the scroll position if needed.
 	if (timelineViewRef.current) {
 		oldScrollHeight.current = timelineViewRef.current.scrollHeight
 	}
 	useLayoutEffect(() => {
 		const bottomRef = roomCtx.timelineBottomRef
-		if (bottomRef.current && scrolledToBottom.current) {
+		if (bottomRef.current && roomCtx.scrolledToBottom) {
 			// For any timeline changes, if we were at the bottom, scroll to the new bottom
 			bottomRef.current.scrollIntoView()
 		} else if (timelineViewRef.current && prevOldestTimelineRow.current > (timeline[0]?.timeline_rowid ?? 0)) {
@@ -72,7 +71,7 @@ const TimelineView = () => {
 	useEffect(() => {
 		const newestEvent = timeline[timeline.length - 1]
 		if (
-			scrolledToBottom.current
+			roomCtx.scrolledToBottom
 			&& focused
 			&& newestEvent
 			&& newestEvent.timeline_rowid > 0
@@ -85,7 +84,7 @@ const TimelineView = () => {
 				err => console.error(`Failed to send read receipt for ${newestEvent.event_id}:`, err),
 			)
 		}
-	}, [focused, client, room, timeline])
+	}, [focused, client, roomCtx, room, timeline])
 	useEffect(() => {
 		const topElem = topRef.current
 		if (!topElem) {

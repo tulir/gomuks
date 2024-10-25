@@ -28,11 +28,14 @@ export class RoomContextData {
 	public setEditing: (evt: MemDBEvent | null) => void = noop("setEditing")
 	public isEditing = new NonNullCachedEventDispatcher<boolean>(false)
 	public ownMessages: EventRowID[] = []
+	public scrolledToBottom = true
 
 	constructor(public store: RoomStateStore) {}
 
 	scrollToBottom() {
-		this.timelineBottomRef.current?.scrollIntoView()
+		if (this.scrolledToBottom) {
+			this.timelineBottomRef.current?.scrollIntoView()
+		}
 	}
 }
 
