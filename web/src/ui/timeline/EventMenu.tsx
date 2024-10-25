@@ -16,6 +16,7 @@
 import { use, useCallback } from "react"
 import { useRoomState } from "@/api/statestore"
 import { MemDBEvent, PowerLevelEventContent } from "@/api/types"
+import { useNonNullEventAsState } from "@/util/eventdispatcher.ts"
 import { ClientContext } from "../ClientContext.ts"
 import { useRoomContext } from "../roomcontext.ts"
 import EditIcon from "../../icons/edit.svg?react"
@@ -47,11 +48,12 @@ const EventMenu = ({ evt }: EventHoverMenuProps) => {
 		window.alert("No reactions yet :(")
 	}, [])
 	const onClickEdit = useCallback(() => {
-		window.alert("No edits yet :(")
-	}, [])
+		roomCtx.setEditing(evt)
+	}, [roomCtx, evt])
 	const onClickMore = useCallback(() => {
 		window.alert("Nothing here yet :(")
 	}, [])
+	const isEditing = useNonNullEventAsState(roomCtx.isEditing)
 	const plEvent = useRoomState(roomCtx.store, "m.room.power_levels", "")
 	// We get pins from getPinnedEvents, but use the hook anyway to subscribe to changes
 	useRoomState(roomCtx.store, "m.room.pinned_events", "")
@@ -61,8 +63,12 @@ const EventMenu = ({ evt }: EventHoverMenuProps) => {
 	const pinPL = pls.events?.["m.room.pinned_events"] ?? pls.state_default ?? 50
 	return <div className="context-menu">
 		<button onClick={onClickReact}><ReactIcon/></button>
-		<button onClick={onClickReply}><ReplyIcon/></button>
-		<button onClick={onClickEdit}><EditIcon/></button>
+		<button
+			disabled={isEditing}
+			title={isEditing ? "Can't reply to messages while editing a message" : undefined}
+			onClick={onClickReply}
+		><ReplyIcon/></button>
+		{evt.sender === userID && evt.type === "m.room.message" && <button onClick={onClickEdit}><EditIcon/></button>}
 		{ownPL >= pinPL && (pins.includes(evt.event_id)
 			? <button onClick={onClickUnpin}><UnpinIcon/></button>
 			: <button onClick={onClickPin}><PinIcon/></button>)}

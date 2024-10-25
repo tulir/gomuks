@@ -26,6 +26,7 @@ interface ReplyBodyProps {
 	room: RoomStateStore
 	event: MemDBEvent
 	isThread: boolean
+	isEditing?: boolean
 	onClose?: (evt: React.MouseEvent) => void
 }
 
@@ -64,15 +65,21 @@ const onClickReply = (evt: React.MouseEvent) => {
 	}
 }
 
-export const ReplyBody = ({ room, event, onClose, isThread }: ReplyBodyProps) => {
+export const ReplyBody = ({ room, event, onClose, isThread, isEditing }: ReplyBodyProps) => {
 	const memberEvt = useRoomState(room, "m.room.member", event.sender)
 	const memberEvtContent = memberEvt?.content as MemberEventContent | undefined
 	const BodyType = getBodyType(event, true)
-	return <blockquote
-		data-reply-to={event.event_id}
-		className={`reply-body ${onClose ? "composer" : ""} ${isThread ? "thread" : ""}`}
-		onClick={onClickReply}
-	>
+	const classNames = ["reply-body"]
+	if (onClose) {
+		classNames.push("composer")
+	}
+	if (isThread) {
+		classNames.push("thread")
+	}
+	if (isEditing) {
+		classNames.push("editing")
+	}
+	return <blockquote data-reply-to={event.event_id} className={classNames.join(" ")} onClick={onClickReply}>
 		<div className="reply-sender">
 			<div className="sender-avatar" title={event.sender}>
 				<img

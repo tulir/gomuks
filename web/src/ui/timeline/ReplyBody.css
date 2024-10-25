@@ -33,6 +33,11 @@ blockquote.reply-body {
 		color: #666;
 	}
 
+	&.editing > div.reply-sender > span.event-sender::after {
+		content: " (editing message)";
+		color: #666;
+	}
+
 	> div.reply-sender {
 		display: flex;
 		align-items: center;

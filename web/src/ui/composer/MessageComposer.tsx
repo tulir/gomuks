@@ -16,7 +16,15 @@
 import React, { use, useCallback, useEffect, useLayoutEffect, useReducer, useRef, useState } from "react"
 import { ScaleLoader } from "react-spinners"
 import { useRoomEvent } from "@/api/statestore"
-import type { EventID, MediaMessageEventContent, Mentions, RelatesTo, RoomID } from "@/api/types"
+import type {
+	EventID,
+	MediaMessageEventContent,
+	MemDBEvent,
+	Mentions,
+	MessageEventContent,
+	RelatesTo,
+	RoomID,
+} from "@/api/types"
 import useEvent from "@/util/useEvent.ts"
 import { ClientContext } from "../ClientContext.ts"
 import { useRoomContext } from "../roomcontext.ts"
@@ -67,6 +75,7 @@ const MessageComposer = () => {
 	const client = use(ClientContext)!
 	const [autocomplete, setAutocomplete] = useState<AutocompleteQuery | null>(null)
 	const [state, setState] = useReducer(composerReducer, uninitedComposer)
+	const [editing, rawSetEditing] = useState<MemDBEvent | null>(null)
 	const [loadingMedia, setLoadingMedia] = useState(false)
 	const fileInput = useRef<HTMLInputElement>(null)
 	const textInput = useRef<HTMLTextAreaElement>(null)
@@ -77,19 +86,48 @@ const MessageComposer = () => {
 		setState({ replyTo: evt })
 		textInput.current?.focus()
 	}, [])
+	roomCtx.setEditing = useCallback((evt: MemDBEvent | null) => {
+		if (evt === null) {
+			rawSetEditing(null)
+			setState(emptyComposer)
+			return
+		}
+		if (state.text || state.media) {
+			// TODO save as draft instead of discarding?
+			const ok = window.confirm("Discard current message to start editing?")
+			if (!ok) {
+				return
+			}
+		}
+		const evtContent = evt.content as MessageEventContent
+		const mediaMsgTypes = ["m.image", "m.audio", "m.video", "m.file"]
+		const isMedia = mediaMsgTypes.includes(evtContent.msgtype) && (evt.content?.url || evt.content?.file?.url)
+		rawSetEditing(evt)
+		setState({
+			media: isMedia ? evtContent as MediaMessageEventContent : null,
+			text: (!evt.content.filename || evt.content.filename !== evt.content.body) ? (evtContent.body ?? "") : "",
+		})
+		textInput.current?.focus()
+	}, [state])
 	const sendMessage = useEvent((evt: React.FormEvent) => {
 		evt.preventDefault()
 		if (state.text === "" && !state.media) {
 			return
 		}
 		setState(emptyComposer)
+		rawSetEditing(null)
 		setAutocomplete(null)
 		const mentions: Mentions = {
 			user_ids: [],
 			room: false,
 		}
 		let relates_to: RelatesTo | undefined = undefined
-		if (replyToEvt) {
+		if (editing) {
+			relates_to = {
+				rel_type: "m.replace",
+				event_id: editing.event_id,
+			}
+		} else if (replyToEvt) {
 			mentions.user_ids.push(replyToEvt.sender)
 			relates_to = {
 				"m.in_reply_to": {
@@ -229,7 +267,8 @@ const MessageComposer = () => {
 	}, [state, roomCtx])
 	// Saving to localStorage could be done in the reducer, but that's not very proper, so do it in an effect.
 	useEffect(() => {
-		if (state.uninited) {
+		roomCtx.isEditing.emit(editing !== null)
+		if (state.uninited || editing) {
 			return
 		}
 		if (!state.text && !state.media && !state.replyTo) {
@@ -237,13 +276,17 @@ const MessageComposer = () => {
 		} else {
 			draftStore.set(room.roomID, state)
 		}
-	}, [room, state])
+	}, [roomCtx, room, state, editing])
 	const openFilePicker = useCallback(() => fileInput.current!.click(), [])
 	const clearMedia = useCallback(() => setState({ media: null }), [])
 	const closeReply = useCallback((evt: React.MouseEvent) => {
 		evt.stopPropagation()
 		setState({ replyTo: null })
 	}, [])
+	const stopEditing = useCallback((evt: React.MouseEvent) => {
+		evt.stopPropagation()
+		roomCtx.setEditing(null)
+	}, [roomCtx])
 	const Autocompleter = getAutocompleter(autocomplete)
 	return <div className="message-composer">
 		{Autocompleter && autocomplete && <div className="autocompletions-wrapper"><Autocompleter
@@ -258,6 +301,13 @@ const MessageComposer = () => {
 			event={replyToEvt}
 			onClose={closeReply}
 			isThread={replyToEvt.content?.["m.relates_to"]?.rel_type === "m.thread"}
+		/>}
+		{editing && <ReplyBody
+			room={room}
+			event={editing}
+			isEditing={true}
+			isThread={false}
+			onClose={stopEditing}
 		/>}
 		{loadingMedia && <div className="composer-media"><ScaleLoader/></div>}
 		{state.media && <ComposerMedia content={state.media} clearMedia={clearMedia}/>}

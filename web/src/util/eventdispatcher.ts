@@ -70,8 +70,10 @@ export class CachedEventDispatcher<T> extends EventDispatcher<T> {
 	}
 
 	emit(data: T) {
-		this.current = data
-		super.emit(data)
+		if (!Object.is(this.current, data)) {
+			this.current = data
+			super.emit(data)
+		}
 	}
 
 	listen(listener: (data: T) => void): () => void {

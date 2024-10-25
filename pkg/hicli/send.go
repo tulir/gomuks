@@ -77,8 +77,14 @@ func (h *HiClient) SendMessage(
 		if relatesTo.Type == event.RelReplace {
 			contentCopy := content
 			content = event.MessageEventContent{
+				Body:       "",
+				MsgType:    contentCopy.MsgType,
+				URL:        contentCopy.URL,
 				NewContent: &contentCopy,
 				RelatesTo:  relatesTo,
+			}
+			if contentCopy.File != nil {
+				content.URL = contentCopy.File.URL
 			}
 		} else {
 			content.RelatesTo = relatesTo
