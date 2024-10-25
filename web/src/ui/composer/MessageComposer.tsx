@@ -27,6 +27,8 @@ import type {
 } from "@/api/types"
 import useEvent from "@/util/useEvent.ts"
 import { ClientContext } from "../ClientContext.ts"
+import EmojiPicker from "../emojipicker/EmojiPicker.tsx"
+import { ModalContext } from "../modal/Modal.tsx"
 import { useRoomContext } from "../roomcontext.ts"
 import { ReplyBody } from "../timeline/ReplyBody.tsx"
 import { useMediaContent } from "../timeline/content/useMediaContent.tsx"
@@ -34,6 +36,7 @@ import type { AutocompleteQuery } from "./Autocompleter.tsx"
 import { charToAutocompleteType, emojiQueryRegex, getAutocompleter } from "./getAutocompleter.ts"
 import AttachIcon from "@/icons/attach.svg?react"
 import CloseIcon from "@/icons/close.svg?react"
+import EmojiIcon from "@/icons/emoji-categories/smileys-emotion.svg?react"
 import SendIcon from "@/icons/send.svg?react"
 import "./MessageComposer.css"
 
@@ -73,12 +76,14 @@ const MessageComposer = () => {
 	const roomCtx = useRoomContext()
 	const room = roomCtx.store
 	const client = use(ClientContext)!
+	const openModal = use(ModalContext)
 	const [autocomplete, setAutocomplete] = useState<AutocompleteQuery | null>(null)
 	const [state, setState] = useReducer(composerReducer, uninitedComposer)
 	const [editing, rawSetEditing] = useState<MemDBEvent | null>(null)
 	const [loadingMedia, setLoadingMedia] = useState(false)
 	const fileInput = useRef<HTMLInputElement>(null)
 	const textInput = useRef<HTMLTextAreaElement>(null)
+	const composerRef = useRef<HTMLDivElement>(null)
 	const textRows = useRef(1)
 	const typingSentAt = useRef(0)
 	const replyToEvt = useRoomEvent(room, state.replyTo)
@@ -308,8 +313,23 @@ const MessageComposer = () => {
 		evt.stopPropagation()
 		roomCtx.setEditing(null)
 	}, [roomCtx])
+	const openEmojiPicker = useEvent(() => {
+		openModal({
+			content: <EmojiPicker
+				style={{ bottom: (composerRef.current?.clientHeight ?? 32) + 2, right: "1rem" }}
+				onSelect={emoji => {
+					setState({
+						text: state.text.slice(0, textInput.current?.selectionStart ?? 0)
+							+ emoji.u
+							+ state.text.slice(textInput.current?.selectionEnd ?? 0),
+					})
+				}}
+			/>,
+			onClose: () => textInput.current?.focus(),
+		})
+	})
 	const Autocompleter = getAutocompleter(autocomplete)
-	return <div className="message-composer">
+	return <div className="message-composer" ref={composerRef}>
 		{Autocompleter && autocomplete && <div className="autocompletions-wrapper"><Autocompleter
 			params={autocomplete}
 			room={room}
@@ -345,6 +365,7 @@ const MessageComposer = () => {
 				placeholder="Send a message"
 				id="message-composer"
 			/>
+			<button onClick={openEmojiPicker}><EmojiIcon/></button>
 			<button
 				onClick={openFilePicker}
 				disabled={!!state.media || loadingMedia}

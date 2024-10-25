@@ -103,7 +103,7 @@ div.timeline-event {
 		display: none;
 	}
 
-	&:hover > div.context-menu-container {
+	&:hover > div.context-menu-container, > div.context-menu-container.force-open {
 		display: block;
 	}
 

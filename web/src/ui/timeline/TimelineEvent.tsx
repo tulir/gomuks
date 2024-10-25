@@ -13,7 +13,7 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import React, { use } from "react"
+import React, { use, useState } from "react"
 import { getAvatarURL, getMediaURL } from "@/api/media.ts"
 import { useRoomState } from "@/api/statestore"
 import { MemDBEvent, MemberEventContent, UnreadType } from "@/api/types"
@@ -70,6 +70,7 @@ function isSmallEvent(bodyType: React.FunctionComponent<EventContentProps>): boo
 const TimelineEvent = ({ evt, prevEvt }: TimelineEventProps) => {
 	const roomCtx = useRoomContext()
 	const client = use(ClientContext)!
+	const [forceContextMenuOpen, setForceContextMenuOpen] = useState(false)
 	const memberEvt = useRoomState(roomCtx.store, "m.room.member", evt.sender)
 	const memberEvtContent = memberEvt?.content as MemberEventContent | undefined
 	const BodyType = getBodyType(evt)
@@ -95,8 +96,8 @@ const TimelineEvent = ({ evt, prevEvt }: TimelineEventProps) => {
 	const relatesTo = (evt.orig_content ?? evt.content)?.["m.relates_to"]
 	const replyTo = relatesTo?.["m.in_reply_to"]?.event_id
 	const mainEvent = <div data-event-id={evt.event_id} className={wrapperClassNames.join(" ")}>
-		<div className="context-menu-container">
-			<EventMenu evt={evt}/>
+		<div className={`context-menu-container ${forceContextMenuOpen ? "force-open" : ""}`}>
+			<EventMenu evt={evt} setForceOpen={setForceContextMenuOpen}/>
 		</div>
 		<div className="sender-avatar" title={evt.sender}>
 			<img

@@ -1,0 +1,130 @@
+div.emoji-picker {
+	position: fixed;
+	background-color: white;
+	width: 22rem;
+	height: 30rem;
+	border-radius: 1rem;
+	border: 1px solid #ccc;
+	display: flex;
+	flex-direction: column;
+
+	div.emoji-category-bar {
+		height: 2.5rem;
+		display: flex;
+		justify-content: center;
+		flex-wrap: wrap;
+		padding-top: .5rem;
+		border-bottom: 1px solid #ccc;
+
+		> button {
+			padding-top: .25rem;
+			width: 2.125rem;
+			height: 2.5rem;
+			box-sizing: border-box;
+
+			border-bottom-left-radius: 0;
+			border-bottom-right-radius: 0;
+			border-bottom: 2px solid transparent;
+			&:hover {
+				border-bottom: 2px solid green;
+			}
+		}
+	}
+
+	div.emoji-search {
+		display: flex;
+		align-items: center;
+		margin: .5rem;
+		border: 1px solid #ccc;
+		border-radius: .25rem;
+		height: 2rem;
+
+		> input {
+			flex: 1;
+			padding: .5rem;
+			border: none;
+			outline: none;
+			border-radius: .25rem;
+		}
+
+		> button {
+			width: 2rem;
+			height: 2rem;
+			padding: .25rem;
+			border-bottom-left-radius: 0;
+			border-top-left-radius: 0;
+		}
+	}
+
+	div.emoji-list {
+		overflow: scroll;
+		padding: 0 1rem;
+		flex: 1;
+		display: flex;
+		flex-direction: column;
+	}
+
+	div.emoji-preview {
+		height: 4.5rem;
+		border-top: 1px solid #ccc;
+
+		display: grid;
+		grid-template:
+			"big name" 1fr
+			"big shortcode" 1fr
+			/ 5rem 1fr;
+
+		> div.big-emoji {
+			grid-area: big;
+			font-size: 2.5rem;
+			display: flex;
+			justify-content: center;
+			align-items: center;
+		}
+
+		> div.emoji-name {
+			grid-area: name;
+			font-weight: bold;
+			display: flex;
+			align-items: end;
+		}
+
+		> div.emoji-shortcode {
+			grid-area: shortcode;
+			color: #666;
+		}
+	}
+
+	div.emoji-category {
+		width: 100%;
+	}
+
+	div.emoji-category-list {
+		display: flex;
+		flex-wrap: wrap;
+		width: 100%;
+	}
+
+	h4.emoji-category-name {
+		margin: 0;
+	}
+
+	button.emoji {
+		font-size: 1.25rem;
+		padding: 0;
+		width: 2.5rem;
+		height: 2.5rem;
+		content-visibility: auto;
+
+		&:hover {
+			background-color: #ccc;
+		}
+	}
+
+	button.freeform-react {
+		width: 100%;
+		padding: .25rem;
+		margin-top: auto;
+		margin-bottom: .25rem;
+	}
+}

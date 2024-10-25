@@ -27,9 +27,14 @@ type openModal = (state: ModalState) => void
 export const ModalContext = createContext<openModal>(() =>
 	console.error("Tried to open modal without being inside context"))
 
+export const ModalCloseContext = createContext<() => void>(() => {})
+
 export const ModalWrapper = ({ children }: { children: React.ReactNode }) => {
 	const [state, setState] = useState<ModalState | null>(null)
-	const onClose = useCallback(() => {
+	const onClickWrapper = useCallback((evt?: React.MouseEvent) => {
+		if (evt && evt.target !== evt.currentTarget) {
+			return
+		}
 		setState(null)
 		state?.onClose?.()
 	}, [state])
@@ -39,9 +44,11 @@ export const ModalWrapper = ({ children }: { children: React.ReactNode }) => {
 		</ModalContext>
 		{state && <div
 			className={`overlay ${state.wrapperClass ?? "modal"} ${state.dimmed ? "dimmed" : ""}`}
-			onClick={onClose}
+			onClick={onClickWrapper}
 		>
-			{state.content}
+			<ModalCloseContext value={onClickWrapper}>
+				{state.content}
+			</ModalCloseContext>
 		</div>}
 	</>
 }

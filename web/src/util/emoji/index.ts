@@ -17,8 +17,8 @@ import { useRef } from "react"
 import data from "./data.json"
 
 export interface Emoji {
-	u: string // Unicode codepoint
-	c: number // Category number
+	u: string // Unicode codepoint or custom emoji mxc:// URI
+	c: number | string // Category number or custom emoji pack name
 	t: string // Emoji title
 	n: string // Primary shortcode
 	s: string[] // Shortcodes without underscores
