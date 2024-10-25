@@ -119,6 +119,11 @@ div.emoji-picker {
 		&:hover {
 			background-color: #ccc;
 		}
+
+		&.selected {
+			border: 1px solid #cec;
+			opacity: .8;
+		}
 	}
 
 	button.freeform-react {

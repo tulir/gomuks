@@ -75,7 +75,7 @@ export default class Client {
 		await this.rpc.setState(room.roomID, "m.room.pinned_events", "", { pinned: pinnedEvents })
 	}
 
-	async sendEvent(roomID: RoomID, type: EventType, content: Record<string, unknown>): Promise<void> {
+	async sendEvent(roomID: RoomID, type: EventType, content: unknown): Promise<void> {
 		const room = this.store.rooms.get(roomID)
 		if (!room) {
 			throw new Error("Room not found")

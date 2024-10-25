@@ -15,7 +15,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import { CSSProperties, JSX, use, useCallback, useState } from "react"
 import { getMediaURL } from "@/api/media.ts"
-import { Emoji, categories, useFilteredEmojis } from "@/util/emoji"
+import { Emoji, PartialEmoji, categories, useFilteredEmojis } from "@/util/emoji"
 import { ModalCloseContext } from "../modal/Modal.tsx"
 import CloseIcon from "@/icons/close.svg?react"
 import ActivitiesIcon from "@/icons/emoji-categories/activities.svg?react"
@@ -58,37 +58,42 @@ function renderEmoji(emoji: Emoji): JSX.Element | string {
 
 interface EmojiPickerProps {
 	style: CSSProperties
-	onSelect: (emoji: Partial<Emoji>) => void
+	onSelect: (emoji: PartialEmoji, isSelected?: boolean) => void
 	allowFreeform?: boolean
 	closeOnSelect?: boolean
+	selected?: string[]
 }
 
-export const EmojiPicker = ({ style, onSelect, allowFreeform, closeOnSelect }: EmojiPickerProps) => {
+export const EmojiPicker = ({ style, selected, onSelect, allowFreeform, closeOnSelect }: EmojiPickerProps) => {
 	const [query, setQuery] = useState("")
 	const emojis = useFilteredEmojis(query)
 	const [previewEmoji, setPreviewEmoji] = useState<Emoji>()
 	const clearQuery = useCallback(() => setQuery(""), [])
-	const onChangeQuery = useCallback((evt: React.ChangeEvent<HTMLInputElement>) => setQuery(evt.target.value), [])
 	const cats: JSX.Element[] = []
-	let currentCat: JSX.Element[] | undefined
+	let currentCat: JSX.Element[] = []
 	let currentCatNum: number | string = -1
 	const close = use(ModalCloseContext)
-	const onSelectWrapped = (emoji: Partial<Emoji>) => {
-		onSelect(emoji)
+	const onSelectWrapped = (emoji: PartialEmoji) => {
+		onSelect(emoji, selected?.includes(emoji.u))
 		if (closeOnSelect) {
 			close()
 		}
 	}
+	cats.push(<div className="emoji-category" data-emoji-category="Frequently Used">
+		<h4 className="emoji-category-name">Frequently Used</h4>
+		<div className="emoji-category-list">
+			{/* TODO */}
+		</div>
+	</div>)
 	for (const emoji of emojis) {
 		if (emoji.c === 2) {
 			continue
 		}
-		if (emoji.c !== currentCatNum || !currentCat) {
-			if (currentCat) {
-				cats.push(<div className="emoji-category" key={currentCatNum} data-emoji-category={currentCatNum}>
-					<h4 className="emoji-category-name">{
-						typeof currentCatNum === "number" ? categories[currentCatNum] : currentCatNum
-					}</h4>
+		if (emoji.c !== currentCatNum) {
+			if (currentCat.length) {
+				const categoryName = typeof currentCatNum === "number" ? categories[currentCatNum] : currentCatNum
+				cats.push(<div className="emoji-category" key={currentCatNum} id={`emoji-category-${categoryName}`}>
+					<h4 className="emoji-category-name">{categoryName}</h4>
 					<div className="emoji-category-list">
 						{currentCat}
 					</div>
@@ -99,23 +104,38 @@ export const EmojiPicker = ({ style, onSelect, allowFreeform, closeOnSelect }: E
 		}
 		currentCat.push(<button
 			key={emoji.u}
-			className="emoji"
+			className={`emoji ${selected?.includes(emoji.u) ? "selected" : ""}`}
 			onMouseOver={() => setPreviewEmoji(emoji)}
 			onMouseOut={() => setPreviewEmoji(undefined)}
 			onClick={() => onSelectWrapped(emoji)}
 		>{renderEmoji(emoji)}</button>)
 	}
+	if (currentCat.length) {
+		const categoryName = typeof currentCatNum === "number" ? categories[currentCatNum] : currentCatNum
+		cats.push(<div className="emoji-category" key={currentCatNum} id={`emoji-category-${categoryName}`}>
+			<h4 className="emoji-category-name">{categoryName}</h4>
+			<div className="emoji-category-list">
+				{currentCat}
+			</div>
+		</div>)
+	}
+	const onChangeQuery = useCallback((evt: React.ChangeEvent<HTMLInputElement>) => setQuery(evt.target.value), [])
+	const onClickCategoryButton = useCallback((evt: React.MouseEvent) => {
+		const categoryName = evt.currentTarget.getAttribute("title")!
+		document.getElementById(`emoji-category-${categoryName}`)?.scrollIntoView({ behavior: "smooth" })
+	}, [])
 	return <div className="emoji-picker" style={style}>
 		<div className="emoji-category-bar">
 			<button
 				className="emoji-category-icon"
-				title={"Recently used"}
+				title="Frequently Used"
 			>{<RecentIcon/>}</button>
 			{sortedEmojiCategories.map(cat =>
 				<button
 					key={cat.index}
 					className="emoji-category-icon"
 					title={cat.name ?? categories[cat.index]}
+					onClick={onClickCategoryButton}
 				>{cat.icon}</button>,
 			)}
 		</div>

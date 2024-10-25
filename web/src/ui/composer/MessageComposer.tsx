@@ -25,6 +25,7 @@ import type {
 	RelatesTo,
 	RoomID,
 } from "@/api/types"
+import { emojiToMarkdown } from "@/util/emoji"
 import useEvent from "@/util/useEvent.ts"
 import { ClientContext } from "../ClientContext.ts"
 import EmojiPicker from "../emojipicker/EmojiPicker.tsx"
@@ -320,7 +321,7 @@ const MessageComposer = () => {
 				onSelect={emoji => {
 					setState({
 						text: state.text.slice(0, textInput.current?.selectionStart ?? 0)
-							+ emoji.u
+							+ emojiToMarkdown(emoji)
 							+ state.text.slice(textInput.current?.selectionEnd ?? 0),
 					})
 				}}

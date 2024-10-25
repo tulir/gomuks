@@ -16,6 +16,7 @@
 import { CSSProperties, use, useCallback, useRef } from "react"
 import { useRoomState } from "@/api/statestore"
 import { MemDBEvent, PowerLevelEventContent } from "@/api/types"
+import { emojiToReactionContent } from "@/util/emoji"
 import { useNonNullEventAsState } from "@/util/eventdispatcher.ts"
 import { ClientContext } from "../ClientContext.ts"
 import EmojiPicker from "../emojipicker/EmojiPicker.tsx"
@@ -67,17 +68,7 @@ const EventMenu = ({ evt, setForceOpen }: EventHoverMenuProps) => {
 			content: <EmojiPicker
 				style={style}
 				onSelect={emoji => {
-					const content: Record<string, unknown> = {
-						"m.relates_to": {
-							rel_type: "m.annotation",
-							event_id: evt.event_id,
-							key: emoji.u,
-						},
-					}
-					if (emoji.u?.startsWith("mxc://") && emoji.n) {
-						content["com.beeper.emoji.shortcode"] = emoji.n
-					}
-					client.sendEvent(evt.room_id, "m.reaction", content)
+					client.sendEvent(evt.room_id, "m.reaction", emojiToReactionContent(emoji, evt.event_id))
 						.catch(err => window.alert(`Failed to send reaction: ${err}`))
 				}}
 				closeOnSelect={true}

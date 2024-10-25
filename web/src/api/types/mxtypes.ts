@@ -125,6 +125,15 @@ export interface MediaMessageEventContent extends BaseMessageEventContent {
 	info?: MediaInfo
 }
 
+export interface ReactionEventContent {
+	"m.relates_to": {
+		rel_type: "m.annotation"
+		event_id: EventID
+		key: string
+	}
+	"com.beeper.emoji.shortcode"?: string
+}
+
 export interface EncryptedFile {
 	url: ContentURI
 	k: string

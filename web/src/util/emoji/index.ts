@@ -14,15 +14,18 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import { useRef } from "react"
+import { EventID, ReactionEventContent } from "@/api/types"
 import data from "./data.json"
 
-export interface Emoji {
+export interface PartialEmoji {
 	u: string // Unicode codepoint or custom emoji mxc:// URI
-	c: number | string // Category number or custom emoji pack name
-	t: string // Emoji title
-	n: string // Primary shortcode
-	s: string[] // Shortcodes without underscores
+	c?: number | string // Category number or custom emoji pack name
+	t?: string // Emoji title
+	n?: string // Primary shortcode
+	s?: string[] // Shortcodes without underscores
 }
+
+export type Emoji = Required<PartialEmoji>
 
 export const emojis: Emoji[] = data.e
 export const categories = data.c
@@ -49,6 +52,27 @@ export function search(query: string, sorted = false, prev?: Emoji[]): Emoji[] {
 	query = query.toLowerCase().replaceAll("_", "")
 	if (!query) return emojis
 	return (sorted ? filterAndSort : filter)(prev ?? emojis, query)
+}
+
+export function emojiToMarkdown(emoji: PartialEmoji): string {
+	if (emoji.u.startsWith("mxc://")) {
+		return `<img data-mx-emoticon src="${emoji.u}" alt=":${emoji.n}:" title=":${emoji.n}:"/>`
+	}
+	return emoji.u
+}
+
+export function emojiToReactionContent(emoji: PartialEmoji, evtID: EventID): ReactionEventContent {
+	const content: ReactionEventContent = {
+		"m.relates_to": {
+			rel_type: "m.annotation",
+			event_id: evtID,
+			key: emoji.u,
+		},
+	}
+	if (emoji.u?.startsWith("mxc://") && emoji.n) {
+		content["com.beeper.emoji.shortcode"] = emoji.n
+	}
+	return content
 }
 
 interface filteredEmojiCache {
