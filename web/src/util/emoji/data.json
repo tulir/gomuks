@@ -6,7 +6,8 @@
       "t": "Grinning Face",
       "n": "grinning",
       "s": [
-        "grinning"
+        "grinning",
+        "grinningface"
       ]
     },
     {
@@ -15,7 +16,8 @@
       "t": "Grinning Face With Big Eyes",
       "n": "smiley",
       "s": [
-        "smiley"
+        "smiley",
+        "grinningfacewithbigeyes"
       ]
     },
     {
@@ -24,7 +26,8 @@
       "t": "Grinning Face With Smiling Eyes",
       "n": "smile",
       "s": [
-        "smile"
+        "smile",
+        "grinningfacewithclosedeyes"
       ]
     },
     {
@@ -33,7 +36,8 @@
       "t": "Beaming Face With Smiling Eyes",
       "n": "grin",
       "s": [
-        "grin"
+        "grin",
+        "beamingface"
       ]
     },
     {
@@ -43,7 +47,9 @@
       "n": "laughing",
       "s": [
         "laughing",
-        "satisfied"
+        "satisfied",
+        "lol",
+        "squintingface"
       ]
     },
     {
@@ -52,7 +58,8 @@
       "t": "Grinning Face With Sweat",
       "n": "sweat_smile",
       "s": [
-        "sweatsmile"
+        "sweatsmile",
+        "grinningfacewithsweat"
       ]
     },
     {
@@ -61,7 +68,8 @@
       "t": "Rolling On The Floor Laughing",
       "n": "rolling_on_the_floor_laughing",
       "s": [
-        "rollingonthefloorlaughing"
+        "rollingonthefloorlaughing",
+        "rofl"
       ]
     },
     {
@@ -70,7 +78,9 @@
       "t": "Face With Tears Of Joy",
       "n": "joy",
       "s": [
-        "joy"
+        "joy",
+        "lmao",
+        "tearsofjoy"
       ]
     },
     {
@@ -97,7 +107,8 @@
       "t": "Melting Face",
       "n": "melting_face",
       "s": [
-        "meltingface"
+        "meltingface",
+        "melt"
       ]
     },
     {
@@ -106,7 +117,8 @@
       "t": "Winking Face",
       "n": "wink",
       "s": [
-        "wink"
+        "wink",
+        "winkingface"
       ]
     },
     {
@@ -115,7 +127,8 @@
       "t": "Smiling Face With Smiling Eyes",
       "n": "blush",
       "s": [
-        "blush"
+        "blush",
+        "smilingfacewithclosedeyes"
       ]
     },
     {
@@ -124,7 +137,8 @@
       "t": "Smiling Face With Halo",
       "n": "innocent",
       "s": [
-        "innocent"
+        "innocent",
+        "halo"
       ]
     },
     {
@@ -142,7 +156,8 @@
       "t": "Smiling Face With Heart-Eyes",
       "n": "heart_eyes",
       "s": [
-        "hearteyes"
+        "hearteyes",
+        "smilingfacewithhearteyes"
       ]
     },
     {
@@ -152,7 +167,8 @@
       "n": "star-struck",
       "s": [
         "star-struck",
-        "grinningfacewithstareyes"
+        "grinningfacewithstareyes",
+        "starstruck"
       ]
     },
     {
@@ -161,7 +177,8 @@
       "t": "Face Blowing A Kiss",
       "n": "kissing_heart",
       "s": [
-        "kissingheart"
+        "kissingheart",
+        "blowingakiss"
       ]
     },
     {
@@ -170,7 +187,8 @@
       "t": "Kissing Face",
       "n": "kissing",
       "s": [
-        "kissing"
+        "kissing",
+        "kissingface"
       ]
     },
     {
@@ -188,7 +206,8 @@
       "t": "Kissing Face With Closed Eyes",
       "n": "kissing_closed_eyes",
       "s": [
-        "kissingclosedeyes"
+        "kissingclosedeyes",
+        "kissingfacewithclosedeyes"
       ]
     },
     {
@@ -197,7 +216,8 @@
       "t": "Kissing Face With Smiling Eyes",
       "n": "kissing_smiling_eyes",
       "s": [
-        "kissingsmilingeyes"
+        "kissingsmilingeyes",
+        "kissingfacewithsmilingeyes"
       ]
     },
     {
@@ -215,7 +235,8 @@
       "t": "Face Savoring Food",
       "n": "yum",
       "s": [
-        "yum"
+        "yum",
+        "savoringfood"
       ]
     },
     {
@@ -224,7 +245,8 @@
       "t": "Face With Tongue",
       "n": "stuck_out_tongue",
       "s": [
-        "stuckouttongue"
+        "stuckouttongue",
+        "facewithtongue"
       ]
     },
     {
@@ -243,7 +265,8 @@
       "n": "zany_face",
       "s": [
         "zanyface",
-        "grinningfacewithonelargeandonesmalleye"
+        "grinningfacewithonelargeandonesmalleye",
+        "zany"
       ]
     },
     {
@@ -270,7 +293,9 @@
       "t": "Smiling Face With Open Hands",
       "n": "hugging_face",
       "s": [
-        "huggingface"
+        "huggingface",
+        "hug",
+        "hugging"
       ]
     },
     {
@@ -280,7 +305,8 @@
       "n": "face_with_hand_over_mouth",
       "s": [
         "facewithhandovermouth",
-        "smilingfacewithsmilingeyesandhandcoveringmouth"
+        "smilingfacewithsmilingeyesandhandcoveringmouth",
+        "handovermouth"
       ]
     },
     {
@@ -289,7 +315,9 @@
       "t": "Face With Open Eyes And Hand Over Mouth",
       "n": "face_with_open_eyes_and_hand_over_mouth",
       "s": [
-        "facewithopeneyesandhandovermouth"
+        "facewithopeneyesandhandovermouth",
+        "facewithopeneyeshandovermouth",
+        "gasp"
       ]
     },
     {
@@ -298,7 +326,8 @@
       "t": "Face With Peeking Eye",
       "n": "face_with_peeking_eye",
       "s": [
-        "facewithpeekingeye"
+        "facewithpeekingeye",
+        "peek"
       ]
     },
     {
@@ -308,7 +337,8 @@
       "n": "shushing_face",
       "s": [
         "shushingface",
-        "facewithfingercoveringclosedlips"
+        "facewithfingercoveringclosedlips",
+        "shush"
       ]
     },
     {
@@ -317,7 +347,9 @@
       "t": "Thinking Face",
       "n": "thinking_face",
       "s": [
-        "thinkingface"
+        "thinkingface",
+        "thinking",
+        "wtf"
       ]
     },
     {
@@ -326,7 +358,8 @@
       "t": "Saluting Face",
       "n": "saluting_face",
       "s": [
-        "salutingface"
+        "salutingface",
+        "salute"
       ]
     },
     {
@@ -335,7 +368,8 @@
       "t": "Zipper-Mouth Face",
       "n": "zipper_mouth_face",
       "s": [
-        "zippermouthface"
+        "zippermouthface",
+        "zippermouth"
       ]
     },
     {
@@ -345,7 +379,8 @@
       "n": "face_with_raised_eyebrow",
       "s": [
         "facewithraisedeyebrow",
-        "facewithoneeyebrowraised"
+        "facewithoneeyebrowraised",
+        "raisedeyebrow"
       ]
     },
     {
@@ -354,7 +389,8 @@
       "t": "Neutral Face",
       "n": "neutral_face",
       "s": [
-        "neutralface"
+        "neutralface",
+        "neutral"
       ]
     },
     {
@@ -363,7 +399,8 @@
       "t": "Expressionless Face",
       "n": "expressionless",
       "s": [
-        "expressionless"
+        "expressionless",
+        "expressionlessface"
       ]
     },
     {
@@ -390,7 +427,8 @@
       "t": "Face In Clouds",
       "n": "face_in_clouds",
       "s": [
-        "faceinclouds"
+        "faceinclouds",
+        "inclouds"
       ]
     },
     {
@@ -399,7 +437,9 @@
       "t": "Smirking Face",
       "n": "smirk",
       "s": [
-        "smirk"
+        "smirk",
+        "smirking",
+        "smirkingface"
       ]
     },
     {
@@ -408,7 +448,8 @@
       "t": "Unamused Face",
       "n": "unamused",
       "s": [
-        "unamused"
+        "unamused",
+        "unamusedface"
       ]
     },
     {
@@ -417,7 +458,8 @@
       "t": "Face With Rolling Eyes",
       "n": "face_with_rolling_eyes",
       "s": [
-        "facewithrollingeyes"
+        "facewithrollingeyes",
+        "rollingeyes"
       ]
     },
     {
@@ -426,7 +468,8 @@
       "t": "Grimacing Face",
       "n": "grimacing",
       "s": [
-        "grimacing"
+        "grimacing",
+        "grimacingface"
       ]
     },
     {
@@ -435,7 +478,9 @@
       "t": "Face Exhaling",
       "n": "face_exhaling",
       "s": [
-        "faceexhaling"
+        "faceexhaling",
+        "exhale",
+        "exhaling"
       ]
     },
     {
@@ -444,7 +489,8 @@
       "t": "Lying Face",
       "n": "lying_face",
       "s": [
-        "lyingface"
+        "lyingface",
+        "lying"
       ]
     },
     {
@@ -453,7 +499,8 @@
       "t": "Shaking Face",
       "n": "shaking_face",
       "s": [
-        "shakingface"
+        "shakingface",
+        "shaking"
       ]
     },
     {
@@ -480,7 +527,8 @@
       "t": "Relieved Face",
       "n": "relieved",
       "s": [
-        "relieved"
+        "relieved",
+        "relievedface"
       ]
     },
     {
@@ -489,7 +537,8 @@
       "t": "Pensive Face",
       "n": "pensive",
       "s": [
-        "pensive"
+        "pensive",
+        "pensiveface"
       ]
     },
     {
@@ -498,7 +547,8 @@
       "t": "Sleepy Face",
       "n": "sleepy",
       "s": [
-        "sleepy"
+        "sleepy",
+        "sleepyface"
       ]
     },
     {
@@ -507,7 +557,8 @@
       "t": "Drooling Face",
       "n": "drooling_face",
       "s": [
-        "droolingface"
+        "droolingface",
+        "drooling"
       ]
     },
     {
@@ -516,7 +567,8 @@
       "t": "Sleeping Face",
       "n": "sleeping",
       "s": [
-        "sleeping"
+        "sleeping",
+        "sleepingface"
       ]
     },
     {
@@ -525,7 +577,8 @@
       "t": "Face With Medical Mask",
       "n": "mask",
       "s": [
-        "mask"
+        "mask",
+        "medicalmask"
       ]
     },
     {
@@ -552,7 +605,8 @@
       "t": "Nauseated Face",
       "n": "nauseated_face",
       "s": [
-        "nauseatedface"
+        "nauseatedface",
+        "nauseated"
       ]
     },
     {
@@ -562,7 +616,8 @@
       "n": "face_vomiting",
       "s": [
         "facevomiting",
-        "facewithopenmouthvomiting"
+        "facewithopenmouthvomiting",
+        "vomiting"
       ]
     },
     {
@@ -571,7 +626,8 @@
       "t": "Sneezing Face",
       "n": "sneezing_face",
       "s": [
-        "sneezingface"
+        "sneezingface",
+        "sneezing"
       ]
     },
     {
@@ -580,7 +636,8 @@
       "t": "Hot Face",
       "n": "hot_face",
       "s": [
-        "hotface"
+        "hotface",
+        "hot"
       ]
     },
     {
@@ -589,7 +646,8 @@
       "t": "Cold Face",
       "n": "cold_face",
       "s": [
-        "coldface"
+        "coldface",
+        "cold"
       ]
     },
     {
@@ -598,7 +656,8 @@
       "t": "Woozy Face",
       "n": "woozy_face",
       "s": [
-        "woozyface"
+        "woozyface",
+        "woozy"
       ]
     },
     {
@@ -607,7 +666,8 @@
       "t": "Face With Crossed-Out Eyes",
       "n": "dizzy_face",
       "s": [
-        "dizzyface"
+        "dizzyface",
+        "knockedout"
       ]
     },
     {
@@ -616,7 +676,8 @@
       "t": "Face With Spiral Eyes",
       "n": "face_with_spiral_eyes",
       "s": [
-        "facewithspiraleyes"
+        "facewithspiraleyes",
+        "dizzyeyes"
       ]
     },
     {
@@ -635,7 +696,9 @@
       "t": "Cowboy Hat Face",
       "n": "face_with_cowboy_hat",
       "s": [
-        "facewithcowboyhat"
+        "facewithcowboyhat",
+        "cowboy",
+        "cowboyface"
       ]
     },
     {
@@ -644,7 +707,9 @@
       "t": "Partying Face",
       "n": "partying_face",
       "s": [
-        "partyingface"
+        "partyingface",
+        "hooray",
+        "partying"
       ]
     },
     {
@@ -653,7 +718,8 @@
       "t": "Disguised Face",
       "n": "disguised_face",
       "s": [
-        "disguisedface"
+        "disguisedface",
+        "disguised"
       ]
     },
     {
@@ -662,7 +728,10 @@
       "t": "Smiling Face With Sunglasses",
       "n": "sunglasses",
       "s": [
-        "sunglasses"
+        "sunglasses",
+        "smilingfacewithsunglasses",
+        "sunglassescool",
+        "toocool"
       ]
     },
     {
@@ -671,7 +740,8 @@
       "t": "Nerd Face",
       "n": "nerd_face",
       "s": [
-        "nerdface"
+        "nerdface",
+        "nerd"
       ]
     },
     {
@@ -689,7 +759,8 @@
       "t": "Confused Face",
       "n": "confused",
       "s": [
-        "confused"
+        "confused",
+        "confusedface"
       ]
     },
     {
@@ -707,7 +778,8 @@
       "t": "Worried Face",
       "n": "worried",
       "s": [
-        "worried"
+        "worried",
+        "worriedface"
       ]
     },
     {
@@ -734,7 +806,8 @@
       "t": "Face With Open Mouth",
       "n": "open_mouth",
       "s": [
-        "openmouth"
+        "openmouth",
+        "facewithopenmouth"
       ]
     },
     {
@@ -743,7 +816,8 @@
       "t": "Hushed Face",
       "n": "hushed",
       "s": [
-        "hushed"
+        "hushed",
+        "hushedface"
       ]
     },
     {
@@ -752,7 +826,8 @@
       "t": "Astonished Face",
       "n": "astonished",
       "s": [
-        "astonished"
+        "astonished",
+        "astonishedface"
       ]
     },
     {
@@ -761,7 +836,8 @@
       "t": "Flushed Face",
       "n": "flushed",
       "s": [
-        "flushed"
+        "flushed",
+        "flushedface"
       ]
     },
     {
@@ -770,7 +846,8 @@
       "t": "Pleading Face",
       "n": "pleading_face",
       "s": [
-        "pleadingface"
+        "pleadingface",
+        "pleading"
       ]
     },
     {
@@ -779,7 +856,8 @@
       "t": "Face Holding Back Tears",
       "n": "face_holding_back_tears",
       "s": [
-        "faceholdingbacktears"
+        "faceholdingbacktears",
+        "wateryeyes"
       ]
     },
     {
@@ -788,7 +866,8 @@
       "t": "Frowning Face With Open Mouth",
       "n": "frowning",
       "s": [
-        "frowning"
+        "frowning",
+        "frowningface"
       ]
     },
     {
@@ -797,7 +876,8 @@
       "t": "Anguished Face",
       "n": "anguished",
       "s": [
-        "anguished"
+        "anguished",
+        "anguishedface"
       ]
     },
     {
@@ -806,7 +886,8 @@
       "t": "Fearful Face",
       "n": "fearful",
       "s": [
-        "fearful"
+        "fearful",
+        "fearfulface"
       ]
     },
     {
@@ -815,7 +896,9 @@
       "t": "Anxious Face With Sweat",
       "n": "cold_sweat",
       "s": [
-        "coldsweat"
+        "coldsweat",
+        "anxious",
+        "anxiousface"
       ]
     },
     {
@@ -824,7 +907,8 @@
       "t": "Sad But Relieved Face",
       "n": "disappointed_relieved",
       "s": [
-        "disappointedrelieved"
+        "disappointedrelieved",
+        "sadrelievedface"
       ]
     },
     {
@@ -833,7 +917,8 @@
       "t": "Crying Face",
       "n": "cry",
       "s": [
-        "cry"
+        "cry",
+        "cryingface"
       ]
     },
     {
@@ -842,7 +927,8 @@
       "t": "Loudly Crying Face",
       "n": "sob",
       "s": [
-        "sob"
+        "sob",
+        "loudlycryingface"
       ]
     },
     {
@@ -851,7 +937,8 @@
       "t": "Face Screaming In Fear",
       "n": "scream",
       "s": [
-        "scream"
+        "scream",
+        "screaminginfear"
       ]
     },
     {
@@ -860,7 +947,8 @@
       "t": "Confounded Face",
       "n": "confounded",
       "s": [
-        "confounded"
+        "confounded",
+        "confoundedface"
       ]
     },
     {
@@ -869,7 +957,8 @@
       "t": "Persevering Face",
       "n": "persevere",
       "s": [
-        "persevere"
+        "persevere",
+        "perseveringface"
       ]
     },
     {
@@ -878,7 +967,8 @@
       "t": "Disappointed Face",
       "n": "disappointed",
       "s": [
-        "disappointed"
+        "disappointed",
+        "disappointedface"
       ]
     },
     {
@@ -887,7 +977,8 @@
       "t": "Downcast Face With Sweat",
       "n": "sweat",
       "s": [
-        "sweat"
+        "sweat",
+        "downcastface"
       ]
     },
     {
@@ -896,7 +987,8 @@
       "t": "Weary Face",
       "n": "weary",
       "s": [
-        "weary"
+        "weary",
+        "wearyface"
       ]
     },
     {
@@ -905,7 +997,8 @@
       "t": "Tired Face",
       "n": "tired_face",
       "s": [
-        "tiredface"
+        "tiredface",
+        "tired"
       ]
     },
     {
@@ -914,7 +1007,9 @@
       "t": "Yawning Face",
       "n": "yawning_face",
       "s": [
-        "yawningface"
+        "yawningface",
+        "yawn",
+        "yawning"
       ]
     },
     {
@@ -923,7 +1018,8 @@
       "t": "Face With Steam From Nose",
       "n": "triumph",
       "s": [
-        "triumph"
+        "triumph",
+        "nosesteam"
       ]
     },
     {
@@ -932,7 +1028,9 @@
       "t": "Enraged Face",
       "n": "rage",
       "s": [
-        "rage"
+        "rage",
+        "pout",
+        "poutingface"
       ]
     },
     {
@@ -941,7 +1039,8 @@
       "t": "Angry Face",
       "n": "angry",
       "s": [
-        "angry"
+        "angry",
+        "angryface"
       ]
     },
     {
@@ -951,7 +1050,8 @@
       "n": "face_with_symbols_on_mouth",
       "s": [
         "facewithsymbolsonmouth",
-        "seriousfacewithsymbolscoveringmouth"
+        "seriousfacewithsymbolscoveringmouth",
+        "censored"
       ]
     },
     {
@@ -969,7 +1069,8 @@
       "t": "Angry Face With Horns",
       "n": "imp",
       "s": [
-        "imp"
+        "imp",
+        "angryimp"
       ]
     },
     {
@@ -1007,7 +1108,8 @@
       "t": "Clown Face",
       "n": "clown_face",
       "s": [
-        "clownface"
+        "clownface",
+        "clown"
       ]
     },
     {
@@ -1016,7 +1118,8 @@
       "t": "Ogre",
       "n": "japanese_ogre",
       "s": [
-        "japaneseogre"
+        "japaneseogre",
+        "ogre"
       ]
     },
     {
@@ -1025,7 +1128,8 @@
       "t": "Goblin",
       "n": "japanese_goblin",
       "s": [
-        "japanesegoblin"
+        "japanesegoblin",
+        "goblin"
       ]
     },
     {
@@ -1052,7 +1156,8 @@
       "t": "Alien Monster",
       "n": "space_invader",
       "s": [
-        "spaceinvader"
+        "spaceinvader",
+        "alienmonster"
       ]
     },
     {
@@ -1061,7 +1166,8 @@
       "t": "Robot",
       "n": "robot_face",
       "s": [
-        "robotface"
+        "robotface",
+        "robot"
       ]
     },
     {
@@ -1070,7 +1176,8 @@
       "t": "Grinning Cat",
       "n": "smiley_cat",
       "s": [
-        "smileycat"
+        "smileycat",
+        "grinningcat"
       ]
     },
     {
@@ -1079,7 +1186,8 @@
       "t": "Grinning Cat With Smiling Eyes",
       "n": "smile_cat",
       "s": [
-        "smilecat"
+        "smilecat",
+        "grinningcatwithclosedeyes"
       ]
     },
     {
@@ -1088,7 +1196,8 @@
       "t": "Cat With Tears Of Joy",
       "n": "joy_cat",
       "s": [
-        "joycat"
+        "joycat",
+        "tearsofjoycat"
       ]
     },
     {
@@ -1097,7 +1206,8 @@
       "t": "Smiling Cat With Heart-Eyes",
       "n": "heart_eyes_cat",
       "s": [
-        "hearteyescat"
+        "hearteyescat",
+        "smilingcatwithhearteyes"
       ]
     },
     {
@@ -1106,7 +1216,8 @@
       "t": "Cat With Wry Smile",
       "n": "smirk_cat",
       "s": [
-        "smirkcat"
+        "smirkcat",
+        "wrysmilecat"
       ]
     },
     {
@@ -1124,7 +1235,8 @@
       "t": "Weary Cat",
       "n": "scream_cat",
       "s": [
-        "screamcat"
+        "screamcat",
+        "wearycat"
       ]
     },
     {
@@ -1133,7 +1245,8 @@
       "t": "Crying Cat",
       "n": "crying_cat_face",
       "s": [
-        "cryingcatface"
+        "cryingcatface",
+        "cryingcat"
       ]
     },
     {
@@ -1187,7 +1300,8 @@
       "t": "Heart With Arrow",
       "n": "cupid",
       "s": [
-        "cupid"
+        "cupid",
+        "heartwitharrow"
       ]
     },
     {
@@ -1196,7 +1310,8 @@
       "t": "Heart With Ribbon",
       "n": "gift_heart",
       "s": [
-        "giftheart"
+        "giftheart",
+        "heartwithribbon"
       ]
     },
     {
@@ -1214,7 +1329,8 @@
       "t": "Growing Heart",
       "n": "heartpulse",
       "s": [
-        "heartpulse"
+        "heartpulse",
+        "growingheart"
       ]
     },
     {
@@ -1223,7 +1339,8 @@
       "t": "Beating Heart",
       "n": "heartbeat",
       "s": [
-        "heartbeat"
+        "heartbeat",
+        "beatingheart"
       ]
     },
     {
@@ -1385,7 +1502,8 @@
       "t": "Grey Heart",
       "n": "grey_heart",
       "s": [
-        "greyheart"
+        "greyheart",
+        "grayheart"
       ]
     },
     {
@@ -1458,7 +1576,8 @@
       "t": "Dashing Away",
       "n": "dash",
       "s": [
-        "dash"
+        "dash",
+        "dashingaway"
       ]
     },
     {
@@ -1485,7 +1604,8 @@
       "t": "Eye In Speech Bubble",
       "n": "eye-in-speech-bubble",
       "s": [
-        "eye-in-speech-bubble"
+        "eye-in-speech-bubble",
+        "eyeinspeechbubble"
       ]
     },
     {
@@ -1530,7 +1650,8 @@
       "t": "Waving Hand",
       "n": "wave",
       "s": [
-        "wave"
+        "wave",
+        "wavinghand"
       ]
     },
     {
@@ -1558,7 +1679,8 @@
       "n": "hand",
       "s": [
         "hand",
-        "raisedhand"
+        "raisedhand",
+        "highfive"
       ]
     },
     {
@@ -1567,7 +1689,8 @@
       "t": "Vulcan Salute",
       "n": "spock-hand",
       "s": [
-        "spock-hand"
+        "spock-hand",
+        "vulcan"
       ]
     },
     {
@@ -1594,7 +1717,8 @@
       "t": "Palm Down Hand",
       "n": "palm_down_hand",
       "s": [
-        "palmdownhand"
+        "palmdownhand",
+        "palmdown"
       ]
     },
     {
@@ -1603,7 +1727,8 @@
       "t": "Palm Up Hand",
       "n": "palm_up_hand",
       "s": [
-        "palmuphand"
+        "palmuphand",
+        "palmup"
       ]
     },
     {
@@ -1639,7 +1764,8 @@
       "t": "Pinched Fingers",
       "n": "pinched_fingers",
       "s": [
-        "pinchedfingers"
+        "pinchedfingers",
+        "pinch"
       ]
     },
     {
@@ -1667,7 +1793,8 @@
       "n": "crossed_fingers",
       "s": [
         "crossedfingers",
-        "handwithindexandmiddlefingerscrossed"
+        "handwithindexandmiddlefingerscrossed",
+        "fingerscrossed"
       ]
     },
     {
@@ -1685,7 +1812,8 @@
       "t": "Love-You Gesture",
       "n": "i_love_you_hand_sign",
       "s": [
-        "iloveyouhandsign"
+        "iloveyouhandsign",
+        "loveyougesture"
       ]
     },
     {
@@ -1695,7 +1823,8 @@
       "n": "the_horns",
       "s": [
         "thehorns",
-        "signofthehorns"
+        "signofthehorns",
+        "metal"
       ]
     },
     {
@@ -1768,7 +1897,8 @@
       "t": "Index Pointing At The Viewer",
       "n": "index_pointing_at_the_viewer",
       "s": [
-        "indexpointingattheviewer"
+        "indexpointingattheviewer",
+        "pointforward"
       ]
     },
     {
@@ -1778,7 +1908,8 @@
       "n": "+1",
       "s": [
         "+1",
-        "thumbsup"
+        "thumbsup",
+        "yes"
       ]
     },
     {
@@ -1788,7 +1919,8 @@
       "n": "-1",
       "s": [
         "-1",
-        "thumbsdown"
+        "thumbsdown",
+        "no"
       ]
     },
     {
@@ -1816,7 +1948,8 @@
       "t": "Left-Facing Fist",
       "n": "left-facing_fist",
       "s": [
-        "left-facingfist"
+        "left-facingfist",
+        "leftfacingfist"
       ]
     },
     {
@@ -1825,7 +1958,8 @@
       "t": "Right-Facing Fist",
       "n": "right-facing_fist",
       "s": [
-        "right-facingfist"
+        "right-facingfist",
+        "rightfacingfist"
       ]
     },
     {
@@ -1834,7 +1968,8 @@
       "t": "Clapping Hands",
       "n": "clap",
       "s": [
-        "clap"
+        "clap",
+        "clappinghands"
       ]
     },
     {
@@ -1888,7 +2023,8 @@
       "t": "Folded Hands",
       "n": "pray",
       "s": [
-        "pray"
+        "pray",
+        "foldedhands"
       ]
     },
     {
@@ -1906,7 +2042,8 @@
       "t": "Nail Polish",
       "n": "nail_care",
       "s": [
-        "nailcare"
+        "nailcare",
+        "nailpolish"
       ]
     },
     {
@@ -1924,7 +2061,8 @@
       "t": "Flexed Biceps",
       "n": "muscle",
       "s": [
-        "muscle"
+        "muscle",
+        "rightbicep"
       ]
     },
     {
@@ -1978,7 +2116,8 @@
       "t": "Ear With Hearing Aid",
       "n": "ear_with_hearing_aid",
       "s": [
-        "earwithhearingaid"
+        "earwithhearingaid",
+        "hearingaid"
       ]
     },
     {
@@ -2068,7 +2207,8 @@
       "t": "Mouth",
       "n": "lips",
       "s": [
-        "lips"
+        "lips",
+        "mouth"
       ]
     },
     {
@@ -2131,7 +2271,8 @@
       "t": "Person: Blond Hair",
       "n": "person_with_blond_hair",
       "s": [
-        "personwithblondhair"
+        "personwithblondhair",
+        "blondhaired"
       ]
     },
     {
@@ -2149,7 +2290,8 @@
       "t": "Person: Beard",
       "n": "bearded_person",
       "s": [
-        "beardedperson"
+        "beardedperson",
+        "personbearded"
       ]
     },
     {
@@ -2158,7 +2300,8 @@
       "t": "Man: Beard",
       "n": "man_with_beard",
       "s": [
-        "manwithbeard"
+        "manwithbeard",
+        "manbearded"
       ]
     },
     {
@@ -2167,7 +2310,8 @@
       "t": "Woman: Beard",
       "n": "woman_with_beard",
       "s": [
-        "womanwithbeard"
+        "womanwithbeard",
+        "womanbearded"
       ]
     },
     {
@@ -2176,7 +2320,8 @@
       "t": "Man: Red Hair",
       "n": "red_haired_man",
       "s": [
-        "redhairedman"
+        "redhairedman",
+        "manredhaired"
       ]
     },
     {
@@ -2185,7 +2330,8 @@
       "t": "Man: Curly Hair",
       "n": "curly_haired_man",
       "s": [
-        "curlyhairedman"
+        "curlyhairedman",
+        "mancurlyhaired"
       ]
     },
     {
@@ -2194,7 +2340,8 @@
       "t": "Man: White Hair",
       "n": "white_haired_man",
       "s": [
-        "whitehairedman"
+        "whitehairedman",
+        "manwhitehaired"
       ]
     },
     {
@@ -2203,7 +2350,8 @@
       "t": "Man: Bald",
       "n": "bald_man",
       "s": [
-        "baldman"
+        "baldman",
+        "manbald"
       ]
     },
     {
@@ -2221,7 +2369,8 @@
       "t": "Woman: Red Hair",
       "n": "red_haired_woman",
       "s": [
-        "redhairedwoman"
+        "redhairedwoman",
+        "womanredhaired"
       ]
     },
     {
@@ -2230,7 +2379,8 @@
       "t": "Person: Red Hair",
       "n": "red_haired_person",
       "s": [
-        "redhairedperson"
+        "redhairedperson",
+        "redhaired"
       ]
     },
     {
@@ -2239,7 +2389,8 @@
       "t": "Woman: Curly Hair",
       "n": "curly_haired_woman",
       "s": [
-        "curlyhairedwoman"
+        "curlyhairedwoman",
+        "womancurlyhaired"
       ]
     },
     {
@@ -2248,7 +2399,8 @@
       "t": "Person: Curly Hair",
       "n": "curly_haired_person",
       "s": [
-        "curlyhairedperson"
+        "curlyhairedperson",
+        "curlyhaired"
       ]
     },
     {
@@ -2257,7 +2409,8 @@
       "t": "Woman: White Hair",
       "n": "white_haired_woman",
       "s": [
-        "whitehairedwoman"
+        "whitehairedwoman",
+        "womanwhitehaired"
       ]
     },
     {
@@ -2266,7 +2419,8 @@
       "t": "Person: White Hair",
       "n": "white_haired_person",
       "s": [
-        "whitehairedperson"
+        "whitehairedperson",
+        "whitehaired"
       ]
     },
     {
@@ -2275,7 +2429,8 @@
       "t": "Woman: Bald",
       "n": "bald_woman",
       "s": [
-        "baldwoman"
+        "baldwoman",
+        "womanbald"
       ]
     },
     {
@@ -2284,7 +2439,8 @@
       "t": "Person: Bald",
       "n": "bald_person",
       "s": [
-        "baldperson"
+        "baldperson",
+        "bald"
       ]
     },
     {
@@ -2293,7 +2449,8 @@
       "t": "Woman: Blond Hair",
       "n": "blond-haired-woman",
       "s": [
-        "blond-haired-woman"
+        "blond-haired-woman",
+        "womanblondhaired"
       ]
     },
     {
@@ -2302,7 +2459,8 @@
       "t": "Man: Blond Hair",
       "n": "blond-haired-man",
       "s": [
-        "blond-haired-man"
+        "blond-haired-man",
+        "manblondhaired"
       ]
     },
     {
@@ -2347,7 +2505,8 @@
       "t": "Man Frowning",
       "n": "man-frowning",
       "s": [
-        "man-frowning"
+        "man-frowning",
+        "manfrowning"
       ]
     },
     {
@@ -2356,7 +2515,8 @@
       "t": "Woman Frowning",
       "n": "woman-frowning",
       "s": [
-        "woman-frowning"
+        "woman-frowning",
+        "womanfrowning"
       ]
     },
     {
@@ -2365,7 +2525,9 @@
       "t": "Person Pouting",
       "n": "person_with_pouting_face",
       "s": [
-        "personwithpoutingface"
+        "personwithpoutingface",
+        "personpouting",
+        "pouting"
       ]
     },
     {
@@ -2374,7 +2536,8 @@
       "t": "Man Pouting",
       "n": "man-pouting",
       "s": [
-        "man-pouting"
+        "man-pouting",
+        "manpouting"
       ]
     },
     {
@@ -2383,7 +2546,8 @@
       "t": "Woman Pouting",
       "n": "woman-pouting",
       "s": [
-        "woman-pouting"
+        "woman-pouting",
+        "womanpouting"
       ]
     },
     {
@@ -2392,7 +2556,8 @@
       "t": "Person Gesturing No",
       "n": "no_good",
       "s": [
-        "nogood"
+        "nogood",
+        "persongesturingno"
       ]
     },
     {
@@ -2401,7 +2566,8 @@
       "t": "Man Gesturing No",
       "n": "man-gesturing-no",
       "s": [
-        "man-gesturing-no"
+        "man-gesturing-no",
+        "mangesturingno"
       ]
     },
     {
@@ -2410,7 +2576,8 @@
       "t": "Woman Gesturing No",
       "n": "woman-gesturing-no",
       "s": [
-        "woman-gesturing-no"
+        "woman-gesturing-no",
+        "womangesturingno"
       ]
     },
     {
@@ -2419,7 +2586,9 @@
       "t": "Person Gesturing Ok",
       "n": "ok_woman",
       "s": [
-        "okwoman"
+        "okwoman",
+        "allgood",
+        "persongesturingok"
       ]
     },
     {
@@ -2428,7 +2597,8 @@
       "t": "Man Gesturing Ok",
       "n": "man-gesturing-ok",
       "s": [
-        "man-gesturing-ok"
+        "man-gesturing-ok",
+        "mangesturingok"
       ]
     },
     {
@@ -2437,7 +2607,8 @@
       "t": "Woman Gesturing Ok",
       "n": "woman-gesturing-ok",
       "s": [
-        "woman-gesturing-ok"
+        "woman-gesturing-ok",
+        "womangesturingok"
       ]
     },
     {
@@ -2446,7 +2617,8 @@
       "t": "Person Tipping Hand",
       "n": "information_desk_person",
       "s": [
-        "informationdeskperson"
+        "informationdeskperson",
+        "persontippinghand"
       ]
     },
     {
@@ -2455,7 +2627,8 @@
       "t": "Man Tipping Hand",
       "n": "man-tipping-hand",
       "s": [
-        "man-tipping-hand"
+        "man-tipping-hand",
+        "mantippinghand"
       ]
     },
     {
@@ -2464,7 +2637,8 @@
       "t": "Woman Tipping Hand",
       "n": "woman-tipping-hand",
       "s": [
-        "woman-tipping-hand"
+        "woman-tipping-hand",
+        "womantippinghand"
       ]
     },
     {
@@ -2473,7 +2647,8 @@
       "t": "Person Raising Hand",
       "n": "raising_hand",
       "s": [
-        "raisinghand"
+        "raisinghand",
+        "personraisinghand"
       ]
     },
     {
@@ -2482,7 +2657,8 @@
       "t": "Man Raising Hand",
       "n": "man-raising-hand",
       "s": [
-        "man-raising-hand"
+        "man-raising-hand",
+        "manraisinghand"
       ]
     },
     {
@@ -2491,7 +2667,8 @@
       "t": "Woman Raising Hand",
       "n": "woman-raising-hand",
       "s": [
-        "woman-raising-hand"
+        "woman-raising-hand",
+        "womanraisinghand"
       ]
     },
     {
@@ -2527,7 +2704,8 @@
       "t": "Person Bowing",
       "n": "bow",
       "s": [
-        "bow"
+        "bow",
+        "personbowing"
       ]
     },
     {
@@ -2536,7 +2714,8 @@
       "t": "Man Bowing",
       "n": "man-bowing",
       "s": [
-        "man-bowing"
+        "man-bowing",
+        "manbowing"
       ]
     },
     {
@@ -2545,7 +2724,8 @@
       "t": "Woman Bowing",
       "n": "woman-bowing",
       "s": [
-        "woman-bowing"
+        "woman-bowing",
+        "womanbowing"
       ]
     },
     {
@@ -2554,7 +2734,8 @@
       "t": "Person Facepalming",
       "n": "face_palm",
       "s": [
-        "facepalm"
+        "facepalm",
+        "personfacepalming"
       ]
     },
     {
@@ -2563,7 +2744,8 @@
       "t": "Man Facepalming",
       "n": "man-facepalming",
       "s": [
-        "man-facepalming"
+        "man-facepalming",
+        "manfacepalming"
       ]
     },
     {
@@ -2572,7 +2754,8 @@
       "t": "Woman Facepalming",
       "n": "woman-facepalming",
       "s": [
-        "woman-facepalming"
+        "woman-facepalming",
+        "womanfacepalming"
       ]
     },
     {
@@ -2581,7 +2764,8 @@
       "t": "Person Shrugging",
       "n": "shrug",
       "s": [
-        "shrug"
+        "shrug",
+        "personshrugging"
       ]
     },
     {
@@ -2590,7 +2774,8 @@
       "t": "Man Shrugging",
       "n": "man-shrugging",
       "s": [
-        "man-shrugging"
+        "man-shrugging",
+        "manshrugging"
       ]
     },
     {
@@ -2599,7 +2784,8 @@
       "t": "Woman Shrugging",
       "n": "woman-shrugging",
       "s": [
-        "woman-shrugging"
+        "woman-shrugging",
+        "womanshrugging"
       ]
     },
     {
@@ -2617,7 +2803,8 @@
       "t": "Man Health Worker",
       "n": "male-doctor",
       "s": [
-        "male-doctor"
+        "male-doctor",
+        "manhealthworker"
       ]
     },
     {
@@ -2626,7 +2813,8 @@
       "t": "Woman Health Worker",
       "n": "female-doctor",
       "s": [
-        "female-doctor"
+        "female-doctor",
+        "womanhealthworker"
       ]
     },
     {
@@ -2644,7 +2832,8 @@
       "t": "Man Student",
       "n": "male-student",
       "s": [
-        "male-student"
+        "male-student",
+        "manstudent"
       ]
     },
     {
@@ -2653,7 +2842,8 @@
       "t": "Woman Student",
       "n": "female-student",
       "s": [
-        "female-student"
+        "female-student",
+        "womanstudent"
       ]
     },
     {
@@ -2671,7 +2861,8 @@
       "t": "Man Teacher",
       "n": "male-teacher",
       "s": [
-        "male-teacher"
+        "male-teacher",
+        "manteacher"
       ]
     },
     {
@@ -2680,7 +2871,8 @@
       "t": "Woman Teacher",
       "n": "female-teacher",
       "s": [
-        "female-teacher"
+        "female-teacher",
+        "womanteacher"
       ]
     },
     {
@@ -2698,7 +2890,8 @@
       "t": "Man Judge",
       "n": "male-judge",
       "s": [
-        "male-judge"
+        "male-judge",
+        "manjudge"
       ]
     },
     {
@@ -2707,7 +2900,8 @@
       "t": "Woman Judge",
       "n": "female-judge",
       "s": [
-        "female-judge"
+        "female-judge",
+        "womanjudge"
       ]
     },
     {
@@ -2725,7 +2919,8 @@
       "t": "Man Farmer",
       "n": "male-farmer",
       "s": [
-        "male-farmer"
+        "male-farmer",
+        "manfarmer"
       ]
     },
     {
@@ -2734,7 +2929,8 @@
       "t": "Woman Farmer",
       "n": "female-farmer",
       "s": [
-        "female-farmer"
+        "female-farmer",
+        "womanfarmer"
       ]
     },
     {
@@ -2752,7 +2948,8 @@
       "t": "Man Cook",
       "n": "male-cook",
       "s": [
-        "male-cook"
+        "male-cook",
+        "mancook"
       ]
     },
     {
@@ -2761,7 +2958,8 @@
       "t": "Woman Cook",
       "n": "female-cook",
       "s": [
-        "female-cook"
+        "female-cook",
+        "womancook"
       ]
     },
     {
@@ -2779,7 +2977,8 @@
       "t": "Man Mechanic",
       "n": "male-mechanic",
       "s": [
-        "male-mechanic"
+        "male-mechanic",
+        "manmechanic"
       ]
     },
     {
@@ -2788,7 +2987,8 @@
       "t": "Woman Mechanic",
       "n": "female-mechanic",
       "s": [
-        "female-mechanic"
+        "female-mechanic",
+        "womanmechanic"
       ]
     },
     {
@@ -2806,7 +3006,8 @@
       "t": "Man Factory Worker",
       "n": "male-factory-worker",
       "s": [
-        "male-factory-worker"
+        "male-factory-worker",
+        "manfactoryworker"
       ]
     },
     {
@@ -2815,7 +3016,8 @@
       "t": "Woman Factory Worker",
       "n": "female-factory-worker",
       "s": [
-        "female-factory-worker"
+        "female-factory-worker",
+        "womanfactoryworker"
       ]
     },
     {
@@ -2833,7 +3035,8 @@
       "t": "Man Office Worker",
       "n": "male-office-worker",
       "s": [
-        "male-office-worker"
+        "male-office-worker",
+        "manofficeworker"
       ]
     },
     {
@@ -2842,7 +3045,8 @@
       "t": "Woman Office Worker",
       "n": "female-office-worker",
       "s": [
-        "female-office-worker"
+        "female-office-worker",
+        "womanofficeworker"
       ]
     },
     {
@@ -2860,7 +3064,8 @@
       "t": "Man Scientist",
       "n": "male-scientist",
       "s": [
-        "male-scientist"
+        "male-scientist",
+        "manscientist"
       ]
     },
     {
@@ -2869,7 +3074,8 @@
       "t": "Woman Scientist",
       "n": "female-scientist",
       "s": [
-        "female-scientist"
+        "female-scientist",
+        "womanscientist"
       ]
     },
     {
@@ -2887,7 +3093,8 @@
       "t": "Man Technologist",
       "n": "male-technologist",
       "s": [
-        "male-technologist"
+        "male-technologist",
+        "mantechnologist"
       ]
     },
     {
@@ -2896,7 +3103,8 @@
       "t": "Woman Technologist",
       "n": "female-technologist",
       "s": [
-        "female-technologist"
+        "female-technologist",
+        "womantechnologist"
       ]
     },
     {
@@ -2914,7 +3122,8 @@
       "t": "Man Singer",
       "n": "male-singer",
       "s": [
-        "male-singer"
+        "male-singer",
+        "mansinger"
       ]
     },
     {
@@ -2923,7 +3132,8 @@
       "t": "Woman Singer",
       "n": "female-singer",
       "s": [
-        "female-singer"
+        "female-singer",
+        "womansinger"
       ]
     },
     {
@@ -2941,7 +3151,8 @@
       "t": "Man Artist",
       "n": "male-artist",
       "s": [
-        "male-artist"
+        "male-artist",
+        "manartist"
       ]
     },
     {
@@ -2950,7 +3161,8 @@
       "t": "Woman Artist",
       "n": "female-artist",
       "s": [
-        "female-artist"
+        "female-artist",
+        "womanartist"
       ]
     },
     {
@@ -2968,7 +3180,8 @@
       "t": "Man Pilot",
       "n": "male-pilot",
       "s": [
-        "male-pilot"
+        "male-pilot",
+        "manpilot"
       ]
     },
     {
@@ -2977,7 +3190,8 @@
       "t": "Woman Pilot",
       "n": "female-pilot",
       "s": [
-        "female-pilot"
+        "female-pilot",
+        "womanpilot"
       ]
     },
     {
@@ -2995,7 +3209,8 @@
       "t": "Man Astronaut",
       "n": "male-astronaut",
       "s": [
-        "male-astronaut"
+        "male-astronaut",
+        "manastronaut"
       ]
     },
     {
@@ -3004,7 +3219,8 @@
       "t": "Woman Astronaut",
       "n": "female-astronaut",
       "s": [
-        "female-astronaut"
+        "female-astronaut",
+        "womanastronaut"
       ]
     },
     {
@@ -3022,7 +3238,8 @@
       "t": "Man Firefighter",
       "n": "male-firefighter",
       "s": [
-        "male-firefighter"
+        "male-firefighter",
+        "manfirefighter"
       ]
     },
     {
@@ -3031,7 +3248,8 @@
       "t": "Woman Firefighter",
       "n": "female-firefighter",
       "s": [
-        "female-firefighter"
+        "female-firefighter",
+        "womanfirefighter"
       ]
     },
     {
@@ -3040,7 +3258,8 @@
       "t": "Police Officer",
       "n": "cop",
       "s": [
-        "cop"
+        "cop",
+        "policeofficer"
       ]
     },
     {
@@ -3049,7 +3268,8 @@
       "t": "Man Police Officer",
       "n": "male-police-officer",
       "s": [
-        "male-police-officer"
+        "male-police-officer",
+        "manpoliceofficer"
       ]
     },
     {
@@ -3058,7 +3278,8 @@
       "t": "Woman Police Officer",
       "n": "female-police-officer",
       "s": [
-        "female-police-officer"
+        "female-police-officer",
+        "womanpoliceofficer"
       ]
     },
     {
@@ -3076,7 +3297,8 @@
       "t": "Man Detective",
       "n": "male-detective",
       "s": [
-        "male-detective"
+        "male-detective",
+        "mandetective"
       ]
     },
     {
@@ -3085,7 +3307,8 @@
       "t": "Woman Detective",
       "n": "female-detective",
       "s": [
-        "female-detective"
+        "female-detective",
+        "womandetective"
       ]
     },
     {
@@ -3094,7 +3317,8 @@
       "t": "Guard",
       "n": "guardsman",
       "s": [
-        "guardsman"
+        "guardsman",
+        "guard"
       ]
     },
     {
@@ -3103,7 +3327,8 @@
       "t": "Man Guard",
       "n": "male-guard",
       "s": [
-        "male-guard"
+        "male-guard",
+        "manguard"
       ]
     },
     {
@@ -3112,7 +3337,8 @@
       "t": "Woman Guard",
       "n": "female-guard",
       "s": [
-        "female-guard"
+        "female-guard",
+        "womanguard"
       ]
     },
     {
@@ -3139,7 +3365,8 @@
       "t": "Man Construction Worker",
       "n": "male-construction-worker",
       "s": [
-        "male-construction-worker"
+        "male-construction-worker",
+        "manconstructionworker"
       ]
     },
     {
@@ -3148,7 +3375,8 @@
       "t": "Woman Construction Worker",
       "n": "female-construction-worker",
       "s": [
-        "female-construction-worker"
+        "female-construction-worker",
+        "womanconstructionworker"
       ]
     },
     {
@@ -3157,7 +3385,8 @@
       "t": "Person With Crown",
       "n": "person_with_crown",
       "s": [
-        "personwithcrown"
+        "personwithcrown",
+        "royalty"
       ]
     },
     {
@@ -3184,7 +3413,8 @@
       "t": "Person Wearing Turban",
       "n": "man_with_turban",
       "s": [
-        "manwithturban"
+        "manwithturban",
+        "personwearingturban"
       ]
     },
     {
@@ -3193,7 +3423,8 @@
       "t": "Man Wearing Turban",
       "n": "man-wearing-turban",
       "s": [
-        "man-wearing-turban"
+        "man-wearing-turban",
+        "manwearingturban"
       ]
     },
     {
@@ -3202,7 +3433,8 @@
       "t": "Woman Wearing Turban",
       "n": "woman-wearing-turban",
       "s": [
-        "woman-wearing-turban"
+        "woman-wearing-turban",
+        "womanwearingturban"
       ]
     },
     {
@@ -3211,7 +3443,8 @@
       "t": "Person With Skullcap",
       "n": "man_with_gua_pi_mao",
       "s": [
-        "manwithguapimao"
+        "manwithguapimao",
+        "personwithskullcap"
       ]
     },
     {
@@ -3220,7 +3453,8 @@
       "t": "Woman With Headscarf",
       "n": "person_with_headscarf",
       "s": [
-        "personwithheadscarf"
+        "personwithheadscarf",
+        "womanwithheadscarf"
       ]
     },
     {
@@ -3256,7 +3490,8 @@
       "t": "Person With Veil",
       "n": "bride_with_veil",
       "s": [
-        "bridewithveil"
+        "bridewithveil",
+        "personwithveil"
       ]
     },
     {
@@ -3310,7 +3545,8 @@
       "t": "Breast-Feeding",
       "n": "breast-feeding",
       "s": [
-        "breast-feeding"
+        "breast-feeding",
+        "breastfeeding"
       ]
     },
     {
@@ -3392,7 +3628,8 @@
       "t": "Man Superhero",
       "n": "male_superhero",
       "s": [
-        "malesuperhero"
+        "malesuperhero",
+        "mansuperhero"
       ]
     },
     {
@@ -3401,7 +3638,8 @@
       "t": "Woman Superhero",
       "n": "female_superhero",
       "s": [
-        "femalesuperhero"
+        "femalesuperhero",
+        "womansuperhero"
       ]
     },
     {
@@ -3419,7 +3657,8 @@
       "t": "Man Supervillain",
       "n": "male_supervillain",
       "s": [
-        "malesupervillain"
+        "malesupervillain",
+        "mansupervillain"
       ]
     },
     {
@@ -3428,7 +3667,8 @@
       "t": "Woman Supervillain",
       "n": "female_supervillain",
       "s": [
-        "femalesupervillain"
+        "femalesupervillain",
+        "womansupervillain"
       ]
     },
     {
@@ -3446,7 +3686,8 @@
       "t": "Man Mage",
       "n": "male_mage",
       "s": [
-        "malemage"
+        "malemage",
+        "manmage"
       ]
     },
     {
@@ -3455,7 +3696,8 @@
       "t": "Woman Mage",
       "n": "female_mage",
       "s": [
-        "femalemage"
+        "femalemage",
+        "womanmage"
       ]
     },
     {
@@ -3473,7 +3715,8 @@
       "t": "Man Fairy",
       "n": "male_fairy",
       "s": [
-        "malefairy"
+        "malefairy",
+        "manfairy"
       ]
     },
     {
@@ -3482,7 +3725,8 @@
       "t": "Woman Fairy",
       "n": "female_fairy",
       "s": [
-        "femalefairy"
+        "femalefairy",
+        "womanfairy"
       ]
     },
     {
@@ -3500,7 +3744,8 @@
       "t": "Man Vampire",
       "n": "male_vampire",
       "s": [
-        "malevampire"
+        "malevampire",
+        "manvampire"
       ]
     },
     {
@@ -3509,7 +3754,8 @@
       "t": "Woman Vampire",
       "n": "female_vampire",
       "s": [
-        "femalevampire"
+        "femalevampire",
+        "womanvampire"
       ]
     },
     {
@@ -3554,7 +3800,8 @@
       "t": "Man Elf",
       "n": "male_elf",
       "s": [
-        "maleelf"
+        "maleelf",
+        "manelf"
       ]
     },
     {
@@ -3563,7 +3810,8 @@
       "t": "Woman Elf",
       "n": "female_elf",
       "s": [
-        "femaleelf"
+        "femaleelf",
+        "womanelf"
       ]
     },
     {
@@ -3581,7 +3829,8 @@
       "t": "Man Genie",
       "n": "male_genie",
       "s": [
-        "malegenie"
+        "malegenie",
+        "mangenie"
       ]
     },
     {
@@ -3590,7 +3839,8 @@
       "t": "Woman Genie",
       "n": "female_genie",
       "s": [
-        "femalegenie"
+        "femalegenie",
+        "womangenie"
       ]
     },
     {
@@ -3608,7 +3858,8 @@
       "t": "Man Zombie",
       "n": "male_zombie",
       "s": [
-        "malezombie"
+        "malezombie",
+        "manzombie"
       ]
     },
     {
@@ -3617,7 +3868,8 @@
       "t": "Woman Zombie",
       "n": "female_zombie",
       "s": [
-        "femalezombie"
+        "femalezombie",
+        "womanzombie"
       ]
     },
     {
@@ -3635,7 +3887,8 @@
       "t": "Person Getting Massage",
       "n": "massage",
       "s": [
-        "massage"
+        "massage",
+        "persongettingmassage"
       ]
     },
     {
@@ -3644,7 +3897,8 @@
       "t": "Man Getting Massage",
       "n": "man-getting-massage",
       "s": [
-        "man-getting-massage"
+        "man-getting-massage",
+        "mangettingmassage"
       ]
     },
     {
@@ -3653,7 +3907,8 @@
       "t": "Woman Getting Massage",
       "n": "woman-getting-massage",
       "s": [
-        "woman-getting-massage"
+        "woman-getting-massage",
+        "womangettingmassage"
       ]
     },
     {
@@ -3662,7 +3917,8 @@
       "t": "Person Getting Haircut",
       "n": "haircut",
       "s": [
-        "haircut"
+        "haircut",
+        "persongettinghaircut"
       ]
     },
     {
@@ -3671,7 +3927,8 @@
       "t": "Man Getting Haircut",
       "n": "man-getting-haircut",
       "s": [
-        "man-getting-haircut"
+        "man-getting-haircut",
+        "mangettinghaircut"
       ]
     },
     {
@@ -3680,7 +3937,8 @@
       "t": "Woman Getting Haircut",
       "n": "woman-getting-haircut",
       "s": [
-        "woman-getting-haircut"
+        "woman-getting-haircut",
+        "womangettinghaircut"
       ]
     },
     {
@@ -3689,7 +3947,8 @@
       "t": "Person Walking",
       "n": "walking",
       "s": [
-        "walking"
+        "walking",
+        "personwalking"
       ]
     },
     {
@@ -3698,7 +3957,8 @@
       "t": "Man Walking",
       "n": "man-walking",
       "s": [
-        "man-walking"
+        "man-walking",
+        "manwalking"
       ]
     },
     {
@@ -3707,7 +3967,8 @@
       "t": "Woman Walking",
       "n": "woman-walking",
       "s": [
-        "woman-walking"
+        "woman-walking",
+        "womanwalking"
       ]
     },
     {
@@ -3716,7 +3977,8 @@
       "t": "Person Walking Facing Right",
       "n": "person_walking_facing_right",
       "s": [
-        "personwalkingfacingright"
+        "personwalkingfacingright",
+        "personwalkingright"
       ]
     },
     {
@@ -3725,7 +3987,8 @@
       "t": "Woman Walking Facing Right",
       "n": "woman_walking_facing_right",
       "s": [
-        "womanwalkingfacingright"
+        "womanwalkingfacingright",
+        "womanwalkingright"
       ]
     },
     {
@@ -3734,7 +3997,8 @@
       "t": "Man Walking Facing Right",
       "n": "man_walking_facing_right",
       "s": [
-        "manwalkingfacingright"
+        "manwalkingfacingright",
+        "manwalkingright"
       ]
     },
     {
@@ -3743,7 +4007,9 @@
       "t": "Person Standing",
       "n": "standing_person",
       "s": [
-        "standingperson"
+        "standingperson",
+        "personstanding",
+        "standing"
       ]
     },
     {
@@ -3770,7 +4036,9 @@
       "t": "Person Kneeling",
       "n": "kneeling_person",
       "s": [
-        "kneelingperson"
+        "kneelingperson",
+        "kneeling",
+        "personkneeling"
       ]
     },
     {
@@ -3797,7 +4065,8 @@
       "t": "Person Kneeling Facing Right",
       "n": "person_kneeling_facing_right",
       "s": [
-        "personkneelingfacingright"
+        "personkneelingfacingright",
+        "personkneelingright"
       ]
     },
     {
@@ -3806,7 +4075,8 @@
       "t": "Woman Kneeling Facing Right",
       "n": "woman_kneeling_facing_right",
       "s": [
-        "womankneelingfacingright"
+        "womankneelingfacingright",
+        "womankneelingright"
       ]
     },
     {
@@ -3815,7 +4085,8 @@
       "t": "Man Kneeling Facing Right",
       "n": "man_kneeling_facing_right",
       "s": [
-        "mankneelingfacingright"
+        "mankneelingfacingright",
+        "mankneelingright"
       ]
     },
     {
@@ -3824,7 +4095,8 @@
       "t": "Person With White Cane",
       "n": "person_with_probing_cane",
       "s": [
-        "personwithprobingcane"
+        "personwithprobingcane",
+        "personwithwhitecane"
       ]
     },
     {
@@ -3833,7 +4105,8 @@
       "t": "Person With White Cane Facing Right",
       "n": "person_with_white_cane_facing_right",
       "s": [
-        "personwithwhitecanefacingright"
+        "personwithwhitecanefacingright",
+        "personwithwhitecaneright"
       ]
     },
     {
@@ -3842,7 +4115,8 @@
       "t": "Man With White Cane",
       "n": "man_with_probing_cane",
       "s": [
-        "manwithprobingcane"
+        "manwithprobingcane",
+        "manwithwhitecane"
       ]
     },
     {
@@ -3851,7 +4125,8 @@
       "t": "Man With White Cane Facing Right",
       "n": "man_with_white_cane_facing_right",
       "s": [
-        "manwithwhitecanefacingright"
+        "manwithwhitecanefacingright",
+        "manwithwhitecaneright"
       ]
     },
     {
@@ -3860,7 +4135,8 @@
       "t": "Woman With White Cane",
       "n": "woman_with_probing_cane",
       "s": [
-        "womanwithprobingcane"
+        "womanwithprobingcane",
+        "womanwithwhitecane"
       ]
     },
     {
@@ -3869,7 +4145,8 @@
       "t": "Woman With White Cane Facing Right",
       "n": "woman_with_white_cane_facing_right",
       "s": [
-        "womanwithwhitecanefacingright"
+        "womanwithwhitecanefacingright",
+        "womanwithwhitecaneright"
       ]
     },
     {
@@ -3887,7 +4164,8 @@
       "t": "Person In Motorized Wheelchair Facing Right",
       "n": "person_in_motorized_wheelchair_facing_right",
       "s": [
-        "personinmotorizedwheelchairfacingright"
+        "personinmotorizedwheelchairfacingright",
+        "personinmotorizedwheelchairright"
       ]
     },
     {
@@ -3905,7 +4183,8 @@
       "t": "Man In Motorized Wheelchair Facing Right",
       "n": "man_in_motorized_wheelchair_facing_right",
       "s": [
-        "maninmotorizedwheelchairfacingright"
+        "maninmotorizedwheelchairfacingright",
+        "maninmotorizedwheelchairright"
       ]
     },
     {
@@ -3923,7 +4202,8 @@
       "t": "Woman In Motorized Wheelchair Facing Right",
       "n": "woman_in_motorized_wheelchair_facing_right",
       "s": [
-        "womaninmotorizedwheelchairfacingright"
+        "womaninmotorizedwheelchairfacingright",
+        "womaninmotorizedwheelchairright"
       ]
     },
     {
@@ -3941,7 +4221,8 @@
       "t": "Person In Manual Wheelchair Facing Right",
       "n": "person_in_manual_wheelchair_facing_right",
       "s": [
-        "personinmanualwheelchairfacingright"
+        "personinmanualwheelchairfacingright",
+        "personinmanualwheelchairright"
       ]
     },
     {
@@ -3959,7 +4240,8 @@
       "t": "Man In Manual Wheelchair Facing Right",
       "n": "man_in_manual_wheelchair_facing_right",
       "s": [
-        "maninmanualwheelchairfacingright"
+        "maninmanualwheelchairfacingright",
+        "maninmanualwheelchairright"
       ]
     },
     {
@@ -3977,7 +4259,8 @@
       "t": "Woman In Manual Wheelchair Facing Right",
       "n": "woman_in_manual_wheelchair_facing_right",
       "s": [
-        "womaninmanualwheelchairfacingright"
+        "womaninmanualwheelchairfacingright",
+        "womaninmanualwheelchairright"
       ]
     },
     {
@@ -3987,7 +4270,8 @@
       "n": "runner",
       "s": [
         "runner",
-        "running"
+        "running",
+        "personrunning"
       ]
     },
     {
@@ -3996,7 +4280,8 @@
       "t": "Man Running",
       "n": "man-running",
       "s": [
-        "man-running"
+        "man-running",
+        "manrunning"
       ]
     },
     {
@@ -4005,7 +4290,8 @@
       "t": "Woman Running",
       "n": "woman-running",
       "s": [
-        "woman-running"
+        "woman-running",
+        "womanrunning"
       ]
     },
     {
@@ -4014,7 +4300,8 @@
       "t": "Person Running Facing Right",
       "n": "person_running_facing_right",
       "s": [
-        "personrunningfacingright"
+        "personrunningfacingright",
+        "personrunningright"
       ]
     },
     {
@@ -4023,7 +4310,8 @@
       "t": "Woman Running Facing Right",
       "n": "woman_running_facing_right",
       "s": [
-        "womanrunningfacingright"
+        "womanrunningfacingright",
+        "womanrunningright"
       ]
     },
     {
@@ -4032,7 +4320,8 @@
       "t": "Man Running Facing Right",
       "n": "man_running_facing_right",
       "s": [
-        "manrunningfacingright"
+        "manrunningfacingright",
+        "manrunningright"
       ]
     },
     {
@@ -4041,7 +4330,8 @@
       "t": "Woman Dancing",
       "n": "dancer",
       "s": [
-        "dancer"
+        "dancer",
+        "womandancing"
       ]
     },
     {
@@ -4068,7 +4358,8 @@
       "t": "People With Bunny Ears",
       "n": "dancers",
       "s": [
-        "dancers"
+        "dancers",
+        "peoplewithbunnyearspartying"
       ]
     },
     {
@@ -4078,7 +4369,8 @@
       "n": "men-with-bunny-ears-partying",
       "s": [
         "men-with-bunny-ears-partying",
-        "man-with-bunny-ears-partying"
+        "man-with-bunny-ears-partying",
+        "menwithbunnyearspartying"
       ]
     },
     {
@@ -4088,7 +4380,8 @@
       "n": "women-with-bunny-ears-partying",
       "s": [
         "women-with-bunny-ears-partying",
-        "woman-with-bunny-ears-partying"
+        "woman-with-bunny-ears-partying",
+        "womenwithbunnyearspartying"
       ]
     },
     {
@@ -4124,7 +4417,8 @@
       "t": "Person Climbing",
       "n": "person_climbing",
       "s": [
-        "personclimbing"
+        "personclimbing",
+        "climbing"
       ]
     },
     {
@@ -4151,7 +4445,9 @@
       "t": "Person Fencing",
       "n": "fencer",
       "s": [
-        "fencer"
+        "fencer",
+        "fencing",
+        "personfencing"
       ]
     },
     {
@@ -4178,7 +4474,9 @@
       "t": "Snowboarder",
       "n": "snowboarder",
       "s": [
-        "snowboarder"
+        "snowboarder",
+        "personsnowboarding",
+        "snowboarding"
       ]
     },
     {
@@ -4196,7 +4494,8 @@
       "t": "Man Golfing",
       "n": "man-golfing",
       "s": [
-        "man-golfing"
+        "man-golfing",
+        "mangolfing"
       ]
     },
     {
@@ -4205,7 +4504,8 @@
       "t": "Woman Golfing",
       "n": "woman-golfing",
       "s": [
-        "woman-golfing"
+        "woman-golfing",
+        "womangolfing"
       ]
     },
     {
@@ -4214,7 +4514,9 @@
       "t": "Person Surfing",
       "n": "surfer",
       "s": [
-        "surfer"
+        "surfer",
+        "personsurfing",
+        "surfing"
       ]
     },
     {
@@ -4223,7 +4525,8 @@
       "t": "Man Surfing",
       "n": "man-surfing",
       "s": [
-        "man-surfing"
+        "man-surfing",
+        "mansurfing"
       ]
     },
     {
@@ -4232,7 +4535,8 @@
       "t": "Woman Surfing",
       "n": "woman-surfing",
       "s": [
-        "woman-surfing"
+        "woman-surfing",
+        "womansurfing"
       ]
     },
     {
@@ -4241,7 +4545,8 @@
       "t": "Person Rowing Boat",
       "n": "rowboat",
       "s": [
-        "rowboat"
+        "rowboat",
+        "personrowingboat"
       ]
     },
     {
@@ -4250,7 +4555,8 @@
       "t": "Man Rowing Boat",
       "n": "man-rowing-boat",
       "s": [
-        "man-rowing-boat"
+        "man-rowing-boat",
+        "manrowingboat"
       ]
     },
     {
@@ -4259,7 +4565,8 @@
       "t": "Woman Rowing Boat",
       "n": "woman-rowing-boat",
       "s": [
-        "woman-rowing-boat"
+        "woman-rowing-boat",
+        "womanrowingboat"
       ]
     },
     {
@@ -4268,7 +4575,9 @@
       "t": "Person Swimming",
       "n": "swimmer",
       "s": [
-        "swimmer"
+        "swimmer",
+        "personswimming",
+        "swimming"
       ]
     },
     {
@@ -4277,7 +4586,8 @@
       "t": "Man Swimming",
       "n": "man-swimming",
       "s": [
-        "man-swimming"
+        "man-swimming",
+        "manswimming"
       ]
     },
     {
@@ -4286,7 +4596,8 @@
       "t": "Woman Swimming",
       "n": "woman-swimming",
       "s": [
-        "woman-swimming"
+        "woman-swimming",
+        "womanswimming"
       ]
     },
     {
@@ -4304,7 +4615,8 @@
       "t": "Man Bouncing Ball",
       "n": "man-bouncing-ball",
       "s": [
-        "man-bouncing-ball"
+        "man-bouncing-ball",
+        "manbouncingball"
       ]
     },
     {
@@ -4313,7 +4625,8 @@
       "t": "Woman Bouncing Ball",
       "n": "woman-bouncing-ball",
       "s": [
-        "woman-bouncing-ball"
+        "woman-bouncing-ball",
+        "womanbouncingball"
       ]
     },
     {
@@ -4331,7 +4644,8 @@
       "t": "Man Lifting Weights",
       "n": "man-lifting-weights",
       "s": [
-        "man-lifting-weights"
+        "man-lifting-weights",
+        "manliftingweights"
       ]
     },
     {
@@ -4340,7 +4654,8 @@
       "t": "Woman Lifting Weights",
       "n": "woman-lifting-weights",
       "s": [
-        "woman-lifting-weights"
+        "woman-lifting-weights",
+        "womanliftingweights"
       ]
     },
     {
@@ -4349,7 +4664,9 @@
       "t": "Person Biking",
       "n": "bicyclist",
       "s": [
-        "bicyclist"
+        "bicyclist",
+        "biking",
+        "personbiking"
       ]
     },
     {
@@ -4358,7 +4675,8 @@
       "t": "Man Biking",
       "n": "man-biking",
       "s": [
-        "man-biking"
+        "man-biking",
+        "manbiking"
       ]
     },
     {
@@ -4367,7 +4685,8 @@
       "t": "Woman Biking",
       "n": "woman-biking",
       "s": [
-        "woman-biking"
+        "woman-biking",
+        "womanbiking"
       ]
     },
     {
@@ -4376,7 +4695,9 @@
       "t": "Person Mountain Biking",
       "n": "mountain_bicyclist",
       "s": [
-        "mountainbicyclist"
+        "mountainbicyclist",
+        "mountainbiking",
+        "personmountainbiking"
       ]
     },
     {
@@ -4385,7 +4706,8 @@
       "t": "Man Mountain Biking",
       "n": "man-mountain-biking",
       "s": [
-        "man-mountain-biking"
+        "man-mountain-biking",
+        "manmountainbiking"
       ]
     },
     {
@@ -4394,7 +4716,8 @@
       "t": "Woman Mountain Biking",
       "n": "woman-mountain-biking",
       "s": [
-        "woman-mountain-biking"
+        "woman-mountain-biking",
+        "womanmountainbiking"
       ]
     },
     {
@@ -4403,7 +4726,9 @@
       "t": "Person Cartwheeling",
       "n": "person_doing_cartwheel",
       "s": [
-        "persondoingcartwheel"
+        "persondoingcartwheel",
+        "cartwheeling",
+        "personcartwheel"
       ]
     },
     {
@@ -4412,7 +4737,8 @@
       "t": "Man Cartwheeling",
       "n": "man-cartwheeling",
       "s": [
-        "man-cartwheeling"
+        "man-cartwheeling",
+        "mancartwheeling"
       ]
     },
     {
@@ -4421,7 +4747,8 @@
       "t": "Woman Cartwheeling",
       "n": "woman-cartwheeling",
       "s": [
-        "woman-cartwheeling"
+        "woman-cartwheeling",
+        "womancartwheeling"
       ]
     },
     {
@@ -4430,7 +4757,9 @@
       "t": "People Wrestling",
       "n": "wrestlers",
       "s": [
-        "wrestlers"
+        "wrestlers",
+        "peoplewrestling",
+        "wrestling"
       ]
     },
     {
@@ -4439,7 +4768,8 @@
       "t": "Men Wrestling",
       "n": "man-wrestling",
       "s": [
-        "man-wrestling"
+        "man-wrestling",
+        "menwrestling"
       ]
     },
     {
@@ -4448,7 +4778,8 @@
       "t": "Women Wrestling",
       "n": "woman-wrestling",
       "s": [
-        "woman-wrestling"
+        "woman-wrestling",
+        "womenwrestling"
       ]
     },
     {
@@ -4457,7 +4788,8 @@
       "t": "Person Playing Water Polo",
       "n": "water_polo",
       "s": [
-        "waterpolo"
+        "waterpolo",
+        "personplayingwaterpolo"
       ]
     },
     {
@@ -4466,7 +4798,8 @@
       "t": "Man Playing Water Polo",
       "n": "man-playing-water-polo",
       "s": [
-        "man-playing-water-polo"
+        "man-playing-water-polo",
+        "manplayingwaterpolo"
       ]
     },
     {
@@ -4475,7 +4808,8 @@
       "t": "Woman Playing Water Polo",
       "n": "woman-playing-water-polo",
       "s": [
-        "woman-playing-water-polo"
+        "woman-playing-water-polo",
+        "womanplayingwaterpolo"
       ]
     },
     {
@@ -4484,7 +4818,8 @@
       "t": "Person Playing Handball",
       "n": "handball",
       "s": [
-        "handball"
+        "handball",
+        "personplayinghandball"
       ]
     },
     {
@@ -4493,7 +4828,8 @@
       "t": "Man Playing Handball",
       "n": "man-playing-handball",
       "s": [
-        "man-playing-handball"
+        "man-playing-handball",
+        "manplayinghandball"
       ]
     },
     {
@@ -4502,7 +4838,8 @@
       "t": "Woman Playing Handball",
       "n": "woman-playing-handball",
       "s": [
-        "woman-playing-handball"
+        "woman-playing-handball",
+        "womanplayinghandball"
       ]
     },
     {
@@ -4511,7 +4848,9 @@
       "t": "Person Juggling",
       "n": "juggling",
       "s": [
-        "juggling"
+        "juggling",
+        "juggler",
+        "personjuggling"
       ]
     },
     {
@@ -4520,7 +4859,8 @@
       "t": "Man Juggling",
       "n": "man-juggling",
       "s": [
-        "man-juggling"
+        "man-juggling",
+        "manjuggling"
       ]
     },
     {
@@ -4529,7 +4869,8 @@
       "t": "Woman Juggling",
       "n": "woman-juggling",
       "s": [
-        "woman-juggling"
+        "woman-juggling",
+        "womanjuggling"
       ]
     },
     {
@@ -4565,7 +4906,8 @@
       "t": "Person Taking Bath",
       "n": "bath",
       "s": [
-        "bath"
+        "bath",
+        "persontakingbath"
       ]
     },
     {
@@ -4574,7 +4916,8 @@
       "t": "Person In Bed",
       "n": "sleeping_accommodation",
       "s": [
-        "sleepingaccommodation"
+        "sleepingaccommodation",
+        "personinbed"
       ]
     },
     {
@@ -4632,7 +4975,9 @@
       "t": "Kiss: Woman, Man",
       "n": "woman-kiss-man",
       "s": [
-        "woman-kiss-man"
+        "woman-kiss-man",
+        "kissmw",
+        "kisswm"
       ]
     },
     {
@@ -4641,7 +4986,8 @@
       "t": "Kiss: Man, Man",
       "n": "man-kiss-man",
       "s": [
-        "man-kiss-man"
+        "man-kiss-man",
+        "kissmm"
       ]
     },
     {
@@ -4650,7 +4996,8 @@
       "t": "Kiss: Woman, Woman",
       "n": "woman-kiss-woman",
       "s": [
-        "woman-kiss-woman"
+        "woman-kiss-woman",
+        "kissww"
       ]
     },
     {
@@ -4668,7 +5015,9 @@
       "t": "Couple With Heart: Woman, Man",
       "n": "woman-heart-man",
       "s": [
-        "woman-heart-man"
+        "woman-heart-man",
+        "couplewithheartmw",
+        "couplewithheartwm"
       ]
     },
     {
@@ -4677,7 +5026,8 @@
       "t": "Couple With Heart: Man, Man",
       "n": "man-heart-man",
       "s": [
-        "man-heart-man"
+        "man-heart-man",
+        "couplewithheartmm"
       ]
     },
     {
@@ -4686,7 +5036,8 @@
       "t": "Couple With Heart: Woman, Woman",
       "n": "woman-heart-woman",
       "s": [
-        "woman-heart-woman"
+        "woman-heart-woman",
+        "couplewithheartww"
       ]
     },
     {
@@ -4695,7 +5046,8 @@
       "t": "Family: Man, Woman, Boy",
       "n": "man-woman-boy",
       "s": [
-        "man-woman-boy"
+        "man-woman-boy",
+        "familymwb"
       ]
     },
     {
@@ -4704,7 +5056,8 @@
       "t": "Family: Man, Woman, Girl",
       "n": "man-woman-girl",
       "s": [
-        "man-woman-girl"
+        "man-woman-girl",
+        "familymwg"
       ]
     },
     {
@@ -4713,7 +5066,8 @@
       "t": "Family: Man, Woman, Girl, Boy",
       "n": "man-woman-girl-boy",
       "s": [
-        "man-woman-girl-boy"
+        "man-woman-girl-boy",
+        "familymwgb"
       ]
     },
     {
@@ -4722,7 +5076,8 @@
       "t": "Family: Man, Woman, Boy, Boy",
       "n": "man-woman-boy-boy",
       "s": [
-        "man-woman-boy-boy"
+        "man-woman-boy-boy",
+        "familymwbb"
       ]
     },
     {
@@ -4731,7 +5086,8 @@
       "t": "Family: Man, Woman, Girl, Girl",
       "n": "man-woman-girl-girl",
       "s": [
-        "man-woman-girl-girl"
+        "man-woman-girl-girl",
+        "familymwgg"
       ]
     },
     {
@@ -4740,7 +5096,8 @@
       "t": "Family: Man, Man, Boy",
       "n": "man-man-boy",
       "s": [
-        "man-man-boy"
+        "man-man-boy",
+        "familymmb"
       ]
     },
     {
@@ -4749,7 +5106,8 @@
       "t": "Family: Man, Man, Girl",
       "n": "man-man-girl",
       "s": [
-        "man-man-girl"
+        "man-man-girl",
+        "familymmg"
       ]
     },
     {
@@ -4758,7 +5116,8 @@
       "t": "Family: Man, Man, Girl, Boy",
       "n": "man-man-girl-boy",
       "s": [
-        "man-man-girl-boy"
+        "man-man-girl-boy",
+        "familymmgb"
       ]
     },
     {
@@ -4767,7 +5126,8 @@
       "t": "Family: Man, Man, Boy, Boy",
       "n": "man-man-boy-boy",
       "s": [
-        "man-man-boy-boy"
+        "man-man-boy-boy",
+        "familymmbb"
       ]
     },
     {
@@ -4776,7 +5136,8 @@
       "t": "Family: Man, Man, Girl, Girl",
       "n": "man-man-girl-girl",
       "s": [
-        "man-man-girl-girl"
+        "man-man-girl-girl",
+        "familymmgg"
       ]
     },
     {
@@ -4785,7 +5146,8 @@
       "t": "Family: Woman, Woman, Boy",
       "n": "woman-woman-boy",
       "s": [
-        "woman-woman-boy"
+        "woman-woman-boy",
+        "familywwb"
       ]
     },
     {
@@ -4794,7 +5156,8 @@
       "t": "Family: Woman, Woman, Girl",
       "n": "woman-woman-girl",
       "s": [
-        "woman-woman-girl"
+        "woman-woman-girl",
+        "familywwg"
       ]
     },
     {
@@ -4803,7 +5166,8 @@
       "t": "Family: Woman, Woman, Girl, Boy",
       "n": "woman-woman-girl-boy",
       "s": [
-        "woman-woman-girl-boy"
+        "woman-woman-girl-boy",
+        "familywwgb"
       ]
     },
     {
@@ -4812,7 +5176,8 @@
       "t": "Family: Woman, Woman, Boy, Boy",
       "n": "woman-woman-boy-boy",
       "s": [
-        "woman-woman-boy-boy"
+        "woman-woman-boy-boy",
+        "familywwbb"
       ]
     },
     {
@@ -4821,7 +5186,8 @@
       "t": "Family: Woman, Woman, Girl, Girl",
       "n": "woman-woman-girl-girl",
       "s": [
-        "woman-woman-girl-girl"
+        "woman-woman-girl-girl",
+        "familywwgg"
       ]
     },
     {
@@ -4830,7 +5196,8 @@
       "t": "Family: Man, Boy",
       "n": "man-boy",
       "s": [
-        "man-boy"
+        "man-boy",
+        "familymb"
       ]
     },
     {
@@ -4839,7 +5206,8 @@
       "t": "Family: Man, Boy, Boy",
       "n": "man-boy-boy",
       "s": [
-        "man-boy-boy"
+        "man-boy-boy",
+        "familymbb"
       ]
     },
     {
@@ -4848,7 +5216,8 @@
       "t": "Family: Man, Girl",
       "n": "man-girl",
       "s": [
-        "man-girl"
+        "man-girl",
+        "familymg"
       ]
     },
     {
@@ -4857,7 +5226,8 @@
       "t": "Family: Man, Girl, Boy",
       "n": "man-girl-boy",
       "s": [
-        "man-girl-boy"
+        "man-girl-boy",
+        "familymgb"
       ]
     },
     {
@@ -4866,7 +5236,8 @@
       "t": "Family: Man, Girl, Girl",
       "n": "man-girl-girl",
       "s": [
-        "man-girl-girl"
+        "man-girl-girl",
+        "familymgg"
       ]
     },
     {
@@ -4875,7 +5246,8 @@
       "t": "Family: Woman, Boy",
       "n": "woman-boy",
       "s": [
-        "woman-boy"
+        "woman-boy",
+        "familywb"
       ]
     },
     {
@@ -4884,7 +5256,8 @@
       "t": "Family: Woman, Boy, Boy",
       "n": "woman-boy-boy",
       "s": [
-        "woman-boy-boy"
+        "woman-boy-boy",
+        "familywbb"
       ]
     },
     {
@@ -4893,7 +5266,8 @@
       "t": "Family: Woman, Girl",
       "n": "woman-girl",
       "s": [
-        "woman-girl"
+        "woman-girl",
+        "familywg"
       ]
     },
     {
@@ -4902,7 +5276,8 @@
       "t": "Family: Woman, Girl, Boy",
       "n": "woman-girl-boy",
       "s": [
-        "woman-girl-boy"
+        "woman-girl-boy",
+        "familywgb"
       ]
     },
     {
@@ -4911,7 +5286,8 @@
       "t": "Family: Woman, Girl, Girl",
       "n": "woman-girl-girl",
       "s": [
-        "woman-girl-girl"
+        "woman-girl-girl",
+        "familywgg"
       ]
     },
     {
@@ -4965,7 +5341,8 @@
       "t": "Family: Adult, Adult, Child",
       "n": "family_adult_adult_child",
       "s": [
-        "familyadultadultchild"
+        "familyadultadultchild",
+        "familyaac"
       ]
     },
     {
@@ -4974,7 +5351,8 @@
       "t": "Family: Adult, Adult, Child, Child",
       "n": "family_adult_adult_child_child",
       "s": [
-        "familyadultadultchildchild"
+        "familyadultadultchildchild",
+        "familyaacc"
       ]
     },
     {
@@ -4983,7 +5361,8 @@
       "t": "Family: Adult, Child",
       "n": "family_adult_child",
       "s": [
-        "familyadultchild"
+        "familyadultchild",
+        "familyac"
       ]
     },
     {
@@ -4992,7 +5371,8 @@
       "t": "Family: Adult, Child, Child",
       "n": "family_adult_child_child",
       "s": [
-        "familyadultchildchild"
+        "familyadultchildchild",
+        "familyacc"
       ]
     },
     {
@@ -5010,7 +5390,9 @@
       "t": "Light Skin Tone",
       "n": "skin-tone-2",
       "s": [
-        "skin-tone-2"
+        "skin-tone-2",
+        "tone1",
+        "tonelight"
       ]
     },
     {
@@ -5019,7 +5401,9 @@
       "t": "Medium-Light Skin Tone",
       "n": "skin-tone-3",
       "s": [
-        "skin-tone-3"
+        "skin-tone-3",
+        "tone2",
+        "tonemediumlight"
       ]
     },
     {
@@ -5028,7 +5412,9 @@
       "t": "Medium Skin Tone",
       "n": "skin-tone-4",
       "s": [
-        "skin-tone-4"
+        "skin-tone-4",
+        "tone3",
+        "tonemedium"
       ]
     },
     {
@@ -5037,7 +5423,9 @@
       "t": "Medium-Dark Skin Tone",
       "n": "skin-tone-5",
       "s": [
-        "skin-tone-5"
+        "skin-tone-5",
+        "tone4",
+        "tonemediumdark"
       ]
     },
     {
@@ -5046,7 +5434,9 @@
       "t": "Dark Skin Tone",
       "n": "skin-tone-6",
       "s": [
-        "skin-tone-6"
+        "skin-tone-6",
+        "tone5",
+        "tonedark"
       ]
     },
     {
@@ -5091,7 +5481,8 @@
       "t": "Dog Face",
       "n": "dog",
       "s": [
-        "dog"
+        "dog",
+        "dogface"
       ]
     },
     {
@@ -5136,7 +5527,8 @@
       "t": "Wolf",
       "n": "wolf",
       "s": [
-        "wolf"
+        "wolf",
+        "wolfface"
       ]
     },
     {
@@ -5145,7 +5537,8 @@
       "t": "Fox",
       "n": "fox_face",
       "s": [
-        "foxface"
+        "foxface",
+        "fox"
       ]
     },
     {
@@ -5163,7 +5556,8 @@
       "t": "Cat Face",
       "n": "cat",
       "s": [
-        "cat"
+        "cat",
+        "catface"
       ]
     },
     {
@@ -5190,7 +5584,8 @@
       "t": "Lion",
       "n": "lion_face",
       "s": [
-        "lionface"
+        "lionface",
+        "lion"
       ]
     },
     {
@@ -5199,7 +5594,8 @@
       "t": "Tiger Face",
       "n": "tiger",
       "s": [
-        "tiger"
+        "tiger",
+        "tigerface"
       ]
     },
     {
@@ -5226,7 +5622,8 @@
       "t": "Horse Face",
       "n": "horse",
       "s": [
-        "horse"
+        "horse",
+        "horseface"
       ]
     },
     {
@@ -5262,7 +5659,8 @@
       "t": "Unicorn",
       "n": "unicorn_face",
       "s": [
-        "unicornface"
+        "unicornface",
+        "unicorn"
       ]
     },
     {
@@ -5271,7 +5669,8 @@
       "t": "Zebra",
       "n": "zebra_face",
       "s": [
-        "zebraface"
+        "zebraface",
+        "zebra"
       ]
     },
     {
@@ -5298,7 +5697,8 @@
       "t": "Cow Face",
       "n": "cow",
       "s": [
-        "cow"
+        "cow",
+        "cowface"
       ]
     },
     {
@@ -5334,7 +5734,8 @@
       "t": "Pig Face",
       "n": "pig",
       "s": [
-        "pig"
+        "pig",
+        "pigface"
       ]
     },
     {
@@ -5379,7 +5780,8 @@
       "t": "Ewe",
       "n": "sheep",
       "s": [
-        "sheep"
+        "sheep",
+        "ewe"
       ]
     },
     {
@@ -5424,7 +5826,8 @@
       "t": "Giraffe",
       "n": "giraffe_face",
       "s": [
-        "giraffeface"
+        "giraffeface",
+        "giraffe"
       ]
     },
     {
@@ -5451,7 +5854,8 @@
       "t": "Rhinoceros",
       "n": "rhinoceros",
       "s": [
-        "rhinoceros"
+        "rhinoceros",
+        "rhino"
       ]
     },
     {
@@ -5460,7 +5864,8 @@
       "t": "Hippopotamus",
       "n": "hippopotamus",
       "s": [
-        "hippopotamus"
+        "hippopotamus",
+        "hippo"
       ]
     },
     {
@@ -5469,7 +5874,8 @@
       "t": "Mouse Face",
       "n": "mouse",
       "s": [
-        "mouse"
+        "mouse",
+        "mouseface"
       ]
     },
     {
@@ -5496,7 +5902,8 @@
       "t": "Hamster",
       "n": "hamster",
       "s": [
-        "hamster"
+        "hamster",
+        "hamsterface"
       ]
     },
     {
@@ -5505,7 +5912,8 @@
       "t": "Rabbit Face",
       "n": "rabbit",
       "s": [
-        "rabbit"
+        "rabbit",
+        "rabbitface"
       ]
     },
     {
@@ -5559,7 +5967,8 @@
       "t": "Bear",
       "n": "bear",
       "s": [
-        "bear"
+        "bear",
+        "bearface"
       ]
     },
     {
@@ -5568,7 +5977,8 @@
       "t": "Polar Bear",
       "n": "polar_bear",
       "s": [
-        "polarbear"
+        "polarbear",
+        "polarbearface"
       ]
     },
     {
@@ -5577,7 +5987,8 @@
       "t": "Koala",
       "n": "koala",
       "s": [
-        "koala"
+        "koala",
+        "koalaface"
       ]
     },
     {
@@ -5586,7 +5997,8 @@
       "t": "Panda",
       "n": "panda_face",
       "s": [
-        "pandaface"
+        "pandaface",
+        "panda"
       ]
     },
     {
@@ -5659,7 +6071,8 @@
       "t": "Chicken",
       "n": "chicken",
       "s": [
-        "chicken"
+        "chicken",
+        "chickenface"
       ]
     },
     {
@@ -5704,7 +6117,8 @@
       "t": "Bird",
       "n": "bird",
       "s": [
-        "bird"
+        "bird",
+        "birdface"
       ]
     },
     {
@@ -5713,7 +6127,8 @@
       "t": "Penguin",
       "n": "penguin",
       "s": [
-        "penguin"
+        "penguin",
+        "penguinface"
       ]
     },
     {
@@ -5848,7 +6263,8 @@
       "t": "Frog",
       "n": "frog",
       "s": [
-        "frog"
+        "frog",
+        "frogface"
       ]
     },
     {
@@ -5920,7 +6336,8 @@
       "t": "T-Rex",
       "n": "t-rex",
       "s": [
-        "t-rex"
+        "t-rex",
+        "trex"
       ]
     },
     {
@@ -5929,7 +6346,8 @@
       "t": "Spouting Whale",
       "n": "whale",
       "s": [
-        "whale"
+        "whale",
+        "spoutingwhale"
       ]
     },
     {
@@ -6346,7 +6764,8 @@
       "t": "Sheaf Of Rice",
       "n": "ear_of_rice",
       "s": [
-        "earofrice"
+        "earofrice",
+        "sheafofrice"
       ]
     },
     {
@@ -6409,7 +6828,8 @@
       "t": "Empty Nest",
       "n": "empty_nest",
       "s": [
-        "emptynest"
+        "emptynest",
+        "nest"
       ]
     },
     {
@@ -6463,7 +6883,8 @@
       "t": "Tangerine",
       "n": "tangerine",
       "s": [
-        "tangerine"
+        "tangerine",
+        "orange"
       ]
     },
     {
@@ -6517,7 +6938,8 @@
       "t": "Red Apple",
       "n": "apple",
       "s": [
-        "apple"
+        "apple",
+        "redapple"
       ]
     },
     {
@@ -6580,7 +7002,8 @@
       "t": "Kiwi Fruit",
       "n": "kiwifruit",
       "s": [
-        "kiwifruit"
+        "kiwifruit",
+        "kiwi"
       ]
     },
     {
@@ -6652,7 +7075,8 @@
       "t": "Ear Of Corn",
       "n": "corn",
       "s": [
-        "corn"
+        "corn",
+        "earofcorn"
       ]
     },
     {
@@ -6751,7 +7175,8 @@
       "t": "Ginger Root",
       "n": "ginger_root",
       "s": [
-        "gingerroot"
+        "gingerroot",
+        "ginger"
       ]
     },
     {
@@ -6760,7 +7185,8 @@
       "t": "Pea Pod",
       "n": "pea_pod",
       "s": [
-        "peapod"
+        "peapod",
+        "pea"
       ]
     },
     {
@@ -6850,7 +7276,8 @@
       "t": "Cheese Wedge",
       "n": "cheese_wedge",
       "s": [
-        "cheesewedge"
+        "cheesewedge",
+        "cheese"
       ]
     },
     {
@@ -6904,7 +7331,8 @@
       "t": "French Fries",
       "n": "fries",
       "s": [
-        "fries"
+        "fries",
+        "frenchfries"
       ]
     },
     {
@@ -7013,7 +7441,8 @@
       "t": "Pot Of Food",
       "n": "stew",
       "s": [
-        "stew"
+        "stew",
+        "potoffood"
       ]
     },
     {
@@ -7040,7 +7469,8 @@
       "t": "Green Salad",
       "n": "green_salad",
       "s": [
-        "greensalad"
+        "greensalad",
+        "salad"
       ]
     },
     {
@@ -7085,7 +7515,8 @@
       "t": "Bento Box",
       "n": "bento",
       "s": [
-        "bento"
+        "bento",
+        "bentobox"
       ]
     },
     {
@@ -7112,7 +7543,8 @@
       "t": "Cooked Rice",
       "n": "rice",
       "s": [
-        "rice"
+        "rice",
+        "cookedrice"
       ]
     },
     {
@@ -7121,7 +7553,8 @@
       "t": "Curry Rice",
       "n": "curry",
       "s": [
-        "curry"
+        "curry",
+        "curryrice"
       ]
     },
     {
@@ -7130,7 +7563,8 @@
       "t": "Steaming Bowl",
       "n": "ramen",
       "s": [
-        "ramen"
+        "ramen",
+        "steamingbowl"
       ]
     },
     {
@@ -7283,7 +7717,8 @@
       "t": "Soft Ice Cream",
       "n": "icecream",
       "s": [
-        "icecream"
+        "icecream",
+        "softserve"
       ]
     },
     {
@@ -7328,7 +7763,8 @@
       "t": "Birthday Cake",
       "n": "birthday",
       "s": [
-        "birthday"
+        "birthday",
+        "birthdaycake"
       ]
     },
     {
@@ -7337,7 +7773,8 @@
       "t": "Shortcake",
       "n": "cake",
       "s": [
-        "cake"
+        "cake",
+        "shortcake"
       ]
     },
     {
@@ -7418,7 +7855,8 @@
       "t": "Glass Of Milk",
       "n": "glass_of_milk",
       "s": [
-        "glassofmilk"
+        "glassofmilk",
+        "milk"
       ]
     },
     {
@@ -7526,7 +7964,8 @@
       "t": "Tumbler Glass",
       "n": "tumbler_glass",
       "s": [
-        "tumblerglass"
+        "tumblerglass",
+        "whisky"
       ]
     },
     {
@@ -7535,7 +7974,8 @@
       "t": "Pouring Liquid",
       "n": "pouring_liquid",
       "s": [
-        "pouringliquid"
+        "pouringliquid",
+        "pour"
       ]
     },
     {
@@ -7553,7 +7993,8 @@
       "t": "Bubble Tea",
       "n": "bubble_tea",
       "s": [
-        "bubbletea"
+        "bubbletea",
+        "bobadrink"
       ]
     },
     {
@@ -7562,7 +8003,8 @@
       "t": "Beverage Box",
       "n": "beverage_box",
       "s": [
-        "beveragebox"
+        "beveragebox",
+        "juicebox"
       ]
     },
     {
@@ -7571,7 +8013,8 @@
       "t": "Mate",
       "n": "mate_drink",
       "s": [
-        "matedrink"
+        "matedrink",
+        "mate"
       ]
     },
     {
@@ -7580,7 +8023,8 @@
       "t": "Ice",
       "n": "ice_cube",
       "s": [
-        "icecube"
+        "icecube",
+        "ice"
       ]
     },
     {
@@ -7653,7 +8097,8 @@
       "t": "Globe Showing Europe-Africa",
       "n": "earth_africa",
       "s": [
-        "earthafrica"
+        "earthafrica",
+        "eartheurope"
       ]
     },
     {
@@ -7698,7 +8143,8 @@
       "t": "Map Of Japan",
       "n": "japan",
       "s": [
-        "japan"
+        "japan",
+        "japanmap"
       ]
     },
     {
@@ -8004,7 +8450,8 @@
       "t": "Castle",
       "n": "european_castle",
       "s": [
-        "europeancastle"
+        "europeancastle",
+        "castle"
       ]
     },
     {
@@ -8157,7 +8604,8 @@
       "t": "Cityscape At Dusk",
       "n": "city_sunset",
       "s": [
-        "citysunset"
+        "citysunset",
+        "citydusk"
       ]
     },
     {
@@ -8202,7 +8650,8 @@
       "t": "Playground Slide",
       "n": "playground_slide",
       "s": [
-        "playgroundslide"
+        "playgroundslide",
+        "slide"
       ]
     },
     {
@@ -8229,7 +8678,8 @@
       "t": "Barber Pole",
       "n": "barber",
       "s": [
-        "barber"
+        "barber",
+        "barberpole"
       ]
     },
     {
@@ -8346,7 +8796,8 @@
       "t": "Tram Car",
       "n": "train",
       "s": [
-        "train"
+        "train",
+        "tramcar"
       ]
     },
     {
@@ -8464,7 +8915,8 @@
       "t": "Sport Utility Vehicle",
       "n": "blue_car",
       "s": [
-        "bluecar"
+        "bluecar",
+        "suv"
       ]
     },
     {
@@ -8482,7 +8934,8 @@
       "t": "Delivery Truck",
       "n": "truck",
       "s": [
-        "truck"
+        "truck",
+        "deliverytruck"
       ]
     },
     {
@@ -8563,7 +9016,8 @@
       "t": "Bicycle",
       "n": "bike",
       "s": [
-        "bike"
+        "bike",
+        "bicycle"
       ]
     },
     {
@@ -8680,7 +9134,8 @@
       "t": "Stop Sign",
       "n": "octagonal_sign",
       "s": [
-        "octagonalsign"
+        "octagonalsign",
+        "stopsign"
       ]
     },
     {
@@ -8707,7 +9162,8 @@
       "t": "Ring Buoy",
       "n": "ring_buoy",
       "s": [
-        "ringbuoy"
+        "ringbuoy",
+        "lifebuoy"
       ]
     },
     {
@@ -9339,7 +9795,8 @@
       "t": "Ringed Planet",
       "n": "ringed_planet",
       "s": [
-        "ringedplanet"
+        "ringedplanet",
+        "saturn"
       ]
     },
     {
@@ -9357,7 +9814,8 @@
       "t": "Glowing Star",
       "n": "star2",
       "s": [
-        "star2"
+        "star2",
+        "glowingstar"
       ]
     },
     {
@@ -9366,7 +9824,8 @@
       "t": "Shooting Star",
       "n": "stars",
       "s": [
-        "stars"
+        "stars",
+        "shootingstar"
       ]
     },
     {
@@ -9533,7 +9992,8 @@
       "t": "Umbrella With Rain Drops",
       "n": "umbrella_with_rain_drops",
       "s": [
-        "umbrellawithraindrops"
+        "umbrellawithraindrops",
+        "umbrellawithrain"
       ]
     },
     {
@@ -9551,7 +10011,8 @@
       "t": "High Voltage",
       "n": "zap",
       "s": [
-        "zap"
+        "zap",
+        "highvoltage"
       ]
     },
     {
@@ -9614,7 +10075,8 @@
       "t": "Water Wave",
       "n": "ocean",
       "s": [
-        "ocean"
+        "ocean",
+        "waterwave"
       ]
     },
     {
@@ -9686,7 +10148,9 @@
       "t": "Party Popper",
       "n": "tada",
       "s": [
-        "tada"
+        "tada",
+        "party",
+        "partypopper"
       ]
     },
     {
@@ -9731,7 +10195,8 @@
       "t": "Carp Streamer",
       "n": "flags",
       "s": [
-        "flags"
+        "flags",
+        "carpstreamer"
       ]
     },
     {
@@ -9749,7 +10214,8 @@
       "t": "Moon Viewing Ceremony",
       "n": "rice_scene",
       "s": [
-        "ricescene"
+        "ricescene",
+        "moonceremony"
       ]
     },
     {
@@ -9839,7 +10305,8 @@
       "t": "1St Place Medal",
       "n": "first_place_medal",
       "s": [
-        "firstplacemedal"
+        "firstplacemedal",
+        "1st"
       ]
     },
     {
@@ -9848,7 +10315,8 @@
       "t": "2Nd Place Medal",
       "n": "second_place_medal",
       "s": [
-        "secondplacemedal"
+        "secondplacemedal",
+        "2nd"
       ]
     },
     {
@@ -9857,7 +10325,8 @@
       "t": "3Rd Place Medal",
       "n": "third_place_medal",
       "s": [
-        "thirdplacemedal"
+        "thirdplacemedal",
+        "3rd"
       ]
     },
     {
@@ -9956,7 +10425,8 @@
       "t": "Cricket Game",
       "n": "cricket_bat_and_ball",
       "s": [
-        "cricketbatandball"
+        "cricketbatandball",
+        "cricketgame"
       ]
     },
     {
@@ -9965,7 +10435,8 @@
       "t": "Field Hockey",
       "n": "field_hockey_stick_and_ball",
       "s": [
-        "fieldhockeystickandball"
+        "fieldhockeystickandball",
+        "fieldhockey"
       ]
     },
     {
@@ -9974,7 +10445,8 @@
       "t": "Ice Hockey",
       "n": "ice_hockey_stick_and_puck",
       "s": [
-        "icehockeystickandpuck"
+        "icehockeystickandpuck",
+        "hockey"
       ]
     },
     {
@@ -9992,7 +10464,8 @@
       "t": "Ping Pong",
       "n": "table_tennis_paddle_and_ball",
       "s": [
-        "tabletennispaddleandball"
+        "tabletennispaddleandball",
+        "pingpong"
       ]
     },
     {
@@ -10001,7 +10474,8 @@
       "t": "Badminton",
       "n": "badminton_racquet_and_shuttlecock",
       "s": [
-        "badmintonracquetandshuttlecock"
+        "badmintonracquetandshuttlecock",
+        "badminton"
       ]
     },
     {
@@ -10055,7 +10529,8 @@
       "t": "Fishing Pole",
       "n": "fishing_pole_and_fish",
       "s": [
-        "fishingpoleandfish"
+        "fishingpoleandfish",
+        "fishingpole"
       ]
     },
     {
@@ -10073,7 +10548,8 @@
       "t": "Running Shirt",
       "n": "running_shirt_with_sash",
       "s": [
-        "runningshirtwithsash"
+        "runningshirtwithsash",
+        "runningshirt"
       ]
     },
     {
@@ -10109,7 +10585,9 @@
       "t": "Bullseye",
       "n": "dart",
       "s": [
-        "dart"
+        "dart",
+        "bullseye",
+        "directhit"
       ]
     },
     {
@@ -10118,7 +10596,8 @@
       "t": "Yo-Yo",
       "n": "yo-yo",
       "s": [
-        "yo-yo"
+        "yo-yo",
+        "yoyo"
       ]
     },
     {
@@ -10136,7 +10615,8 @@
       "t": "Water Pistol",
       "n": "gun",
       "s": [
-        "gun"
+        "gun",
+        "pistol"
       ]
     },
     {
@@ -10145,7 +10625,8 @@
       "t": "Pool 8 Ball",
       "n": "8ball",
       "s": [
-        "8ball"
+        "8ball",
+        "billiards"
       ]
     },
     {
@@ -10172,7 +10653,8 @@
       "t": "Video Game",
       "n": "video_game",
       "s": [
-        "videogame"
+        "videogame",
+        "controller"
       ]
     },
     {
@@ -10208,7 +10690,8 @@
       "t": "Puzzle Piece",
       "n": "jigsaw",
       "s": [
-        "jigsaw"
+        "jigsaw",
+        "puzzlepiece"
       ]
     },
     {
@@ -10235,7 +10718,9 @@
       "t": "Mirror Ball",
       "n": "mirror_ball",
       "s": [
-        "mirrorball"
+        "mirrorball",
+        "disco",
+        "discoball"
       ]
     },
     {
@@ -10343,7 +10828,8 @@
       "t": "Artist Palette",
       "n": "art",
       "s": [
-        "art"
+        "art",
+        "palette"
       ]
     },
     {
@@ -10388,7 +10874,8 @@
       "t": "Glasses",
       "n": "eyeglasses",
       "s": [
-        "eyeglasses"
+        "eyeglasses",
+        "glasses"
       ]
     },
     {
@@ -10524,7 +11011,8 @@
       "t": "One-Piece Swimsuit",
       "n": "one-piece_swimsuit",
       "s": [
-        "one-pieceswimsuit"
+        "one-pieceswimsuit",
+        "onepieceswimsuit"
       ]
     },
     {
@@ -10569,7 +11057,8 @@
       "t": "Folding Hand Fan",
       "n": "folding_hand_fan",
       "s": [
-        "foldinghandfan"
+        "foldinghandfan",
+        "foldingfan"
       ]
     },
     {
@@ -10596,7 +11085,8 @@
       "t": "Clutch Bag",
       "n": "pouch",
       "s": [
-        "pouch"
+        "pouch",
+        "clutchbag"
       ]
     },
     {
@@ -10614,7 +11104,8 @@
       "t": "Backpack",
       "n": "school_satchel",
       "s": [
-        "schoolsatchel"
+        "schoolsatchel",
+        "backpack"
       ]
     },
     {
@@ -10642,7 +11133,8 @@
       "t": "Running Shoe",
       "n": "athletic_shoe",
       "s": [
-        "athleticshoe"
+        "athleticshoe",
+        "sneaker"
       ]
     },
     {
@@ -10660,7 +11152,8 @@
       "t": "Flat Shoe",
       "n": "womans_flat_shoe",
       "s": [
-        "womansflatshoe"
+        "womansflatshoe",
+        "flatshoe"
       ]
     },
     {
@@ -10741,7 +11234,8 @@
       "t": "Graduation Cap",
       "n": "mortar_board",
       "s": [
-        "mortarboard"
+        "mortarboard",
+        "graduationcap"
       ]
     },
     {
@@ -10813,7 +11307,8 @@
       "t": "Muted Speaker",
       "n": "mute",
       "s": [
-        "mute"
+        "mute",
+        "nosound"
       ]
     },
     {
@@ -10822,7 +11317,9 @@
       "t": "Speaker Low Volume",
       "n": "speaker",
       "s": [
-        "speaker"
+        "speaker",
+        "lowvolume",
+        "quietsound"
       ]
     },
     {
@@ -10831,7 +11328,8 @@
       "t": "Speaker Medium Volume",
       "n": "sound",
       "s": [
-        "sound"
+        "sound",
+        "mediumvolumne"
       ]
     },
     {
@@ -10840,7 +11338,8 @@
       "t": "Speaker High Volume",
       "n": "loud_sound",
       "s": [
-        "loudsound"
+        "loudsound",
+        "highvolume"
       ]
     },
     {
@@ -10858,7 +11357,8 @@
       "t": "Megaphone",
       "n": "mega",
       "s": [
-        "mega"
+        "mega",
+        "megaphone"
       ]
     },
     {
@@ -10912,7 +11412,8 @@
       "t": "Musical Notes",
       "n": "notes",
       "s": [
-        "notes"
+        "notes",
+        "musicalnotes"
       ]
     },
     {
@@ -11038,7 +11539,8 @@
       "t": "Drum",
       "n": "drum_with_drumsticks",
       "s": [
-        "drumwithdrumsticks"
+        "drumwithdrumsticks",
+        "drum"
       ]
     },
     {
@@ -11074,7 +11576,9 @@
       "t": "Mobile Phone",
       "n": "iphone",
       "s": [
-        "iphone"
+        "iphone",
+        "android",
+        "mobilephone"
       ]
     },
     {
@@ -11083,7 +11587,8 @@
       "t": "Mobile Phone With Arrow",
       "n": "calling",
       "s": [
-        "calling"
+        "calling",
+        "mobilephonearrow"
       ]
     },
     {
@@ -11120,7 +11625,8 @@
       "t": "Fax Machine",
       "n": "fax",
       "s": [
-        "fax"
+        "fax",
+        "faxmachine"
       ]
     },
     {
@@ -11156,7 +11662,8 @@
       "t": "Laptop",
       "n": "computer",
       "s": [
-        "computer"
+        "computer",
+        "laptop"
       ]
     },
     {
@@ -11210,7 +11717,8 @@
       "t": "Computer Disk",
       "n": "minidisc",
       "s": [
-        "minidisc"
+        "minidisc",
+        "computerdisk"
       ]
     },
     {
@@ -11228,7 +11736,8 @@
       "t": "Optical Disk",
       "n": "cd",
       "s": [
-        "cd"
+        "cd",
+        "opticaldisk"
       ]
     },
     {
@@ -11327,7 +11836,8 @@
       "t": "Videocassette",
       "n": "vhs",
       "s": [
-        "vhs"
+        "vhs",
+        "videocassette"
       ]
     },
     {
@@ -11363,7 +11873,8 @@
       "t": "Light Bulb",
       "n": "bulb",
       "s": [
-        "bulb"
+        "bulb",
+        "lightbulb"
       ]
     },
     {
@@ -11382,7 +11893,8 @@
       "n": "izakaya_lantern",
       "s": [
         "izakayalantern",
-        "lantern"
+        "lantern",
+        "redpaperlantern"
       ]
     },
     {
@@ -11907,7 +12419,9 @@
       "t": "Chart Increasing",
       "n": "chart_with_upwards_trend",
       "s": [
-        "chartwithupwardstrend"
+        "chartwithupwardstrend",
+        "chartincreasing",
+        "chartupwards"
       ]
     },
     {
@@ -11916,7 +12430,9 @@
       "t": "Chart Decreasing",
       "n": "chart_with_downwards_trend",
       "s": [
-        "chartwithdownwardstrend"
+        "chartwithdownwardstrend",
+        "chartdecreasing",
+        "chartdownwards"
       ]
     },
     {
@@ -12033,7 +12549,8 @@
       "t": "Locked",
       "n": "lock",
       "s": [
-        "lock"
+        "lock",
+        "locked"
       ]
     },
     {
@@ -12042,7 +12559,8 @@
       "t": "Unlocked",
       "n": "unlock",
       "s": [
-        "unlock"
+        "unlock",
+        "unlocked"
       ]
     },
     {
@@ -12051,7 +12569,8 @@
       "t": "Locked With Pen",
       "n": "lock_with_ink_pen",
       "s": [
-        "lockwithinkpen"
+        "lockwithinkpen",
+        "lockedwithpen"
       ]
     },
     {
@@ -12060,7 +12579,8 @@
       "t": "Locked With Key",
       "n": "closed_lock_with_key",
       "s": [
-        "closedlockwithkey"
+        "closedlockwithkey",
+        "lockedwithkey"
       ]
     },
     {
@@ -12249,7 +12769,8 @@
       "t": "White Cane",
       "n": "probing_cane",
       "s": [
-        "probingcane"
+        "probingcane",
+        "whitecane"
       ]
     },
     {
@@ -12348,7 +12869,8 @@
       "t": "Dna",
       "n": "dna",
       "s": [
-        "dna"
+        "dna",
+        "doublehelix"
       ]
     },
     {
@@ -12411,7 +12933,8 @@
       "t": "Adhesive Bandage",
       "n": "adhesive_bandage",
       "s": [
-        "adhesivebandage"
+        "adhesivebandage",
+        "bandaid"
       ]
     },
     {
@@ -12438,7 +12961,8 @@
       "t": "X-Ray",
       "n": "x-ray",
       "s": [
-        "x-ray"
+        "x-ray",
+        "xray"
       ]
     },
     {
@@ -12600,7 +13124,8 @@
       "t": "Roll Of Paper",
       "n": "roll_of_paper",
       "s": [
-        "rollofpaper"
+        "rollofpaper",
+        "toiletpaper"
       ]
     },
     {
@@ -12663,7 +13188,8 @@
       "t": "Shopping Cart",
       "n": "shopping_trolley",
       "s": [
-        "shoppingtrolley"
+        "shoppingtrolley",
+        "shoppingcart"
       ]
     },
     {
@@ -12672,7 +13198,8 @@
       "t": "Cigarette",
       "n": "smoking",
       "s": [
-        "smoking"
+        "smoking",
+        "cigarette"
       ]
     },
     {
@@ -12726,7 +13253,8 @@
       "t": "Moai",
       "n": "moyai",
       "s": [
-        "moyai"
+        "moyai",
+        "moai"
       ]
     },
     {
@@ -12744,7 +13272,8 @@
       "t": "Identification Card",
       "n": "identification_card",
       "s": [
-        "identificationcard"
+        "identificationcard",
+        "idcard"
       ]
     },
     {
@@ -12762,7 +13291,8 @@
       "t": "Litter In Bin Sign",
       "n": "put_litter_in_its_place",
       "s": [
-        "putlitterinitsplace"
+        "putlitterinitsplace",
+        "litterbin"
       ]
     },
     {
@@ -12780,7 +13310,8 @@
       "t": "Wheelchair Symbol",
       "n": "wheelchair",
       "s": [
-        "wheelchair"
+        "wheelchair",
+        "handicapped"
       ]
     },
     {
@@ -12807,7 +13338,8 @@
       "t": "Restroom",
       "n": "restroom",
       "s": [
-        "restroom"
+        "restroom",
+        "bathroom"
       ]
     },
     {
@@ -12825,7 +13357,8 @@
       "t": "Water Closet",
       "n": "wc",
       "s": [
-        "wc"
+        "wc",
+        "watercloset"
       ]
     },
     {
@@ -12924,7 +13457,8 @@
       "t": "No Littering",
       "n": "do_not_litter",
       "s": [
-        "donotlitter"
+        "donotlitter",
+        "nolittering"
       ]
     },
     {
@@ -12960,7 +13494,8 @@
       "t": "No One Under Eighteen",
       "n": "underage",
       "s": [
-        "underage"
+        "underage",
+        "nooneunder18"
       ]
     },
     {
@@ -13113,7 +13648,8 @@
       "t": "Clockwise Vertical Arrows",
       "n": "arrows_clockwise",
       "s": [
-        "arrowsclockwise"
+        "arrowsclockwise",
+        "clockwise"
       ]
     },
     {
@@ -13122,7 +13658,8 @@
       "t": "Counterclockwise Arrows Button",
       "n": "arrows_counterclockwise",
       "s": [
-        "arrowscounterclockwise"
+        "arrowscounterclockwise",
+        "counterclockwise"
       ]
     },
     {
@@ -13266,7 +13803,8 @@
       "t": "Menorah",
       "n": "menorah_with_nine_branches",
       "s": [
-        "menorahwithninebranches"
+        "menorahwithninebranches",
+        "menorah"
       ]
     },
     {
@@ -13410,7 +13948,8 @@
       "t": "Shuffle Tracks Button",
       "n": "twisted_rightwards_arrows",
       "s": [
-        "twistedrightwardsarrows"
+        "twistedrightwardsarrows",
+        "shuffle"
       ]
     },
     {
@@ -13482,7 +14021,8 @@
       "t": "Fast Reverse Button",
       "n": "rewind",
       "s": [
-        "rewind"
+        "rewind",
+        "fastreverse"
       ]
     },
     {
@@ -13509,7 +14049,8 @@
       "t": "Fast Up Button",
       "n": "arrow_double_up",
       "s": [
-        "arrowdoubleup"
+        "arrowdoubleup",
+        "fastup"
       ]
     },
     {
@@ -13518,7 +14059,8 @@
       "t": "Downwards Button",
       "n": "arrow_down_small",
       "s": [
-        "arrowdownsmall"
+        "arrowdownsmall",
+        "down"
       ]
     },
     {
@@ -13527,7 +14069,8 @@
       "t": "Fast Down Button",
       "n": "arrow_double_down",
       "s": [
-        "arrowdoubledown"
+        "arrowdoubledown",
+        "fastdown"
       ]
     },
     {
@@ -13581,7 +14124,8 @@
       "t": "Dim Button",
       "n": "low_brightness",
       "s": [
-        "lowbrightness"
+        "lowbrightness",
+        "dimbutton"
       ]
     },
     {
@@ -13590,7 +14134,8 @@
       "t": "Bright Button",
       "n": "high_brightness",
       "s": [
-        "highbrightness"
+        "highbrightness",
+        "brightbutton"
       ]
     },
     {
@@ -13599,7 +14144,8 @@
       "t": "Antenna Bars",
       "n": "signal_strength",
       "s": [
-        "signalstrength"
+        "signalstrength",
+        "antennabars"
       ]
     },
     {
@@ -13671,7 +14217,8 @@
       "t": "Plus",
       "n": "heavy_plus_sign",
       "s": [
-        "heavyplussign"
+        "heavyplussign",
+        "plus"
       ]
     },
     {
@@ -13680,7 +14227,8 @@
       "t": "Minus",
       "n": "heavy_minus_sign",
       "s": [
-        "heavyminussign"
+        "heavyminussign",
+        "minus"
       ]
     },
     {
@@ -13689,7 +14237,9 @@
       "t": "Divide",
       "n": "heavy_division_sign",
       "s": [
-        "heavydivisionsign"
+        "heavydivisionsign",
+        "divide",
+        "division"
       ]
     },
     {
@@ -13743,7 +14293,8 @@
       "t": "White Question Mark",
       "n": "grey_question",
       "s": [
-        "greyquestion"
+        "greyquestion",
+        "whitequestion"
       ]
     },
     {
@@ -13752,7 +14303,8 @@
       "t": "White Exclamation Mark",
       "n": "grey_exclamation",
       "s": [
-        "greyexclamation"
+        "greyexclamation",
+        "whiteexclamation"
       ]
     },
     {
@@ -13853,7 +14405,9 @@
       "t": "Hollow Red Circle",
       "n": "o",
       "s": [
-        "o"
+        "o",
+        "hollowredcircle",
+        "redo"
       ]
     },
     {
@@ -13862,7 +14416,8 @@
       "t": "Check Mark Button",
       "n": "white_check_mark",
       "s": [
-        "whitecheckmark"
+        "whitecheckmark",
+        "checkmarkbutton"
       ]
     },
     {
@@ -13889,7 +14444,8 @@
       "t": "Cross Mark",
       "n": "x",
       "s": [
-        "x"
+        "x",
+        "crossmark"
       ]
     },
     {
@@ -13898,7 +14454,8 @@
       "t": "Cross Mark Button",
       "n": "negative_squared_cross_mark",
       "s": [
-        "negativesquaredcrossmark"
+        "negativesquaredcrossmark",
+        "crossmarkbutton"
       ]
     },
     {
@@ -13916,7 +14473,8 @@
       "t": "Double Curly Loop",
       "n": "loop",
       "s": [
-        "loop"
+        "loop",
+        "doublecurlyloop"
       ]
     },
     {
@@ -13988,7 +14546,8 @@
       "t": "Keycap: #",
       "n": "hash",
       "s": [
-        "hash"
+        "hash",
+        "numbersign"
       ]
     },
     {
@@ -13997,7 +14556,8 @@
       "t": "Keycap: *",
       "n": "keycap_star",
       "s": [
-        "keycapstar"
+        "keycapstar",
+        "asterisk"
       ]
     },
     {
@@ -14096,7 +14656,8 @@
       "t": "Keycap: 10",
       "n": "keycap_ten",
       "s": [
-        "keycapten"
+        "keycapten",
+        "ten"
       ]
     },
     {
@@ -14159,7 +14720,8 @@
       "t": "Ab Button (Blood Type)",
       "n": "ab",
       "s": [
-        "ab"
+        "ab",
+        "abblood"
       ]
     },
     {
@@ -14285,7 +14847,8 @@
       "t": "Up! Button",
       "n": "up",
       "s": [
-        "up"
+        "up",
+        "up2"
       ]
     },
     {
@@ -14303,7 +14866,8 @@
       "t": "Japanese “Here” Button",
       "n": "koko",
       "s": [
-        "koko"
+        "koko",
+        "jahere"
       ]
     },
     {
@@ -14330,7 +14894,8 @@
       "t": "Japanese “Not Free Of Charge” Button",
       "n": "u6709",
       "s": [
-        "u6709"
+        "u6709",
+        "janotfreeofcarge"
       ]
     },
     {
@@ -14339,7 +14904,8 @@
       "t": "Japanese “Reserved” Button",
       "n": "u6307",
       "s": [
-        "u6307"
+        "u6307",
+        "jareserved"
       ]
     },
     {
@@ -14348,7 +14914,8 @@
       "t": "Japanese “Bargain” Button",
       "n": "ideograph_advantage",
       "s": [
-        "ideographadvantage"
+        "ideographadvantage",
+        "jabargain"
       ]
     },
     {
@@ -14357,7 +14924,8 @@
       "t": "Japanese “Discount” Button",
       "n": "u5272",
       "s": [
-        "u5272"
+        "u5272",
+        "jadiscount"
       ]
     },
     {
@@ -14366,7 +14934,8 @@
       "t": "Japanese “Free Of Charge” Button",
       "n": "u7121",
       "s": [
-        "u7121"
+        "u7121",
+        "jafreeofcharge"
       ]
     },
     {
@@ -14375,7 +14944,8 @@
       "t": "Japanese “Prohibited” Button",
       "n": "u7981",
       "s": [
-        "u7981"
+        "u7981",
+        "japrohibited"
       ]
     },
     {
@@ -14384,7 +14954,8 @@
       "t": "Japanese “Acceptable” Button",
       "n": "accept",
       "s": [
-        "accept"
+        "accept",
+        "jaacceptable"
       ]
     },
     {
@@ -14393,7 +14964,8 @@
       "t": "Japanese “Application” Button",
       "n": "u7533",
       "s": [
-        "u7533"
+        "u7533",
+        "jaapplication"
       ]
     },
     {
@@ -14402,7 +14974,8 @@
       "t": "Japanese “Passing Grade” Button",
       "n": "u5408",
       "s": [
-        "u5408"
+        "u5408",
+        "japassinggrade"
       ]
     },
     {
@@ -14411,7 +14984,8 @@
       "t": "Japanese “Vacancy” Button",
       "n": "u7a7a",
       "s": [
-        "u7a7a"
+        "u7a7a",
+        "javacancy"
       ]
     },
     {
@@ -14438,7 +15012,8 @@
       "t": "Japanese “Open For Business” Button",
       "n": "u55b6",
       "s": [
-        "u55b6"
+        "u55b6",
+        "jaopenforbusiness"
       ]
     },
     {
@@ -14447,7 +15022,8 @@
       "t": "Japanese “No Vacancy” Button",
       "n": "u6e80",
       "s": [
-        "u6e80"
+        "u6e80",
+        "janovacancy"
       ]
     },
     {
@@ -14465,7 +15041,8 @@
       "t": "Orange Circle",
       "n": "large_orange_circle",
       "s": [
-        "largeorangecircle"
+        "largeorangecircle",
+        "orangecircle"
       ]
     },
     {
@@ -14474,7 +15051,8 @@
       "t": "Yellow Circle",
       "n": "large_yellow_circle",
       "s": [
-        "largeyellowcircle"
+        "largeyellowcircle",
+        "yellowcircle"
       ]
     },
     {
@@ -14483,7 +15061,8 @@
       "t": "Green Circle",
       "n": "large_green_circle",
       "s": [
-        "largegreencircle"
+        "largegreencircle",
+        "greencircle"
       ]
     },
     {
@@ -14492,7 +15071,8 @@
       "t": "Blue Circle",
       "n": "large_blue_circle",
       "s": [
-        "largebluecircle"
+        "largebluecircle",
+        "bluecircle"
       ]
     },
     {
@@ -14501,7 +15081,8 @@
       "t": "Purple Circle",
       "n": "large_purple_circle",
       "s": [
-        "largepurplecircle"
+        "largepurplecircle",
+        "purplecircle"
       ]
     },
     {
@@ -14510,7 +15091,8 @@
       "t": "Brown Circle",
       "n": "large_brown_circle",
       "s": [
-        "largebrowncircle"
+        "largebrowncircle",
+        "browncircle"
       ]
     },
     {
@@ -14537,7 +15119,8 @@
       "t": "Red Square",
       "n": "large_red_square",
       "s": [
-        "largeredsquare"
+        "largeredsquare",
+        "redsquare"
       ]
     },
     {
@@ -14546,7 +15129,8 @@
       "t": "Orange Square",
       "n": "large_orange_square",
       "s": [
-        "largeorangesquare"
+        "largeorangesquare",
+        "orangesquare"
       ]
     },
     {
@@ -14555,7 +15139,8 @@
       "t": "Yellow Square",
       "n": "large_yellow_square",
       "s": [
-        "largeyellowsquare"
+        "largeyellowsquare",
+        "yellowsquare"
       ]
     },
     {
@@ -14564,7 +15149,8 @@
       "t": "Green Square",
       "n": "large_green_square",
       "s": [
-        "largegreensquare"
+        "largegreensquare",
+        "greensquare"
       ]
     },
     {
@@ -14573,7 +15159,8 @@
       "t": "Blue Square",
       "n": "large_blue_square",
       "s": [
-        "largebluesquare"
+        "largebluesquare",
+        "bluesquare"
       ]
     },
     {
@@ -14582,7 +15169,8 @@
       "t": "Purple Square",
       "n": "large_purple_square",
       "s": [
-        "largepurplesquare"
+        "largepurplesquare",
+        "purplesquare"
       ]
     },
     {
@@ -14591,7 +15179,8 @@
       "t": "Brown Square",
       "n": "large_brown_square",
       "s": [
-        "largebrownsquare"
+        "largebrownsquare",
+        "brownsquare"
       ]
     },
     {
@@ -14726,7 +15315,8 @@
       "t": "Diamond With A Dot",
       "n": "diamond_shape_with_a_dot_inside",
       "s": [
-        "diamondshapewithadotinside"
+        "diamondshapewithadotinside",
+        "diamondwithadot"
       ]
     },
     {
@@ -14771,7 +15361,8 @@
       "t": "Triangular Flag",
       "n": "triangular_flag_on_post",
       "s": [
-        "triangularflagonpost"
+        "triangularflagonpost",
+        "triangularflag"
       ]
     },
     {
@@ -14789,7 +15380,8 @@
       "t": "Black Flag",
       "n": "waving_black_flag",
       "s": [
-        "wavingblackflag"
+        "wavingblackflag",
+        "blackflag"
       ]
     },
     {
@@ -14807,7 +15399,8 @@
       "t": "Rainbow Flag",
       "n": "rainbow-flag",
       "s": [
-        "rainbow-flag"
+        "rainbow-flag",
+        "rainbowflag"
       ]
     },
     {
@@ -14825,7 +15418,8 @@
       "t": "Pirate Flag",
       "n": "pirate_flag",
       "s": [
-        "pirateflag"
+        "pirateflag",
+        "jollyroger"
       ]
     },
     {
@@ -14834,7 +15428,9 @@
       "t": "Flag: Ascension Island",
       "n": "flag-ac",
       "s": [
-        "flag-ac"
+        "flag-ac",
+        "ascensionisland",
+        "flagac"
       ]
     },
     {
@@ -14843,7 +15439,9 @@
       "t": "Flag: Andorra",
       "n": "flag-ad",
       "s": [
-        "flag-ad"
+        "flag-ad",
+        "andorra",
+        "flagad"
       ]
     },
     {
@@ -14852,7 +15450,9 @@
       "t": "Flag: United Arab Emirates",
       "n": "flag-ae",
       "s": [
-        "flag-ae"
+        "flag-ae",
+        "flagae",
+        "unitedarabemirates"
       ]
     },
     {
@@ -14861,7 +15461,9 @@
       "t": "Flag: Afghanistan",
       "n": "flag-af",
       "s": [
-        "flag-af"
+        "flag-af",
+        "afghanistan",
+        "flagaf"
       ]
     },
     {
@@ -14870,7 +15472,9 @@
       "t": "Flag: Antigua & Barbuda",
       "n": "flag-ag",
       "s": [
-        "flag-ag"
+        "flag-ag",
+        "antiguabarbuda",
+        "flagag"
       ]
     },
     {
@@ -14879,7 +15483,9 @@
       "t": "Flag: Anguilla",
       "n": "flag-ai",
       "s": [
-        "flag-ai"
+        "flag-ai",
+        "anguilla",
+        "flagai"
       ]
     },
     {
@@ -14888,7 +15494,9 @@
       "t": "Flag: Albania",
       "n": "flag-al",
       "s": [
-        "flag-al"
+        "flag-al",
+        "albania",
+        "flagal"
       ]
     },
     {
@@ -14897,7 +15505,9 @@
       "t": "Flag: Armenia",
       "n": "flag-am",
       "s": [
-        "flag-am"
+        "flag-am",
+        "armenia",
+        "flagam"
       ]
     },
     {
@@ -14906,7 +15516,9 @@
       "t": "Flag: Angola",
       "n": "flag-ao",
       "s": [
-        "flag-ao"
+        "flag-ao",
+        "angola",
+        "flagao"
       ]
     },
     {
@@ -14915,7 +15527,9 @@
       "t": "Flag: Antarctica",
       "n": "flag-aq",
       "s": [
-        "flag-aq"
+        "flag-aq",
+        "antarctica",
+        "flagaq"
       ]
     },
     {
@@ -14924,7 +15538,9 @@
       "t": "Flag: Argentina",
       "n": "flag-ar",
       "s": [
-        "flag-ar"
+        "flag-ar",
+        "argentina",
+        "flagar"
       ]
     },
     {
@@ -14933,7 +15549,9 @@
       "t": "Flag: American Samoa",
       "n": "flag-as",
       "s": [
-        "flag-as"
+        "flag-as",
+        "americansamoa",
+        "flagas"
       ]
     },
     {
@@ -14942,7 +15560,9 @@
       "t": "Flag: Austria",
       "n": "flag-at",
       "s": [
-        "flag-at"
+        "flag-at",
+        "austria",
+        "flagat"
       ]
     },
     {
@@ -14951,7 +15571,9 @@
       "t": "Flag: Australia",
       "n": "flag-au",
       "s": [
-        "flag-au"
+        "flag-au",
+        "australia",
+        "flagau"
       ]
     },
     {
@@ -14960,7 +15582,9 @@
       "t": "Flag: Aruba",
       "n": "flag-aw",
       "s": [
-        "flag-aw"
+        "flag-aw",
+        "aruba",
+        "flagaw"
       ]
     },
     {
@@ -14969,7 +15593,9 @@
       "t": "Flag: Åland Islands",
       "n": "flag-ax",
       "s": [
-        "flag-ax"
+        "flag-ax",
+        "alandislands",
+        "flagax"
       ]
     },
     {
@@ -14978,7 +15604,9 @@
       "t": "Flag: Azerbaijan",
       "n": "flag-az",
       "s": [
-        "flag-az"
+        "flag-az",
+        "azerbaijan",
+        "flagaz"
       ]
     },
     {
@@ -14987,7 +15615,9 @@
       "t": "Flag: Bosnia & Herzegovina",
       "n": "flag-ba",
       "s": [
-        "flag-ba"
+        "flag-ba",
+        "bosniaherzegovina",
+        "flagba"
       ]
     },
     {
@@ -14996,7 +15626,9 @@
       "t": "Flag: Barbados",
       "n": "flag-bb",
       "s": [
-        "flag-bb"
+        "flag-bb",
+        "barbados",
+        "flagbb"
       ]
     },
     {
@@ -15005,7 +15637,9 @@
       "t": "Flag: Bangladesh",
       "n": "flag-bd",
       "s": [
-        "flag-bd"
+        "flag-bd",
+        "bangladesh",
+        "flagbd"
       ]
     },
     {
@@ -15014,7 +15648,9 @@
       "t": "Flag: Belgium",
       "n": "flag-be",
       "s": [
-        "flag-be"
+        "flag-be",
+        "belgium",
+        "flagbe"
       ]
     },
     {
@@ -15023,7 +15659,9 @@
       "t": "Flag: Burkina Faso",
       "n": "flag-bf",
       "s": [
-        "flag-bf"
+        "flag-bf",
+        "burkinafaso",
+        "flagbf"
       ]
     },
     {
@@ -15032,7 +15670,9 @@
       "t": "Flag: Bulgaria",
       "n": "flag-bg",
       "s": [
-        "flag-bg"
+        "flag-bg",
+        "bulgaria",
+        "flagbg"
       ]
     },
     {
@@ -15041,7 +15681,9 @@
       "t": "Flag: Bahrain",
       "n": "flag-bh",
       "s": [
-        "flag-bh"
+        "flag-bh",
+        "bahrain",
+        "flagbh"
       ]
     },
     {
@@ -15050,7 +15692,9 @@
       "t": "Flag: Burundi",
       "n": "flag-bi",
       "s": [
-        "flag-bi"
+        "flag-bi",
+        "burundi",
+        "flagbi"
       ]
     },
     {
@@ -15059,7 +15703,9 @@
       "t": "Flag: Benin",
       "n": "flag-bj",
       "s": [
-        "flag-bj"
+        "flag-bj",
+        "benin",
+        "flagbj"
       ]
     },
     {
@@ -15068,7 +15714,9 @@
       "t": "Flag: St. Barthélemy",
       "n": "flag-bl",
       "s": [
-        "flag-bl"
+        "flag-bl",
+        "flagbl",
+        "stbarthelemy"
       ]
     },
     {
@@ -15077,7 +15725,9 @@
       "t": "Flag: Bermuda",
       "n": "flag-bm",
       "s": [
-        "flag-bm"
+        "flag-bm",
+        "bermuda",
+        "flagbm"
       ]
     },
     {
@@ -15086,7 +15736,9 @@
       "t": "Flag: Brunei",
       "n": "flag-bn",
       "s": [
-        "flag-bn"
+        "flag-bn",
+        "brunei",
+        "flagbn"
       ]
     },
     {
@@ -15095,7 +15747,9 @@
       "t": "Flag: Bolivia",
       "n": "flag-bo",
       "s": [
-        "flag-bo"
+        "flag-bo",
+        "bolivia",
+        "flagbo"
       ]
     },
     {
@@ -15104,7 +15758,9 @@
       "t": "Flag: Caribbean Netherlands",
       "n": "flag-bq",
       "s": [
-        "flag-bq"
+        "flag-bq",
+        "caribbeannetherlands",
+        "flagbq"
       ]
     },
     {
@@ -15113,7 +15769,9 @@
       "t": "Flag: Brazil",
       "n": "flag-br",
       "s": [
-        "flag-br"
+        "flag-br",
+        "brazil",
+        "flagbr"
       ]
     },
     {
@@ -15122,7 +15780,9 @@
       "t": "Flag: Bahamas",
       "n": "flag-bs",
       "s": [
-        "flag-bs"
+        "flag-bs",
+        "bahamas",
+        "flagbs"
       ]
     },
     {
@@ -15131,7 +15791,9 @@
       "t": "Flag: Bhutan",
       "n": "flag-bt",
       "s": [
-        "flag-bt"
+        "flag-bt",
+        "bhutan",
+        "flagbt"
       ]
     },
     {
@@ -15140,7 +15802,9 @@
       "t": "Flag: Bouvet Island",
       "n": "flag-bv",
       "s": [
-        "flag-bv"
+        "flag-bv",
+        "bouvetisland",
+        "flagbv"
       ]
     },
     {
@@ -15149,7 +15813,9 @@
       "t": "Flag: Botswana",
       "n": "flag-bw",
       "s": [
-        "flag-bw"
+        "flag-bw",
+        "botswana",
+        "flagbw"
       ]
     },
     {
@@ -15158,7 +15824,9 @@
       "t": "Flag: Belarus",
       "n": "flag-by",
       "s": [
-        "flag-by"
+        "flag-by",
+        "belarus",
+        "flagby"
       ]
     },
     {
@@ -15167,7 +15835,9 @@
       "t": "Flag: Belize",
       "n": "flag-bz",
       "s": [
-        "flag-bz"
+        "flag-bz",
+        "belize",
+        "flagbz"
       ]
     },
     {
@@ -15176,7 +15846,9 @@
       "t": "Flag: Canada",
       "n": "flag-ca",
       "s": [
-        "flag-ca"
+        "flag-ca",
+        "canada",
+        "flagca"
       ]
     },
     {
@@ -15185,7 +15857,9 @@
       "t": "Flag: Cocos (Keeling) Islands",
       "n": "flag-cc",
       "s": [
-        "flag-cc"
+        "flag-cc",
+        "cocosislands",
+        "flagcc"
       ]
     },
     {
@@ -15194,7 +15868,9 @@
       "t": "Flag: Congo - Kinshasa",
       "n": "flag-cd",
       "s": [
-        "flag-cd"
+        "flag-cd",
+        "congokinshasa",
+        "flagcd"
       ]
     },
     {
@@ -15203,7 +15879,9 @@
       "t": "Flag: Central African Republic",
       "n": "flag-cf",
       "s": [
-        "flag-cf"
+        "flag-cf",
+        "centralafricanrepublic",
+        "flagcf"
       ]
     },
     {
@@ -15212,7 +15890,9 @@
       "t": "Flag: Congo - Brazzaville",
       "n": "flag-cg",
       "s": [
-        "flag-cg"
+        "flag-cg",
+        "congobrazzaville",
+        "flagcg"
       ]
     },
     {
@@ -15221,7 +15901,9 @@
       "t": "Flag: Switzerland",
       "n": "flag-ch",
       "s": [
-        "flag-ch"
+        "flag-ch",
+        "flagch",
+        "switzerland"
       ]
     },
     {
@@ -15230,7 +15912,9 @@
       "t": "Flag: Côte D’ivoire",
       "n": "flag-ci",
       "s": [
-        "flag-ci"
+        "flag-ci",
+        "cotedivoire",
+        "flagci"
       ]
     },
     {
@@ -15239,7 +15923,9 @@
       "t": "Flag: Cook Islands",
       "n": "flag-ck",
       "s": [
-        "flag-ck"
+        "flag-ck",
+        "cookislands",
+        "flagck"
       ]
     },
     {
@@ -15248,7 +15934,9 @@
       "t": "Flag: Chile",
       "n": "flag-cl",
       "s": [
-        "flag-cl"
+        "flag-cl",
+        "chile",
+        "flagcl"
       ]
     },
     {
@@ -15257,7 +15945,9 @@
       "t": "Flag: Cameroon",
       "n": "flag-cm",
       "s": [
-        "flag-cm"
+        "flag-cm",
+        "cameroon",
+        "flagcm"
       ]
     },
     {
@@ -15267,7 +15957,9 @@
       "n": "cn",
       "s": [
         "cn",
-        "flag-cn"
+        "flag-cn",
+        "china",
+        "flagcn"
       ]
     },
     {
@@ -15276,7 +15968,9 @@
       "t": "Flag: Colombia",
       "n": "flag-co",
       "s": [
-        "flag-co"
+        "flag-co",
+        "colombia",
+        "flagco"
       ]
     },
     {
@@ -15285,7 +15979,9 @@
       "t": "Flag: Clipperton Island",
       "n": "flag-cp",
       "s": [
-        "flag-cp"
+        "flag-cp",
+        "clippertonisland",
+        "flagcp"
       ]
     },
     {
@@ -15294,7 +15990,9 @@
       "t": "Flag: Costa Rica",
       "n": "flag-cr",
       "s": [
-        "flag-cr"
+        "flag-cr",
+        "costarica",
+        "flagcr"
       ]
     },
     {
@@ -15303,7 +16001,9 @@
       "t": "Flag: Cuba",
       "n": "flag-cu",
       "s": [
-        "flag-cu"
+        "flag-cu",
+        "cuba",
+        "flagcu"
       ]
     },
     {
@@ -15312,7 +16012,9 @@
       "t": "Flag: Cape Verde",
       "n": "flag-cv",
       "s": [
-        "flag-cv"
+        "flag-cv",
+        "capeverde",
+        "flagcv"
       ]
     },
     {
@@ -15321,7 +16023,9 @@
       "t": "Flag: Curaçao",
       "n": "flag-cw",
       "s": [
-        "flag-cw"
+        "flag-cw",
+        "curacao",
+        "flagcw"
       ]
     },
     {
@@ -15330,7 +16034,9 @@
       "t": "Flag: Christmas Island",
       "n": "flag-cx",
       "s": [
-        "flag-cx"
+        "flag-cx",
+        "christmasisland",
+        "flagcx"
       ]
     },
     {
@@ -15339,7 +16045,9 @@
       "t": "Flag: Cyprus",
       "n": "flag-cy",
       "s": [
-        "flag-cy"
+        "flag-cy",
+        "cyprus",
+        "flagcy"
       ]
     },
     {
@@ -15348,7 +16056,10 @@
       "t": "Flag: Czechia",
       "n": "flag-cz",
       "s": [
-        "flag-cz"
+        "flag-cz",
+        "czechrepublic",
+        "czechia",
+        "flagcz"
       ]
     },
     {
@@ -15358,7 +16069,9 @@
       "n": "de",
       "s": [
         "de",
-        "flag-de"
+        "flag-de",
+        "flagde",
+        "germany"
       ]
     },
     {
@@ -15367,7 +16080,9 @@
       "t": "Flag: Diego Garcia",
       "n": "flag-dg",
       "s": [
-        "flag-dg"
+        "flag-dg",
+        "diegogarcia",
+        "flagdg"
       ]
     },
     {
@@ -15376,7 +16091,9 @@
       "t": "Flag: Djibouti",
       "n": "flag-dj",
       "s": [
-        "flag-dj"
+        "flag-dj",
+        "djibouti",
+        "flagdj"
       ]
     },
     {
@@ -15385,7 +16102,9 @@
       "t": "Flag: Denmark",
       "n": "flag-dk",
       "s": [
-        "flag-dk"
+        "flag-dk",
+        "denmark",
+        "flagdk"
       ]
     },
     {
@@ -15394,7 +16113,9 @@
       "t": "Flag: Dominica",
       "n": "flag-dm",
       "s": [
-        "flag-dm"
+        "flag-dm",
+        "dominica",
+        "flagdm"
       ]
     },
     {
@@ -15403,7 +16124,9 @@
       "t": "Flag: Dominican Republic",
       "n": "flag-do",
       "s": [
-        "flag-do"
+        "flag-do",
+        "dominicanrepublic",
+        "flagdo"
       ]
     },
     {
@@ -15412,7 +16135,9 @@
       "t": "Flag: Algeria",
       "n": "flag-dz",
       "s": [
-        "flag-dz"
+        "flag-dz",
+        "algeria",
+        "flagdz"
       ]
     },
     {
@@ -15421,7 +16146,9 @@
       "t": "Flag: Ceuta & Melilla",
       "n": "flag-ea",
       "s": [
-        "flag-ea"
+        "flag-ea",
+        "ceutamelilla",
+        "flagea"
       ]
     },
     {
@@ -15430,7 +16157,9 @@
       "t": "Flag: Ecuador",
       "n": "flag-ec",
       "s": [
-        "flag-ec"
+        "flag-ec",
+        "ecuador",
+        "flagec"
       ]
     },
     {
@@ -15439,7 +16168,9 @@
       "t": "Flag: Estonia",
       "n": "flag-ee",
       "s": [
-        "flag-ee"
+        "flag-ee",
+        "estonia",
+        "flagee"
       ]
     },
     {
@@ -15448,7 +16179,9 @@
       "t": "Flag: Egypt",
       "n": "flag-eg",
       "s": [
-        "flag-eg"
+        "flag-eg",
+        "egypt",
+        "flageg"
       ]
     },
     {
@@ -15457,7 +16190,9 @@
       "t": "Flag: Western Sahara",
       "n": "flag-eh",
       "s": [
-        "flag-eh"
+        "flag-eh",
+        "flageh",
+        "westernsahara"
       ]
     },
     {
@@ -15466,7 +16201,9 @@
       "t": "Flag: Eritrea",
       "n": "flag-er",
       "s": [
-        "flag-er"
+        "flag-er",
+        "eritrea",
+        "flager"
       ]
     },
     {
@@ -15476,7 +16213,9 @@
       "n": "es",
       "s": [
         "es",
-        "flag-es"
+        "flag-es",
+        "flages",
+        "spain"
       ]
     },
     {
@@ -15485,7 +16224,9 @@
       "t": "Flag: Ethiopia",
       "n": "flag-et",
       "s": [
-        "flag-et"
+        "flag-et",
+        "ethiopia",
+        "flaget"
       ]
     },
     {
@@ -15494,7 +16235,9 @@
       "t": "Flag: European Union",
       "n": "flag-eu",
       "s": [
-        "flag-eu"
+        "flag-eu",
+        "europeanunion",
+        "flageu"
       ]
     },
     {
@@ -15503,7 +16246,9 @@
       "t": "Flag: Finland",
       "n": "flag-fi",
       "s": [
-        "flag-fi"
+        "flag-fi",
+        "finland",
+        "flagfi"
       ]
     },
     {
@@ -15512,7 +16257,9 @@
       "t": "Flag: Fiji",
       "n": "flag-fj",
       "s": [
-        "flag-fj"
+        "flag-fj",
+        "fiji",
+        "flagfj"
       ]
     },
     {
@@ -15521,7 +16268,9 @@
       "t": "Flag: Falkland Islands",
       "n": "flag-fk",
       "s": [
-        "flag-fk"
+        "flag-fk",
+        "falklandislands",
+        "flagfk"
       ]
     },
     {
@@ -15530,7 +16279,9 @@
       "t": "Flag: Micronesia",
       "n": "flag-fm",
       "s": [
-        "flag-fm"
+        "flag-fm",
+        "flagfm",
+        "micronesia"
       ]
     },
     {
@@ -15539,7 +16290,9 @@
       "t": "Flag: Faroe Islands",
       "n": "flag-fo",
       "s": [
-        "flag-fo"
+        "flag-fo",
+        "faroeislands",
+        "flagfo"
       ]
     },
     {
@@ -15549,7 +16302,9 @@
       "n": "fr",
       "s": [
         "fr",
-        "flag-fr"
+        "flag-fr",
+        "flagfr",
+        "france"
       ]
     },
     {
@@ -15558,7 +16313,9 @@
       "t": "Flag: Gabon",
       "n": "flag-ga",
       "s": [
-        "flag-ga"
+        "flag-ga",
+        "flagga",
+        "gabon"
       ]
     },
     {
@@ -15569,7 +16326,9 @@
       "s": [
         "gb",
         "uk",
-        "flag-gb"
+        "flag-gb",
+        "flaggb",
+        "unitedkingdom"
       ]
     },
     {
@@ -15578,7 +16337,9 @@
       "t": "Flag: Grenada",
       "n": "flag-gd",
       "s": [
-        "flag-gd"
+        "flag-gd",
+        "flaggd",
+        "grenada"
       ]
     },
     {
@@ -15587,7 +16348,9 @@
       "t": "Flag: Georgia",
       "n": "flag-ge",
       "s": [
-        "flag-ge"
+        "flag-ge",
+        "flagge",
+        "georgia"
       ]
     },
     {
@@ -15596,7 +16359,9 @@
       "t": "Flag: French Guiana",
       "n": "flag-gf",
       "s": [
-        "flag-gf"
+        "flag-gf",
+        "flaggf",
+        "frenchguiana"
       ]
     },
     {
@@ -15605,7 +16370,9 @@
       "t": "Flag: Guernsey",
       "n": "flag-gg",
       "s": [
-        "flag-gg"
+        "flag-gg",
+        "flaggg",
+        "guernsey"
       ]
     },
     {
@@ -15614,7 +16381,9 @@
       "t": "Flag: Ghana",
       "n": "flag-gh",
       "s": [
-        "flag-gh"
+        "flag-gh",
+        "flaggh",
+        "ghana"
       ]
     },
     {
@@ -15623,7 +16392,9 @@
       "t": "Flag: Gibraltar",
       "n": "flag-gi",
       "s": [
-        "flag-gi"
+        "flag-gi",
+        "flaggi",
+        "gibraltar"
       ]
     },
     {
@@ -15632,7 +16403,9 @@
       "t": "Flag: Greenland",
       "n": "flag-gl",
       "s": [
-        "flag-gl"
+        "flag-gl",
+        "flaggl",
+        "greenland"
       ]
     },
     {
@@ -15641,7 +16414,9 @@
       "t": "Flag: Gambia",
       "n": "flag-gm",
       "s": [
-        "flag-gm"
+        "flag-gm",
+        "flaggm",
+        "gambia"
       ]
     },
     {
@@ -15650,7 +16425,9 @@
       "t": "Flag: Guinea",
       "n": "flag-gn",
       "s": [
-        "flag-gn"
+        "flag-gn",
+        "flaggn",
+        "guinea"
       ]
     },
     {
@@ -15659,7 +16436,9 @@
       "t": "Flag: Guadeloupe",
       "n": "flag-gp",
       "s": [
-        "flag-gp"
+        "flag-gp",
+        "flaggp",
+        "guadeloupe"
       ]
     },
     {
@@ -15668,7 +16447,9 @@
       "t": "Flag: Equatorial Guinea",
       "n": "flag-gq",
       "s": [
-        "flag-gq"
+        "flag-gq",
+        "equatorialguinea",
+        "flaggq"
       ]
     },
     {
@@ -15677,7 +16458,9 @@
       "t": "Flag: Greece",
       "n": "flag-gr",
       "s": [
-        "flag-gr"
+        "flag-gr",
+        "flaggr",
+        "greece"
       ]
     },
     {
@@ -15686,7 +16469,9 @@
       "t": "Flag: South Georgia & South Sandwich Islands",
       "n": "flag-gs",
       "s": [
-        "flag-gs"
+        "flag-gs",
+        "flaggs",
+        "southgeorgiasouthsandwichislands"
       ]
     },
     {
@@ -15695,7 +16480,9 @@
       "t": "Flag: Guatemala",
       "n": "flag-gt",
       "s": [
-        "flag-gt"
+        "flag-gt",
+        "flaggt",
+        "guatemala"
       ]
     },
     {
@@ -15704,7 +16491,9 @@
       "t": "Flag: Guam",
       "n": "flag-gu",
       "s": [
-        "flag-gu"
+        "flag-gu",
+        "flaggu",
+        "guam"
       ]
     },
     {
@@ -15713,7 +16502,9 @@
       "t": "Flag: Guinea-Bissau",
       "n": "flag-gw",
       "s": [
-        "flag-gw"
+        "flag-gw",
+        "flaggw",
+        "guineabissau"
       ]
     },
     {
@@ -15722,7 +16513,9 @@
       "t": "Flag: Guyana",
       "n": "flag-gy",
       "s": [
-        "flag-gy"
+        "flag-gy",
+        "flaggy",
+        "guyana"
       ]
     },
     {
@@ -15731,7 +16524,9 @@
       "t": "Flag: Hong Kong Sar China",
       "n": "flag-hk",
       "s": [
-        "flag-hk"
+        "flag-hk",
+        "flaghk",
+        "hongkong"
       ]
     },
     {
@@ -15740,7 +16535,9 @@
       "t": "Flag: Heard & Mcdonald Islands",
       "n": "flag-hm",
       "s": [
-        "flag-hm"
+        "flag-hm",
+        "flaghm",
+        "heardmcdonaldislands"
       ]
     },
     {
@@ -15749,7 +16546,9 @@
       "t": "Flag: Honduras",
       "n": "flag-hn",
       "s": [
-        "flag-hn"
+        "flag-hn",
+        "flaghn",
+        "honduras"
       ]
     },
     {
@@ -15758,7 +16557,9 @@
       "t": "Flag: Croatia",
       "n": "flag-hr",
       "s": [
-        "flag-hr"
+        "flag-hr",
+        "croatia",
+        "flaghr"
       ]
     },
     {
@@ -15767,7 +16568,9 @@
       "t": "Flag: Haiti",
       "n": "flag-ht",
       "s": [
-        "flag-ht"
+        "flag-ht",
+        "flaght",
+        "haiti"
       ]
     },
     {
@@ -15776,7 +16579,9 @@
       "t": "Flag: Hungary",
       "n": "flag-hu",
       "s": [
-        "flag-hu"
+        "flag-hu",
+        "flaghu",
+        "hungary"
       ]
     },
     {
@@ -15785,7 +16590,9 @@
       "t": "Flag: Canary Islands",
       "n": "flag-ic",
       "s": [
-        "flag-ic"
+        "flag-ic",
+        "canaryislands",
+        "flagic"
       ]
     },
     {
@@ -15794,7 +16601,9 @@
       "t": "Flag: Indonesia",
       "n": "flag-id",
       "s": [
-        "flag-id"
+        "flag-id",
+        "flagid",
+        "indonesia"
       ]
     },
     {
@@ -15803,7 +16612,9 @@
       "t": "Flag: Ireland",
       "n": "flag-ie",
       "s": [
-        "flag-ie"
+        "flag-ie",
+        "flagie",
+        "ireland"
       ]
     },
     {
@@ -15812,7 +16623,9 @@
       "t": "Flag: Israel",
       "n": "flag-il",
       "s": [
-        "flag-il"
+        "flag-il",
+        "flagil",
+        "israel"
       ]
     },
     {
@@ -15821,7 +16634,9 @@
       "t": "Flag: Isle Of Man",
       "n": "flag-im",
       "s": [
-        "flag-im"
+        "flag-im",
+        "flagim",
+        "isleofman"
       ]
     },
     {
@@ -15830,7 +16645,9 @@
       "t": "Flag: India",
       "n": "flag-in",
       "s": [
-        "flag-in"
+        "flag-in",
+        "flagin",
+        "india"
       ]
     },
     {
@@ -15839,7 +16656,9 @@
       "t": "Flag: British Indian Ocean Territory",
       "n": "flag-io",
       "s": [
-        "flag-io"
+        "flag-io",
+        "britishindianoceanterritory",
+        "flagio"
       ]
     },
     {
@@ -15848,7 +16667,9 @@
       "t": "Flag: Iraq",
       "n": "flag-iq",
       "s": [
-        "flag-iq"
+        "flag-iq",
+        "flagiq",
+        "iraq"
       ]
     },
     {
@@ -15857,7 +16678,9 @@
       "t": "Flag: Iran",
       "n": "flag-ir",
       "s": [
-        "flag-ir"
+        "flag-ir",
+        "flagir",
+        "iran"
       ]
     },
     {
@@ -15866,7 +16689,9 @@
       "t": "Flag: Iceland",
       "n": "flag-is",
       "s": [
-        "flag-is"
+        "flag-is",
+        "flagis",
+        "iceland"
       ]
     },
     {
@@ -15876,7 +16701,9 @@
       "n": "it",
       "s": [
         "it",
-        "flag-it"
+        "flag-it",
+        "flagit",
+        "italy"
       ]
     },
     {
@@ -15885,7 +16712,9 @@
       "t": "Flag: Jersey",
       "n": "flag-je",
       "s": [
-        "flag-je"
+        "flag-je",
+        "flagje",
+        "jersey"
       ]
     },
     {
@@ -15894,7 +16723,9 @@
       "t": "Flag: Jamaica",
       "n": "flag-jm",
       "s": [
-        "flag-jm"
+        "flag-jm",
+        "flagjm",
+        "jamaica"
       ]
     },
     {
@@ -15903,7 +16734,9 @@
       "t": "Flag: Jordan",
       "n": "flag-jo",
       "s": [
-        "flag-jo"
+        "flag-jo",
+        "flagjo",
+        "jordan"
       ]
     },
     {
@@ -15913,7 +16746,8 @@
       "n": "jp",
       "s": [
         "jp",
-        "flag-jp"
+        "flag-jp",
+        "flagjp"
       ]
     },
     {
@@ -15922,7 +16756,9 @@
       "t": "Flag: Kenya",
       "n": "flag-ke",
       "s": [
-        "flag-ke"
+        "flag-ke",
+        "flagke",
+        "kenya"
       ]
     },
     {
@@ -15931,7 +16767,9 @@
       "t": "Flag: Kyrgyzstan",
       "n": "flag-kg",
       "s": [
-        "flag-kg"
+        "flag-kg",
+        "flagkg",
+        "kyrgyzstan"
       ]
     },
     {
@@ -15940,7 +16778,9 @@
       "t": "Flag: Cambodia",
       "n": "flag-kh",
       "s": [
-        "flag-kh"
+        "flag-kh",
+        "cambodia",
+        "flagkh"
       ]
     },
     {
@@ -15949,7 +16789,9 @@
       "t": "Flag: Kiribati",
       "n": "flag-ki",
       "s": [
-        "flag-ki"
+        "flag-ki",
+        "flagki",
+        "kiribati"
       ]
     },
     {
@@ -15958,7 +16800,9 @@
       "t": "Flag: Comoros",
       "n": "flag-km",
       "s": [
-        "flag-km"
+        "flag-km",
+        "comoros",
+        "flagkm"
       ]
     },
     {
@@ -15967,7 +16811,9 @@
       "t": "Flag: St. Kitts & Nevis",
       "n": "flag-kn",
       "s": [
-        "flag-kn"
+        "flag-kn",
+        "flagkn",
+        "stkittsnevis"
       ]
     },
     {
@@ -15976,7 +16822,9 @@
       "t": "Flag: North Korea",
       "n": "flag-kp",
       "s": [
-        "flag-kp"
+        "flag-kp",
+        "flagkp",
+        "northkorea"
       ]
     },
     {
@@ -15986,7 +16834,9 @@
       "n": "kr",
       "s": [
         "kr",
-        "flag-kr"
+        "flag-kr",
+        "flagkr",
+        "southkorea"
       ]
     },
     {
@@ -15995,7 +16845,9 @@
       "t": "Flag: Kuwait",
       "n": "flag-kw",
       "s": [
-        "flag-kw"
+        "flag-kw",
+        "flagkw",
+        "kuwait"
       ]
     },
     {
@@ -16004,7 +16856,9 @@
       "t": "Flag: Cayman Islands",
       "n": "flag-ky",
       "s": [
-        "flag-ky"
+        "flag-ky",
+        "caymanislands",
+        "flagky"
       ]
     },
     {
@@ -16013,7 +16867,9 @@
       "t": "Flag: Kazakhstan",
       "n": "flag-kz",
       "s": [
-        "flag-kz"
+        "flag-kz",
+        "flagkz",
+        "kazakhstan"
       ]
     },
     {
@@ -16022,7 +16878,9 @@
       "t": "Flag: Laos",
       "n": "flag-la",
       "s": [
-        "flag-la"
+        "flag-la",
+        "flagla",
+        "laos"
       ]
     },
     {
@@ -16031,7 +16889,9 @@
       "t": "Flag: Lebanon",
       "n": "flag-lb",
       "s": [
-        "flag-lb"
+        "flag-lb",
+        "flaglb",
+        "lebanon"
       ]
     },
     {
@@ -16040,7 +16900,9 @@
       "t": "Flag: St. Lucia",
       "n": "flag-lc",
       "s": [
-        "flag-lc"
+        "flag-lc",
+        "flaglc",
+        "stlucia"
       ]
     },
     {
@@ -16049,7 +16911,9 @@
       "t": "Flag: Liechtenstein",
       "n": "flag-li",
       "s": [
-        "flag-li"
+        "flag-li",
+        "flagli",
+        "liechtenstein"
       ]
     },
     {
@@ -16058,7 +16922,9 @@
       "t": "Flag: Sri Lanka",
       "n": "flag-lk",
       "s": [
-        "flag-lk"
+        "flag-lk",
+        "flaglk",
+        "srilanka"
       ]
     },
     {
@@ -16067,7 +16933,9 @@
       "t": "Flag: Liberia",
       "n": "flag-lr",
       "s": [
-        "flag-lr"
+        "flag-lr",
+        "flaglr",
+        "liberia"
       ]
     },
     {
@@ -16076,7 +16944,9 @@
       "t": "Flag: Lesotho",
       "n": "flag-ls",
       "s": [
-        "flag-ls"
+        "flag-ls",
+        "flagls",
+        "lesotho"
       ]
     },
     {
@@ -16085,7 +16955,9 @@
       "t": "Flag: Lithuania",
       "n": "flag-lt",
       "s": [
-        "flag-lt"
+        "flag-lt",
+        "flaglt",
+        "lithuania"
       ]
     },
     {
@@ -16094,7 +16966,9 @@
       "t": "Flag: Luxembourg",
       "n": "flag-lu",
       "s": [
-        "flag-lu"
+        "flag-lu",
+        "flaglu",
+        "luxembourg"
       ]
     },
     {
@@ -16103,7 +16977,9 @@
       "t": "Flag: Latvia",
       "n": "flag-lv",
       "s": [
-        "flag-lv"
+        "flag-lv",
+        "flaglv",
+        "latvia"
       ]
     },
     {
@@ -16112,7 +16988,9 @@
       "t": "Flag: Libya",
       "n": "flag-ly",
       "s": [
-        "flag-ly"
+        "flag-ly",
+        "flagly",
+        "libya"
       ]
     },
     {
@@ -16121,7 +16999,9 @@
       "t": "Flag: Morocco",
       "n": "flag-ma",
       "s": [
-        "flag-ma"
+        "flag-ma",
+        "flagma",
+        "morocco"
       ]
     },
     {
@@ -16130,7 +17010,9 @@
       "t": "Flag: Monaco",
       "n": "flag-mc",
       "s": [
-        "flag-mc"
+        "flag-mc",
+        "flagmc",
+        "monaco"
       ]
     },
     {
@@ -16139,7 +17021,9 @@
       "t": "Flag: Moldova",
       "n": "flag-md",
       "s": [
-        "flag-md"
+        "flag-md",
+        "flagmd",
+        "moldova"
       ]
     },
     {
@@ -16148,7 +17032,9 @@
       "t": "Flag: Montenegro",
       "n": "flag-me",
       "s": [
-        "flag-me"
+        "flag-me",
+        "flagme",
+        "montenegro"
       ]
     },
     {
@@ -16157,7 +17043,9 @@
       "t": "Flag: St. Martin",
       "n": "flag-mf",
       "s": [
-        "flag-mf"
+        "flag-mf",
+        "flagmf",
+        "stmartin"
       ]
     },
     {
@@ -16166,7 +17054,9 @@
       "t": "Flag: Madagascar",
       "n": "flag-mg",
       "s": [
-        "flag-mg"
+        "flag-mg",
+        "flagmg",
+        "madagascar"
       ]
     },
     {
@@ -16175,7 +17065,9 @@
       "t": "Flag: Marshall Islands",
       "n": "flag-mh",
       "s": [
-        "flag-mh"
+        "flag-mh",
+        "flagmh",
+        "marshallislands"
       ]
     },
     {
@@ -16184,7 +17076,9 @@
       "t": "Flag: North Macedonia",
       "n": "flag-mk",
       "s": [
-        "flag-mk"
+        "flag-mk",
+        "flagmk",
+        "macedonia"
       ]
     },
     {
@@ -16193,7 +17087,9 @@
       "t": "Flag: Mali",
       "n": "flag-ml",
       "s": [
-        "flag-ml"
+        "flag-ml",
+        "flagml",
+        "mali"
       ]
     },
     {
@@ -16202,7 +17098,10 @@
       "t": "Flag: Myanmar (Burma)",
       "n": "flag-mm",
       "s": [
-        "flag-mm"
+        "flag-mm",
+        "burma",
+        "flagmm",
+        "myanmar"
       ]
     },
     {
@@ -16211,7 +17110,9 @@
       "t": "Flag: Mongolia",
       "n": "flag-mn",
       "s": [
-        "flag-mn"
+        "flag-mn",
+        "flagmn",
+        "mongolia"
       ]
     },
     {
@@ -16220,7 +17121,10 @@
       "t": "Flag: Macao Sar China",
       "n": "flag-mo",
       "s": [
-        "flag-mo"
+        "flag-mo",
+        "flagmo",
+        "macao",
+        "macau"
       ]
     },
     {
@@ -16229,7 +17133,9 @@
       "t": "Flag: Northern Mariana Islands",
       "n": "flag-mp",
       "s": [
-        "flag-mp"
+        "flag-mp",
+        "flagmp",
+        "northernmarianaislands"
       ]
     },
     {
@@ -16238,7 +17144,9 @@
       "t": "Flag: Martinique",
       "n": "flag-mq",
       "s": [
-        "flag-mq"
+        "flag-mq",
+        "flagmq",
+        "martinique"
       ]
     },
     {
@@ -16247,7 +17155,9 @@
       "t": "Flag: Mauritania",
       "n": "flag-mr",
       "s": [
-        "flag-mr"
+        "flag-mr",
+        "flagmr",
+        "mauritania"
       ]
     },
     {
@@ -16256,7 +17166,9 @@
       "t": "Flag: Montserrat",
       "n": "flag-ms",
       "s": [
-        "flag-ms"
+        "flag-ms",
+        "flagms",
+        "montserrat"
       ]
     },
     {
@@ -16265,7 +17177,9 @@
       "t": "Flag: Malta",
       "n": "flag-mt",
       "s": [
-        "flag-mt"
+        "flag-mt",
+        "flagmt",
+        "malta"
       ]
     },
     {
@@ -16274,7 +17188,9 @@
       "t": "Flag: Mauritius",
       "n": "flag-mu",
       "s": [
-        "flag-mu"
+        "flag-mu",
+        "flagmu",
+        "mauritius"
       ]
     },
     {
@@ -16283,7 +17199,9 @@
       "t": "Flag: Maldives",
       "n": "flag-mv",
       "s": [
-        "flag-mv"
+        "flag-mv",
+        "flagmv",
+        "maldives"
       ]
     },
     {
@@ -16292,7 +17210,9 @@
       "t": "Flag: Malawi",
       "n": "flag-mw",
       "s": [
-        "flag-mw"
+        "flag-mw",
+        "flagmw",
+        "malawi"
       ]
     },
     {
@@ -16301,7 +17221,9 @@
       "t": "Flag: Mexico",
       "n": "flag-mx",
       "s": [
-        "flag-mx"
+        "flag-mx",
+        "flagmx",
+        "mexico"
       ]
     },
     {
@@ -16310,7 +17232,9 @@
       "t": "Flag: Malaysia",
       "n": "flag-my",
       "s": [
-        "flag-my"
+        "flag-my",
+        "flagmy",
+        "malaysia"
       ]
     },
     {
@@ -16319,7 +17243,9 @@
       "t": "Flag: Mozambique",
       "n": "flag-mz",
       "s": [
-        "flag-mz"
+        "flag-mz",
+        "flagmz",
+        "mozambique"
       ]
     },
     {
@@ -16328,7 +17254,9 @@
       "t": "Flag: Namibia",
       "n": "flag-na",
       "s": [
-        "flag-na"
+        "flag-na",
+        "flagna",
+        "namibia"
       ]
     },
     {
@@ -16337,7 +17265,9 @@
       "t": "Flag: New Caledonia",
       "n": "flag-nc",
       "s": [
-        "flag-nc"
+        "flag-nc",
+        "flagnc",
+        "newcaledonia"
       ]
     },
     {
@@ -16346,7 +17276,9 @@
       "t": "Flag: Niger",
       "n": "flag-ne",
       "s": [
-        "flag-ne"
+        "flag-ne",
+        "flagne",
+        "niger"
       ]
     },
     {
@@ -16355,7 +17287,9 @@
       "t": "Flag: Norfolk Island",
       "n": "flag-nf",
       "s": [
-        "flag-nf"
+        "flag-nf",
+        "flagnf",
+        "norfolkisland"
       ]
     },
     {
@@ -16364,7 +17298,9 @@
       "t": "Flag: Nigeria",
       "n": "flag-ng",
       "s": [
-        "flag-ng"
+        "flag-ng",
+        "flagng",
+        "nigeria"
       ]
     },
     {
@@ -16373,7 +17309,9 @@
       "t": "Flag: Nicaragua",
       "n": "flag-ni",
       "s": [
-        "flag-ni"
+        "flag-ni",
+        "flagni",
+        "nicaragua"
       ]
     },
     {
@@ -16382,7 +17320,9 @@
       "t": "Flag: Netherlands",
       "n": "flag-nl",
       "s": [
-        "flag-nl"
+        "flag-nl",
+        "flagnl",
+        "netherlands"
       ]
     },
     {
@@ -16391,7 +17331,9 @@
       "t": "Flag: Norway",
       "n": "flag-no",
       "s": [
-        "flag-no"
+        "flag-no",
+        "flagno",
+        "norway"
       ]
     },
     {
@@ -16400,7 +17342,9 @@
       "t": "Flag: Nepal",
       "n": "flag-np",
       "s": [
-        "flag-np"
+        "flag-np",
+        "flagnp",
+        "nepal"
       ]
     },
     {
@@ -16409,7 +17353,9 @@
       "t": "Flag: Nauru",
       "n": "flag-nr",
       "s": [
-        "flag-nr"
+        "flag-nr",
+        "flagnr",
+        "nauru"
       ]
     },
     {
@@ -16418,7 +17364,9 @@
       "t": "Flag: Niue",
       "n": "flag-nu",
       "s": [
-        "flag-nu"
+        "flag-nu",
+        "flagnu",
+        "niue"
       ]
     },
     {
@@ -16427,7 +17375,9 @@
       "t": "Flag: New Zealand",
       "n": "flag-nz",
       "s": [
-        "flag-nz"
+        "flag-nz",
+        "flagnz",
+        "newzealand"
       ]
     },
     {
@@ -16436,7 +17386,9 @@
       "t": "Flag: Oman",
       "n": "flag-om",
       "s": [
-        "flag-om"
+        "flag-om",
+        "flagom",
+        "oman"
       ]
     },
     {
@@ -16445,7 +17397,9 @@
       "t": "Flag: Panama",
       "n": "flag-pa",
       "s": [
-        "flag-pa"
+        "flag-pa",
+        "flagpa",
+        "panama"
       ]
     },
     {
@@ -16454,7 +17408,9 @@
       "t": "Flag: Peru",
       "n": "flag-pe",
       "s": [
-        "flag-pe"
+        "flag-pe",
+        "flagpe",
+        "peru"
       ]
     },
     {
@@ -16463,7 +17419,9 @@
       "t": "Flag: French Polynesia",
       "n": "flag-pf",
       "s": [
-        "flag-pf"
+        "flag-pf",
+        "flagpf",
+        "frenchpolynesia"
       ]
     },
     {
@@ -16472,7 +17430,9 @@
       "t": "Flag: Papua New Guinea",
       "n": "flag-pg",
       "s": [
-        "flag-pg"
+        "flag-pg",
+        "flagpg",
+        "papuanewguinea"
       ]
     },
     {
@@ -16481,7 +17441,9 @@
       "t": "Flag: Philippines",
       "n": "flag-ph",
       "s": [
-        "flag-ph"
+        "flag-ph",
+        "flagph",
+        "philippines"
       ]
     },
     {
@@ -16490,7 +17452,9 @@
       "t": "Flag: Pakistan",
       "n": "flag-pk",
       "s": [
-        "flag-pk"
+        "flag-pk",
+        "flagpk",
+        "pakistan"
       ]
     },
     {
@@ -16499,7 +17463,9 @@
       "t": "Flag: Poland",
       "n": "flag-pl",
       "s": [
-        "flag-pl"
+        "flag-pl",
+        "flagpl",
+        "poland"
       ]
     },
     {
@@ -16508,7 +17474,9 @@
       "t": "Flag: St. Pierre & Miquelon",
       "n": "flag-pm",
       "s": [
-        "flag-pm"
+        "flag-pm",
+        "flagpm",
+        "stpierremiquelon"
       ]
     },
     {
@@ -16517,7 +17485,9 @@
       "t": "Flag: Pitcairn Islands",
       "n": "flag-pn",
       "s": [
-        "flag-pn"
+        "flag-pn",
+        "flagpn",
+        "pitcairnislands"
       ]
     },
     {
@@ -16526,7 +17496,9 @@
       "t": "Flag: Puerto Rico",
       "n": "flag-pr",
       "s": [
-        "flag-pr"
+        "flag-pr",
+        "flagpr",
+        "puertorico"
       ]
     },
     {
@@ -16535,7 +17507,9 @@
       "t": "Flag: Palestinian Territories",
       "n": "flag-ps",
       "s": [
-        "flag-ps"
+        "flag-ps",
+        "flagps",
+        "palestinianterritories"
       ]
     },
     {
@@ -16544,7 +17518,9 @@
       "t": "Flag: Portugal",
       "n": "flag-pt",
       "s": [
-        "flag-pt"
+        "flag-pt",
+        "flagpt",
+        "portugal"
       ]
     },
     {
@@ -16553,7 +17529,9 @@
       "t": "Flag: Palau",
       "n": "flag-pw",
       "s": [
-        "flag-pw"
+        "flag-pw",
+        "flagpw",
+        "palau"
       ]
     },
     {
@@ -16562,7 +17540,9 @@
       "t": "Flag: Paraguay",
       "n": "flag-py",
       "s": [
-        "flag-py"
+        "flag-py",
+        "flagpy",
+        "paraguay"
       ]
     },
     {
@@ -16571,7 +17551,9 @@
       "t": "Flag: Qatar",
       "n": "flag-qa",
       "s": [
-        "flag-qa"
+        "flag-qa",
+        "flagqa",
+        "qatar"
       ]
     },
     {
@@ -16580,7 +17562,9 @@
       "t": "Flag: Réunion",
       "n": "flag-re",
       "s": [
-        "flag-re"
+        "flag-re",
+        "flagre",
+        "reunion"
       ]
     },
     {
@@ -16589,7 +17573,9 @@
       "t": "Flag: Romania",
       "n": "flag-ro",
       "s": [
-        "flag-ro"
+        "flag-ro",
+        "flagro",
+        "romania"
       ]
     },
     {
@@ -16598,7 +17584,9 @@
       "t": "Flag: Serbia",
       "n": "flag-rs",
       "s": [
-        "flag-rs"
+        "flag-rs",
+        "flagrs",
+        "serbia"
       ]
     },
     {
@@ -16608,7 +17596,9 @@
       "n": "ru",
       "s": [
         "ru",
-        "flag-ru"
+        "flag-ru",
+        "flagru",
+        "russia"
       ]
     },
     {
@@ -16617,7 +17607,9 @@
       "t": "Flag: Rwanda",
       "n": "flag-rw",
       "s": [
-        "flag-rw"
+        "flag-rw",
+        "flagrw",
+        "rwanda"
       ]
     },
     {
@@ -16626,7 +17618,9 @@
       "t": "Flag: Saudi Arabia",
       "n": "flag-sa",
       "s": [
-        "flag-sa"
+        "flag-sa",
+        "flagsa",
+        "saudiarabia"
       ]
     },
     {
@@ -16635,7 +17629,9 @@
       "t": "Flag: Solomon Islands",
       "n": "flag-sb",
       "s": [
-        "flag-sb"
+        "flag-sb",
+        "flagsb",
+        "solomonislands"
       ]
     },
     {
@@ -16644,7 +17640,9 @@
       "t": "Flag: Seychelles",
       "n": "flag-sc",
       "s": [
-        "flag-sc"
+        "flag-sc",
+        "flagsc",
+        "seychelles"
       ]
     },
     {
@@ -16653,7 +17651,9 @@
       "t": "Flag: Sudan",
       "n": "flag-sd",
       "s": [
-        "flag-sd"
+        "flag-sd",
+        "flagsd",
+        "sudan"
       ]
     },
     {
@@ -16662,7 +17662,9 @@
       "t": "Flag: Sweden",
       "n": "flag-se",
       "s": [
-        "flag-se"
+        "flag-se",
+        "flagse",
+        "sweden"
       ]
     },
     {
@@ -16671,7 +17673,9 @@
       "t": "Flag: Singapore",
       "n": "flag-sg",
       "s": [
-        "flag-sg"
+        "flag-sg",
+        "flagsg",
+        "singapore"
       ]
     },
     {
@@ -16680,7 +17684,9 @@
       "t": "Flag: St. Helena",
       "n": "flag-sh",
       "s": [
-        "flag-sh"
+        "flag-sh",
+        "flagsh",
+        "sthelena"
       ]
     },
     {
@@ -16689,7 +17695,9 @@
       "t": "Flag: Slovenia",
       "n": "flag-si",
       "s": [
-        "flag-si"
+        "flag-si",
+        "flagsi",
+        "slovenia"
       ]
     },
     {
@@ -16698,7 +17706,9 @@
       "t": "Flag: Svalbard & Jan Mayen",
       "n": "flag-sj",
       "s": [
-        "flag-sj"
+        "flag-sj",
+        "flagsj",
+        "svalbardjanmayen"
       ]
     },
     {
@@ -16707,7 +17717,9 @@
       "t": "Flag: Slovakia",
       "n": "flag-sk",
       "s": [
-        "flag-sk"
+        "flag-sk",
+        "flagsk",
+        "slovakia"
       ]
     },
     {
@@ -16716,7 +17728,9 @@
       "t": "Flag: Sierra Leone",
       "n": "flag-sl",
       "s": [
-        "flag-sl"
+        "flag-sl",
+        "flagsl",
+        "sierraleone"
       ]
     },
     {
@@ -16725,7 +17739,9 @@
       "t": "Flag: San Marino",
       "n": "flag-sm",
       "s": [
-        "flag-sm"
+        "flag-sm",
+        "flagsm",
+        "sanmarino"
       ]
     },
     {
@@ -16734,7 +17750,9 @@
       "t": "Flag: Senegal",
       "n": "flag-sn",
       "s": [
-        "flag-sn"
+        "flag-sn",
+        "flagsn",
+        "senegal"
       ]
     },
     {
@@ -16743,7 +17761,9 @@
       "t": "Flag: Somalia",
       "n": "flag-so",
       "s": [
-        "flag-so"
+        "flag-so",
+        "flagso",
+        "somalia"
       ]
     },
     {
@@ -16752,7 +17772,9 @@
       "t": "Flag: Suriname",
       "n": "flag-sr",
       "s": [
-        "flag-sr"
+        "flag-sr",
+        "flagsr",
+        "suriname"
       ]
     },
     {
@@ -16761,7 +17783,9 @@
       "t": "Flag: South Sudan",
       "n": "flag-ss",
       "s": [
-        "flag-ss"
+        "flag-ss",
+        "flagss",
+        "southsudan"
       ]
     },
     {
@@ -16770,7 +17794,9 @@
       "t": "Flag: São Tomé & Príncipe",
       "n": "flag-st",
       "s": [
-        "flag-st"
+        "flag-st",
+        "flagst",
+        "saotomeprincipe"
       ]
     },
     {
@@ -16779,7 +17805,9 @@
       "t": "Flag: El Salvador",
       "n": "flag-sv",
       "s": [
-        "flag-sv"
+        "flag-sv",
+        "elsalvador",
+        "flagsv"
       ]
     },
     {
@@ -16788,7 +17816,9 @@
       "t": "Flag: Sint Maarten",
       "n": "flag-sx",
       "s": [
-        "flag-sx"
+        "flag-sx",
+        "flagsx",
+        "sintmaarten"
       ]
     },
     {
@@ -16797,7 +17827,9 @@
       "t": "Flag: Syria",
       "n": "flag-sy",
       "s": [
-        "flag-sy"
+        "flag-sy",
+        "flagsy",
+        "syria"
       ]
     },
     {
@@ -16806,7 +17838,10 @@
       "t": "Flag: Eswatini",
       "n": "flag-sz",
       "s": [
-        "flag-sz"
+        "flag-sz",
+        "eswatini",
+        "flagsz",
+        "swaziland"
       ]
     },
     {
@@ -16815,7 +17850,9 @@
       "t": "Flag: Tristan Da Cunha",
       "n": "flag-ta",
       "s": [
-        "flag-ta"
+        "flag-ta",
+        "flagta",
+        "tristandacunha"
       ]
     },
     {
@@ -16824,7 +17861,9 @@
       "t": "Flag: Turks & Caicos Islands",
       "n": "flag-tc",
       "s": [
-        "flag-tc"
+        "flag-tc",
+        "flagtc",
+        "turkscaicosislands"
       ]
     },
     {
@@ -16833,7 +17872,9 @@
       "t": "Flag: Chad",
       "n": "flag-td",
       "s": [
-        "flag-td"
+        "flag-td",
+        "chad",
+        "flagtd"
       ]
     },
     {
@@ -16842,7 +17883,9 @@
       "t": "Flag: French Southern Territories",
       "n": "flag-tf",
       "s": [
-        "flag-tf"
+        "flag-tf",
+        "flagtf",
+        "frenchsouthernterritories"
       ]
     },
     {
@@ -16851,7 +17894,9 @@
       "t": "Flag: Togo",
       "n": "flag-tg",
       "s": [
-        "flag-tg"
+        "flag-tg",
+        "flagtg",
+        "togo"
       ]
     },
     {
@@ -16860,7 +17905,9 @@
       "t": "Flag: Thailand",
       "n": "flag-th",
       "s": [
-        "flag-th"
+        "flag-th",
+        "flagth",
+        "thailand"
       ]
     },
     {
@@ -16869,7 +17916,9 @@
       "t": "Flag: Tajikistan",
       "n": "flag-tj",
       "s": [
-        "flag-tj"
+        "flag-tj",
+        "flagtj",
+        "tajikistan"
       ]
     },
     {
@@ -16878,7 +17927,9 @@
       "t": "Flag: Tokelau",
       "n": "flag-tk",
       "s": [
-        "flag-tk"
+        "flag-tk",
+        "flagtk",
+        "tokelau"
       ]
     },
     {
@@ -16887,7 +17938,9 @@
       "t": "Flag: Timor-Leste",
       "n": "flag-tl",
       "s": [
-        "flag-tl"
+        "flag-tl",
+        "flagtl",
+        "timorleste"
       ]
     },
     {
@@ -16896,7 +17949,9 @@
       "t": "Flag: Turkmenistan",
       "n": "flag-tm",
       "s": [
-        "flag-tm"
+        "flag-tm",
+        "flagtm",
+        "turkmenistan"
       ]
     },
     {
@@ -16905,7 +17960,9 @@
       "t": "Flag: Tunisia",
       "n": "flag-tn",
       "s": [
-        "flag-tn"
+        "flag-tn",
+        "flagtn",
+        "tunisia"
       ]
     },
     {
@@ -16914,7 +17971,9 @@
       "t": "Flag: Tonga",
       "n": "flag-to",
       "s": [
-        "flag-to"
+        "flag-to",
+        "flagto",
+        "tonga"
       ]
     },
     {
@@ -16923,7 +17982,9 @@
       "t": "Flag: Türkiye",
       "n": "flag-tr",
       "s": [
-        "flag-tr"
+        "flag-tr",
+        "flagtr",
+        "turkeytr"
       ]
     },
     {
@@ -16932,7 +17993,9 @@
       "t": "Flag: Trinidad & Tobago",
       "n": "flag-tt",
       "s": [
-        "flag-tt"
+        "flag-tt",
+        "flagtt",
+        "trinidadtobago"
       ]
     },
     {
@@ -16941,7 +18004,9 @@
       "t": "Flag: Tuvalu",
       "n": "flag-tv",
       "s": [
-        "flag-tv"
+        "flag-tv",
+        "flagtv",
+        "tuvalu"
       ]
     },
     {
@@ -16950,7 +18015,9 @@
       "t": "Flag: Taiwan",
       "n": "flag-tw",
       "s": [
-        "flag-tw"
+        "flag-tw",
+        "flagtw",
+        "taiwan"
       ]
     },
     {
@@ -16959,7 +18026,9 @@
       "t": "Flag: Tanzania",
       "n": "flag-tz",
       "s": [
-        "flag-tz"
+        "flag-tz",
+        "flagtz",
+        "tanzania"
       ]
     },
     {
@@ -16968,7 +18037,9 @@
       "t": "Flag: Ukraine",
       "n": "flag-ua",
       "s": [
-        "flag-ua"
+        "flag-ua",
+        "flagua",
+        "ukraine"
       ]
     },
     {
@@ -16977,7 +18048,9 @@
       "t": "Flag: Uganda",
       "n": "flag-ug",
       "s": [
-        "flag-ug"
+        "flag-ug",
+        "flagug",
+        "uganda"
       ]
     },
     {
@@ -16986,7 +18059,9 @@
       "t": "Flag: U.s. Outlying Islands",
       "n": "flag-um",
       "s": [
-        "flag-um"
+        "flag-um",
+        "flagum",
+        "usoutlyingislands"
       ]
     },
     {
@@ -16995,7 +18070,10 @@
       "t": "Flag: United Nations",
       "n": "flag-un",
       "s": [
-        "flag-un"
+        "flag-un",
+        "flagun",
+        "un",
+        "unitednations"
       ]
     },
     {
@@ -17005,7 +18083,10 @@
       "n": "us",
       "s": [
         "us",
-        "flag-us"
+        "flag-us",
+        "flagus",
+        "unitedstates",
+        "usa"
       ]
     },
     {
@@ -17014,7 +18095,9 @@
       "t": "Flag: Uruguay",
       "n": "flag-uy",
       "s": [
-        "flag-uy"
+        "flag-uy",
+        "flaguy",
+        "uruguay"
       ]
     },
     {
@@ -17023,7 +18106,9 @@
       "t": "Flag: Uzbekistan",
       "n": "flag-uz",
       "s": [
-        "flag-uz"
+        "flag-uz",
+        "flaguz",
+        "uzbekistan"
       ]
     },
     {
@@ -17032,7 +18117,9 @@
       "t": "Flag: Vatican City",
       "n": "flag-va",
       "s": [
-        "flag-va"
+        "flag-va",
+        "flagva",
+        "vaticancity"
       ]
     },
     {
@@ -17041,7 +18128,9 @@
       "t": "Flag: St. Vincent & Grenadines",
       "n": "flag-vc",
       "s": [
-        "flag-vc"
+        "flag-vc",
+        "flagvc",
+        "stvincentgrenadines"
       ]
     },
     {
@@ -17050,7 +18139,9 @@
       "t": "Flag: Venezuela",
       "n": "flag-ve",
       "s": [
-        "flag-ve"
+        "flag-ve",
+        "flagve",
+        "venezuela"
       ]
     },
     {
@@ -17059,7 +18150,9 @@
       "t": "Flag: British Virgin Islands",
       "n": "flag-vg",
       "s": [
-        "flag-vg"
+        "flag-vg",
+        "britishvirginislands",
+        "flagvg"
       ]
     },
     {
@@ -17068,7 +18161,9 @@
       "t": "Flag: U.s. Virgin Islands",
       "n": "flag-vi",
       "s": [
-        "flag-vi"
+        "flag-vi",
+        "flagvi",
+        "usvirginislands"
       ]
     },
     {
@@ -17077,7 +18172,9 @@
       "t": "Flag: Vietnam",
       "n": "flag-vn",
       "s": [
-        "flag-vn"
+        "flag-vn",
+        "flagvn",
+        "vietnam"
       ]
     },
     {
@@ -17086,7 +18183,9 @@
       "t": "Flag: Vanuatu",
       "n": "flag-vu",
       "s": [
-        "flag-vu"
+        "flag-vu",
+        "flagvu",
+        "vanuatu"
       ]
     },
     {
@@ -17095,7 +18194,9 @@
       "t": "Flag: Wallis & Futuna",
       "n": "flag-wf",
       "s": [
-        "flag-wf"
+        "flag-wf",
+        "flagwf",
+        "wallisfutuna"
       ]
     },
     {
@@ -17104,7 +18205,9 @@
       "t": "Flag: Samoa",
       "n": "flag-ws",
       "s": [
-        "flag-ws"
+        "flag-ws",
+        "flagws",
+        "samoa"
       ]
     },
     {
@@ -17113,7 +18216,9 @@
       "t": "Flag: Kosovo",
       "n": "flag-xk",
       "s": [
-        "flag-xk"
+        "flag-xk",
+        "flagxk",
+        "kosovo"
       ]
     },
     {
@@ -17122,7 +18227,9 @@
       "t": "Flag: Yemen",
       "n": "flag-ye",
       "s": [
-        "flag-ye"
+        "flag-ye",
+        "flagye",
+        "yemen"
       ]
     },
     {
@@ -17131,7 +18238,9 @@
       "t": "Flag: Mayotte",
       "n": "flag-yt",
       "s": [
-        "flag-yt"
+        "flag-yt",
+        "flagyt",
+        "mayotte"
       ]
     },
     {
@@ -17140,7 +18249,9 @@
       "t": "Flag: South Africa",
       "n": "flag-za",
       "s": [
-        "flag-za"
+        "flag-za",
+        "flagza",
+        "southafrica"
       ]
     },
     {
@@ -17149,7 +18260,9 @@
       "t": "Flag: Zambia",
       "n": "flag-zm",
       "s": [
-        "flag-zm"
+        "flag-zm",
+        "flagzm",
+        "zambia"
       ]
     },
     {
@@ -17158,7 +18271,9 @@
       "t": "Flag: Zimbabwe",
       "n": "flag-zw",
       "s": [
-        "flag-zw"
+        "flag-zw",
+        "flagzw",
+        "zimbabwe"
       ]
     },
     {
@@ -17167,7 +18282,9 @@
       "t": "Flag: England",
       "n": "flag-england",
       "s": [
-        "flag-england"
+        "flag-england",
+        "england",
+        "flaggbeng"
       ]
     },
     {
@@ -17176,7 +18293,9 @@
       "t": "Flag: Scotland",
       "n": "flag-scotland",
       "s": [
-        "flag-scotland"
+        "flag-scotland",
+        "flaggbsct",
+        "scotland"
       ]
     },
     {
@@ -17185,7 +18304,9 @@
       "t": "Flag: Wales",
       "n": "flag-wales",
       "s": [
-        "flag-wales"
+        "flag-wales",
+        "flaggbwls",
+        "wales"
       ]
     }
   ],

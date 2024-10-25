@@ -14,6 +14,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+//go:generate go run .
 package main
 
 import (
@@ -137,6 +138,17 @@ func getEmojibaseNames() map[string]string {
 	return output
 }
 
+type stringOrArray []string
+
+func (s *stringOrArray) UnmarshalJSON(data []byte) error {
+	var str string
+	if err := json.Unmarshal(data, &str); err == nil {
+		*s = []string{str}
+		return nil
+	}
+	return json.Unmarshal(data, (*[]string)(s))
+}
+
 func main() {
 	var emojis []Emoji
 	resp := exerrors.Must(http.Get("https://raw.githubusercontent.com/iamcal/emoji-data/master/emoji.json"))
@@ -151,6 +163,8 @@ func main() {
 		Emojis:     make([]*outputEmoji, len(emojis)),
 		Categories: []string{"Activities", "Animals & Nature", "Component", "Flags", "Food & Drink", "Objects", "People & Body", "Smileys & Emotion", "Symbols", "Travel & Places"},
 	}
+	existingShortcodes := make(map[string]struct{})
+	emojiMap := make(map[string]*outputEmoji)
 	for i, emoji := range emojis {
 		wrapped := &outputEmoji{
 			Unicode:    unifiedToUnicode(emoji.Unified),
@@ -159,11 +173,14 @@ func main() {
 			Category:   slices.Index(data.Categories, emoji.Category),
 			Title:      names[emoji.Unified],
 		}
+		emojiMap[emoji.Unified] = wrapped
 		if wrapped.Category == -1 {
 			panic(fmt.Errorf("unknown category %q", emoji.Category))
 		}
 		for i, short := range wrapped.Shortcodes {
-			wrapped.Shortcodes[i] = strings.ReplaceAll(short, "_", "")
+			short = strings.ReplaceAll(short, "_", "")
+			wrapped.Shortcodes[i] = short
+			existingShortcodes[short] = struct{}{}
 		}
 		if wrapped.Title == "" {
 			wrapped.Title = titler.String(emoji.Name)
@@ -172,6 +189,24 @@ func main() {
 			wrapped.Unicode += "\ufe0f"
 		}
 		data.Emojis[i] = wrapped
+	}
+	var moreShortcodes map[string]stringOrArray
+	resp = exerrors.Must(http.Get("https://raw.githubusercontent.com/milesj/emojibase/refs/heads/master/packages/data/en/shortcodes/emojibase.raw.json"))
+	exerrors.PanicIfNotNil(json.NewDecoder(resp.Body).Decode(&moreShortcodes))
+	moreShortcodes["1F4C8"] = append(moreShortcodes["1F4C8"], "chart_upwards")
+	moreShortcodes["1F4C9"] = append(moreShortcodes["1F4C9"], "chart_downwards")
+	for unified, codes := range moreShortcodes {
+		emoji, ok := emojiMap[unified]
+		if !ok {
+			continue
+		}
+		for _, short := range codes {
+			short = strings.ReplaceAll(short, "_", "")
+			if _, exists := existingShortcodes[short]; exists {
+				continue
+			}
+			emoji.Shortcodes = append(emoji.Shortcodes, short)
+		}
 	}
 	file := exerrors.Must(os.OpenFile("data.json", os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644))
 	enc := json.NewEncoder(file)
