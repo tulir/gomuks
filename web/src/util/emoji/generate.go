@@ -143,6 +143,9 @@ func main() {
 	exerrors.PanicIfNotNil(json.NewDecoder(resp.Body).Decode(&emojis))
 	vs := getVariationSequences()
 	names := getEmojibaseNames()
+	slices.SortFunc(emojis, func(a, b Emoji) int {
+		return a.SortOrder - b.SortOrder
+	})
 
 	data := &outputData{
 		Emojis:     make([]*outputEmoji, len(emojis)),
