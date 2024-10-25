@@ -384,6 +384,7 @@ func (h *HiClient) calculateLocalContent(ctx context.Context, dbEvt *database.Ev
 			}
 		} else {
 			var builder strings.Builder
+			builder.Grow(len(content.Body) + builderPreallocBuffer)
 			linkifyAndWriteBytes(&builder, []byte(content.Body))
 			sanitizedHTML = builder.String()
 			wasPlaintext = true

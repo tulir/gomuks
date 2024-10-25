@@ -505,9 +505,12 @@ func getCodeBlockLanguage(token html.Token) string {
 	return ""
 }
 
+const builderPreallocBuffer = 100
+
 func sanitizeAndLinkifyHTML(body string) (string, []id.ContentURI, error) {
 	tz := html.NewTokenizer(strings.NewReader(body))
 	var built strings.Builder
+	built.Grow(len(body) + builderPreallocBuffer)
 	var codeBlock *strings.Builder
 	var codeBlockLanguage string
 	var inlineImages []id.ContentURI
