@@ -68,7 +68,7 @@ const draftStore = {
 		}
 	},
 	set: (roomID: RoomID, data: ComposerState) => localStorage.setItem(`draft-${roomID}`, JSON.stringify(data)),
-	clear: (roomID: RoomID)=> localStorage.removeItem(`draft-${roomID}`),
+	clear: (roomID: RoomID) => localStorage.removeItem(`draft-${roomID}`),
 }
 
 type CaretEvent<T> = React.MouseEvent<T> | React.KeyboardEvent<T> | React.ChangeEvent<T>
@@ -175,7 +175,13 @@ const MessageComposer = () => {
 			}
 		} else if (area.selectionStart === area.selectionEnd) {
 			const acType = charToAutocompleteType(newText?.slice(area.selectionStart - 1, area.selectionStart))
-			if (acType && (area.selectionStart === 1 || newText?.[area.selectionStart - 2] === " ")) {
+			if (
+				acType && (
+					area.selectionStart === 1
+					|| newText?.[area.selectionStart - 2] === " "
+					|| newText?.[area.selectionStart - 2] === "\n"
+				)
+			) {
 				setAutocomplete({
 					type: acType,
 					query: "",
