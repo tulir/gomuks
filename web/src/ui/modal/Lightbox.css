@@ -1,12 +1,17 @@
 div.overlay {
 	position: fixed;
 	inset: 0;
-	background-color: rgba(0, 0, 0, 0.75);
 	display: flex;
 	align-items: center;
 	justify-content: center;
 
-	&.lightbox > div.controls {
+	&.dimmed {
+		background-color: rgba(0, 0, 0, 0.75);
+	}
+}
+
+div.lightbox {
+	> div.controls {
 		position: fixed;
 		top: .5rem;
 		right: .5rem;
@@ -29,7 +34,7 @@ div.overlay {
 		}
 	}
 
-	&.lightbox > img {
+	> img {
 		max-width: 75%;
 		max-height: 75%;
 

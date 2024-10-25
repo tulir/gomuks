@@ -18,9 +18,10 @@ import { ScaleLoader } from "react-spinners"
 import Client from "./api/client.ts"
 import WSClient from "./api/wsclient.ts"
 import { ClientContext } from "./ui/ClientContext.ts"
-import { LightboxWrapper } from "./ui/Lightbox.tsx"
 import MainScreen from "./ui/MainScreen.tsx"
 import { LoginScreen, VerificationScreen } from "./ui/login"
+import { LightboxWrapper } from "./ui/modal/Lightbox.tsx"
+import { ModalWrapper } from "./ui/modal/Modal.tsx"
 import { useEventAsState } from "./util/eventdispatcher.ts"
 
 function App() {
@@ -53,7 +54,9 @@ function App() {
 	} else {
 		return <ClientContext value={client}>
 			<LightboxWrapper>
-				<MainScreen/>
+				<ModalWrapper>
+					<MainScreen/>
+				</ModalWrapper>
 			</LightboxWrapper>
 		</ClientContext>
 	}

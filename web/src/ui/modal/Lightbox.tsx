@@ -14,12 +14,12 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import React, { Component, RefObject, createContext, createRef, useCallback, useState } from "react"
-import CloseIcon from "../icons/close.svg?react"
-import DownloadIcon from "../icons/download.svg?react"
-import RotateLeftIcon from "../icons/rotate-left.svg?react"
-import RotateRightIcon from "../icons/rotate-right.svg?react"
-import ZoomInIcon from "../icons/zoom-in.svg?react"
-import ZoomOutIcon from "../icons/zoom-out.svg?react"
+import CloseIcon from "@/icons/close.svg?react"
+import DownloadIcon from "@/icons/download.svg?react"
+import RotateLeftIcon from "@/icons/rotate-left.svg?react"
+import RotateRightIcon from "@/icons/rotate-right.svg?react"
+import ZoomInIcon from "@/icons/zoom-in.svg?react"
+import ZoomOutIcon from "@/icons/zoom-out.svg?react"
 import "./Lightbox.css"
 
 const isTouchDevice = window.ontouchstart !== undefined
@@ -158,7 +158,7 @@ export class Lightbox extends Component<LightboxProps> {
 
 	render() {
 		return <div
-			className="overlay lightbox"
+			className="overlay dimmed lightbox"
 			onClick={this.onClick}
 			onMouseMove={isTouchDevice ? undefined : this.onMouseMove}
 		>
