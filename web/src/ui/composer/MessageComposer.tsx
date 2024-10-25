@@ -89,32 +89,30 @@ const MessageComposer = () => {
 	roomCtx.setEditing = useCallback((evt: MemDBEvent | null) => {
 		if (evt === null) {
 			rawSetEditing(null)
-			setState(emptyComposer)
+			setState(draftStore.get(room.roomID) ?? emptyComposer)
 			return
-		}
-		if (state.text || state.media) {
-			// TODO save as draft instead of discarding?
-			const ok = window.confirm("Discard current message to start editing?")
-			if (!ok) {
-				return
-			}
 		}
 		const evtContent = evt.content as MessageEventContent
 		const mediaMsgTypes = ["m.image", "m.audio", "m.video", "m.file"]
-		const isMedia = mediaMsgTypes.includes(evtContent.msgtype) && (evt.content?.url || evt.content?.file?.url)
+		const isMedia = mediaMsgTypes.includes(evtContent.msgtype)
+			&& Boolean(evt.content?.url || evt.content?.file?.url)
 		rawSetEditing(evt)
 		setState({
 			media: isMedia ? evtContent as MediaMessageEventContent : null,
 			text: (!evt.content.filename || evt.content.filename !== evt.content.body) ? (evtContent.body ?? "") : "",
 		})
 		textInput.current?.focus()
-	}, [state])
+	}, [room.roomID])
 	const sendMessage = useEvent((evt: React.FormEvent) => {
 		evt.preventDefault()
 		if (state.text === "" && !state.media) {
 			return
 		}
-		setState(emptyComposer)
+		if (editing) {
+			setState(draftStore.get(room.roomID) ?? emptyComposer)
+		} else {
+			setState(emptyComposer)
+		}
 		rawSetEditing(null)
 		setAutocomplete(null)
 		const mentions: Mentions = {
@@ -184,8 +182,7 @@ const MessageComposer = () => {
 	const onComposerKeyDown = useEvent((evt: React.KeyboardEvent) => {
 		if (evt.key === "Enter" && !evt.shiftKey) {
 			sendMessage(evt)
-		}
-		if (autocomplete && !evt.ctrlKey && !evt.altKey) {
+		} else if (autocomplete && !evt.ctrlKey && !evt.altKey) {
 			if (!evt.shiftKey && (evt.key === "Tab" || evt.key === "ArrowDown")) {
 				setAutocomplete({ ...autocomplete, selected: (autocomplete.selected ?? -1) + 1 })
 				evt.preventDefault()
@@ -193,6 +190,30 @@ const MessageComposer = () => {
 				setAutocomplete({ ...autocomplete, selected: (autocomplete.selected ?? 0) - 1 })
 				evt.preventDefault()
 			}
+		} else if (!autocomplete && textInput.current) {
+			const inp = textInput.current
+			if (evt.key === "ArrowUp" && inp.selectionStart === 0 && inp.selectionEnd === 0) {
+				const currentlyEditing = editing
+					? roomCtx.ownMessages.indexOf(editing.rowid)
+					: roomCtx.ownMessages.length
+				const prevEventToEditID = roomCtx.ownMessages[currentlyEditing - 1]
+				const prevEventToEdit = prevEventToEditID ? room.eventsByRowID.get(prevEventToEditID) : undefined
+				if (prevEventToEdit) {
+					roomCtx.setEditing(prevEventToEdit)
+					evt.preventDefault()
+				}
+			} else if (editing && evt.key === "ArrowDown" && inp.selectionStart === state.text.length) {
+				const currentlyEditingIdx = roomCtx.ownMessages.indexOf(editing.rowid)
+				const nextEventToEdit = currentlyEditingIdx
+					? room.eventsByRowID.get(roomCtx.ownMessages[currentlyEditingIdx + 1]) : undefined
+				roomCtx.setEditing(nextEventToEdit ?? null)
+				// This timeout is very hacky and probably doesn't work in every case
+				setTimeout(() => inp.setSelectionRange(0, 0), 0)
+				evt.preventDefault()
+			}
+		}
+		if (editing && evt.key === "Escape") {
+			roomCtx.setEditing(null)
 		}
 	})
 	const onChange = useEvent((evt: React.ChangeEvent<HTMLTextAreaElement>) => {

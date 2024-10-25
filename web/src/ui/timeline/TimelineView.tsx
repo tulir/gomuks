@@ -53,6 +53,7 @@ const TimelineView = () => {
 		oldScrollHeight.current = timelineViewRef.current.scrollHeight
 	}
 	useLayoutEffect(() => {
+		const bottomRef = roomCtx.timelineBottomRef
 		if (bottomRef.current && scrolledToBottom.current) {
 			// For any timeline changes, if we were at the bottom, scroll to the new bottom
 			bottomRef.current.scrollIntoView()
@@ -61,7 +62,13 @@ const TimelineView = () => {
 			timelineViewRef.current.scrollTop += timelineViewRef.current.scrollHeight - oldScrollHeight.current
 		}
 		prevOldestTimelineRow.current = timeline[0]?.timeline_rowid ?? 0
-	}, [bottomRef, timeline])
+		roomCtx.ownMessages = timeline
+			.filter(evt => evt !== null
+				&& evt.sender === client.userID
+				&& evt.type === "m.room.message"
+				&& evt.relation_type !== "m.replace")
+			.map(evt => evt!.rowid)
+	}, [client.userID, roomCtx, timeline])
 	useEffect(() => {
 		const newestEvent = timeline[timeline.length - 1]
 		if (

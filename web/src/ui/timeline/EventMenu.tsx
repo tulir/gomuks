@@ -68,7 +68,8 @@ const EventMenu = ({ evt }: EventHoverMenuProps) => {
 			title={isEditing ? "Can't reply to messages while editing a message" : undefined}
 			onClick={onClickReply}
 		><ReplyIcon/></button>
-		{evt.sender === userID && evt.type === "m.room.message" && <button onClick={onClickEdit}><EditIcon/></button>}
+		{evt.sender === userID && evt.type === "m.room.message" && evt.relation_type !== "m.replace"
+			&& <button onClick={onClickEdit}><EditIcon/></button>}
 		{ownPL >= pinPL && (pins.includes(evt.event_id)
 			? <button onClick={onClickUnpin}><UnpinIcon/></button>
 			: <button onClick={onClickPin}><PinIcon/></button>)}

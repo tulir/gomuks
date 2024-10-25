@@ -15,7 +15,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import { RefObject, createContext, createRef, use } from "react"
 import { RoomStateStore } from "@/api/statestore"
-import { EventID, MemDBEvent } from "@/api/types"
+import { EventID, EventRowID, MemDBEvent } from "@/api/types"
 import { NonNullCachedEventDispatcher } from "@/util/eventdispatcher.ts"
 
 const noop = (name: string) => () => {
@@ -27,6 +27,7 @@ export class RoomContextData {
 	public setReplyTo: (eventID: EventID | null) => void = noop("setReplyTo")
 	public setEditing: (evt: MemDBEvent | null) => void = noop("setEditing")
 	public isEditing = new NonNullCachedEventDispatcher<boolean>(false)
+	public ownMessages: EventRowID[] = []
 
 	constructor(public store: RoomStateStore) {}
 
