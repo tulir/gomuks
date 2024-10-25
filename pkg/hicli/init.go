@@ -19,6 +19,7 @@ func (h *HiClient) getInitialSyncRoom(ctx context.Context, room *database.Room) 
 		Timeline:      make([]database.TimelineRowTuple, 0),
 		State:         map[event.Type]map[string]database.EventRowID{},
 		Notifications: make([]SyncNotification, 0),
+		AccountData:   make(map[event.Type]*database.AccountData),
 	}
 	if room.PreviewEventRowID != 0 {
 		previewEvent, err := h.DB.Event.GetByRowID(ctx, room.PreviewEventRowID)
@@ -53,7 +54,7 @@ func (h *HiClient) getInitialSyncRoom(ctx context.Context, room *database.Room) 
 func (h *HiClient) GetInitialSync(ctx context.Context, batchSize int) iter.Seq[*SyncComplete] {
 	return func(yield func(*SyncComplete) bool) {
 		maxTS := time.Now().Add(1 * time.Hour)
-		for {
+		for i := 0; ; i++ {
 			rooms, err := h.DB.Room.GetBySortTS(ctx, maxTS, batchSize)
 			if err != nil {
 				if ctx.Err() == nil {
@@ -64,6 +65,19 @@ func (h *HiClient) GetInitialSync(ctx context.Context, batchSize int) iter.Seq[*
 			payload := SyncComplete{
 				Rooms:     make(map[id.RoomID]*SyncRoom, len(rooms)-1),
 				LeftRooms: make([]id.RoomID, 0),
+			}
+			if i == 0 {
+				ad, err := h.DB.AccountData.GetAllGlobal(ctx, h.Account.UserID)
+				if err != nil {
+					zerolog.Ctx(ctx).Err(err).Msg("Failed to get global account data")
+					return
+				}
+				payload.AccountData = make(map[event.Type]*database.AccountData, len(ad))
+				for _, data := range ad {
+					payload.AccountData[event.Type{Type: data.Type, Class: event.AccountDataEventType}] = data
+				}
+			} else {
+				payload.AccountData = make(map[event.Type]*database.AccountData)
 			}
 			for _, room := range rooms {
 				if room.SortingTimestamp == rooms[len(rooms)-1].SortingTimestamp {

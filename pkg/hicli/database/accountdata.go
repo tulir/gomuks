@@ -27,6 +27,9 @@ const (
 		INSERT INTO room_account_data (user_id, room_id, type, content) VALUES ($1, $2, $3, $4)
 		ON CONFLICT (user_id, room_id, type) DO UPDATE SET content = excluded.content
 	`
+	getGlobalAccountDataQuery = `
+		SELECT user_id, '', type, content FROM account_data WHERE user_id = $1
+	`
 )
 
 type AccountDataQuery struct {
@@ -41,12 +44,27 @@ func unsafeJSONString(content json.RawMessage) *string {
 	return &str
 }
 
-func (adq *AccountDataQuery) Put(ctx context.Context, userID id.UserID, eventType event.Type, content json.RawMessage) error {
-	return adq.Exec(ctx, upsertAccountDataQuery, userID, eventType.Type, unsafeJSONString(content))
+func (adq *AccountDataQuery) Put(ctx context.Context, userID id.UserID, eventType event.Type, content json.RawMessage) (*AccountData, error) {
+	ad := &AccountData{
+		UserID:  userID,
+		Type:    eventType.Type,
+		Content: content,
+	}
+	return ad, adq.Exec(ctx, upsertAccountDataQuery, userID, eventType.Type, unsafeJSONString(content))
 }
 
-func (adq *AccountDataQuery) PutRoom(ctx context.Context, userID id.UserID, roomID id.RoomID, eventType event.Type, content json.RawMessage) error {
-	return adq.Exec(ctx, upsertRoomAccountDataQuery, userID, roomID, eventType.Type, unsafeJSONString(content))
+func (adq *AccountDataQuery) PutRoom(ctx context.Context, userID id.UserID, roomID id.RoomID, eventType event.Type, content json.RawMessage) (*AccountData, error) {
+	ad := &AccountData{
+		UserID:  userID,
+		RoomID:  roomID,
+		Type:    eventType.Type,
+		Content: content,
+	}
+	return ad, adq.Exec(ctx, upsertRoomAccountDataQuery, userID, roomID, eventType.Type, unsafeJSONString(content))
+}
+
+func (adq *AccountDataQuery) GetAllGlobal(ctx context.Context, userID id.UserID) ([]*AccountData, error) {
+	return adq.QueryMany(ctx, getGlobalAccountDataQuery, userID)
 }
 
 type AccountData struct {

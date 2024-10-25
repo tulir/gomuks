@@ -104,9 +104,11 @@ func (h *HiClient) processSyncResponse(ctx context.Context, resp *mautrix.RespSy
 		ctx.Value(syncContextKey).(*syncContext).shouldWakeupRequestQueue = true
 	}
 
+	accountData := make(map[event.Type]*database.AccountData, len(resp.AccountData.Events))
+	var err error
 	for _, evt := range resp.AccountData.Events {
 		evt.Type.Class = event.AccountDataEventType
-		err := h.DB.AccountData.Put(ctx, h.Account.UserID, evt.Type, evt.Content.VeryRaw)
+		accountData[evt.Type], err = h.DB.AccountData.Put(ctx, h.Account.UserID, evt.Type, evt.Content.VeryRaw)
 		if err != nil {
 			return fmt.Errorf("failed to save account data event %s: %w", evt.Type.Type, err)
 		}
@@ -120,6 +122,7 @@ func (h *HiClient) processSyncResponse(ctx context.Context, resp *mautrix.RespSy
 			}
 		}
 	}
+	ctx.Value(syncContextKey).(*syncContext).evt.AccountData = accountData
 	for roomID, room := range resp.Rooms.Join {
 		err := h.processSyncJoinedRoom(ctx, roomID, room)
 		if err != nil {
@@ -133,7 +136,7 @@ func (h *HiClient) processSyncResponse(ctx context.Context, resp *mautrix.RespSy
 		}
 	}
 	h.Account.NextBatch = resp.NextBatch
-	err := h.DB.Account.PutNextBatch(ctx, h.Account.UserID, resp.NextBatch)
+	err = h.DB.Account.PutNextBatch(ctx, h.Account.UserID, resp.NextBatch)
 	if err != nil {
 		return fmt.Errorf("failed to save next_batch: %w", err)
 	}
@@ -179,10 +182,11 @@ func (h *HiClient) processSyncJoinedRoom(ctx context.Context, roomID id.RoomID, 
 		}
 	}
 
+	accountData := make(map[event.Type]*database.AccountData, len(room.AccountData.Events))
 	for _, evt := range room.AccountData.Events {
 		evt.Type.Class = event.AccountDataEventType
 		evt.RoomID = roomID
-		err = h.DB.AccountData.PutRoom(ctx, h.Account.UserID, roomID, evt.Type, evt.Content.VeryRaw)
+		accountData[evt.Type], err = h.DB.AccountData.PutRoom(ctx, h.Account.UserID, roomID, evt.Type, evt.Content.VeryRaw)
 		if err != nil {
 			return fmt.Errorf("failed to save account data event %s: %w", evt.Type.Type, err)
 		}
@@ -216,6 +220,7 @@ func (h *HiClient) processSyncJoinedRoom(ctx context.Context, roomID id.RoomID, 
 		&room.Summary,
 		receiptsList,
 		newOwnReceipts,
+		accountData,
 	)
 	if err != nil {
 		return err
@@ -513,6 +518,7 @@ func (h *HiClient) processStateAndTimeline(
 	summary *mautrix.LazyLoadSummary,
 	receipts []*database.Receipt,
 	newOwnReceipts []id.EventID,
+	accountData map[event.Type]*database.AccountData,
 ) error {
 	updatedRoom := &database.Room{
 		ID: room.ID,
@@ -747,10 +753,11 @@ func (h *HiClient) processStateAndTimeline(
 		}
 	}
 	// TODO why is *old* unread count sometimes zero when processing the read receipt that is making it zero?
-	if roomChanged || len(newOwnReceipts) > 0 || len(timelineRowTuples) > 0 || len(allNewEvents) > 0 {
+	if roomChanged || len(accountData) > 0 || len(newOwnReceipts) > 0 || len(timelineRowTuples) > 0 || len(allNewEvents) > 0 {
 		ctx.Value(syncContextKey).(*syncContext).evt.Rooms[room.ID] = &SyncRoom{
 			Meta:          room,
 			Timeline:      timelineRowTuples,
+			AccountData:   accountData,
 			State:         changedState,
 			Reset:         timeline.Limited,
 			Events:        allNewEvents,

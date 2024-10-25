@@ -129,7 +129,13 @@ export interface MemDBEvent extends BaseDBEvent {
 
 export interface DBAccountData {
 	user_id: UserID
-	room_id?: RoomID
+	type: EventType
+	content: unknown
+}
+
+export interface DBRoomAccountData {
+	user_id: UserID
+	room_id: RoomID
 	type: EventType
 	content: unknown
 }

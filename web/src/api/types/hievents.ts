@@ -14,7 +14,9 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import {
+	DBAccountData,
 	DBRoom,
+	DBRoomAccountData,
 	EventRowID,
 	RawDBEvent,
 	TimelineRowTuple,
@@ -71,6 +73,7 @@ export interface SyncRoom {
 	state: Record<EventType, Record<string, EventRowID>>
 	reset: boolean
 	notifications: SyncNotification[]
+	account_data: Record<EventType, DBRoomAccountData>
 }
 
 export interface SyncNotification {
@@ -81,6 +84,7 @@ export interface SyncNotification {
 export interface SyncCompleteData {
 	rooms: Record<RoomID, SyncRoom>
 	left_rooms: RoomID[]
+	account_data: Record<EventType, DBAccountData>
 }
 
 export interface SyncCompleteEvent extends RPCCommand<SyncCompleteData> {
