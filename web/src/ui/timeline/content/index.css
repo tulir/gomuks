@@ -112,9 +112,26 @@ div.html-body {
 		margin: 0 0 .5rem;
 	}
 
-	p, ul, ol, dl, table, pre, blockquote {
+	h1, h2 {
+		font-size: 1.5em;
+	}
+
+	h3 {
+		font-size: 1.25em;
+	}
+
+	ul, ol, dl, table, pre, blockquote {
 		&:not(:last-child) {
 			margin: 0 0 .25rem;
+		}
+		&:last-child {
+			margin: 0;
+		}
+	}
+
+	p {
+		&:not(:last-child) {
+			margin: 0 0 1rem;
 		}
 		&:last-child {
 			margin: 0;
