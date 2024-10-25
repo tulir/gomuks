@@ -383,10 +383,19 @@ func (h *HiClient) calculateLocalContent(ctx context.Context, dbEvt *database.Ev
 				inlineImages = nil
 			}
 		} else {
-			var builder strings.Builder
-			builder.Grow(len(content.Body) + builderPreallocBuffer)
-			linkifyAndWriteBytes(&builder, []byte(content.Body))
-			sanitizedHTML = builder.String()
+			hasSpecialCharacters := false
+			for _, char := range content.Body {
+				if char == '<' || char == '>' || char == '&' || char == '.' || char == ':' {
+					hasSpecialCharacters = true
+					break
+				}
+			}
+			if hasSpecialCharacters {
+				var builder strings.Builder
+				builder.Grow(len(content.Body) + builderPreallocBuffer)
+				linkifyAndWriteBytes(&builder, []byte(content.Body))
+				sanitizedHTML = builder.String()
+			}
 			wasPlaintext = true
 		}
 		return &database.LocalContent{
