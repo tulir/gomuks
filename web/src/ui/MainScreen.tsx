@@ -13,7 +13,7 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import { use, useCallback, useState } from "react"
+import { use, useCallback, useLayoutEffect, useState } from "react"
 import type { RoomID } from "@/api/types"
 import { ClientContext } from "./ClientContext.ts"
 import RoomView from "./RoomView.tsx"
@@ -25,13 +25,16 @@ const MainScreen = () => {
 	const client = use(ClientContext)!
 	const activeRoom = activeRoomID && client.store.rooms.get(activeRoomID)
 	const setActiveRoom = useCallback((roomID: RoomID) => {
+		console.log("Switching to room", roomID)
 		setActiveRoomID(roomID)
 		if (client.store.rooms.get(roomID)?.stateLoaded === false) {
 			client.loadRoomState(roomID)
 				.catch(err => console.error("Failed to load room state", err))
 		}
 	}, [client])
-	client.store.switchRoom = setActiveRoom
+	useLayoutEffect(() => {
+		client.store.switchRoom = setActiveRoom
+	}, [client, setActiveRoom])
 	const clearActiveRoom = useCallback(() => setActiveRoomID(null), [])
 	return <main className={`matrix-main ${activeRoom ? "room-selected" : ""}`}>
 		<RoomList setActiveRoom={setActiveRoom} activeRoomID={activeRoomID} />
