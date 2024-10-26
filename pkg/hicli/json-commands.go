@@ -47,6 +47,16 @@ func (h *HiClient) handleJSONCommand(ctx context.Context, req *JSONCommand) (any
 		return unmarshalAndCall(req.Data, func(params *sendEventParams) (*database.Event, error) {
 			return h.Send(ctx, params.RoomID, params.EventType, params.Content)
 		})
+	case "report_event":
+		return unmarshalAndCall(req.Data, func(params *reportEventParams) (bool, error) {
+			return true, h.Client.ReportEvent(ctx, params.RoomID, params.EventID, params.Reason)
+		})
+	case "redact_event":
+		return unmarshalAndCall(req.Data, func(params *redactEventParams) (*mautrix.RespSendEvent, error) {
+			return h.Client.RedactEvent(ctx, params.RoomID, params.EventID, mautrix.ReqRedact{
+				Reason: params.Reason,
+			})
+		})
 	case "set_state":
 		return unmarshalAndCall(req.Data, func(params *sendStateEventParams) (id.EventID, error) {
 			return h.SetState(ctx, params.RoomID, params.EventType, params.StateKey, params.Content)
@@ -146,6 +156,18 @@ type sendEventParams struct {
 	RoomID    id.RoomID       `json:"room_id"`
 	EventType event.Type      `json:"type"`
 	Content   json.RawMessage `json:"content"`
+}
+
+type reportEventParams struct {
+	RoomID  id.RoomID  `json:"room_id"`
+	EventID id.EventID `json:"event_id"`
+	Reason  string     `json:"reason"`
+}
+
+type redactEventParams struct {
+	RoomID  id.RoomID  `json:"room_id"`
+	EventID id.EventID `json:"event_id"`
+	Reason  string     `json:"reason"`
 }
 
 type sendStateEventParams struct {

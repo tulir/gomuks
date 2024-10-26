@@ -133,6 +133,14 @@ export default abstract class RPCClient {
 		return this.request("send_event", { room_id, type, content })
 	}
 
+	reportEvent(room_id: RoomID, event_id: EventID, reason: string): Promise<boolean> {
+		return this.request("report_event", { room_id, event_id, reason })
+	}
+
+	redactEvent(room_id: RoomID, event_id: EventID, reason: string): Promise<boolean> {
+		return this.request("redact_event", { room_id, event_id, reason })
+	}
+
 	setState(
 		room_id: RoomID, type: EventType, state_key: string, content: Record<string, unknown>,
 	): Promise<EventID> {

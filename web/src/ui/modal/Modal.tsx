@@ -13,7 +13,7 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import React, { JSX, createContext, useCallback, useState } from "react"
+import React, { JSX, createContext, useCallback, useReducer } from "react"
 
 export interface ModalState {
 	content: JSX.Element
@@ -30,25 +30,27 @@ export const ModalContext = createContext<openModal>(() =>
 export const ModalCloseContext = createContext<() => void>(() => {})
 
 export const ModalWrapper = ({ children }: { children: React.ReactNode }) => {
-	const [state, setState] = useState<ModalState | null>(null)
+	const [state, setState] = useReducer((prevState: ModalState | null, newState: ModalState | null) => {
+		prevState?.onClose?.()
+		return newState
+	}, null)
 	const onClickWrapper = useCallback((evt?: React.MouseEvent) => {
 		if (evt && evt.target !== evt.currentTarget) {
 			return
 		}
 		setState(null)
-		state?.onClose?.()
-	}, [state])
+	}, [])
 	return <>
 		<ModalContext value={setState}>
 			{children}
+			{state && <div
+				className={`overlay ${state.wrapperClass ?? "modal"} ${state.dimmed ? "dimmed" : ""}`}
+				onClick={onClickWrapper}
+			>
+				<ModalCloseContext value={onClickWrapper}>
+					{state.content}
+				</ModalCloseContext>
+			</div>}
 		</ModalContext>
-		{state && <div
-			className={`overlay ${state.wrapperClass ?? "modal"} ${state.dimmed ? "dimmed" : ""}`}
-			onClick={onClickWrapper}
-		>
-			<ModalCloseContext value={onClickWrapper}>
-				{state.content}
-			</ModalCloseContext>
-		</div>}
 	</>
 }

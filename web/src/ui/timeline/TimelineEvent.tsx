@@ -21,9 +21,9 @@ import { isEventID } from "@/util/validation.ts"
 import { ClientContext } from "../ClientContext.ts"
 import { LightboxContext } from "../modal/Lightbox.tsx"
 import { useRoomContext } from "../roomcontext.ts"
-import EventMenu from "./EventMenu.tsx"
 import { ReplyIDBody } from "./ReplyBody.tsx"
 import getBodyType, { ContentErrorBoundary, EventContentProps, HiddenEvent, MemberBody } from "./content"
+import EventMenu from "./menu/EventMenu.tsx"
 import ErrorIcon from "../../icons/error.svg?react"
 import PendingIcon from "../../icons/pending.svg?react"
 import SentIcon from "../../icons/sent.svg?react"
@@ -32,6 +32,7 @@ import "./TimelineEvent.css"
 export interface TimelineEventProps {
 	evt: MemDBEvent
 	prevEvt: MemDBEvent | null
+	disableMenu?: boolean
 }
 
 const fullTimeFormatter = new Intl.DateTimeFormat("en-GB", { dateStyle: "full", timeStyle: "medium" })
@@ -67,7 +68,7 @@ function isSmallEvent(bodyType: React.FunctionComponent<EventContentProps>): boo
 	return bodyType === HiddenEvent || bodyType === MemberBody
 }
 
-const TimelineEvent = ({ evt, prevEvt }: TimelineEventProps) => {
+const TimelineEvent = ({ evt, prevEvt, disableMenu }: TimelineEventProps) => {
 	const roomCtx = useRoomContext()
 	const client = use(ClientContext)!
 	const [forceContextMenuOpen, setForceContextMenuOpen] = useState(false)
@@ -96,9 +97,9 @@ const TimelineEvent = ({ evt, prevEvt }: TimelineEventProps) => {
 	const relatesTo = (evt.orig_content ?? evt.content)?.["m.relates_to"]
 	const replyTo = relatesTo?.["m.in_reply_to"]?.event_id
 	const mainEvent = <div data-event-id={evt.event_id} className={wrapperClassNames.join(" ")}>
-		<div className={`context-menu-container ${forceContextMenuOpen ? "force-open" : ""}`}>
+		{!disableMenu && <div className={`context-menu-container ${forceContextMenuOpen ? "force-open" : ""}`}>
 			<EventMenu evt={evt} setForceOpen={setForceContextMenuOpen}/>
-		</div>
+		</div>}
 		<div className="sender-avatar" title={evt.sender}>
 			<img
 				className={`${smallAvatar ? "small" : ""} avatar`}
