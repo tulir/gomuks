@@ -21,7 +21,6 @@ div.message-composer {
 			padding: .5rem;
 			border: none;
 			outline: none;
-			background: linear-gradient(to right, #ffffff 0%,#ffeded 100%);
 		}
 
 		> button {

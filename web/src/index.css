@@ -2,7 +2,7 @@ body {
 	font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
 	margin: 0;
 	padding: 0;
-	background: linear-gradient(to right, #ffffff 0%,#ffeded 100%);
+	background-color: #EEE;
 	line-height: 1.5;
 	font-size: 16px;
 	touch-action: none;
@@ -18,7 +18,7 @@ html {
 }
 
 main {
-	background: linear-gradient(to right, #ffffff 0%,#ffeded 100%);
+	background-color: white;
 }
 
 pre, code {
