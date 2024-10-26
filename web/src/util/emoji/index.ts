@@ -128,13 +128,13 @@ export function parseCustomEmojiPack(
 			}
 			let converted = emojiMap.get(image.url)
 			if (converted) {
-				converted.s.push(shortcode.toLowerCase().replaceAll("_", ""))
+				converted.s.push(shortcode.toLowerCase().replaceAll("_", "").replaceAll(" ", ""))
 			} else {
 				converted = {
 					c: id,
 					u: image.url,
 					n: shortcode,
-					s: [shortcode.toLowerCase().replaceAll("_", "")],
+					s: [shortcode.toLowerCase().replaceAll("_", "").replaceAll(" ", "")],
 					t: image.body || shortcode,
 				}
 				emojiMap.set(image.url, converted)
@@ -171,7 +171,7 @@ interface useEmojisParams {
 }
 
 export function useFilteredEmojis(query: string, params: useEmojisParams = {}): Emoji[][] {
-	query = query.toLowerCase().replaceAll("_", "")
+	query = query.toLowerCase().replaceAll("_", "").replaceAll(" ", "")
 	const frequentlyUsedCategory: Emoji[] = useMemo(() => {
 		if (!params.frequentlyUsed?.size) {
 			return []
