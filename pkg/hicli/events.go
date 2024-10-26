@@ -35,7 +35,7 @@ type SyncComplete struct {
 }
 
 func (c *SyncComplete) IsEmpty() bool {
-	return len(c.Rooms) == 0
+	return len(c.Rooms) == 0 && len(c.LeftRooms) == 0 && len(c.AccountData) == 0
 }
 
 type EventsDecrypted struct {

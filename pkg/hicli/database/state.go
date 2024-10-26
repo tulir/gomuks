@@ -10,6 +10,7 @@ import (
 	"context"
 	"fmt"
 	"slices"
+	"strings"
 
 	"go.mau.fi/util/dbutil"
 	"maunium.net/go/mautrix/event"
@@ -28,16 +29,17 @@ const (
 	deleteCurrentStateQuery = `
 		DELETE FROM current_state WHERE room_id = $1
 	`
-	getCurrentRoomStateQuery = `
+	getCurrentRoomStateBaseQuery = `
 		SELECT event.rowid, -1,
 		       event.room_id, event.event_id, sender, event.type, event.state_key, timestamp, content, decrypted, decrypted_type,
 		       unsigned, local_content, transaction_id, redacted_by, relates_to, relation_type,
 		       megolm_session_id, decryption_error, send_error, reactions, last_edit_rowid, unread_type
 		FROM current_state cs
 		JOIN event ON cs.event_rowid = event.rowid
-		WHERE cs.room_id = $1
 	`
-	getCurrentStateEventQuery = getCurrentRoomStateQuery + `AND cs.event_type = $2 AND cs.state_key = $3`
+	getCurrentRoomStateQuery     = getCurrentRoomStateBaseQuery + `WHERE cs.room_id = $1`
+	getManyCurrentRoomStateQuery = getCurrentRoomStateBaseQuery + `WHERE (cs.room_id, cs.event_type, cs.state_key) IN (%s)`
+	getCurrentStateEventQuery    = getCurrentRoomStateBaseQuery + `WHERE cs.room_id = $1 AND cs.event_type = $2 AND cs.state_key = $3`
 )
 
 var massInsertCurrentStateBuilder = dbutil.NewMassInsertBuilder[*CurrentStateEntry, [1]any](addCurrentStateQuery, "($1, $%d, $%d, $%d, $%d)")
@@ -79,6 +81,25 @@ func (csq *CurrentStateQuery) AddMany(ctx context.Context, roomID id.RoomID, del
 		}
 	}
 	return nil
+}
+
+type RoomStateGUID struct {
+	RoomID   id.RoomID  `json:"room_id"`
+	Type     event.Type `json:"type"`
+	StateKey string     `json:"state_key"`
+}
+
+func (csq *CurrentStateQuery) GetMany(ctx context.Context, keys []RoomStateGUID) ([]*Event, error) {
+	args := make([]any, len(keys)*3)
+	placeholders := make([]string, len(keys))
+	for i, key := range keys {
+		args[i*3] = key.RoomID
+		args[i*3+1] = key.Type.Type
+		args[i*3+2] = key.StateKey
+		placeholders[i] = fmt.Sprintf("($%d, $%d, $%d)", i*3+1, i*3+2, i*3+3)
+	}
+	query := fmt.Sprintf(getManyCurrentRoomStateQuery, strings.Join(placeholders, ", "))
+	return csq.QueryMany(ctx, query, args...)
 }
 
 func (csq *CurrentStateQuery) Add(ctx context.Context, roomID id.RoomID, eventType event.Type, stateKey string, eventRowID EventRowID, membership event.Membership) error {

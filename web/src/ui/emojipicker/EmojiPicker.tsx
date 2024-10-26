@@ -16,6 +16,7 @@
 import { CSSProperties, JSX, use, useCallback, useState } from "react"
 import { getMediaURL } from "@/api/media.ts"
 import { RoomStateStore, useCustomEmojis } from "@/api/statestore"
+import { roomStateGUIDToString, stringToRoomStateGUID } from "@/api/types"
 import { CATEGORY_FREQUENTLY_USED, Emoji, PartialEmoji, categories, useFilteredEmojis } from "@/util/emoji"
 import useEvent from "@/util/useEvent.ts"
 import { ClientContext } from "../ClientContext.ts"
@@ -72,6 +73,7 @@ interface EmojiPickerProps {
 export const EmojiPicker = ({ style, selected, onSelect, room, allowFreeform, closeOnSelect }: EmojiPickerProps) => {
 	const client = use(ClientContext)!
 	const [query, setQuery] = useState("")
+	const watchedEmojiPackKeys = client.store.getEmojiPackKeys().map(roomStateGUIDToString)
 	const customEmojiPacks = useCustomEmojis(client.store, room)
 	const emojis = useFilteredEmojis(query, {
 		frequentlyUsed: client.store.frequentlyUsedEmoji,
@@ -114,6 +116,22 @@ export const EmojiPicker = ({ style, selected, onSelect, room, allowFreeform, cl
 		setPreviewEmoji(getEmojiFromAttrs(evt.currentTarget)))
 	const onMouseOutEmoji = useCallback(() => setPreviewEmoji(undefined), [])
 	const onClickFreeformReact = useEvent(() => onSelectWrapped({ u: query }))
+	const onClickSubscribePack = useEvent((evt: React.MouseEvent<HTMLButtonElement>) => {
+		const guid = stringToRoomStateGUID(evt.currentTarget.getAttribute("data-pack-id"))
+		if (!guid) {
+			return
+		}
+		client.subscribeToEmojiPack(guid, true)
+			.catch(err => window.alert(`Failed to subscribe to emoji pack: ${err}`))
+	})
+	const onClickUnsubscribePack = useEvent((evt: React.MouseEvent<HTMLButtonElement>) => {
+		const guid = stringToRoomStateGUID(evt.currentTarget.getAttribute("data-pack-id"))
+		if (!guid) {
+			return
+		}
+		client.subscribeToEmojiPack(guid, false)
+			.catch(err => window.alert(`Failed to unsubscribe from emoji pack: ${err}`))
+	})
 
 	const renderedCats: JSX.Element[] = []
 	let currentCatRender: JSX.Element[] = []
@@ -122,14 +140,38 @@ export const EmojiPicker = ({ style, selected, onSelect, room, allowFreeform, cl
 		if (!currentCatRender.length) {
 			return
 		}
-		const categoryName = typeof currentCatNum === "number" ? categories[currentCatNum] : currentCatNum
+		let categoryName: string
+		let headerExtra: JSX.Element | null = null
+		if (typeof currentCatNum === "number") {
+			categoryName = categories[currentCatNum]
+		} else if (currentCatNum === CATEGORY_FREQUENTLY_USED) {
+			categoryName = CATEGORY_FREQUENTLY_USED
+		} else {
+			const customPack = customEmojiPacks.find(pack => pack.id === currentCatNum)
+			categoryName = customPack?.name ?? "Unknown name"
+			if (customPack && customPack.id !== "personal") {
+				if (watchedEmojiPackKeys.includes(customPack.id)) {
+					headerExtra = <button
+						className="emoji-category-add"
+						onClick={onClickUnsubscribePack}
+						data-pack-id={customPack.id}
+					>Unsubscribe</button>
+				} else {
+					headerExtra = <button
+						className="emoji-category-add"
+						onClick={onClickSubscribePack}
+						data-pack-id={customPack.id}
+					>Subscribe</button>
+				}
+			}
+		}
 		renderedCats.push(<div
 			className="emoji-category"
 			key={currentCatNum}
-			id={`emoji-category-${categoryName}`}
+			id={`emoji-category-${currentCatNum}`}
 			style={{ containIntrinsicHeight: `${1.5 + Math.ceil(currentCatRender.length / 8) * 2.5}rem` }}
 		>
-			<h4 className="emoji-category-name">{categoryName}</h4>
+			<h4 className="emoji-category-name">{categoryName}{headerExtra}</h4>
 			<div className="emoji-category-list">
 				{currentCatRender}
 			</div>
@@ -162,8 +204,8 @@ export const EmojiPicker = ({ style, selected, onSelect, room, allowFreeform, cl
 	}
 	const onChangeQuery = useCallback((evt: React.ChangeEvent<HTMLInputElement>) => setQuery(evt.target.value), [])
 	const onClickCategoryButton = useCallback((evt: React.MouseEvent) => {
-		const categoryName = evt.currentTarget.getAttribute("title")!
-		document.getElementById(`emoji-category-${categoryName}`)?.scrollIntoView({ behavior: "smooth" })
+		const categoryID = evt.currentTarget.getAttribute("data-category-id")!
+		document.getElementById(`emoji-category-${categoryID}`)?.scrollIntoView({ behavior: "smooth" })
 	}, [])
 	return <div className="emoji-picker" style={style}>
 		<div className="emoji-category-bar">

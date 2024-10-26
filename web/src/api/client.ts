@@ -16,7 +16,7 @@
 import { CachedEventDispatcher } from "../util/eventdispatcher.ts"
 import RPCClient, { SendMessageParams } from "./rpc.ts"
 import { RoomStateStore, StateStore } from "./statestore"
-import type { ClientState, EventID, EventType, RPCEvent, RoomID, RoomStateGUID, UserID } from "./types"
+import type { ClientState, EventID, EventType, ImagePackRooms, RPCEvent, RoomID, RoomStateGUID, UserID } from "./types"
 
 export default class Client {
 	readonly state = new CachedEventDispatcher<ClientState>()
@@ -25,7 +25,7 @@ export default class Client {
 	constructor(readonly rpc: RPCClient) {
 		this.rpc.event.listen(this.#handleEvent)
 		this.store.accountDataSubs.getSubscriber("im.ponies.emote_rooms")(() =>
-			queueMicrotask(() => this.#handleEmoteRoomsChange))
+			queueMicrotask(() => this.#handleEmoteRoomsChange()))
 	}
 
 	get userID(): UserID {
@@ -103,6 +103,29 @@ export default class Client {
 		}
 	}
 
+	async subscribeToEmojiPack(pack: RoomStateGUID, subscribe: boolean = true) {
+		const emoteRooms = (this.store.accountData.get("im.ponies.emote_rooms") ?? {}) as ImagePackRooms
+		if (!emoteRooms.rooms) {
+			emoteRooms.rooms = {}
+		}
+		if (!emoteRooms.rooms[pack.room_id]) {
+			emoteRooms.rooms[pack.room_id] = {}
+		}
+		if (emoteRooms.rooms[pack.room_id][pack.state_key]) {
+			if (subscribe) {
+				return
+			}
+			delete emoteRooms.rooms[pack.room_id][pack.state_key]
+		} else {
+			if (!subscribe) {
+				return
+			}
+			emoteRooms.rooms[pack.room_id][pack.state_key] = {}
+		}
+		console.log("Changing subscription state for emoji pack", pack, "to", subscribe)
+		await this.rpc.setAccountData("im.ponies.emote_rooms", emoteRooms)
+	}
+
 	async incrementFrequentlyUsedEmoji(targetEmoji: string) {
 		if (targetEmoji.startsWith("mxc://")) {
 			return
@@ -134,7 +157,9 @@ export default class Client {
 
 	#handleEmoteRoomsChange() {
 		this.store.invalidateEmojiPackKeyCache()
-		this.loadSpecificRoomState(this.store.getEmojiPackKeys()).then(
+		const keys = this.store.getEmojiPackKeys()
+		console.log("Loading subscribed emoji pack states", keys)
+		this.loadSpecificRoomState(keys).then(
 			() => this.store.emojiRoomsSub.notify(),
 			err => console.error("Failed to load emote rooms", err),
 		)

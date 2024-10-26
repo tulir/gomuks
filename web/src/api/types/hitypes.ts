@@ -165,7 +165,22 @@ export interface ClientWellKnown {
 }
 
 export function roomStateGUIDToString(guid: RoomStateGUID): string {
-	return `${guid.room_id}/${guid.type}/${guid.state_key}`
+	return `${encodeURIComponent(guid.room_id)}/${guid.type}/${encodeURIComponent(guid.state_key)}`
+}
+
+export function stringToRoomStateGUID(str?: string | null): RoomStateGUID | undefined {
+	if (!str) {
+		return
+	}
+	const [roomID, type, stateKey] = str.split("/")
+	if (!roomID || !type || !stateKey) {
+		return
+	}
+	return {
+		room_id: decodeURIComponent(roomID) as RoomID,
+		type: type as EventType,
+		state_key: decodeURIComponent(stateKey),
+	}
 }
 
 export interface RoomStateGUID {

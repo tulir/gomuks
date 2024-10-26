@@ -195,6 +195,7 @@ export class StateStore {
 
 	invalidateEmojiPackKeyCache() {
 		this.#emojiPackKeys = null
+		this.#watchedRoomEmojiPacks = null
 	}
 
 	invalidateEmojiPacksCache() {
@@ -239,10 +240,12 @@ export class StateStore {
 					.map(key => {
 						const room = this.rooms.get(key.room_id)
 						if (!room) {
+							console.warn("Failed to find room for emoji pack", key)
 							return null
 						}
 						const pack = room.getEmojiPack(key.state_key)
 						if (!pack) {
+							console.warn("Failed to find pack", key)
 							return null
 						}
 						return [roomStateGUIDToString(key), pack]

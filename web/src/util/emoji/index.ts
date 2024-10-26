@@ -131,7 +131,7 @@ export function parseCustomEmojiPack(
 				converted.s.push(shortcode.toLowerCase().replaceAll("_", ""))
 			} else {
 				converted = {
-					c: name,
+					c: id,
 					u: image.url,
 					n: shortcode,
 					s: [shortcode.toLowerCase().replaceAll("_", "")],

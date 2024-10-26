@@ -113,6 +113,13 @@ div.emoji-picker {
 
 	h4.emoji-category-name {
 		margin: 0;
+		display: flex;
+		align-items: center;
+
+		> button {
+			margin-left: .5rem;
+			font-size: .8rem;
+		}
 	}
 
 	button.emoji-category-icon > img, button.emoji > img {
