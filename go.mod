@@ -24,7 +24,7 @@ require (
 	golang.org/x/text v0.19.0
 	gopkg.in/yaml.v3 v3.0.1
 	maunium.net/go/mauflag v1.0.0
-	maunium.net/go/mautrix v0.21.2-0.20241020164413-e17cb8385518
+	maunium.net/go/mautrix v0.21.2-0.20241026115159-a59d4d78677f
 	mvdan.cc/xurls/v2 v2.5.0
 )
 

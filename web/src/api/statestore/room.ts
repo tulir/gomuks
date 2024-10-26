@@ -13,22 +13,26 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
+import { CustomEmojiPack, parseCustomEmojiPack } from "@/util/emoji"
 import { NonNullCachedEventDispatcher } from "@/util/eventdispatcher.ts"
 import Subscribable, { MultiSubscribable } from "@/util/subscribable.ts"
-import type {
+import {
 	DBRoom,
 	EncryptedEventContent,
 	EventID,
 	EventRowID,
 	EventType,
 	EventsDecryptedData,
+	ImagePack,
 	LazyLoadSummary,
 	MemDBEvent,
 	RawDBEvent,
 	RoomID,
 	SyncRoom,
 	TimelineRowTuple,
+	roomStateGUIDToString,
 } from "../types"
+import type { StateStore } from "./main.ts"
 
 function arraysAreEqual<T>(arr1?: T[], arr2?: T[]): boolean {
 	if (!arr1 || !arr2) {
@@ -75,12 +79,14 @@ export class RoomStateStore {
 	readonly eventSubs = new MultiSubscribable()
 	readonly requestedEvents: Set<EventID> = new Set()
 	readonly openNotifications: Map<EventRowID, Notification> = new Map()
+	readonly emojiPacks: Map<string, CustomEmojiPack | null> = new Map()
+	#allPacksCache: Record<string, CustomEmojiPack> | null = null
 	readonly pendingEvents: EventRowID[] = []
 	paginating = false
 	paginationRequestedForRow = -1
 	readUpToRow = -1
 
-	constructor(meta: DBRoom) {
+	constructor(meta: DBRoom, private parent: StateStore) {
 		this.roomID = meta.room_id
 		this.meta = new NonNullCachedEventDispatcher(meta)
 	}
@@ -109,6 +115,39 @@ export class RoomStateStore {
 			return
 		}
 		return this.eventsByRowID.get(rowID)
+	}
+
+	getEmojiPack(key: string): CustomEmojiPack | null {
+		if (!this.emojiPacks.has(key)) {
+			const pack = this.getStateEvent("im.ponies.room_emotes", key)?.content
+			if (!pack) {
+				this.emojiPacks.set(key, null)
+				return null
+			}
+			const fallbackName = key === ""
+				? this.meta.current.name : `${this.meta.current.name} - ${key}`
+			const packID = roomStateGUIDToString({
+				room_id: this.roomID,
+				type: "im.ponies.room_emotes",
+				state_key: key,
+			})
+			this.emojiPacks.set(key, parseCustomEmojiPack(pack as ImagePack, packID, fallbackName))
+		}
+		return this.emojiPacks.get(key) ?? null
+	}
+
+	getAllEmojiPacks(): Record<string, CustomEmojiPack> {
+		if (this.#allPacksCache === null) {
+			this.#allPacksCache = Object.fromEntries(
+				this.state.get("im.ponies.room_emotes")?.keys()
+					.map(stateKey => {
+						const pack = this.getEmojiPack(stateKey)
+						return pack ? [pack.id, pack] : null
+					})
+					.filter((res): res is [string, CustomEmojiPack] => !!res) ?? [],
+			)
+		}
+		return this.#allPacksCache
 	}
 
 	getPinnedEvents(): EventID[] {
@@ -185,6 +224,15 @@ export class RoomStateStore {
 		this.notifyTimelineSubscribers()
 	}
 
+	invalidateStateCaches(evtType: string, key: string) {
+		if (evtType === "im.ponies.room_emotes") {
+			this.emojiPacks.delete(key)
+			this.#allPacksCache = null
+			this.parent.invalidateEmojiPacksCache()
+		}
+		this.stateSubs.notify(this.stateSubKey(evtType, key))
+	}
+
 	applySync(sync: SyncRoom) {
 		if (visibleMetaIsEqual(this.meta.current, sync.meta)) {
 			this.meta.current = sync.meta
@@ -202,8 +250,9 @@ export class RoomStateStore {
 			}
 			for (const [key, rowID] of Object.entries(changedEvts)) {
 				stateMap.set(key, rowID)
-				this.stateSubs.notify(this.stateSubKey(evtType, key))
+				this.invalidateStateCaches(evtType, key)
 			}
+			this.stateSubs.notify(evtType)
 		}
 		if (sync.reset) {
 			this.timeline = sync.timeline
@@ -231,7 +280,8 @@ export class RoomStateStore {
 			this.state.set(evt.type, stateMap)
 		}
 		stateMap.set(evt.state_key, evt.rowid)
-		this.stateSubs.notify(this.stateSubKey(evt.type, evt.state_key))
+		this.invalidateStateCaches(evt.type, evt.state_key)
+		this.stateSubs.notify(evt.type)
 	}
 
 	applyFullState(state: RawDBEvent[]) {
@@ -248,12 +298,15 @@ export class RoomStateStore {
 			}
 			stateMap.set(evt.state_key, evt.rowid)
 		}
+		this.emojiPacks.clear()
+		this.#allPacksCache = null
 		this.state = newStateMap
 		this.stateLoaded = true
 		for (const [evtType, stateMap] of newStateMap) {
 			for (const [key] of stateMap) {
 				this.stateSubs.notify(this.stateSubKey(evtType, key))
 			}
+			this.stateSubs.notify(evtType)
 		}
 	}
 

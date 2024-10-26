@@ -145,7 +145,7 @@ func (gmx *Gomuks) SetupLog() {
 }
 
 func (gmx *Gomuks) StartClient() {
-	hicli.HTMLSanitizerImgSrcTemplate = "_gomuks/media/%s/%s"
+	hicli.HTMLSanitizerImgSrcTemplate = "_gomuks/media/%s/%s?encrypted=false"
 	rawDB, err := dbutil.NewFromConfig("gomuks", dbutil.Config{
 		PoolConfig: dbutil.PoolConfig{
 			Type:         "sqlite3-fk-wal",

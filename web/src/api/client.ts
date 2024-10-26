@@ -24,6 +24,8 @@ export default class Client {
 
 	constructor(readonly rpc: RPCClient) {
 		this.rpc.event.listen(this.#handleEvent)
+		this.store.accountDataSubs.getSubscriber("im.ponies.emote_rooms")(() =>
+			queueMicrotask(() => this.#handleEmoteRoomsChange))
 	}
 
 	get userID(): UserID {
@@ -102,6 +104,9 @@ export default class Client {
 	}
 
 	async incrementFrequentlyUsedEmoji(targetEmoji: string) {
+		if (targetEmoji.startsWith("mxc://")) {
+			return
+		}
 		let recentEmoji = this.store.accountData.get("io.element.recent_emoji")?.recent_emoji as
 			[string, number][] | undefined
 		if (!Array.isArray(recentEmoji)) {
@@ -125,6 +130,14 @@ export default class Client {
 		const newContent = { recent_emoji: recentEmoji }
 		this.store.accountData.set("io.element.recent_emoji", newContent)
 		await this.rpc.setAccountData("io.element.recent_emoji", newContent)
+	}
+
+	#handleEmoteRoomsChange() {
+		this.store.invalidateEmojiPackKeyCache()
+		this.loadSpecificRoomState(this.store.getEmojiPackKeys()).then(
+			() => this.store.emojiRoomsSub.notify(),
+			err => console.error("Failed to load emote rooms", err),
+		)
 	}
 
 	async loadSpecificRoomState(keys: RoomStateGUID[]): Promise<void> {

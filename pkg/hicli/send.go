@@ -52,7 +52,7 @@ func (h *HiClient) SendMessage(
 		text = strings.TrimPrefix(text, "/html ")
 		content = format.RenderMarkdown(text, false, true)
 	} else if text != "" {
-		content = format.RenderMarkdown(text, true, false)
+		content = format.RenderMarkdown(text, true, true)
 	}
 	if base != nil {
 		if text != "" {

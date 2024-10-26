@@ -71,12 +71,13 @@ const EventMenu = ({ evt, setForceOpen }: EventHoverMenuProps) => {
 					client.sendEvent(evt.room_id, "m.reaction", emojiToReactionContent(emoji, evt.event_id))
 						.catch(err => window.alert(`Failed to send reaction: ${err}`))
 				}}
+				room={roomCtx.store}
 				closeOnSelect={true}
 				allowFreeform={true}
 			/>,
 			onClose: () => setForceOpen(false),
 		})
-	}, [client, evt, setForceOpen, openModal])
+	}, [client, roomCtx, evt, setForceOpen, openModal])
 	const onClickEdit = useCallback(() => {
 		roomCtx.setEditing(evt)
 	}, [roomCtx, evt])

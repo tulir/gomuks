@@ -81,7 +81,7 @@ export default tseslint.config(
 				"asyncArrow": "always",
 			}],
 			"func-style": ["warn", "declaration", {"allowArrowFunctions": true}],
-			"id-length": ["warn", {"max": 40, "exceptions": ["i", "j", "x", "y", "_"]}],
+			"id-length": ["warn", {"min": 1, "max": 40, "exceptions": ["i", "j", "x", "y", "_"]}],
 			"new-cap": ["warn", {
 				"newIsCap": true,
 				"capIsNew": true,

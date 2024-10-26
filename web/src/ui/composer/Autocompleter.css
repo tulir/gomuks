@@ -23,5 +23,10 @@ div.autocompletions {
 		&.selected, &:hover {
 			background-color: #f0f0f0;
 		}
+
+		> img {
+			width: 1.5rem;
+			height: 1.5rem;
+		}
 	}
 }

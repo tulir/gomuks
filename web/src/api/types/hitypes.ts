@@ -164,6 +164,10 @@ export interface ClientWellKnown {
 	}
 }
 
+export function roomStateGUIDToString(guid: RoomStateGUID): string {
+	return `${guid.room_id}/${guid.type}/${guid.state_key}`
+}
+
 export interface RoomStateGUID {
 	room_id: RoomID
 	type: EventType

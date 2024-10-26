@@ -13,7 +13,8 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import { useSyncExternalStore } from "react"
+import { useMemo, useSyncExternalStore } from "react"
+import { CustomEmojiPack } from "@/util/emoji"
 import type { EventID, EventType, MemDBEvent, UnknownEventContent } from "../types"
 import { StateStore } from "./main.ts"
 import { RoomStateStore } from "./room.ts"
@@ -49,4 +50,28 @@ export function useAccountData(ss: StateStore, type: EventType): UnknownEventCon
 		ss.accountDataSubs.getSubscriber(type),
 		() => ss.accountData.get(type) ?? null,
 	)
+}
+
+export function useCustomEmojis(
+	ss: StateStore, room: RoomStateStore,
+): CustomEmojiPack[] {
+	const personalPack = useSyncExternalStore(
+		ss.accountDataSubs.getSubscriber("im.ponies.user_emotes"),
+		() => ss.getPersonalEmojiPack(),
+	)
+	const watchedRoomPacks = useSyncExternalStore(
+		ss.emojiRoomsSub.subscribe,
+		() => ss.getRoomEmojiPacks(),
+	)
+	const specialRoomPacks = useSyncExternalStore(
+		room.stateSubs.getSubscriber("im.ponies.room_emotes"),
+		() => room.getAllEmojiPacks(),
+	)
+	return useMemo(() => {
+		const allPacksObject = { ...watchedRoomPacks, ...specialRoomPacks }
+		if (personalPack) {
+			allPacksObject.personal = personalPack
+		}
+		return Object.values(allPacksObject)
+	}, [personalPack, watchedRoomPacks, specialRoomPacks])
 }

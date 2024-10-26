@@ -169,6 +169,7 @@ export type ImagePackUsage = "emoticon" | "sticker"
 
 export interface ImagePackEntry {
 	url: ContentURI
+	body?: string
 	info?: MediaInfo
 	usage?: ImagePackUsage[]
 }

@@ -2,14 +2,14 @@ div.emoji-picker {
 	position: fixed;
 	background-color: white;
 	width: 22rem;
-	height: 30rem;
+	height: 34rem;
 	border-radius: 1rem;
 	border: 1px solid #ccc;
 	display: flex;
 	flex-direction: column;
 
 	div.emoji-category-bar {
-		height: 2.5rem;
+		/*height: 2.5rem;*/
 		display: flex;
 		justify-content: center;
 		flex-wrap: wrap;
@@ -80,6 +80,11 @@ div.emoji-picker {
 			display: flex;
 			justify-content: center;
 			align-items: center;
+
+			> img {
+				width: 3rem;
+				height: 3rem;
+			}
 		}
 
 		> div.emoji-name {
@@ -97,6 +102,7 @@ div.emoji-picker {
 
 	div.emoji-category {
 		width: 100%;
+		content-visibility: auto;
 	}
 
 	div.emoji-category-list {
@@ -107,6 +113,11 @@ div.emoji-picker {
 
 	h4.emoji-category-name {
 		margin: 0;
+	}
+
+	button.emoji-category-icon > img, button.emoji > img {
+		width: 1.5rem;
+		height: 1.5rem;
 	}
 
 	button.emoji {

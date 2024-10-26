@@ -25,7 +25,7 @@ import type {
 	RelatesTo,
 	RoomID,
 } from "@/api/types"
-import { emojiToMarkdown } from "@/util/emoji"
+import { PartialEmoji, emojiToMarkdown } from "@/util/emoji"
 import useEvent from "@/util/useEvent.ts"
 import { ClientContext } from "../ClientContext.ts"
 import EmojiPicker from "../emojipicker/EmojiPicker.tsx"
@@ -320,17 +320,19 @@ const MessageComposer = () => {
 		evt.stopPropagation()
 		roomCtx.setEditing(null)
 	}, [roomCtx])
+	const onSelectEmoji = useEvent((emoji: PartialEmoji) => {
+		setState({
+			text: state.text.slice(0, textInput.current?.selectionStart ?? 0)
+				+ emojiToMarkdown(emoji)
+				+ state.text.slice(textInput.current?.selectionEnd ?? 0),
+		})
+	})
 	const openEmojiPicker = useEvent(() => {
 		openModal({
 			content: <EmojiPicker
 				style={{ bottom: (composerRef.current?.clientHeight ?? 32) + 2, right: "1rem" }}
-				onSelect={emoji => {
-					setState({
-						text: state.text.slice(0, textInput.current?.selectionStart ?? 0)
-							+ emojiToMarkdown(emoji)
-							+ state.text.slice(textInput.current?.selectionEnd ?? 0),
-					})
-				}}
+				room={roomCtx.store}
+				onSelect={onSelectEmoji}
 			/>,
 			onClose: () => textInput.current?.focus(),
 		})

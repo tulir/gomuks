@@ -14,9 +14,9 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import { JSX, use, useEffect } from "react"
-import { getAvatarURL } from "@/api/media.ts"
-import { RoomStateStore } from "@/api/statestore"
-import { Emoji, useFilteredEmojis } from "@/util/emoji"
+import { getAvatarURL, getMediaURL } from "@/api/media.ts"
+import { RoomStateStore, useCustomEmojis } from "@/api/statestore"
+import { Emoji, emojiToMarkdown, useSortedAndFilteredEmojis } from "@/util/emoji"
 import useEvent from "@/util/useEvent.ts"
 import { ClientContext } from "../ClientContext.ts"
 import type { ComposerState } from "./MessageComposer.tsx"
@@ -81,7 +81,7 @@ function useAutocompleter<T>({
 			onSelect(params.selected)
 		}
 	}, [onSelect, params.selected])
-	const selected = params.selected !== undefined	 ? positiveMod(params.selected, items.length) : -1
+	const selected = params.selected !== undefined ? positiveMod(params.selected, items.length) : -1
 	return <div className="autocompletions">
 		{items.map((item, i) => <div
 			onClick={onClick}
@@ -93,18 +93,22 @@ function useAutocompleter<T>({
 }
 
 const emojiFuncs = {
-	getText: (emoji: Emoji) => emoji.u,
-	getKey: (emoji: Emoji) => emoji.u,
-	render: (emoji: Emoji) => <>{emoji.u} :{emoji.n}:</>,
+	getText: (emoji: Emoji) => emojiToMarkdown(emoji),
+	getKey: (emoji: Emoji) => `${emoji.c}-${emoji.u}`,
+	render: (emoji: Emoji) => <>{emoji.u.startsWith("mxc://")
+		? <img loading="lazy" src={getMediaURL(emoji.u)} alt={`:${emoji.n}:`}/>
+		: emoji.u
+	} :{emoji.n}:</>,
 }
 
-export const EmojiAutocompleter = ({ params, ...rest }: AutocompleterProps) => {
+export const EmojiAutocompleter = ({ params, room, ...rest }: AutocompleterProps) => {
 	const client = use(ClientContext)!
-	const items = useFilteredEmojis((params.frozenQuery ?? params.query).slice(1), {
-		sorted: true,
+	const customEmojiPacks = useCustomEmojis(client.store, room)
+	const items = useSortedAndFilteredEmojis((params.frozenQuery ?? params.query).slice(1), {
 		frequentlyUsed: client.store.frequentlyUsedEmoji,
+		customEmojiPacks,
 	})
-	return useAutocompleter({ params, ...rest, items, ...emojiFuncs })
+	return useAutocompleter({ params, room, ...rest, items, ...emojiFuncs })
 }
 
 const escapeDisplayname = (input: string) => input
