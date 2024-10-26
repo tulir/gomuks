@@ -29,6 +29,7 @@ function useChangeDescription(
 		onClick={use(LightboxContext)!}
 		alt=""
 	/>
+	const targetElem = <>{content.avatar_url && targetAvatar} {content.displayname ?? target}</>
 	if (content.membership === prevContent?.membership) {
 		if (content.displayname !== prevContent.displayname) {
 			if (content.avatar_url !== prevContent.avatar_url) {
@@ -60,16 +61,24 @@ function useChangeDescription(
 	} else if (content.membership === "join") {
 		return "joined the room"
 	} else if (content.membership === "invite") {
-		return <>invited {content.avatar_url && targetAvatar} {content.displayname ?? target}</>
+		return <>invited {targetElem}</>
 	} else if (content.membership === "ban") {
-		return <>banned {content.avatar_url && targetAvatar} {content.displayname ?? target}</>
+		return <>banned {targetElem}</>
 	} else if (content.membership === "knock") {
 		return "knocked on the room"
 	} else if (content.membership === "leave") {
 		if (sender === target) {
+			if (prevContent?.membership === "knock") {
+				return "cancelled their knock"
+			}
 			return "left the room"
 		}
-		return <>kicked {content.avatar_url && targetAvatar} {content.displayname ?? target}</>
+		if (prevContent?.membership === "ban") {
+			return <>unbanned {targetElem}</>
+		} else if (prevContent?.membership === "invite") {
+			return <>disinvited {targetElem}</>
+		}
+		return <>kicked {targetElem}</>
 	}
 	return "made an unknown membership change"
 }
