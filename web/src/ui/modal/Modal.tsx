@@ -40,12 +40,18 @@ export const ModalWrapper = ({ children }: { children: React.ReactNode }) => {
 		}
 		setState(null)
 	}, [])
+	const onKeyWrapper = useCallback((evt: React.KeyboardEvent<HTMLDivElement>) => {
+		if (evt.key === "Escape") {
+			setState(null)
+		}
+	}, [])
 	return <>
 		<ModalContext value={setState}>
 			{children}
 			{state && <div
 				className={`overlay ${state.wrapperClass ?? "modal"} ${state.dimmed ? "dimmed" : ""}`}
 				onClick={onClickWrapper}
+				onKeyDown={onKeyWrapper}
 			>
 				<ModalCloseContext value={onClickWrapper}>
 					{state.content}
