@@ -1,6 +1,6 @@
 div.emoji-picker {
 	position: fixed;
-	background-color: white;
+	backdrop-filter: blur(2.5px);
 	width: 22rem;
 	height: 34rem;
 	border-radius: 1rem;

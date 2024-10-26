@@ -8,6 +8,7 @@ div.room-view {
 		"messageview" 1fr
 		"input" auto
 		/ 1fr;
+	background: linear-gradient(135deg, #ffffff 0%,#ffeded 100%);
 
 	> div.room-header {
 		display: flex;

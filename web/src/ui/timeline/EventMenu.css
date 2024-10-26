@@ -2,7 +2,7 @@ div.context-menu {
 	position: absolute;
 	right: .5rem;
 	top: -1.5rem;
-	background-color: white;
+	backdrop-filter: blur(10px);
 	border: 1px solid #ccc;
 	border-radius: .25rem;
 	display: flex;
