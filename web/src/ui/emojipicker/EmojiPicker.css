@@ -84,6 +84,7 @@ div.emoji-picker {
 			> img {
 				width: 3rem;
 				height: 3rem;
+				object-fit: contain;
 			}
 		}
 
@@ -125,6 +126,7 @@ div.emoji-picker {
 	button.emoji-category-icon > img, button.emoji > img {
 		width: 1.5rem;
 		height: 1.5rem;
+		object-fit: contain;
 	}
 
 	button.emoji {
