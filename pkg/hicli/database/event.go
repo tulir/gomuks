@@ -316,7 +316,7 @@ type Event struct {
 	RelatesTo    id.EventID         `json:"relates_to,omitempty"`
 	RelationType event.RelationType `json:"relation_type,omitempty"`
 
-	MegolmSessionID id.SessionID `json:"-,omitempty"`
+	MegolmSessionID id.SessionID `json:"-"`
 	DecryptionError string       `json:"decryption_error,omitempty"`
 	SendError       string       `json:"send_error,omitempty"`
 
