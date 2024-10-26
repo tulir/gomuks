@@ -195,6 +195,8 @@ func main() {
 	exerrors.PanicIfNotNil(json.NewDecoder(resp.Body).Decode(&moreShortcodes))
 	moreShortcodes["1F4C8"] = append(moreShortcodes["1F4C8"], "chart_upwards")
 	moreShortcodes["1F4C9"] = append(moreShortcodes["1F4C9"], "chart_downwards")
+	moreShortcodes["1F6AE"] = append(moreShortcodes["1F6AE"], "put_in_trash")
+	moreShortcodes["1F5D1-FE0F"] = append(moreShortcodes["1F5D1-FE0F"], "trash_can")
 	for unified, codes := range moreShortcodes {
 		emoji, ok := emojiMap[unified]
 		if !ok {

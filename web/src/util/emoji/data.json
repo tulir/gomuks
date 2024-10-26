@@ -12540,7 +12540,8 @@
       "t": "Wastebasket",
       "n": "wastebasket",
       "s": [
-        "wastebasket"
+        "wastebasket",
+        "trashcan"
       ]
     },
     {
@@ -13292,7 +13293,8 @@
       "n": "put_litter_in_its_place",
       "s": [
         "putlitterinitsplace",
-        "litterbin"
+        "litterbin",
+        "putintrash"
       ]
     },
     {
