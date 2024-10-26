@@ -131,7 +131,7 @@ export interface ReactionEventContent {
 		event_id: EventID
 		key: string
 	}
-	"com.beeper.emoji.shortcode"?: string
+	"com.beeper.reaction.shortcode"?: string
 }
 
 export interface EncryptedFile {
