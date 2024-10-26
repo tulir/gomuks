@@ -13,14 +13,16 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import { CSSProperties, JSX, use, useCallback, useState } from "react"
+import React, { CSSProperties, JSX, use, useCallback, useState } from "react"
 import { getMediaURL } from "@/api/media.ts"
 import { RoomStateStore, useCustomEmojis } from "@/api/statestore"
-import { roomStateGUIDToString, stringToRoomStateGUID } from "@/api/types"
+import { roomStateGUIDToString } from "@/api/types"
 import { CATEGORY_FREQUENTLY_USED, Emoji, PartialEmoji, categories, useFilteredEmojis } from "@/util/emoji"
 import useEvent from "@/util/useEvent.ts"
 import { ClientContext } from "../ClientContext.ts"
 import { ModalCloseContext } from "../modal/Modal.tsx"
+import { EmojiGroup } from "./EmojiGroup.tsx"
+import renderEmoji from "./renderEmoji.tsx"
 import FallbackPackIcon from "@/icons/category.svg?react"
 import CloseIcon from "@/icons/close.svg?react"
 import ActivitiesIcon from "@/icons/emoji-categories/activities.svg?react"
@@ -36,13 +38,7 @@ import RecentIcon from "@/icons/schedule.svg?react"
 import SearchIcon from "@/icons/search.svg?react"
 import "./EmojiPicker.css"
 
-interface EmojiCategory {
-	index: number
-	name?: string
-	icon: JSX.Element
-}
-
-const sortedEmojiCategories: EmojiCategory[] = [
+const sortedEmojiCategories: {index: number, icon: JSX.Element}[] = [
 	{ index: 7, icon: <SmileysEmotionIcon/> },
 	{ index: 6, icon: <PeopleBodyIcon/> },
 	{ index: 1, icon: <AnimalsNatureIcon/> },
@@ -53,13 +49,6 @@ const sortedEmojiCategories: EmojiCategory[] = [
 	{ index: 8, icon: <SymbolsIcon/> },
 	{ index: 3, icon: <FlagsIcon/> },
 ]
-
-function renderEmoji(emoji: Emoji): JSX.Element | string {
-	if (emoji.u.startsWith("mxc://")) {
-		return <img loading="lazy" src={getMediaURL(emoji.u)} alt={`:${emoji.n}:`}/>
-	}
-	return emoji.u
-}
 
 interface EmojiPickerProps {
 	style: CSSProperties
@@ -73,16 +62,16 @@ interface EmojiPickerProps {
 export const EmojiPicker = ({ style, selected, onSelect, room, allowFreeform, closeOnSelect }: EmojiPickerProps) => {
 	const client = use(ClientContext)!
 	const [query, setQuery] = useState("")
+	const [previewEmoji, setPreviewEmoji] = useState<Emoji>()
 	const watchedEmojiPackKeys = client.store.getEmojiPackKeys().map(roomStateGUIDToString)
 	const customEmojiPacks = useCustomEmojis(client.store, room)
 	const emojis = useFilteredEmojis(query, {
 		frequentlyUsed: client.store.frequentlyUsedEmoji,
 		customEmojiPacks,
 	})
-	const [previewEmoji, setPreviewEmoji] = useState<Emoji>()
 	const clearQuery = useCallback(() => setQuery(""), [])
-	const close = use(ModalCloseContext)
-	const onSelectWrapped = (emoji?: PartialEmoji) => {
+	const close = closeOnSelect ? use(ModalCloseContext) : null
+	const onSelectWrapped = useCallback((emoji?: PartialEmoji) => {
 		if (!emoji) {
 			return
 		}
@@ -91,121 +80,13 @@ export const EmojiPicker = ({ style, selected, onSelect, room, allowFreeform, cl
 			client.incrementFrequentlyUsedEmoji(emoji.u)
 				.catch(err => console.error("Failed to increment frequently used emoji", err))
 		}
-		if (closeOnSelect) {
-			close()
-		}
-	}
-	const getEmojiFromAttrs = (elem: HTMLButtonElement) => {
-		const groupIdx = elem.getAttribute("data-emoji-group-index")
-		if (!groupIdx) {
-			return
-		}
-		const idx = elem.getAttribute("data-emoji-index")
-		if (!idx) {
-			return
-		}
-		const emoji = emojis[+groupIdx]?.[+idx]
-		if (!emoji) {
-			return
-		}
-		return emoji
-	}
-	const onClickEmoji = useEvent((evt: React.MouseEvent<HTMLButtonElement>) =>
-		onSelectWrapped(getEmojiFromAttrs(evt.currentTarget)))
-	const onMouseOverEmoji = useEvent((evt: React.MouseEvent<HTMLButtonElement>) =>
-		setPreviewEmoji(getEmojiFromAttrs(evt.currentTarget)))
-	const onMouseOutEmoji = useCallback(() => setPreviewEmoji(undefined), [])
+		close?.()
+	}, [onSelect, selected, client, close])
 	const onClickFreeformReact = useEvent(() => onSelectWrapped({ u: query }))
-	const onClickSubscribePack = useEvent((evt: React.MouseEvent<HTMLButtonElement>) => {
-		const guid = stringToRoomStateGUID(evt.currentTarget.getAttribute("data-pack-id"))
-		if (!guid) {
-			return
-		}
-		client.subscribeToEmojiPack(guid, true)
-			.catch(err => window.alert(`Failed to subscribe to emoji pack: ${err}`))
-	})
-	const onClickUnsubscribePack = useEvent((evt: React.MouseEvent<HTMLButtonElement>) => {
-		const guid = stringToRoomStateGUID(evt.currentTarget.getAttribute("data-pack-id"))
-		if (!guid) {
-			return
-		}
-		client.subscribeToEmojiPack(guid, false)
-			.catch(err => window.alert(`Failed to unsubscribe from emoji pack: ${err}`))
-	})
-
-	const renderedCats: JSX.Element[] = []
-	let currentCatRender: JSX.Element[] = []
-	let currentCatNum: number | string = -1
-	const renderCurrentCategory = () => {
-		if (!currentCatRender.length) {
-			return
-		}
-		let categoryName: string
-		let headerExtra: JSX.Element | null = null
-		if (typeof currentCatNum === "number") {
-			categoryName = categories[currentCatNum]
-		} else if (currentCatNum === CATEGORY_FREQUENTLY_USED) {
-			categoryName = CATEGORY_FREQUENTLY_USED
-		} else {
-			const customPack = customEmojiPacks.find(pack => pack.id === currentCatNum)
-			categoryName = customPack?.name ?? "Unknown name"
-			if (customPack && customPack.id !== "personal") {
-				if (watchedEmojiPackKeys.includes(customPack.id)) {
-					headerExtra = <button
-						className="emoji-category-add"
-						onClick={onClickUnsubscribePack}
-						data-pack-id={customPack.id}
-					>Unsubscribe</button>
-				} else {
-					headerExtra = <button
-						className="emoji-category-add"
-						onClick={onClickSubscribePack}
-						data-pack-id={customPack.id}
-					>Subscribe</button>
-				}
-			}
-		}
-		renderedCats.push(<div
-			className="emoji-category"
-			key={currentCatNum}
-			id={`emoji-category-${currentCatNum}`}
-			style={{ containIntrinsicHeight: `${1.5 + Math.ceil(currentCatRender.length / 8) * 2.5}rem` }}
-		>
-			<h4 className="emoji-category-name">{categoryName}{headerExtra}</h4>
-			<div className="emoji-category-list">
-				{currentCatRender}
-			</div>
-		</div>)
-		currentCatRender = []
-		currentCatNum = -1
-	}
-	for (let catIdx = 0; catIdx < emojis.length; catIdx++) {
-		const cat = emojis[catIdx]
-		for (let emojiIdx = 0; emojiIdx < cat.length; emojiIdx++) {
-			const emoji = cat[emojiIdx]
-			if (emoji.c === 2) {
-				continue
-			}
-			if (emoji.c !== currentCatNum) {
-				renderCurrentCategory()
-				currentCatNum = emoji.c
-			}
-			currentCatRender.push(<button
-				key={`${emoji.c}-${emoji.u}`}
-				className={`emoji ${selected?.includes(emoji.u) ? "selected" : ""}`}
-				data-emoji-group-index={catIdx}
-				data-emoji-index={emojiIdx}
-				onMouseOver={onMouseOverEmoji}
-				onMouseOut={onMouseOutEmoji}
-				onClick={onClickEmoji}
-			>{renderEmoji(emoji)}</button>)
-		}
-		renderCurrentCategory()
-	}
 	const onChangeQuery = useCallback((evt: React.ChangeEvent<HTMLInputElement>) => setQuery(evt.target.value), [])
 	const onClickCategoryButton = useCallback((evt: React.MouseEvent) => {
 		const categoryID = evt.currentTarget.getAttribute("data-category-id")!
-		document.getElementById(`emoji-category-${categoryID}`)?.scrollIntoView({ behavior: "smooth" })
+		document.getElementById(`emoji-category-${categoryID}`)?.scrollIntoView()
 	}, [])
 	return <div className="emoji-picker" style={style}>
 		<div className="emoji-category-bar">
@@ -214,13 +95,13 @@ export const EmojiPicker = ({ style, selected, onSelect, room, allowFreeform, cl
 				data-category-id={CATEGORY_FREQUENTLY_USED}
 				title={CATEGORY_FREQUENTLY_USED}
 				onClick={onClickCategoryButton}
-			>{<RecentIcon/>}</button>
+			><RecentIcon/></button>
 			{sortedEmojiCategories.map(cat =>
 				<button
 					key={cat.index}
 					className="emoji-category-icon"
 					data-category-id={cat.index}
-					title={cat.name ?? categories[cat.index]}
+					title={categories[cat.index]}
 					onClick={onClickCategoryButton}
 				>{cat.icon}</button>,
 			)}
@@ -243,7 +124,23 @@ export const EmojiPicker = ({ style, selected, onSelect, room, allowFreeform, cl
 			</button>
 		</div>
 		<div className="emoji-list">
-			{renderedCats}
+			{emojis.map(group => {
+				if (!group?.length) {
+					return null
+				}
+				const categoryID = group[0].c
+				const customPack = customEmojiPacks.find(pack => pack.id === categoryID)
+				return <EmojiGroup
+					key={categoryID}
+					emojis={group}
+					categoryID={categoryID}
+					selected={selected}
+					pack={customPack}
+					isWatched={typeof categoryID === "string" && watchedEmojiPackKeys.includes(categoryID)}
+					onSelect={onSelectWrapped}
+					setPreviewEmoji={setPreviewEmoji}
+				/>
+			})}
 			{allowFreeform && query && <button
 				className="freeform-react"
 				onClick={onClickFreeformReact}

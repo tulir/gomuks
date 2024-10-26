@@ -13,10 +13,11 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import { memo, use, useLayoutEffect, useRef, useState } from "react"
+import { memo, use } from "react"
 import { getAvatarURL } from "@/api/media.ts"
 import type { RoomListEntry } from "@/api/statestore"
 import type { MemDBEvent, MemberEventContent } from "@/api/types"
+import useContentVisibility from "@/util/contentvisibility.ts"
 import { ClientContext } from "../ClientContext.ts"
 
 export interface RoomListEntryProps {
@@ -77,21 +78,7 @@ const EntryInner = ({ room }: InnerProps) => {
 }
 
 const Entry = ({ room, setActiveRoom, isActive, hidden }: RoomListEntryProps) => {
-	const [isVisible, setVisible] = useState(false)
-	const divRef = useRef<HTMLDivElement>(null)
-	useLayoutEffect(() => {
-		const div = divRef.current
-		if (!div) {
-			return
-		}
-		const listener = (evt: unknown) => {
-			if (!(evt as ContentVisibilityAutoStateChangeEvent).skipped) {
-				setVisible(true)
-			}
-		}
-		div.addEventListener("contentvisibilityautostatechange", listener)
-		return () => div.removeEventListener("contentvisibilityautostatechange", listener)
-	}, [])
+	const [isVisible, divRef] = useContentVisibility<HTMLDivElement>()
 	return <div
 		ref={divRef}
 		className={`room-entry ${isActive ? "active" : ""} ${hidden ? "hidden" : ""}`}

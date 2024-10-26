@@ -104,6 +104,7 @@ div.emoji-picker {
 	div.emoji-category {
 		width: 100%;
 		content-visibility: auto;
+		contain: size;
 	}
 
 	div.emoji-category-list {

@@ -33,13 +33,34 @@ export type Emoji = EmojiText & EmojiMetadata
 
 export const emojis: Emoji[] = data.e
 export const emojiMap = new Map<string, Emoji>()
+export const emojisByCategory: Emoji[][] = []
 export const categories = data.c
 
 export const CATEGORY_FREQUENTLY_USED = "Frequently Used"
 
-for (const emoji of emojis) {
-	emojiMap.set(emoji.u, emoji)
+function initEmojiMaps() {
+	let building: Emoji[] = []
+	let buildingCat: number = -1
+	for (const emoji of emojis) {
+		emojiMap.set(emoji.u, emoji)
+		if (emoji.c === 2) {
+			continue
+		}
+		if (emoji.c !== buildingCat) {
+			if (building.length) {
+				emojisByCategory.push(building)
+			}
+			buildingCat = emoji.c as number
+			building = []
+		}
+		building.push(emoji)
+	}
+	if (building.length) {
+		emojisByCategory.push(building)
+	}
 }
+
+initEmojiMaps()
 
 function filter(emojis: Emoji[], query: string): Emoji[] {
 	return emojis.filter(emoji => emoji.s.some(shortcode => shortcode.includes(query)))
@@ -187,16 +208,22 @@ export function useFilteredEmojis(query: string, params: useEmojisParams = {}): 
 			.filter(emoji => emoji !== undefined))
 			.filter((_emoji, index) => index < 24)
 	}, [params.frequentlyUsed])
-	const allPacks = [frequentlyUsedCategory, emojis, ...(params.customEmojiPacks?.map(pack => pack.emojis) ?? [])]
-	const prev = useRef<filteredEmojiCache>({ query: "", result: allPacks })
-	if (!query) {
-		prev.current.query = ""
-		prev.current.result = allPacks
-	} else if (prev.current.query !== query) {
-		if (query.startsWith(prev.current.query) && allPacks.length === prev.current.result.length) {
+	const prev = useRef<filteredEmojiCache>({
+		query: "",
+		result: [],
+	})
+	const categoriesChanged = prev.current.result.length !==
+		(1 + emojisByCategory.length + (params.customEmojiPacks?.length ?? 0))
+	if (prev.current.query !== query || categoriesChanged) {
+		if (!query.startsWith(prev.current.query) || categoriesChanged) {
+			prev.current.result = [
+				frequentlyUsedCategory,
+				...emojisByCategory,
+				...(params.customEmojiPacks?.map(pack => pack.emojis) ?? []),
+			]
+		}
+		if (query !== "") {
 			prev.current.result = prev.current.result.map(pack => filter(pack, query))
-		} else {
-			prev.current.result = allPacks.map(pack => filter(pack, query))
 		}
 		prev.current.query = query
 	}
