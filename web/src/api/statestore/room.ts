@@ -120,7 +120,7 @@ export class RoomStateStore {
 	getEmojiPack(key: string): CustomEmojiPack | null {
 		if (!this.emojiPacks.has(key)) {
 			const pack = this.getStateEvent("im.ponies.room_emotes", key)?.content
-			if (!pack) {
+			if (!pack || !pack.images) {
 				this.emojiPacks.set(key, null)
 				return null
 			}

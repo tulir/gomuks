@@ -206,7 +206,7 @@ export class StateStore {
 	getPersonalEmojiPack(): CustomEmojiPack | null {
 		if (this.#personalEmojiPack === null) {
 			const pack = this.accountData.get("im.ponies.user_emotes")
-			if (!pack) {
+			if (!pack || !pack.images) {
 				return null
 			}
 			this.#personalEmojiPack = parseCustomEmojiPack(pack as ImagePack, "personal", "Personal pack")
