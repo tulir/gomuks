@@ -514,7 +514,7 @@ func sanitizeAndLinkifyHTML(body string) (string, []id.ContentURI, error) {
 	var codeBlock *strings.Builder
 	var codeBlockLanguage string
 	var inlineImages []id.ContentURI
-	ts := make(tagStack, 2)
+	ts := make(tagStack, 0, 2)
 Loop:
 	for {
 		switch tz.Next() {

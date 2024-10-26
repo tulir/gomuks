@@ -407,7 +407,7 @@ func (h *HiClient) calculateLocalContent(ctx context.Context, dbEvt *database.Ev
 	return nil, nil
 }
 
-const CurrentHTMLSanitizerVersion = 3
+const CurrentHTMLSanitizerVersion = 4
 
 func (h *HiClient) ReprocessExistingEvent(ctx context.Context, evt *database.Event) {
 	if (evt.Type != event.EventMessage.Type && evt.DecryptedType != event.EventMessage.Type) ||
