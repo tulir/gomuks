@@ -202,7 +202,9 @@ func (gmx *Gomuks) HandleWebsocket(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	go sendImageAuthToken()
-	go gmx.sendInitialData(ctx, conn)
+	if gmx.Client.IsLoggedIn() {
+		go gmx.sendInitialData(ctx, conn)
+	}
 	log.Debug().Msg("Connection initialization complete")
 	var closeErr websocket.CloseError
 	for {
