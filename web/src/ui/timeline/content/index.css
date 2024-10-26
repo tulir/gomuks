@@ -72,15 +72,15 @@ div.html-body {
 
 	img.hicli-custom-emoji {
 		vertical-align: middle;
-		height: 24px;
+		height: 2rem; /* text height is 1.5rem, so this will make lines a bit taller */
 		width: auto;
-		max-width: 72px;
+		max-width: 5rem;
 	}
 
 	img.hicli-sizeless-inline-img {
-		height: 24px;
+		height: 1.5rem;
 		width: auto;
-		max-width: 72px;
+		max-width: 5rem;
 	}
 
 	span.hicli-spoiler {
