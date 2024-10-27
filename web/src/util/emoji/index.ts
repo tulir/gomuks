@@ -118,7 +118,7 @@ export function emojiToReactionContent(emoji: PartialEmoji, evtID: EventID): Rea
 		},
 	}
 	if (emoji.u?.startsWith("mxc://") && emoji.n) {
-		content["com.beeper.reaction.shortcode"] = emoji.n
+		content["com.beeper.reaction.shortcode"] = `:${emoji.n}:`
 	}
 	return content
 }
