@@ -16,7 +16,17 @@
 import { CachedEventDispatcher } from "../util/eventdispatcher.ts"
 import RPCClient, { SendMessageParams } from "./rpc.ts"
 import { RoomStateStore, StateStore } from "./statestore"
-import type { ClientState, EventID, EventType, ImagePackRooms, RPCEvent, RoomID, RoomStateGUID, UserID } from "./types"
+import type {
+	ClientState,
+	ElementRecentEmoji,
+	EventID,
+	EventType,
+	ImagePackRooms,
+	RPCEvent,
+	RoomID,
+	RoomStateGUID,
+	UserID,
+} from "./types"
 
 export default class Client {
 	readonly state = new CachedEventDispatcher<ClientState>()
@@ -127,29 +137,27 @@ export default class Client {
 	}
 
 	async incrementFrequentlyUsedEmoji(targetEmoji: string) {
-		let recentEmoji = this.store.accountData.get("io.element.recent_emoji")?.recent_emoji as
-			[string, number][] | undefined
-		if (!Array.isArray(recentEmoji)) {
-			recentEmoji = []
+		const content = Object.assign({}, this.store.accountData.get("io.element.recent_emoji")) as ElementRecentEmoji
+		if (!Array.isArray(content.recent_emoji)) {
+			content.recent_emoji = []
 		}
 		let found = false
-		for (const [idx, [emoji, count]] of recentEmoji.entries()) {
+		for (const [idx, [emoji, count]] of content.recent_emoji.entries()) {
 			if (emoji === targetEmoji) {
-				recentEmoji.splice(idx, 1)
-				recentEmoji.unshift([emoji, count + 1])
+				content.recent_emoji.splice(idx, 1)
+				content.recent_emoji.unshift([emoji, count + 1])
 				found = true
 				break
 			}
 		}
 		if (!found) {
-			recentEmoji.unshift([targetEmoji, 1])
+			content.recent_emoji.unshift([targetEmoji, 1])
 		}
-		if (recentEmoji.length > 100) {
-			recentEmoji.pop()
+		if (content.recent_emoji.length > 100) {
+			content.recent_emoji.pop()
 		}
-		const newContent = { recent_emoji: recentEmoji }
-		this.store.accountData.set("io.element.recent_emoji", newContent)
-		await this.rpc.setAccountData("io.element.recent_emoji", newContent)
+		this.store.accountData.set("io.element.recent_emoji", content)
+		await this.rpc.setAccountData("io.element.recent_emoji", content)
 	}
 
 	#handleEmoteRoomsChange() {
