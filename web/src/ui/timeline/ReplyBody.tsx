@@ -18,7 +18,7 @@ import { getAvatarURL, getUserColorIndex } from "@/api/media.ts"
 import { RoomStateStore, useRoomEvent, useRoomState } from "@/api/statestore"
 import type { EventID, MemDBEvent, MemberEventContent } from "@/api/types"
 import ClientContext from "../ClientContext.ts"
-import getBodyType, { ContentErrorBoundary } from "./content"
+import { ContentErrorBoundary, getBodyType } from "./content"
 import CloseButton from "@/icons/close.svg?react"
 import "./ReplyBody.css"
 

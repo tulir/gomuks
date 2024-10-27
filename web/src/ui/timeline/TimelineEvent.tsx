@@ -22,7 +22,7 @@ import ClientContext from "../ClientContext.ts"
 import { LightboxContext } from "../modal/Lightbox.tsx"
 import { useRoomContext } from "../roomcontext.ts"
 import { ReplyIDBody } from "./ReplyBody.tsx"
-import getBodyType, { ContentErrorBoundary, EventContentProps, HiddenEvent, MemberBody } from "./content"
+import { ContentErrorBoundary, HiddenEvent, getBodyType, isSmallEvent } from "./content"
 import EventMenu from "./menu/EventMenu.tsx"
 import ErrorIcon from "../../icons/error.svg?react"
 import PendingIcon from "../../icons/pending.svg?react"
@@ -66,10 +66,6 @@ const EventSendStatus = ({ evt }: { evt: MemDBEvent }) => {
 	} else {
 		return <div title="Event sent and remote echo received" className="event-send-status sent"><SentIcon/></div>
 	}
-}
-
-function isSmallEvent(bodyType: React.FunctionComponent<EventContentProps>): boolean {
-	return bodyType === HiddenEvent || bodyType === MemberBody
 }
 
 const TimelineEvent = ({ evt, prevEvt, disableMenu }: TimelineEventProps) => {

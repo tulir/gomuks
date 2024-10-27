@@ -1,26 +1,32 @@
 import React from "react"
 import { MemDBEvent } from "@/api/types"
+import ACLBody from "./ACLBody.tsx"
 import EncryptedBody from "./EncryptedBody.tsx"
 import HiddenEvent from "./HiddenEvent.tsx"
 import MediaMessageBody from "./MediaMessageBody.tsx"
 import MemberBody from "./MemberBody.tsx"
+import PinnedEventsBody from "./PinnedEventsBody.tsx"
+import PowerLevelBody from "./PowerLevelBody.tsx"
 import RedactedBody from "./RedactedBody.tsx"
 import TextMessageBody from "./TextMessageBody.tsx"
 import UnknownMessageBody from "./UnknownMessageBody.tsx"
 import EventContentProps from "./props.ts"
 import "./index.css"
 
+export { default as ACLBody } from "./ACLBody.tsx"
 export { default as ContentErrorBoundary } from "./ContentErrorBoundary.tsx"
 export { default as EncryptedBody } from "./EncryptedBody.tsx"
 export { default as HiddenEvent } from "./HiddenEvent.tsx"
 export { default as MediaMessageBody } from "./MediaMessageBody.tsx"
 export { default as MemberBody } from "./MemberBody.tsx"
+export { default as PinnedEventsBody } from "./PinnedEventsBody.tsx"
+export { default as PowerLevelBody } from "./PowerLevelBody.tsx"
 export { default as RedactedBody } from "./RedactedBody.tsx"
 export { default as TextMessageBody } from "./TextMessageBody.tsx"
 export { default as UnknownMessageBody } from "./UnknownMessageBody.tsx"
 export type { default as EventContentProps } from "./props.ts"
 
-export default function getBodyType(evt: MemDBEvent, forReply = false): React.FunctionComponent<EventContentProps> {
+export function getBodyType(evt: MemDBEvent, forReply = false): React.FunctionComponent<EventContentProps> {
 	if (evt.relation_type === "m.replace") {
 		return HiddenEvent
 	}
@@ -62,6 +68,25 @@ export default function getBodyType(evt: MemDBEvent, forReply = false): React.Fu
 		return EncryptedBody
 	case "m.room.member":
 		return MemberBody
+	case "m.room.server_acl":
+		return ACLBody
+	case "m.room.pinned_events":
+		return PinnedEventsBody
+	case "m.room.power_levels":
+		return PowerLevelBody
 	}
 	return HiddenEvent
+}
+
+export function isSmallEvent(bodyType: React.FunctionComponent<EventContentProps>): boolean {
+	switch (bodyType) {
+	case HiddenEvent:
+	case MemberBody:
+	case ACLBody:
+	case PinnedEventsBody:
+	case PowerLevelBody:
+		return true
+	default:
+		return false
+	}
 }

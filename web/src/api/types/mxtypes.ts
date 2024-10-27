@@ -69,6 +69,12 @@ export interface MemberEventContent {
 	reason?: string
 }
 
+export interface ACLEventContent {
+	allow?: string[]
+	allow_ip_literals?: boolean
+	deny?: string[]
+}
+
 export interface PowerLevelEventContent {
 	users?: Record<UserID, number>
 	users_default?: number
