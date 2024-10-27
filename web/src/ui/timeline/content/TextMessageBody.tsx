@@ -16,8 +16,17 @@
 import { MessageEventContent } from "@/api/types"
 import EventContentProps from "./props.ts"
 
+function isImageElement(elem: EventTarget): elem is HTMLImageElement {
+	return (elem as HTMLImageElement).tagName === "IMG"
+}
+
 const onClickHTML = (evt: React.MouseEvent<HTMLDivElement>) => {
-	if ((evt.target as HTMLElement).closest("span.hicli-spoiler")?.classList.toggle("spoiler-revealed")) {
+	if (isImageElement(evt.target)) {
+		window.openLightbox({
+			src: evt.target.src,
+			alt: evt.target.alt,
+		})
+	} else if ((evt.target as HTMLElement).closest?.("span.hicli-spoiler")?.classList.toggle("spoiler-revealed")) {
 		// When unspoilering, don't trigger links and other clickables inside the spoiler
 		evt.preventDefault()
 	}

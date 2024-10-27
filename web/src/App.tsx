@@ -28,7 +28,7 @@ function App() {
 	const client = useMemo(() => new Client(new WSClient("_gomuks/websocket")), [])
 	const connState = useEventAsState(client.rpc.connect)
 	const clientState = useEventAsState(client.state)
-	;((window as unknown) as { client: Client }).client = client
+	window.client = client
 	useEffect(() => {
 		Notification.requestPermission()
 			.then(permission => console.log("Notification permission:", permission))

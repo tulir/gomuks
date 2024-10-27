@@ -51,6 +51,7 @@ export const LightboxWrapper = ({ children }: { children: React.ReactNode }) => 
 			setParams(params as LightboxParams)
 		}
 	}, [])
+	window.openLightbox = onOpen
 	const onClose = useCallback(() => setParams(null), [])
 	return <>
 		<LightboxContext value={onOpen}>
