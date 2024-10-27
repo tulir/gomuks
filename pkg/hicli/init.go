@@ -63,21 +63,9 @@ func (h *HiClient) GetInitialSync(ctx context.Context, batchSize int) iter.Seq[*
 				return
 			}
 			payload := SyncComplete{
-				Rooms:     make(map[id.RoomID]*SyncRoom, len(rooms)-1),
-				LeftRooms: make([]id.RoomID, 0),
-			}
-			if i == 0 {
-				ad, err := h.DB.AccountData.GetAllGlobal(ctx, h.Account.UserID)
-				if err != nil {
-					zerolog.Ctx(ctx).Err(err).Msg("Failed to get global account data")
-					return
-				}
-				payload.AccountData = make(map[event.Type]*database.AccountData, len(ad))
-				for _, data := range ad {
-					payload.AccountData[event.Type{Type: data.Type, Class: event.AccountDataEventType}] = data
-				}
-			} else {
-				payload.AccountData = make(map[event.Type]*database.AccountData)
+				Rooms:       make(map[id.RoomID]*SyncRoom, len(rooms)-1),
+				LeftRooms:   make([]id.RoomID, 0),
+				AccountData: make(map[event.Type]*database.AccountData),
 			}
 			for _, room := range rooms {
 				if room.SortingTimestamp == rooms[len(rooms)-1].SortingTimestamp {
@@ -90,5 +78,20 @@ func (h *HiClient) GetInitialSync(ctx context.Context, batchSize int) iter.Seq[*
 				break
 			}
 		}
+		// This is last so that the frontend would know about all rooms before trying to fetch custom emoji packs
+		ad, err := h.DB.AccountData.GetAllGlobal(ctx, h.Account.UserID)
+		if err != nil {
+			zerolog.Ctx(ctx).Err(err).Msg("Failed to get global account data")
+			return
+		}
+		payload := SyncComplete{
+			Rooms:       make(map[id.RoomID]*SyncRoom, 0),
+			LeftRooms:   make([]id.RoomID, 0),
+			AccountData: make(map[event.Type]*database.AccountData, len(ad)),
+		}
+		for _, data := range ad {
+			payload.AccountData[event.Type{Type: data.Type, Class: event.AccountDataEventType}] = data
+		}
+		yield(&payload)
 	}
 }
