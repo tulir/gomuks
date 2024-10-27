@@ -104,7 +104,8 @@ function filterAndSort(
 
 export function emojiToMarkdown(emoji: PartialEmoji): string {
 	if (emoji.u.startsWith("mxc://")) {
-		return `<img data-mx-emoticon height="32" src="${emoji.u}" alt=":${emoji.n}:" title=":${emoji.n}:"/>`
+		const title = emoji.t && emoji.t !== emoji.n ? emoji.t : `:${emoji.n}:`
+		return `<img data-mx-emoticon height="32" src="${emoji.u}" alt=":${emoji.n}:" title="${title}"/>`
 	}
 	return emoji.u
 }
