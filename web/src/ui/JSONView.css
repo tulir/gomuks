@@ -1,0 +1,36 @@
+pre.json-view {
+	white-space: wrap;
+	overflow-wrap: anywhere;
+	margin: 0;
+
+	ul, ol {
+		margin: 0;
+
+		> li {
+			list-style-type: none;
+		}
+	}
+
+	span.json-collapsed {
+		user-select: none;
+	}
+
+	button {
+		padding: 0 .25rem;
+	}
+
+	/* If the screen is wide enough, make line-wrapped strings aligned after the object key */
+	@media screen and (min-width: 800px) {
+		li.json-object-entry:has(> span.json-comma-container > span.json-string) {
+			display: flex;
+
+			span.json-object-key {
+				white-space: nowrap;
+			}
+
+			span.json-object-entry-colon {
+				white-space: pre;
+			}
+		}
+	}
+}

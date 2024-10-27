@@ -14,6 +14,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import { MemDBEvent } from "@/api/types"
+import JSONView from "../../JSONView.tsx"
 
 interface ViewSourceModalProps {
 	evt: MemDBEvent
@@ -21,9 +22,7 @@ interface ViewSourceModalProps {
 
 const ViewSourceModal = ({ evt }: ViewSourceModalProps) => {
 	return <div className="view-source-modal">
-		<pre>
-			{JSON.stringify(evt, null, "  ")}
-		</pre>
+		<JSONView data={evt} />
 	</div>
 }
 

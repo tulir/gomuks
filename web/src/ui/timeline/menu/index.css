@@ -56,12 +56,6 @@ div.view-source-modal {
 	background-color: white;
 	border-radius: 1rem;
 	padding: 1rem;
-
-	> pre {
-		margin: 0;
-		white-space: pre-wrap;
-		overflow-wrap: anywhere;
-	}
 }
 
 div.confirm-message-modal {
