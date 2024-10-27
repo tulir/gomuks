@@ -13,7 +13,7 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import { useEffect } from "react"
+import { useEffect, useMemo } from "react"
 import { ScaleLoader } from "react-spinners"
 import Client from "./api/client.ts"
 import WSClient from "./api/wsclient.ts"
@@ -24,10 +24,9 @@ import { LightboxWrapper } from "./ui/modal/Lightbox.tsx"
 import { ModalWrapper } from "./ui/modal/Modal.tsx"
 import { useEventAsState } from "./util/eventdispatcher.ts"
 
-const client = new Client(new WSClient("_gomuks/websocket"))
-window.client = client
-
 function App() {
+	const client = useMemo(() => new Client(new WSClient("_gomuks/websocket")), [])
+	window.client = client
 	const connState = useEventAsState(client.rpc.connect)
 	const clientState = useEventAsState(client.state)
 	useEffect(() => {
@@ -35,7 +34,7 @@ function App() {
 			.then(permission => console.log("Notification permission:", permission))
 		client.rpc.start()
 		return () => client.rpc.stop()
-	}, [])
+	}, [client])
 
 	if (connState?.error) {
 		return <div>
