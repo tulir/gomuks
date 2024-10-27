@@ -199,7 +199,17 @@ export function useFilteredEmojis(query: string, params: useEmojisParams = {}): 
 		}
 		return Array.from(params.frequentlyUsed.keys()
 			.map(key => {
-				const emoji = emojiMap.get(key)
+				let emoji: Emoji | undefined
+				if (key.startsWith("mxc://")) {
+					for (const pack of params.customEmojiPacks?.values() ?? []) {
+						emoji = pack.emojiMap.get(key)
+						if (emoji) {
+							break
+						}
+					}
+				} else {
+					emoji = emojiMap.get(key)
+				}
 				if (!emoji) {
 					return undefined
 				}
@@ -207,7 +217,7 @@ export function useFilteredEmojis(query: string, params: useEmojisParams = {}): 
 			})
 			.filter(emoji => emoji !== undefined))
 			.filter((_emoji, index) => index < 24)
-	}, [params.frequentlyUsed])
+	}, [params.frequentlyUsed, params.customEmojiPacks])
 	const prev = useRef<filteredEmojiCache>({
 		query: "",
 		result: [],

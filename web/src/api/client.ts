@@ -127,9 +127,6 @@ export default class Client {
 	}
 
 	async incrementFrequentlyUsedEmoji(targetEmoji: string) {
-		if (targetEmoji.startsWith("mxc://")) {
-			return
-		}
 		let recentEmoji = this.store.accountData.get("io.element.recent_emoji")?.recent_emoji as
 			[string, number][] | undefined
 		if (!Array.isArray(recentEmoji)) {
