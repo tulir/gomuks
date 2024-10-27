@@ -18,6 +18,7 @@ import (
 	"github.com/rs/zerolog"
 	"github.com/tidwall/gjson"
 	"github.com/tidwall/sjson"
+	"go.mau.fi/util/emojirunes"
 	"go.mau.fi/util/exzerolog"
 	"go.mau.fi/util/jsontime"
 	"maunium.net/go/mautrix"
@@ -366,7 +367,7 @@ func (h *HiClient) calculateLocalContent(ctx context.Context, dbEvt *database.Ev
 	}
 	if content != nil {
 		var sanitizedHTML string
-		var wasPlaintext bool
+		var wasPlaintext, bigEmoji bool
 		var inlineImages []id.ContentURI
 		if content.Format == event.FormatHTML && content.FormattedBody != "" {
 			var err error
@@ -395,6 +396,8 @@ func (h *HiClient) calculateLocalContent(ctx context.Context, dbEvt *database.Ev
 				builder.Grow(len(content.Body) + builderPreallocBuffer)
 				linkifyAndWriteBytes(&builder, []byte(content.Body))
 				sanitizedHTML = builder.String()
+			} else if len(content.Body) < 100 && emojirunes.IsOnlyEmojis(content.Body) {
+				bigEmoji = true
 			}
 			wasPlaintext = true
 		}
@@ -402,6 +405,7 @@ func (h *HiClient) calculateLocalContent(ctx context.Context, dbEvt *database.Ev
 			SanitizedHTML: sanitizedHTML,
 			HTMLVersion:   CurrentHTMLSanitizerVersion,
 			WasPlaintext:  wasPlaintext,
+			BigEmoji:      bigEmoji,
 		}, inlineImages
 	}
 	return nil, nil

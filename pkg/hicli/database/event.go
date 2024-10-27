@@ -291,6 +291,7 @@ type LocalContent struct {
 	SanitizedHTML string `json:"sanitized_html,omitempty"`
 	HTMLVersion   int    `json:"html_version,omitempty"`
 	WasPlaintext  bool   `json:"was_plaintext,omitempty"`
+	BigEmoji      bool   `json:"big_emoji,omitempty"`
 }
 
 type Event struct {

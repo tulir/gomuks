@@ -33,11 +33,14 @@ const TextMessageBody = ({ event, sender }: EventContentProps) => {
 		classNames.push("emote-message")
 		eventSenderName = sender?.content?.displayname || event.sender
 	}
+	if (event.local_content?.big_emoji) {
+		classNames.push("big-emoji-body")
+	}
+	if (event.local_content?.was_plaintext) {
+		classNames.push("plaintext-body")
+	}
 	if (event.local_content?.sanitized_html) {
 		classNames.push("html-body")
-		if (event.local_content.was_plaintext) {
-			classNames.push("plaintext-body")
-		}
 		return <div
 			onClick={onClickHTML}
 			className={classNames.join(" ")}

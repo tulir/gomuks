@@ -35,6 +35,10 @@ div.message-text {
 		white-space: pre-wrap;
 	}
 
+	&.big-emoji-body {
+		font-size: 3rem;
+	}
+
 	&.notice-message {
 		opacity: .6;
 	}
