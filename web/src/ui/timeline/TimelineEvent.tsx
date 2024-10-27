@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import React, { use, useState } from "react"
-import { getAvatarURL, getMediaURL } from "@/api/media.ts"
+import { getAvatarURL, getMediaURL, getUserColorIndex } from "@/api/media.ts"
 import { useRoomState } from "@/api/statestore"
 import { MemDBEvent, MemberEventContent, UnreadType } from "@/api/types"
 import { isEventID } from "@/util/validation.ts"
@@ -86,14 +86,18 @@ const TimelineEvent = ({ evt, prevEvt, disableMenu }: TimelineEventProps) => {
 		wrapperClassNames.push("highlight")
 	}
 	let smallAvatar = false
+	let renderAvatar = true
+	let eventTimeOnly = false
 	if (isSmallEvent(BodyType)) {
 		wrapperClassNames.push("hidden-event")
 		smallAvatar = true
+		eventTimeOnly = true
 	} else if (prevEvt?.sender === evt.sender &&
 		prevEvt.timestamp + 15 * 60 * 1000 > evt.timestamp &&
 		!isSmallEvent(getBodyType(prevEvt))) {
 		wrapperClassNames.push("same-sender")
-		smallAvatar = true
+		eventTimeOnly = true
+		renderAvatar = false
 	}
 	const fullTime = fullTimeFormatter.format(eventTS)
 	const shortTime = formatShortTime(eventTS)
@@ -104,7 +108,7 @@ const TimelineEvent = ({ evt, prevEvt, disableMenu }: TimelineEventProps) => {
 		{!disableMenu && <div className={`context-menu-container ${forceContextMenuOpen ? "force-open" : ""}`}>
 			<EventMenu evt={evt} setForceOpen={setForceContextMenuOpen}/>
 		</div>}
-		<div className="sender-avatar" title={evt.sender}>
+		{renderAvatar && <div className="sender-avatar" title={evt.sender}>
 			<img
 				className={`${smallAvatar ? "small" : ""} avatar`}
 				loading="lazy"
@@ -112,17 +116,18 @@ const TimelineEvent = ({ evt, prevEvt, disableMenu }: TimelineEventProps) => {
 				onClick={use(LightboxContext)!}
 				alt=""
 			/>
-		</div>
-		<div className="event-sender-and-time">
-			<span className="event-sender">{memberEvtContent?.displayname || evt.sender}</span>
+		</div>}
+		{!eventTimeOnly ? <div className="event-sender-and-time">
+			<span className={`event-sender sender-color-${getUserColorIndex(evt.sender)}`}>
+				{memberEvtContent?.displayname || evt.sender}
+			</span>
 			<span className="event-time" title={fullTime}>{shortTime}</span>
 			{(editEventTS && editTime) ? <span className="event-edited" title={editTime}>
 				(edited at {formatShortTime(editEventTS)})
 			</span> : null}
-		</div>
-		<div className="event-time-only">
+		</div> : <div className="event-time-only">
 			<span className="event-time" title={editTime ? `${fullTime} - ${editTime}` : fullTime}>{shortTime}</span>
-		</div>
+		</div>}
 		<div className="event-content">
 			{isEventID(replyTo) && BodyType !== HiddenEvent ? <ReplyIDBody
 				room={roomCtx.store}

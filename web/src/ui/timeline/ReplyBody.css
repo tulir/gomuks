@@ -49,11 +49,6 @@ blockquote.reply-body {
 			margin-right: .25rem;
 		}
 
-		> span.event-sender {
-			overflow: hidden;
-			text-overflow: ellipsis;
-		}
-
 		> button.close-reply {
 			display: flex;
 			margin-left: auto;

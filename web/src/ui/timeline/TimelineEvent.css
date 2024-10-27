@@ -51,8 +51,6 @@ div.timeline-event {
 
 		> span.event-sender {
 			font-weight: bold;
-			overflow: hidden;
-			text-overflow: ellipsis;
 		}
 
 		> span.event-time, > span.event-edited {
@@ -146,6 +144,23 @@ div.timeline-event {
 			margin-top: 0;
 		}
 	}
+}
+
+span.event-sender {
+	overflow: hidden;
+	text-overflow: ellipsis;
+
+	/* These should be synced with the avatar colors in api/media.ts */
+	&.sender-color-0 { color: #a4041d; }
+	&.sender-color-1 { color: #9b2200; }
+	&.sender-color-2 { color: #803f00; }
+	&.sender-color-3 { color: #005f00; }
+	&.sender-color-4 { color: #005c45; }
+	&.sender-color-5 { color: #00548c; }
+	&.sender-color-6 { color: #064ab1; }
+	&.sender-color-7 { color: #5d26cd; }
+	&.sender-color-8 { color: #822198; }
+	&.sender-color-9 { color: #9f0850; }
 }
 
 div.event-content > div.event-reactions {

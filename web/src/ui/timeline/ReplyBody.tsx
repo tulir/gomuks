@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import { use } from "react"
-import { getAvatarURL } from "@/api/media.ts"
+import { getAvatarURL, getUserColorIndex } from "@/api/media.ts"
 import { RoomStateStore, useRoomEvent, useRoomState } from "@/api/statestore"
 import type { EventID, MemDBEvent, MemberEventContent } from "@/api/types"
 import ClientContext from "../ClientContext.ts"
@@ -89,7 +89,9 @@ export const ReplyBody = ({ room, event, onClose, isThread, isEditing }: ReplyBo
 					alt=""
 				/>
 			</div>
-			<span className="event-sender">{memberEvtContent?.displayname || event.sender}</span>
+			<span className={`event-sender sender-color-${getUserColorIndex(event.sender)}`}>
+				{memberEvtContent?.displayname || event.sender}
+			</span>
 			{onClose && <button className="close-reply" onClick={onClose}><CloseButton/></button>}
 		</div>
 		<ContentErrorBoundary>
