@@ -71,7 +71,9 @@ div.html-body {
 	}
 
 	img.hicli-custom-emoji {
-		vertical-align: middle;
+		/* This has to be the same alignment as matrix URIs above to look good
+		   Middle may be nicer for emojis, but that doesn't work nicely with pills. */
+		vertical-align: bottom;
 		height: 2rem; /* text height is 1.5rem, so this will make lines a bit taller */
 		width: auto;
 		max-width: 5rem;
