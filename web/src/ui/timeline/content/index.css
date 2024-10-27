@@ -93,9 +93,11 @@ div.html-body {
 		filter: blur(4px);
 		transition: filter .5s;
 		/*cursor: pointer;*/
+		cursor: default;
 
 		&.spoiler-revealed {
 			filter: none;
+			cursor: initial;
 		}
 
 		&:not(.spoiler-revealed) a {
