@@ -41,14 +41,18 @@ const formatShortTime = (time: Date) =>
 	`${time.getHours().toString().padStart(2, "0")}:${time.getMinutes().toString().padStart(2, "0")}`
 
 const EventReactions = ({ reactions }: { reactions: Record<string, number> }) => {
+	const reactionEntries = Object.entries(reactions).filter(([, count]) => count > 0).sort((a, b) => b[1] - a[1])
+	if (reactionEntries.length === 0) {
+		return null
+	}
 	return <div className="event-reactions">
-		{Object.entries(reactions).map(([reaction, count]) => count > 0 ?
+		{reactionEntries.map(([reaction, count]) =>
 			<div key={reaction} className="reaction" title={reaction}>
 				{reaction.startsWith("mxc://")
 					? <img className="reaction-emoji" src={getMediaURL(reaction)} alt=""/>
 					: <span className="reaction-emoji">{reaction}</span>}
 				<span className="reaction-count">{count}</span>
-			</div> : null)}
+			</div>)}
 	</div>
 }
 
