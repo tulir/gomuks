@@ -22,14 +22,14 @@ import MainScreen from "./ui/MainScreen.tsx"
 import { LoginScreen, VerificationScreen } from "./ui/login"
 import { LightboxWrapper } from "./ui/modal/Lightbox.tsx"
 import { ModalWrapper } from "./ui/modal/Modal.tsx"
-import { useCachedEventAsState } from "./util/eventdispatcher.ts"
+import { useEventAsState } from "./util/eventdispatcher.ts"
 
 const client = new Client(new WSClient("_gomuks/websocket"))
 window.client = client
 
 function App() {
-	const connState = useCachedEventAsState(client.rpc.connect)
-	const clientState = useCachedEventAsState(client.state)
+	const connState = useEventAsState(client.rpc.connect)
+	const clientState = useEventAsState(client.state)
 	useEffect(() => {
 		Notification.requestPermission()
 			.then(permission => console.log("Notification permission:", permission))

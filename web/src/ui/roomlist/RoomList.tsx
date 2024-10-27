@@ -15,7 +15,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import React, { use, useCallback, useRef, useState } from "react"
 import type { RoomID } from "@/api/types"
-import { useNonNullEventAsState } from "@/util/eventdispatcher.ts"
+import { useEventAsState } from "@/util/eventdispatcher.ts"
 import toSearchableString from "@/util/searchablestring.ts"
 import ClientContext from "../ClientContext.ts"
 import Entry from "./Entry.tsx"
@@ -27,7 +27,7 @@ interface RoomListProps {
 }
 
 const RoomList = ({ setActiveRoom, activeRoomID }: RoomListProps) => {
-	const roomList = useNonNullEventAsState(use(ClientContext)!.store.roomList)
+	const roomList = useEventAsState(use(ClientContext)!.store.roomList)
 	const roomFilterRef = useRef<HTMLInputElement>(null)
 	const [roomFilter, setRoomFilter] = useState("")
 	const [realRoomFilter, setRealRoomFilter] = useState("")

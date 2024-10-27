@@ -13,12 +13,12 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import { NonNullCachedEventDispatcher, useNonNullEventAsState } from "@/util/eventdispatcher.ts"
+import { NonNullCachedEventDispatcher, useEventAsState } from "@/util/eventdispatcher.ts"
 
 export const focused = new NonNullCachedEventDispatcher(document.hasFocus())
 window.addEventListener("focus", () => focused.emit(true))
 window.addEventListener("blur", () => focused.emit(false))
 
 export default function useFocus() {
-	return useNonNullEventAsState(focused)
+	return useEventAsState(focused)
 }

@@ -16,7 +16,7 @@
 import { use, useRef } from "react"
 import { getAvatarURL } from "@/api/media.ts"
 import { RoomStateStore } from "@/api/statestore"
-import { useNonNullEventAsState } from "@/util/eventdispatcher.ts"
+import { useEventAsState } from "@/util/eventdispatcher.ts"
 import MessageComposer from "./composer/MessageComposer.tsx"
 import { LightboxContext } from "./modal/Lightbox.tsx"
 import { RoomContext, RoomContextData } from "./roomcontext.ts"
@@ -30,7 +30,7 @@ interface RoomViewProps {
 }
 
 const RoomHeader = ({ room, clearActiveRoom }: RoomViewProps) => {
-	const roomMeta = useNonNullEventAsState(room.meta)
+	const roomMeta = useEventAsState(room.meta)
 	const avatarSourceID = roomMeta.lazy_load_summary?.heroes?.length === 1
 		? roomMeta.lazy_load_summary.heroes[0] : room.roomID
 	return <div className="room-header">

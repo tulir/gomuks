@@ -16,7 +16,7 @@
 import { CSSProperties, use, useCallback, useRef } from "react"
 import { MemDBEvent } from "@/api/types"
 import { emojiToReactionContent } from "@/util/emoji"
-import { useNonNullEventAsState } from "@/util/eventdispatcher.ts"
+import { useEventAsState } from "@/util/eventdispatcher.ts"
 import ClientContext from "../../ClientContext.ts"
 import EmojiPicker from "../../emojipicker/EmojiPicker.tsx"
 import { ModalContext } from "../../modal/Modal.tsx"
@@ -83,7 +83,7 @@ const EventMenu = ({ evt, setForceOpen }: EventHoverMenuProps) => {
 			onClose: () => setForceOpen(false),
 		})
 	}, [evt, roomCtx, setForceOpen, openModal])
-	const isEditing = useNonNullEventAsState(roomCtx.isEditing)
+	const isEditing = useEventAsState(roomCtx.isEditing)
 	return <div className="event-hover-menu" ref={contextMenuRef}>
 		<button onClick={onClickReact}><ReactIcon/></button>
 		<button

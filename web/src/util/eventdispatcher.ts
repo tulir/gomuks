@@ -13,22 +13,11 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import { useEffect, useState, useSyncExternalStore } from "react"
+import { useSyncExternalStore } from "react"
 
-export function useEventAsState<T>(dispatcher?: EventDispatcher<T>): T | null {
-	const [state, setState] = useState<T | null>(null)
-	useEffect(() => dispatcher && dispatcher.listen(setState), [dispatcher])
-	return state
-}
-
-export function useCachedEventAsState<T>(dispatcher: CachedEventDispatcher<T>): T | null {
-	return useSyncExternalStore(
-		dispatcher.listenChange,
-		() => dispatcher.current,
-	)
-}
-
-export function useNonNullEventAsState<T>(dispatcher: NonNullCachedEventDispatcher<T>): T {
+export function useEventAsState<T>(dispatcher: NonNullCachedEventDispatcher<T>): T
+export function useEventAsState<T>(dispatcher: CachedEventDispatcher<T>): T | null
+export function useEventAsState<T>(dispatcher: CachedEventDispatcher<T>): T | null {
 	return useSyncExternalStore(
 		dispatcher.listenChange,
 		() => dispatcher.current,
