@@ -18,7 +18,7 @@ import { stringToRoomStateGUID } from "@/api/types"
 import useContentVisibility from "@/util/contentvisibility.ts"
 import { CATEGORY_FREQUENTLY_USED, CustomEmojiPack, Emoji, PartialEmoji, categories } from "@/util/emoji"
 import useEvent from "@/util/useEvent.ts"
-import { ClientContext } from "../ClientContext.ts"
+import ClientContext from "../ClientContext.ts"
 import renderEmoji from "./renderEmoji.tsx"
 
 interface EmojiGroupProps {

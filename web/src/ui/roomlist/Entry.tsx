@@ -18,7 +18,7 @@ import { getAvatarURL } from "@/api/media.ts"
 import type { RoomListEntry } from "@/api/statestore"
 import type { MemDBEvent, MemberEventContent } from "@/api/types"
 import useContentVisibility from "@/util/contentvisibility.ts"
-import { ClientContext } from "../ClientContext.ts"
+import ClientContext from "../ClientContext.ts"
 
 export interface RoomListEntryProps {
 	room: RoomListEntry

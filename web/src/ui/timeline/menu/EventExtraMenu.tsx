@@ -16,7 +16,7 @@
 import { CSSProperties, use, useCallback } from "react"
 import { RoomStateStore, useRoomState } from "@/api/statestore"
 import { MemDBEvent, PowerLevelEventContent } from "@/api/types"
-import { ClientContext } from "../../ClientContext.ts"
+import ClientContext from "../../ClientContext.ts"
 import { ModalCloseContext, ModalContext } from "../../modal/Modal.tsx"
 import { RoomContext, RoomContextData } from "../../roomcontext.ts"
 import ConfirmWithMessageModal from "./ConfirmWithMessageModal.tsx"

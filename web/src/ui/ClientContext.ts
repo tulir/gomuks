@@ -16,4 +16,6 @@
 import { createContext } from "react"
 import type Client from "../api/client.ts"
 
-export const ClientContext = createContext<Client | null>(null)
+const ClientContext = createContext<Client | null>(null)
+
+export default ClientContext

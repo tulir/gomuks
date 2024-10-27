@@ -17,7 +17,7 @@ import React, { use, useCallback, useRef, useState } from "react"
 import type { RoomID } from "@/api/types"
 import { useNonNullEventAsState } from "@/util/eventdispatcher.ts"
 import toSearchableString from "@/util/searchablestring.ts"
-import { ClientContext } from "../ClientContext.ts"
+import ClientContext from "../ClientContext.ts"
 import Entry from "./Entry.tsx"
 import "./RoomList.css"
 

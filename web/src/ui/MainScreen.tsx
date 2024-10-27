@@ -15,7 +15,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import { use, useCallback, useLayoutEffect, useState } from "react"
 import type { RoomID } from "@/api/types"
-import { ClientContext } from "./ClientContext.ts"
+import ClientContext from "./ClientContext.ts"
 import RoomView from "./RoomView.tsx"
 import RoomList from "./roomlist/RoomList.tsx"
 import "./MainScreen.css"

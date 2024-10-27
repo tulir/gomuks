@@ -27,7 +27,7 @@ import type {
 } from "@/api/types"
 import { PartialEmoji, emojiToMarkdown } from "@/util/emoji"
 import useEvent from "@/util/useEvent.ts"
-import { ClientContext } from "../ClientContext.ts"
+import ClientContext from "../ClientContext.ts"
 import EmojiPicker from "../emojipicker/EmojiPicker.tsx"
 import { ModalContext } from "../modal/Modal.tsx"
 import { useRoomContext } from "../roomcontext.ts"
