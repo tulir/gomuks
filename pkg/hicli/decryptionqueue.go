@@ -39,6 +39,11 @@ func (h *HiClient) handleReceivedMegolmSession(ctx context.Context, roomID id.Ro
 	if err != nil {
 		log.Warn().Err(err).Msg("Failed to remove session request after receiving megolm session")
 	}
+	// When receiving megolm sessions in sync, wake up the request queue to ensure they get uploaded to key backup
+	syncCtx, ok := ctx.Value(syncContextKey).(*syncContext)
+	if ok {
+		syncCtx.shouldWakeupRequestQueue = true
+	}
 	events, err := h.DB.Event.GetFailedByMegolmSessionID(ctx, roomID, sessionID)
 	if err != nil {
 		log.Err(err).Msg("Failed to get events that failed to decrypt to retry decryption")
@@ -109,6 +114,7 @@ func (h *HiClient) RunRequestQueue(ctx context.Context) {
 		if err != nil {
 			log.Err(err).Msg("Failed to fetch outdated device lists for tracked users")
 		}
+		h.uploadKeysToBackup(ctx)
 		madeRequests, err := h.RequestQueuedSessions(ctx)
 		if err != nil {
 			log.Err(err).Msg("Failed to handle session request queue")
