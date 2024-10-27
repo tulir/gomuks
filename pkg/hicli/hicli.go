@@ -92,12 +92,17 @@ func New(rawDB, cryptoDB *dbutil.Database, log zerolog.Logger, pickleKey []byte,
 		UserAgent: mautrix.DefaultUserAgent,
 		Client: &http.Client{
 			Transport: &http.Transport{
-				DialContext:         (&net.Dialer{Timeout: 10 * time.Second}).DialContext,
-				TLSHandshakeTimeout: 10 * time.Second,
+				DialContext: (&net.Dialer{Timeout: 10 * time.Second}).DialContext,
 				// This needs to be relatively high to allow initial syncs,
 				// it's lowered after the first sync in postProcessSyncResponse
 				ResponseHeaderTimeout: 300 * time.Second,
+				// Default settings from http.DefaultTransport
+				Proxy:                 http.ProxyFromEnvironment,
 				ForceAttemptHTTP2:     true,
+				MaxIdleConns:          100,
+				IdleConnTimeout:       90 * time.Second,
+				TLSHandshakeTimeout:   10 * time.Second,
+				ExpectContinueTimeout: 1 * time.Second,
 			},
 			Timeout: 300 * time.Second,
 		},
