@@ -26,6 +26,7 @@ import type {
 	RoomID,
 } from "@/api/types"
 import { PartialEmoji, emojiToMarkdown } from "@/util/emoji"
+import { escapeMarkdown } from "@/util/markdown.ts"
 import useEvent from "@/util/useEvent.ts"
 import ClientContext from "../ClientContext.ts"
 import EmojiPicker from "../emojipicker/EmojiPicker.tsx"
@@ -266,11 +267,26 @@ const MessageComposer = () => {
 	const onAttachFile = useEvent(
 		(evt: React.ChangeEvent<HTMLInputElement>) => doUploadFile(evt.target.files?.[0]),
 	)
-	useEffect(() => {
-		const listener = (evt: ClipboardEvent) => doUploadFile(evt.clipboardData?.files?.[0])
-		document.addEventListener("paste", listener)
-		return () => document.removeEventListener("paste", listener)
-	}, [doUploadFile])
+	const onPaste = useEvent((evt: React.ClipboardEvent<HTMLTextAreaElement>) => {
+		const file = evt.clipboardData?.files?.[0]
+		const text = evt.clipboardData.getData("text/plain")
+		const input = evt.currentTarget
+		if (file) {
+			doUploadFile(file)
+		} else if (
+			input.selectionStart !== input.selectionEnd
+			&& (text.startsWith("http://") || text.startsWith("https://") || text.startsWith("matrix:"))
+		) {
+			setState({
+				text: `${state.text.slice(0, input.selectionStart)}[${
+					escapeMarkdown(state.text.slice(input.selectionStart, input.selectionEnd))
+				}](${escapeMarkdown(text)})${state.text.slice(input.selectionEnd)}`,
+			})
+		} else {
+			return
+		}
+		evt.preventDefault()
+	})
 	// To ensure the cursor jumps to the end, do this in an effect rather than as the initial value of useState
 	// To try to avoid the input bar flashing, use useLayoutEffect instead of useEffect
 	useLayoutEffect(() => {
@@ -370,6 +386,7 @@ const MessageComposer = () => {
 				onKeyDown={onComposerKeyDown}
 				onKeyUp={onComposerCaretChange}
 				onClick={onComposerCaretChange}
+				onPaste={onPaste}
 				onChange={onChange}
 				placeholder="Send a message"
 				id="message-composer"

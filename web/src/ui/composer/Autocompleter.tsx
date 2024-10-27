@@ -17,6 +17,7 @@ import { JSX, use, useEffect } from "react"
 import { getAvatarURL, getMediaURL } from "@/api/media.ts"
 import { RoomStateStore, useCustomEmojis } from "@/api/statestore"
 import { Emoji, emojiToMarkdown, useSortedAndFilteredEmojis } from "@/util/emoji"
+import { escapeMarkdown } from "@/util/markdown.ts"
 import useEvent from "@/util/useEvent.ts"
 import ClientContext from "../ClientContext.ts"
 import type { ComposerState } from "./MessageComposer.tsx"
@@ -111,11 +112,7 @@ export const EmojiAutocompleter = ({ params, room, ...rest }: AutocompleterProps
 	return useAutocompleter({ params, room, ...rest, items, ...emojiFuncs })
 }
 
-const escapeDisplayname = (input: string) => input
-	.replace("\n", " ")
-	.replace(/([\\`*_[\]])/g, "\\$1")
-	.replace("<", "&lt;")
-	.replace(">", "&gt;")
+const escapeDisplayname = (input: string) => escapeMarkdown(input).replace("\n", " ")
 
 const userFuncs = {
 	getText: (user: AutocompleteUser) =>
