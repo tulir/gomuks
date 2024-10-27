@@ -45,7 +45,7 @@ const TextMessageBody = ({ event, sender }: EventContentProps) => {
 			onClick={onClickHTML}
 			className={classNames.join(" ")}
 			data-event-sender={eventSenderName}
-			dangerouslySetInnerHTML={{ __html: event.local_content!.sanitized_html! }}
+			dangerouslySetInnerHTML={{ __html: event.local_content.sanitized_html }}
 		/>
 	}
 	return <div className={classNames.join(" ")} data-event-sender={eventSenderName}>{content.body}</div>
