@@ -666,11 +666,24 @@ func (h *HiClient) processStateAndTimeline(
 		timelineIDs := make([]database.EventRowID, len(timeline.Events))
 		readUpToIndex := -1
 		for i := len(timeline.Events) - 1; i >= 0; i-- {
-			if slices.Contains(newOwnReceipts, timeline.Events[i].ID) {
+			evt := timeline.Events[i]
+			isRead := slices.Contains(newOwnReceipts, evt.ID)
+			isOwnEvent := evt.Sender == h.Account.UserID
+			if isRead || isOwnEvent {
 				readUpToIndex = i
 				// Reset unread counts if we see our own read receipt in the timeline.
 				// It'll be updated with new unreads (if any) at the end.
 				updatedRoom.UnreadCounts = database.UnreadCounts{}
+				if !isRead {
+					receipts = append(receipts, &database.Receipt{
+						RoomID:      room.ID,
+						UserID:      h.Account.UserID,
+						ReceiptType: event.ReceiptTypeRead,
+						EventID:     evt.ID,
+						Timestamp:   jsontime.UM(time.UnixMilli(evt.Timestamp)),
+					})
+					newOwnReceipts = append(newOwnReceipts, evt.ID)
+				}
 				break
 			}
 		}
