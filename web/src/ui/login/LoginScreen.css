@@ -3,7 +3,7 @@ main.matrix-login {
 	width: 100%;
 	padding: 3rem 6rem;
 
-	box-shadow: 0 0 1rem rgba(0, 0, 0, 0.25);
+	box-shadow: 0 0 1rem var(--modal-box-shadow-color);
 	margin: 2rem;
 
 	@media (width < 800px) {
@@ -49,7 +49,7 @@ main.matrix-login {
 
 	button {
 		background-color: var(--primary-color);
-		color: white;
+		color: var(--inverted-text-color);
 		font-weight: bold;
 
 		&:hover, &:focus {

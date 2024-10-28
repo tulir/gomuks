@@ -14,7 +14,7 @@ div.room-view {
 		align-items: center;
 		gap: .5rem;
 		padding-left: .5rem;
-		border-bottom: 1px solid #ccc;
+		border-bottom: 1px solid var(--border-color);
 
 		> span.room-name {
 			font-weight: bold;
@@ -23,14 +23,6 @@ div.room-view {
 		> button.back {
 			height: 2.5rem;
 			width: 2.5rem;
-			padding: 0;
-			display: flex;
-			justify-content: center;
-			align-items: center;
-
-			&:hover, &:focus {
-				background-color: #eee;
-			}
 		}
 	}
 }

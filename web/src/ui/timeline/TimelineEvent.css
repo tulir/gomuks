@@ -10,11 +10,11 @@ div.timeline-event {
 		/ 2.5rem .5rem 1fr 2rem;
 
 	&.highlight {
-		background-color: rgba(255, 255, 0, .1);
+		background-color: var(--timeline-highlight-bg-color);
 	}
 
 	&.jump-highlight {
-		background-color: rgba(0, 255, 0, .2);
+		background-color: var(--timeline-jump-bg-color);
 	}
 
 	&.jump-highlight-fadeout {
@@ -22,14 +22,14 @@ div.timeline-event {
 	}
 
 	&:hover {
-		background-color: #eee;
+		background-color: var(--timeline-hover-bg-color);
 
 		&.highlight {
-			background-color: #eec;
+			background-color: var(--timeline-highlight-hover-bg-color);
 		}
 
 		&.jump-highlight {
-			background-color: #cec;
+			background-color: var(--timeline-jump-hover-bg-color);
 		}
 	}
 
@@ -55,7 +55,7 @@ div.timeline-event {
 
 		> span.event-time, > span.event-edited {
 			font-size: .7rem;
-			color: #888;
+			color: var(--secondary-text-color);
 		}
 	}
 
@@ -64,7 +64,7 @@ div.timeline-event {
 		display: none;
 		align-items: end;
 		font-size: .7rem;
-		color: #888;
+		color: var(--secondary-text-color);
 		max-height: 1.25rem;
 		margin-left: .25rem;
 	}
@@ -87,11 +87,11 @@ div.timeline-event {
 		}
 
 		&.error {
-			color: red;
+			color: var(--sent-error-color);
 		}
 
 		&.sending, &.sent {
-			color: #ccc;
+			color: var(--sent-ok-color);
 		}
 	}
 
@@ -150,17 +150,16 @@ span.event-sender {
 	overflow: hidden;
 	text-overflow: ellipsis;
 
-	/* These should be synced with the avatar colors in api/media.ts */
-	&.sender-color-0 { color: #a4041d; }
-	&.sender-color-1 { color: #9b2200; }
-	&.sender-color-2 { color: #803f00; }
-	&.sender-color-3 { color: #005f00; }
-	&.sender-color-4 { color: #005c45; }
-	&.sender-color-5 { color: #00548c; }
-	&.sender-color-6 { color: #064ab1; }
-	&.sender-color-7 { color: #5d26cd; }
-	&.sender-color-8 { color: #822198; }
-	&.sender-color-9 { color: #9f0850; }
+	&.sender-color-0 { color: var(--sender-color-0); }
+	&.sender-color-1 { color: var(--sender-color-1); }
+	&.sender-color-2 { color: var(--sender-color-2); }
+	&.sender-color-3 { color: var(--sender-color-3); }
+	&.sender-color-4 { color: var(--sender-color-4); }
+	&.sender-color-5 { color: var(--sender-color-5); }
+	&.sender-color-6 { color: var(--sender-color-6); }
+	&.sender-color-7 { color: var(--sender-color-7); }
+	&.sender-color-8 { color: var(--sender-color-8); }
+	&.sender-color-9 { color: var(--sender-color-9); }
 }
 
 div.event-content > div.event-reactions {
@@ -174,8 +173,8 @@ div.event-content > div.event-reactions {
 		align-items: center;
 		gap: .25rem;
 
-		background-color: #efe;
-		border: 1px solid #ada;
+		background-color: var(--background-color);
+		border: 1px solid var(--border-color);
 		border-radius: 2rem;
 		padding: 0 .5rem;
 

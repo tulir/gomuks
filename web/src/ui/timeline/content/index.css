@@ -1,7 +1,6 @@
-
 div.render-error-body {
 	font-style: italic;
-	color: #555;
+	color: var(--semisecondary-text-color);
 }
 
 div.decryption-error-body {
@@ -10,14 +9,14 @@ div.decryption-error-body {
 
 	> svg {
 		height: 20px;
-		color: red;
+		color: var(--error-color);
 	}
 }
 
 div.redacted-body, div.decryption-pending-body {
 	display: flex;
 	align-items: center;
-	color: #888;
+	color: var(--secondary-text-color);
 
 	> svg {
 		height: 20px;
@@ -52,12 +51,11 @@ div.html-body {
 	overflow: hidden;
 
 	pre.chroma {
-		/* TODO this may need to be undone if the color scheme is customizable */
-		background-color: inherit;
+		background-color: var(--codeblock-background-color);
 	}
 
 	a.hicli-matrix-uri-user, a.hicli-matrix-uri-room-alias {
-		background-color: #ccc;
+		background-color: var(--pill-background-color);
 		border-radius: 1rem;
 		padding: 0 .25rem;
 		color: inherit;
@@ -106,7 +104,7 @@ div.html-body {
 	}
 
 	blockquote {
-		border-left: 2px solid #ccc;
+		border-left: 2px solid var(--blockquote-border-color);
 		padding-left: .5rem;
 	}
 

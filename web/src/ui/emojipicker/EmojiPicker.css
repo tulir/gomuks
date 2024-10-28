@@ -1,13 +1,13 @@
 div.emoji-picker {
 	position: fixed;
-	background-color: white;
+	background-color: var(--background-color);
 	width: 22rem;
 	height: 34rem;
 	border-radius: 1rem;
-	border: 1px solid #ccc;
+	border: 1px solid var(--border-color);
 	display: flex;
 	flex-direction: column;
-	box-shadow: 0 0 1rem rgba(0, 0, 0, 0.15);
+	box-shadow: 0 0 1rem var(--modal-box-shadow-color);
 
 	div.emoji-category-bar {
 		/*height: 2.5rem;*/
@@ -15,7 +15,7 @@ div.emoji-picker {
 		justify-content: center;
 		flex-wrap: wrap;
 		padding-top: .5rem;
-		border-bottom: 1px solid #ccc;
+		border-bottom: 1px solid var(--border-color);
 
 		> button {
 			padding-top: .25rem;
@@ -27,7 +27,7 @@ div.emoji-picker {
 			border-bottom-right-radius: 0;
 			border-bottom: 2px solid transparent;
 			&:hover {
-				border-bottom: 2px solid green;
+				border-bottom: 2px solid var(--primary-color-dark);
 			}
 		}
 	}
@@ -36,7 +36,7 @@ div.emoji-picker {
 		display: flex;
 		align-items: center;
 		margin: .5rem;
-		border: 1px solid #ccc;
+		border: 1px solid var(--border-color);
 		border-radius: .25rem;
 		height: 2rem;
 
@@ -67,7 +67,7 @@ div.emoji-picker {
 
 	div.emoji-preview {
 		height: 4.5rem;
-		border-top: 1px solid #ccc;
+		border-top: 1px solid var(--border-color);
 
 		display: grid;
 		grid-template:
@@ -98,7 +98,7 @@ div.emoji-picker {
 
 		> div.emoji-shortcode {
 			grid-area: shortcode;
-			color: #666;
+			color: var(--semisecondary-text-color);
 		}
 	}
 
@@ -120,9 +120,15 @@ div.emoji-picker {
 		align-items: center;
 
 		> button {
-			margin-left: .5rem;
+			margin-left: .25rem;
 			font-size: .8rem;
+			padding: .25rem .5rem;
 		}
+	}
+
+	button.emoji-category-icon {
+		/* The vertical alignment isn't quite right with flex */
+		display: block;
 	}
 
 	button.emoji-category-icon > img, button.emoji > img {
@@ -138,12 +144,8 @@ div.emoji-picker {
 		height: 2.5rem;
 		content-visibility: auto;
 
-		&:hover {
-			background-color: #ccc;
-		}
-
 		&.selected {
-			border: 1px solid #cec;
+			border: 1px solid var(--emoji-selected-border-color);
 			opacity: .8;
 		}
 	}

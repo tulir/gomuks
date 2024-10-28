@@ -5,9 +5,9 @@ div.autocompletions-wrapper {
 div.autocompletions {
 	position: absolute;
 	bottom: 1px;
-	border-top: 1px solid #ccc;
-	border-right: 1px solid #ccc;
-	background-color: #fff;
+	border-top: 1px solid var(--border-color);
+	border-right: 1px solid var(--border-color);
+	background-color: var(--background-color);
 	padding: .5rem;
 	max-height: 20rem;
 	overflow: auto;
@@ -21,7 +21,7 @@ div.autocompletions {
 		/*cursor: pointer;*/
 
 		&.selected, &:hover {
-			background-color: #f0f0f0;
+			background-color: var(--light-hover-color);
 		}
 
 		> img {

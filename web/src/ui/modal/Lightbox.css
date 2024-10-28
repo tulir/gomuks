@@ -6,7 +6,7 @@ div.overlay {
 	justify-content: center;
 
 	&.dimmed {
-		background-color: rgba(0, 0, 0, 0.75);
+		background-color: var(--dimmed-overlay-background-color);
 	}
 }
 
@@ -19,17 +19,13 @@ div.lightbox {
 		z-index: 1;
 
 		> button, > a {
-			display: flex;
-			justify-content: center;
-			align-items: center;
-			color: #ccc;
-			width: 48px;
-			height: 48px;
-			padding: 0;
+			color: var(--lightbox-button-color);
+			width: 3rem;
+			height: 3rem;
 
 			> svg {
-				width: 32px;
-				height: 32px;
+				width: 2rem;
+				height: 2rem;
 			}
 		}
 	}

@@ -2,29 +2,25 @@ div.event-hover-menu {
 	position: absolute;
 	right: .5rem;
 	top: -1.5rem;
-	background-color: white;
-	border: 1px solid #ccc;
+	background-color: var(--background-color);
+	border: 1px solid var(--border-color);
 	border-radius: .5rem;
 	display: flex;
 	gap: .25rem;
 	padding: .125rem;
 
 	> button {
-		padding: 0;
 		width: 2rem;
 		height: 2rem;
-		display: flex;
-		justify-content: center;
-		align-items: center;
 	}
 }
 
 div.event-context-menu-extra {
 	position: fixed;
-	background-color: white;
+	background-color: var(--background-color);
 	border-radius: .5rem;
-	border: 1px solid #ccc;
-	box-shadow: 0 0 1rem rgba(0, 0, 0, 0.15);
+	border: 1px solid var(--border-color);
+	box-shadow: 0 0 1rem var(--modal-box-shadow-color);
 
 	display: flex;
 	flex-direction: column;
@@ -32,9 +28,7 @@ div.event-context-menu-extra {
 	> button {
 		border-radius: 0;
 		padding: .5rem .75rem;
-		display: flex;
 		justify-content: left;
-		align-items: center;
 		gap: .5rem;
 
 		&:first-of-type {
@@ -45,7 +39,7 @@ div.event-context-menu-extra {
 		}
 
 		&.redact-button {
-			color: red;
+			color: var(--error-color);
 		}
 	}
 }
@@ -54,7 +48,7 @@ div.view-source-modal {
 	max-width: min(80rem, 80vw);
 	max-height: min(80rem, 80vh);
 	overflow: auto;
-	background-color: white;
+	background-color: var(--background-color);
 	border-radius: 1rem;
 	padding: 1rem;
 }
@@ -62,7 +56,7 @@ div.view-source-modal {
 div.confirm-message-modal {
 	width: min(40rem, 80vw);
 	max-height: min(40rem, 80vh);
-	background-color: white;
+	background-color: var(--background-color);
 	border-radius: 1rem;
 	padding: 1rem;
 	display: flex;
@@ -76,7 +70,7 @@ div.confirm-message-modal {
 	> div.timeline-event-container {
 		margin: .5rem 0;
 		padding-left: .5rem;
-		border-left: 2px solid #ccc;
+		border-left: 2px solid var(--border-color);
 		overflow: auto;
 
 		> div.timeline-event {
@@ -88,7 +82,7 @@ div.confirm-message-modal {
 		padding: 1rem;
 		outline: none;
 		border-radius: .25rem;
-		border: 1px solid #ccc;
+		border: 1px solid var(--border-color);
 	}
 
 	> div.confirm-buttons {

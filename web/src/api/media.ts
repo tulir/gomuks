@@ -28,17 +28,28 @@ export const getEncryptedMediaURL = (mxc?: string): string | undefined => {
 	return getMediaURL(mxc, true)
 }
 
-// This should be synced with the sender colors in ui/timeline/TimelineEvent.css
-const fallbackColors = [
-	"#a4041d", "#9b2200", "#803f00", "#005f00",
-	"#005c45", "#00548c", "#064ab1", "#5d26cd",
-	"#822198", "#9f0850",
-]
+const FALLBACK_COLOR_COUNT = 10
 
 export const getUserColorIndex = (userID: UserID) =>
-	userID.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0) % fallbackColors.length
+	userID.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0) % FALLBACK_COLOR_COUNT
 
-export const getUserColor = (userID: UserID) => fallbackColors[getUserColorIndex(userID)]
+function initFallbackColors(): string[] {
+	const style = getComputedStyle(document.body)
+	const output = []
+	for (let i = 0; i < FALLBACK_COLOR_COUNT; i++) {
+		output.push(style.getPropertyValue(`--sender-color-${i}`))
+	}
+	return output
+}
+
+let fallbackColors: string[]
+
+export const getUserColor = (userID: UserID) => {
+	if (!fallbackColors) {
+		fallbackColors = initFallbackColors()
+	}
+	return fallbackColors[getUserColorIndex(userID)]
+}
 
 // note: this should stay in sync with fallbackAvatarTemplate in cmd/gomuks.media.go
 function makeFallbackAvatar(backgroundColor: string, fallbackCharacter: string): string {

@@ -79,6 +79,8 @@ export const ReplyBody = ({ room, event, onClose, isThread, isEditing }: ReplyBo
 	if (isEditing) {
 		classNames.push("editing")
 	}
+	const userColorIndex = getUserColorIndex(event.sender)
+	classNames.push(`sender-color-${userColorIndex}`)
 	return <blockquote data-reply-to={event.event_id} className={classNames.join(" ")} onClick={onClickReply}>
 		<div className="reply-sender">
 			<div className="sender-avatar" title={event.sender}>
@@ -89,7 +91,7 @@ export const ReplyBody = ({ room, event, onClose, isThread, isEditing }: ReplyBo
 					alt=""
 				/>
 			</div>
-			<span className={`event-sender sender-color-${getUserColorIndex(event.sender)}`}>
+			<span className={`event-sender sender-color-${userColorIndex}`}>
 				{memberEvtContent?.displayname || event.sender}
 			</span>
 			{onClose && <button className="close-reply" onClick={onClose}><CloseButton/></button>}

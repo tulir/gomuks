@@ -1,11 +1,128 @@
+:root {
+	--font-stack: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+	--monospace-font-stack: "Fira Code", monospace;
+
+	--background-color: #fff;
+	--login-background-color: #eee;
+	--text-color: #000;
+	--inverted-text-color: var(--background-color);
+	--secondary-text-color: #888;
+	--semisecondary-text-color: #555;
+
+	--primary-color: #00c853;
+	--primary-color-dark: #00b24a;
+	--error-color: red;
+
+	--border-color: #ccc;
+	--pill-background-color: #ccc;
+	--button-hover-color: rgba(0, 0, 0, .2);
+	--light-hover-color: rgba(0, 0, 0, .1);
+
+	--timeline-hover-bg-color: #eee;
+	--timeline-highlight-bg-color: rgba(255, 255, 0, .1);
+	--timeline-highlight-hover-bg-color: #eec;
+	--timeline-jump-bg-color: rgba(0, 255, 0, .2);
+	--timeline-jump-hover-bg-color: #cec;
+
+	--room-list-background: linear-gradient(in hsl longer hue, red 0 0, magenta);
+	--room-list-background-overlay: hsla(0, 0%, 96%, .9);
+	--room-list-search-background-overlay: var(--room-list-background-overlay);
+	--space-list-background-overlay: hsla(0, 0%, 96%, .8);
+	--room-list-scrollbar-color: rgba(0, 0, 0, .4) rgba(0, 0, 0, .1);
+	--room-list-entry-hover-color: rgba(0, 0, 0, 0.075);
+	--room-list-entry-selected-color: rgba(0, 0, 0, 0.125);
+
+	--dimmed-overlay-background-color: rgba(0, 0, 0, .75);
+	--modal-box-shadow-color: rgba(0, 0, 0, 0.15);
+
+	--emoji-selected-border-color: #cec;
+
+	--unread-counter-text-color: var(--inverted-text-color);
+	--unread-counter-message-bg: rgba(0, 0, 0, 0.35);
+	--unread-counter-notification-bg: rgba(50, 150, 0, 0.7);
+	--unread-counter-highlight-bg: rgba(200, 0, 0, 0.7);
+
+	/* These should be synced with the avatar colors in api/media.ts */
+	--sender-color-0: #a4041d;
+	--sender-color-1: #9b2200;
+	--sender-color-2: #803f00;
+	--sender-color-3: #005f00;
+	--sender-color-4: #005c45;
+	--sender-color-5: #00548c;
+	--sender-color-6: #064ab1;
+	--sender-color-7: #5d26cd;
+	--sender-color-8: #822198;
+	--sender-color-9: #9f0850;
+
+	--sent-ok-color: var(--border-color);
+	--sent-error-color: var(--error-color);
+	--blockquote-border-color: var(--border-color);
+	--lightbox-button-color: var(--border-color);
+	--codeblock-background-color: inherit;
+
+	@media (prefers-color-scheme: dark) {
+		--background-color: #000;
+		--login-background-color: #111;
+		--text-color: #fff;
+		--inverted-text-color: var(--background-color);
+		--secondary-text-color: #888;
+		--semisecondary-text-color: #bbb;
+
+		--primary-color: #00b24a;
+		--primary-color-dark: #00c853;
+		--error-color: red;
+
+		--border-color: #222;
+		--pill-background-color: #222;
+		--button-hover-color: rgba(255, 255, 255, .2);
+		--light-hover-color: rgba(255, 255, 255, .1);
+
+		--timeline-hover-bg-color: #111;
+		--timeline-highlight-bg-color: rgba(255, 255, 0, .1);
+		--timeline-highlight-hover-bg-color: #331;
+		--timeline-jump-bg-color: rgba(0, 255, 0, .2);
+		--timeline-jump-hover-bg-color: #131;
+
+		--room-list-background-overlay: hsla(0, 0%, 4%, .8);
+		--space-list-background-overlay: hsla(0, 0%, 4%, .7);
+		--room-list-scrollbar-color: rgba(255, 255, 255, .4) rgba(255, 255, 255, .1);
+		--room-list-entry-hover-color: rgba(255, 255, 255, 0.075);
+		--room-list-entry-selected-color: rgba(255, 255, 255, 0.125);
+
+		--modal-box-shadow-color: rgba(255, 255, 255, 0.1);
+
+		--emoji-selected-border-color: #131;
+
+		--unread-counter-message-bg: rgba(255, 255, 255, 0.5);
+		--unread-counter-notification-bg: rgba(150, 255, 0, 0.7);
+		--unread-counter-highlight-bg: rgba(255, 50, 50, 0.7);
+
+		--sender-color-0: #ff877c;
+		--sender-color-1: #f6913d;
+		--sender-color-2: #db9f00;
+		--sender-color-3: #56c02c;
+		--sender-color-4: #1fc090;
+		--sender-color-5: #21bacd;
+		--sender-color-6: #7aacf4;
+		--sender-color-7: #ad9cfe;
+		--sender-color-8: #d991de;
+		--sender-color-9: #fe84a2;
+
+		--sent-ok-color: #444;
+		--blockquote-border-color: #444;
+		--lightbox-button-color: #ccc;
+	}
+}
+
 body {
-	font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+	font-family: var(--font-stack);
 	margin: 0;
 	padding: 0;
-	background-color: #EEE;
+	background-color: var(--login-background-color);
 	line-height: 1.5;
 	font-size: 16px;
 	touch-action: none;
+	color: var(--text-color);
 }
 
 html {
@@ -18,11 +135,16 @@ html {
 }
 
 main {
-	background-color: white;
+	background-color: var(--background-color);
 }
 
 pre, code {
-	font-family: "Fira Code", monospace;
+	font-family: var(--monospace-font-stack);
+}
+
+input, textarea {
+	color: inherit;
+	background-color: inherit;
 }
 
 button, a.button {
@@ -31,13 +153,18 @@ button, a.button {
 	background: none;
 	border: none;
 	border-radius: .25rem;
+	padding: 0;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	color: inherit;
 
 	&:disabled {
 		cursor: default;
 	}
 
-	&:hover:not(:disabled) {
-		background-color: rgba(0, 0, 0, .2);
+	&:hover:not(:disabled), &:focus:not(:disabled) {
+		background-color: var(--button-hover-color);
 	}
 }
 
@@ -47,14 +174,6 @@ a {
 	&:hover:not(.button) {
 		text-decoration: underline;
 	}
-}
-
-:root {
-	--primary-color: #00c853;
-	--primary-color-light: #92ffc0;
-	--primary-color-dark: #00b24a;
-	--error-color: red;
-	--error-color-light: #ff6666;
 }
 
 .hidden {

@@ -17,6 +17,7 @@ pre.json-view {
 
 	button {
 		padding: 0 .25rem;
+		display: inline-flex;
 	}
 
 	/* If the screen is wide enough, make line-wrapped strings aligned after the object key */

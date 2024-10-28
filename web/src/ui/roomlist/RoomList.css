@@ -1,15 +1,15 @@
 div.room-list-wrapper {
 	grid-area: roomlist;
-	background: linear-gradient(in hsl longer hue, red 0 0, magenta);
+	background: var(--room-list-background);
 	box-sizing: border-box;
 	overflow: hidden;
-	scrollbar-color: rgba(0, 0, 0, 0.4) rgba(0, 0, 0, 0.1);
+	scrollbar-color: var(--room-list-scrollbar-color);
 	display: flex;
 	flex-direction: column;
 }
 
 div.room-list {
-	background-color: hsla(0, 0%, 96%, .9);
+	background-color: var(--room-list-background-overlay);
 	overflow-y: auto;
 	flex: 1;
 }
@@ -19,7 +19,7 @@ input.room-search {
 	padding: 1rem;
 	box-sizing: border-box;
 	border: none;
-	background-color: hsla(0, 0%, 96%, .9);
+	background-color: var(--room-list-search-background-overlay);
 	outline: none;
 }
 
@@ -27,19 +27,18 @@ div.room-entry {
 	width: 100%;
 	display: flex;
 	gap: 4px;
-	/*border-radius: 4px;*/
 	user-select: none;
 	/*cursor: pointer;*/
 	height: 3rem;
 	contain-intrinsic-height: 3rem;
 	content-visibility: auto;
 
-	&:hover {
-		background-color: rgba(0, 0, 0, 0.075);
+	&:hover, &:focus {
+		background-color: var(--room-list-entry-hover-color);
 	}
 
 	&.active {
-		background-color: rgba(0, 0, 0, 0.125);
+		background-color: var(--room-list-entry-selected-color);
 	}
 
 	> div.room-entry-left {
@@ -93,9 +92,9 @@ div.room-entry {
 			align-items: center;
 			justify-content: center;
 			border-radius: 50%;
-			color: white;
+			color: var(--unread-counter-text-color);
 
-			background-color: rgba(0, 0, 0, 0.35);
+			background-color: var(--unread-counter-message-bg);
 			width: 1rem;
 			height: 1rem;
 			line-height: 1;
@@ -110,11 +109,11 @@ div.room-entry {
 			}
 
 			&.notified:not(.highlighted) {
-				background-color: rgba(50, 150, 0, 0.7);
+				background-color: var(--unread-counter-notification-bg);
 			}
 
 			&.highlighted {
-				background-color: rgba(200, 0, 0, 0.7);
+				background-color: var(--unread-counter-highlight-bg);
 			}
 		}
 	}

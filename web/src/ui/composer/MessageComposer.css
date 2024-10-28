@@ -1,5 +1,5 @@
 div.message-composer {
-	border-top: 1px solid #ccc;
+	border-top: 1px solid var(--border-color);
 
 	blockquote.reply-body {
 		pre, a.hicli-matrix-uri {
@@ -16,7 +16,7 @@ div.message-composer {
 			line-height: 1.25;
 			flex: 1;
 			resize: none;
-			font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+			font-family: var(--font-stack);
 			height: auto;
 			padding: .5rem;
 			border: none;

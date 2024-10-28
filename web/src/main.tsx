@@ -19,12 +19,10 @@ import App from "./App.tsx"
 import "./index.css"
 
 const styleTags = document.createElement("style")
-// styleTags.textContent = `
-// @import "_gomuks/codeblock/github-dark.css" (prefers-color-scheme: dark);
-// @import "_gomuks/codeblock/github.css" (prefers-color-scheme: light);
-// `
-// TODO switch to the above version after adding global dark theme support
-styleTags.textContent = `@import "_gomuks/codeblock/github.css";`
+styleTags.textContent = `
+@import "_gomuks/codeblock/github-dark.css" (prefers-color-scheme: dark);
+@import "_gomuks/codeblock/github.css" (prefers-color-scheme: light);
+`
 document.head.appendChild(styleTags)
 
 fetch("_gomuks/auth", { method: "POST" }).then(resp => {
