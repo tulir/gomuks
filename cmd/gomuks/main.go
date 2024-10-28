@@ -55,7 +55,7 @@ func main() {
 	initVersion(Tag, Commit, BuildTime)
 	flag.SetHelpTitles(
 		"gomuks - A Matrix client written in Go.",
-		"gomuks [-hv] [-l address]",
+		"gomuks [-hv]",
 	)
 	err := flag.Parse()
 
