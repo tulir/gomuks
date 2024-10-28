@@ -77,6 +77,7 @@ div.confirm-message-modal {
 		margin: .5rem 0;
 		padding-left: .5rem;
 		border-left: 2px solid #ccc;
+		overflow: auto;
 
 		> div.timeline-event {
 			margin: 0;
