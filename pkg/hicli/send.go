@@ -41,6 +41,14 @@ func (h *HiClient) SendMessage(
 	mentions *event.Mentions,
 ) (*database.Event, error) {
 	var content event.MessageEventContent
+	msgType := event.MsgText
+	if strings.HasPrefix(text, "/me ") {
+		msgType = event.MsgEmote
+		text = strings.TrimPrefix(text, "/me ")
+	} else if strings.HasPrefix(text, "/notice ") {
+		msgType = event.MsgNotice
+		text = strings.TrimPrefix(text, "/notice ")
+	}
 	if strings.HasPrefix(text, "/rainbow ") {
 		text = strings.TrimPrefix(text, "/rainbow ")
 		content = format.RenderMarkdownCustom(text, rainbowWithHTML)
@@ -54,6 +62,7 @@ func (h *HiClient) SendMessage(
 	} else if text != "" {
 		content = format.RenderMarkdown(text, true, true)
 	}
+	content.MsgType = msgType
 	if base != nil {
 		if text != "" {
 			base.Body = content.Body
