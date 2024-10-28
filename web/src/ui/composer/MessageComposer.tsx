@@ -107,6 +107,7 @@ const MessageComposer = () => {
 		setState({
 			media: isMedia ? evtContent as MediaMessageEventContent : null,
 			text: (!evt.content.filename || evt.content.filename !== evt.content.body) ? (evtContent.body ?? "") : "",
+			replyTo: null,
 		})
 		textInput.current?.focus()
 	}, [room.roomID])
