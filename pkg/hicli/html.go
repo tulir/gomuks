@@ -223,6 +223,7 @@ func writeURL(w *strings.Builder, addr []byte) {
 		}
 		w.WriteString("<a")
 		writeAttribute(w, "class", "hicli-mxc-url")
+		writeAttribute(w, "target", "_blank")
 		writeAttribute(w, "data-mxc", mxc.String())
 		writeAttribute(w, "href", fmt.Sprintf(HTMLSanitizerImgSrcTemplate, mxc.Homeserver, mxc.FileID))
 		w.WriteByte('>')
@@ -405,6 +406,7 @@ func writeA(w *strings.Builder, attr []html.Attribute) (mxc id.ContentURI) {
 			return
 		}
 		writeAttribute(w, "class", "hicli-mxc-url")
+		writeAttribute(w, "target", "_blank")
 		writeAttribute(w, "data-mxc", mxc.String())
 		href = fmt.Sprintf(HTMLSanitizerImgSrcTemplate, mxc.Homeserver, mxc.FileID)
 	default:
