@@ -42,7 +42,6 @@
 	--unread-counter-notification-bg: rgba(50, 150, 0, 0.7);
 	--unread-counter-highlight-bg: rgba(200, 0, 0, 0.7);
 
-	/* These should be synced with the avatar colors in api/media.ts */
 	--sender-color-0: #a4041d;
 	--sender-color-1: #9b2200;
 	--sender-color-2: #803f00;
