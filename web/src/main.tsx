@@ -18,16 +18,8 @@ import { createRoot } from "react-dom/client"
 import App from "./App.tsx"
 import "./index.css"
 
-fetch("_gomuks/auth", { method: "POST" }).then(resp => {
-	if (resp.ok) {
-		createRoot(document.getElementById("root")!).render(
-			<StrictMode>
-				<App/>
-			</StrictMode>,
-		)
-	} else {
-		window.alert("Authentication failed: " + resp.statusText)
-	}
-}, err => {
-	window.alert("Authentication failed: " + err)
-})
+createRoot(document.getElementById("root")!).render(
+	<StrictMode>
+		<App/>
+	</StrictMode>,
+)

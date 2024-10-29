@@ -38,6 +38,41 @@ export default class Client {
 			queueMicrotask(() => this.#handleEmoteRoomsChange()))
 	}
 
+	async #reallyStart(signal: AbortSignal) {
+		try {
+			const resp = await fetch("_gomuks/auth", {
+				method: "POST",
+				signal,
+			})
+			if (!resp.ok) {
+				this.rpc.connect.emit({
+					connected: false,
+					error: new Error(`Authentication failed: ${resp.statusText}`),
+				})
+				return
+			}
+		} catch (err) {
+			const error = err instanceof Error ? err : new Error(`${err}`)
+			this.rpc.connect.emit({ connected: false, error })
+		}
+		if (signal.aborted) {
+			return
+		}
+		console.log("Successfully authenticated, connecting to websocket")
+		this.rpc.start()
+		Notification.requestPermission()
+			.then(permission => console.log("Notification permission:", permission))
+	}
+
+	start(): () => void {
+		const abort = new AbortController()
+		this.#reallyStart(abort.signal)
+		return () => {
+			abort.abort()
+			this.rpc.stop()
+		}
+	}
+
 	get userID(): UserID {
 		return this.state.current?.is_logged_in ? this.state.current.user_id : ""
 	}

@@ -29,16 +29,11 @@ function App() {
 	window.client = client
 	const connState = useEventAsState(client.rpc.connect)
 	const clientState = useEventAsState(client.state)
-	useEffect(() => {
-		Notification.requestPermission()
-			.then(permission => console.log("Notification permission:", permission))
-		client.rpc.start()
-		return () => client.rpc.stop()
-	}, [client])
+	useEffect(() => client.start(), [client])
 
 	if (connState?.error) {
 		return <div>
-			error {`${connState.error}`} :(
+			{`${connState.error} \u{1F63F}`}
 		</div>
 	} else if (!connState?.connected || !clientState) {
 		const msg = connState?.connected ?
