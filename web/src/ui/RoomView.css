@@ -1,4 +1,5 @@
 div.room-view {
+	grid-area: roomview;
 	overflow: hidden;
 	height: 100%;
 	display: grid;
@@ -8,21 +9,4 @@ div.room-view {
 		"messageview" 1fr
 		"input" auto
 		/ 1fr;
-
-	> div.room-header {
-		display: flex;
-		align-items: center;
-		gap: .5rem;
-		padding-left: .5rem;
-		border-bottom: 1px solid var(--border-color);
-
-		> span.room-name {
-			font-weight: bold;
-		}
-
-		> button.back {
-			height: 2.5rem;
-			width: 2.5rem;
-		}
-	}
 }

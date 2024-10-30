@@ -1,31 +1,49 @@
 main.matrix-main {
+	--room-list-width: 300px;
+	--right-panel-width: 300px;
+
 	position: fixed;
 	inset: 0;
 
 	display: grid;
-	grid-template: "roomlist roomview" 1fr / 300px 1fr;
+	grid-template:
+		" roomlist               rh1 roomview" 1fr
+		/ var(--room-list-width) 0   1fr;
 
-	@media screen and (max-width: 1000px) {
-		grid-template: "roomlist roomview" 1fr / 250px 1fr;
-	}
-
-	@media screen and (max-width: 900px) {
-		grid-template: "roomlist roomview" 1fr / 200px 1fr;
+	&.right-panel-open {
+		grid-template:
+			" roomlist               rh1 roomview rh2 rightpanel              " 1fr
+			/ var(--room-list-width) 0   1fr      0   var(--right-panel-width);
 	}
 
 	@media screen and (max-width: 750px) {
-		&.room-selected {
+		&.right-panel-open {
+			grid-template: "rightpanel" 1fr / 1fr;
+			> div.room-list-wrapper {
+				display: none;
+			}
+			> div.room-view {
+				display: none;
+			}
+		}
+
+		&.room-selected:not(.right-panel-open) {
 			grid-template: "roomview" 1fr / 1fr;
 			> div.room-list-wrapper {
 				display: none;
 			}
 		}
 
-		&:not(.room-selected) {
+		&:not(.room-selected):not(.right-panel-open) {
 			grid-template: "roomlist" 1fr / 1fr;
-			> div.room-view {
-				display: none;
-			}
 		}
+	}
+
+	> div.room-list-resizer {
+		grid-area: rh1;
+	}
+
+	> div.right-panel-resizer {
+		grid-area: rh2;
 	}
 }

@@ -19,10 +19,10 @@ import type { RoomListEntry } from "@/api/statestore"
 import type { MemDBEvent, MemberEventContent } from "@/api/types"
 import useContentVisibility from "@/util/contentvisibility.ts"
 import ClientContext from "../ClientContext.ts"
+import MainScreenContext from "../MainScreenContext.ts"
 
 export interface RoomListEntryProps {
 	room: RoomListEntry
-	setActiveRoom: (evt: React.MouseEvent) => void
 	isActive: boolean
 	hidden: boolean
 }
@@ -77,12 +77,12 @@ const EntryInner = ({ room }: InnerProps) => {
 	</>
 }
 
-const Entry = ({ room, setActiveRoom, isActive, hidden }: RoomListEntryProps) => {
+const Entry = ({ room, isActive, hidden }: RoomListEntryProps) => {
 	const [isVisible, divRef] = useContentVisibility<HTMLDivElement>()
 	return <div
 		ref={divRef}
 		className={`room-entry ${isActive ? "active" : ""} ${hidden ? "hidden" : ""}`}
-		onClick={setActiveRoom}
+		onClick={use(MainScreenContext).clickRoom}
 		data-room-id={room.room_id}
 	>
 		{isVisible ? <EntryInner room={room}/> : null}

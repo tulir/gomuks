@@ -1,0 +1,31 @@
+div.room-header {
+	display: flex;
+	align-items: center;
+	gap: .5rem;
+	padding-left: .5rem;
+	border-bottom: 1px solid var(--border-color);
+
+	> span.room-name {
+		font-weight: bold;
+	}
+
+	> div.divider {
+		flex: 1;
+	}
+
+	> button.back {
+		height: 2.5rem;
+		width: 2.5rem;
+	}
+
+	> div.right-buttons {
+		display: flex;
+		align-items: center;
+		margin-right: .5rem;
+
+		> button {
+			width: 2.5rem;
+			height: 2.5rem;
+		}
+	}
+}

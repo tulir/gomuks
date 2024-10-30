@@ -13,39 +13,16 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import { use, useRef } from "react"
-import { getAvatarURL } from "@/api/media.ts"
+import { useRef } from "react"
 import { RoomStateStore } from "@/api/statestore"
-import { useEventAsState } from "@/util/eventdispatcher.ts"
+import RoomViewHeader from "./RoomViewHeader.tsx"
 import MessageComposer from "./composer/MessageComposer.tsx"
-import { LightboxContext } from "./modal/Lightbox.tsx"
 import { RoomContext, RoomContextData } from "./roomcontext.ts"
 import TimelineView from "./timeline/TimelineView.tsx"
-import BackIcon from "@/icons/back.svg?react"
 import "./RoomView.css"
 
 interface RoomViewProps {
 	room: RoomStateStore
-	clearActiveRoom: () => void
-}
-
-const RoomHeader = ({ room, clearActiveRoom }: RoomViewProps) => {
-	const roomMeta = useEventAsState(room.meta)
-	const avatarSourceID = roomMeta.lazy_load_summary?.heroes?.length === 1
-		? roomMeta.lazy_load_summary.heroes[0] : room.roomID
-	return <div className="room-header">
-		<button className="back" onClick={clearActiveRoom}><BackIcon/></button>
-		<img
-			className="avatar"
-			loading="lazy"
-			src={getAvatarURL(avatarSourceID, { avatar_url: roomMeta.avatar, displayname: roomMeta.name })}
-			onClick={use(LightboxContext)!}
-			alt=""
-		/>
-		<span className="room-name">
-			{roomMeta.name ?? roomMeta.room_id}
-		</span>
-	</div>
 }
 
 const onKeyDownRoomView = (evt: React.KeyboardEvent) => {
@@ -54,14 +31,14 @@ const onKeyDownRoomView = (evt: React.KeyboardEvent) => {
 	}
 }
 
-const RoomView = ({ room, clearActiveRoom }: RoomViewProps) => {
+const RoomView = ({ room }: RoomViewProps) => {
 	const roomContextDataRef = useRef<RoomContextData | undefined>(undefined)
 	if (roomContextDataRef.current === undefined) {
 		roomContextDataRef.current = new RoomContextData(room)
 	}
 	return <div className="room-view" onKeyDown={onKeyDownRoomView} tabIndex={-1}>
 		<RoomContext value={roomContextDataRef.current}>
-			<RoomHeader room={room} clearActiveRoom={clearActiveRoom}/>
+			<RoomViewHeader room={room}/>
 			<TimelineView/>
 			<MessageComposer/>
 		</RoomContext>
