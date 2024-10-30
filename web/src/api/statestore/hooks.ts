@@ -27,11 +27,12 @@ export function useRoomTimeline(room: RoomStateStore): (MemDBEvent | null)[] {
 }
 
 export function useRoomState(
-	room: RoomStateStore, type: EventType, stateKey: string | undefined = "",
+	room?: RoomStateStore, type?: EventType, stateKey: string | undefined = "",
 ): MemDBEvent | null {
+	const isNoop = !room || !type || stateKey === undefined
 	return useSyncExternalStore(
-		stateKey === undefined ? noopSubscribe : room.stateSubs.getSubscriber(room.stateSubKey(type, stateKey)),
-		stateKey === undefined ? returnNull : (() => room.getStateEvent(type, stateKey) ?? null),
+		isNoop ? noopSubscribe : room.stateSubs.getSubscriber(room.stateSubKey(type, stateKey)),
+		isNoop ? returnNull : (() => room.getStateEvent(type, stateKey) ?? null),
 	)
 }
 

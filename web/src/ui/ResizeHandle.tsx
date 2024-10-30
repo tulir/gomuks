@@ -24,14 +24,19 @@ export interface ResizeHandleProps {
 	setWidth: (width: number) => void
 	className?: string
 	style?: CSSProperties
+	inverted?: boolean
 }
 
-const ResizeHandle = ({ width, minWidth, maxWidth, setWidth, style, className }: ResizeHandleProps) => {
+const ResizeHandle = ({ width, minWidth, maxWidth, setWidth, style, className, inverted }: ResizeHandleProps) => {
 	const onMouseDown = useEvent((evt: React.MouseEvent<HTMLDivElement>) => {
 		const origWidth = width
 		const startPos = evt.clientX
 		const onMouseMove = (evt: MouseEvent) => {
-			setWidth(Math.max(minWidth, Math.min(maxWidth, origWidth + evt.clientX - startPos)))
+			let delta = evt.clientX - startPos
+			if (inverted) {
+				delta = -delta
+			}
+			setWidth(Math.max(minWidth, Math.min(maxWidth, origWidth + delta)))
 			evt.preventDefault()
 		}
 		const onMouseUp = () => {

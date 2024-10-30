@@ -20,9 +20,9 @@ import { useEventAsState } from "@/util/eventdispatcher.ts"
 import MainScreenContext from "./MainScreenContext.ts"
 import { LightboxContext } from "./modal/Lightbox.tsx"
 import BackIcon from "@/icons/back.svg?react"
-// import PeopleIcon from "@/icons/group.svg?react"
-// import PinIcon from "@/icons/pin.svg?react"
-// import SettingsIcon from "@/icons/settings.svg?react"
+import PeopleIcon from "@/icons/group.svg?react"
+import PinIcon from "@/icons/pin.svg?react"
+import SettingsIcon from "@/icons/settings.svg?react"
 import "./RoomViewHeader.css"
 
 interface RoomViewHeaderProps {
@@ -40,18 +40,26 @@ const RoomViewHeader = ({ room }: RoomViewHeaderProps) => {
 			className="avatar"
 			loading="lazy"
 			src={getAvatarURL(avatarSourceID, { avatar_url: roomMeta.avatar, displayname: roomMeta.name })}
-			onClick={use(LightboxContext)!}
+			onClick={use(LightboxContext)}
 			alt=""
 		/>
 		<span className="room-name">
 			{roomMeta.name ?? roomMeta.room_id}
 		</span>
 		<div className="divider"/>
-		{/*<div className="right-buttons">
-			<button><PinIcon/></button>
-			<button><PeopleIcon/></button>
-			<button><SettingsIcon/></button>
-		</div>*/}
+		<div className="right-buttons">
+			<button
+				data-target-panel="pinned-messages"
+				onClick={mainScreen.clickRightPanelOpener}
+				title="Pinned Messages"
+			><PinIcon/></button>
+			<button
+				data-target-panel="members"
+				onClick={mainScreen.clickRightPanelOpener}
+				title="Room Members"
+			><PeopleIcon/></button>
+			<button title="Room Settings"><SettingsIcon/></button>
+		</div>
 	</div>
 }
 

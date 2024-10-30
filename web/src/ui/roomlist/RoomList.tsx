@@ -16,6 +16,7 @@
 import React, { use, useCallback, useRef, useState } from "react"
 import type { RoomID } from "@/api/types"
 import { useEventAsState } from "@/util/eventdispatcher.ts"
+import reverseMap from "@/util/reversemap.ts"
 import toSearchableString from "@/util/searchablestring.ts"
 import ClientContext from "../ClientContext.ts"
 import Entry from "./Entry.tsx"
@@ -56,10 +57,6 @@ const RoomList = ({ activeRoomID }: RoomListProps) => {
 			)}
 		</div>
 	</div>
-}
-
-function reverseMap<T, O>(arg: T[], fn: (a: T) => O) {
-	return arg.map((_, i, arr) => fn(arr[arr.length - i - 1]))
 }
 
 export default RoomList

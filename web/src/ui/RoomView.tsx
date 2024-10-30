@@ -13,16 +13,19 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import { useRef } from "react"
+import { JSX, useRef } from "react"
 import { RoomStateStore } from "@/api/statestore"
 import RoomViewHeader from "./RoomViewHeader.tsx"
 import MessageComposer from "./composer/MessageComposer.tsx"
+import RightPanel, { RightPanelProps } from "./rightpanel/RightPanel.tsx"
 import { RoomContext, RoomContextData } from "./roomcontext.ts"
 import TimelineView from "./timeline/TimelineView.tsx"
 import "./RoomView.css"
 
 interface RoomViewProps {
 	room: RoomStateStore
+	rightPanel: RightPanelProps | null
+	rightPanelResizeHandle: JSX.Element
 }
 
 const onKeyDownRoomView = (evt: React.KeyboardEvent) => {
@@ -31,18 +34,20 @@ const onKeyDownRoomView = (evt: React.KeyboardEvent) => {
 	}
 }
 
-const RoomView = ({ room }: RoomViewProps) => {
+const RoomView = ({ room, rightPanelResizeHandle, rightPanel }: RoomViewProps) => {
 	const roomContextDataRef = useRef<RoomContextData | undefined>(undefined)
 	if (roomContextDataRef.current === undefined) {
 		roomContextDataRef.current = new RoomContextData(room)
 	}
-	return <div className="room-view" onKeyDown={onKeyDownRoomView} tabIndex={-1}>
-		<RoomContext value={roomContextDataRef.current}>
+	return <RoomContext value={roomContextDataRef.current}>
+		<div className="room-view" onKeyDown={onKeyDownRoomView} tabIndex={-1}>
 			<RoomViewHeader room={room}/>
 			<TimelineView/>
 			<MessageComposer/>
-		</RoomContext>
-	</div>
+		</div>
+		{rightPanelResizeHandle}
+		{rightPanel && <RightPanel {...rightPanel}/>}
+	</RoomContext>
 }
 
 export default RoomView

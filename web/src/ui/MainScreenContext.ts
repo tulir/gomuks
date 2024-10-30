@@ -23,6 +23,8 @@ export interface MainScreenContextFields {
 	clearActiveRoom: () => void
 
 	setRightPanel: (props: RightPanelProps) => void
+	closeRightPanel: () => void
+	clickRightPanelOpener: (evt: React.MouseEvent) => void
 }
 
 const MainScreenContext = createContext<MainScreenContextFields>({
@@ -36,6 +38,12 @@ const MainScreenContext = createContext<MainScreenContextFields>({
 		throw new Error("MainScreenContext used outside main screen")
 	},
 	get setRightPanel(): never {
+		throw new Error("MainScreenContext used outside main screen")
+	},
+	get closeRightPanel(): never {
+		throw new Error("MainScreenContext used outside main screen")
+	},
+	get clickRightPanelOpener(): never {
 		throw new Error("MainScreenContext used outside main screen")
 	},
 })

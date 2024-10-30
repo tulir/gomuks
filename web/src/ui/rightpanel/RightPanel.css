@@ -1,3 +1,42 @@
 div.right-panel {
+	border-left: 1px solid var(--border-color);
+	display: flex;
+	flex-direction: column;
+	overflow: hidden;
 
+	> div.right-panel-header {
+		height: 3rem;
+		border-bottom: 1px solid var(--border-color);
+		box-sizing: border-box;
+		display: flex;
+		align-items: center;
+		vertical-align: center;
+		padding: 0 .25rem 0 .5rem;
+		justify-content: space-between;
+
+		> div.panel-name {
+			font-weight: bold;
+		}
+
+		> button {
+			height: 2.5rem;
+			width: 2.5rem;
+		}
+	}
+
+	> div.right-panel-content {
+		flex: 1;
+		overflow: auto;
+	}
+}
+
+div.right-panel-content.pinned-messages {
+	padding: .5rem;
+	display: flex;
+	flex-direction: column-reverse;
+
+	> div.pinned-event:not(:first-child) {
+		border-bottom: 1px solid var(--border-color);
+		padding-bottom: .5rem;
+	}
 }

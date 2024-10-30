@@ -27,7 +27,7 @@ const MainScreen = () => {
 	const [activeRoomID, setActiveRoomID] = useState<RoomID | null>(null)
 	const [rightPanel, setRightPanel] = useState<RightPanelProps | null>(null)
 	const client = use(ClientContext)!
-	const activeRoom = activeRoomID && client.store.rooms.get(activeRoomID)
+	const activeRoom = activeRoomID ? client.store.rooms.get(activeRoomID) : undefined
 	const setActiveRoom = useCallback((roomID: RoomID) => {
 		console.log("Switching to room", roomID)
 		setActiveRoomID(roomID)
@@ -49,6 +49,15 @@ const MainScreen = () => {
 		},
 		clearActiveRoom: () => setActiveRoomID(null),
 		setRightPanel,
+		closeRightPanel: () => setRightPanel(null),
+		clickRightPanelOpener: (evt: React.MouseEvent) => {
+			const type = evt.currentTarget.getAttribute("data-target-panel")
+			if (type === "pinned-messages" || type === "members") {
+				setRightPanel({ type })
+			} else {
+				throw new Error(`Invalid right panel type ${type}`)
+			}
+		},
 	}), [setRightPanel, setActiveRoom])
 	useLayoutEffect(() => {
 		client.store.switchRoom = setActiveRoom
@@ -57,19 +66,34 @@ const MainScreen = () => {
 		300, 48, 900, "roomListWidth", { className: "room-list-resizer" },
 	)
 	const [rightPanelWidth, resizeHandle2] = useResizeHandle(
-		300, 100, 900, "rightPanelWidth", { className: "right-panel-resizer" },
+		300, 100, 900, "rightPanelWidth", { className: "right-panel-resizer", inverted: true },
 	)
 	const extraStyle = {
 		["--room-list-width" as string]: `${roomListWidth}px`,
 		["--right-panel-width" as string]: `${rightPanelWidth}px`,
 	}
-	return <main className={`matrix-main ${activeRoom ? "room-selected" : ""}`} style={extraStyle}>
+	const classNames = ["matrix-main"]
+	if (activeRoom) {
+		classNames.push("room-selected")
+	}
+	if (rightPanel) {
+		classNames.push("right-panel-open")
+	}
+	return <main className={classNames.join(" ")} style={extraStyle}>
 		<MainScreenContext value={context}>
 			<RoomList activeRoomID={activeRoomID}/>
 			{resizeHandle1}
-			{activeRoom && <RoomView key={activeRoomID} room={activeRoom}/>}
-			{resizeHandle2}
-			{rightPanel && <RightPanel {...rightPanel}/>}
+			{activeRoom
+				? <RoomView
+					key={activeRoomID}
+					room={activeRoom}
+					rightPanel={rightPanel}
+					rightPanelResizeHandle={resizeHandle2}
+				/>
+				: rightPanel && <>
+					{resizeHandle2}
+					{rightPanel && <RightPanel {...rightPanel}/>}
+				</>}
 		</MainScreenContext>
 	</main>
 }
