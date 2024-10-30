@@ -30,6 +30,10 @@ div.message-composer {
 			width: 2rem;
 			padding: .25rem;
 		}
+
+		> input[type="file"] {
+			display: none;
+		}
 	}
 
 	> div.composer-media {

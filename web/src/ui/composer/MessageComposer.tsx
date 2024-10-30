@@ -403,7 +403,7 @@ const MessageComposer = () => {
 					onClick={sendMessage}
 					disabled={(!state.text && !state.media) || loadingMedia}
 				><SendIcon/></button>
-				<input ref={fileInput} onChange={onAttachFile} type="file" value="" style={{ display: "none" }}/>
+				<input ref={fileInput} onChange={onAttachFile} type="file" value=""/>
 			</div>
 		</div>
 	</>
