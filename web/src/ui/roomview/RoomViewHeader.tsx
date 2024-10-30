@@ -43,10 +43,9 @@ const RoomViewHeader = ({ room }: RoomViewHeaderProps) => {
 			onClick={use(LightboxContext)}
 			alt=""
 		/>
-		<span className="room-name">
+		<div className="room-name">
 			{roomMeta.name ?? roomMeta.room_id}
-		</span>
-		<div className="divider"/>
+		</div>
 		<div className="right-buttons">
 			<button
 				data-target-panel="pinned-messages"

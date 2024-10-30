@@ -4,12 +4,13 @@ div.room-header {
 	gap: .5rem;
 	padding-left: .5rem;
 	border-bottom: 1px solid var(--border-color);
+	overflow: hidden;
 
-	> span.room-name {
+	> div.room-name {
 		font-weight: bold;
-	}
-
-	> div.divider {
+		overflow: hidden;
+		text-overflow: ellipsis;
+		text-wrap: nowrap;
 		flex: 1;
 	}
 
