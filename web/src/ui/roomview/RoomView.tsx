@@ -15,11 +15,11 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import { JSX, useRef } from "react"
 import { RoomStateStore } from "@/api/statestore"
+import MessageComposer from "../composer/MessageComposer.tsx"
+import RightPanel, { RightPanelProps } from "../rightpanel/RightPanel.tsx"
+import TimelineView from "../timeline/TimelineView.tsx"
 import RoomViewHeader from "./RoomViewHeader.tsx"
-import MessageComposer from "./composer/MessageComposer.tsx"
-import RightPanel, { RightPanelProps } from "./rightpanel/RightPanel.tsx"
 import { RoomContext, RoomContextData } from "./roomcontext.ts"
-import TimelineView from "./timeline/TimelineView.tsx"
 import "./RoomView.css"
 
 interface RoomViewProps {

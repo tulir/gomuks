@@ -18,7 +18,7 @@ import { useRoomTimeline } from "@/api/statestore"
 import { MemDBEvent } from "@/api/types"
 import useFocus from "@/util/focus.ts"
 import ClientContext from "../ClientContext.ts"
-import { useRoomContext } from "../roomcontext.ts"
+import { useRoomContext } from "../roomview/roomcontext.ts"
 import TimelineEvent from "./TimelineEvent.tsx"
 import "./TimelineView.css"
 

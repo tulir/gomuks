@@ -18,7 +18,7 @@ import { RoomStateStore, useRoomEvent, useRoomState } from "@/api/statestore"
 import { EventID, PinnedEventsContent } from "@/api/types"
 import reverseMap from "@/util/reversemap.ts"
 import ClientContext from "../ClientContext.ts"
-import { RoomContext } from "../roomcontext.ts"
+import { RoomContext } from "../roomview/roomcontext.ts"
 import TimelineEvent from "../timeline/TimelineEvent.tsx"
 
 interface PinnedMessageProps {

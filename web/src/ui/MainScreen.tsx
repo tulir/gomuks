@@ -17,10 +17,10 @@ import { use, useCallback, useLayoutEffect, useMemo, useState } from "react"
 import type { RoomID } from "@/api/types"
 import ClientContext from "./ClientContext.ts"
 import MainScreenContext, { MainScreenContextFields } from "./MainScreenContext.ts"
-import RoomView from "./RoomView.tsx"
 import RightPanel, { RightPanelProps } from "./rightpanel/RightPanel.tsx"
 import RoomList from "./roomlist/RoomList.tsx"
-import { useResizeHandle } from "./useResizeHandle.tsx"
+import RoomView from "./roomview/RoomView.tsx"
+import { useResizeHandle } from "./util/useResizeHandle.tsx"
 import "./MainScreen.css"
 
 const MainScreen = () => {
