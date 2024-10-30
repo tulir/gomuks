@@ -13,7 +13,7 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import { use, useCallback, useLayoutEffect, useMemo, useState } from "react"
+import { use, useCallback, useLayoutEffect, useMemo, useReducer, useState } from "react"
 import type { RoomID } from "@/api/types"
 import ClientContext from "./ClientContext.ts"
 import MainScreenContext, { MainScreenContextFields } from "./MainScreenContext.ts"
@@ -23,9 +23,16 @@ import RoomView from "./roomview/RoomView.tsx"
 import { useResizeHandle } from "./util/useResizeHandle.tsx"
 import "./MainScreen.css"
 
+const rpReducer = (prevState: RightPanelProps | null, newState: RightPanelProps | null) => {
+	if (prevState?.type === newState?.type) {
+		return null
+	}
+	return newState
+}
+
 const MainScreen = () => {
 	const [activeRoomID, setActiveRoomID] = useState<RoomID | null>(null)
-	const [rightPanel, setRightPanel] = useState<RightPanelProps | null>(null)
+	const [rightPanel, setRightPanel] = useReducer(rpReducer, null)
 	const client = use(ClientContext)!
 	const activeRoom = activeRoomID ? client.store.rooms.get(activeRoomID) : undefined
 	const setActiveRoom = useCallback((roomID: RoomID) => {
