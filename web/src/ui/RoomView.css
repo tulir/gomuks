@@ -7,6 +7,7 @@ div.room-view {
 	grid-template:
 		"header" 3rem
 		"messageview" 1fr
+		"autocomplete" 0
 		"input" auto
 		/ 1fr;
 }
