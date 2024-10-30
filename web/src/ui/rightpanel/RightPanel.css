@@ -39,4 +39,8 @@ div.right-panel-content.pinned-messages {
 		border-bottom: 1px solid var(--border-color);
 		padding-bottom: .5rem;
 	}
+
+	> div.empty {
+		margin: auto;
+	}
 }

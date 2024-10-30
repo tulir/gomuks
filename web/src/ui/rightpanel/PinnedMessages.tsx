@@ -42,14 +42,12 @@ const PinnedMessages = () => {
 	if (!roomCtx) {
 		return null
 	} else if (!Array.isArray(pins?.pinned) || pins.pinned.length === 0) {
-		return <>No pinned messages</>
+		return <div className="empty">No pinned messages</div>
 	}
 	return <>
-		<RoomContext value={roomCtx}>
-			{reverseMap(pins.pinned, evtID => typeof evtID === "string" ? <div className="pinned-event" key={evtID}>
-				<PinnedMessage evtID={evtID} room={roomCtx.store} />
-			</div> : null)}
-		</RoomContext>
+		{reverseMap(pins.pinned, evtID => typeof evtID === "string" ? <div className="pinned-event" key={evtID}>
+			<PinnedMessage evtID={evtID} room={roomCtx.store} />
+		</div> : null)}
 	</>
 }
 
