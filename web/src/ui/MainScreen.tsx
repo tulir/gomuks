@@ -13,7 +13,7 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import { use, useCallback, useLayoutEffect, useMemo, useReducer, useState } from "react"
+import { use, useCallback, useEffect, useLayoutEffect, useMemo, useReducer, useState } from "react"
 import type { RoomID } from "@/api/types"
 import ClientContext from "./ClientContext.ts"
 import MainScreenContext, { MainScreenContextFields } from "./MainScreenContext.ts"
@@ -69,6 +69,19 @@ const MainScreen = () => {
 	useLayoutEffect(() => {
 		client.store.switchRoom = setActiveRoom
 	}, [client, setActiveRoom])
+	useEffect(() => {
+		const styleTags = document.createElement("style")
+		styleTags.textContent = `
+			div.html-body > a.hicli-matrix-uri-user[href="matrix:u/${client.userID.slice(1).replaceAll(`"`, `\\"`)}"] {
+				background-color: var(--highlight-pill-background-color);
+				color: var(--highlight-pill-text-color);
+			}
+		`
+		document.head.appendChild(styleTags)
+		return () => {
+			document.head.removeChild(styleTags)
+		}
+	}, [client.userID])
 	const [roomListWidth, resizeHandle1] = useResizeHandle(
 		300, 48, 900, "roomListWidth", { className: "room-list-resizer" },
 	)

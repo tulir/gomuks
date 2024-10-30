@@ -15,6 +15,8 @@
 
 	--border-color: #ccc;
 	--pill-background-color: #ccc;
+	--highlight-pill-background-color: #c00;
+	--highlight-pill-text-color: #fff;
 	--button-hover-color: rgba(0, 0, 0, .2);
 	--light-hover-color: rgba(0, 0, 0, .1);
 
