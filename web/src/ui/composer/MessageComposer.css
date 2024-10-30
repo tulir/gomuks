@@ -1,5 +1,6 @@
 div.message-composer {
 	border-top: 1px solid var(--border-color);
+	overflow: hidden;
 
 	blockquote.reply-body {
 		pre, a.hicli-matrix-uri {
