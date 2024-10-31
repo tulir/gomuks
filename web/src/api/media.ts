@@ -70,8 +70,16 @@ function escapeHTMLChar(char: string): string {
 	}
 }
 
+function getFallbackCharacter(from: unknown, idx: number): string {
+	if (!from || typeof from !== "string" || from.length <= idx) {
+		return ""
+	}
+	// Array.from appears to be the only way to handle Unicode correctly
+	return Array.from(from.slice(0, (idx + 1) * 2))[idx]?.toUpperCase().toWellFormed() ?? ""
+}
+
 export const getAvatarURL = (userID: UserID, content?: Partial<MemberEventContent>): string | undefined => {
-	const fallbackCharacter = (content?.displayname?.[0]?.toUpperCase() ?? userID[1].toUpperCase()).toWellFormed()
+	const fallbackCharacter = getFallbackCharacter(content?.displayname, 0) || getFallbackCharacter(userID, 1)
 	const backgroundColor = getUserColor(userID)
 	const [server, mediaID] = parseMXC(content?.avatar_url)
 	if (!mediaID) {
