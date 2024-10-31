@@ -3,10 +3,8 @@ div.message-composer {
 	overflow: hidden;
 	grid-area: input;
 
-	blockquote.reply-body {
-		pre, a.hicli-matrix-uri {
-			text-wrap: auto !important;
-		}
+	blockquote.reply-body > pre {
+		text-wrap: auto !important;
 	}
 
 	> div.input-area {
