@@ -27,15 +27,17 @@ interface RoomListProps {
 }
 
 const RoomList = ({ activeRoomID }: RoomListProps) => {
-	const roomList = useEventAsState(use(ClientContext)!.store.roomList)
+	const client = use(ClientContext)!
+	const roomList = useEventAsState(client.store.roomList)
 	const roomFilterRef = useRef<HTMLInputElement>(null)
 	const [roomFilter, setRoomFilter] = useState("")
 	const [realRoomFilter, setRealRoomFilter] = useState("")
 
 	const updateRoomFilter = useCallback((evt: React.ChangeEvent<HTMLInputElement>) => {
 		setRoomFilter(evt.target.value)
-		setRealRoomFilter(toSearchableString(evt.target.value))
-	}, [])
+		client.store.currentRoomListFilter = toSearchableString(evt.target.value)
+		setRealRoomFilter(client.store.currentRoomListFilter)
+	}, [client])
 
 	return <div className="room-list-wrapper">
 		<input

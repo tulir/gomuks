@@ -47,21 +47,23 @@ export default class Keybindings {
 				return
 			}
 			const activeRoomID = this.activeRoom.roomID
-			const selectedIdx = this.store.roomList.current.findLastIndex(room => room.room_id === activeRoomID)
-			if (selectedIdx < this.store.roomList.current.length - 1) {
-				this.context.setActiveRoom(this.store.roomList.current[selectedIdx + 1].room_id)
+			const filteredRoomList = this.store.getFilteredRoomList()
+			const selectedIdx = filteredRoomList.findLastIndex(room => room.room_id === activeRoomID)
+			if (selectedIdx < filteredRoomList.length - 1) {
+				this.context.setActiveRoom(filteredRoomList[selectedIdx + 1].room_id)
 			} else {
 				this.context.setActiveRoom(null)
 			}
 		},
 		"Alt+ArrowDown": () => {
+			const filteredRoomList = this.store.getFilteredRoomList()
 			const selectedIdx = this.activeRoom
-				? this.store.roomList.current.findLastIndex(room => room.room_id === this.activeRoom?.roomID)
+				? filteredRoomList.findLastIndex(room => room.room_id === this.activeRoom?.roomID)
 				: -1
 			if (selectedIdx === -1) {
-				this.context.setActiveRoom(this.store.roomList.current[this.store.roomList.current.length - 1].room_id)
+				this.context.setActiveRoom(filteredRoomList[filteredRoomList.length - 1].room_id)
 			} else if (selectedIdx > 0) {
-				this.context.setActiveRoom(this.store.roomList.current[selectedIdx - 1].room_id)
+				this.context.setActiveRoom(filteredRoomList[selectedIdx - 1].room_id)
 			}
 		},
 	}
