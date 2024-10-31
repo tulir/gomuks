@@ -18,7 +18,7 @@ import type { RoomID } from "@/api/types"
 import type { RightPanelProps } from "./rightpanel/RightPanel.tsx"
 
 export interface MainScreenContextFields {
-	setActiveRoom: (roomID: RoomID) => void
+	setActiveRoom: (roomID: RoomID | null) => void
 	clickRoom: (evt: React.MouseEvent) => void
 	clearActiveRoom: () => void
 

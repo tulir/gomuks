@@ -61,7 +61,8 @@ export class StateStore {
 	#emojiPackKeys: RoomStateGUID[] | null = null
 	#watchedRoomEmojiPacks: Record<string, CustomEmojiPack> | null = null
 	#personalEmojiPack: CustomEmojiPack | null = null
-	switchRoom?: (roomID: RoomID) => void
+	switchRoom?: (roomID: RoomID | null) => void
+	activeRoomID?: RoomID
 	imageAuthToken?: string
 
 	#shouldHideRoom(entry: SyncRoom): boolean {
@@ -159,6 +160,9 @@ export class StateStore {
 			this.accountDataSubs.notify(ad.type)
 		}
 		for (const roomID of sync.left_rooms) {
+			if (this.activeRoomID === roomID) {
+				this.switchRoom?.(null)
+			}
 			this.rooms.delete(roomID)
 			changedRoomListEntries.set(roomID, null)
 		}

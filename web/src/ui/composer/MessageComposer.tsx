@@ -30,6 +30,7 @@ import { escapeMarkdown } from "@/util/markdown.ts"
 import useEvent from "@/util/useEvent.ts"
 import ClientContext from "../ClientContext.ts"
 import EmojiPicker from "../emojipicker/EmojiPicker.tsx"
+import { keyToString } from "../keybindings.ts"
 import { ModalContext } from "../modal/Modal.tsx"
 import { useRoomContext } from "../roomview/roomcontext.ts"
 import { ReplyBody } from "../timeline/ReplyBody.tsx"
@@ -193,40 +194,39 @@ const MessageComposer = () => {
 			}
 		}
 	})
-	const onComposerKeyDown = useEvent((evt: React.KeyboardEvent) => {
-		if (evt.key === "Enter" && !evt.shiftKey) {
+	const onComposerKeyDown = useEvent((evt: React.KeyboardEvent<HTMLTextAreaElement>) => {
+		const inp = evt.currentTarget
+		const fullKey = keyToString(evt)
+		if (fullKey === "Enter") {
 			sendMessage(evt)
-		} else if (autocomplete && !evt.ctrlKey && !evt.altKey) {
-			if (!evt.shiftKey && (evt.key === "Tab" || evt.key === "ArrowDown")) {
+		} else if (autocomplete) {
+			if (fullKey === "Tab" || fullKey === "ArrowDown") {
 				setAutocomplete({ ...autocomplete, selected: (autocomplete.selected ?? -1) + 1 })
 				evt.preventDefault()
-			} else if ((evt.shiftKey && evt.key === "Tab") || (!evt.shiftKey && evt.key === "ArrowUp")) {
+			} else if (fullKey === "Shift+Tab" || fullKey === "ArrowUp") {
 				setAutocomplete({ ...autocomplete, selected: (autocomplete.selected ?? 0) - 1 })
 				evt.preventDefault()
 			}
-		} else if (!autocomplete && textInput.current) {
-			const inp = textInput.current
-			if (evt.key === "ArrowUp" && inp.selectionStart === 0 && inp.selectionEnd === 0) {
-				const currentlyEditing = editing
-					? roomCtx.ownMessages.indexOf(editing.rowid)
-					: roomCtx.ownMessages.length
-				const prevEventToEditID = roomCtx.ownMessages[currentlyEditing - 1]
-				const prevEventToEdit = prevEventToEditID ? room.eventsByRowID.get(prevEventToEditID) : undefined
-				if (prevEventToEdit) {
-					roomCtx.setEditing(prevEventToEdit)
-					evt.preventDefault()
-				}
-			} else if (editing && evt.key === "ArrowDown" && inp.selectionStart === state.text.length) {
-				const currentlyEditingIdx = roomCtx.ownMessages.indexOf(editing.rowid)
-				const nextEventToEdit = currentlyEditingIdx
-					? room.eventsByRowID.get(roomCtx.ownMessages[currentlyEditingIdx + 1]) : undefined
-				roomCtx.setEditing(nextEventToEdit ?? null)
-				// This timeout is very hacky and probably doesn't work in every case
-				setTimeout(() => inp.setSelectionRange(0, 0), 0)
+		} else if (fullKey === "ArrowUp" && inp.selectionStart === 0 && inp.selectionEnd === 0) {
+			const currentlyEditing = editing
+				? roomCtx.ownMessages.indexOf(editing.rowid)
+				: roomCtx.ownMessages.length
+			const prevEventToEditID = roomCtx.ownMessages[currentlyEditing - 1]
+			const prevEventToEdit = prevEventToEditID ? room.eventsByRowID.get(prevEventToEditID) : undefined
+			if (prevEventToEdit) {
+				roomCtx.setEditing(prevEventToEdit)
 				evt.preventDefault()
 			}
-		}
-		if (editing && evt.key === "Escape") {
+		} else if (editing && fullKey === "ArrowDown" && inp.selectionStart === state.text.length) {
+			const currentlyEditingIdx = roomCtx.ownMessages.indexOf(editing.rowid)
+			const nextEventToEdit = currentlyEditingIdx
+				? room.eventsByRowID.get(roomCtx.ownMessages[currentlyEditingIdx + 1]) : undefined
+			roomCtx.setEditing(nextEventToEdit ?? null)
+			// This timeout is very hacky and probably doesn't work in every case
+			setTimeout(() => inp.setSelectionRange(0, 0), 0)
+			evt.preventDefault()
+		} else if (editing && fullKey === "Escape") {
+			evt.stopPropagation()
 			roomCtx.setEditing(null)
 		}
 	})

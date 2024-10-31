@@ -13,10 +13,13 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import { use, useCallback, useEffect, useLayoutEffect, useMemo, useReducer, useState } from "react"
+import { use, useEffect, useMemo, useReducer, useState } from "react"
+import Client from "@/api/client.ts"
+import { RoomStateStore } from "@/api/statestore"
 import type { RoomID } from "@/api/types"
 import ClientContext from "./ClientContext.ts"
 import MainScreenContext, { MainScreenContextFields } from "./MainScreenContext.ts"
+import Keybindings from "./keybindings.ts"
 import RightPanel, { RightPanelProps } from "./rightpanel/RightPanel.tsx"
 import RoomList from "./roomlist/RoomList.tsx"
 import RoomView from "./roomview/RoomView.tsx"
@@ -30,45 +33,62 @@ const rpReducer = (prevState: RightPanelProps | null, newState: RightPanelProps 
 	return newState
 }
 
-const MainScreen = () => {
-	const [activeRoomID, setActiveRoomID] = useState<RoomID | null>(null)
-	const [rightPanel, setRightPanel] = useReducer(rpReducer, null)
-	const client = use(ClientContext)!
-	const activeRoom = activeRoomID ? client.store.rooms.get(activeRoomID) : undefined
-	const setActiveRoom = useCallback((roomID: RoomID) => {
+class ContextFields implements MainScreenContextFields {
+	public keybindings: Keybindings
+
+	constructor(
+		public setRightPanel: (props: RightPanelProps | null) => void,
+		private directSetActiveRoom: (room: RoomStateStore | null) => void,
+		private client: Client,
+	) {
+		this.keybindings = new Keybindings(client.store, this)
+		client.store.switchRoom = this.setActiveRoom
+	}
+
+	setActiveRoom = (roomID: RoomID | null) => {
 		console.log("Switching to room", roomID)
-		setActiveRoomID(roomID)
-		setRightPanel(null)
-		if (client.store.rooms.get(roomID)?.stateLoaded === false) {
-			client.loadRoomState(roomID)
+		const room = (roomID && this.client.store.rooms.get(roomID)) || null
+		this.directSetActiveRoom(room)
+		this.setRightPanel(null)
+		if (room?.stateLoaded === false) {
+			this.client.loadRoomState(room.roomID)
 				.catch(err => console.error("Failed to load room state", err))
 		}
-	}, [client])
-	const context: MainScreenContextFields = useMemo(() => ({
-		setActiveRoom,
-		clickRoom: (evt: React.MouseEvent) => {
-			const roomID = evt.currentTarget.getAttribute("data-room-id")
-			if (roomID) {
-				setActiveRoom(roomID)
-			} else {
-				console.warn("No room ID :(", evt.currentTarget)
-			}
-		},
-		clearActiveRoom: () => setActiveRoomID(null),
-		setRightPanel,
-		closeRightPanel: () => setRightPanel(null),
-		clickRightPanelOpener: (evt: React.MouseEvent) => {
-			const type = evt.currentTarget.getAttribute("data-target-panel")
-			if (type === "pinned-messages" || type === "members") {
-				setRightPanel({ type })
-			} else {
-				throw new Error(`Invalid right panel type ${type}`)
-			}
-		},
-	}), [setRightPanel, setActiveRoom])
-	useLayoutEffect(() => {
-		client.store.switchRoom = setActiveRoom
-	}, [client, setActiveRoom])
+		this.client.store.activeRoomID = room?.roomID
+		this.keybindings.activeRoom = room
+	}
+
+	clickRoom = (evt: React.MouseEvent) => {
+		const roomID = evt.currentTarget.getAttribute("data-room-id")
+		if (roomID) {
+			this.setActiveRoom(roomID)
+		} else {
+			console.warn("No room ID :(", evt.currentTarget)
+		}
+	}
+
+	clickRightPanelOpener = (evt: React.MouseEvent) => {
+		const type = evt.currentTarget.getAttribute("data-target-panel")
+		if (type === "pinned-messages" || type === "members") {
+			this.setRightPanel({ type })
+		} else {
+			throw new Error(`Invalid right panel type ${type}`)
+		}
+	}
+
+	clearActiveRoom = () => this.setActiveRoom(null)
+	closeRightPanel = () => this.setRightPanel(null)
+}
+
+const MainScreen = () => {
+	const [activeRoom, directSetActiveRoom] = useState<RoomStateStore | null>(null)
+	const [rightPanel, setRightPanel] = useReducer(rpReducer, null)
+	const client = use(ClientContext)!
+	const context = useMemo(
+		() => new ContextFields(setRightPanel, directSetActiveRoom, client),
+		[client],
+	)
+	useEffect(() => context.keybindings.listen(), [context])
 	useEffect(() => {
 		const styleTags = document.createElement("style")
 		styleTags.textContent = `
@@ -101,11 +121,11 @@ const MainScreen = () => {
 	}
 	return <main className={classNames.join(" ")} style={extraStyle}>
 		<MainScreenContext value={context}>
-			<RoomList activeRoomID={activeRoomID}/>
+			<RoomList activeRoomID={activeRoom?.roomID ?? null}/>
 			{resizeHandle1}
 			{activeRoom
 				? <RoomView
-					key={activeRoomID}
+					key={activeRoom.roomID}
 					room={activeRoom}
 					rightPanel={rightPanel}
 					rightPanelResizeHandle={resizeHandle2}

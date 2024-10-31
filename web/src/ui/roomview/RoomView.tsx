@@ -28,19 +28,13 @@ interface RoomViewProps {
 	rightPanelResizeHandle: JSX.Element
 }
 
-const onKeyDownRoomView = (evt: React.KeyboardEvent) => {
-	if (evt.target === evt.currentTarget && (!evt.ctrlKey || evt.key === "v" || evt.key === "a") && !evt.altKey) {
-		document.getElementById("message-composer")?.focus()
-	}
-}
-
 const RoomView = ({ room, rightPanelResizeHandle, rightPanel }: RoomViewProps) => {
 	const roomContextDataRef = useRef<RoomContextData | undefined>(undefined)
 	if (roomContextDataRef.current === undefined) {
 		roomContextDataRef.current = new RoomContextData(room)
 	}
 	return <RoomContext value={roomContextDataRef.current}>
-		<div className="room-view" onKeyDown={onKeyDownRoomView} tabIndex={-1}>
+		<div className="room-view">
 			<RoomViewHeader room={room}/>
 			<TimelineView/>
 			<MessageComposer/>

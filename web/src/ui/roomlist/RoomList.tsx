@@ -45,6 +45,7 @@ const RoomList = ({ activeRoomID }: RoomListProps) => {
 			type="text"
 			placeholder="Search rooms"
 			ref={roomFilterRef}
+			id="room-search"
 		/>
 		<div className="room-list">
 			{reverseMap(roomList, room =>
