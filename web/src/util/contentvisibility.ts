@@ -15,7 +15,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import { RefObject, useLayoutEffect, useRef, useState } from "react"
 
-export default function useContentVisibilit<T extends HTMLElement>(
+export default function useContentVisibility<T extends HTMLElement>(
 	allowRevert = false,
 ): [boolean, RefObject<T | null>] {
 	const ref = useRef<T>(null)
@@ -25,13 +25,17 @@ export default function useContentVisibilit<T extends HTMLElement>(
 		if (!element) {
 			return
 		}
-		const listener = (evt: unknown) => {
+		const listener = ((evt: ContentVisibilityAutoStateChangeEvent) => {
+			if (evt.target !== evt.currentTarget) {
+				// Workaround for chrome bug https://issues.chromium.org/issues/365168180
+				return
+			}
 			if (!(evt as ContentVisibilityAutoStateChangeEvent).skipped) {
 				setVisible(true)
 			} else if (allowRevert) {
 				setVisible(false)
 			}
-		}
+		}) as (evt: unknown) => void
 		element.addEventListener("contentvisibilityautostatechange", listener)
 		return () => element.removeEventListener("contentvisibilityautostatechange", listener)
 	}, [allowRevert])
