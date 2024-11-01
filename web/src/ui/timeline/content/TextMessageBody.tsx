@@ -32,6 +32,19 @@ const onClickHTML = (evt: React.MouseEvent<HTMLDivElement>) => {
 	}
 }
 
+let mathImported = false
+
+function importMath() {
+	if (mathImported) {
+		return
+	}
+	mathImported = true
+	import("./math.ts").then(
+		() => console.info("Imported math"),
+		err => console.error("Failed to import math", err),
+	)
+}
+
 const TextMessageBody = ({ event, sender }: EventContentProps) => {
 	const content = event.content as MessageEventContent
 	const classNames = ["message-text"]
@@ -47,6 +60,10 @@ const TextMessageBody = ({ event, sender }: EventContentProps) => {
 	}
 	if (event.local_content?.was_plaintext) {
 		classNames.push("plaintext-body")
+	}
+	if (event.local_content?.has_math) {
+		classNames.push("math-body")
+		importMath()
 	}
 	if (event.local_content?.sanitized_html) {
 		classNames.push("html-body")

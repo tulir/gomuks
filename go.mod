@@ -16,7 +16,7 @@ require (
 	github.com/tidwall/gjson v1.18.0
 	github.com/tidwall/sjson v1.2.5
 	github.com/yuin/goldmark v1.7.7
-	go.mau.fi/util v0.8.2-0.20241027163518-38d54fc87ee3
+	go.mau.fi/util v0.8.2-0.20241030110711-b3e597e16b74
 	go.mau.fi/zeroconfig v0.1.3
 	golang.org/x/crypto v0.28.0
 	golang.org/x/image v0.21.0
@@ -24,7 +24,7 @@ require (
 	golang.org/x/text v0.19.0
 	gopkg.in/yaml.v3 v3.0.1
 	maunium.net/go/mauflag v1.0.0
-	maunium.net/go/mautrix v0.21.2-0.20241026115159-a59d4d78677f
+	maunium.net/go/mautrix v0.21.2-0.20241101162620-f606129e732f
 	mvdan.cc/xurls/v2 v2.5.0
 )
 

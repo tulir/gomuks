@@ -13,6 +13,7 @@
 	"dependencies": {
 		"@types/react": "npm:types-react@rc",
 		"@types/react-dom": "npm:types-react-dom@rc",
+		"katex": "^0.16.11",
 		"react": "^19.0.0-rc-0751fac7-20241002",
 		"react-dom": "^19.0.0-rc-0751fac7-20241002",
 		"react-spinners": "^0.14.1",
@@ -20,6 +21,7 @@
 	},
 	"devDependencies": {
 		"@eslint/js": "^9.11.1",
+		"@types/katex": "^0.16.7",
 		"@types/sanitize-html": "^2.13.0",
 		"@vitejs/plugin-react-swc": "^3.5.0",
 		"eslint": "^9.11.1",

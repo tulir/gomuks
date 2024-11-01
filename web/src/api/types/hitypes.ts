@@ -84,6 +84,7 @@ export interface LocalContent {
 	html_version?: number
 	was_plaintext?: boolean
 	big_emoji?: boolean
+	has_math?: boolean
 }
 
 export interface BaseDBEvent {

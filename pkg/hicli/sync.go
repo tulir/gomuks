@@ -367,7 +367,7 @@ func (h *HiClient) calculateLocalContent(ctx context.Context, dbEvt *database.Ev
 	}
 	if content != nil {
 		var sanitizedHTML string
-		var wasPlaintext, bigEmoji bool
+		var wasPlaintext, hasMath, bigEmoji bool
 		var inlineImages []id.ContentURI
 		if content.Format == event.FormatHTML && content.FormattedBody != "" {
 			var err error
@@ -377,6 +377,7 @@ func (h *HiClient) calculateLocalContent(ctx context.Context, dbEvt *database.Ev
 					Stringer("event_id", dbEvt.ID).
 					Msg("Failed to sanitize HTML")
 			}
+			hasMath = strings.Contains(sanitizedHTML, "<hicli-math")
 			if len(inlineImages) > 0 && dbEvt.RowID != 0 {
 				for _, uri := range inlineImages {
 					h.addMediaCache(ctx, dbEvt.RowID, uri.CUString(), nil, nil, "")
@@ -406,12 +407,13 @@ func (h *HiClient) calculateLocalContent(ctx context.Context, dbEvt *database.Ev
 			HTMLVersion:   CurrentHTMLSanitizerVersion,
 			WasPlaintext:  wasPlaintext,
 			BigEmoji:      bigEmoji,
+			HasMath:       hasMath,
 		}, inlineImages
 	}
 	return nil, nil
 }
 
-const CurrentHTMLSanitizerVersion = 4
+const CurrentHTMLSanitizerVersion = 6
 
 func (h *HiClient) ReprocessExistingEvent(ctx context.Context, evt *database.Event) {
 	if (evt.Type != event.EventMessage.Type && evt.DecryptedType != event.EventMessage.Type) ||

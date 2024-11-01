@@ -79,6 +79,15 @@ func calculateMediaSize(widthInt, heightInt int) (width, height float64, ok bool
 	return
 }
 
+func getAttribute(attrs []html.Attribute, key string) (string, bool) {
+	for _, attr := range attrs {
+		if attr.Key == key {
+			return attr.Val, true
+		}
+	}
+	return "", false
+}
+
 func parseImgAttributes(attrs []html.Attribute) (src, alt, title string, isCustomEmoji bool, width, height int) {
 	for _, attr := range attrs {
 		switch attr.Key {
@@ -99,7 +108,7 @@ func parseImgAttributes(attrs []html.Attribute) (src, alt, title string, isCusto
 	return
 }
 
-func parseSpanAttributes(attrs []html.Attribute) (bgColor, textColor, spoiler, maths string, isSpoiler bool) {
+func parseSpanAttributes(attrs []html.Attribute) (bgColor, textColor, spoiler string, isSpoiler bool) {
 	for _, attr := range attrs {
 		switch attr.Key {
 		case "data-mx-bg-color":
@@ -113,8 +122,6 @@ func parseSpanAttributes(attrs []html.Attribute) (bgColor, textColor, spoiler, m
 		case "data-mx-spoiler":
 			spoiler = attr.Val
 			isSpoiler = true
-		case "data-mx-maths":
-			maths = attr.Val
 		}
 	}
 	return
@@ -430,7 +437,7 @@ func writeImg(w *strings.Builder, attr []html.Attribute) id.ContentURI {
 }
 
 func writeSpan(w *strings.Builder, attr []html.Attribute) {
-	bgColor, textColor, spoiler, _, isSpoiler := parseSpanAttributes(attr)
+	bgColor, textColor, spoiler, isSpoiler := parseSpanAttributes(attr)
 	if isSpoiler && spoiler != "" {
 		w.WriteString(`<span class="spoiler-reason">`)
 		w.WriteString(spoiler)
@@ -521,10 +528,6 @@ Loop:
 			if !tagIsAllowed(token.DataAtom) {
 				continue
 			}
-			tagIsSelfClosing := isSelfClosing(token.DataAtom)
-			if token.Type == html.SelfClosingTagToken && !tagIsSelfClosing {
-				continue
-			}
 			switch token.DataAtom {
 			case atom.Pre:
 				codeBlock = &strings.Builder{}
@@ -539,8 +542,22 @@ Loop:
 				if !mxc.IsEmpty() {
 					inlineImages = append(inlineImages, mxc)
 				}
+			case atom.Div:
+				math, ok := getAttribute(token.Attr, "data-mx-maths")
+				if ok {
+					built.WriteString(`<hicli-math displaymode="block"`)
+					writeAttribute(&built, "latex", math)
+					token.DataAtom = atom.Math
+				}
 			case atom.Span, atom.Font:
-				writeSpan(&built, token.Attr)
+				math, ok := getAttribute(token.Attr, "data-mx-maths")
+				if ok && token.DataAtom == atom.Span {
+					built.WriteString(`<hicli-math displaymode="inline"`)
+					writeAttribute(&built, "latex", math)
+					token.DataAtom = atom.Math
+				} else {
+					writeSpan(&built, token.Attr)
+				}
 			default:
 				built.WriteByte('<')
 				built.WriteString(token.Data)
@@ -550,18 +567,24 @@ Loop:
 					}
 				}
 			}
+			if token.Type == html.SelfClosingTagToken {
+				built.WriteByte('/')
+			}
 			built.WriteByte('>')
-			if !tagIsSelfClosing {
+			if !isSelfClosing(token.DataAtom) && token.Type != html.SelfClosingTagToken {
 				ts.push(token.DataAtom)
 			}
 		case html.EndTagToken:
 			tagName, _ := tz.TagName()
 			tag := atom.Lookup(tagName)
+			if !tagIsAllowed(tag) {
+				continue
+			}
 			if tag == atom.Pre && codeBlock != nil {
 				writeCodeBlock(&built, codeBlockLanguage, codeBlock)
 				codeBlockLanguage = ""
 				codeBlock = nil
-			} else if tagIsAllowed(tag) && ts.pop(tag) {
+			} else if ts.pop(tag) {
 				// TODO instead of only popping when the last tag in the stack matches, this should go through the stack
 				//      and close all tags until it finds the matching tag
 				if tag == atom.Font {
@@ -571,6 +594,8 @@ Loop:
 					built.Write(tagName)
 					built.WriteByte('>')
 				}
+			} else if (tag == atom.Span || tag == atom.Div) && ts.pop(atom.Math) {
+				built.WriteString("</hicli-math>")
 			}
 		case html.TextToken:
 			if codeBlock != nil {
