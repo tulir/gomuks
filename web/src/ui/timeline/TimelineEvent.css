@@ -8,6 +8,7 @@ div.timeline-event {
 		"avatar gap sender  sender" auto
 		"avatar gap content status" auto
 		/ 2.5rem .5rem 1fr 2rem;
+	contain: layout;
 
 	&.highlight {
 		background-color: var(--timeline-highlight-bg-color);
@@ -73,6 +74,7 @@ div.timeline-event {
 		grid-area: content;
 		overflow: hidden;
 		overflow-wrap: anywhere;
+		contain: content;
 	}
 
 	> div.event-send-status {

@@ -147,6 +147,7 @@ pre, code {
 input, textarea {
 	color: inherit;
 	background-color: inherit;
+	font-size: 1em;
 }
 
 button, a.button {

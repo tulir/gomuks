@@ -1,4 +1,5 @@
 div.room-list-wrapper {
+	contain: strict;
 	grid-area: roomlist;
 	background: var(--room-list-background);
 	box-sizing: border-box;
@@ -32,6 +33,7 @@ div.room-entry {
 	height: 3rem;
 	contain-intrinsic-height: 3rem;
 	content-visibility: auto;
+	contain: strict;
 
 	&:hover, &:focus {
 		background-color: var(--room-list-entry-hover-color);

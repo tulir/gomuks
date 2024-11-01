@@ -10,4 +10,5 @@ div.room-view {
 		"autocomplete" 0
 		"input" auto
 		/ 1fr;
+	contain: strict;
 }

@@ -58,7 +58,7 @@ div.emoji-picker {
 	}
 
 	div.emoji-list {
-		overflow: scroll;
+		overflow-y: auto;
 		padding: 0 1rem;
 		flex: 1;
 		display: flex;

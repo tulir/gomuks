@@ -124,27 +124,30 @@ export const EmojiPicker = ({ style, selected, onSelect, room, allowFreeform, cl
 			</button>
 		</div>
 		<div className="emoji-list">
-			{emojis.map(group => {
-				if (!group?.length) {
-					return null
-				}
-				const categoryID = group[0].c
-				const customPack = customEmojiPacks.find(pack => pack.id === categoryID)
-				return <EmojiGroup
-					key={categoryID}
-					emojis={group}
-					categoryID={categoryID}
-					selected={selected}
-					pack={customPack}
-					isWatched={typeof categoryID === "string" && watchedEmojiPackKeys.includes(categoryID)}
-					onSelect={onSelectWrapped}
-					setPreviewEmoji={setPreviewEmoji}
-				/>
-			})}
-			{allowFreeform && query && <button
-				className="freeform-react"
-				onClick={onClickFreeformReact}
-			>React with "{query}"</button>}
+			{/* Chrome is dumb and doesn't allow scrolling without an inner div */}
+			<div className="emoji-list-inner">
+				{emojis.map(group => {
+					if (!group?.length) {
+						return null
+					}
+					const categoryID = group[0].c
+					const customPack = customEmojiPacks.find(pack => pack.id === categoryID)
+					return <EmojiGroup
+						key={categoryID}
+						emojis={group}
+						categoryID={categoryID}
+						selected={selected}
+						pack={customPack}
+						isWatched={typeof categoryID === "string" && watchedEmojiPackKeys.includes(categoryID)}
+						onSelect={onSelectWrapped}
+						setPreviewEmoji={setPreviewEmoji}
+					/>
+				})}
+				{allowFreeform && query && <button
+					className="freeform-react"
+					onClick={onClickFreeformReact}
+				>React with "{query}"</button>}
+			</div>
 		</div>
 		{previewEmoji ? <div className="emoji-preview">
 			<div className="big-emoji">{renderEmoji(previewEmoji)}</div>
