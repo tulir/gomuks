@@ -28,7 +28,7 @@ div.room-entry {
 	display: flex;
 	gap: 4px;
 	user-select: none;
-	/*cursor: pointer;*/
+	cursor: var(--clickable-cursor);
 	height: 3rem;
 	contain-intrinsic-height: 3rem;
 	content-visibility: auto;

@@ -19,7 +19,7 @@ div.autocompletions {
 		display: flex;
 		align-items: center;
 		gap: .25rem;
-		/*cursor: pointer;*/
+		cursor: var(--clickable-cursor);
 
 		&.selected, &:hover {
 			background-color: var(--light-hover-color);

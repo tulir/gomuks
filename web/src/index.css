@@ -60,6 +60,7 @@
 	--blockquote-border-color: var(--border-color);
 	--lightbox-button-color: var(--border-color);
 	--codeblock-background-color: inherit;
+	--clickable-cursor: default;
 
 	@media (prefers-color-scheme: dark) {
 		--background-color: #000;
@@ -149,7 +150,7 @@ input, textarea {
 }
 
 button, a.button {
-	cursor: default;
+	cursor: var(--clickable-cursor);
 	font-size: 1em;
 	background: none;
 	border: none;
