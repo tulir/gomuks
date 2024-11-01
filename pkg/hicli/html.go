@@ -281,31 +281,33 @@ func linkifyAndWriteBytes(w *strings.Builder, s []byte) {
 
 const escapedChars = "&'<>\"\r"
 
+func getEscapeCharacter(b byte) string {
+	switch b {
+	case '&':
+		return "&amp;"
+	case '\'':
+		// "&#39;" is shorter than "&apos;" and apos was not in HTML until HTML5.
+		return "&#39;"
+	case '<':
+		return "&lt;"
+	case '>':
+		return "&gt;"
+	case '"':
+		// "&#34;" is shorter than "&quot;".
+		return "&#34;"
+	case '\r':
+		return "&#13;"
+	default:
+		panic("unrecognized escape character")
+	}
+}
+
 func writeEscapedBytes(w *strings.Builder, s []byte) {
 	i := bytes.IndexAny(s, escapedChars)
 	for i != -1 {
 		w.Write(s[:i])
-		var esc string
-		switch s[i] {
-		case '&':
-			esc = "&amp;"
-		case '\'':
-			// "&#39;" is shorter than "&apos;" and apos was not in HTML until HTML5.
-			esc = "&#39;"
-		case '<':
-			esc = "&lt;"
-		case '>':
-			esc = "&gt;"
-		case '"':
-			// "&#34;" is shorter than "&quot;".
-			esc = "&#34;"
-		case '\r':
-			esc = "&#13;"
-		default:
-			panic("unrecognized escape character")
-		}
+		w.WriteString(getEscapeCharacter(s[i]))
 		s = s[i+1:]
-		w.WriteString(esc)
 		i = bytes.IndexAny(s, escapedChars)
 	}
 	w.Write(s)
@@ -315,27 +317,8 @@ func writeEscapedString(w *strings.Builder, s string) {
 	i := strings.IndexAny(s, escapedChars)
 	for i != -1 {
 		w.WriteString(s[:i])
-		var esc string
-		switch s[i] {
-		case '&':
-			esc = "&amp;"
-		case '\'':
-			// "&#39;" is shorter than "&apos;" and apos was not in HTML until HTML5.
-			esc = "&#39;"
-		case '<':
-			esc = "&lt;"
-		case '>':
-			esc = "&gt;"
-		case '"':
-			// "&#34;" is shorter than "&quot;".
-			esc = "&#34;"
-		case '\r':
-			esc = "&#13;"
-		default:
-			panic("unrecognized escape character")
-		}
+		w.WriteString(getEscapeCharacter(s[i]))
 		s = s[i+1:]
-		w.WriteString(esc)
 		i = strings.IndexAny(s, escapedChars)
 	}
 	w.WriteString(s)
