@@ -58,6 +58,10 @@ class HicliMath extends HTMLElement {
 			})
 		} catch (err) {
 			console.error("Failed to render math", this.#latex, err)
+			const errorNode = document.createElement("span")
+			errorNode.innerText = `Failed to render math: ${err}`
+			errorNode.style.color = "var(--error-color)"
+			this.#root.appendChild(errorNode)
 		}
 	}
 }
