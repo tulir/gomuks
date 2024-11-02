@@ -548,6 +548,8 @@ Loop:
 					built.WriteString(`<hicli-math displaymode="block"`)
 					writeAttribute(&built, "latex", math)
 					token.DataAtom = atom.Math
+				} else {
+					built.WriteString("<div")
 				}
 			case atom.Span, atom.Font:
 				math, ok := getAttribute(token.Attr, "data-mx-maths")
