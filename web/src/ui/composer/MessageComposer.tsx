@@ -278,11 +278,9 @@ const MessageComposer = () => {
 			input.selectionStart !== input.selectionEnd
 			&& (text.startsWith("http://") || text.startsWith("https://") || text.startsWith("matrix:"))
 		) {
-			setState({
-				text: `${state.text.slice(0, input.selectionStart)}[${
-					escapeMarkdown(state.text.slice(input.selectionStart, input.selectionEnd))
-				}](${escapeMarkdown(text)})${state.text.slice(input.selectionEnd)}`,
-			})
+			document.execCommand("insertText", false, `[${
+				escapeMarkdown(state.text.slice(input.selectionStart, input.selectionEnd))
+			}](${escapeMarkdown(text)})`)
 		} else {
 			return
 		}
