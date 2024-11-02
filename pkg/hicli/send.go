@@ -53,9 +53,9 @@ func init() {
 	}
 	htmlToMarkdownForInput.ImageConverter = func(src, alt, title, width, height string, isEmoji bool) string {
 		if isEmoji {
-			return fmt.Sprintf(`![%s](%s "Emoji: %q")`, alt, src, title)
+			return fmt.Sprintf(`![%s](%s %q)`, alt, src, "Emoji: "+title)
 		} else if title != "" {
-			return fmt.Sprintf(`![%s](%s "%s")`, alt, src, title)
+			return fmt.Sprintf(`![%s](%s %q)`, alt, src, title)
 		} else {
 			return fmt.Sprintf(`![%s](%s)`, alt, src)
 		}
