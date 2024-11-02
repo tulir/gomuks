@@ -19,7 +19,10 @@ import { useEventAsState } from "@/util/eventdispatcher.ts"
 import reverseMap from "@/util/reversemap.ts"
 import toSearchableString from "@/util/searchablestring.ts"
 import ClientContext from "../ClientContext.ts"
+import { keyToString } from "../keybindings.ts"
 import Entry from "./Entry.tsx"
+import CloseIcon from "@/icons/close.svg?react"
+import SearchIcon from "@/icons/search.svg?react"
 import "./RoomList.css"
 
 interface RoomListProps {
@@ -38,17 +41,34 @@ const RoomList = ({ activeRoomID }: RoomListProps) => {
 		client.store.currentRoomListFilter = toSearchableString(evt.target.value)
 		setRealRoomFilter(client.store.currentRoomListFilter)
 	}, [client])
+	const clearQuery = useCallback(() => {
+		setRoomFilter("")
+		client.store.currentRoomListFilter = ""
+		setRealRoomFilter("")
+		roomFilterRef.current?.focus()
+	}, [client])
+	const onKeyDown = useCallback((evt: React.KeyboardEvent<HTMLInputElement>) => {
+		if (keyToString(evt) === "Escape") {
+			clearQuery()
+		}
+	}, [clearQuery])
 
 	return <div className="room-list-wrapper">
-		<input
-			value={roomFilter}
-			onChange={updateRoomFilter}
-			className="room-search"
-			type="text"
-			placeholder="Search rooms"
-			ref={roomFilterRef}
-			id="room-search"
-		/>
+		<div className="room-search-wrapper">
+			<input
+				value={roomFilter}
+				onChange={updateRoomFilter}
+				onKeyDown={onKeyDown}
+				className="room-search"
+				type="text"
+				placeholder="Search rooms"
+				ref={roomFilterRef}
+				id="room-search"
+			/>
+			<button onClick={clearQuery} disabled={roomFilter === ""}>
+				{roomFilter !== "" ? <CloseIcon/> : <SearchIcon/>}
+			</button>
+		</div>
 		<div className="room-list">
 			{reverseMap(roomList, room =>
 				<Entry
