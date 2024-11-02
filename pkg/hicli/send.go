@@ -22,6 +22,7 @@ import (
 	"maunium.net/go/mautrix/crypto"
 	"maunium.net/go/mautrix/event"
 	"maunium.net/go/mautrix/format"
+	"maunium.net/go/mautrix/format/mdext"
 	"maunium.net/go/mautrix/id"
 
 	"go.mau.fi/gomuks/pkg/hicli/database"
@@ -29,7 +30,8 @@ import (
 )
 
 var (
-	rainbowWithHTML = goldmark.New(format.Extensions, format.HTMLOptions, goldmark.WithExtensions(rainbow.Extension))
+	rainbowWithHTML = goldmark.New(format.Extensions, goldmark.WithExtensions(mdext.Math), format.HTMLOptions, goldmark.WithExtensions(rainbow.Extension))
+	defaultWithHTML = goldmark.New(format.Extensions, goldmark.WithExtensions(mdext.Math), format.HTMLOptions)
 )
 
 func (h *HiClient) SendMessage(
@@ -55,12 +57,13 @@ func (h *HiClient) SendMessage(
 		content.FormattedBody = rainbow.ApplyColor(content.FormattedBody)
 	} else if strings.HasPrefix(text, "/plain ") {
 		text = strings.TrimPrefix(text, "/plain ")
-		content = format.RenderMarkdown(text, false, false)
+		content = format.TextToContent(text)
 	} else if strings.HasPrefix(text, "/html ") {
 		text = strings.TrimPrefix(text, "/html ")
-		content = format.RenderMarkdown(text, false, true)
+		text = strings.Replace(text, "\n", "<br>", -1)
+		content = format.HTMLToContent(text)
 	} else if text != "" {
-		content = format.RenderMarkdown(text, true, true)
+		content = format.RenderMarkdownCustom(text, defaultWithHTML)
 	}
 	content.MsgType = msgType
 	if base != nil {
