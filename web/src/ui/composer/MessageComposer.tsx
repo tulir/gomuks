@@ -107,7 +107,9 @@ const MessageComposer = () => {
 		rawSetEditing(evt)
 		setState({
 			media: isMedia ? evtContent as MediaMessageEventContent : null,
-			text: (!evt.content.filename || evt.content.filename !== evt.content.body) ? (evtContent.body ?? "") : "",
+			text: (!evt.content.filename || evt.content.filename !== evt.content.body)
+				? (evt.local_content?.edit_source ?? evtContent.body ?? "")
+				: "",
 			replyTo: null,
 		})
 		textInput.current?.focus()

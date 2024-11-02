@@ -25,6 +25,7 @@ import (
 	"maunium.net/go/mautrix/crypto"
 	"maunium.net/go/mautrix/crypto/olm"
 	"maunium.net/go/mautrix/event"
+	"maunium.net/go/mautrix/format"
 	"maunium.net/go/mautrix/id"
 	"maunium.net/go/mautrix/pushrules"
 
@@ -366,7 +367,7 @@ func (h *HiClient) calculateLocalContent(ctx context.Context, dbEvt *database.Ev
 		content = content.NewContent
 	}
 	if content != nil {
-		var sanitizedHTML string
+		var sanitizedHTML, editSource string
 		var wasPlaintext, hasMath, bigEmoji bool
 		var inlineImages []id.ContentURI
 		if content.Format == event.FormatHTML && content.FormattedBody != "" {
@@ -384,6 +385,16 @@ func (h *HiClient) calculateLocalContent(ctx context.Context, dbEvt *database.Ev
 				}
 				inlineImages = nil
 			}
+			if dbEvt.LocalContent != nil && dbEvt.LocalContent.EditSource != "" {
+				editSource = dbEvt.LocalContent.EditSource
+			} else if evt.Sender == h.Account.UserID {
+				editSource, _ = format.HTMLToMarkdownFull(htmlToMarkdownForInput, content.FormattedBody)
+				if content.MsgType == event.MsgEmote {
+					editSource = "/me " + editSource
+				} else if content.MsgType == event.MsgNotice {
+					editSource = "/notice " + editSource
+				}
+			}
 		} else {
 			hasSpecialCharacters := false
 			for _, char := range content.Body {
@@ -400,6 +411,11 @@ func (h *HiClient) calculateLocalContent(ctx context.Context, dbEvt *database.Ev
 			} else if len(content.Body) < 100 && emojirunes.IsOnlyEmojis(content.Body) {
 				bigEmoji = true
 			}
+			if content.MsgType == event.MsgEmote {
+				editSource = "/me " + content.Body
+			} else if content.MsgType == event.MsgNotice {
+				editSource = "/notice " + content.Body
+			}
 			wasPlaintext = true
 		}
 		return &database.LocalContent{
@@ -408,6 +424,7 @@ func (h *HiClient) calculateLocalContent(ctx context.Context, dbEvt *database.Ev
 			WasPlaintext:  wasPlaintext,
 			BigEmoji:      bigEmoji,
 			HasMath:       hasMath,
+			EditSource:    editSource,
 		}, inlineImages
 	}
 	return nil, nil
@@ -597,7 +614,7 @@ func (h *HiClient) processStateAndTimeline(
 	}
 	processNewEvent := func(evt *event.Event, isTimeline, isUnread bool) (database.EventRowID, error) {
 		evt.RoomID = room.ID
-		dbEvt, err := h.processEvent(ctx, evt, summary, decryptionQueue, false)
+		dbEvt, err := h.processEvent(ctx, evt, summary, decryptionQueue, evt.Unsigned.TransactionID != "")
 		if err != nil {
 			return -1, err
 		}

@@ -30,9 +30,37 @@ import (
 )
 
 var (
-	rainbowWithHTML = goldmark.New(format.Extensions, goldmark.WithExtensions(mdext.Math), format.HTMLOptions, goldmark.WithExtensions(rainbow.Extension))
-	defaultWithHTML = goldmark.New(format.Extensions, goldmark.WithExtensions(mdext.Math), format.HTMLOptions)
+	rainbowWithHTML = goldmark.New(format.Extensions, goldmark.WithExtensions(mdext.Math, mdext.CustomEmoji), format.HTMLOptions, goldmark.WithExtensions(rainbow.Extension))
+	defaultWithHTML = goldmark.New(format.Extensions, goldmark.WithExtensions(mdext.Math, mdext.CustomEmoji), format.HTMLOptions)
 )
+
+var htmlToMarkdownForInput = ptr.Clone(format.MarkdownHTMLParser)
+
+func init() {
+	htmlToMarkdownForInput.PillConverter = func(displayname, mxid, eventID string, ctx format.Context) string {
+		switch {
+		case len(mxid) == 0, mxid[0] == '@':
+			return fmt.Sprintf("[%s](%s)", displayname, id.UserID(mxid).URI().MatrixToURL())
+		case len(eventID) > 0:
+			return fmt.Sprintf("[%s](%s)", displayname, id.RoomID(mxid).EventURI(id.EventID(eventID)).MatrixToURL())
+		case mxid[0] == '!' && displayname == mxid:
+			return fmt.Sprintf("[%s](%s)", displayname, id.RoomID(mxid).URI().MatrixToURL())
+		case mxid[0] == '#':
+			return fmt.Sprintf("[%s](%s)", displayname, id.RoomAlias(mxid).URI().MatrixToURL())
+		default:
+			return htmlToMarkdownForInput.LinkConverter(displayname, "https://matrix.to/#/"+mxid, ctx)
+		}
+	}
+	htmlToMarkdownForInput.ImageConverter = func(src, alt, title, width, height string, isEmoji bool) string {
+		if isEmoji {
+			return fmt.Sprintf(`![%s](%s "Emoji: %q")`, alt, src, title)
+		} else if title != "" {
+			return fmt.Sprintf(`![%s](%s "%s")`, alt, src, title)
+		} else {
+			return fmt.Sprintf(`![%s](%s)`, alt, src)
+		}
+	}
+}
 
 func (h *HiClient) SendMessage(
 	ctx context.Context,
@@ -44,6 +72,7 @@ func (h *HiClient) SendMessage(
 ) (*database.Event, error) {
 	var content event.MessageEventContent
 	msgType := event.MsgText
+	origText := text
 	if strings.HasPrefix(text, "/me ") {
 		msgType = event.MsgEmote
 		text = strings.TrimPrefix(text, "/me ")
@@ -102,7 +131,7 @@ func (h *HiClient) SendMessage(
 			content.RelatesTo = relatesTo
 		}
 	}
-	return h.Send(ctx, roomID, event.EventMessage, &content)
+	return h.send(ctx, roomID, event.EventMessage, &content, origText)
 }
 
 func (h *HiClient) MarkRead(ctx context.Context, roomID id.RoomID, eventID id.EventID, receiptType event.ReceiptType) error {
@@ -154,6 +183,16 @@ func (h *HiClient) Send(
 	evtType event.Type,
 	content any,
 ) (*database.Event, error) {
+	return h.send(ctx, roomID, evtType, content, "")
+}
+
+func (h *HiClient) send(
+	ctx context.Context,
+	roomID id.RoomID,
+	evtType event.Type,
+	content any,
+	overrideEditSource string,
+) (*database.Event, error) {
 	room, err := h.DB.Room.Get(ctx, roomID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get room metadata: %w", err)
@@ -193,6 +232,9 @@ func (h *HiClient) Send(
 	var inlineImages []id.ContentURI
 	mautrixEvt := dbEvt.AsRawMautrix()
 	dbEvt.LocalContent, inlineImages = h.calculateLocalContent(ctx, dbEvt, mautrixEvt)
+	if overrideEditSource != "" {
+		dbEvt.LocalContent.EditSource = overrideEditSource
+	}
 	_, err = h.DB.Event.Insert(ctx, dbEvt)
 	if err != nil {
 		return nil, fmt.Errorf("failed to insert event into database: %w", err)

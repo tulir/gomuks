@@ -81,6 +81,7 @@ export enum UnreadType {
 
 export interface LocalContent {
 	sanitized_html?: TrustedHTML
+	edit_source?: string
 	html_version?: number
 	was_plaintext?: boolean
 	big_emoji?: boolean

@@ -293,6 +293,7 @@ type LocalContent struct {
 	WasPlaintext  bool   `json:"was_plaintext,omitempty"`
 	BigEmoji      bool   `json:"big_emoji,omitempty"`
 	HasMath       bool   `json:"has_math,omitempty"`
+	EditSource    string `json:"edit_source,omitempty"`
 }
 
 type Event struct {
