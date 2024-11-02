@@ -31,7 +31,7 @@ import (
 
 var (
 	rainbowWithHTML = goldmark.New(format.Extensions, goldmark.WithExtensions(mdext.Math, mdext.CustomEmoji), format.HTMLOptions, goldmark.WithExtensions(rainbow.Extension))
-	defaultWithHTML = goldmark.New(format.Extensions, goldmark.WithExtensions(mdext.Math, mdext.CustomEmoji), format.HTMLOptions)
+	defaultNoHTML   = goldmark.New(format.Extensions, goldmark.WithExtensions(mdext.Math, mdext.CustomEmoji, mdext.EscapeHTML), format.HTMLOptions)
 )
 
 var htmlToMarkdownForInput = ptr.Clone(format.MarkdownHTMLParser)
@@ -92,7 +92,7 @@ func (h *HiClient) SendMessage(
 		text = strings.Replace(text, "\n", "<br>", -1)
 		content = format.HTMLToContent(text)
 	} else if text != "" {
-		content = format.RenderMarkdownCustom(text, defaultWithHTML)
+		content = format.RenderMarkdownCustom(text, defaultNoHTML)
 	}
 	content.MsgType = msgType
 	if base != nil {
