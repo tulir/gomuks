@@ -70,6 +70,22 @@ func (h *HiClient) SendMessage(
 	relatesTo *event.RelatesTo,
 	mentions *event.Mentions,
 ) (*database.Event, error) {
+	if strings.HasPrefix(text, "/raw ") {
+		parts := strings.SplitN(text, " ", 3)
+		if len(parts) < 2 || len(parts[1]) == 0 {
+			return nil, fmt.Errorf("invalid /raw command")
+		}
+		var content json.RawMessage
+		if len(parts) == 3 {
+			content = json.RawMessage(parts[2])
+		} else {
+			content = json.RawMessage("{}")
+		}
+		if !json.Valid(content) {
+			return nil, fmt.Errorf("invalid JSON in /raw command")
+		}
+		return h.send(ctx, roomID, event.Type{Type: parts[1]}, content, "")
+	}
 	var content event.MessageEventContent
 	msgType := event.MsgText
 	origText := text
