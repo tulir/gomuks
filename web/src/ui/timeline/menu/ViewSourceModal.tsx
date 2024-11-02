@@ -15,13 +15,22 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import { MemDBEvent } from "@/api/types"
 import JSONView from "../../util/JSONView.tsx"
+import CopyIcon from "@/icons/copy.svg?react"
 
 interface ViewSourceModalProps {
 	evt: MemDBEvent
 }
 
+// TODO: change the copy button's text on copy, without having typescript scream at me.
+// will i need to make a component for the copy button and change its state? hmm
+const copyButtonOnClick = (evt: MemDBEvent) => {
+	navigator.clipboard.writeText(JSON.stringify(evt, null, 4))
+}
+
+// TODO check with tulir that he in fact uses material design icons. i got the copy icon from google's site
 const ViewSourceModal = ({ evt }: ViewSourceModalProps) => {
 	return <div className="view-source-modal">
+		<button onClick={() => {copyButtonOnClick(evt)}}><CopyIcon/> Copy</button>
 		<JSONView data={evt} />
 	</div>
 }
