@@ -22,15 +22,14 @@ interface ViewSourceModalProps {
 }
 
 // TODO: change the copy button's text on copy, without having typescript scream at me.
-// will i need to make a component for the copy button and change its state? hmm
+// will i need to make a component for the copy button and change its state???
 const copyButtonOnClick = (evt: MemDBEvent) => {
 	navigator.clipboard.writeText(JSON.stringify(evt, null, 4))
 }
 
-// TODO check with tulir that he in fact uses material design icons. i got the copy icon from google's site
 const ViewSourceModal = ({ evt }: ViewSourceModalProps) => {
 	return <div className="view-source-modal">
-		<button onClick={() => {copyButtonOnClick(evt)}}><CopyIcon/> Copy</button>
+		<button onClick={() => {copyButtonOnClick(evt)}}><CopyIcon/></button>
 		<JSONView data={evt} />
 	</div>
 }
