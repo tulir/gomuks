@@ -39,9 +39,13 @@ function usePreviewText(evt?: MemDBEvent, senderMemberEvt?: MemDBEvent | null): 
 		} else if (!displayname) {
 			displayname = evt.sender.slice(1).split(":")[0]
 		}
+		let previewText = evt.content.body
+		if (evt.content.formatted_body?.includes?.("data-mx-spoiler")) {
+			previewText = "<message contains spoilers>"
+		}
 		return [
 			`${displayname}: ${evt.content.body}`,
-			`${displayname.length > 16 ? displayname.slice(0, 12) + "…" : displayname}: ${evt.content.body}`,
+			`${displayname.length > 16 ? displayname.slice(0, 12) + "…" : displayname}: ${previewText}`,
 		]
 	}
 	return ["", ""]
