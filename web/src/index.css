@@ -8,6 +8,8 @@
 	--inverted-text-color: var(--background-color);
 	--secondary-text-color: #888;
 	--semisecondary-text-color: #555;
+	--link-text-color: #0467dd;
+	--visited-link-text-color: var(--link-text-color);
 
 	--primary-color: #00c853;
 	--primary-color-dark: #00b24a;
@@ -69,6 +71,7 @@
 		--inverted-text-color: var(--background-color);
 		--secondary-text-color: #888;
 		--semisecondary-text-color: #bbb;
+		--link-text-color: #4187eb;
 
 		--primary-color: #00b24a;
 		--primary-color-dark: #00c853;
@@ -174,6 +177,11 @@ button, a.button {
 
 a {
 	text-decoration: none;
+	color: var(--link-text-color);
+
+	&:visited {
+		color: var(--visited-link-text-color);
+	}
 
 	&:hover:not(.button) {
 		text-decoration: underline;
