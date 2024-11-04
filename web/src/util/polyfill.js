@@ -15,7 +15,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 if (!window.Iterator?.prototype.map) {
-	(new Map([])).__proto__.map = function(callbackFn) {
+	(new Map([])).keys().__proto__.map = function(callbackFn) {
 		const output = []
 		let i = 0
 		for (const item of this) {
