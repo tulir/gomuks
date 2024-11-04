@@ -14,8 +14,8 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-if (!Iterator.prototype.map) {
-	Iterator.prototype.map = function(callbackFn) {
+if (!window.Iterator?.prototype.map) {
+	(new Map([])).__proto__.map = function(callbackFn) {
 		const output = []
 		let i = 0
 		for (const item of this) {
