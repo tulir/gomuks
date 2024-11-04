@@ -13,14 +13,15 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import { StrictMode } from "react"
-import { createRoot } from "react-dom/client"
-import App from "./App.tsx"
-import "./util/polyfill.js"
-import "./index.css"
 
-createRoot(document.getElementById("root")!).render(
-	<StrictMode>
-		<App/>
-	</StrictMode>,
-)
+if (!Iterator.prototype.map) {
+	Iterator.prototype.map = function(callbackFn) {
+		const output = []
+		let i = 0
+		for (const item of this) {
+			output.push(callbackFn(item, i))
+			i++
+		}
+		return output
+	}
+}
