@@ -619,7 +619,7 @@ func (h *HiClient) processStateAndTimeline(
 			return -1, err
 		}
 		if isUnread {
-			if dbEvt.UnreadType.Is(database.UnreadTypeNotify) {
+			if dbEvt.UnreadType.Is(database.UnreadTypeNotify) && h.firstSyncReceived {
 				newNotifications = append(newNotifications, SyncNotification{
 					RowID: dbEvt.RowID,
 					Sound: dbEvt.UnreadType.Is(database.UnreadTypeSound),
