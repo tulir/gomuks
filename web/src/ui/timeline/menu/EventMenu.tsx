@@ -84,15 +84,17 @@ const EventMenu = ({ evt, setForceOpen }: EventHoverMenuProps) => {
 		})
 	}, [evt, roomCtx, setForceOpen, openModal])
 	const isEditing = useEventAsState(roomCtx.isEditing)
+	const isPending = evt.event_id.startsWith("~")
+	const pendingTitle = isPending ? "Can't action messages that haven't been sent yet" : undefined
 	return <div className="event-hover-menu" ref={contextMenuRef}>
-		<button onClick={onClickReact}><ReactIcon/></button>
+		<button disabled={isPending} title={pendingTitle} onClick={onClickReact}><ReactIcon/></button>
 		<button
-			disabled={isEditing}
-			title={isEditing ? "Can't reply to messages while editing a message" : undefined}
+			disabled={isEditing || isPending}
+			title={isEditing ? "Can't reply to messages while editing a message" : pendingTitle}
 			onClick={onClickReply}
 		><ReplyIcon/></button>
 		{evt.sender === userID && evt.type === "m.room.message" && evt.relation_type !== "m.replace" && !evt.redacted_by
-			&& <button onClick={onClickEdit}><EditIcon/></button>}
+			&& <button onClick={onClickEdit} disabled={isPending} title={pendingTitle}><EditIcon/></button>}
 		<button onClick={onClickMore}><MoreIcon/></button>
 	</div>
 }

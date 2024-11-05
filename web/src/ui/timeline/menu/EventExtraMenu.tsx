@@ -88,6 +88,8 @@ const EventExtraMenu = ({ evt, room, style }: EventExtraMenuProps) => {
 			.catch(err => window.alert(`Failed to unpin message: ${err}`))
 	}, [closeModal, client, room, evt.event_id])
 
+	const isPending = evt.event_id.startsWith("~")
+	const pendingTitle = isPending ? "Can't action messages that haven't been sent yet" : undefined
 	const plEvent = useRoomState(room, "m.room.power_levels", "")
 	// We get pins from getPinnedEvents, but use the hook anyway to subscribe to changes
 	useRoomState(room, "m.room.pinned_events", "")
@@ -103,9 +105,14 @@ const EventExtraMenu = ({ evt, room, style }: EventExtraMenuProps) => {
 		<button onClick={onClickViewSource}><ViewSourceIcon/>View source</button>
 		{ownPL >= pinPL && (pins.includes(evt.event_id)
 			? <button onClick={onClickUnpin}><UnpinIcon/>Unpin message</button>
-			: <button onClick={onClickPin}><PinIcon/>Pin message</button>)}
-		<button onClick={onClickReport}><ReportIcon/>Report</button>
-		{canRedact && <button onClick={onClickRedact} className="redact-button"><DeleteIcon/>Remove</button>}
+			: <button onClick={onClickPin} title={pendingTitle} disabled={isPending}><PinIcon/>Pin message</button>)}
+		<button onClick={onClickReport} disabled={isPending} title={pendingTitle}><ReportIcon/>Report</button>
+		{canRedact && <button
+			onClick={onClickRedact}
+			disabled={isPending}
+			title={pendingTitle}
+			className="redact-button"
+		><DeleteIcon/>Remove</button>}
 	</div>
 }
 
