@@ -8,6 +8,7 @@ div.event-hover-menu {
 	display: flex;
 	gap: .25rem;
 	padding: .125rem;
+	z-index: 1;
 
 	> button {
 		width: 2rem;
