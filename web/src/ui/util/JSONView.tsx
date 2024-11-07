@@ -82,9 +82,12 @@ function JSONValueWithKey({ data, objectKey, trailingComma, noCollapse }: JSONVi
 		? <span className="json-object-comma p">,</span>
 		: null
 	const collapseButton = noCollapse ? null :
-		<button onClick={toggleCollapsed} title={collapsed ? "Expand" : "Collapse"}>
-			{collapsed ? "+" : "-"}
-		</button>
+		<span
+			className="button"
+			data-symbol={collapsed ? "+" : "-"}
+			onClick={toggleCollapsed}
+			title={collapsed ? "Expand" : "Collapse"}
+		/>
 	if (Array.isArray(data)) {
 		return <>
 			{renderedKey}

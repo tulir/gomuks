@@ -153,7 +153,7 @@ input, textarea {
 	font-size: 1em;
 }
 
-button, a.button {
+button, a.button, span.button {
 	cursor: var(--clickable-cursor);
 	font-size: 1em;
 	background: none;

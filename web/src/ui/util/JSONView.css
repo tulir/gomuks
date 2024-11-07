@@ -15,9 +15,13 @@ pre.json-view {
 		user-select: none;
 	}
 
-	button {
+	span.button {
 		padding: 0 .25rem;
 		display: inline-flex;
+
+		&::before {
+			content: attr(data-symbol);
+		}
 	}
 
 	/* If the screen is wide enough, make line-wrapped strings aligned after the object key */
