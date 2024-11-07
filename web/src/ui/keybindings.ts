@@ -92,6 +92,8 @@ export default class Keybindings {
 			&& this.keyUpMap[keyToString(evt)] === undefined
 			&& (!evt.ctrlKey || evt.key === "v" || evt.key === "a")
 			&& !evt.altKey
+			&& key !== "PageUp" && key !== "PageDown"
+			&& key !== "Home" && key !== "End"
 		) {
 			document.getElementById("message-composer")?.focus()
 		}
