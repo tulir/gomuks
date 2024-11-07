@@ -56,6 +56,10 @@ class ContextFields implements MainScreenContextFields {
 		}
 		this.client.store.activeRoomID = room?.roomID
 		this.keybindings.activeRoom = room
+		if (roomID) {
+			document.querySelector(`div.room-entry[data-room-id="${CSS.escape(roomID)}"]`)
+				?.scrollIntoView({ block: "nearest" })
+		}
 	}
 
 	clickRoom = (evt: React.MouseEvent) => {

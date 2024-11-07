@@ -49,7 +49,9 @@ export const ReplyIDBody = ({ room, eventID, isThread }: ReplyIDBodyProps) => {
 }
 
 const onClickReply = (evt: React.MouseEvent) => {
-	const targetEvt = document.querySelector(`div[data-event-id="${evt.currentTarget.getAttribute("data-reply-to")}"]`)
+	const targetEvt = document.querySelector(
+		`div[data-event-id="${CSS.escape(evt.currentTarget.getAttribute("data-reply-to") ?? "")}"]`,
+	)
 	if (targetEvt) {
 		targetEvt.scrollIntoView({
 			block: "center",
