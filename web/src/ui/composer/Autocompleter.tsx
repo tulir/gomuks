@@ -31,6 +31,7 @@ export interface AutocompleteQuery {
 	endPos: number
 	frozenQuery?: string
 	selected?: number
+	close?: boolean
 }
 
 export interface AutocompleterProps {
@@ -80,6 +81,9 @@ function useAutocompleter<T>({
 	useEffect(() => {
 		if (params.selected !== undefined) {
 			onSelect(params.selected)
+			if (params.close) {
+				setAutocomplete(null)
+			}
 		}
 	}, [onSelect, params.selected])
 	const selected = params.selected !== undefined ? positiveMod(params.selected, items.length) : -1
