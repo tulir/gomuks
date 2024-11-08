@@ -258,7 +258,7 @@ const MessageComposer = () => {
 			typingSentAt.current = now
 			client.rpc.setTyping(room.roomID, 10_000)
 				.catch(err => console.error("Failed to send typing notification:", err))
-		} else if (evt.target.value == "" && typingSentAt.current > 0) {
+		} else if (evt.target.value === "" && typingSentAt.current > 0) {
 			typingSentAt.current = 0
 			client.rpc.setTyping(room.roomID, 0)
 				.catch(err => console.error("Failed to send stop typing notification:", err))
