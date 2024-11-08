@@ -13,7 +13,7 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import { use, useEffect, useMemo, useReducer, useState } from "react"
+import { use, useEffect, useInsertionEffect, useMemo, useReducer, useState } from "react"
 import Client from "@/api/client.ts"
 import { RoomStateStore } from "@/api/statestore"
 import type { RoomID } from "@/api/types"
@@ -93,7 +93,7 @@ const MainScreen = () => {
 		[client],
 	)
 	useEffect(() => context.keybindings.listen(), [context])
-	useEffect(() => {
+	useInsertionEffect(() => {
 		const styleTags = document.createElement("style")
 		styleTags.textContent = `
 			div.html-body > a.hicli-matrix-uri-user[href="matrix:u/${client.userID.slice(1).replaceAll(`"`, `\\"`)}"] {
