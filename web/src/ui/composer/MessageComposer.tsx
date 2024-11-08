@@ -206,9 +206,21 @@ const MessageComposer = () => {
 			} else if (fullKey === "Shift+Tab" || fullKey === "ArrowUp") {
 				autocompleteUpdate = { selected: (autocomplete.selected ?? 0) - 1 }
 			} else if (fullKey === "Enter") {
-				autocompleteUpdate = autocomplete.selected !== undefined ? null : { selected: 0, close: true }
+				if (autocomplete.selected !== undefined) {
+					// Don't capture enter if a result is already selected
+					sendMessage(evt)
+				} else {
+					autocompleteUpdate = { selected: 0, close: true }
+				}
 			} else if (fullKey === "Escape") {
 				autocompleteUpdate = null
+				if (autocomplete.frozenQuery) {
+					setState({
+						text: state.text.slice(0, autocomplete.startPos)
+							+ autocomplete.frozenQuery
+							+ state.text.slice(autocomplete.endPos),
+					})
+				}
 			}
 			if (autocompleteUpdate !== undefined) {
 				setAutocomplete(autocompleteUpdate && { ...autocomplete, ...autocompleteUpdate })
