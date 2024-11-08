@@ -19,6 +19,7 @@ import { useEventAsState } from "@/util/eventdispatcher.ts"
 import reverseMap from "@/util/reversemap.ts"
 import toSearchableString from "@/util/searchablestring.ts"
 import ClientContext from "../ClientContext.ts"
+import MainScreenContext from "../MainScreenContext.ts"
 import { keyToString } from "../keybindings.ts"
 import Entry from "./Entry.tsx"
 import CloseIcon from "@/icons/close.svg?react"
@@ -31,6 +32,7 @@ interface RoomListProps {
 
 const RoomList = ({ activeRoomID }: RoomListProps) => {
 	const client = use(ClientContext)!
+	const mainScreen = use(MainScreenContext)
 	const roomList = useEventAsState(client.store.roomList)
 	const roomFilterRef = useRef<HTMLInputElement>(null)
 	const [roomFilter, setRoomFilter] = useState("")
@@ -48,8 +50,17 @@ const RoomList = ({ activeRoomID }: RoomListProps) => {
 		roomFilterRef.current?.focus()
 	}, [client])
 	const onKeyDown = useCallback((evt: React.KeyboardEvent<HTMLInputElement>) => {
-		if (keyToString(evt) === "Escape") {
+		const key = keyToString(evt)
+		if (key === "Escape") {
 			clearQuery()
+			evt.stopPropagation()
+			evt.preventDefault()
+		} else if (key === "Enter") {
+			const roomList = client.store.getFilteredRoomList()
+			mainScreen.setActiveRoom(roomList[roomList.length-1]?.room_id)
+			clearQuery()
+			evt.stopPropagation()
+			evt.preventDefault()
 		}
 	}, [clearQuery])
 
