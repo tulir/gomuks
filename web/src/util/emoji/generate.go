@@ -149,6 +149,26 @@ func (s *stringOrArray) UnmarshalJSON(data []byte) error {
 	return json.Unmarshal(data, (*[]string)(s))
 }
 
+var maxSortOrder int
+
+func regionalIndicators(yield func(Emoji) bool) {
+	const regionalIndicatorA = 0x1F1E6
+	const regionalIndicatorZ = 0x1F1FF
+	for x := regionalIndicatorA; x <= regionalIndicatorZ; x++ {
+		shortcode := fmt.Sprintf("regional_indicator_%c", x-regionalIndicatorA+'a')
+		emoji := Emoji{
+			Unified:    fmt.Sprintf("%X", x),
+			ShortName:  shortcode,
+			ShortNames: []string{shortcode},
+			Category:   "Flags",
+			SortOrder:  maxSortOrder + x - regionalIndicatorA,
+		}
+		if !yield(emoji) {
+			return
+		}
+	}
+}
+
 func main() {
 	var emojis []Emoji
 	resp := exerrors.Must(http.Get("https://raw.githubusercontent.com/iamcal/emoji-data/master/emoji.json"))
@@ -158,6 +178,10 @@ func main() {
 	slices.SortFunc(emojis, func(a, b Emoji) int {
 		return a.SortOrder - b.SortOrder
 	})
+	maxSortOrder = emojis[len(emojis)-1].SortOrder
+	for emoji := range regionalIndicators {
+		emojis = append(emojis, emoji)
+	}
 
 	data := &outputData{
 		Emojis:     make([]*outputEmoji, len(emojis)),

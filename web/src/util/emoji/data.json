@@ -18310,6 +18310,240 @@
         "flaggbwls",
         "wales"
       ]
+    },
+    {
+      "u": "🇦",
+      "c": 3,
+      "t": "Regional Indicator A",
+      "n": "regional_indicator_a",
+      "s": [
+        "regionalindicatora"
+      ]
+    },
+    {
+      "u": "🇧",
+      "c": 3,
+      "t": "Regional Indicator B",
+      "n": "regional_indicator_b",
+      "s": [
+        "regionalindicatorb"
+      ]
+    },
+    {
+      "u": "🇨",
+      "c": 3,
+      "t": "Regional Indicator C",
+      "n": "regional_indicator_c",
+      "s": [
+        "regionalindicatorc"
+      ]
+    },
+    {
+      "u": "🇩",
+      "c": 3,
+      "t": "Regional Indicator D",
+      "n": "regional_indicator_d",
+      "s": [
+        "regionalindicatord"
+      ]
+    },
+    {
+      "u": "🇪",
+      "c": 3,
+      "t": "Regional Indicator E",
+      "n": "regional_indicator_e",
+      "s": [
+        "regionalindicatore"
+      ]
+    },
+    {
+      "u": "🇫",
+      "c": 3,
+      "t": "Regional Indicator F",
+      "n": "regional_indicator_f",
+      "s": [
+        "regionalindicatorf"
+      ]
+    },
+    {
+      "u": "🇬",
+      "c": 3,
+      "t": "Regional Indicator G",
+      "n": "regional_indicator_g",
+      "s": [
+        "regionalindicatorg"
+      ]
+    },
+    {
+      "u": "🇭",
+      "c": 3,
+      "t": "Regional Indicator H",
+      "n": "regional_indicator_h",
+      "s": [
+        "regionalindicatorh"
+      ]
+    },
+    {
+      "u": "🇮",
+      "c": 3,
+      "t": "Regional Indicator I",
+      "n": "regional_indicator_i",
+      "s": [
+        "regionalindicatori"
+      ]
+    },
+    {
+      "u": "🇯",
+      "c": 3,
+      "t": "Regional Indicator J",
+      "n": "regional_indicator_j",
+      "s": [
+        "regionalindicatorj"
+      ]
+    },
+    {
+      "u": "🇰",
+      "c": 3,
+      "t": "Regional Indicator K",
+      "n": "regional_indicator_k",
+      "s": [
+        "regionalindicatork"
+      ]
+    },
+    {
+      "u": "🇱",
+      "c": 3,
+      "t": "Regional Indicator L",
+      "n": "regional_indicator_l",
+      "s": [
+        "regionalindicatorl"
+      ]
+    },
+    {
+      "u": "🇲",
+      "c": 3,
+      "t": "Regional Indicator M",
+      "n": "regional_indicator_m",
+      "s": [
+        "regionalindicatorm"
+      ]
+    },
+    {
+      "u": "🇳",
+      "c": 3,
+      "t": "Regional Indicator N",
+      "n": "regional_indicator_n",
+      "s": [
+        "regionalindicatorn"
+      ]
+    },
+    {
+      "u": "🇴",
+      "c": 3,
+      "t": "Regional Indicator O",
+      "n": "regional_indicator_o",
+      "s": [
+        "regionalindicatoro"
+      ]
+    },
+    {
+      "u": "🇵",
+      "c": 3,
+      "t": "Regional Indicator P",
+      "n": "regional_indicator_p",
+      "s": [
+        "regionalindicatorp"
+      ]
+    },
+    {
+      "u": "🇶",
+      "c": 3,
+      "t": "Regional Indicator Q",
+      "n": "regional_indicator_q",
+      "s": [
+        "regionalindicatorq"
+      ]
+    },
+    {
+      "u": "🇷",
+      "c": 3,
+      "t": "Regional Indicator R",
+      "n": "regional_indicator_r",
+      "s": [
+        "regionalindicatorr"
+      ]
+    },
+    {
+      "u": "🇸",
+      "c": 3,
+      "t": "Regional Indicator S",
+      "n": "regional_indicator_s",
+      "s": [
+        "regionalindicators"
+      ]
+    },
+    {
+      "u": "🇹",
+      "c": 3,
+      "t": "Regional Indicator T",
+      "n": "regional_indicator_t",
+      "s": [
+        "regionalindicatort"
+      ]
+    },
+    {
+      "u": "🇺",
+      "c": 3,
+      "t": "Regional Indicator U",
+      "n": "regional_indicator_u",
+      "s": [
+        "regionalindicatoru"
+      ]
+    },
+    {
+      "u": "🇻",
+      "c": 3,
+      "t": "Regional Indicator V",
+      "n": "regional_indicator_v",
+      "s": [
+        "regionalindicatorv"
+      ]
+    },
+    {
+      "u": "🇼",
+      "c": 3,
+      "t": "Regional Indicator W",
+      "n": "regional_indicator_w",
+      "s": [
+        "regionalindicatorw"
+      ]
+    },
+    {
+      "u": "🇽",
+      "c": 3,
+      "t": "Regional Indicator X",
+      "n": "regional_indicator_x",
+      "s": [
+        "regionalindicatorx"
+      ]
+    },
+    {
+      "u": "🇾",
+      "c": 3,
+      "t": "Regional Indicator Y",
+      "n": "regional_indicator_y",
+      "s": [
+        "regionalindicatory"
+      ]
+    },
+    {
+      "u": "🇿",
+      "c": 3,
+      "t": "Regional Indicator Z",
+      "n": "regional_indicator_z",
+      "s": [
+        "regionalindicatorz"
+      ]
     }
   ],
   "c": [
