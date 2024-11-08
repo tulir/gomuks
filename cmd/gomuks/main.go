@@ -28,6 +28,7 @@ import (
 	flag "maunium.net/go/mauflag"
 	"maunium.net/go/mautrix"
 
+	"go.mau.fi/gomuks/pkg/gomuks"
 	"go.mau.fi/gomuks/pkg/hicli"
 )
 
@@ -71,27 +72,12 @@ func main() {
 		os.Exit(0)
 	}
 
-	gmx := NewGomuks()
-	gmx.InitDirectories()
-	err = gmx.LoadConfig()
-	if err != nil {
-		_, _ = fmt.Fprintln(os.Stderr, "Failed to load config:", err)
-		os.Exit(9)
-	}
-	gmx.SetupLog()
-	gmx.Log.Info().
-		Str("version", Version).
-		Str("go_version", runtime.Version()).
-		Time("built_at", ParsedBuildTime).
-		Msg("Initializing gomuks")
-	gmx.StartServer()
-	gmx.StartClient()
-	gmx.Log.Info().Msg("Initialization complete")
-	gmx.WaitForInterrupt()
-	gmx.Log.Info().Msg("Shutting down...")
-	gmx.directStop()
-	gmx.Log.Info().Msg("Shutdown complete")
-	os.Exit(0)
+	gmx := gomuks.NewGomuks()
+	gmx.Version = Version
+	gmx.Commit = Commit
+	gmx.LinkifiedVersion = LinkifiedVersion
+	gmx.BuildTime = ParsedBuildTime
+	gmx.Run()
 }
 
 func initVersion(tag, commit, rawBuildTime string) {

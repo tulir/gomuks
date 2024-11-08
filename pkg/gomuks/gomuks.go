@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-package main
+package gomuks
 
 import (
 	"context"
@@ -28,6 +28,7 @@ import (
 	"slices"
 	"sync"
 	"syscall"
+	"time"
 
 	"github.com/coder/websocket"
 	"github.com/rs/zerolog"
@@ -42,6 +43,11 @@ type Gomuks struct {
 	Log    *zerolog.Logger
 	Server *http.Server
 	Client *hicli.HiClient
+
+	Version          string
+	Commit           string
+	LinkifiedVersion string
+	BuildTime        time.Time
 
 	ConfigDir string
 	DataDir   string
@@ -194,7 +200,7 @@ func (gmx *Gomuks) WaitForInterrupt() {
 	}
 }
 
-func (gmx *Gomuks) directStop() {
+func (gmx *Gomuks) DirectStop() {
 	gmx.eventListenersLock.Lock()
 	closers := slices.Collect(maps.Values(gmx.websocketClosers))
 	gmx.eventListenersLock.Unlock()
@@ -231,4 +237,27 @@ func (gmx *Gomuks) SubscribeEvents(closeForRestart WebsocketCloseFunc, cb func(c
 		delete(gmx.eventListeners, id)
 		delete(gmx.websocketClosers, id)
 	}
+}
+
+func (gmx *Gomuks) Run() {
+	gmx.InitDirectories()
+	err := gmx.LoadConfig()
+	if err != nil {
+		_, _ = fmt.Fprintln(os.Stderr, "Failed to load config:", err)
+		os.Exit(9)
+	}
+	gmx.SetupLog()
+	gmx.Log.Info().
+		Str("version", gmx.Version).
+		Str("go_version", runtime.Version()).
+		Time("built_at", gmx.BuildTime).
+		Msg("Initializing gomuks")
+	gmx.StartServer()
+	gmx.StartClient()
+	gmx.Log.Info().Msg("Initialization complete")
+	gmx.WaitForInterrupt()
+	gmx.Log.Info().Msg("Shutting down...")
+	gmx.DirectStop()
+	gmx.Log.Info().Msg("Shutdown complete")
+	os.Exit(0)
 }
