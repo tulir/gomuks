@@ -625,6 +625,20 @@ var CodeBlockFormatter = chromahtml.New(
 	chromahtml.WithLineNumbers(true),
 )
 
+type lineRewriter struct {
+	w *strings.Builder
+}
+
+var lineNumberRewriter = regexp.MustCompile(`<span class="ln">(\s*\d+)</span>`)
+var lineNumberReplacement = []byte(`<span class="ln" data-linenum="$1"></span>`)
+
+func (lr *lineRewriter) Write(p []byte) (n int, err error) {
+	n = len(p)
+	p = lineNumberRewriter.ReplaceAll(p, lineNumberReplacement)
+	lr.w.Write(p)
+	return
+}
+
 func writeCodeBlock(w *strings.Builder, language string, block *strings.Builder) {
 	lexer := lexers.Get(language)
 	if lexer == nil {
@@ -642,7 +656,7 @@ func writeCodeBlock(w *strings.Builder, language string, block *strings.Builder)
 		w.WriteString("</code></pre>")
 		return
 	}
-	err = CodeBlockFormatter.Format(w, styles.Fallback, iter)
+	err = CodeBlockFormatter.Format(&lineRewriter{w}, styles.Fallback, iter)
 	if err != nil {
 		// This should never fail
 		panic(err)
