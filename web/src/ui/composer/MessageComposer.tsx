@@ -199,19 +199,22 @@ const MessageComposer = () => {
 	const onComposerKeyDown = useEvent((evt: React.KeyboardEvent<HTMLTextAreaElement>) => {
 		const inp = evt.currentTarget
 		const fullKey = keyToString(evt)
-		if (autocomplete) {
+		if (fullKey === "Enter" && (
+			// If the autocomplete already has a selected item or has no results, send message even if it's open.
+			// Otherwise, don't send message on enter, select the first autocomplete entry instead.
+			!autocomplete
+			|| autocomplete.selected !== undefined
+			|| !document.getElementById("composer-autocompletions")?.classList.contains("has-items")
+		)) {
+			sendMessage(evt)
+		} else if (autocomplete) {
 			let autocompleteUpdate: Partial<AutocompleteQuery> | null | undefined
 			if (fullKey === "Tab" || fullKey === "ArrowDown") {
 				autocompleteUpdate = { selected: (autocomplete.selected ?? -1) + 1 }
 			} else if (fullKey === "Shift+Tab" || fullKey === "ArrowUp") {
 				autocompleteUpdate = { selected: (autocomplete.selected ?? 0) - 1 }
 			} else if (fullKey === "Enter") {
-				if (autocomplete.selected !== undefined) {
-					// Don't capture enter if a result is already selected
-					sendMessage(evt)
-				} else {
-					autocompleteUpdate = { selected: 0, close: true }
-				}
+				autocompleteUpdate = { selected: 0, close: true }
 			} else if (fullKey === "Escape") {
 				autocompleteUpdate = null
 				if (autocomplete.frozenQuery) {
@@ -226,8 +229,6 @@ const MessageComposer = () => {
 				setAutocomplete(autocompleteUpdate && { ...autocomplete, ...autocompleteUpdate })
 				evt.preventDefault()
 			}
-		} else if (fullKey === "Enter") {
-			sendMessage(evt)
 		} else if (fullKey === "ArrowUp" && inp.selectionStart === 0 && inp.selectionEnd === 0) {
 			const currentlyEditing = editing
 				? roomCtx.ownMessages.indexOf(editing.rowid)
