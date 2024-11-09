@@ -43,6 +43,7 @@ class ContextFields implements MainScreenContextFields {
 	) {
 		this.keybindings = new Keybindings(client.store, this)
 		client.store.switchRoom = this.setActiveRoom
+		window.mainScreenContext = this
 	}
 
 	setActiveRoom = (roomID: RoomID | null) => {

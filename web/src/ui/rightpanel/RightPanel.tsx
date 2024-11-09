@@ -14,16 +14,24 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import { JSX, use } from "react"
+import type { UserID } from "@/api/types"
 import MainScreenContext from "../MainScreenContext.ts"
 import PinnedMessages from "./PinnedMessages.tsx"
 import CloseButton from "@/icons/close.svg?react"
 import "./RightPanel.css"
 
-export type RightPanelType = "pinned-messages" | "members"
+export type RightPanelType = "pinned-messages" | "members" | "user"
 
-export interface RightPanelProps {
-	type: RightPanelType
+interface RightPanelSimpleProps {
+	type: "pinned-messages" | "members"
 }
+
+interface RightPanelUserProps {
+	type: "user"
+	userID: UserID
+}
+
+export type RightPanelProps = RightPanelUserProps | RightPanelSimpleProps
 
 function getTitle(type: RightPanelType): string {
 	switch (type) {
@@ -31,26 +39,30 @@ function getTitle(type: RightPanelType): string {
 		return "Pinned Messages"
 	case "members":
 		return "Room Members"
+	case "user":
+		return "User Info"
 	}
 }
 
-function renderRightPanelContent({ type }: RightPanelProps): JSX.Element | null {
-	switch (type) {
+function renderRightPanelContent(props: RightPanelProps): JSX.Element | null {
+	switch (props.type) {
 	case "pinned-messages":
 		return <PinnedMessages />
 	case "members":
 		return <>Member list is not yet implemented</>
+	case "user":
+		return <>{props.userID}</>
 	}
 }
 
-const RightPanel = ({ type, ...rest }: RightPanelProps) => {
+const RightPanel = (props: RightPanelProps) => {
 	return <div className="right-panel">
 		<div className="right-panel-header">
-			<div className="panel-name">{getTitle(type)}</div>
+			<div className="panel-name">{getTitle(props.type)}</div>
 			<button onClick={use(MainScreenContext).closeRightPanel}><CloseButton/></button>
 		</div>
-		<div className={`right-panel-content ${type}`}>
-			{renderRightPanelContent({ type, ...rest })}
+		<div className={`right-panel-content ${props.type}`}>
+			{renderRightPanelContent(props)}
 		</div>
 	</div>
 }

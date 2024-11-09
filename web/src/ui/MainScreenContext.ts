@@ -27,7 +27,7 @@ export interface MainScreenContextFields {
 	clickRightPanelOpener: (evt: React.MouseEvent) => void
 }
 
-const MainScreenContext = createContext<MainScreenContextFields>({
+const stubContext = {
 	get setActiveRoom(): never {
 		throw new Error("MainScreenContext used outside main screen")
 	},
@@ -46,6 +46,9 @@ const MainScreenContext = createContext<MainScreenContextFields>({
 	get clickRightPanelOpener(): never {
 		throw new Error("MainScreenContext used outside main screen")
 	},
-})
+}
+
+const MainScreenContext = createContext<MainScreenContextFields>(stubContext)
+window.mainScreenContext = stubContext
 
 export default MainScreenContext

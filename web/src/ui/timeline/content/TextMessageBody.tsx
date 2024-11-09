@@ -20,14 +20,41 @@ function isImageElement(elem: EventTarget): elem is HTMLImageElement {
 	return (elem as HTMLImageElement).tagName === "IMG"
 }
 
-const onClickHTML = (evt: React.MouseEvent<HTMLDivElement>) => {
-	if (isImageElement(evt.target)) {
-		window.openLightbox({
-			src: evt.target.src,
-			alt: evt.target.alt,
+function isAnchorElement(elem: EventTarget): elem is HTMLAnchorElement {
+	return (elem as HTMLAnchorElement).tagName === "A"
+}
+
+function onClickMatrixURI(href: string) {
+	const url = new URL(href)
+	const pathParts = url.pathname.split("/")
+	switch (pathParts[0]) {
+	case "u":
+		return window.mainScreenContext.setRightPanel({
+			type: "user",
+			userID: pathParts[1],
 		})
-	} else if ((evt.target as HTMLElement).closest?.("span.hicli-spoiler")?.classList.toggle("spoiler-revealed")) {
+	case "roomid":
+		return window.mainScreenContext.setActiveRoom(pathParts[1])
+	case "r":
+		return window.client.rpc.resolveAlias(`#${pathParts[1]}`).then(
+			res => window.mainScreenContext.setActiveRoom(res.room_id),
+			err => window.alert(`Failed to resolve room alias #${pathParts[1]}: ${err}`),
+		)
+	}
+}
+
+const onClickHTML = (evt: React.MouseEvent<HTMLDivElement>) => {
+	const targetElem = evt.target as HTMLElement
+	if (isImageElement(targetElem)) {
+		window.openLightbox({
+			src: targetElem.src,
+			alt: targetElem.alt,
+		})
+	} else if (targetElem.closest?.("span.hicli-spoiler")?.classList.toggle("spoiler-revealed")) {
 		// When unspoilering, don't trigger links and other clickables inside the spoiler
+		evt.preventDefault()
+	} else if (isAnchorElement(targetElem) && targetElem.href.startsWith("matrix:")) {
+		onClickMatrixURI(targetElem.href)
 		evt.preventDefault()
 	}
 }
