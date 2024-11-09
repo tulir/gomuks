@@ -298,6 +298,9 @@ export class StateStore {
 		const roomName = room.meta.current.name ?? "Unnamed room"
 		const senderName = memberEvt?.content.displayname ?? evt.sender
 		const title = senderName === roomName ? senderName : `${senderName} (${roomName})`
+		if (sound) {
+			(document.getElementById("default-notification-sound") as HTMLAudioElement)?.play()
+		}
 		const notif = new Notification(title, {
 			body,
 			icon,
@@ -309,9 +312,6 @@ export class StateStore {
 		room.openNotifications.set(rowid, notif)
 		notif.onclose = () => room.openNotifications.delete(rowid)
 		notif.onclick = () => this.onClickNotification(room.roomID)
-		if (sound) {
-			// TODO play sound
-		}
 	}
 
 	onClickNotification(roomID: RoomID) {
