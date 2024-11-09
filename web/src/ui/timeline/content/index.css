@@ -99,6 +99,11 @@ div.html-body {
 		}
 	}
 
+	table {
+		/* Message content has overflow wrap anywhere, but for tables that's not very nice */
+		overflow-wrap: initial;
+	}
+
 	blockquote {
 		border-left: 2px solid var(--blockquote-border-color);
 		padding-left: .5rem;
