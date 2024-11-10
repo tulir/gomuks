@@ -18,6 +18,7 @@ package gomuks
 
 import (
 	"context"
+	"embed"
 	"fmt"
 	"maps"
 	"net/http"
@@ -54,6 +55,8 @@ type Gomuks struct {
 	CacheDir  string
 	TempDir   string
 	LogDir    string
+
+	FrontendFS embed.FS
 
 	Config Config
 

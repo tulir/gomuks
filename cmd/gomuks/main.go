@@ -30,6 +30,7 @@ import (
 
 	"go.mau.fi/gomuks/pkg/gomuks"
 	"go.mau.fi/gomuks/pkg/hicli"
+	"go.mau.fi/gomuks/web"
 )
 
 var (
@@ -77,6 +78,7 @@ func main() {
 	gmx.Commit = Commit
 	gmx.LinkifiedVersion = LinkifiedVersion
 	gmx.BuildTime = ParsedBuildTime
+	gmx.FrontendFS = web.Frontend
 	gmx.Run()
 }
 
