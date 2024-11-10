@@ -39,7 +39,6 @@ import (
 	"maunium.net/go/mautrix"
 
 	"go.mau.fi/gomuks/pkg/hicli"
-	"go.mau.fi/gomuks/web"
 )
 
 func (gmx *Gomuks) StartServer() {
@@ -62,7 +61,7 @@ func (gmx *Gomuks) StartServer() {
 		router.Handle("/debug/", http.DefaultServeMux)
 	}
 	router.Handle("/_gomuks/", apiHandler)
-	if frontend, err := fs.Sub(web.Frontend, "dist"); err != nil {
+	if frontend, err := fs.Sub(gmx.FrontendFS, "dist"); err != nil {
 		gmx.Log.Warn().Msg("Frontend not found")
 	} else {
 		router.Handle("/", gmx.FrontendCacheMiddleware(http.FileServerFS(frontend)))
