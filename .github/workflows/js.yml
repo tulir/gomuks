@@ -8,7 +8,7 @@ jobs:
     defaults:
       run:
         working-directory: ./web
-    name: Lint
+    name: Lint JS
 
     steps:
       - uses: actions/checkout@v4
