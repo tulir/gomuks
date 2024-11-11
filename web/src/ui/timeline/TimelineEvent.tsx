@@ -140,7 +140,7 @@ const TimelineEvent = ({ evt, prevEvt, disableMenu }: TimelineEventProps) => {
 	let dateSeparator = null
 	const prevEvtDate = prevEvt ? new Date(prevEvt.timestamp) : null
 	if (prevEvtDate && (
-		eventTS.getDay() !== prevEvtDate.getDay() ||
+		eventTS.getDate() !== prevEvtDate.getDate() ||
 		eventTS.getMonth() !== prevEvtDate.getMonth() ||
 		eventTS.getFullYear() !== prevEvtDate.getFullYear())) {
 		dateSeparator = <div className="date-separator">
