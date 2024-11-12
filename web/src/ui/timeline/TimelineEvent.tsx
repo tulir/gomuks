@@ -19,7 +19,7 @@ import { useRoomState } from "@/api/statestore"
 import { MemDBEvent, MemberEventContent, UnreadType } from "@/api/types"
 import { isEventID } from "@/util/validation.ts"
 import ClientContext from "../ClientContext.ts"
-import { LightboxContext } from "../modal/Lightbox.tsx"
+import MainScreenContext from "../MainScreenContext.ts"
 import { useRoomContext } from "../roomview/roomcontext.ts"
 import { ReplyIDBody } from "./ReplyBody.tsx"
 import { ContentErrorBoundary, HiddenEvent, getBodyType, isSmallEvent } from "./content"
@@ -71,6 +71,7 @@ const EventSendStatus = ({ evt }: { evt: MemDBEvent }) => {
 const TimelineEvent = ({ evt, prevEvt, disableMenu }: TimelineEventProps) => {
 	const roomCtx = useRoomContext()
 	const client = use(ClientContext)!
+	const mainScreen = use(MainScreenContext)
 	const [forceContextMenuOpen, setForceContextMenuOpen] = useState(false)
 	const memberEvt = useRoomState(roomCtx.store, "m.room.member", evt.sender)
 	const memberEvtContent = memberEvt?.content as MemberEventContent | undefined
@@ -104,12 +105,17 @@ const TimelineEvent = ({ evt, prevEvt, disableMenu }: TimelineEventProps) => {
 		{!disableMenu && <div className={`context-menu-container ${forceContextMenuOpen ? "force-open" : ""}`}>
 			<EventMenu evt={evt} setForceOpen={setForceContextMenuOpen}/>
 		</div>}
-		{renderAvatar && <div className="sender-avatar" title={evt.sender}>
+		{renderAvatar && <div
+			className="sender-avatar"
+			title={evt.sender}
+			data-target-panel="user"
+			data-target-user={evt.sender}
+			onClick={mainScreen.clickRightPanelOpener}
+		>
 			<img
 				className={`${smallAvatar ? "small" : ""} avatar`}
 				loading="lazy"
 				src={getAvatarURL(evt.sender, memberEvtContent)}
-				onClick={use(LightboxContext)!}
 				alt=""
 			/>
 		</div>}

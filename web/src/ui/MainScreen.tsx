@@ -76,6 +76,8 @@ class ContextFields implements MainScreenContextFields {
 		const type = evt.currentTarget.getAttribute("data-target-panel")
 		if (type === "pinned-messages" || type === "members") {
 			this.setRightPanel({ type })
+		} else if (type === "user") {
+			this.setRightPanel({ type, userID: evt.currentTarget.getAttribute("data-target-user")! })
 		} else {
 			throw new Error(`Invalid right panel type ${type}`)
 		}
