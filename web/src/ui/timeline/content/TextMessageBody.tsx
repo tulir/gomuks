@@ -27,18 +27,19 @@ function isAnchorElement(elem: EventTarget): elem is HTMLAnchorElement {
 function onClickMatrixURI(href: string) {
 	const url = new URL(href)
 	const pathParts = url.pathname.split("/")
+	const decodedPart = decodeURIComponent(pathParts[1])
 	switch (pathParts[0]) {
 	case "u":
 		return window.mainScreenContext.setRightPanel({
 			type: "user",
-			userID: pathParts[1],
+			userID: `@${decodedPart}`,
 		})
 	case "roomid":
-		return window.mainScreenContext.setActiveRoom(pathParts[1])
+		return window.mainScreenContext.setActiveRoom(`!${decodedPart}`)
 	case "r":
-		return window.client.rpc.resolveAlias(`#${pathParts[1]}`).then(
+		return window.client.rpc.resolveAlias(`#${decodedPart}`).then(
 			res => window.mainScreenContext.setActiveRoom(res.room_id),
-			err => window.alert(`Failed to resolve room alias #${pathParts[1]}: ${err}`),
+			err => window.alert(`Failed to resolve room alias #${decodedPart}: ${err}`),
 		)
 	}
 }
