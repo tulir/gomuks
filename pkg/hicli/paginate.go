@@ -10,6 +10,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 
 	"github.com/rs/zerolog"
 	"maunium.net/go/mautrix"
@@ -83,6 +84,30 @@ func (h *HiClient) processGetRoomState(ctx context.Context, roomID id.RoomID, fe
 	if evts == nil {
 		return nil
 	}
+	dbEvts := make([]*database.Event, len(evts))
+	currentStateEntries := make([]*database.CurrentStateEntry, len(evts))
+	mediaReferenceEntries := make([]*database.MediaReference, len(evts))
+	mediaCacheEntries := make([]*database.PlainMedia, 0, len(evts))
+	for i, evt := range evts {
+		dbEvts[i] = database.MautrixToEvent(evt)
+		currentStateEntries[i] = &database.CurrentStateEntry{
+			EventType: evt.Type,
+			StateKey:  *evt.StateKey,
+		}
+		var mediaURL string
+		if evt.Type == event.StateMember {
+			currentStateEntries[i].Membership = event.Membership(evt.Content.Raw["membership"].(string))
+			mediaURL, _ = evt.Content.Raw["avatar_url"].(string)
+		} else if evt.Type == event.StateRoomAvatar {
+			mediaURL, _ = evt.Content.Raw["url"].(string)
+		}
+		if mxc := id.ContentURIString(mediaURL).ParseOrIgnore(); mxc.IsValid() {
+			mediaCacheEntries = append(mediaCacheEntries, (*database.PlainMedia)(&mxc))
+			mediaReferenceEntries[i] = &database.MediaReference{
+				MediaMXC: mxc,
+			}
+		}
+	}
 	return h.DB.DoTxn(ctx, nil, func(ctx context.Context) error {
 		room, err := h.DB.Room.Get(ctx, roomID)
 		if err != nil {
@@ -92,26 +117,33 @@ func (h *HiClient) processGetRoomState(ctx context.Context, roomID id.RoomID, fe
 			ID:            room.ID,
 			HasMemberList: true,
 		}
-		entries := make([]*database.CurrentStateEntry, len(evts))
-		for i, evt := range evts {
-			dbEvt, err := h.processEvent(ctx, evt, room.LazyLoadSummary, nil, false)
-			if err != nil {
-				return fmt.Errorf("failed to process event %s: %w", evt.ID, err)
+		err = h.DB.Event.MassUpsertState(ctx, dbEvts)
+		if err != nil {
+			return fmt.Errorf("failed to save events: %w", err)
+		}
+		for i := range currentStateEntries {
+			currentStateEntries[i].EventRowID = dbEvts[i].RowID
+			if mediaReferenceEntries[i] != nil {
+				mediaReferenceEntries[i].EventRowID = dbEvts[i].RowID
 			}
-			entries[i] = &database.CurrentStateEntry{
-				EventType:  evt.Type,
-				StateKey:   *evt.StateKey,
-				EventRowID: dbEvt.RowID,
-			}
-			if evt.Type == event.StateMember {
-				entries[i].Membership = event.Membership(evt.Content.Raw["membership"].(string))
-			} else {
-				processImportantEvent(ctx, evt, room, updatedRoom)
+			if evts[i].Type != event.StateMember {
+				processImportantEvent(ctx, evts[i], room, updatedRoom)
 			}
 		}
-		err = h.DB.CurrentState.AddMany(ctx, room.ID, refetch, entries)
+		err = h.DB.Media.AddMany(ctx, mediaCacheEntries)
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to save media cache entries: %w", err)
+		}
+		mediaReferenceEntries = slices.DeleteFunc(mediaReferenceEntries, func(reference *database.MediaReference) bool {
+			return reference == nil
+		})
+		err = h.DB.Media.AddManyReferences(ctx, mediaReferenceEntries)
+		if err != nil {
+			return fmt.Errorf("failed to save media reference entries: %w", err)
+		}
+		err = h.DB.CurrentState.AddMany(ctx, room.ID, refetch, currentStateEntries)
+		if err != nil {
+			return fmt.Errorf("failed to save current state entries: %w", err)
 		}
 		roomChanged := updatedRoom.CheckChangesAndCopyInto(room)
 		if roomChanged {

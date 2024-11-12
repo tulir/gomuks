@@ -51,6 +51,14 @@ const (
 	`
 )
 
+var mediaReferenceMassInserter = dbutil.NewMassInsertBuilder[*MediaReference, [0]any](
+	addMediaReferenceQuery, "($%d, $%d)",
+)
+
+var mediaMassInserter = dbutil.NewMassInsertBuilder[*PlainMedia, [0]any](
+	"INSERT INTO media (mxc) VALUES ($1) ON CONFLICT (mxc) DO NOTHING", "($%d)",
+)
+
 type MediaQuery struct {
 	*dbutil.QueryHelper[*Media]
 }
@@ -61,6 +69,28 @@ func (mq *MediaQuery) Add(ctx context.Context, cm *Media) error {
 
 func (mq *MediaQuery) AddReference(ctx context.Context, evtRowID EventRowID, mxc id.ContentURI) error {
 	return mq.Exec(ctx, addMediaReferenceQuery, evtRowID, &mxc)
+}
+
+func (mq *MediaQuery) AddMany(ctx context.Context, medias []*PlainMedia) error {
+	for chunk := range slices.Chunk(medias, 8000) {
+		query, params := mediaMassInserter.Build([0]any{}, chunk)
+		err := mq.Exec(ctx, query, params...)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (mq *MediaQuery) AddManyReferences(ctx context.Context, refs []*MediaReference) error {
+	for chunk := range slices.Chunk(refs, 4000) {
+		query, params := mediaReferenceMassInserter.Build([0]any{}, chunk)
+		err := mq.Exec(ctx, query, params...)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (mq *MediaQuery) Put(ctx context.Context, cm *Media) error {
@@ -163,4 +193,19 @@ func (m *Media) ContentDisposition() string {
 		return "inline"
 	}
 	return "attachment"
+}
+
+type MediaReference struct {
+	EventRowID EventRowID
+	MediaMXC   id.ContentURI
+}
+
+func (mr *MediaReference) GetMassInsertValues() [2]any {
+	return [2]any{mr.EventRowID, &mr.MediaMXC}
+}
+
+type PlainMedia id.ContentURI
+
+func (pm *PlainMedia) GetMassInsertValues() [1]any {
+	return [1]any{(*id.ContentURI)(pm)}
 }

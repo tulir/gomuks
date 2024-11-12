@@ -11,6 +11,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"slices"
 	"strings"
 	"time"
 
@@ -125,6 +126,39 @@ func (eq *EventQuery) Insert(ctx context.Context, evt *Event) (rowID EventRowID,
 		evt.RowID = rowID
 	}
 	return
+}
+
+var stateEventMassInserter = dbutil.NewMassInsertBuilder[*Event, [1]any](
+	strings.ReplaceAll(upsertEventQuery, "($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21)", "($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)"),
+	"($1, $%d, $%d, $%d, $%d, $%d, $%d, NULL, NULL, $%d, NULL, $%d, $%d, NULL, NULL, NULL, NULL, NULL, '{}', 0, 0)",
+)
+
+var massInsertConverter = dbutil.ConvertRowFn[EventRowID](dbutil.ScanSingleColumn[EventRowID])
+
+func (e *Event) GetMassInsertValues() [9]any {
+	return [9]any{
+		e.ID, e.Sender, e.Type, e.StateKey, e.Timestamp.UnixMilli(),
+		unsafeJSONString(e.Content), unsafeJSONString(e.Unsigned),
+		e.TransactionID, e.RedactedBy,
+	}
+}
+
+func (eq *EventQuery) MassUpsertState(ctx context.Context, evts []*Event) error {
+	for chunk := range slices.Chunk(evts, 500) {
+		query, params := stateEventMassInserter.Build([1]any{chunk[0].RoomID}, chunk)
+		i := 0
+		err := massInsertConverter.
+			NewRowIter(eq.GetDB().Query(ctx, query, params...)).
+			Iter(func(t EventRowID) (bool, error) {
+				chunk[i].RowID = t
+				i++
+				return true, nil
+			})
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (eq *EventQuery) UpdateID(ctx context.Context, rowID EventRowID, newID id.EventID) error {
@@ -339,6 +373,7 @@ func MautrixToEvent(evt *event.Event) *Event {
 		Content:         evt.Content.VeryRaw,
 		MegolmSessionID: getMegolmSessionID(evt),
 		TransactionID:   evt.Unsigned.TransactionID,
+		Reactions:       make(map[string]int),
 	}
 	if !strings.HasPrefix(dbEvt.TransactionID, "hicli-mautrix-go_") {
 		dbEvt.TransactionID = ""
