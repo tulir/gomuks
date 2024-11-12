@@ -17,7 +17,8 @@ import { JSX, use } from "react"
 import type { UserID } from "@/api/types"
 import MainScreenContext from "../MainScreenContext.ts"
 import PinnedMessages from "./PinnedMessages.tsx"
-import CloseButton from "@/icons/close.svg?react"
+import BackIcon from "@/icons/back.svg?react"
+import CloseIcon from "@/icons/close.svg?react"
 import "./RightPanel.css"
 
 export type RightPanelType = "pinned-messages" | "members" | "user"
@@ -56,10 +57,20 @@ function renderRightPanelContent(props: RightPanelProps): JSX.Element | null {
 }
 
 const RightPanel = (props: RightPanelProps) => {
+	let backButton: JSX.Element | null = null
+	if (props.type === "user") {
+		backButton = <button
+			data-target-panel="members"
+			onClick={use(MainScreenContext).clickRightPanelOpener}
+		><BackIcon/></button>
+	}
 	return <div className="right-panel">
 		<div className="right-panel-header">
-			<div className="panel-name">{getTitle(props.type)}</div>
-			<button onClick={use(MainScreenContext).closeRightPanel}><CloseButton/></button>
+			<div className="left-side">
+				{backButton}
+				<div className="panel-name">{getTitle(props.type)}</div>
+			</div>
+			<button onClick={use(MainScreenContext).closeRightPanel}><CloseIcon/></button>
 		</div>
 		<div className={`right-panel-content ${props.type}`}>
 			{renderRightPanelContent(props)}

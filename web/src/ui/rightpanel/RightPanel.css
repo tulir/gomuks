@@ -11,14 +11,20 @@ div.right-panel {
 		display: flex;
 		align-items: center;
 		vertical-align: center;
-		padding: 0 .25rem 0 .5rem;
+		padding: 0 .25rem;
 		justify-content: space-between;
 
-		> div.panel-name {
+		div.left-side {
+			display: flex;
+			align-items: center;
+		}
+
+		div.panel-name {
+			margin-left: .25rem;
 			font-weight: bold;
 		}
 
-		> button {
+		button {
 			height: 2.5rem;
 			width: 2.5rem;
 		}
