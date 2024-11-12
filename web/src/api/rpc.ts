@@ -172,8 +172,10 @@ export default abstract class RPCClient {
 		return this.request("get_specific_room_state", { keys })
 	}
 
-	getRoomState(room_id: RoomID, fetch_members = false, refetch = false): Promise<RawDBEvent[]> {
-		return this.request("get_room_state", { room_id, fetch_members, refetch })
+	getRoomState(
+		room_id: RoomID, include_members = false, fetch_members = false, refetch = false,
+	): Promise<RawDBEvent[]> {
+		return this.request("get_room_state", { room_id, include_members, fetch_members, refetch })
 	}
 
 	getEvent(room_id: RoomID, event_id: EventID): Promise<RawDBEvent> {

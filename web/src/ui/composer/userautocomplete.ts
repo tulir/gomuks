@@ -15,7 +15,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import { useMemo, useRef } from "react"
 import { RoomStateStore } from "@/api/statestore"
-import type { ContentURI, MemberEventContent, UserID } from "@/api/types"
+import type { ContentURI, UserID } from "@/api/types"
 import toSearchableString from "@/util/searchablestring.ts"
 
 export interface AutocompleteUser {
@@ -34,35 +34,18 @@ export function filterAndSort(users: AutocompleteUser[], query: string): Autocom
 		.map(({ user }) => user)
 }
 
-export function getAutocompleteMemberList(room: RoomStateStore) {
-	const states = room.state.get("m.room.member")
-	if (!states) {
-		return []
-	}
-	const output = []
-	for (const [stateKey, rowID] of states) {
-		const memberEvt = room.eventsByRowID.get(rowID)
-		if (!memberEvt) {
-			continue
-		}
-		const content = memberEvt.content as MemberEventContent
-		output.push({
-			userID: stateKey,
-			displayName: content.displayname ?? stateKey,
-			avatarURL: content.avatar_url,
-			searchString: toSearchableString(`${content.displayname ?? ""}${stateKey.slice(1)}`),
-		})
-	}
-	return output
-}
-
 interface filteredUserCache {
 	query: string
 	result: AutocompleteUser[]
 }
 
 export function useFilteredMembers(room: RoomStateStore, query: string): AutocompleteUser[] {
-	const allMembers = useMemo(() => getAutocompleteMemberList(room), [room])
+	const allMembers = useMemo(
+		() => room.getAutocompleteMembers(),
+		// fullMembersLoaded needs to be monitored for when the member list loads
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+		[room, room.fullMembersLoaded],
+	)
 	const prev = useRef<filteredUserCache>({ query: "", result: allMembers })
 	if (!query) {
 		prev.current.query = ""
@@ -72,6 +55,9 @@ export function useFilteredMembers(room: RoomStateStore, query: string): Autocom
 			query.startsWith(prev.current.query) ? prev.current.result : allMembers,
 			query,
 		)
+		if (prev.current.result.length > 100) {
+			prev.current.result = prev.current.result.slice(0, 100)
+		}
 		prev.current.query = query
 	}
 	return prev.current.result

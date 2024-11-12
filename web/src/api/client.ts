@@ -31,6 +31,8 @@ import type {
 export default class Client {
 	readonly state = new CachedEventDispatcher<ClientState>()
 	readonly store = new StateStore()
+	#stateRequests: RoomStateGUID[] = []
+	#stateRequestQueued = false
 
 	constructor(readonly rpc: RPCClient) {
 		this.rpc.event.listen(this.#handleEvent)
@@ -89,6 +91,28 @@ export default class Client {
 		} else if (ev.command === "image_auth_token") {
 			this.store.imageAuthToken = ev.data
 		}
+	}
+
+	requestMemberEvent(room: RoomStateStore | RoomID | undefined, userID: UserID) {
+		if (typeof room === "string") {
+			room = this.store.rooms.get(room)
+		}
+		if (!room || room.state.get("m.room.member")?.has(userID) || room.requestedMembers.has(userID)) {
+			return
+		}
+		room.requestedMembers.add(userID)
+		this.#stateRequests.push({ room_id: room.roomID, type: "m.room.member", state_key: userID })
+		if (!this.#stateRequestQueued) {
+			this.#stateRequestQueued = true
+			window.queueMicrotask(this.doStateRequests)
+		}
+	}
+
+	doStateRequests = () => {
+		const reqs = this.#stateRequests
+		this.#stateRequestQueued = false
+		this.#stateRequests = []
+		this.loadSpecificRoomState(reqs).catch(err => console.error("Failed to load room state", reqs, err))
 	}
 
 	requestEvent(room: RoomStateStore | RoomID | undefined, eventID: EventID) {
@@ -219,13 +243,22 @@ export default class Client {
 		}
 	}
 
-	async loadRoomState(roomID: RoomID, refetch = false): Promise<void> {
+	async loadRoomState(
+		roomID: RoomID, { omitMembers, refetch } = { omitMembers: true, refetch: false },
+	): Promise<void> {
 		const room = this.store.rooms.get(roomID)
 		if (!room) {
 			throw new Error("Room not found")
 		}
-		const state = await this.rpc.getRoomState(roomID, !room.meta.current.has_member_list, refetch)
-		room.applyFullState(state)
+		if (!omitMembers) {
+			room.membersRequested = true
+			console.log("Requesting full member list for", roomID)
+		}
+		const state = await this.rpc.getRoomState(roomID, !omitMembers, !room.meta.current.has_member_list, refetch)
+		room.applyFullState(state, omitMembers)
+		if (!omitMembers && !room.meta.current.has_member_list) {
+			room.meta.current.has_member_list = true
+		}
 	}
 
 	async loadMoreHistory(roomID: RoomID): Promise<void> {

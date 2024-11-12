@@ -74,6 +74,9 @@ const TimelineEvent = ({ evt, prevEvt, disableMenu }: TimelineEventProps) => {
 	const mainScreen = use(MainScreenContext)
 	const [forceContextMenuOpen, setForceContextMenuOpen] = useState(false)
 	const memberEvt = useRoomState(roomCtx.store, "m.room.member", evt.sender)
+	if (!memberEvt) {
+		client.requestMemberEvent(roomCtx.store, evt.sender)
+	}
 	const memberEvtContent = memberEvt?.content as MemberEventContent | undefined
 	const BodyType = getBodyType(evt)
 	const eventTS = new Date(evt.timestamp)

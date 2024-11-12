@@ -18,6 +18,7 @@ import { getAvatarURL } from "@/api/media.ts"
 import { useRoomMembers } from "@/api/statestore"
 import { MemDBEvent, MemberEventContent } from "@/api/types"
 import { getDisplayname } from "@/util/validation.ts"
+import ClientContext from "../ClientContext.ts"
 import MainScreenContext from "../MainScreenContext.ts"
 import { RoomContext } from "../roomview/roomcontext.ts"
 
@@ -44,6 +45,10 @@ const MemberList = () => {
 	const [limit, setLimit] = useState(50)
 	const increaseLimit = useCallback(() => setLimit(limit => limit + 50), [])
 	const roomCtx = use(RoomContext)
+	if (roomCtx?.store && !roomCtx?.store.membersRequested && !roomCtx?.store.fullMembersLoaded) {
+		roomCtx.store.membersRequested = true
+		use(ClientContext)?.loadRoomState(roomCtx.store.roomID, { omitMembers: false, refetch: false })
+	}
 	const memberEvents = useRoomMembers(roomCtx?.store)
 	if (!roomCtx) {
 		return null

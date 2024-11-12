@@ -15,9 +15,11 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import { CustomEmojiPack, parseCustomEmojiPack } from "@/util/emoji"
 import { NonNullCachedEventDispatcher } from "@/util/eventdispatcher.ts"
+import toSearchableString from "@/util/searchablestring.ts"
 import Subscribable, { MultiSubscribable } from "@/util/subscribable.ts"
 import { getDisplayname } from "@/util/validation.ts"
 import {
+	ContentURI,
 	DBRoom,
 	EncryptedEventContent,
 	EventID,
@@ -69,6 +71,13 @@ function visibleMetaIsEqual(meta1: DBRoom, meta2: DBRoom): boolean {
 		meta1.has_member_list === meta2.has_member_list
 }
 
+export interface AutocompleteMemberEntry {
+	userID: UserID
+	displayName: string
+	avatarURL?: ContentURI
+	searchString: string
+}
+
 export class RoomStateStore {
 	readonly roomID: RoomID
 	readonly meta: NonNullCachedEventDispatcher<DBRoom>
@@ -76,15 +85,19 @@ export class RoomStateStore {
 	timelineCache: (MemDBEvent | null)[] = []
 	state: Map<EventType, Map<string, EventRowID>> = new Map()
 	stateLoaded = false
+	fullMembersLoaded = false
 	readonly eventsByRowID: Map<EventRowID, MemDBEvent> = new Map()
 	readonly eventsByID: Map<EventID, MemDBEvent> = new Map()
 	readonly timelineSub = new Subscribable()
 	readonly stateSubs = new MultiSubscribable()
 	readonly eventSubs = new MultiSubscribable()
 	readonly requestedEvents: Set<EventID> = new Set()
+	readonly requestedMembers: Set<UserID> = new Set()
 	readonly openNotifications: Map<EventRowID, Notification> = new Map()
 	readonly emojiPacks: Map<string, CustomEmojiPack | null> = new Map()
 	#membersCache: MemDBEvent[] | null = null
+	#autocompleteMembersCache: AutocompleteMemberEntry[] | null = null
+	membersRequested: boolean = false
 	#allPacksCache: Record<string, CustomEmojiPack> | null = null
 	readonly pendingEvents: EventRowID[] = []
 	paginating = false
@@ -155,34 +168,53 @@ export class RoomStateStore {
 		return this.#allPacksCache
 	}
 
+	#fillMembersCache() {
+		const memberEvtIDs = this.state.get("m.room.member")
+		if (!memberEvtIDs) {
+			return
+		}
+		const powerLevels: PowerLevelEventContent = this.getStateEvent("m.room.power_levels", "")?.content ?? {}
+		const membersCache = memberEvtIDs.values()
+			.map(rowID => this.eventsByRowID.get(rowID))
+			.filter((evt): evt is MemDBEvent => !!evt && evt.content.membership === "join")
+			.toArray()
+		membersCache.sort((a, b) => {
+			const aUserID = a.state_key as UserID
+			const bUserID = b.state_key as UserID
+			const aPower = powerLevels.users?.[aUserID] ?? powerLevels.users_default ?? 0
+			const bPower = powerLevels.users?.[bUserID] ?? powerLevels.users_default ?? 0
+			if (aPower !== bPower) {
+				return bPower - aPower
+			}
+			const aName = getDisplayname(aUserID, a.content as MemberEventContent).toLowerCase()
+			const bName = getDisplayname(bUserID, b.content as MemberEventContent).toLowerCase()
+			if (aName === bName) {
+				return aUserID.localeCompare(bUserID)
+			}
+			return aName.localeCompare(bName)
+		})
+		this.#autocompleteMembersCache = membersCache.map(evt => ({
+			userID: evt.state_key!,
+			displayName: getDisplayname(evt.state_key!, evt.content as MemberEventContent),
+			avatarURL: evt.content?.avatar_url,
+			searchString: toSearchableString(`${evt.content?.displayname ?? ""}${evt.state_key!.slice(1)}`),
+		}))
+		this.#membersCache = membersCache
+		return membersCache
+	}
+
 	getMembers = (): MemDBEvent[] => {
 		if (this.#membersCache === null) {
-			const memberEvtIDs = this.state.get("m.room.member")
-			if (!memberEvtIDs) {
-				return []
-			}
-			const powerLevels: PowerLevelEventContent = this.getStateEvent("m.room.power_levels", "")?.content ?? {}
-			this.#membersCache = memberEvtIDs.values()
-				.map(rowID => this.eventsByRowID.get(rowID))
-				.filter(evt => !!evt)
-				.toArray()
-			this.#membersCache.sort((a, b) => {
-				const aUserID = a.state_key as UserID
-				const bUserID = b.state_key as UserID
-				const aPower = powerLevels.users?.[aUserID] ?? powerLevels.users_default ?? 0
-				const bPower = powerLevels.users?.[bUserID] ?? powerLevels.users_default ?? 0
-				if (aPower !== bPower) {
-					return bPower - aPower
-				}
-				const aName = getDisplayname(aUserID, a.content as MemberEventContent).toLowerCase()
-				const bName = getDisplayname(bUserID, b.content as MemberEventContent).toLowerCase()
-				if (aName === bName) {
-					return aUserID.localeCompare(bUserID)
-				}
-				return aName.localeCompare(bName)
-			})
+			this.#fillMembersCache()
 		}
-		return this.#membersCache
+		return this.#membersCache ?? []
+	}
+
+	getAutocompleteMembers = (): AutocompleteMemberEntry[] => {
+		if (this.#autocompleteMembersCache === null) {
+			this.#fillMembersCache()
+		}
+		return this.#autocompleteMembersCache ?? []
 	}
 
 	getPinnedEvents(): EventID[] {
@@ -264,8 +296,13 @@ export class RoomStateStore {
 			this.emojiPacks.delete(key)
 			this.#allPacksCache = null
 			this.parent.invalidateEmojiPacksCache()
-		} else if (evtType === "m.room.member" || evtType === "m.room.power_levels") {
+		} else if (evtType === "m.room.member") {
 			this.#membersCache = null
+			this.#autocompleteMembersCache = null
+			this.requestedMembers.delete(key as UserID)
+		} else if (evtType === "m.room.power_levels") {
+			this.#membersCache = null
+			this.#autocompleteMembersCache = null
 		}
 		this.stateSubs.notify(this.stateSubKey(evtType, key))
 	}
@@ -321,7 +358,7 @@ export class RoomStateStore {
 		this.stateSubs.notify(evt.type)
 	}
 
-	applyFullState(state: RawDBEvent[]) {
+	applyFullState(state: RawDBEvent[], omitMembers: boolean) {
 		const newStateMap: Map<EventType, Map<string, EventRowID>> = new Map()
 		for (const evt of state) {
 			if (evt.state_key === undefined) {
@@ -337,9 +374,19 @@ export class RoomStateStore {
 		}
 		this.emojiPacks.clear()
 		this.#allPacksCache = null
+		if (omitMembers) {
+			newStateMap.set("m.room.member", this.state.get("m.room.member") ?? new Map())
+		} else {
+			this.#membersCache = null
+			this.#autocompleteMembersCache = null
+		}
 		this.state = newStateMap
 		this.stateLoaded = true
+		this.fullMembersLoaded = this.fullMembersLoaded || !omitMembers
 		for (const [evtType, stateMap] of newStateMap) {
+			if (omitMembers && evtType === "m.room.member") {
+				continue
+			}
 			for (const [key] of stateMap) {
 				this.stateSubs.notify(this.stateSubKey(evtType, key))
 			}

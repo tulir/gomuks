@@ -87,7 +87,10 @@ function useAutocompleter<T>({
 		}
 	}, [onSelect, setAutocomplete, params.selected, params.close])
 	const selected = params.selected !== undefined ? positiveMod(params.selected, items.length) : -1
-	return <div className={`autocompletions ${items.length === 0 ? "empty" : "has-items"}`} id="composer-autocompletions">
+	return <div
+		className={`autocompletions ${items.length === 0 ? "empty" : "has-items"}`}
+		id="composer-autocompletions"
+	>
 		{items.map((item, i) => <div
 			onClick={onClick}
 			data-index={i}

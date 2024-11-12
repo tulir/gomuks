@@ -13,6 +13,8 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
+import Client from "@/api/client.ts"
+import { RoomStateStore } from "@/api/statestore"
 import {
 	AutocompleteQuery,
 	AutocompleterProps,
@@ -36,10 +38,23 @@ export function charToAutocompleteType(newChar?: string): AutocompleteQuery["typ
 
 export const emojiQueryRegex = /[a-zA-Z0-9_+-]*$/
 
-export function getAutocompleter(params: AutocompleteQuery | null): React.ElementType<AutocompleterProps> | null {
+export function getAutocompleter(
+	params: AutocompleteQuery | null, client: Client, room: RoomStateStore,
+): React.ElementType<AutocompleterProps> | null {
 	switch (params?.type) {
-	case "user":
+	case "user": {
+		const memberCount = room.state.get("m.room.member")?.size ?? 0
+		if (memberCount > 500 && params.query.length < 2) {
+			return null
+		} else if (memberCount > 5000 && params.query.length < 3) {
+			return null
+		}
+		if (!room.membersRequested) {
+			room.membersRequested = true
+			client.loadRoomState(room.roomID, { omitMembers: false, refetch: false })
+		}
 		return UserAutocompleter
+	}
 	case "emoji":
 		if (params.query.length < 3) {
 			return null

@@ -65,64 +65,100 @@ func (h *HiClient) GetEvent(ctx context.Context, roomID id.RoomID, eventID id.Ev
 	}
 }
 
-func (h *HiClient) GetRoomState(ctx context.Context, roomID id.RoomID, fetchMembers, refetch bool) ([]*database.Event, error) {
+func (h *HiClient) processGetRoomState(ctx context.Context, roomID id.RoomID, fetchMembers, refetch, dispatchEvt bool) error {
 	var evts []*event.Event
 	if refetch {
 		resp, err := h.Client.StateAsArray(ctx, roomID)
 		if err != nil {
-			return nil, fmt.Errorf("failed to refetch state: %w", err)
+			return fmt.Errorf("failed to refetch state: %w", err)
 		}
 		evts = resp
 	} else if fetchMembers {
 		resp, err := h.Client.Members(ctx, roomID)
 		if err != nil {
-			return nil, fmt.Errorf("failed to fetch members: %w", err)
+			return fmt.Errorf("failed to fetch members: %w", err)
 		}
 		evts = resp.Chunk
 	}
-	if evts != nil {
-		err := h.DB.DoTxn(ctx, nil, func(ctx context.Context) error {
-			room, err := h.DB.Room.Get(ctx, roomID)
-			if err != nil {
-				return fmt.Errorf("failed to get room from database: %w", err)
-			}
-			updatedRoom := &database.Room{
-				ID:            room.ID,
-				HasMemberList: true,
-			}
-			entries := make([]*database.CurrentStateEntry, len(evts))
-			for i, evt := range evts {
-				dbEvt, err := h.processEvent(ctx, evt, room.LazyLoadSummary, nil, false)
-				if err != nil {
-					return fmt.Errorf("failed to process event %s: %w", evt.ID, err)
-				}
-				entries[i] = &database.CurrentStateEntry{
-					EventType:  evt.Type,
-					StateKey:   *evt.StateKey,
-					EventRowID: dbEvt.RowID,
-				}
-				if evt.Type == event.StateMember {
-					entries[i].Membership = event.Membership(evt.Content.Raw["membership"].(string))
-				} else {
-					processImportantEvent(ctx, evt, room, updatedRoom)
-				}
-			}
-			err = h.DB.CurrentState.AddMany(ctx, room.ID, refetch, entries)
-			if err != nil {
-				return err
-			}
-			roomChanged := updatedRoom.CheckChangesAndCopyInto(room)
-			if roomChanged {
-				err = h.DB.Room.Upsert(ctx, updatedRoom)
-				if err != nil {
-					return fmt.Errorf("failed to save room data: %w", err)
-				}
-			}
-			return nil
-		})
+	if evts == nil {
+		return nil
+	}
+	return h.DB.DoTxn(ctx, nil, func(ctx context.Context) error {
+		room, err := h.DB.Room.Get(ctx, roomID)
 		if err != nil {
-			return nil, err
+			return fmt.Errorf("failed to get room from database: %w", err)
 		}
+		updatedRoom := &database.Room{
+			ID:            room.ID,
+			HasMemberList: true,
+		}
+		entries := make([]*database.CurrentStateEntry, len(evts))
+		for i, evt := range evts {
+			dbEvt, err := h.processEvent(ctx, evt, room.LazyLoadSummary, nil, false)
+			if err != nil {
+				return fmt.Errorf("failed to process event %s: %w", evt.ID, err)
+			}
+			entries[i] = &database.CurrentStateEntry{
+				EventType:  evt.Type,
+				StateKey:   *evt.StateKey,
+				EventRowID: dbEvt.RowID,
+			}
+			if evt.Type == event.StateMember {
+				entries[i].Membership = event.Membership(evt.Content.Raw["membership"].(string))
+			} else {
+				processImportantEvent(ctx, evt, room, updatedRoom)
+			}
+		}
+		err = h.DB.CurrentState.AddMany(ctx, room.ID, refetch, entries)
+		if err != nil {
+			return err
+		}
+		roomChanged := updatedRoom.CheckChangesAndCopyInto(room)
+		if roomChanged {
+			err = h.DB.Room.Upsert(ctx, updatedRoom)
+			if err != nil {
+				return fmt.Errorf("failed to save room data: %w", err)
+			}
+			if dispatchEvt {
+				h.EventHandler(&SyncComplete{
+					Rooms: map[id.RoomID]*SyncRoom{
+						roomID: {
+							Meta:          room,
+							Timeline:      make([]database.TimelineRowTuple, 0),
+							State:         make(map[event.Type]map[string]database.EventRowID),
+							AccountData:   make(map[event.Type]*database.AccountData),
+							Events:        make([]*database.Event, 0),
+							Reset:         false,
+							Notifications: make([]SyncNotification, 0),
+						},
+					},
+					AccountData: make(map[event.Type]*database.AccountData),
+					LeftRooms:   make([]id.RoomID, 0),
+				})
+			}
+		}
+		return nil
+	})
+}
+
+func (h *HiClient) GetRoomState(ctx context.Context, roomID id.RoomID, includeMembers, fetchMembers, refetch bool) ([]*database.Event, error) {
+	if fetchMembers || refetch {
+		if !includeMembers {
+			go func(ctx context.Context) {
+				err := h.processGetRoomState(ctx, roomID, fetchMembers, refetch, true)
+				if err != nil {
+					zerolog.Ctx(ctx).Err(err).Msg("Failed to fetch room state in background")
+				}
+			}(context.WithoutCancel(ctx))
+		} else {
+			err := h.processGetRoomState(ctx, roomID, fetchMembers, refetch, false)
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
+	if !includeMembers {
+		return h.DB.CurrentState.GetAllExceptMembers(ctx, roomID)
 	}
 	return h.DB.CurrentState.GetAll(ctx, roomID)
 }

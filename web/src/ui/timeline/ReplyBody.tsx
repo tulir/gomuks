@@ -70,6 +70,9 @@ const onClickReply = (evt: React.MouseEvent) => {
 
 export const ReplyBody = ({ room, event, onClose, isThread, isEditing }: ReplyBodyProps) => {
 	const memberEvt = useRoomState(room, "m.room.member", event.sender)
+	if (!memberEvt) {
+		use(ClientContext)?.requestMemberEvent(room, event.sender)
+	}
 	const memberEvtContent = memberEvt?.content as MemberEventContent | undefined
 	const BodyType = getBodyType(event, true)
 	const classNames = ["reply-body"]

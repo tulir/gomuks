@@ -11,6 +11,7 @@ div.autocompletions {
 	background-color: var(--background-color);
 	padding: .5rem;
 	max-height: 20rem;
+	max-width: 30rem;
 	overflow: auto;
 
 	> .autocompletion-item {
@@ -20,6 +21,10 @@ div.autocompletions {
 		align-items: center;
 		gap: .25rem;
 		cursor: var(--clickable-cursor);
+		overflow: hidden;
+		height: 2rem;
+		contain-intrinsic-height: 2rem;
+		content-visibility: auto;
 
 		&.selected, &:hover {
 			background-color: var(--light-hover-color);

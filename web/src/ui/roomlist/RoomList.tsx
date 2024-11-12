@@ -62,7 +62,7 @@ const RoomList = ({ activeRoomID }: RoomListProps) => {
 			evt.stopPropagation()
 			evt.preventDefault()
 		}
-	}, [clearQuery])
+	}, [mainScreen, client.store, clearQuery])
 
 	return <div className="room-list-wrapper">
 		<div className="room-search-wrapper">

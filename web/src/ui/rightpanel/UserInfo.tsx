@@ -31,6 +31,9 @@ const UserInfo = ({ userID }: UserInfoProps) => {
 	const roomCtx = use(RoomContext)
 	const openLightbox = use(LightboxContext)!
 	const memberEvt = useRoomState(roomCtx?.store, "m.room.member", userID)
+	if (!memberEvt) {
+		use(ClientContext)?.requestMemberEvent(roomCtx?.store, userID)
+	}
 	const memberEvtContent = memberEvt?.content as MemberEventContent
 	if (!memberEvtContent) {
 		return <NonMemberInfo userID={userID}/>

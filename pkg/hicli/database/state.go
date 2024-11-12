@@ -37,9 +37,10 @@ const (
 		FROM current_state cs
 		JOIN event ON cs.event_rowid = event.rowid
 	`
-	getCurrentRoomStateQuery     = getCurrentRoomStateBaseQuery + `WHERE cs.room_id = $1`
-	getManyCurrentRoomStateQuery = getCurrentRoomStateBaseQuery + `WHERE (cs.room_id, cs.event_type, cs.state_key) IN (%s)`
-	getCurrentStateEventQuery    = getCurrentRoomStateBaseQuery + `WHERE cs.room_id = $1 AND cs.event_type = $2 AND cs.state_key = $3`
+	getCurrentRoomStateQuery               = getCurrentRoomStateBaseQuery + `WHERE cs.room_id = $1`
+	getCurrentRoomStateWithoutMembersQuery = getCurrentRoomStateBaseQuery + `WHERE cs.room_id = $1 AND type<>'m.room.member'`
+	getManyCurrentRoomStateQuery           = getCurrentRoomStateBaseQuery + `WHERE (cs.room_id, cs.event_type, cs.state_key) IN (%s)`
+	getCurrentStateEventQuery              = getCurrentRoomStateBaseQuery + `WHERE cs.room_id = $1 AND cs.event_type = $2 AND cs.state_key = $3`
 )
 
 var massInsertCurrentStateBuilder = dbutil.NewMassInsertBuilder[*CurrentStateEntry, [1]any](addCurrentStateQuery, "($1, $%d, $%d, $%d, $%d)")
@@ -112,4 +113,8 @@ func (csq *CurrentStateQuery) Get(ctx context.Context, roomID id.RoomID, eventTy
 
 func (csq *CurrentStateQuery) GetAll(ctx context.Context, roomID id.RoomID) ([]*Event, error) {
 	return csq.QueryMany(ctx, getCurrentRoomStateQuery, roomID)
+}
+
+func (csq *CurrentStateQuery) GetAllExceptMembers(ctx context.Context, roomID id.RoomID) ([]*Event, error) {
+	return csq.QueryMany(ctx, getCurrentRoomStateWithoutMembersQuery, roomID)
 }

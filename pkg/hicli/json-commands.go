@@ -91,7 +91,7 @@ func (h *HiClient) handleJSONCommand(ctx context.Context, req *JSONCommand) (any
 		})
 	case "get_room_state":
 		return unmarshalAndCall(req.Data, func(params *getRoomStateParams) ([]*database.Event, error) {
-			return h.GetRoomState(ctx, params.RoomID, params.FetchMembers, params.Refetch)
+			return h.GetRoomState(ctx, params.RoomID, params.IncludeMembers, params.FetchMembers, params.Refetch)
 		})
 	case "get_specific_room_state":
 		return unmarshalAndCall(req.Data, func(params *getSpecificRoomStateParams) ([]*database.Event, error) {
@@ -212,9 +212,10 @@ type getEventsByRowIDsParams struct {
 }
 
 type getRoomStateParams struct {
-	RoomID       id.RoomID `json:"room_id"`
-	Refetch      bool      `json:"refetch"`
-	FetchMembers bool      `json:"fetch_members"`
+	RoomID         id.RoomID `json:"room_id"`
+	Refetch        bool      `json:"refetch"`
+	FetchMembers   bool      `json:"fetch_members"`
+	IncludeMembers bool      `json:"include_members"`
 }
 
 type getSpecificRoomStateParams struct {

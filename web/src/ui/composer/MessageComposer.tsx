@@ -378,7 +378,7 @@ const MessageComposer = () => {
 			onClose: () => textInput.current?.focus(),
 		})
 	})
-	const Autocompleter = getAutocompleter(autocomplete)
+	const Autocompleter = getAutocompleter(autocomplete, client, room)
 	return <>
 		{Autocompleter && autocomplete && <div className="autocompletions-wrapper"><Autocompleter
 			params={autocomplete}
