@@ -224,7 +224,7 @@ export default class Client {
 		if (!room) {
 			throw new Error("Room not found")
 		}
-		const state = await this.rpc.getRoomState(roomID, room.meta.current.has_member_list, refetch)
+		const state = await this.rpc.getRoomState(roomID, !room.meta.current.has_member_list, refetch)
 		room.applyFullState(state)
 	}
 
