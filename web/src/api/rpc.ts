@@ -34,6 +34,7 @@ import type {
 	RoomStateGUID,
 	TimelineRowID,
 	UserID,
+	UserProfile,
 } from "./types"
 
 export interface ConnectionEvent {
@@ -157,6 +158,10 @@ export default abstract class RPCClient {
 
 	setTyping(room_id: RoomID, timeout: number): Promise<boolean> {
 		return this.request("set_typing", { room_id, timeout })
+	}
+
+	getProfile(user_id: UserID): Promise<UserProfile> {
+		return this.request("get_profile", { user_id })
 	}
 
 	ensureGroupSessionShared(room_id: RoomID): Promise<boolean> {

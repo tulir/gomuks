@@ -62,10 +62,14 @@ export interface EncryptedEventContent {
 	device_id?: DeviceID
 }
 
-export interface MemberEventContent {
-	membership: "join" | "leave" | "ban" | "invite" | "knock"
+export interface UserProfile {
 	displayname?: string
 	avatar_url?: ContentURI
+	[custom: string]: unknown
+}
+
+export interface MemberEventContent extends UserProfile {
+	membership: "join" | "leave" | "ban" | "invite" | "knock"
 	reason?: string
 }
 

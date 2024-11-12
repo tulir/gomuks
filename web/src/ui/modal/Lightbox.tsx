@@ -29,9 +29,9 @@ export interface LightboxParams {
 	alt: string
 }
 
-type openLightbox = (params: LightboxParams | React.MouseEvent<HTMLImageElement>) => void
+export type OpenLightboxType = (params: LightboxParams | React.MouseEvent<HTMLImageElement>) => void
 
-export const LightboxContext = createContext<openLightbox>(() =>
+export const LightboxContext = createContext<OpenLightboxType>(() =>
 	console.error("Tried to open lightbox without being inside context"))
 
 export const LightboxWrapper = ({ children }: { children: React.ReactNode }) => {

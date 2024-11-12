@@ -17,6 +17,7 @@ import { JSX, use } from "react"
 import type { UserID } from "@/api/types"
 import MainScreenContext from "../MainScreenContext.ts"
 import PinnedMessages from "./PinnedMessages.tsx"
+import UserInfo from "./UserInfo.tsx"
 import BackIcon from "@/icons/back.svg?react"
 import CloseIcon from "@/icons/close.svg?react"
 import "./RightPanel.css"
@@ -52,7 +53,7 @@ function renderRightPanelContent(props: RightPanelProps): JSX.Element | null {
 	case "members":
 		return <>Member list is not yet implemented</>
 	case "user":
-		return <>{props.userID}</>
+		return <UserInfo userID={props.userID} />
 	}
 }
 

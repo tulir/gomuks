@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import { parseMXC } from "@/util/validation.ts"
-import { MemberEventContent, UserID } from "./types"
+import { UserID, UserProfile } from "./types"
 
 export const getMediaURL = (mxc?: string, encrypted: boolean = false): string | undefined => {
 	const [server, mediaID] = parseMXC(mxc)
@@ -78,7 +78,7 @@ function getFallbackCharacter(from: unknown, idx: number): string {
 	return Array.from(from.slice(0, (idx + 1) * 2))[idx]?.toUpperCase().toWellFormed() ?? ""
 }
 
-export const getAvatarURL = (userID: UserID, content?: Partial<MemberEventContent>): string | undefined => {
+export const getAvatarURL = (userID: UserID, content?: UserProfile | null): string | undefined => {
 	const fallbackCharacter = getFallbackCharacter(content?.displayname, 0) || getFallbackCharacter(userID, 1)
 	const backgroundColor = getUserColor(userID)
 	const [server, mediaID] = parseMXC(content?.avatar_url)

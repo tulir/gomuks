@@ -26,8 +26,21 @@ import RoomView from "./roomview/RoomView.tsx"
 import { useResizeHandle } from "./util/useResizeHandle.tsx"
 import "./MainScreen.css"
 
+function objectIsEqual(a: RightPanelProps | null, b: RightPanelProps | null): boolean {
+	if (a === null || b === null) {
+		return a === null && b === null
+	}
+	for (const key of Object.keys(a)) {
+		// @ts-expect-error 3:<
+		if (a[key] !== b[key]) {
+			return false
+		}
+	}
+	return true
+}
+
 const rpReducer = (prevState: RightPanelProps | null, newState: RightPanelProps | null) => {
-	if (prevState?.type === newState?.type) {
+	if (objectIsEqual(prevState, newState)) {
 		return null
 	}
 	return newState

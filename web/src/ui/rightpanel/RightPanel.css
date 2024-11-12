@@ -50,3 +50,42 @@ div.right-panel-content.pinned-messages {
 		margin: auto;
 	}
 }
+
+div.right-panel-content.user {
+	display: flex;
+	flex-direction: column;
+	padding: 1rem;
+
+	div.avatar-container {
+		width: calc((var(--right-panel-width) - 4rem));
+		height: calc((var(--right-panel-width) - 4rem));
+		display: flex;
+		justify-content: center;
+		align-items: center;
+		padding: 1rem;
+
+		> img {
+			width: 100%;
+			height: 100%;
+		}
+	}
+
+	div.displayname {
+		font-size: 1.5rem;
+		font-weight: bold;
+		text-align: center;
+	}
+
+	div.userid {
+		text-align: center;
+		font-family: var(--monospace-font-stack);
+	}
+
+	div.userid, div.displayname {
+		/* Ensure names aren't too long */
+		display: -webkit-box;
+		-webkit-line-clamp: 4;
+		-webkit-box-orient: vertical;
+		word-break: break-word;
+	}
+}
