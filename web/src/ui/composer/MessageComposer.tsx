@@ -90,6 +90,10 @@ const MessageComposer = () => {
 	const textRows = useRef(1)
 	const typingSentAt = useRef(0)
 	const replyToEvt = useRoomEvent(room, state.replyTo)
+	roomCtx.insertText = useCallback((text: string) => {
+		textInput.current?.focus()
+		document.execCommand("insertText", false, text)
+	}, [])
 	roomCtx.setReplyTo = useCallback((evt: EventID | null) => {
 		setState({ replyTo: evt })
 		textInput.current?.focus()

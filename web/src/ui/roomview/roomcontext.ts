@@ -17,6 +17,7 @@ import { RefObject, createContext, createRef, use } from "react"
 import { RoomStateStore } from "@/api/statestore"
 import { EventID, EventRowID, MemDBEvent } from "@/api/types"
 import { NonNullCachedEventDispatcher } from "@/util/eventdispatcher.ts"
+import { escapeMarkdown } from "@/util/markdown.ts"
 
 const noop = (name: string) => () => {
 	console.warn(`${name} called before initialization`)
@@ -26,6 +27,7 @@ export class RoomContextData {
 	public timelineBottomRef: RefObject<HTMLDivElement | null> = createRef()
 	public setReplyTo: (eventID: EventID | null) => void = noop("setReplyTo")
 	public setEditing: (evt: MemDBEvent | null) => void = noop("setEditing")
+	public insertText: (text: string) => void = noop("insertText")
 	public isEditing = new NonNullCachedEventDispatcher<boolean>(false)
 	public ownMessages: EventRowID[] = []
 	public scrolledToBottom = true
@@ -36,6 +38,15 @@ export class RoomContextData {
 		if (this.scrolledToBottom) {
 			this.timelineBottomRef.current?.scrollIntoView()
 		}
+	}
+
+	appendMentionToComposer = (evt: React.MouseEvent<HTMLSpanElement>) => {
+		const targetUser = evt.currentTarget.getAttribute("data-target-user")
+		if (!targetUser) {
+			return
+		}
+		const targetUserName = evt.currentTarget.innerText
+		this.insertText(`[${escapeMarkdown(targetUserName)}](https://matrix.to/#/${encodeURIComponent(targetUser)}) `)
 	}
 }
 

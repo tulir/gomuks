@@ -52,6 +52,8 @@ div.timeline-event {
 
 		> span.event-sender {
 			font-weight: bold;
+			user-select: none;
+			cursor: var(--clickable-cursor);
 		}
 
 		> span.event-time, > span.event-edited {

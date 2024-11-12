@@ -120,7 +120,11 @@ const TimelineEvent = ({ evt, prevEvt, disableMenu }: TimelineEventProps) => {
 			/>
 		</div>}
 		{!eventTimeOnly ? <div className="event-sender-and-time">
-			<span className={`event-sender sender-color-${getUserColorIndex(evt.sender)}`}>
+			<span
+				className={`event-sender sender-color-${getUserColorIndex(evt.sender)}`}
+				data-target-user={evt.sender}
+				onClick={roomCtx.appendMentionToComposer}
+			>
 				{memberEvtContent?.displayname || evt.sender}
 			</span>
 			<span className="event-time" title={fullTime}>{shortTime}</span>
