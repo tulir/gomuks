@@ -18,6 +18,7 @@ import { PuffLoader } from "react-spinners"
 import { getAvatarURL } from "@/api/media.ts"
 import { useRoomState } from "@/api/statestore"
 import { MemberEventContent, UserID, UserProfile } from "@/api/types"
+import { getDisplayname } from "@/util/validation.ts"
 import ClientContext from "../ClientContext.ts"
 import { LightboxContext, OpenLightboxType } from "../modal/Lightbox.tsx"
 import { RoomContext } from "../roomview/roomcontext.ts"
@@ -56,31 +57,22 @@ interface RenderUserInfoParams {
 }
 
 function renderUserInfo({ userID, profile, error, openLightbox }: RenderUserInfoParams) {
-	const displayname = profile?.displayname ?? userID
-	if (profile === null) {
-		return <>
-			<div className="avatar-container">
-				<PuffLoader
-					color="var(--primary-color)"
-					size="100%"
-					className="avatar-loader"
-				/>
-			</div>
-			<div className="displayname">&nbsp;</div>
-			<div className="userid">{userID}</div>
-		</>
-	}
+	const displayname = getDisplayname(userID, profile)
 	return <>
 		<div className="avatar-container">
-			<img
+			{profile === null && error === null ? <PuffLoader
+				color="var(--primary-color)"
+				size="100%"
+				className="avatar-loader"
+			/> : <img
 				className="avatar"
 				src={getAvatarURL(userID, profile)}
 				onClick={openLightbox}
 				alt=""
-			/>
+			/>}
 		</div>
 		<div className="displayname" title={displayname}>{displayname}</div>
-		{displayname !== userID ? <div className="userid" title={userID}>{userID}</div> : null}
+		<div className="userid" title={userID}>{userID}</div>
 		{error && <div className="error">{`${error}`}</div>}
 	</>
 }

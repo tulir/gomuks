@@ -36,6 +36,13 @@ export function useRoomState(
 	)
 }
 
+export function useRoomMembers(room?: RoomStateStore): MemDBEvent[] {
+	return useSyncExternalStore(
+		room ? room.stateSubs.getSubscriber("m.room.member") : noopSubscribe,
+		room ? room.getMembers : () => [],
+	)
+}
+
 const noopSubscribe = () => () => {}
 const returnNull = () => null
 

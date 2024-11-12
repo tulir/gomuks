@@ -14,6 +14,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import { MessageEventContent } from "@/api/types"
+import { getDisplayname } from "@/util/validation.ts"
 import EventContentProps from "./props.ts"
 
 function isImageElement(elem: EventTarget): elem is HTMLImageElement {
@@ -81,7 +82,7 @@ const TextMessageBody = ({ event, sender }: EventContentProps) => {
 		classNames.push("notice-message")
 	} else if (content.msgtype === "m.emote") {
 		classNames.push("emote-message")
-		eventSenderName = sender?.content?.displayname || event.sender
+		eventSenderName = getDisplayname(event.sender, sender?.content)
 	}
 	if (event.local_content?.big_emoji) {
 		classNames.push("big-emoji-body")

@@ -18,6 +18,7 @@ import { getAvatarURL } from "@/api/media.ts"
 import type { RoomListEntry } from "@/api/statestore"
 import type { MemDBEvent, MemberEventContent } from "@/api/types"
 import useContentVisibility from "@/util/contentvisibility.ts"
+import { getDisplayname } from "@/util/validation.ts"
 import ClientContext from "../ClientContext.ts"
 import MainScreenContext from "../MainScreenContext.ts"
 
@@ -33,12 +34,9 @@ function usePreviewText(evt?: MemDBEvent, senderMemberEvt?: MemDBEvent | null): 
 	}
 	if ((evt.type === "m.room.message" || evt.type === "m.sticker") && typeof evt.content.body === "string") {
 		const client = use(ClientContext)!
-		let displayname = (senderMemberEvt?.content as MemberEventContent)?.displayname
-		if (evt.sender === client.userID) {
-			displayname = "You"
-		} else if (!displayname) {
-			displayname = evt.sender.slice(1).split(":")[0]
-		}
+		const displayname = evt.sender === client.userID
+			? "You"
+			: getDisplayname(evt.sender, senderMemberEvt?.content as MemberEventContent)
 		let previewText = evt.content.body
 		if (evt.content.formatted_body?.includes?.("data-mx-spoiler")) {
 			previewText = "<message contains spoilers>"

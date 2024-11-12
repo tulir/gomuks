@@ -89,3 +89,36 @@ div.right-panel-content.user {
 		word-break: break-word;
 	}
 }
+
+div.right-panel-content.members {
+	display: flex;
+	flex-direction: column;
+
+	> div.member {
+		display: flex;
+		align-items: center;
+		gap: .5rem;
+		cursor: var(--clickable-cursor);
+
+		content-visibility: auto;
+		contain-intrinsic-height: 3rem;
+		height: 3rem;
+		padding: .25rem;
+
+		> span.displayname {
+			overflow: hidden;
+			text-wrap: nowrap;
+			text-overflow: ellipsis;
+			user-select: none;
+		}
+
+		&:hover, &:focus {
+			background-color: var(--light-hover-color);
+		}
+	}
+
+	> button {
+		border-radius: 0;
+		padding: .5rem;
+	}
+}

@@ -13,7 +13,7 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import { ContentURI, EventID, RoomAlias, RoomID, UserID } from "@/api/types"
+import { ContentURI, EventID, RoomAlias, RoomID, UserID, UserProfile } from "@/api/types"
 
 const simpleHomeserverRegex = /^[a-zA-Z0-9.:-]+$/
 const mediaRegex = /^mxc:\/\/([a-zA-Z0-9.:-]+)\/([a-zA-Z0-9_-]+)$/
@@ -38,6 +38,15 @@ export const isUserID = (userID: unknown) => isIdentifier<UserID>(userID, "@", t
 export const isRoomID = (roomID: unknown) => isIdentifier<RoomID>(roomID, "!", true)
 export const isRoomAlias = (roomAlias: unknown) => isIdentifier<RoomAlias>(roomAlias, "#", true)
 export const isMXC = (mxc: unknown): mxc is ContentURI => typeof mxc === "string" && mediaRegex.test(mxc)
+
+export function getLocalpart(userID: UserID): string {
+	const idx = userID.indexOf(":")
+	return idx > 0 ? userID.slice(1, idx) : userID.slice(1)
+}
+
+export function getDisplayname(userID: UserID, profile?: UserProfile | null): string {
+	return profile?.displayname || getLocalpart(userID)
+}
 
 export function parseMXC(mxc: unknown): [string, string] | [] {
 	if (typeof mxc !== "string") {

@@ -17,7 +17,7 @@ import React, { use, useState } from "react"
 import { getAvatarURL, getMediaURL, getUserColorIndex } from "@/api/media.ts"
 import { useRoomState } from "@/api/statestore"
 import { MemDBEvent, MemberEventContent, UnreadType } from "@/api/types"
-import { isEventID } from "@/util/validation.ts"
+import { getDisplayname, isEventID } from "@/util/validation.ts"
 import ClientContext from "../ClientContext.ts"
 import MainScreenContext from "../MainScreenContext.ts"
 import { useRoomContext } from "../roomview/roomcontext.ts"
@@ -125,7 +125,7 @@ const TimelineEvent = ({ evt, prevEvt, disableMenu }: TimelineEventProps) => {
 				data-target-user={evt.sender}
 				onClick={roomCtx.appendMentionToComposer}
 			>
-				{memberEvtContent?.displayname || evt.sender}
+				{getDisplayname(evt.sender, memberEvtContent)}
 			</span>
 			<span className="event-time" title={fullTime}>{shortTime}</span>
 			{(editEventTS && editTime) ? <span className="event-edited" title={editTime}>

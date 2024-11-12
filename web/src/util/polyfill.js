@@ -24,4 +24,7 @@ if (!window.Iterator?.prototype.map) {
 		}
 		return output
 	}
+	Array.prototype.toArray = function() {
+		return this
+	}
 }

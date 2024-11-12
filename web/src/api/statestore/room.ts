@@ -16,6 +16,7 @@
 import { CustomEmojiPack, parseCustomEmojiPack } from "@/util/emoji"
 import { NonNullCachedEventDispatcher } from "@/util/eventdispatcher.ts"
 import Subscribable, { MultiSubscribable } from "@/util/subscribable.ts"
+import { getDisplayname } from "@/util/validation.ts"
 import {
 	DBRoom,
 	EncryptedEventContent,
@@ -26,10 +27,13 @@ import {
 	ImagePack,
 	LazyLoadSummary,
 	MemDBEvent,
+	MemberEventContent,
+	PowerLevelEventContent,
 	RawDBEvent,
 	RoomID,
 	SyncRoom,
 	TimelineRowTuple,
+	UserID,
 	roomStateGUIDToString,
 } from "../types"
 import type { StateStore } from "./main.ts"
@@ -80,6 +84,7 @@ export class RoomStateStore {
 	readonly requestedEvents: Set<EventID> = new Set()
 	readonly openNotifications: Map<EventRowID, Notification> = new Map()
 	readonly emojiPacks: Map<string, CustomEmojiPack | null> = new Map()
+	#membersCache: MemDBEvent[] | null = null
 	#allPacksCache: Record<string, CustomEmojiPack> | null = null
 	readonly pendingEvents: EventRowID[] = []
 	paginating = false
@@ -148,6 +153,36 @@ export class RoomStateStore {
 			)
 		}
 		return this.#allPacksCache
+	}
+
+	getMembers = (): MemDBEvent[] => {
+		if (this.#membersCache === null) {
+			const memberEvtIDs = this.state.get("m.room.member")
+			if (!memberEvtIDs) {
+				return []
+			}
+			const powerLevels: PowerLevelEventContent = this.getStateEvent("m.room.power_levels", "")?.content ?? {}
+			this.#membersCache = memberEvtIDs.values()
+				.map(rowID => this.eventsByRowID.get(rowID))
+				.filter(evt => !!evt)
+				.toArray()
+			this.#membersCache.sort((a, b) => {
+				const aUserID = a.state_key as UserID
+				const bUserID = b.state_key as UserID
+				const aPower = powerLevels.users?.[aUserID] ?? powerLevels.users_default ?? 0
+				const bPower = powerLevels.users?.[bUserID] ?? powerLevels.users_default ?? 0
+				if (aPower !== bPower) {
+					return bPower - aPower
+				}
+				const aName = getDisplayname(aUserID, a.content as MemberEventContent).toLowerCase()
+				const bName = getDisplayname(bUserID, b.content as MemberEventContent).toLowerCase()
+				if (aName === bName) {
+					return aUserID.localeCompare(bUserID)
+				}
+				return aName.localeCompare(bName)
+			})
+		}
+		return this.#membersCache
 	}
 
 	getPinnedEvents(): EventID[] {
@@ -229,6 +264,8 @@ export class RoomStateStore {
 			this.emojiPacks.delete(key)
 			this.#allPacksCache = null
 			this.parent.invalidateEmojiPacksCache()
+		} else if (evtType === "m.room.member" || evtType === "m.room.power_levels") {
+			this.#membersCache = null
 		}
 		this.stateSubs.notify(this.stateSubKey(evtType, key))
 	}

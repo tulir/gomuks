@@ -17,6 +17,7 @@ import { use } from "react"
 import { getAvatarURL, getUserColorIndex } from "@/api/media.ts"
 import { RoomStateStore, useRoomEvent, useRoomState } from "@/api/statestore"
 import type { EventID, MemDBEvent, MemberEventContent } from "@/api/types"
+import { getDisplayname } from "@/util/validation.ts"
 import ClientContext from "../ClientContext.ts"
 import { ContentErrorBoundary, getBodyType } from "./content"
 import CloseButton from "@/icons/close.svg?react"
@@ -94,7 +95,7 @@ export const ReplyBody = ({ room, event, onClose, isThread, isEditing }: ReplyBo
 				/>
 			</div>
 			<span className={`event-sender sender-color-${userColorIndex}`}>
-				{memberEvtContent?.displayname || event.sender}
+				{getDisplayname(event.sender, memberEvtContent)}
 			</span>
 			{onClose && <button className="close-reply" onClick={onClose}><CloseButton/></button>}
 		</div>
