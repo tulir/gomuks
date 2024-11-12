@@ -87,9 +87,11 @@ const MemberBody = ({ event, sender }: EventContentProps) => {
 	const content = event.content as MemberEventContent
 	const prevContent = event.unsigned.prev_content as MemberEventContent | undefined
 	return <div className="member-body">
-		{sender?.content.displayname ?? event.sender} {
-			useChangeDescription(event.sender, event.state_key as UserID, content, prevContent)
-		}
+		<span className="sender-name">{sender?.content.displayname ?? event.sender}</span>
+		<span className="change-description">
+			{useChangeDescription(event.sender, event.state_key as UserID, content, prevContent)}
+		</span>
+		{content.reason ? <span className="reason">for {content.reason}</span> : null}
 	</div>
 }
 
