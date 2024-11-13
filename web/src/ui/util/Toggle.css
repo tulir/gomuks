@@ -1,0 +1,36 @@
+input.toggle {
+	--transition-duration: .3s;
+	--disabled-color: var(--secondary-text-color);
+	--enabled-color: var(--primary-color-dark);
+
+	cursor: var(--clickable-cursor);
+	appearance: none;
+	display: block;
+	background-color: var(--background-color);
+	border: 1px solid var(--disabled-color);
+	border-radius: 1.5em;
+	width: 3.5em;
+	height: 2em;
+	padding: calc(.25em - 1px);
+	transition: background-color var(--transition-duration), border-color var(--transition-duration);
+
+	&::after {
+		content: "";
+		display: block;
+		height: 1.5em;
+		width: 1.5em;
+		border-radius: 50%;
+		background-color: var(--disabled-color);
+		transition: margin-left var(--transition-duration), background-color var(--transition-duration);
+	}
+
+	&:checked {
+		border-color: var(--enabled-color);
+		background-color: var(--enabled-color);
+
+		&::after {
+			margin-left: 1.5em;
+			background-color: var(--background-color);
+		}
+	}
+}
