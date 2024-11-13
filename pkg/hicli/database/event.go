@@ -139,7 +139,7 @@ func (e *Event) GetMassInsertValues() [9]any {
 	return [9]any{
 		e.ID, e.Sender, e.Type, e.StateKey, e.Timestamp.UnixMilli(),
 		unsafeJSONString(e.Content), unsafeJSONString(e.Unsigned),
-		e.TransactionID, e.RedactedBy,
+		dbutil.StrPtr(e.TransactionID), dbutil.StrPtr(e.RedactedBy),
 	}
 }
 
