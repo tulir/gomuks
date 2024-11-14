@@ -20,6 +20,7 @@ import type { RoomID } from "@/api/types"
 import ClientContext from "./ClientContext.ts"
 import MainScreenContext, { MainScreenContextFields } from "./MainScreenContext.ts"
 import Keybindings from "./keybindings.ts"
+import { ModalWrapper } from "./modal/Modal.tsx"
 import RightPanel, { RightPanelProps } from "./rightpanel/RightPanel.tsx"
 import RoomList from "./roomlist/RoomList.tsx"
 import RoomView from "./roomview/RoomView.tsx"
@@ -139,23 +140,25 @@ const MainScreen = () => {
 	if (rightPanel) {
 		classNames.push("right-panel-open")
 	}
-	return <main className={classNames.join(" ")} style={extraStyle}>
-		<MainScreenContext value={context}>
-			<RoomList activeRoomID={activeRoom?.roomID ?? null}/>
-			{resizeHandle1}
-			{activeRoom
-				? <RoomView
-					key={activeRoom.roomID}
-					room={activeRoom}
-					rightPanel={rightPanel}
-					rightPanelResizeHandle={resizeHandle2}
-				/>
-				: rightPanel && <>
-					{resizeHandle2}
-					{rightPanel && <RightPanel {...rightPanel}/>}
-				</>}
-		</MainScreenContext>
-	</main>
+	return <MainScreenContext value={context}>
+		<ModalWrapper>
+			<main className={classNames.join(" ")} style={extraStyle}>
+				<RoomList activeRoomID={activeRoom?.roomID ?? null}/>
+				{resizeHandle1}
+				{activeRoom
+					? <RoomView
+						key={activeRoom.roomID}
+						room={activeRoom}
+						rightPanel={rightPanel}
+						rightPanelResizeHandle={resizeHandle2}
+					/>
+					: rightPanel && <>
+						{resizeHandle2}
+						{rightPanel && <RightPanel {...rightPanel}/>}
+					</>}
+			</main>
+		</ModalWrapper>
+	</MainScreenContext>
 }
 
 export default MainScreen

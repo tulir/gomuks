@@ -45,18 +45,16 @@ export const ModalWrapper = ({ children }: { children: React.ReactNode }) => {
 			setState(null)
 		}
 	}, [])
-	return <>
-		<ModalContext value={setState}>
-			{children}
-			{state && <div
-				className={`overlay ${state.wrapperClass ?? "modal"} ${state.dimmed ? "dimmed" : ""}`}
-				onClick={onClickWrapper}
-				onKeyDown={onKeyWrapper}
-			>
-				<ModalCloseContext value={onClickWrapper}>
-					{state.content}
-				</ModalCloseContext>
-			</div>}
-		</ModalContext>
-	</>
+	return <ModalContext value={setState}>
+		{children}
+		{state && <div
+			className={`overlay ${state.wrapperClass ?? "modal"} ${state.dimmed ? "dimmed" : ""}`}
+			onClick={onClickWrapper}
+			onKeyDown={onKeyWrapper}
+		>
+			<ModalCloseContext value={onClickWrapper}>
+				{state.content}
+			</ModalCloseContext>
+		</div>}
+	</ModalContext>
 }
