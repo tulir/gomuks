@@ -80,7 +80,7 @@ func (h *HiClient) LoginAndVerify(ctx context.Context, homeserverURL, username, 
 	if err != nil {
 		return err
 	}
-	err = h.VerifyWithRecoveryKey(ctx, recoveryKey)
+	err = h.Verify(ctx, recoveryKey)
 	if err != nil {
 		return err
 	}

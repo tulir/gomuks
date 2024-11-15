@@ -129,7 +129,7 @@ func (h *HiClient) handleJSONCommand(ctx context.Context, req *JSONCommand) (any
 		})
 	case "verify":
 		return unmarshalAndCall(req.Data, func(params *verifyParams) (bool, error) {
-			return true, h.VerifyWithRecoveryKey(ctx, params.RecoveryKey)
+			return true, h.Verify(ctx, params.RecoveryKey)
 		})
 	case "discover_homeserver":
 		return unmarshalAndCall(req.Data, func(params *discoverHomeserverParams) (*mautrix.ClientWellKnown, error) {

@@ -9,6 +9,7 @@ package hicli
 import (
 	"context"
 	"encoding/base64"
+	"errors"
 	"fmt"
 
 	"github.com/rs/zerolog"
@@ -125,13 +126,16 @@ func (h *HiClient) storeCrossSigningPrivateKeys(ctx context.Context) error {
 	return nil
 }
 
-func (h *HiClient) VerifyWithRecoveryKey(ctx context.Context, code string) error {
+func (h *HiClient) Verify(ctx context.Context, code string) error {
 	defer h.dispatchCurrentState()
 	keyID, keyData, err := h.Crypto.SSSS.GetDefaultKeyData(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to get default SSSS key data: %w", err)
 	}
 	key, err := keyData.VerifyRecoveryKey(keyID, code)
+	if errors.Is(err, ssss.ErrInvalidRecoveryKey) && keyData.Passphrase != nil {
+		key, err = keyData.VerifyPassphrase(keyID, code)
+	}
 	if err != nil {
 		return err
 	}

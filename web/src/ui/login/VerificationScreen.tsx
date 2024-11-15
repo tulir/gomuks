@@ -40,7 +40,7 @@ export const VerificationScreen = ({ client, clientState }: LoginScreenProps) =>
 				type="text"
 				autoComplete="off"
 				id="mxlogin-recoverykey"
-				placeholder="Recovery key"
+				placeholder="Recovery key or passphrase"
 				value={recoveryKey}
 				onChange={evt => setRecoveryKey(evt.target.value)}
 			/>
