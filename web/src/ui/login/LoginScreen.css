@@ -18,7 +18,14 @@ main.matrix-login {
 
 	h1 {
 		margin: 0 0 2rem;
+	}
+	h1, h2, h3 {
 		text-align: center;
+	}
+
+	div.buttons {
+		display: flex;
+		gap: .5rem;
 	}
 
 	button, input {
@@ -61,5 +68,6 @@ main.matrix-login {
 		border: 2px solid var(--error-color);
 		border-radius: .25rem;
 		padding: 1rem;
+		margin-top: .5rem;
 	}
 }

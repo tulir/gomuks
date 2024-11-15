@@ -38,6 +38,7 @@ export const VerificationScreen = ({ client, clientState }: LoginScreenProps) =>
 			<p>Successfully logged in as <code>{clientState.user_id}</code></p>
 			<input
 				type="text"
+				autoComplete="off"
 				id="mxlogin-recoverykey"
 				placeholder="Recovery key"
 				value={recoveryKey}

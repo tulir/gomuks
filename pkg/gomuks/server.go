@@ -46,6 +46,8 @@ func (gmx *Gomuks) StartServer() {
 	api.HandleFunc("GET /websocket", gmx.HandleWebsocket)
 	api.HandleFunc("POST /auth", gmx.Authenticate)
 	api.HandleFunc("POST /upload", gmx.UploadMedia)
+	api.HandleFunc("GET /sso", gmx.HandleSSOComplete)
+	api.HandleFunc("POST /sso", gmx.PrepareSSO)
 	api.HandleFunc("GET /media/{server}/{media_id}", gmx.DownloadMedia)
 	api.HandleFunc("GET /codeblock/{style}", gmx.GetCodeblockCSS)
 	apiHandler := exhttp.ApplyMiddleware(
@@ -111,8 +113,8 @@ type tokenData struct {
 	ImageOnly bool          `json:"image_only,omitempty"`
 }
 
-func (gmx *Gomuks) validateAuth(token string, imageOnly bool) bool {
-	if len(token) > 500 {
+func (gmx *Gomuks) validateToken(token string, output any) bool {
+	if len(token) > 4096 {
 		return false
 	}
 	parts := strings.Split(token, ".")
@@ -133,9 +135,19 @@ func (gmx *Gomuks) validateAuth(token string, imageOnly bool) bool {
 		return false
 	}
 
+	err = json.Unmarshal(rawJSON, output)
+	return err == nil
+}
+
+func (gmx *Gomuks) validateAuth(token string, imageOnly bool) bool {
+	if len(token) > 500 {
+		return false
+	}
 	var td tokenData
-	err = json.Unmarshal(rawJSON, &td)
-	return err == nil && td.Username == gmx.Config.Web.Username && td.Expiry.After(time.Now()) && td.ImageOnly == imageOnly
+	return gmx.validateToken(token, &td) &&
+		td.Username == gmx.Config.Web.Username &&
+		td.Expiry.After(time.Now()) &&
+		td.ImageOnly == imageOnly
 }
 
 func (gmx *Gomuks) generateToken() (string, time.Time) {
@@ -154,7 +166,7 @@ func (gmx *Gomuks) generateImageToken() string {
 	})
 }
 
-func (gmx *Gomuks) signToken(td tokenData) string {
+func (gmx *Gomuks) signToken(td any) string {
 	data := exerrors.Must(json.Marshal(td))
 	hasher := hmac.New(sha256.New, []byte(gmx.Config.Web.TokenKey))
 	hasher.Write(data)
@@ -202,10 +214,7 @@ func (gmx *Gomuks) Authenticate(w http.ResponseWriter, r *http.Request) {
 }
 
 func isUserFetch(header http.Header) bool {
-	return (header.Get("Sec-Fetch-Site") == "none" ||
-		header.Get("Sec-Fetch-Site") == "same-site" ||
-		header.Get("Sec-Fetch-Site") == "same-origin") &&
-		header.Get("Sec-Fetch-Mode") == "navigate" &&
+	return header.Get("Sec-Fetch-Mode") == "navigate" &&
 		header.Get("Sec-Fetch-Dest") == "document" &&
 		header.Get("Sec-Fetch-User") == "?1"
 }

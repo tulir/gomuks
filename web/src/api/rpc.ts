@@ -20,6 +20,8 @@ import type {
 	EventID,
 	EventRowID,
 	EventType,
+	LoginFlowsResponse,
+	LoginRequest,
 	Mentions,
 	MessageEventContent,
 	PaginationResponse,
@@ -202,8 +204,16 @@ export default abstract class RPCClient {
 		return this.request("discover_homeserver", { user_id })
 	}
 
+	getLoginFlows(homeserver_url: string): Promise<LoginFlowsResponse> {
+		return this.request("get_login_flows", { homeserver_url })
+	}
+
 	login(homeserver_url: string, username: string, password: string): Promise<boolean> {
 		return this.request("login", { homeserver_url, username, password })
+	}
+
+	loginCustom(homeserver_url: string, request: LoginRequest): Promise<boolean> {
+		return this.request("login_custom", { homeserver_url, request })
 	}
 
 	verify(recovery_key: string): Promise<boolean> {

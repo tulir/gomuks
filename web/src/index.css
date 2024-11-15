@@ -165,13 +165,14 @@ button, a.button, span.button {
 	align-items: center;
 	color: inherit;
 
+	&:hover, &:focus {
+		background-color: var(--button-hover-color);
+	}
+
 	&:disabled {
 		cursor: default;
 		color: var(--secondary-text-color);
-	}
-
-	&:hover:not(:disabled), &:focus:not(:disabled) {
-		background-color: var(--button-hover-color);
+		background: none;
 	}
 }
 

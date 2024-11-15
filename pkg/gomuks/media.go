@@ -22,6 +22,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"html"
 	"image"
 	_ "image/gif"
 	_ "image/jpeg"
@@ -38,7 +39,6 @@ import (
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/hlog"
 	_ "golang.org/x/image/webp"
-	"golang.org/x/net/html"
 
 	"go.mau.fi/util/exhttp"
 	"go.mau.fi/util/ffmpeg"

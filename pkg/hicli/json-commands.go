@@ -11,6 +11,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/url"
 	"time"
 
 	"maunium.net/go/mautrix"
@@ -117,6 +118,15 @@ func (h *HiClient) handleJSONCommand(ctx context.Context, req *JSONCommand) (any
 		return unmarshalAndCall(req.Data, func(params *loginParams) (bool, error) {
 			return true, h.LoginPassword(ctx, params.HomeserverURL, params.Username, params.Password)
 		})
+	case "login_custom":
+		return unmarshalAndCall(req.Data, func(params *loginCustomParams) (bool, error) {
+			var err error
+			h.Client.HomeserverURL, err = url.Parse(params.HomeserverURL)
+			if err != nil {
+				return false, err
+			}
+			return true, h.Login(ctx, params.Request)
+		})
 	case "verify":
 		return unmarshalAndCall(req.Data, func(params *verifyParams) (bool, error) {
 			return true, h.VerifyWithRecoveryKey(ctx, params.RecoveryKey)
@@ -128,6 +138,18 @@ func (h *HiClient) handleJSONCommand(ctx context.Context, req *JSONCommand) (any
 				return nil, err
 			}
 			return mautrix.DiscoverClientAPI(ctx, homeserver)
+		})
+	case "get_login_flows":
+		return unmarshalAndCall(req.Data, func(params *getLoginFlowsParams) (*mautrix.RespLoginFlows, error) {
+			cli, err := h.tempClient(params.HomeserverURL)
+			if err != nil {
+				return nil, err
+			}
+			err = h.checkServerVersions(ctx, cli)
+			if err != nil {
+				return nil, err
+			}
+			return cli.GetLoginFlows(ctx)
 		})
 	default:
 		return nil, fmt.Errorf("unknown command %q", req.Command)
@@ -236,12 +258,21 @@ type loginParams struct {
 	Password      string `json:"password"`
 }
 
+type loginCustomParams struct {
+	HomeserverURL string            `json:"homeserver_url"`
+	Request       *mautrix.ReqLogin `json:"request"`
+}
+
 type verifyParams struct {
 	RecoveryKey string `json:"recovery_key"`
 }
 
 type discoverHomeserverParams struct {
 	UserID id.UserID `json:"user_id"`
+}
+
+type getLoginFlowsParams struct {
+	HomeserverURL string `json:"homeserver_url"`
 }
 
 type paginateParams struct {

@@ -153,6 +153,12 @@ export interface ResolveAliasResponse {
 	servers: string[]
 }
 
+export interface LoginFlowsResponse {
+	flows: {
+		type: string
+	}[]
+}
+
 export interface EventUnsigned {
 	prev_content?: unknown
 	prev_sender?: UserID
@@ -191,3 +197,24 @@ export interface RoomStateGUID {
 	type: EventType
 	state_key: string
 }
+
+export interface PasswordLoginRequest {
+	type: "m.login.password"
+	identifier: {
+		type: "m.id.user"
+		user: string
+	}
+	password: string
+}
+
+export interface SSOLoginRequest {
+	type: "m.login.token"
+	token: string
+}
+
+export interface JWTLoginRequest {
+	type: "org.matrix.login.jwt"
+	token: string
+}
+
+export type LoginRequest = PasswordLoginRequest | SSOLoginRequest | JWTLoginRequest

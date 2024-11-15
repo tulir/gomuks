@@ -121,6 +121,19 @@ func New(rawDB, cryptoDB *dbutil.Database, log zerolog.Logger, pickleKey []byte,
 	return c
 }
 
+func (h *HiClient) tempClient(homeserverURL string) (*mautrix.Client, error) {
+	parsedURL, err := url.Parse(homeserverURL)
+	if err != nil {
+		return nil, err
+	}
+	return &mautrix.Client{
+		HomeserverURL: parsedURL,
+		UserAgent:     h.Client.UserAgent,
+		Client:        h.Client.Client,
+		Log:           h.Log.With().Str("component", "temp mautrix client").Logger(),
+	}, nil
+}
+
 func (h *HiClient) IsLoggedIn() bool {
 	return h.Account != nil
 }
@@ -191,7 +204,11 @@ var ErrOutdatedServer = errors.New("homeserver is outdated")
 var MinimumSpecVersion = mautrix.SpecV11
 
 func (h *HiClient) CheckServerVersions(ctx context.Context) error {
-	versions, err := h.Client.Versions(ctx)
+	return h.checkServerVersions(ctx, h.Client)
+}
+
+func (h *HiClient) checkServerVersions(ctx context.Context, cli *mautrix.Client) error {
+	versions, err := cli.Versions(ctx)
 	if err != nil {
 		return exerrors.NewDualError(ErrFailedToCheckServerVersions, err)
 	} else if !versions.Contains(MinimumSpecVersion) {

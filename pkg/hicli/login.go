@@ -31,8 +31,7 @@ func (h *HiClient) LoginPassword(ctx context.Context, homeserverURL, username, p
 			Type: mautrix.IdentifierTypeUser,
 			User: username,
 		},
-		Password:                 password,
-		InitialDeviceDisplayName: InitialDeviceDisplayName,
+		Password: password,
 	})
 }
 
@@ -41,6 +40,7 @@ func (h *HiClient) Login(ctx context.Context, req *mautrix.ReqLogin) error {
 	if err != nil {
 		return err
 	}
+	req.InitialDeviceDisplayName = InitialDeviceDisplayName
 	req.StoreCredentials = true
 	req.StoreHomeserverURL = true
 	resp, err := h.Client.Login(ctx, req)
