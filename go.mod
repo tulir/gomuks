@@ -2,7 +2,7 @@ module go.mau.fi/gomuks
 
 go 1.23.0
 
-toolchain go1.23.2
+toolchain go1.23.3
 
 require (
 	github.com/alecthomas/chroma/v2 v2.14.0
@@ -16,15 +16,15 @@ require (
 	github.com/tidwall/gjson v1.18.0
 	github.com/tidwall/sjson v1.2.5
 	github.com/yuin/goldmark v1.7.8
-	go.mau.fi/util v0.8.2-0.20241112213434-d05f63473223
+	go.mau.fi/util v0.8.2-0.20241113135441-636f8643f367
 	go.mau.fi/zeroconfig v0.1.3
-	golang.org/x/crypto v0.28.0
-	golang.org/x/image v0.21.0
-	golang.org/x/net v0.30.0
-	golang.org/x/text v0.19.0
+	golang.org/x/crypto v0.29.0
+	golang.org/x/image v0.22.0
+	golang.org/x/net v0.31.0
+	golang.org/x/text v0.20.0
 	gopkg.in/yaml.v3 v3.0.1
 	maunium.net/go/mauflag v1.0.0
-	maunium.net/go/mautrix v0.21.2-0.20241102114451-83e60efa1558
+	maunium.net/go/mautrix v0.21.2-0.20241115133431-5a3dd8d45c10
 	mvdan.cc/xurls/v2 v2.5.0
 )
 
@@ -34,11 +34,11 @@ require (
 	github.com/dlclark/regexp2 v1.11.0 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.19 // indirect
-	github.com/petermattis/goid v0.0.0-20240813172612-4fcff4a6cae7 // indirect
+	github.com/petermattis/goid v0.0.0-20241025130422-66cb2e6d7274 // indirect
 	github.com/rs/xid v1.6.0 // indirect
 	github.com/tidwall/match v1.1.1 // indirect
 	github.com/tidwall/pretty v1.2.0 // indirect
-	golang.org/x/exp v0.0.0-20241009180824-f66d83c29e7c // indirect
-	golang.org/x/sys v0.26.0 // indirect
+	golang.org/x/exp v0.0.0-20241108190413-2d47ceb2692f // indirect
+	golang.org/x/sys v0.27.0 // indirect
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1 // indirect
 )
