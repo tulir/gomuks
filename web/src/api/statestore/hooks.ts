@@ -83,9 +83,9 @@ export function useCustomEmojis(
 		ss.emojiRoomsSub.subscribe,
 		() => ss.getRoomEmojiPacks(),
 	)
-	const specialRoomPacks = useSyncExternalStore(
+	const specialRoomPacks = useSyncExternalStore<Record<string, CustomEmojiPack>>(
 		room.stateSubs.getSubscriber("im.ponies.room_emotes"),
-		() => room.getAllEmojiPacks(),
+		() => room.preferences.show_room_emoji_packs ? room.getAllEmojiPacks() : {},
 	)
 	return useMemo(() => {
 		const allPacksObject = { ...watchedRoomPacks, ...specialRoomPacks }

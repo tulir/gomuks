@@ -79,7 +79,8 @@ const TimelineView = () => {
 			&& newestEvent.sender !== client.userID
 		) {
 			room.readUpToRow = newestEvent.timeline_rowid
-			client.rpc.markRead(room.roomID, newestEvent.event_id, "m.read").then(
+			const receiptType = roomCtx.store.preferences.send_read_receipts ? "m.read" : "m.read.private"
+			client.rpc.markRead(room.roomID, newestEvent.event_id, receiptType).then(
 				() => console.log("Marked read up to", newestEvent.event_id, newestEvent.timeline_rowid),
 				err => console.error(`Failed to send read receipt for ${newestEvent.event_id}:`, err),
 			)

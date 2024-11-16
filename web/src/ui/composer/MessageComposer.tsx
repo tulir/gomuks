@@ -262,12 +262,16 @@ const MessageComposer = () => {
 		const now = Date.now()
 		if (evt.target.value !== "" && typingSentAt.current + 5_000 < now) {
 			typingSentAt.current = now
-			client.rpc.setTyping(room.roomID, 10_000)
-				.catch(err => console.error("Failed to send typing notification:", err))
+			if (room.preferences.send_typing_notifications) {
+				client.rpc.setTyping(room.roomID, 10_000)
+					.catch(err => console.error("Failed to send typing notification:", err))
+			}
 		} else if (evt.target.value === "" && typingSentAt.current > 0) {
 			typingSentAt.current = 0
-			client.rpc.setTyping(room.roomID, 0)
-				.catch(err => console.error("Failed to send stop typing notification:", err))
+			if (room.preferences.send_typing_notifications) {
+				client.rpc.setTyping(room.roomID, 0)
+					.catch(err => console.error("Failed to send stop typing notification:", err))
+			}
 		}
 		onComposerCaretChange(evt, evt.target.value)
 	})
@@ -322,11 +326,13 @@ const MessageComposer = () => {
 		return () => {
 			if (typingSentAt.current > 0) {
 				typingSentAt.current = 0
-				client.rpc.setTyping(room.roomID, 0)
-					.catch(err => console.error("Failed to send stop typing notification due to room switch:", err))
+				if (room.preferences.send_typing_notifications) {
+					client.rpc.setTyping(room.roomID, 0)
+						.catch(err => console.error("Failed to send stop typing notification due to room switch:", err))
+				}
 			}
 		}
-	}, [client, room.roomID])
+	}, [client, room])
 	useLayoutEffect(() => {
 		if (!textInput.current) {
 			return
