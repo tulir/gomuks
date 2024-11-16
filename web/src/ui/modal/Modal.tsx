@@ -13,7 +13,7 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import React, { JSX, createContext, useCallback, useReducer } from "react"
+import React, { JSX, createContext, useCallback, useLayoutEffect, useReducer, useRef } from "react"
 
 export interface ModalState {
 	content: JSX.Element
@@ -44,13 +44,22 @@ export const ModalWrapper = ({ children }: { children: React.ReactNode }) => {
 		if (evt.key === "Escape") {
 			setState(null)
 		}
+		evt.stopPropagation()
 	}, [])
+	const wrapperRef = useRef<HTMLDivElement>(null)
+	useLayoutEffect(() => {
+		if (wrapperRef.current && (!document.activeElement || !wrapperRef.current.contains(document.activeElement))) {
+			wrapperRef.current.focus()
+		}
+	}, [state])
 	return <ModalContext value={setState}>
 		{children}
 		{state && <div
 			className={`overlay ${state.wrapperClass ?? "modal"} ${state.dimmed ? "dimmed" : ""}`}
 			onClick={onClickWrapper}
 			onKeyDown={onKeyWrapper}
+			tabIndex={-1}
+			ref={wrapperRef}
 		>
 			<ModalCloseContext value={onClickWrapper}>
 				{state.content}

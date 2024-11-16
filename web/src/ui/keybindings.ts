@@ -69,7 +69,7 @@ export default class Keybindings {
 	}
 
 	private keyUpMap: KeyMap = {
-		"Escape": evt => evt.target === evt.currentTarget && this.context.clearActiveRoom(),
+		// "Escape": evt => evt.target === evt.currentTarget && this.context.clearActiveRoom(),
 	}
 
 	listen(): () => void {

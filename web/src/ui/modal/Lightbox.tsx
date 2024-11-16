@@ -13,7 +13,8 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import React, { Component, RefObject, createContext, createRef, useCallback, useLayoutEffect, useState } from "react"
+import React, { Component, createContext, createRef, useCallback, useLayoutEffect, useState } from "react"
+import { keyToString } from "../keybindings.ts"
 import CloseIcon from "@/icons/close.svg?react"
 import DownloadIcon from "@/icons/download.svg?react"
 import RotateLeftIcon from "@/icons/rotate-left.svg?react"
@@ -59,7 +60,7 @@ export const LightboxWrapper = ({ children }: { children: React.ReactNode }) => 
 		<LightboxContext value={onOpen}>
 			{children}
 		</LightboxContext>
-		{params && <Lightbox {...params} onClose={onClose} />}
+		{params && <Lightbox {...params} onClose={onClose}/>}
 	</>
 }
 
@@ -72,12 +73,8 @@ export class Lightbox extends Component<LightboxProps> {
 	zoom = 1
 	rotate = 0
 	maybePanning = false
-	readonly ref: RefObject<HTMLImageElement | null>
-
-	constructor(props: LightboxProps) {
-		super(props)
-		this.ref = createRef<HTMLImageElement>()
-	}
+	readonly ref = createRef<HTMLImageElement>()
+	readonly wrapperRef = createRef<HTMLDivElement>()
 
 	get style() {
 		return {
@@ -85,6 +82,13 @@ export class Lightbox extends Component<LightboxProps> {
 			rotate: `${this.rotate}deg`,
 			scale: `${this.zoom}`,
 		}
+	}
+
+	close = () => {
+		this.translate = { x: 0, y: 0 }
+		this.rotate = 0
+		this.zoom = 1
+		this.props.onClose()
 	}
 
 	onClick = () => {
@@ -95,10 +99,7 @@ export class Lightbox extends Component<LightboxProps> {
 			this.ref.current.style.cursor = "auto"
 			this.maybePanning = false
 		} else {
-			this.translate = { x: 0, y: 0 }
-			this.rotate = 0
-			this.zoom = 1
-			this.props.onClose()
+			this.close()
 		}
 	}
 
@@ -142,7 +143,15 @@ export class Lightbox extends Component<LightboxProps> {
 		this.ref.current.style.cursor = "grabbing"
 	}
 
-	transformer = (callback: () => void)=> (evt: React.MouseEvent) => {
+	onKeyDown = (evt: React.KeyboardEvent<HTMLDivElement>) => {
+		const key = keyToString(evt)
+		if (key === "Escape") {
+			this.close()
+		}
+		evt.stopPropagation()
+	}
+
+	transformer = (callback: () => void) => (evt: React.MouseEvent) => {
 		evt.stopPropagation()
 		if (!this.ref.current) {
 			return
@@ -151,6 +160,15 @@ export class Lightbox extends Component<LightboxProps> {
 		const style = this.style
 		this.ref.current.style.rotate = style.rotate
 		this.ref.current.style.scale = style.scale
+	}
+
+	componentDidMount() {
+		if (
+			this.wrapperRef.current
+			&& (!document.activeElement || !this.wrapperRef.current.contains(document.activeElement))
+		) {
+			this.wrapperRef.current.focus()
+		}
 	}
 
 	stopPropagation = (evt: React.MouseEvent) => evt.stopPropagation()
@@ -164,6 +182,9 @@ export class Lightbox extends Component<LightboxProps> {
 			className="overlay dimmed lightbox"
 			onClick={this.onClick}
 			onMouseMove={isTouchDevice ? undefined : this.onMouseMove}
+			tabIndex={-1}
+			onKeyDown={this.onKeyDown}
+			ref={this.wrapperRef}
 		>
 			<div className="controls" onClick={this.stopPropagation}>
 				<button onClick={this.zoomOut}><ZoomOutIcon/></button>
