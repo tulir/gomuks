@@ -14,11 +14,12 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import { getAvatarURL } from "@/api/media.ts"
+import { Preferences, getLocalStoragePreferences, getPreferenceProxy } from "@/api/types/preferences"
 import { CustomEmojiPack, parseCustomEmojiPack } from "@/util/emoji"
 import { NonNullCachedEventDispatcher } from "@/util/eventdispatcher.ts"
 import { focused } from "@/util/focus.ts"
 import toSearchableString from "@/util/searchablestring.ts"
-import Subscribable, { MultiSubscribable } from "@/util/subscribable.ts"
+import Subscribable, { MultiSubscribable, NoDataSubscribable } from "@/util/subscribable.ts"
 import {
 	ContentURI,
 	EventRowID,
@@ -58,10 +59,14 @@ export class StateStore {
 	readonly accountData: Map<string, UnknownEventContent> = new Map()
 	readonly accountDataSubs = new MultiSubscribable()
 	readonly emojiRoomsSub = new Subscribable()
+	readonly preferences: Preferences = getPreferenceProxy(this)
 	#frequentlyUsedEmoji: Map<string, number> | null = null
 	#emojiPackKeys: RoomStateGUID[] | null = null
 	#watchedRoomEmojiPacks: Record<string, CustomEmojiPack> | null = null
 	#personalEmojiPack: CustomEmojiPack | null = null
+	readonly preferenceSub = new NoDataSubscribable()
+	readonly localPreferenceCache: Preferences = getLocalStoragePreferences("global_prefs", this.preferenceSub.notify)
+	serverPreferenceCache: Preferences = {}
 	switchRoom?: (roomID: RoomID | null) => void
 	activeRoomID?: RoomID
 	imageAuthToken?: string
@@ -163,6 +168,9 @@ export class StateStore {
 		for (const ad of Object.values(sync.account_data)) {
 			if (ad.type === "io.element.recent_emoji") {
 				this.#frequentlyUsedEmoji = null
+			} else if (ad.type === "fi.mau.gomuks.preferences") {
+				this.serverPreferenceCache = ad.content
+				this.preferenceSub.notify()
 			}
 			this.accountData.set(ad.type, ad.content)
 			this.accountDataSubs.notify(ad.type)

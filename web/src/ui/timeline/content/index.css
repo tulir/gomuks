@@ -117,8 +117,6 @@ div.html-body {
 		padding-bottom: .5rem;
 
 		&.chroma {
-			background-color: var(--codeblock-background-color);
-
 			span.line > span.ln {
 				-webkit-user-select: initial;
 				user-select: initial;

@@ -60,6 +60,18 @@ export function useAccountData(ss: StateStore, type: EventType): UnknownEventCon
 	)
 }
 
+export function useRoomAccountData(room: RoomStateStore | null, type: EventType): UnknownEventContent | null {
+	return useSyncExternalStore(
+		room ? room.accountDataSubs.getSubscriber(type) : noopSubscribe,
+		() => room?.accountData.get(type) ?? null,
+	)
+}
+
+export function usePreferences(ss: StateStore, room: RoomStateStore | null) {
+	useSyncExternalStore(ss.preferenceSub.subscribe, ss.preferenceSub.getData)
+	useSyncExternalStore(room?.preferenceSub.subscribe ?? noopSubscribe, room?.preferenceSub.getData ?? returnNull)
+}
+
 export function useCustomEmojis(
 	ss: StateStore, room: RoomStateStore,
 ): CustomEmojiPack[] {

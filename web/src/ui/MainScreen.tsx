@@ -13,12 +13,13 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import { use, useEffect, useInsertionEffect, useMemo, useReducer, useState } from "react"
+import { use, useEffect, useInsertionEffect, useLayoutEffect, useMemo, useReducer, useState } from "react"
 import Client from "@/api/client.ts"
 import { RoomStateStore } from "@/api/statestore"
 import type { RoomID } from "@/api/types"
 import ClientContext from "./ClientContext.ts"
 import MainScreenContext, { MainScreenContextFields } from "./MainScreenContext.ts"
+import StylePreferences from "./StylePreferences.tsx"
 import Keybindings from "./keybindings.ts"
 import { ModalWrapper } from "./modal/Modal.tsx"
 import RightPanel, { RightPanelProps } from "./rightpanel/RightPanel.tsx"
@@ -57,12 +58,12 @@ class ContextFields implements MainScreenContextFields {
 	) {
 		this.keybindings = new Keybindings(client.store, this)
 		client.store.switchRoom = this.setActiveRoom
-		window.mainScreenContext = this
 	}
 
 	setActiveRoom = (roomID: RoomID | null) => {
 		console.log("Switching to room", roomID)
 		const room = (roomID && this.client.store.rooms.get(roomID)) || null
+		window.activeRoom = room
 		this.directSetActiveRoom(room)
 		this.setRightPanel(null)
 		if (room?.stateLoaded === false) {
@@ -109,6 +110,9 @@ const MainScreen = () => {
 		() => new ContextFields(setRightPanel, directSetActiveRoom, client),
 		[client],
 	)
+	useLayoutEffect(() => {
+		window.mainScreenContext = context
+	}, [context])
 	useEffect(() => context.keybindings.listen(), [context])
 	useInsertionEffect(() => {
 		const styleTags = document.createElement("style")
@@ -142,6 +146,7 @@ const MainScreen = () => {
 	}
 	return <MainScreenContext value={context}>
 		<ModalWrapper>
+			<StylePreferences client={client} activeRoom={activeRoom} />
 			<main className={classNames.join(" ")} style={extraStyle}>
 				<RoomList activeRoomID={activeRoom?.roomID ?? null}/>
 				{resizeHandle1}

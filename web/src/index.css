@@ -61,7 +61,6 @@
 	--sent-error-color: var(--error-color);
 	--blockquote-border-color: var(--border-color);
 	--lightbox-button-color: var(--border-color);
-	--codeblock-background-color: inherit;
 	--clickable-cursor: default;
 
 	@media (prefers-color-scheme: dark) {

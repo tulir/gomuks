@@ -13,7 +13,7 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import React, { Component, RefObject, createContext, createRef, useCallback, useState } from "react"
+import React, { Component, RefObject, createContext, createRef, useCallback, useLayoutEffect, useState } from "react"
 import CloseIcon from "@/icons/close.svg?react"
 import DownloadIcon from "@/icons/download.svg?react"
 import RotateLeftIcon from "@/icons/rotate-left.svg?react"
@@ -51,7 +51,9 @@ export const LightboxWrapper = ({ children }: { children: React.ReactNode }) => 
 			setParams(params as LightboxParams)
 		}
 	}, [])
-	window.openLightbox = onOpen
+	useLayoutEffect(() => {
+		window.openLightbox = onOpen
+	}, [onOpen])
 	const onClose = useCallback(() => setParams(null), [])
 	return <>
 		<LightboxContext value={onOpen}>

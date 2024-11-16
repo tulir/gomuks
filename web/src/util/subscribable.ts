@@ -32,6 +32,17 @@ export default class Subscribable {
 	}
 }
 
+export class NoDataSubscribable extends Subscribable {
+	data: number = 0
+
+	notify = () => {
+		this.data++
+		super.notify()
+	}
+
+	getData = () => this.data
+}
+
 export class MultiSubscribable {
 	readonly subscribers: Map<string, Set<Subscriber>> = new Map()
 	readonly subscribeFuncs: Map<string, SubscribeFunc> = new Map()

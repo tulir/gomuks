@@ -13,10 +13,11 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
+import { Preferences, getLocalStoragePreferences, getPreferenceProxy } from "@/api/types/preferences"
 import { CustomEmojiPack, parseCustomEmojiPack } from "@/util/emoji"
 import { NonNullCachedEventDispatcher } from "@/util/eventdispatcher.ts"
 import toSearchableString from "@/util/searchablestring.ts"
-import Subscribable, { MultiSubscribable } from "@/util/subscribable.ts"
+import Subscribable, { MultiSubscribable, NoDataSubscribable } from "@/util/subscribable.ts"
 import { getDisplayname } from "@/util/validation.ts"
 import {
 	ContentURI,
@@ -35,6 +36,7 @@ import {
 	RoomID,
 	SyncRoom,
 	TimelineRowTuple,
+	UnknownEventContent,
 	UserID,
 	roomStateGUIDToString,
 } from "../types"
@@ -93,8 +95,14 @@ export class RoomStateStore {
 	readonly eventSubs = new MultiSubscribable()
 	readonly requestedEvents: Set<EventID> = new Set()
 	readonly requestedMembers: Set<UserID> = new Set()
+	readonly accountData: Map<string, UnknownEventContent> = new Map()
+	readonly accountDataSubs = new MultiSubscribable()
 	readonly openNotifications: Map<EventRowID, Notification> = new Map()
 	readonly emojiPacks: Map<string, CustomEmojiPack | null> = new Map()
+	readonly preferences: Preferences
+	readonly localPreferenceCache: Preferences
+	readonly preferenceSub = new NoDataSubscribable()
+	serverPreferenceCache: Preferences = {}
 	#membersCache: MemDBEvent[] | null = null
 	#autocompleteMembersCache: AutocompleteMemberEntry[] | null = null
 	membersRequested: boolean = false
@@ -107,6 +115,8 @@ export class RoomStateStore {
 	constructor(meta: DBRoom, private parent: StateStore) {
 		this.roomID = meta.room_id
 		this.meta = new NonNullCachedEventDispatcher(meta)
+		this.localPreferenceCache = getLocalStoragePreferences(`prefs-${this.roomID}`, this.preferenceSub.notify)
+		this.preferences = getPreferenceProxy(parent, this)
 	}
 
 	notifyTimelineSubscribers() {
@@ -312,6 +322,14 @@ export class RoomStateStore {
 			this.meta.current = sync.meta
 		} else {
 			this.meta.emit(sync.meta)
+		}
+		for (const ad of Object.values(sync.account_data)) {
+			if (ad.type === "fi.mau.gomuks.preferences") {
+				this.serverPreferenceCache = ad.content
+				this.preferenceSub.notify()
+			}
+			this.accountData.set(ad.type, ad.content)
+			this.accountDataSubs.notify(ad.type)
 		}
 		for (const evt of sync.events) {
 			this.applyEvent(evt)
