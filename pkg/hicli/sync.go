@@ -21,6 +21,7 @@ import (
 	"go.mau.fi/util/emojirunes"
 	"go.mau.fi/util/exzerolog"
 	"go.mau.fi/util/jsontime"
+	"go.mau.fi/util/ptr"
 	"maunium.net/go/mautrix"
 	"maunium.net/go/mautrix/crypto"
 	"maunium.net/go/mautrix/crypto/olm"
@@ -771,6 +772,10 @@ func (h *HiClient) processStateAndTimeline(
 		if !dmAvatarURL.IsEmpty() && !room.ExplicitAvatar {
 			updatedRoom.Avatar = &dmAvatarURL
 		}
+	}
+	mu, ok := accountData[event.AccountDataMarkedUnread]
+	if ok {
+		updatedRoom.MarkedUnread = ptr.Ptr(gjson.GetBytes(mu.Content, "unread").Bool())
 	}
 
 	if len(receipts) > 0 {

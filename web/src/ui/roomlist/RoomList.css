@@ -117,7 +117,7 @@ div.room-entry {
 			line-height: 1;
 			font-size: .75em;
 
-			&.notified, &.highlighted {
+			&.notified, &.marked-unread, &.highlighted {
 				width: 1.5rem;
 				height: 1.5rem;
 				padding-bottom: 0;
@@ -125,7 +125,11 @@ div.room-entry {
 				font-weight: bold;
 			}
 
-			&.notified:not(.highlighted) {
+			&.marked-unread {
+				background-color: var(--unread-counter-marked-unread-bg);
+			}
+
+			&.notified {
 				background-color: var(--unread-counter-notification-bg);
 			}
 

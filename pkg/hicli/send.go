@@ -151,6 +151,12 @@ func (h *HiClient) SendMessage(
 }
 
 func (h *HiClient) MarkRead(ctx context.Context, roomID id.RoomID, eventID id.EventID, receiptType event.ReceiptType) error {
+	room, err := h.DB.Room.Get(ctx, roomID)
+	if err != nil {
+		return fmt.Errorf("failed to get room metadata: %w", err)
+	} else if room == nil {
+		return fmt.Errorf("unknown room")
+	}
 	content := &mautrix.ReqSetReadMarkers{
 		FullyRead: eventID,
 	}
@@ -161,9 +167,15 @@ func (h *HiClient) MarkRead(ctx context.Context, roomID id.RoomID, eventID id.Ev
 	} else {
 		return fmt.Errorf("invalid receipt type: %v", receiptType)
 	}
-	err := h.Client.SetReadMarkers(ctx, roomID, content)
+	err = h.Client.SetReadMarkers(ctx, roomID, content)
 	if err != nil {
 		return fmt.Errorf("failed to mark event as read: %w", err)
+	}
+	if ptr.Val(room.MarkedUnread) {
+		err = h.Client.SetRoomAccountData(ctx, roomID, event.AccountDataMarkedUnread.Type, &event.MarkedUnreadEventContent{Unread: false})
+		if err != nil {
+			return fmt.Errorf("failed to mark room as read: %w", err)
+		}
 	}
 	return nil
 }

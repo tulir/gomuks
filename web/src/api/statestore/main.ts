@@ -50,6 +50,7 @@ export interface RoomListEntry {
 	unread_messages: number
 	unread_notifications: number
 	unread_highlights: number
+	marked_unread: boolean
 }
 
 export class StateStore {
@@ -102,6 +103,7 @@ export class StateStore {
 			entry.meta.unread_messages !== oldEntry.meta.current.unread_messages ||
 			entry.meta.unread_notifications !== oldEntry.meta.current.unread_notifications ||
 			entry.meta.unread_highlights !== oldEntry.meta.current.unread_highlights ||
+			entry.meta.marked_unread !== oldEntry.meta.current.marked_unread ||
 			entry.meta.preview_event_rowid !== oldEntry.meta.current.preview_event_rowid ||
 			entry.events.findIndex(evt => evt.rowid === entry.meta.preview_event_rowid) !== -1
 	}
@@ -129,6 +131,7 @@ export class StateStore {
 			unread_messages: entry.meta.unread_messages,
 			unread_notifications: entry.meta.unread_notifications,
 			unread_highlights: entry.meta.unread_highlights,
+			marked_unread: entry.meta.marked_unread,
 		}
 	}
 

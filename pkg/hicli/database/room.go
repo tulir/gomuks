@@ -23,7 +23,7 @@ const (
 	getRoomBaseQuery = `
 		SELECT room_id, creation_content, tombstone_content, name, name_quality, avatar, explicit_avatar, topic, canonical_alias,
 		       lazy_load_summary, encryption_event, has_member_list, preview_event_rowid, sorting_timestamp,
-		       unread_highlights, unread_notifications, unread_messages, prev_batch
+		       unread_highlights, unread_notifications, unread_messages, marked_unread, prev_batch
 		FROM room
 	`
 	getRoomsBySortingTimestampQuery = getRoomBaseQuery + `WHERE sorting_timestamp < $1 AND sorting_timestamp > 0 ORDER BY sorting_timestamp DESC LIMIT $2`
@@ -50,7 +50,8 @@ const (
 			unread_highlights = COALESCE($15, room.unread_highlights),
 			unread_notifications = COALESCE($16, room.unread_notifications),
 			unread_messages = COALESCE($17, room.unread_messages),
-			prev_batch = COALESCE($18, room.prev_batch)
+			marked_unread = COALESCE($18, room.marked_unread),
+			prev_batch = COALESCE($19, room.prev_batch)
 		WHERE room_id = $1
 	`
 	setRoomPrevBatchQuery = `
@@ -157,6 +158,7 @@ type Room struct {
 	PreviewEventRowID EventRowID         `json:"preview_event_rowid"`
 	SortingTimestamp  jsontime.UnixMilli `json:"sorting_timestamp"`
 	UnreadCounts
+	MarkedUnread *bool `json:"marked_unread,omitempty"`
 
 	PrevBatch string `json:"prev_batch"`
 }
@@ -220,6 +222,10 @@ func (r *Room) CheckChangesAndCopyInto(other *Room) (hasChanges bool) {
 		other.UnreadMessages = r.UnreadMessages
 		hasChanges = true
 	}
+	if r.MarkedUnread != other.MarkedUnread {
+		other.MarkedUnread = r.MarkedUnread
+		hasChanges = true
+	}
 	if r.PrevBatch != "" && other.PrevBatch == "" {
 		other.PrevBatch = r.PrevBatch
 		hasChanges = true
@@ -248,6 +254,7 @@ func (r *Room) Scan(row dbutil.Scannable) (*Room, error) {
 		&r.UnreadHighlights,
 		&r.UnreadNotifications,
 		&r.UnreadMessages,
+		&r.MarkedUnread,
 		&prevBatch,
 	)
 	if err != nil {
@@ -278,6 +285,7 @@ func (r *Room) sqlVariables() []any {
 		r.UnreadHighlights,
 		r.UnreadNotifications,
 		r.UnreadMessages,
+		r.MarkedUnread,
 		dbutil.StrPtr(r.PrevBatch),
 	}
 }

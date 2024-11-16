@@ -64,6 +64,7 @@ export interface DBRoom {
 	unread_highlights: number
 	unread_notifications: number
 	unread_messages: number
+	marked_unread: boolean
 
 	prev_batch: string
 }

@@ -68,8 +68,9 @@ const EntryInner = ({ room }: InnerProps) => {
 			<div className="room-name">{room.name}</div>
 			{previewText && <div className="message-preview" title={previewText}>{croppedPreviewText}</div>}
 		</div>
-		{room.unread_messages ? <div className="room-entry-unreads">
+		{(room.unread_messages || room.marked_unread) ? <div className="room-entry-unreads">
 			<div className={`unread-count ${
+				room.marked_unread ? "marked-unread" : ""} ${
 				room.unread_notifications ? "notified" : ""} ${
 				room.unread_highlights ? "highlighted" : ""}`}
 			>

@@ -1,4 +1,4 @@
--- v0 -> v6 (compatible with v5+): Latest revision
+-- v0 -> v7 (compatible with v5+): Latest revision
 CREATE TABLE account (
 	user_id        TEXT NOT NULL PRIMARY KEY,
 	device_id      TEXT NOT NULL,
@@ -29,6 +29,7 @@ CREATE TABLE room (
 	unread_highlights    INTEGER NOT NULL DEFAULT 0,
 	unread_notifications INTEGER NOT NULL DEFAULT 0,
 	unread_messages      INTEGER NOT NULL DEFAULT 0,
+	marked_unread        INTEGER NOT NULL DEFAULT false,
 
 	prev_batch           TEXT,
 

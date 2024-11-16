@@ -44,6 +44,7 @@
 	--unread-counter-text-color: var(--inverted-text-color);
 	--unread-counter-message-bg: rgba(0, 0, 0, 0.35);
 	--unread-counter-notification-bg: rgba(50, 150, 0, 0.7);
+	--unread-counter-marked-unread-bg: var(--unread-counter-notification-bg);
 	--unread-counter-highlight-bg: rgba(200, 0, 0, 0.7);
 
 	--sender-color-0: #a4041d;
