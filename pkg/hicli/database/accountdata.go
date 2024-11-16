@@ -30,6 +30,9 @@ const (
 	getGlobalAccountDataQuery = `
 		SELECT user_id, '', type, content FROM account_data WHERE user_id = $1
 	`
+	getRoomAccountDataQuery = `
+		SELECT user_id, room_id, type, content FROM room_account_data WHERE user_id = $1 AND room_id = $2
+	`
 )
 
 type AccountDataQuery struct {
@@ -65,6 +68,10 @@ func (adq *AccountDataQuery) PutRoom(ctx context.Context, userID id.UserID, room
 
 func (adq *AccountDataQuery) GetAllGlobal(ctx context.Context, userID id.UserID) ([]*AccountData, error) {
 	return adq.QueryMany(ctx, getGlobalAccountDataQuery, userID)
+}
+
+func (adq *AccountDataQuery) GetAllRoom(ctx context.Context, userID id.UserID, roomID id.RoomID) ([]*AccountData, error) {
+	return adq.QueryMany(ctx, getRoomAccountDataQuery, userID, roomID)
 }
 
 type AccountData struct {
