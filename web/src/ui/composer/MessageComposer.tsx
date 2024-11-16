@@ -51,6 +51,7 @@ export interface ComposerState {
 }
 
 const isMobileDevice = window.ontouchstart !== undefined && window.innerWidth < 800
+const MAX_TEXTAREA_ROWS = 10
 
 const emptyComposer: ComposerState = { text: "", media: null, replyTo: null }
 const uninitedComposer: ComposerState = { ...emptyComposer, uninited: true }
@@ -333,7 +334,7 @@ const MessageComposer = () => {
 		// This is a hacky way to auto-resize the text area. Setting the rows to 1 and then
 		// checking scrollHeight seems to be the only reliable way to get the size of the text.
 		textInput.current.rows = 1
-		const newTextRows = (textInput.current.scrollHeight - 16) / 20
+		const newTextRows = Math.min((textInput.current.scrollHeight - 16) / 20, MAX_TEXTAREA_ROWS)
 		textInput.current.rows = newTextRows
 		textRows.current = newTextRows
 		// This has to be called unconditionally, because setting rows = 1 messes up the scroll state otherwise
