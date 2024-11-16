@@ -91,6 +91,18 @@ const TimelineEvent = ({ evt, prevEvt, disableMenu }: TimelineEventProps) => {
 	if (evt.type === "m.room.member") {
 		wrapperClassNames.push("membership-event")
 	}
+	let dateSeparator = null
+	const prevEvtDate = prevEvt ? new Date(prevEvt.timestamp) : null
+	if (prevEvtDate && (
+		eventTS.getDate() !== prevEvtDate.getDate() ||
+		eventTS.getMonth() !== prevEvtDate.getMonth() ||
+		eventTS.getFullYear() !== prevEvtDate.getFullYear())) {
+		dateSeparator = <div className="date-separator">
+			<hr role="none"/>
+			{dateFormatter.format(eventTS)}
+			<hr role="none"/>
+		</div>
+	}
 	let smallAvatar = false
 	let renderAvatar = true
 	let eventTimeOnly = false
@@ -100,7 +112,8 @@ const TimelineEvent = ({ evt, prevEvt, disableMenu }: TimelineEventProps) => {
 		eventTimeOnly = true
 	} else if (prevEvt?.sender === evt.sender &&
 		prevEvt.timestamp + 15 * 60 * 1000 > evt.timestamp &&
-		!isSmallEvent(getBodyType(prevEvt))) {
+		!isSmallEvent(getBodyType(prevEvt)) &&
+		dateSeparator === null) {
 		wrapperClassNames.push("same-sender")
 		eventTimeOnly = true
 		renderAvatar = false
@@ -156,18 +169,6 @@ const TimelineEvent = ({ evt, prevEvt, disableMenu }: TimelineEventProps) => {
 		</div>
 		{evt.sender === client.userID && evt.transaction_id ? <EventSendStatus evt={evt}/> : null}
 	</div>
-	let dateSeparator = null
-	const prevEvtDate = prevEvt ? new Date(prevEvt.timestamp) : null
-	if (prevEvtDate && (
-		eventTS.getDate() !== prevEvtDate.getDate() ||
-		eventTS.getMonth() !== prevEvtDate.getMonth() ||
-		eventTS.getFullYear() !== prevEvtDate.getFullYear())) {
-		dateSeparator = <div className="date-separator">
-			<hr role="none"/>
-			{dateFormatter.format(eventTS)}
-			<hr role="none"/>
-		</div>
-	}
 	return <>
 		{dateSeparator}
 		{mainEvent}
