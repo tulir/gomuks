@@ -87,6 +87,21 @@ const StylePreferences = ({ client, activeRoom }: StylePreferencesProps) => {
 			display: none;
 		}
 	`, [preferences.show_hidden_events])
+	useStyle(() => !preferences.show_redacted_events && css`
+		div.timeline-list > div.redacted-event {
+			display: none;
+		}
+	`, [preferences.show_redacted_events])
+	useStyle(() => !preferences.show_membership_events && css`
+		div.timeline-list > div.membership-event {
+			display: none;
+		}
+	`, [preferences.show_membership_events])
+	useStyle(() => !preferences.show_date_separators && css`
+		div.timeline-list > div.date-separator {
+			display: none;
+		}
+	`, [preferences.show_date_separators])
 	useAsyncStyle(() => preferences.code_block_theme === "auto" ? `
 		@import url("_gomuks/codeblock/github.css") (prefers-color-scheme: light);
 		@import url("_gomuks/codeblock/github-dark.css") (prefers-color-scheme: dark);

@@ -85,6 +85,12 @@ const TimelineEvent = ({ evt, prevEvt, disableMenu }: TimelineEventProps) => {
 	if (evt.unread_type & UnreadType.Highlight) {
 		wrapperClassNames.push("highlight")
 	}
+	if (evt.redacted_by) {
+		wrapperClassNames.push("redacted-event")
+	}
+	if (evt.type === "m.room.member") {
+		wrapperClassNames.push("membership-event")
+	}
 	let smallAvatar = false
 	let renderAvatar = true
 	let eventTimeOnly = false

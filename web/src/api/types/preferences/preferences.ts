@@ -73,6 +73,24 @@ export const preferences = {
 		allowedContexts: anyContext,
 		defaultValue: true,
 	}),
+	show_redacted_events: new Preference<boolean>({
+		displayName: "Show redacted event placeholders",
+		description: "Whether redacted events should leave a placeholder behind in the room timeline.",
+		allowedContexts: anyContext,
+		defaultValue: true,
+	}),
+	show_membership_events: new Preference<boolean>({
+		displayName: "Show membership events",
+		description: "Whether membership and profile changes should be visible in the room timeline.",
+		allowedContexts: anyContext,
+		defaultValue: true,
+	}),
+	show_date_separators: new Preference<boolean>({
+		displayName: "Show date separators",
+		description: "Whether messages in different days should have a date separator between them in the room timeline.",
+		allowedContexts: anyContext,
+		defaultValue: true,
+	}),
 	show_room_emoji_packs: new Preference<boolean>({
 		displayName: "Show room emoji packs",
 		description: "Whether to show custom emoji packs provided by the room. If disabled, only your personal packs are shown in all rooms.",
