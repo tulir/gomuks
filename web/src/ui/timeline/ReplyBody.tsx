@@ -20,7 +20,7 @@ import type { EventID, MemDBEvent, MemberEventContent } from "@/api/types"
 import { getDisplayname } from "@/util/validation.ts"
 import ClientContext from "../ClientContext.ts"
 import { ContentErrorBoundary, getBodyType } from "./content"
-import CloseButton from "@/icons/close.svg?react"
+import CloseIcon from "@/icons/close.svg?react"
 import "./ReplyBody.css"
 
 interface ReplyBodyProps {
@@ -100,7 +100,7 @@ export const ReplyBody = ({ room, event, onClose, isThread, isEditing }: ReplyBo
 			<span className={`event-sender sender-color-${userColorIndex}`}>
 				{getDisplayname(event.sender, memberEvtContent)}
 			</span>
-			{onClose && <button className="close-reply" onClick={onClose}><CloseButton/></button>}
+			{onClose && <button className="close-reply" onClick={onClose}><CloseIcon/></button>}
 		</div>
 		<ContentErrorBoundary>
 			<BodyType room={room} event={event} sender={memberEvt}/>
