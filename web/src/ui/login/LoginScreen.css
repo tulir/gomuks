@@ -55,13 +55,7 @@ main.matrix-login {
 	}
 
 	button {
-		background-color: var(--primary-color);
-		color: var(--inverted-text-color);
 		font-weight: bold;
-
-		&:hover, &:focus {
-			background-color: var(--primary-color-dark);
-		}
 	}
 
 	div.error {

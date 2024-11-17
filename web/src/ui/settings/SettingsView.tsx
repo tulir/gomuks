@@ -171,7 +171,7 @@ const CustomCSSInput = ({ setPref, room }: { setPref: SetPrefFunc, room: RoomSta
 		<textarea value={text} onChange={onChangeText}/>
 		<div className="buttons">
 			<button className="delete" onClick={onDelete}>Delete</button>
-			<button className="save" onClick={onSave}>Save</button>
+			<button className="save primary-color-button" onClick={onSave}>Save</button>
 		</div>
 	</div>
 }

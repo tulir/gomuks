@@ -48,24 +48,11 @@ div.settings-view {
 
 			> button {
 				padding: .5rem 1rem;
+				font-weight: bold;
 
-				&.save {
-					background-color: var(--primary-color);
+				&.delete:hover, &.delete:focus {
+					background-color: var(--error-color);
 					color: var(--inverted-text-color);
-					font-weight: bold;
-
-					&:hover, &:focus {
-						background-color: var(--primary-color-dark);
-					}
-				}
-
-				&.delete {
-					font-weight: bold;
-
-					&:hover, &:focus {
-						background-color: var(--error-color);
-						color: var(--inverted-text-color);
-					}
 				}
 			}
 		}

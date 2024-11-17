@@ -148,12 +148,12 @@ export const LoginScreen = ({ client }: LoginScreenProps) => {
 			/>}
 			<div className="buttons">
 				{supportsSSO && <button
-					className="mx-login-button"
+					className="mx-login-button primary-color-button"
 					type={supportsPassword ? "button" : "submit"}
 					onClick={supportsPassword ? loginSSO : undefined}
 				>Login with SSO</button>}
 				{supportsPassword && <button
-					className="mx-login-button"
+					className="mx-login-button primary-color-button"
 					type="submit"
 				>Login{supportsSSO || beeperDomain ? " with password" : ""}</button>}
 			</div>
