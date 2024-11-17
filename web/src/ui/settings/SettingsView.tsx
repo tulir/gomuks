@@ -13,18 +13,179 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import { RoomStateStore } from "@/api/statestore"
-import JSONView from "@/ui/util/JSONView.tsx"
+import { use, useCallback } from "react"
+import { RoomStateStore, usePreferences } from "@/api/statestore"
+import { Preference, PreferenceContext, PreferenceValueType, Preferences, preferences } from "@/api/types/preferences"
+import ClientContext from "../ClientContext.ts"
+import JSONView from "../util/JSONView.tsx"
+import Toggle from "../util/Toggle.tsx"
+import CloseIcon from "@/icons/close.svg?react"
 import "./SettingsView.css"
+
+interface PreferenceCellProps<T extends PreferenceValueType> {
+	context: PreferenceContext
+	name: keyof Preferences
+	pref: Preference<T>
+	setPref: SetPrefFunc
+	value: T | undefined
+	inheritedValue: T
+}
+
+const useRemover = (
+	context: PreferenceContext, setPref: SetPrefFunc, name: keyof Preferences, value: PreferenceValueType | undefined,
+) => {
+	const onClear = useCallback(() => {
+		setPref(context, name, undefined)
+	}, [setPref, context, name])
+	if (value === undefined) {
+		return null
+	}
+	return <button onClick={onClear}><CloseIcon /></button>
+}
+
+const BooleanPreferenceCell = ({ context, name, setPref, value, inheritedValue }: PreferenceCellProps<boolean>) => {
+	const onChange = useCallback((evt: React.ChangeEvent<HTMLInputElement>) => {
+		setPref(context, name, evt.target.checked)
+	}, [setPref, context, name])
+	return <div className="preference boolean-preference">
+		<Toggle checked={value ?? inheritedValue} onChange={onChange}/>
+		{useRemover(context, setPref, name, value)}
+	</div>
+}
+
+const SelectPreferenceCell = ({ context, name, pref, setPref, value, inheritedValue }: PreferenceCellProps<string>) => {
+	const onChange = useCallback((evt: React.ChangeEvent<HTMLSelectElement>) => {
+		setPref(context, name, evt.target.value)
+	}, [setPref, context, name])
+	const remover = useRemover(context, setPref, name, value)
+	if (!pref.allowedValues) {
+		return null
+	}
+	return <div className="preference select-preference">
+		<select value={value ?? inheritedValue} onChange={onChange}>
+			{pref.allowedValues.map(value =>
+				<option key={value} value={value}>{value}</option>)}
+		</select>
+		{remover}
+	</div>
+}
+
+type SetPrefFunc = (context: PreferenceContext, key: keyof Preferences, value: PreferenceValueType | undefined) => void
+
+interface PreferenceRowProps {
+	name: keyof Preferences
+	pref: Preference
+	setPref: SetPrefFunc
+	globalServer?: PreferenceValueType
+	globalLocal?: PreferenceValueType
+	roomServer?: PreferenceValueType
+	roomLocal?: PreferenceValueType
+}
+
+const PreferenceRow = ({
+	name, pref, setPref, globalServer, globalLocal, roomServer, roomLocal,
+}: PreferenceRowProps) => {
+	const makeContentCell = (
+		context: PreferenceContext,
+		val: PreferenceValueType | undefined,
+		inheritedVal: PreferenceValueType,
+	) => {
+		const prefType = typeof pref.defaultValue
+		if (prefType === "boolean") {
+			return <BooleanPreferenceCell
+				name={name}
+				setPref={setPref}
+				context={context}
+				pref={pref as Preference<boolean>}
+				value={val as boolean | undefined}
+				inheritedValue={inheritedVal as boolean}
+			/>
+		} else if (typeof prefType === "string" && pref.allowedValues) {
+			return <SelectPreferenceCell
+				name={name}
+				setPref={setPref}
+				context={context}
+				pref={pref as Preference<string>}
+				value={val as string | undefined}
+				inheritedValue={inheritedVal as string}
+			/>
+		} else {
+			return null
+		}
+	}
+	let inherit: PreferenceValueType
+	return <tr>
+		<th title={pref.description}>{pref.displayName}</th>
+		<td>{makeContentCell(PreferenceContext.Account, globalServer, inherit = pref.defaultValue)}</td>
+		<td>{makeContentCell(PreferenceContext.Device, globalLocal, inherit = globalServer ?? inherit)}</td>
+		<td>{makeContentCell(PreferenceContext.RoomAccount, roomServer, inherit = globalLocal ?? inherit)}</td>
+		<td>{makeContentCell(PreferenceContext.RoomDevice, roomLocal, inherit = roomServer ?? inherit)}</td>
+	</tr>
+}
 
 interface SettingsViewProps {
 	room: RoomStateStore
 }
 
 const SettingsView = ({ room }: SettingsViewProps) => {
+	const client = use(ClientContext)!
+	const setPref = useCallback((context: PreferenceContext, key: keyof Preferences, value: PreferenceValueType | undefined)=>  {
+		if (context === PreferenceContext.Account) {
+			client.rpc.setAccountData("fi.mau.gomuks.preferences", {
+				...client.store.serverPreferenceCache,
+				[key]: value,
+			})
+		} else if (context === PreferenceContext.Device) {
+			if (value === undefined) {
+				delete client.store.localPreferenceCache[key]
+			} else {
+				(client.store.localPreferenceCache[key] as PreferenceValueType) = value
+			}
+		} else if (context === PreferenceContext.RoomAccount) {
+			client.rpc.setAccountData("fi.mau.gomuks.preferences", {
+				...room.serverPreferenceCache,
+				[key]: value,
+			}, room.roomID)
+		} else if (context === PreferenceContext.RoomDevice) {
+			if (value === undefined) {
+				delete room.localPreferenceCache[key]
+			} else {
+				(room.localPreferenceCache[key] as PreferenceValueType) = value
+			}
+		}
+	}, [client, room])
+	usePreferences(client.store, room)
+	const globalServer = client.store.serverPreferenceCache
+	const globalLocal = client.store.localPreferenceCache
+	const roomServer = room.serverPreferenceCache
+	const roomLocal = room.localPreferenceCache
 	return <>
 		<h2>Settings</h2>
 		<code>{room.roomID}</code>
+		<table>
+			<thead>
+				<tr>
+					<th>name</th>
+					<th>Account</th>
+					<th>Device</th>
+					<th>Room (account)</th>
+					<th>Room (device)</th>
+				</tr>
+			</thead>
+			<tbody>
+				{Object.entries(preferences).map(([key, pref]) =>
+					<PreferenceRow
+						key={key}
+						name={key as keyof Preferences}
+						pref={pref}
+						setPref={setPref}
+						globalServer={globalServer[key as keyof Preferences]}
+						globalLocal={globalLocal[key as keyof Preferences]}
+						roomServer={roomServer[key as keyof Preferences]}
+						roomLocal={roomLocal[key as keyof Preferences]}
+					/>)}
+			</tbody>
+		</table>
 		<JSONView data={room.preferences} />
 	</>
 }

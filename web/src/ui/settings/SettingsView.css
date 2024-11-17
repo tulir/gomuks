@@ -6,4 +6,12 @@ div.settings-view {
 	> h2 {
 		margin: 0;
 	}
+
+	table {
+		text-align: left;
+
+		div.preference {
+			display: flex;
+		}
+	}
 }

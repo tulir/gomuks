@@ -10,7 +10,7 @@ input.toggle {
 	border: 1px solid var(--disabled-color);
 	border-radius: 1.5em;
 	width: 3.5em;
-	height: 2em;
+	/*height: 2em;*/
 	padding: calc(.25em - 1px);
 	transition: background-color var(--transition-duration), border-color var(--transition-duration);
 
