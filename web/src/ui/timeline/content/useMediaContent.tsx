@@ -37,10 +37,9 @@ export const useMediaContent = (
 		const onClick = (event: React.MouseEvent<HTMLImageElement>) => {
 			// Check if it is spoilered. If it is, remove the attachment-spoiler class
 			if(event.currentTarget.parentElement?.classList.contains("attachment-spoiler")) {
-				console.debug("Removing spoiler")
+				event.preventDefault()
 				event.currentTarget.parentElement?.classList.remove("attachment-spoiler")
 			} else {
-				console.debug("Opening lightbox")
 				return lightBox(event)
 			}
 		}
@@ -66,6 +65,19 @@ export const useMediaContent = (
 				event.currentTarget.currentTime = 0
 			}
 		}
+		let classes = ["video-container"]
+		if(content["m.spoiler"] === true) {
+			classes.push("attachment-spoiler")
+		}
+		const onPlay = (event: React.MouseEvent<HTMLVideoElement>) => {
+			// onclick doesn't appear to work for <video> elements, so we use onPlay instead
+			if(classes.includes("attachment-spoiler")) {
+				event.preventDefault()
+				event.currentTarget.pause()  // stop it autoplaying before the spoiler is removed
+				classes = classes.filter((c) => c !== "attachment-spoiler")
+				event.currentTarget.parentElement?.classList.remove("attachment-spoiler")
+			}
+		}
 		return [<video
 			autoPlay={autoplay}
 			controls={controls}
@@ -74,9 +86,11 @@ export const useMediaContent = (
 			onMouseOver={onMouseOver}
 			onMouseOut={onMouseOut}
 			preload="none"
+			title={content["m.spoiler.reason"]}
+			onPlay={onPlay}
 		>
 			<source src={mediaURL} type={content.info?.mimetype}/>
-		</video>, "video-container", {}]
+		</video>, classes.join(" "), {}]
 	} else if (content.msgtype === "m.audio") {
 		return [<audio controls src={mediaURL} preload="none"/>, "audio-container", {}]
 	} else if (content.msgtype === "m.file") {
