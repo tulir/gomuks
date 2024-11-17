@@ -44,17 +44,29 @@ type WebConfig struct {
 	DebugEndpoints bool   `yaml:"debug_endpoints"`
 }
 
-var defaultConfig = Config{
-	Web: WebConfig{
-		ListenAddress: "localhost:29325",
+var defaultFileWriter = zeroconfig.WriterConfig{
+	Type:   zeroconfig.WriterTypeFile,
+	Format: "json",
+	FileConfig: zeroconfig.FileConfig{
+		Filename:   "",
+		MaxSize:    100 * 1024 * 1024,
+		MaxBackups: 10,
 	},
-	Logging: zeroconfig.Config{
-		MinLevel: ptr.Ptr(zerolog.TraceLevel),
-		Writers: []zeroconfig.WriterConfig{{
-			Type:   zeroconfig.WriterTypeStdout,
-			Format: zeroconfig.LogFormatPrettyColored,
-		}},
-	},
+}
+
+func makeDefaultConfig() Config {
+	return Config{
+		Web: WebConfig{
+			ListenAddress: "localhost:29325",
+		},
+		Logging: zeroconfig.Config{
+			MinLevel: ptr.Ptr(zerolog.DebugLevel),
+			Writers: []zeroconfig.WriterConfig{{
+				Type:   zeroconfig.WriterTypeStdout,
+				Format: zeroconfig.LogFormatPrettyColored,
+			}, defaultFileWriter},
+		},
+	}
 }
 
 func (gmx *Gomuks) LoadConfig() error {
@@ -62,7 +74,7 @@ func (gmx *Gomuks) LoadConfig() error {
 	if err != nil && !errors.Is(err, os.ErrNotExist) {
 		return err
 	}
-	gmx.Config = defaultConfig
+	gmx.Config = makeDefaultConfig()
 	changed := false
 	if file != nil {
 		err = yaml.NewDecoder(file).Decode(&gmx.Config)

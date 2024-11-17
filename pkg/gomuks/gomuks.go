@@ -146,6 +146,7 @@ func (gmx *Gomuks) InitDirectories() {
 	exerrors.PanicIfNotNil(os.MkdirAll(gmx.TempDir, 0700))
 	exerrors.PanicIfNotNil(os.MkdirAll(gmx.DataDir, 0700))
 	exerrors.PanicIfNotNil(os.MkdirAll(gmx.LogDir, 0700))
+	defaultFileWriter.FileConfig.Filename = filepath.Join(gmx.LogDir, "gomuks.log")
 }
 
 func (gmx *Gomuks) SetupLog() {
