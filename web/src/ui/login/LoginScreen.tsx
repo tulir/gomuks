@@ -57,14 +57,16 @@ export const LoginScreen = ({ client }: LoginScreenProps) => {
 
 	const login = useEvent((evt: React.FormEvent) => {
 		evt.preventDefault()
-		if (!loginFlows?.includes("m.login.password")) {
+		if (!loginFlows) {
+			// do nothing
+		} else if (!loginFlows.includes("m.login.password")) {
 			loginSSO()
-			return
+		} else {
+			client.rpc.login(homeserverURL, username, password).then(
+				() => {},
+				err => setError(err.toString()),
+			)
 		}
-		client.rpc.login(homeserverURL, username, password).then(
-			() => {},
-			err => setError(err.toString()),
-		)
 	})
 
 	const resolveLoginFlows = useCallback((serverURL: string) => {
@@ -141,6 +143,7 @@ export const LoginScreen = ({ client }: LoginScreenProps) => {
 				{supportsPassword !== false && <button
 					className="mx-login-button"
 					type="submit"
+					disabled={!loginFlows}
 				>Login{supportsSSO || beeperDomain ? " with password" : ""}</button>}
 			</div>
 			{error && <div className="error">
