@@ -28,9 +28,21 @@ export const useMediaContent = (
 		? getEncryptedMediaURL(content.info.thumbnail_file.url) : getMediaURL(content.info?.thumbnail_url)
 	if (content.msgtype === "m.image" || evtType === "m.sticker") {
 		const style = calculateMediaSize(content.info?.w, content.info?.h, containerSize)
-		let className = "image-container"
+		const classes = ["image-container"]
 		if(content["m.spoiler"] === true) {
-			className += " attachment-spoiler"
+			classes.push("attachment-spoiler")
+		}
+		const lightBox = use(LightboxContext)
+
+		const onClick = (event: React.MouseEvent<HTMLImageElement>) => {
+			// Check if it is spoilered. If it is, remove the attachment-spoiler class
+			if(event.currentTarget.parentElement?.classList.contains("attachment-spoiler")) {
+				console.debug("Removing spoiler")
+				event.currentTarget.parentElement?.classList.remove("attachment-spoiler")
+			} else {
+				console.debug("Opening lightbox")
+				return lightBox(event)
+			}
 		}
 
 		return [<img
@@ -39,8 +51,8 @@ export const useMediaContent = (
 			src={mediaURL}
 			alt={content.filename ?? content.body}
 			title={content["m.spoiler.reason"]}
-			onClick={use(LightboxContext)}
-		/>, className, style.container]
+			onClick={onClick}
+		/>, classes.join(" "), style.container]
 	} else if (content.msgtype === "m.video") {
 		const autoplay = false
 		const controls = !content.info?.["fi.mau.hide_controls"]
