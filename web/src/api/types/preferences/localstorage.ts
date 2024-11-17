@@ -13,7 +13,7 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import { Preferences, existingPreferenceKeys, preferences } from "./preferences.ts"
+import { Preferences, isValidPreferenceKey, preferences } from "./preferences.ts"
 import { PreferenceContext } from "./types.ts"
 
 function getObjectFromLocalStorage(key: string): Preferences {
@@ -28,11 +28,18 @@ function getObjectFromLocalStorage(key: string): Preferences {
 	return {}
 }
 
+const globalPrefKeys = Object.entries(preferences)
+	.filter(([,pref]) => pref.allowedContexts.includes(PreferenceContext.Device))
+	.map(([key]) => key)
+const roomPrefKeys = Object.entries(preferences)
+	.filter(([,pref]) => pref.allowedContexts.includes(PreferenceContext.RoomDevice))
+	.map(([key]) => key)
+
 export function getLocalStoragePreferences(localStorageKey: string, onChange: () => void): Preferences {
 	return new Proxy(getObjectFromLocalStorage(localStorageKey), {
 		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		set(target: Preferences, key: keyof Preferences, newValue: any): boolean {
-			if (!existingPreferenceKeys.has(key)) {
+		set(target: Preferences, key: string | symbol, newValue: any): boolean {
+			if (!isValidPreferenceKey(key)) {
 				return false
 			}
 			target[key] = newValue
@@ -40,8 +47,8 @@ export function getLocalStoragePreferences(localStorageKey: string, onChange: ()
 			onChange()
 			return true
 		},
-		deleteProperty(target: Preferences, key: keyof Preferences): boolean {
-			if (!existingPreferenceKeys.has(key)) {
+		deleteProperty(target: Preferences, key: string | symbol): boolean {
+			if (!isValidPreferenceKey(key)) {
 				return false
 			}
 			delete target[key]
@@ -52,13 +59,15 @@ export function getLocalStoragePreferences(localStorageKey: string, onChange: ()
 			return true
 		},
 		ownKeys(): string[] {
-			console.warn("localStorage preference proxy ownKeys called")
-			// This is only for debugging, so the performance doesn't matter that much
-			return Object.entries(preferences)
-				.filter(([,pref]) =>
-					pref.allowedContexts.includes(localStorageKey === "global_prefs"
-						? PreferenceContext.Device : PreferenceContext.RoomDevice))
-				.map(([key]) => key)
+			return localStorageKey === "global_prefs" ? globalPrefKeys : roomPrefKeys
+		},
+		getOwnPropertyDescriptor(_target: never, key: string | symbol): PropertyDescriptor | undefined {
+			const keySet = localStorageKey === "global_prefs" ? globalPrefKeys : roomPrefKeys
+			return (typeof key === "string" && keySet.includes(key)) ? {
+				configurable: true,
+				enumerable: true,
+				writable: true,
+			} : undefined
 		},
 	})
 }

@@ -14,18 +14,23 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import type { RoomStateStore, StateStore } from "@/api/statestore"
-import { Preferences, existingPreferenceKeys, preferences } from "./preferences.ts"
+import { Preferences, isValidPreferenceKey, preferences } from "./preferences.ts"
 import { PreferenceContext, PreferenceValueType } from "./types.ts"
+
+const prefKeys = Object.keys(preferences)
 
 export function getPreferenceProxy(store: StateStore, room?: RoomStateStore): Preferences {
 	return new Proxy({}, {
 		set(): boolean {
 			throw new Error("The preference proxy is read-only")
 		},
-		get(_target: never, key: keyof Preferences): PreferenceValueType | undefined {
+		get(_target: never, key: keyof Preferences | symbol): PreferenceValueType | undefined {
+			if (typeof key !== "string") {
+				return
+			}
 			const pref = preferences[key]
 			if (!pref) {
-				return undefined
+				return
 			}
 			let val: typeof pref.defaultValue | undefined
 			for (const ctx of pref.allowedContexts) {
@@ -47,7 +52,14 @@ export function getPreferenceProxy(store: StateStore, room?: RoomStateStore): Pr
 			return pref.defaultValue
 		},
 		ownKeys(): string[] {
-			return Array.from(existingPreferenceKeys)
+			return prefKeys
+		},
+		getOwnPropertyDescriptor(_target: never, key: string | symbol): PropertyDescriptor | undefined {
+			return isValidPreferenceKey(key) ? {
+				configurable: true,
+				enumerable: true,
+				writable: false,
+			} : undefined
 		},
 	})
 }

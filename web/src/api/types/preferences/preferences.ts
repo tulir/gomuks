@@ -13,6 +13,7 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
+import type { ContentURI } from "../../types"
 import { Preference, anyContext } from "./types.ts"
 
 export const codeBlockStyles = [
@@ -56,7 +57,7 @@ export const preferences = {
 		allowedValues: codeBlockStyles,
 	}),
 	pointer_cursor: new Preference<boolean>({
-		displayName: "Pointer cursor",
+		displayName: "Use pointer cursor",
 		description: "Whether to use a pointer cursor for clickable elements.",
 		allowedContexts: anyContext,
 		defaultValue: false,
@@ -97,10 +98,20 @@ export const preferences = {
 		allowedContexts: anyContext,
 		defaultValue: true,
 	}),
+	custom_notification_sound: new Preference<ContentURI>({
+		displayName: "Custom notification sound",
+		description: "The mxc:// URI to a custom notification sound.",
+		allowedContexts: anyContext,
+		defaultValue: "",
+	}),
 } as const
 
 export const existingPreferenceKeys = new Set(Object.keys(preferences))
 
 export type Preferences = {
 	-readonly [name in keyof typeof preferences]?: typeof preferences[name]["defaultValue"]
+}
+
+export function isValidPreferenceKey(key: unknown): key is keyof Preferences {
+	return typeof key === "string" && existingPreferenceKeys.has(key)
 }
