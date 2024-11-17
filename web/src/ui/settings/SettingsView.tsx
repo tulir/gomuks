@@ -13,9 +13,10 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import { use, useCallback } from "react"
+import { use, useCallback, useState } from "react"
 import { RoomStateStore, usePreferences } from "@/api/statestore"
 import { Preference, PreferenceContext, PreferenceValueType, Preferences, preferences } from "@/api/types/preferences"
+import useEvent from "@/util/useEvent.ts"
 import ClientContext from "../ClientContext.ts"
 import JSONView from "../util/JSONView.tsx"
 import Toggle from "../util/Toggle.tsx"
@@ -85,12 +86,15 @@ interface PreferenceRowProps {
 const PreferenceRow = ({
 	name, pref, setPref, globalServer, globalLocal, roomServer, roomLocal,
 }: PreferenceRowProps) => {
+	const prefType = typeof pref.defaultValue
+	if (prefType !== "boolean" && !pref.allowedValues) {
+		return null
+	}
 	const makeContentCell = (
 		context: PreferenceContext,
 		val: PreferenceValueType | undefined,
 		inheritedVal: PreferenceValueType,
 	) => {
-		const prefType = typeof pref.defaultValue
 		if (prefType === "boolean") {
 			return <BooleanPreferenceCell
 				name={name}
@@ -125,6 +129,51 @@ const PreferenceRow = ({
 
 interface SettingsViewProps {
 	room: RoomStateStore
+}
+
+const CustomCSSInput = ({ setPref, room }: { setPref: SetPrefFunc, room: RoomStateStore }) => {
+	const client = use(ClientContext)!
+	const [context, setContext] = useState(PreferenceContext.Account)
+	const [text, setText] = useState("")
+	const onChangeContext = useCallback((evt: React.ChangeEvent<HTMLSelectElement>) => {
+		const newContext = evt.target.value as PreferenceContext
+		setContext(newContext)
+		if (newContext === PreferenceContext.Account) {
+			setText(client.store.serverPreferenceCache.custom_css ?? "")
+		} else if (newContext === PreferenceContext.Device) {
+			setText(client.store.localPreferenceCache.custom_css ?? "")
+		} else if (newContext === PreferenceContext.RoomAccount) {
+			setText(room.serverPreferenceCache.custom_css ?? "")
+		} else if (newContext === PreferenceContext.RoomDevice) {
+			setText(room.localPreferenceCache.custom_css ?? "")
+		}
+	}, [client, room])
+	const onChangeText = useCallback((evt: React.ChangeEvent<HTMLTextAreaElement>) => {
+		setText(evt.target.value)
+	}, [])
+	const onSave = useEvent(() => {
+		setPref(context, "custom_css", text)
+	})
+	const onDelete = useEvent(() => {
+		setPref(context, "custom_css", undefined)
+		setText("")
+	})
+	return <div className="custom-css-input">
+		<div className="header">
+			<h3>Custom CSS</h3>
+			<select value={context} onChange={onChangeContext}>
+				<option value={PreferenceContext.Account}>Account</option>
+				<option value={PreferenceContext.Device}>Device</option>
+				<option value={PreferenceContext.RoomAccount}>Room (account)</option>
+				<option value={PreferenceContext.RoomDevice}>Room (device)</option>
+			</select>
+		</div>
+		<textarea value={text} onChange={onChangeText}/>
+		<div className="buttons">
+			<button className="delete" onClick={onDelete}>Delete</button>
+			<button className="save" onClick={onSave}>Save</button>
+		</div>
+	</div>
 }
 
 const SettingsView = ({ room }: SettingsViewProps) => {
@@ -186,6 +235,7 @@ const SettingsView = ({ room }: SettingsViewProps) => {
 					/>)}
 			</tbody>
 		</table>
+		<CustomCSSInput setPref={setPref} room={room} />
 		<JSONView data={room.preferences} />
 	</>
 }

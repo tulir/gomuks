@@ -3,7 +3,7 @@ div.settings-view {
 	display: flex;
 	flex-direction: column;
 
-	> h2 {
+	h2, h3 {
 		margin: 0;
 	}
 
@@ -12,6 +12,58 @@ div.settings-view {
 
 		div.preference {
 			display: flex;
+		}
+	}
+
+	> div.custom-css-input {
+		display: flex;
+		flex-direction: column;
+		gap: .5rem;
+		margin-right: 1rem;
+
+		> div.header {
+			display: flex;
+			gap: .5rem;
+		}
+
+		> textarea {
+			width: 100%;
+			box-sizing: border-box;
+			resize: vertical;
+			border: 1px solid var(--border-color);
+			outline: none;
+			height: 10rem;
+			min-height: 3rem;
+			font-family: var(--monospace-font-stack);
+		}
+
+		> div.buttons {
+			display: flex;
+			justify-content: right;
+			gap: .5rem;
+
+			> button {
+				padding: .5rem 1rem;
+
+				&.save {
+					background-color: var(--primary-color);
+					color: var(--inverted-text-color);
+					font-weight: bold;
+
+					&:hover, &:focus {
+						background-color: var(--primary-color-dark);
+					}
+				}
+
+				&.delete {
+					font-weight: bold;
+
+					&:hover, &:focus {
+						background-color: var(--error-color);
+						color: var(--inverted-text-color);
+					}
+				}
+			}
 		}
 	}
 }
