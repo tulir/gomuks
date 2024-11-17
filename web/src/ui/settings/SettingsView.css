@@ -1,0 +1,9 @@
+div.settings-view {
+	width: min(60rem, 80vw);
+	display: flex;
+	flex-direction: column;
+
+	> h2 {
+		margin: 0;
+	}
+}

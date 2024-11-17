@@ -13,12 +13,14 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import { use } from "react"
+import { use, useCallback } from "react"
 import { getAvatarURL } from "@/api/media.ts"
 import { RoomStateStore } from "@/api/statestore"
 import { useEventAsState } from "@/util/eventdispatcher.ts"
 import MainScreenContext from "../MainScreenContext.ts"
 import { LightboxContext } from "../modal/Lightbox.tsx"
+import { ModalContext } from "../modal/Modal.tsx"
+import SettingsView from "../settings/SettingsView.tsx"
 import BackIcon from "@/icons/back.svg?react"
 import PeopleIcon from "@/icons/group.svg?react"
 import PinIcon from "@/icons/pin.svg?react"
@@ -34,6 +36,15 @@ const RoomViewHeader = ({ room }: RoomViewHeaderProps) => {
 	const avatarSourceID = roomMeta.lazy_load_summary?.heroes?.length === 1
 		? roomMeta.lazy_load_summary.heroes[0] : room.roomID
 	const mainScreen = use(MainScreenContext)
+	const openModal = use(ModalContext)
+	const openSettings = useCallback(() => {
+		openModal({
+			dimmed: true,
+			boxed: true,
+			innerBoxClass: "settings-view",
+			content: <SettingsView room={room} />,
+		})
+	}, [room, openModal])
 	return <div className="room-header">
 		<button className="back" onClick={mainScreen.clearActiveRoom}><BackIcon/></button>
 		<img
@@ -57,7 +68,7 @@ const RoomViewHeader = ({ room }: RoomViewHeaderProps) => {
 				onClick={mainScreen.clickRightPanelOpener}
 				title="Room Members"
 			><PeopleIcon/></button>
-			<button title="Room Settings"><SettingsIcon/></button>
+			<button title="Room Settings" onClick={openSettings}><SettingsIcon/></button>
 		</div>
 	</div>
 }
