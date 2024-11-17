@@ -71,7 +71,10 @@ export const LoginScreen = ({ client }: LoginScreenProps) => {
 
 	const resolveLoginFlows = useCallback((serverURL: string) => {
 		client.rpc.getLoginFlows(serverURL).then(
-			resp => setLoginFlows(resp.flows.map(flow => flow.type)),
+			resp => {
+				setLoginFlows(resp.flows.map(flow => flow.type))
+				setError("")
+			},
 			err => setError(`Failed to get login flows: ${err}`),
 		)
 	}, [client])
@@ -79,7 +82,7 @@ export const LoginScreen = ({ client }: LoginScreenProps) => {
 		client.rpc.discoverHomeserver(username).then(
 			resp => {
 				const url = resp["m.homeserver"].base_url
-				setLoginFlows(null)
+				setLoginFlows([])
 				setHomeserverURL(url)
 				resolveLoginFlows(url)
 			},
@@ -96,6 +99,15 @@ export const LoginScreen = ({ client }: LoginScreenProps) => {
 			clearTimeout(timeout)
 		}
 	}, [username, resolveHomeserver])
+	useEffect(() => {
+		if (loginFlows !== null || loginFlows === "resolving" || !homeserverURL) {
+			return
+		}
+		const timeout = setTimeout(() => resolveLoginFlows(homeserverURL), 500)
+		return () => {
+			clearTimeout(timeout)
+		}
+	}, [homeserverURL, loginFlows, resolveLoginFlows])
 	const onChangeUsername = useCallback((evt: React.ChangeEvent<HTMLInputElement>) => {
 		setUsername(evt.target.value)
 	}, [])
@@ -120,30 +132,29 @@ export const LoginScreen = ({ client }: LoginScreenProps) => {
 				value={username}
 				onChange={onChangeUsername}
 			/>
-			{supportsPassword !== false && <input
+			<input
+				type="text"
+				id="mxlogin-homeserver-url"
+				placeholder="Homeserver URL (will autofill)"
+				value={homeserverURL}
+				onChange={onChangeHomeserverURL}
+			/>
+			{supportsPassword && <input
 				type="password"
 				id="mxlogin-password"
 				placeholder="Password"
 				value={password}
 				onChange={onChangePassword}
 			/>}
-			<input
-				type="text"
-				id="mxlogin-homeserver-url"
-				placeholder="Homeserver URL"
-				value={homeserverURL}
-				onChange={onChangeHomeserverURL}
-			/>
 			<div className="buttons">
 				{supportsSSO && <button
 					className="mx-login-button"
 					type={supportsPassword ? "button" : "submit"}
 					onClick={supportsPassword ? loginSSO : undefined}
 				>Login with SSO</button>}
-				{supportsPassword !== false && <button
+				{supportsPassword && <button
 					className="mx-login-button"
 					type="submit"
-					disabled={!loginFlows}
 				>Login{supportsSSO || beeperDomain ? " with password" : ""}</button>}
 			</div>
 			{error && <div className="error">
