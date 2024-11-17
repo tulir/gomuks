@@ -8,6 +8,21 @@ div.overlay {
 	&.dimmed {
 		background-color: var(--dimmed-overlay-background-color);
 	}
+
+	&.modal > div.modal-box {
+		background-color: var(--background-color);
+		border-radius: 1rem;
+		padding: 1rem;
+
+		max-width: min(80rem, 80vw);
+		max-height: min(80rem, 80vh);
+		overflow: hidden;
+		display: flex;
+
+		> div.modal-box-inner {
+			overflow: scroll;
+		}
+	}
 }
 
 div.lightbox {

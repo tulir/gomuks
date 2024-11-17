@@ -40,7 +40,7 @@ const ConfirmWithMessageModal = ({
 	const onChangeReason = useCallback((evt: React.ChangeEvent<HTMLInputElement>) => {
 		setReason(evt.target.value)
 	}, [])
-	return <div className="confirm-message-modal">
+	return <>
 		<h3>{title}</h3>
 		<div className="timeline-event-container">
 			<TimelineEvent evt={evt} prevEvt={null} disableMenu={true} />
@@ -53,7 +53,7 @@ const ConfirmWithMessageModal = ({
 			<button onClick={closeModal}>Cancel</button>
 			<button onClick={onConfirmWrapped}>{confirmButton}</button>
 		</div>
-	</div>
+	</>
 }
 
 export default ConfirmWithMessageModal

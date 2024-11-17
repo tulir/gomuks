@@ -18,7 +18,9 @@ import React, { JSX, createContext, useCallback, useLayoutEffect, useReducer, us
 export interface ModalState {
 	content: JSX.Element
 	dimmed?: boolean
-	wrapperClass?: string
+	boxed?: boolean
+	boxClass?: string
+	innerBoxClass?: string
 	onClose?: () => void
 }
 
@@ -52,18 +54,28 @@ export const ModalWrapper = ({ children }: { children: React.ReactNode }) => {
 			wrapperRef.current.focus()
 		}
 	}, [state])
-	return <ModalContext value={setState}>
-		{children}
-		{state && <div
-			className={`overlay ${state.wrapperClass ?? "modal"} ${state.dimmed ? "dimmed" : ""}`}
+	let modal: JSX.Element | null = null
+	if (state) {
+		let content = <ModalCloseContext value={onClickWrapper}>{state.content}</ModalCloseContext>
+		if (state.boxed) {
+			content = <div className={`modal-box ${state.boxClass ?? ""}`}>
+				<div className={`modal-box-inner ${state.innerBoxClass ?? ""}`}>
+					{content}
+				</div>
+			</div>
+		}
+		modal = <div
+			className={`overlay modal ${state.dimmed ? "dimmed" : ""}`}
 			onClick={onClickWrapper}
 			onKeyDown={onKeyWrapper}
 			tabIndex={-1}
 			ref={wrapperRef}
 		>
-			<ModalCloseContext value={onClickWrapper}>
-				{state.content}
-			</ModalCloseContext>
-		</div>}
+			{content}
+		</div>
+	}
+	return <ModalContext value={setState}>
+		{children}
+		{modal}
 	</ModalContext>
 }

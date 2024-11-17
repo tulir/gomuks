@@ -45,21 +45,9 @@ div.event-context-menu-extra {
 	}
 }
 
-div.view-source-modal {
-	max-width: min(80rem, 80vw);
-	max-height: min(80rem, 80vh);
-	overflow: auto;
-	background-color: var(--background-color);
-	border-radius: 1rem;
-	padding: 1rem;
-}
-
 div.confirm-message-modal {
 	width: min(40rem, 80vw);
 	max-height: min(40rem, 80vh);
-	background-color: var(--background-color);
-	border-radius: 1rem;
-	padding: 1rem;
 	display: flex;
 	flex-direction: column;
 	gap: .5rem;

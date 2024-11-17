@@ -19,8 +19,8 @@ import { MemDBEvent, PowerLevelEventContent } from "@/api/types"
 import ClientContext from "../../ClientContext.ts"
 import { ModalCloseContext, ModalContext } from "../../modal/Modal.tsx"
 import { RoomContext, RoomContextData } from "../../roomview/roomcontext.ts"
+import JSONView from "../../util/JSONView.tsx"
 import ConfirmWithMessageModal from "./ConfirmWithMessageModal.tsx"
-import ViewSourceModal from "./ViewSourceModal.tsx"
 import ViewSourceIcon from "@/icons/code.svg?react"
 import DeleteIcon from "@/icons/delete.svg?react"
 import PinIcon from "@/icons/pin.svg?react"
@@ -39,11 +39,17 @@ const EventExtraMenu = ({ evt, room, style }: EventExtraMenuProps) => {
 	const closeModal = use(ModalCloseContext)
 	const openModal = use(ModalContext)
 	const onClickViewSource = useCallback(() => {
-		openModal({ dimmed: true, content: <ViewSourceModal evt={evt}/> })
+		openModal({
+			dimmed: true,
+			boxed: true,
+			content: <JSONView data={evt} />,
+		})
 	}, [evt, openModal])
 	const onClickReport = useCallback(() => {
 		openModal({
 			dimmed: true,
+			boxed: true,
+			innerBoxClass: "confirm-message-modal",
 			content: <RoomContext value={new RoomContextData(room)}>
 				<ConfirmWithMessageModal
 					evt={evt}
@@ -62,6 +68,8 @@ const EventExtraMenu = ({ evt, room, style }: EventExtraMenuProps) => {
 	const onClickRedact = useCallback(() => {
 		openModal({
 			dimmed: true,
+			boxed: true,
+			innerBoxClass: "confirm-message-modal",
 			content: <RoomContext value={new RoomContextData(room)}>
 				<ConfirmWithMessageModal
 					evt={evt}
