@@ -134,20 +134,24 @@ interface SettingsViewProps {
 const CustomCSSInput = ({ setPref, room }: { setPref: SetPrefFunc, room: RoomStateStore }) => {
 	const client = use(ClientContext)!
 	const [context, setContext] = useState(PreferenceContext.Account)
-	const [text, setText] = useState("")
+	const getContextText = useCallback((context: PreferenceContext) => {
+		if (context === PreferenceContext.Account) {
+			return client.store.serverPreferenceCache.custom_css
+		} else if (context === PreferenceContext.Device) {
+			return client.store.localPreferenceCache.custom_css
+		} else if (context === PreferenceContext.RoomAccount) {
+			return room.serverPreferenceCache.custom_css
+		} else if (context === PreferenceContext.RoomDevice) {
+			return room.localPreferenceCache.custom_css
+		}
+	}, [client, room])
+	const origText = getContextText(context)
+	const [text, setText] = useState(origText ?? "")
 	const onChangeContext = useCallback((evt: React.ChangeEvent<HTMLSelectElement>) => {
 		const newContext = evt.target.value as PreferenceContext
 		setContext(newContext)
-		if (newContext === PreferenceContext.Account) {
-			setText(client.store.serverPreferenceCache.custom_css ?? "")
-		} else if (newContext === PreferenceContext.Device) {
-			setText(client.store.localPreferenceCache.custom_css ?? "")
-		} else if (newContext === PreferenceContext.RoomAccount) {
-			setText(room.serverPreferenceCache.custom_css ?? "")
-		} else if (newContext === PreferenceContext.RoomDevice) {
-			setText(room.localPreferenceCache.custom_css ?? "")
-		}
-	}, [client, room])
+		setText(getContextText(newContext) ?? "")
+	}, [getContextText])
 	const onChangeText = useCallback((evt: React.ChangeEvent<HTMLTextAreaElement>) => {
 		setText(evt.target.value)
 	}, [])
@@ -170,8 +174,8 @@ const CustomCSSInput = ({ setPref, room }: { setPref: SetPrefFunc, room: RoomSta
 		</div>
 		<textarea value={text} onChange={onChangeText}/>
 		<div className="buttons">
-			<button className="delete" onClick={onDelete}>Delete</button>
-			<button className="save primary-color-button" onClick={onSave}>Save</button>
+			{origText !== undefined && <button className="delete" onClick={onDelete}>Delete</button>}
+			<button className="save primary-color-button" onClick={onSave} disabled={origText === text}>Save</button>
 		</div>
 	</div>
 }
