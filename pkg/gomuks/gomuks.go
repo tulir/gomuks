@@ -131,9 +131,9 @@ func (gmx *Gomuks) InitDirectories() {
 		} else if logDir = os.Getenv("XDG_STATE_HOME"); logDir != "" {
 			gmx.LogDir = filepath.Join(logDir, "gomuks")
 		} else if runtime.GOOS == "darwin" {
-			gmx.DataDir = filepath.Join(homeDir, "Library", "Logs", "gomuks")
+			gmx.LogDir = filepath.Join(homeDir, "Library", "Logs", "gomuks")
 		} else if runtime.GOOS == "windows" {
-			gmx.DataDir = filepath.Join(gmx.CacheDir, "logs")
+			gmx.LogDir = filepath.Join(gmx.CacheDir, "logs")
 		} else {
 			gmx.LogDir = filepath.Join(homeDir, ".local", "state", "gomuks")
 		}
