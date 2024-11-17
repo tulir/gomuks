@@ -214,7 +214,7 @@ const SettingsView = ({ room }: SettingsViewProps) => {
 		<table>
 			<thead>
 				<tr>
-					<th>name</th>
+					<th>Name</th>
 					<th>Account</th>
 					<th>Device</th>
 					<th>Room (account)</th>
