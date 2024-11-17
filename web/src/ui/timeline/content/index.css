@@ -84,7 +84,7 @@ div.html-body {
 		max-width: 5rem;
 	}
 
-	span.hicli-spoiler {
+	.hicli-spoiler {
 		filter: blur(4px);
 		transition: filter .5s;
 		cursor: var(--clickable-cursor);
@@ -163,6 +163,20 @@ div.media-container {
 	&.video-container {
 		width: 100%;
 		height: 240px;
+	}
+	&.attachment-spoiler {
+		filter: blur(4px);
+		transition: filter .5s;
+		cursor: var(--clickable-cursor);
+
+		&.spoiler-revealed {
+			filter: none;
+			cursor: initial;
+		}
+
+		&:not(.spoiler-revealed) a {
+			pointer-events: none;
+		}
 	}
 
 	> a {

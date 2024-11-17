@@ -28,13 +28,19 @@ export const useMediaContent = (
 		? getEncryptedMediaURL(content.info.thumbnail_file.url) : getMediaURL(content.info?.thumbnail_url)
 	if (content.msgtype === "m.image" || evtType === "m.sticker") {
 		const style = calculateMediaSize(content.info?.w, content.info?.h, containerSize)
+		let className = "image-container"
+		if(content["m.spoiler"] === true) {
+			className += " attachment-spoiler"
+		}
+
 		return [<img
 			loading="lazy"
 			style={style.media}
 			src={mediaURL}
 			alt={content.filename ?? content.body}
+			title={content["m.spoiler.reason"]}
 			onClick={use(LightboxContext)}
-		/>, "image-container", style.container]
+		/>, className, style.container]
 	} else if (content.msgtype === "m.video") {
 		const autoplay = false
 		const controls = !content.info?.["fi.mau.hide_controls"]

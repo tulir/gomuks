@@ -133,6 +133,8 @@ export interface MediaMessageEventContent extends BaseMessageEventContent {
 	url?: ContentURI
 	file?: EncryptedFile
 	info?: MediaInfo
+	"m.spoiler"?: boolean
+	"m.spoiler.reason"?: string
 }
 
 export interface ReactionEventContent {
