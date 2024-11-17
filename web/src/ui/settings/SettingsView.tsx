@@ -190,7 +190,7 @@ const AppliedSettingsView = ({ room }: SettingsViewProps) => {
 			<JSONView data={client.store.serverPreferenceCache}/>
 		</details>
 		<details open>
-			<summary><h4>Global local settings</h4></summary>
+			<summary><h4>Global device settings</h4></summary>
 			<JSONView data={client.store.localPreferenceCache}/>
 		</details>
 		<details open>
@@ -198,7 +198,7 @@ const AppliedSettingsView = ({ room }: SettingsViewProps) => {
 			<JSONView data={room.serverPreferenceCache}/>
 		</details>
 		<details open>
-			<summary><h4>Room local settings</h4></summary>
+			<summary><h4>Room device settings</h4></summary>
 			<JSONView data={room.localPreferenceCache}/>
 		</details>
 	</div>
