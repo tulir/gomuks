@@ -176,9 +176,37 @@ const CustomCSSInput = ({ setPref, room }: { setPref: SetPrefFunc, room: RoomSta
 	</div>
 }
 
+const AppliedSettingsView = ({ room }: SettingsViewProps) => {
+	const client = use(ClientContext)!
+
+	return <div className="applied-settings">
+		<h3>Raw settings data</h3>
+		<details>
+			<summary><h4>Applied settings in this room</h4></summary>
+			<JSONView data={room.preferences}/>
+		</details>
+		<details open>
+			<summary><h4>Global account settings</h4></summary>
+			<JSONView data={client.store.serverPreferenceCache}/>
+		</details>
+		<details open>
+			<summary><h4>Global local settings</h4></summary>
+			<JSONView data={client.store.localPreferenceCache}/>
+		</details>
+		<details open>
+			<summary><h4>Room account settings</h4></summary>
+			<JSONView data={room.serverPreferenceCache}/>
+		</details>
+		<details open>
+			<summary><h4>Room local settings</h4></summary>
+			<JSONView data={room.localPreferenceCache}/>
+		</details>
+	</div>
+}
+
 const SettingsView = ({ room }: SettingsViewProps) => {
 	const client = use(ClientContext)!
-	const setPref = useCallback((context: PreferenceContext, key: keyof Preferences, value: PreferenceValueType | undefined)=>  {
+	const setPref = useCallback((context: PreferenceContext, key: keyof Preferences, value: PreferenceValueType | undefined) => {
 		if (context === PreferenceContext.Account) {
 			client.rpc.setAccountData("fi.mau.gomuks.preferences", {
 				...client.store.serverPreferenceCache,
@@ -236,7 +264,7 @@ const SettingsView = ({ room }: SettingsViewProps) => {
 			</tbody>
 		</table>
 		<CustomCSSInput setPref={setPref} room={room} />
-		<JSONView data={room.preferences} />
+		<AppliedSettingsView room={room} />
 	</>
 }
 

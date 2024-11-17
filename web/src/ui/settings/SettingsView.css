@@ -3,8 +3,12 @@ div.settings-view {
 	display: flex;
 	flex-direction: column;
 
-	h2, h3 {
+	h2, h3, h4 {
 		margin: 0;
+	}
+
+	summary > h3, summary > h4 {
+		display: inline;
 	}
 
 	table {

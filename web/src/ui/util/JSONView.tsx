@@ -54,9 +54,9 @@ function renderJSONValue(data: unknown, collapsed: boolean) {
 			}
 			return <ul className="json-object-children">
 				{entries.map(([key, value], index, arr) =>
-					<li key={key} className="json-object-entry">
+					value !== undefined ? <li key={key} className="json-object-entry">
 						<JSONValueWithKey data={value} objectKey={key} trailingComma={index < arr.length - 1}/>
-					</li>)}
+					</li> : null)}
 			</ul>
 		}
 	case "string":
