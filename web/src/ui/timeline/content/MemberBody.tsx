@@ -29,17 +29,25 @@ function useChangeDescription(
 		onClick={use(LightboxContext)!}
 		alt=""
 	/>
-	const targetElem = <>{content.avatar_url && targetAvatar} {content.displayname ?? target}</>
+	const targetElem = <>
+		{content.avatar_url && targetAvatar}
+		<span className="name">{content.displayname ?? target}</span>
+	</>
 	if (content.membership === prevContent?.membership) {
 		if (content.displayname !== prevContent.displayname) {
 			if (content.avatar_url !== prevContent.avatar_url) {
-				return "changed their displayname and avatar"
+				return <>changed their displayname and avatar</>
 			} else if (!content.displayname) {
-				return "removed their displayname"
+				return <>removed their displayname</>
 			} else if (!prevContent.displayname) {
-				return `set their displayname to ${content.displayname}`
+				return <>set their displayname to <span className="name">{content.displayname}</span></>
 			}
-			return `changed their displayname from ${prevContent.displayname} to ${content.displayname}`
+			return <>
+				changed their displayname from
+				<span className="name">{prevContent.displayname}</span>
+				to
+				<span className="name">{content.displayname}</span>
+			</>
 		} else if (content.avatar_url !== prevContent.avatar_url) {
 			if (!content.avatar_url) {
 				return "removed their avatar"
@@ -87,7 +95,7 @@ const MemberBody = ({ event, sender }: EventContentProps) => {
 	const content = event.content as MemberEventContent
 	const prevContent = event.unsigned.prev_content as MemberEventContent | undefined
 	return <div className="member-body">
-		<span className="sender-name">{sender?.content.displayname ?? event.sender}</span>
+		<span className="name sender-name">{sender?.content.displayname ?? event.sender}</span>
 		<span className="change-description">
 			{useChangeDescription(event.sender, event.state_key as UserID, content, prevContent)}
 		</span>

@@ -27,6 +27,20 @@ div.member-body {
 	display: flex;
 	align-items: center;
 	gap: .25rem;
+
+	span.name {
+		unicode-bidi: isolate;
+		max-width: 40ch;
+		text-wrap: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+	}
+
+	> span.change-description {
+		display: flex;
+		align-items: center;
+		gap: .25rem;
+	}
 }
 
 div.message-text {
