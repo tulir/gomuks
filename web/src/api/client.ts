@@ -35,6 +35,7 @@ export default class Client {
 	readonly store = new StateStore()
 	#stateRequests: RoomStateGUID[] = []
 	#stateRequestQueued = false
+	#gcInterval: number | undefined
 
 	constructor(readonly rpc: RPCClient) {
 		this.rpc.event.listen(this.#handleEvent)
@@ -71,9 +72,13 @@ export default class Client {
 	start(): () => void {
 		const abort = new AbortController()
 		this.#reallyStart(abort.signal)
+		this.#gcInterval = setInterval(() => {
+			console.log("Garbage collection completed:", this.store.doGarbageCollection())
+		}, window.gcSettings.interval)
 		return () => {
 			abort.abort()
 			this.rpc.stop()
+			clearInterval(this.#gcInterval)
 		}
 	}
 
@@ -276,7 +281,10 @@ export default class Client {
 		room.paginating = true
 		try {
 			const oldestRowID = room.timeline[0]?.timeline_rowid
-			const resp = await this.rpc.paginate(roomID, oldestRowID ?? 0, 100)
+			// Request 50 messages at a time first, increase batch size when going further
+			const count = room.timeline.length < 100 ? 50 : 100
+			console.log("Requesting", count, "messages of history in", roomID)
+			const resp = await this.rpc.paginate(roomID, oldestRowID ?? 0, count)
 			if (room.timeline[0]?.timeline_rowid !== oldestRowID) {
 				throw new Error("Timeline changed while loading history")
 			}

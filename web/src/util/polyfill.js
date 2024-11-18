@@ -24,6 +24,17 @@ if (!window.Iterator?.prototype.map) {
 		}
 		return output
 	}
+	(new Map([])).keys().__proto__.filter = function(callbackFn) {
+		const output = []
+		let i = 0
+		for (const item of this) {
+			if (callbackFn(item, i)) {
+				output.push(item)
+			}
+			i++
+		}
+		return output
+	}
 	Array.prototype.toArray = function() {
 		return this
 	}

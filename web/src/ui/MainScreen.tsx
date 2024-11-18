@@ -68,14 +68,16 @@ class ContextFields implements MainScreenContextFields {
 		window.activeRoom = room
 		this.directSetActiveRoom(room)
 		this.setRightPanel(null)
-		if (room?.stateLoaded === false) {
-			this.client.loadRoomState(room.roomID)
-				.catch(err => console.error("Failed to load room state", err))
-		}
 		this.client.store.activeRoomID = room?.roomID
 		this.keybindings.activeRoom = room
-		if (roomID) {
-			document.querySelector(`div.room-entry[data-room-id="${CSS.escape(roomID)}"]`)
+		if (room) {
+			room.lastOpened = Date.now()
+			if (!room.stateLoaded) {
+				this.client.loadRoomState(room.roomID)
+					.catch(err => console.error("Failed to load room state", err))
+			}
+			document
+				.querySelector(`div.room-entry[data-room-id="${CSS.escape(room.roomID)}"]`)
 				?.scrollIntoView({ block: "nearest" })
 		}
 	}

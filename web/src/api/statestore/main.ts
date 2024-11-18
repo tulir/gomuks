@@ -53,6 +53,18 @@ export interface RoomListEntry {
 	marked_unread: boolean
 }
 
+export interface GCSettings {
+	interval: number,
+	lastOpenedCutoff: number,
+}
+
+window.gcSettings ??= {
+	// Run garbage collection every 15 minutes.
+	interval: 15 * 60 * 1000,
+	// Run garbage collection to rooms not opened in the past 30 minutes.
+	lastOpenedCutoff: 30 * 60 * 1000,
+}
+
 export class StateStore {
 	readonly rooms: Map<RoomID, RoomStateStore> = new Map()
 	readonly roomList = new NonNullCachedEventDispatcher<RoomListEntry[]>([])
@@ -358,5 +370,20 @@ export class StateStore {
 				this.roomList.emit(updatedRoomList)
 			}
 		}
+	}
+
+	doGarbageCollection() {
+		const maxLastOpened = Date.now() - window.gcSettings.lastOpenedCutoff
+		let deletedEvents = 0
+		let deletedState = 0
+		for (const room of this.rooms.values()) {
+			if (room.roomID === this.activeRoomID || room.lastOpened > maxLastOpened) {
+				continue
+			}
+			const [de, ds] = room.doGarbageCollection()
+			deletedEvents += de
+			deletedState += ds
+		}
+		return { deletedEvents, deletedState } as const
 	}
 }
