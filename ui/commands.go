@@ -259,15 +259,15 @@ func cmdDownload(cmd *Command) {
 }
 
 func cmdUpload(cmd *Command) {
-	var path string
+	var paths []string
 	var err error
 	if len(cmd.Args) == 0 {
 		if filepicker.IsSupported() {
-			path, err = filepicker.Open()
+			paths, err = filepicker.Open()
 			if err != nil {
 				cmd.Reply("Failed to open file picker: %v", err)
 				return
-			} else if len(path) == 0 {
+			} else if len(paths) == 0 {
 				cmd.Reply("File picking cancelled")
 				return
 			}
@@ -276,14 +276,16 @@ func cmdUpload(cmd *Command) {
 			return
 		}
 	} else {
-		path, err = filepath.Abs(cmd.RawArgs)
+		paths, err = filepath.Glob(cmd.RawArgs)
 		if err != nil {
-			cmd.Reply("Failed to get absolute path: %v", err)
+			cmd.Reply("Failed to glob path: %v", err)
 			return
 		}
 	}
 
-	go cmd.Room.SendMessageMedia(path)
+	for _, path := range paths {
+		go cmd.Room.SendMessageMedia(path)
+	}
 }
 
 func cmdOpen(cmd *Command) {
