@@ -67,7 +67,7 @@ const StylePreferences = ({ client, activeRoom }: StylePreferencesProps) => {
 	usePreferences(client.store, activeRoom)
 	const preferences = activeRoom?.preferences ?? client.store.preferences
 	useStyle(() => css`
-		div.html-body > a.hicli-matrix-uri-user[href="matrix:u/${CSS.escape(client.userID.slice(1))}"] {
+		div.html-body a.hicli-matrix-uri-user[href="matrix:u/${CSS.escape(client.userID.slice(1))}"] {
 			background-color: var(--highlight-pill-background-color);
 			color: var(--highlight-pill-text-color);
 		}
