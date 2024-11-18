@@ -99,6 +99,9 @@ div.emoji-picker {
 		> div.emoji-shortcode {
 			grid-area: shortcode;
 			color: var(--semisecondary-text-color);
+			text-wrap: nowrap;
+			overflow: hidden;
+			text-overflow: ellipsis;
 		}
 	}
 
