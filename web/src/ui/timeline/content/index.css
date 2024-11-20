@@ -142,10 +142,10 @@ div.html-body {
 		}
 	}
 
-	code {
+	code.hicli-inline-code {
 		background-color: var(--code-background-color);
-		border-radius: 4px;
-		padding: 2px 0.5em;
+		border-radius: .25rem;
+		padding: .125rem .25rem;
 	}
 
 	h1, h2, h3, h4, h5, h6 {
