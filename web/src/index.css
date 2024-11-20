@@ -11,6 +11,8 @@
 	--link-text-color: #0467dd;
 	--visited-link-text-color: var(--link-text-color);
 
+	--code-background-color: rgba(0, 0, 0, 0.15);
+
 	--primary-color: #00c853;
 	--primary-color-dark: #00b24a;
 	--error-color: red;
@@ -72,6 +74,8 @@
 		--secondary-text-color: #888;
 		--semisecondary-text-color: #bbb;
 		--link-text-color: #4187eb;
+
+		--code-background-color: rgba(255, 255, 255, 0.1);
 
 		--primary-color: #00b24a;
 		--primary-color-dark: #00c853;

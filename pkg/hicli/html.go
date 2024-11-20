@@ -560,6 +560,8 @@ Loop:
 				} else {
 					writeSpan(&built, token.Attr)
 				}
+			case atom.Code:
+				built.WriteString(`<code class="hicli-inline-code"`)
 			default:
 				built.WriteByte('<')
 				built.WriteString(token.Data)
