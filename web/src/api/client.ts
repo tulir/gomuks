@@ -13,7 +13,7 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import { CachedEventDispatcher } from "../util/eventdispatcher.ts"
+import { CachedEventDispatcher, NonNullCachedEventDispatcher } from "../util/eventdispatcher.ts"
 import RPCClient, { SendMessageParams } from "./rpc.ts"
 import { RoomStateStore, StateStore } from "./statestore"
 import type {
@@ -25,11 +25,13 @@ import type {
 	RPCEvent,
 	RoomID,
 	RoomStateGUID,
+	SyncStatus,
 	UserID,
 } from "./types"
 
 export default class Client {
 	readonly state = new CachedEventDispatcher<ClientState>()
+	readonly syncStatus = new NonNullCachedEventDispatcher<SyncStatus>({ type: "waiting", error_count: 0 })
 	readonly store = new StateStore()
 	#stateRequests: RoomStateGUID[] = []
 	#stateRequestQueued = false
@@ -82,6 +84,8 @@ export default class Client {
 	#handleEvent = (ev: RPCEvent) => {
 		if (ev.command === "client_state") {
 			this.state.emit(ev.data)
+		} else if (ev.command === "sync_status") {
+			this.syncStatus.emit(ev.data)
 		} else if (ev.command === "sync_complete") {
 			this.store.applySync(ev.data)
 		} else if (ev.command === "events_decrypted") {

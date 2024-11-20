@@ -107,8 +107,20 @@ export interface ClientStateEvent extends RPCCommand<ClientState> {
 	command: "client_state"
 }
 
+export interface SyncStatus {
+	type: "ok" | "waiting" | "errored"
+	error?: string
+	error_count: number
+	last_sync?: number
+}
+
+export interface SyncStatusEvent extends RPCCommand<SyncStatus> {
+	command: "sync_status"
+}
+
 export type RPCEvent =
 	ClientStateEvent |
+	SyncStatusEvent |
 	TypingEvent |
 	SendCompleteEvent |
 	EventsDecryptedEvent |

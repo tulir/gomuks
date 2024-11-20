@@ -16,11 +16,13 @@ import (
 	"go.mau.fi/util/exerrors"
 )
 
-type JSONCommand struct {
-	Command   string          `json:"command"`
-	RequestID int64           `json:"request_id"`
-	Data      json.RawMessage `json:"data"`
+type JSONCommandCustom[T any] struct {
+	Command   string `json:"command"`
+	RequestID int64  `json:"request_id"`
+	Data      T      `json:"data"`
 }
+
+type JSONCommand = JSONCommandCustom[json.RawMessage]
 
 type JSONEventHandler func(*JSONCommand)
 
@@ -31,6 +33,8 @@ func (jeh JSONEventHandler) HandleEvent(evt any) {
 	switch evt.(type) {
 	case *SyncComplete:
 		command = "sync_complete"
+	case *SyncStatus:
+		command = "sync_status"
 	case *EventsDecrypted:
 		command = "events_decrypted"
 	case *Typing:

@@ -27,6 +27,7 @@ const (
 
 func (h *hiSyncer) ProcessResponse(ctx context.Context, resp *mautrix.RespSync, since string) error {
 	c := (*HiClient)(h)
+	c.lastSync = time.Now()
 	ctx = context.WithValue(ctx, syncContextKey, &syncContext{evt: &SyncComplete{
 		Rooms:     make(map[id.RoomID]*SyncRoom, len(resp.Rooms.Join)),
 		LeftRooms: make([]id.RoomID, 0, len(resp.Rooms.Leave)),
@@ -42,12 +43,21 @@ func (h *hiSyncer) ProcessResponse(ctx context.Context, resp *mautrix.RespSync, 
 		return err
 	}
 	c.postProcessSyncResponse(ctx, resp, since)
+	c.syncErrors = 0
+	c.markSyncOK()
 	return nil
 }
 
 func (h *hiSyncer) OnFailedSync(_ *mautrix.RespSync, err error) (time.Duration, error) {
-	(*HiClient)(h).Log.Err(err).Msg("Sync failed, retrying in 1 second")
-	return 1 * time.Second, nil
+	c := (*HiClient)(h)
+	c.syncErrors++
+	delay := 1 * time.Second
+	if c.syncErrors > 5 {
+		delay = max(time.Duration(c.syncErrors)*time.Second, 30*time.Second)
+	}
+	c.markSyncErrored(err)
+	c.Log.Err(err).Dur("retry_in", delay).Msg("Sync failed")
+	return delay, nil
 }
 
 func (h *hiSyncer) GetFilterJSON(_ id.UserID) *mautrix.Filter {

@@ -44,7 +44,10 @@ type HiClient struct {
 	KeyBackupVersion id.KeyBackupVersion
 	KeyBackupKey     *backup.MegolmBackupKey
 
-	PushRules atomic.Pointer[pushrules.PushRuleset]
+	PushRules  atomic.Pointer[pushrules.PushRuleset]
+	SyncStatus atomic.Pointer[SyncStatus]
+	syncErrors int
+	lastSync   time.Time
 
 	EventHandler func(evt any)
 
@@ -87,6 +90,7 @@ func New(rawDB, cryptoDB *dbutil.Database, log zerolog.Logger, pickleKey []byte,
 
 		EventHandler: evtHandler,
 	}
+	c.SyncStatus.Store(syncWaiting)
 	c.ClientStore = &database.ClientStateStore{Database: db}
 	c.Client = &mautrix.Client{
 		UserAgent: mautrix.DefaultUserAgent,
@@ -243,8 +247,10 @@ func (h *HiClient) Sync() {
 	log.Info().Msg("Starting syncing")
 	err := h.Client.SyncWithContext(ctx)
 	if err != nil && ctx.Err() == nil {
+		h.markSyncErrored(err)
 		log.Err(err).Msg("Fatal error in syncer")
 	} else {
+		h.SyncStatus.Store(syncWaiting)
 		log.Info().Msg("Syncing stopped")
 	}
 }

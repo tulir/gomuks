@@ -47,3 +47,22 @@ main.matrix-main {
 		grid-area: rh2;
 	}
 }
+
+div.sync-status {
+	position: fixed;
+	top: 1rem;
+	left: 50%;
+	transform: translate(-50%, 0);
+	padding: 1.5rem;
+	background-color: var(--background-color);
+	border: 1px solid var(--border-color);
+	border-radius: .5rem;
+	display: flex;
+	gap: 1rem;
+
+	&.errored {
+		border: 2px solid var(--error-color);
+		color: var(--error-color);
+		font-weight: bold;
+	}
+}

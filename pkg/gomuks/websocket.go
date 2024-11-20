@@ -33,7 +33,7 @@ import (
 	"go.mau.fi/gomuks/pkg/hicli"
 )
 
-func writeCmd(ctx context.Context, conn *websocket.Conn, cmd *hicli.JSONCommand) error {
+func writeCmd[T any](ctx context.Context, conn *websocket.Conn, cmd *hicli.JSONCommandCustom[T]) error {
 	writer, err := conn.Writer(ctx, websocket.MessageText)
 	if err != nil {
 		return err
@@ -188,17 +188,20 @@ func (gmx *Gomuks) HandleWebsocket(w http.ResponseWriter, r *http.Request) {
 			log.Trace().Int64("req_id", cmd.RequestID).Msg("Sent response to command")
 		}
 	}
-	initData, initErr := json.Marshal(gmx.Client.State())
-	if initErr != nil {
-		log.Err(initErr).Msg("Failed to marshal init message")
-		return
-	}
-	initErr = writeCmd(ctx, conn, &hicli.JSONCommand{
+	initErr := writeCmd(ctx, conn, &hicli.JSONCommandCustom[*hicli.ClientState]{
 		Command: "client_state",
-		Data:    initData,
+		Data:    gmx.Client.State(),
 	})
 	if initErr != nil {
-		log.Err(initErr).Msg("Failed to write init message")
+		log.Err(initErr).Msg("Failed to write init client state message")
+		return
+	}
+	initErr = writeCmd(ctx, conn, &hicli.JSONCommandCustom[*hicli.SyncStatus]{
+		Command: "sync_status",
+		Data:    gmx.Client.SyncStatus.Load(),
+	})
+	if initErr != nil {
+		log.Err(initErr).Msg("Failed to write init sync status message")
 		return
 	}
 	go sendImageAuthToken()

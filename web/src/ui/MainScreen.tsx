@@ -13,10 +13,12 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import { use, useEffect, useInsertionEffect, useLayoutEffect, useMemo, useReducer, useState } from "react"
+import { JSX, use, useEffect, useInsertionEffect, useLayoutEffect, useMemo, useReducer, useState } from "react"
+import { SyncLoader } from "react-spinners"
 import Client from "@/api/client.ts"
 import { RoomStateStore } from "@/api/statestore"
 import type { RoomID } from "@/api/types"
+import { useEventAsState } from "@/util/eventdispatcher.ts"
 import ClientContext from "./ClientContext.ts"
 import MainScreenContext, { MainScreenContextFields } from "./MainScreenContext.ts"
 import StylePreferences from "./StylePreferences.tsx"
@@ -102,10 +104,13 @@ class ContextFields implements MainScreenContextFields {
 	closeRightPanel = () => this.setRightPanel(null)
 }
 
+const SYNC_ERROR_HIDE_DELAY = 30 * 1000
+
 const MainScreen = () => {
 	const [activeRoom, directSetActiveRoom] = useState<RoomStateStore | null>(null)
 	const [rightPanel, setRightPanel] = useReducer(rpReducer, null)
 	const client = use(ClientContext)!
+	const syncStatus = useEventAsState(client.syncStatus)
 	const context = useMemo(
 		() => new ContextFields(setRightPanel, directSetActiveRoom, client),
 		[client],
@@ -144,9 +149,24 @@ const MainScreen = () => {
 	if (rightPanel) {
 		classNames.push("right-panel-open")
 	}
+	let syncLoader: JSX.Element | null = null
+	if (syncStatus.type === "waiting") {
+		syncLoader = <div className="sync-status waiting">
+			<SyncLoader color="var(--primary-color)"/>
+			Waiting for first sync...
+		</div>
+	} else if (
+		syncStatus.type === "errored"
+		&& (syncStatus.error_count > 2 || (syncStatus.last_sync ?? 0) + SYNC_ERROR_HIDE_DELAY < Date.now())
+	) {
+		syncLoader = <div className="sync-status errored" title={syncStatus.error}>
+			<SyncLoader color="var(--error-color)"/>
+			Sync is failing
+		</div>
+	}
 	return <MainScreenContext value={context}>
 		<ModalWrapper>
-			<StylePreferences client={client} activeRoom={activeRoom} />
+			<StylePreferences client={client} activeRoom={activeRoom}/>
 			<main className={classNames.join(" ")} style={extraStyle}>
 				<RoomList activeRoomID={activeRoom?.roomID ?? null}/>
 				{resizeHandle1}
@@ -162,6 +182,7 @@ const MainScreen = () => {
 						{rightPanel && <RightPanel {...rightPanel}/>}
 					</>}
 			</main>
+			{syncLoader}
 		</ModalWrapper>
 	</MainScreenContext>
 }

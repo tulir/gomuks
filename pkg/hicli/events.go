@@ -7,6 +7,7 @@
 package hicli
 
 import (
+	"go.mau.fi/util/jsontime"
 	"maunium.net/go/mautrix/event"
 	"maunium.net/go/mautrix/id"
 
@@ -36,6 +37,21 @@ type SyncComplete struct {
 
 func (c *SyncComplete) IsEmpty() bool {
 	return len(c.Rooms) == 0 && len(c.LeftRooms) == 0 && len(c.AccountData) == 0
+}
+
+type SyncStatusType string
+
+const (
+	SyncStatusOK      SyncStatusType = "ok"
+	SyncStatusWaiting SyncStatusType = "waiting"
+	SyncStatusErrored SyncStatusType = "errored"
+)
+
+type SyncStatus struct {
+	Type       SyncStatusType     `json:"type"`
+	Error      string             `json:"error,omitempty"`
+	ErrorCount int                `json:"error_count"`
+	LastSync   jsontime.UnixMilli `json:"last_sync,omitempty"`
 }
 
 type EventsDecrypted struct {
