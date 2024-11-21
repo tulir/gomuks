@@ -103,7 +103,7 @@ func New(rawDB, cryptoDB *dbutil.Database, log zerolog.Logger, pickleKey []byte,
 				// Default settings from http.DefaultTransport
 				Proxy:                 http.ProxyFromEnvironment,
 				ForceAttemptHTTP2:     true,
-				MaxIdleConns:          100,
+				MaxIdleConns:          5,
 				IdleConnTimeout:       90 * time.Second,
 				TLSHandshakeTimeout:   10 * time.Second,
 				ExpectContinueTimeout: 1 * time.Second,

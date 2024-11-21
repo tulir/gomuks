@@ -33,7 +33,12 @@ import (
 
 type Config struct {
 	Web     WebConfig         `yaml:"web"`
+	Matrix  MatrixConfig      `yaml:"matrix"`
 	Logging zeroconfig.Config `yaml:"logging"`
+}
+
+type MatrixConfig struct {
+	DisableHTTP2 bool `yaml:"disable_http2"`
 }
 
 type WebConfig struct {
@@ -58,6 +63,9 @@ func makeDefaultConfig() Config {
 	return Config{
 		Web: WebConfig{
 			ListenAddress: "localhost:29325",
+		},
+		Matrix: MatrixConfig{
+			DisableHTTP2: false,
 		},
 		Logging: zeroconfig.Config{
 			MinLevel: ptr.Ptr(zerolog.DebugLevel),

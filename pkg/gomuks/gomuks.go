@@ -36,6 +36,7 @@ import (
 	"go.mau.fi/util/dbutil"
 	"go.mau.fi/util/exerrors"
 	"go.mau.fi/util/exzerolog"
+	"golang.org/x/net/http2"
 
 	"go.mau.fi/gomuks/pkg/hicli"
 )
@@ -176,6 +177,15 @@ func (gmx *Gomuks) StartClient() {
 		[]byte("meow"),
 		hicli.JSONEventHandler(gmx.OnEvent).HandleEvent,
 	)
+	httpClient := gmx.Client.Client.Client
+	httpClient.Transport.(*http.Transport).ForceAttemptHTTP2 = false
+	if !gmx.Config.Matrix.DisableHTTP2 {
+		_, err = http2.ConfigureTransports(httpClient.Transport.(*http.Transport))
+		if err != nil {
+			gmx.Log.WithLevel(zerolog.FatalLevel).Err(err).Msg("Failed to configure HTTP/2")
+			os.Exit(13)
+		}
+	}
 	userID, err := gmx.Client.DB.Account.GetFirstUserID(ctx)
 	if err != nil {
 		gmx.Log.WithLevel(zerolog.FatalLevel).Err(err).Msg("Failed to get first user ID")
