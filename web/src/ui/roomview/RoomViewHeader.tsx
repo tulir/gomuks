@@ -20,12 +20,14 @@ import { useEventAsState } from "@/util/eventdispatcher.ts"
 import MainScreenContext from "../MainScreenContext.ts"
 import { LightboxContext } from "../modal/Lightbox.tsx"
 import { ModalContext } from "../modal/Modal.tsx"
+import StateViewer from "../stateviewer/StateViewer.tsx"
 import SettingsView from "../settings/SettingsView.tsx"
 import BackIcon from "@/icons/back.svg?react"
 import PeopleIcon from "@/icons/group.svg?react"
 import PinIcon from "@/icons/pin.svg?react"
 import SettingsIcon from "@/icons/settings.svg?react"
 import "./RoomViewHeader.css"
+
 
 interface RoomViewHeaderProps {
 	room: RoomStateStore
@@ -37,6 +39,14 @@ const RoomViewHeader = ({ room }: RoomViewHeaderProps) => {
 		? roomMeta.lazy_load_summary.heroes[0] : room.roomID
 	const mainScreen = use(MainScreenContext)
 	const openModal = use(ModalContext)
+	const openStateViewer = useCallback(() => {
+		openModal({
+			dimmed: true,
+			boxed: true,
+			innerBoxClass: "state-view",
+			content: <StateViewer room={room} />,
+		})
+	}, [room, openModal])
 	const openSettings = useCallback(() => {
 		openModal({
 			dimmed: true,
@@ -68,6 +78,10 @@ const RoomViewHeader = ({ room }: RoomViewHeaderProps) => {
 				onClick={mainScreen.clickRightPanelOpener}
 				title="Room Members"
 			><PeopleIcon/></button>
+			<button
+				title="Explore room state"
+				onClick={openStateViewer}
+			>s</button>
 			<button title="Room Settings" onClick={openSettings}><SettingsIcon/></button>
 		</div>
 	</div>
