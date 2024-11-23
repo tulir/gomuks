@@ -39,6 +39,14 @@ const RoomViewHeader = ({ room }: RoomViewHeaderProps) => {
 		? roomMeta.lazy_load_summary.heroes[0] : room.roomID
 	const mainScreen = use(MainScreenContext)
 	const openModal = use(ModalContext)
+	const openStateViewer = useCallback(() => {
+		openModal({
+			dimmed: true,
+			boxed: true,
+			innerBoxClass: "state-view",
+			content: <StateViewer room={room} />,
+		})
+	}, [room, openModal])
 	const openSettings = useCallback(() => {
 		openModal({
 			dimmed: true,
