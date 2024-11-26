@@ -44,6 +44,12 @@ div.member-body {
 	}
 }
 
+div.room-avatar-body {
+	display: flex;
+	align-items: center;
+	gap: .25rem;
+}
+
 div.message-text {
 	&.plaintext-body {
 		white-space: pre-wrap;

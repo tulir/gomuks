@@ -73,6 +73,18 @@ export interface MemberEventContent extends UserProfile {
 	reason?: string
 }
 
+export interface RoomAvatarEventContent {
+	url?: ContentURI
+}
+
+export interface RoomNameEventContent {
+	name?: string
+}
+
+export interface RoomTopicEventContent {
+	topic?: string
+}
+
 export interface ACLEventContent {
 	allow?: string[]
 	allow_ip_literals?: boolean
