@@ -13,7 +13,7 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import { JSX, use, useEffect } from "react"
+import { JSX, RefObject, use, useEffect } from "react"
 import { getAvatarURL, getMediaURL } from "@/api/media.ts"
 import { RoomStateStore, useCustomEmojis } from "@/api/statestore"
 import { Emoji, emojiToMarkdown, useSortedAndFilteredEmojis } from "@/util/emoji"
@@ -37,6 +37,7 @@ export interface AutocompleteQuery {
 export interface AutocompleterProps {
 	setState: (state: Partial<ComposerState>) => void
 	setAutocomplete: (params: AutocompleteQuery | null) => void
+	textInput: RefObject<HTMLTextAreaElement | null>
 	state: ComposerState
 	params: AutocompleteQuery
 	room: RoomStateStore
@@ -52,7 +53,7 @@ interface InnerAutocompleterProps<T> extends AutocompleterProps {
 }
 
 function useAutocompleter<T>({
-	params, state, setState, setAutocomplete,
+	params, state, setState, setAutocomplete, textInput,
 	items, getText, getKey, render,
 }: InnerAutocompleterProps<T>) {
 	const onSelect = useEvent((index: number) => {
@@ -61,12 +62,20 @@ function useAutocompleter<T>({
 		}
 		index = positiveMod(index, items.length)
 		const replacementText = getText(items[index])
+		const newText = state.text.slice(0, params.startPos) + replacementText + state.text.slice(params.endPos)
+		const endPos = params.startPos + replacementText.length
+		if (textInput.current) {
+			// React messes up the selection when changing the value for some reason,
+			// so bypass react here to avoid the caret jumping to the end and closing the autocompleter
+			textInput.current.value = newText
+			textInput.current.setSelectionRange(endPos, endPos)
+		}
 		setState({
-			text: state.text.slice(0, params.startPos) + replacementText + state.text.slice(params.endPos),
+			text: newText,
 		})
 		setAutocomplete({
 			...params,
-			endPos: params.startPos + replacementText.length,
+			endPos,
 			frozenQuery: params.frozenQuery ?? params.query,
 		})
 		document.querySelector(`div.autocompletion-item[data-index='${index}']`)?.scrollIntoView({ block: "nearest" })

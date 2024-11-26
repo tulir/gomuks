@@ -393,6 +393,7 @@ const MessageComposer = () => {
 			state={state}
 			setState={setState}
 			setAutocomplete={setAutocomplete}
+			textInput={textInput}
 		/></div>}
 		<div className="message-composer" ref={composerRef}>
 			{replyToEvt && <ReplyBody
