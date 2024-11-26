@@ -13,8 +13,9 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
+import type { RoomListEntry } from "@/api/statestore"
 import { parseMXC } from "@/util/validation.ts"
-import { UserID, UserProfile } from "./types"
+import { ContentURI, DBRoom, UserID, UserProfile } from "./types"
 
 export const getMediaURL = (mxc?: string, encrypted: boolean = false): string | undefined => {
 	const [server, mediaID] = parseMXC(mxc)
@@ -87,4 +88,15 @@ export const getAvatarURL = (userID: UserID, content?: UserProfile | null): stri
 	}
 	const fallback = `${backgroundColor}:${fallbackCharacter}`
 	return `_gomuks/media/${server}/${mediaID}?encrypted=false&fallback=${encodeURIComponent(fallback)}`
+}
+
+export const getRoomAvatarURL = (room: DBRoom | RoomListEntry, avatarOverride?: ContentURI): string | undefined => {
+	let dmUserID: UserID | undefined
+	if ("dm_user_id" in room) {
+		dmUserID = room.dm_user_id
+	} else if ("lazy_load_summary" in room) {
+		dmUserID = room.lazy_load_summary?.heroes?.length === 1
+			? room.lazy_load_summary.heroes[0] : undefined
+	}
+	return getAvatarURL(dmUserID ?? room.room_id, { displayname: room.name, avatar_url: avatarOverride ?? room.avatar })
 }

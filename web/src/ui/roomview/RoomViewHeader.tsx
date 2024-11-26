@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import { use, useCallback } from "react"
-import { getAvatarURL } from "@/api/media.ts"
+import { getRoomAvatarURL } from "@/api/media.ts"
 import { RoomStateStore } from "@/api/statestore"
 import { useEventAsState } from "@/util/eventdispatcher.ts"
 import MainScreenContext from "../MainScreenContext.ts"
@@ -33,8 +33,6 @@ interface RoomViewHeaderProps {
 
 const RoomViewHeader = ({ room }: RoomViewHeaderProps) => {
 	const roomMeta = useEventAsState(room.meta)
-	const avatarSourceID = roomMeta.lazy_load_summary?.heroes?.length === 1
-		? roomMeta.lazy_load_summary.heroes[0] : room.roomID
 	const mainScreen = use(MainScreenContext)
 	const openModal = use(ModalContext)
 	const openSettings = useCallback(() => {
@@ -50,7 +48,7 @@ const RoomViewHeader = ({ room }: RoomViewHeaderProps) => {
 		<img
 			className="avatar"
 			loading="lazy"
-			src={getAvatarURL(avatarSourceID, { avatar_url: roomMeta.avatar, displayname: roomMeta.name })}
+			src={getRoomAvatarURL(roomMeta)}
 			onClick={use(LightboxContext)}
 			alt=""
 		/>
