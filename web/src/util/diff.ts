@@ -15,19 +15,19 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 const minSizeForSet = 10
 
-export function listDiff<T>(newArr: T[], oldArr: T[]): { added: T[], removed: T[] } {
+export function listDiff<T>(newArr: T[], oldArr: T[]): [added: T[], removed: T[]] {
 	if (oldArr.length < minSizeForSet && newArr.length < minSizeForSet) {
-		return {
-			removed: oldArr.filter(item => !newArr.includes(item)),
-			added: newArr.filter(item => !oldArr.includes(item)),
-		}
+		return [
+			newArr.filter(item => !oldArr.includes(item)),
+			oldArr.filter(item => !newArr.includes(item)),
+		]
 	}
 	const oldSet = new Set(oldArr)
 	const newSet = new Set(newArr)
-	return {
-		removed: oldArr.filter(item => !newSet.has(item)),
-		added: newArr.filter(item => !oldSet.has(item)),
-	}
+	return [
+		newArr.filter(item => !oldSet.has(item)),
+		oldArr.filter(item => !newSet.has(item)),
+	]
 }
 
 export function objectDiff<T>(

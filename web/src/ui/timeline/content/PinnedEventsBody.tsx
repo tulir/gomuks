@@ -19,7 +19,7 @@ import { oxfordHumanJoin } from "@/util/join.ts"
 import EventContentProps from "./props.ts"
 
 function renderPinChanges(content: PinnedEventsContent, prevContent?: PinnedEventsContent): string {
-	const { added, removed } = listDiff(content.pinned ?? [], prevContent?.pinned ?? [])
+	const [added, removed] = listDiff(content.pinned ?? [], prevContent?.pinned ?? [])
 	if (added.length) {
 		if (removed.length) {
 			return `pinned ${oxfordHumanJoin(added)} and unpinned ${oxfordHumanJoin(removed)}`

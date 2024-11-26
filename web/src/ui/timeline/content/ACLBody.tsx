@@ -13,15 +13,70 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-// import { ACLEventContent } from "@/api/types"
+import { Fragment, JSX } from "react"
+import { ACLEventContent } from "@/api/types"
+import { listDiff } from "@/util/diff.ts"
+import { humanJoinReact, joinReact } from "@/util/reactjoin.tsx"
 import EventContentProps from "./props.ts"
 
+function joinServers(arr: string[]): JSX.Element[] {
+	return humanJoinReact(arr.map(item => <code className="server-name">{item}</code>))
+}
+
+function makeACLChangeString(
+	addedAllow: string[], removedAllow: string[],
+	addedDeny: string[], removedDeny: string[],
+	prevAllowIP: boolean, newAllowIP: boolean,
+) {
+	const parts = []
+	if (addedDeny.length > 0) {
+		parts.push(<>Servers matching {joinServers(addedDeny)} are now banned.</>)
+	}
+	if (removedDeny.length > 0) {
+		parts.push(<>Servers matching {joinServers(removedDeny)} were removed from the ban list.</>)
+	}
+	if (addedAllow.length > 0) {
+		parts.push(<>Servers matching {joinServers(addedAllow)} are now allowed.</>)
+	}
+	if (removedAllow.length > 0) {
+		parts.push(<>Servers matching {joinServers(removedAllow)} were removed from the allowed list.</>)
+	}
+	if (prevAllowIP !== newAllowIP) {
+		parts.push(
+			<>Participating from a server using an IP literal hostname is now {newAllowIP ? "allowed" : "banned"}.</>,
+		)
+	}
+	return joinReact(parts)
+}
+
+function ensureArray(val: unknown): string[] {
+	return Array.isArray(val) ? val : []
+}
+
 const ACLBody = ({ event, sender }: EventContentProps) => {
-	// const content = event.content as ACLEventContent
-	// const prevContent = event.unsigned.prev_content as ACLEventContent | undefined
-	// TODO diff content and prevContent
+	const content = event.content as ACLEventContent
+	const prevContent = event.unsigned.prev_content as ACLEventContent | undefined
+	const [addedAllow, removedAllow] = listDiff(ensureArray(content.allow), ensureArray(prevContent?.allow))
+	const [addedDeny, removedDeny] = listDiff(ensureArray(content.deny), ensureArray(prevContent?.deny))
+	const prevAllowIP = prevContent?.allow_ip_literals ?? true
+	const newAllowIP = content.allow_ip_literals ?? true
+	if (
+		prevAllowIP === newAllowIP
+		&& !addedAllow.length && !removedAllow.length
+		&& !addedDeny.length && !removedDeny.length
+	) {
+		return <div className="acl-body">
+			{sender?.content.displayname ?? event.sender} sent a server ACL event with no changes
+		</div>
+	}
+	let changeString = makeACLChangeString(addedAllow, removedAllow, addedDeny, removedDeny, prevAllowIP, newAllowIP)
+	if (ensureArray(content.allow).length === 0) {
+		changeString = [<Fragment key="yay">
+			🎉 All servers are banned from participating! This room can no longer be used.
+		</Fragment>]
+	}
 	return <div className="acl-body">
-		{sender?.content.displayname ?? event.sender} changed the server ACLs
+		{sender?.content.displayname ?? event.sender} changed the server ACLs: {changeString}
 	</div>
 }
 
