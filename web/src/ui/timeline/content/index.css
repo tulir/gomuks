@@ -40,6 +40,7 @@ div.member-body {
 		display: flex;
 		align-items: center;
 		gap: .25rem;
+		text-wrap: nowrap;
 	}
 }
 
