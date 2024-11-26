@@ -76,7 +76,7 @@ function renderUserInfo({ userID, profile, error, openLightbox }: RenderUserInfo
 		</div>
 		<div className="displayname" title={displayname}>{displayname}</div>
 		<div className="userid" title={userID}>{userID}</div>
-		{error && <div className="error">{`${error}`}</div>}
+		{error ? <div className="error">{`${error}`}</div> : null}
 	</>
 }
 

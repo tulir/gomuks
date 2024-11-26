@@ -8,7 +8,7 @@ require (
 	github.com/alecthomas/chroma/v2 v2.14.0
 	github.com/chzyer/readline v1.5.1
 	github.com/coder/websocket v1.8.12
-	github.com/gabriel-vasile/mimetype v1.4.6
+	github.com/gabriel-vasile/mimetype v1.4.7
 	github.com/lucasb-eyer/go-colorful v1.2.0
 	github.com/mattn/go-sqlite3 v1.14.24
 	github.com/rivo/uniseg v0.4.7
@@ -24,7 +24,7 @@ require (
 	golang.org/x/text v0.20.0
 	gopkg.in/yaml.v3 v3.0.1
 	maunium.net/go/mauflag v1.0.0
-	maunium.net/go/mautrix v0.22.1-0.20241120171618-4cd2bb62ff01
+	maunium.net/go/mautrix v0.22.1-0.20241126202918-4b970e0ea7e6
 	mvdan.cc/xurls/v2 v2.5.0
 )
 

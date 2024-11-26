@@ -14,8 +14,8 @@
 		"@types/react": "npm:types-react@rc",
 		"@types/react-dom": "npm:types-react-dom@rc",
 		"katex": "^0.16.11",
-		"react": "^19.0.0-rc-0751fac7-20241002",
-		"react-dom": "^19.0.0-rc-0751fac7-20241002",
+		"react": "^19.0.0-rc.1",
+		"react-dom": "^19.0.0-rc.1",
 		"react-spinners": "^0.14.1",
 		"unhomoglyph": "^1.0.6"
 	},
