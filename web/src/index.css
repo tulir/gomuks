@@ -1,4 +1,5 @@
 :root {
+	color-scheme: light;
 	--font-stack: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
 	--monospace-font-stack: "Fira Code", monospace;
 
@@ -67,6 +68,7 @@
 	--clickable-cursor: default;
 
 	@media (prefers-color-scheme: dark) {
+		color-scheme: dark;
 		--background-color: #000;
 		--login-background-color: #111;
 		--text-color: #fff;
