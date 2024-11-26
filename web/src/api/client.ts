@@ -274,9 +274,8 @@ export default class Client {
 		const room = this.store.rooms.get(roomID)
 		if (!room) {
 			throw new Error("Room not found")
-		}
-		if (room.paginating) {
-			return
+		} else if (room.paginating) {
+			throw new Error("Already paginating")
 		}
 		room.paginating = true
 		try {
@@ -288,6 +287,7 @@ export default class Client {
 			if (room.timeline[0]?.timeline_rowid !== oldestRowID) {
 				throw new Error("Timeline changed while loading history")
 			}
+			room.hasMoreHistory = resp.has_more
 			room.applyPagination(resp.events)
 		} finally {
 			room.paginating = false

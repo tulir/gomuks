@@ -5,4 +5,15 @@ div.timeline-view {
 	display: flex;
 	flex-direction: column;
 	justify-content: space-between;
+
+	> div.timeline-beginning {
+		display: flex;
+		justify-content: space-around;
+
+		> button {
+			display: flex;
+			padding: .5rem 1rem;
+			gap: .5rem;
+		}
+	}
 }

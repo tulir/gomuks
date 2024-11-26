@@ -112,6 +112,7 @@ export class RoomStateStore {
 	paginating = false
 	paginationRequestedForRow = -1
 	readUpToRow = -1
+	hasMoreHistory = true
 
 	constructor(meta: DBRoom, private parent: StateStore) {
 		this.roomID = meta.room_id
@@ -467,6 +468,7 @@ export class RoomStateStore {
 		this.#membersCache = null
 		this.#autocompleteMembersCache = null
 		this.paginationRequestedForRow = -1
+		this.hasMoreHistory = true
 		this.timeline = []
 		this.notifyTimelineSubscribers()
 		const eventsToKeepList = this.eventsByRowID.values()

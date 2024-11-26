@@ -13,7 +13,8 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import { use, useCallback, useEffect, useLayoutEffect, useRef } from "react"
+import { use, useCallback, useEffect, useLayoutEffect, useRef, useState } from "react"
+import { ScaleLoader } from "react-spinners"
 import { useRoomTimeline } from "@/api/statestore"
 import { MemDBEvent } from "@/api/types"
 import useFocus from "@/util/focus.ts"
@@ -27,14 +28,18 @@ const TimelineView = () => {
 	const room = roomCtx.store
 	const timeline = useRoomTimeline(room)
 	const client = use(ClientContext)!
+	const [isLoadingHistory, setLoadingHistory] = useState(false)
 	const loadHistory = useCallback(() => {
+		setLoadingHistory(true)
 		client.loadMoreHistory(room.roomID)
 			.catch(err => console.error("Failed to load history", err))
+			.finally(() => setLoadingHistory(false))
 	}, [client, room])
 	const bottomRef = roomCtx.timelineBottomRef
 	const topRef = useRef<HTMLDivElement>(null)
 	const timelineViewRef = useRef<HTMLDivElement>(null)
 	const prevOldestTimelineRow = useRef(0)
+	const oldestTimelineRow = timeline[0]?.timeline_rowid
 	const oldScrollHeight = useRef(0)
 	const focused = useFocus()
 
@@ -93,7 +98,7 @@ const TimelineView = () => {
 	}, [focused, client, roomCtx, room, timeline])
 	useEffect(() => {
 		const topElem = topRef.current
-		if (!topElem) {
+		if (!topElem || !room.hasMoreHistory) {
 			return
 		}
 		const observer = new IntersectionObserver(entries => {
@@ -108,12 +113,14 @@ const TimelineView = () => {
 		})
 		observer.observe(topElem)
 		return () => observer.unobserve(topElem)
-	}, [room, loadHistory])
+	}, [room, room.hasMoreHistory, loadHistory, oldestTimelineRow])
 
 	let prevEvt: MemDBEvent | null = null
 	return <div className="timeline-view" onScroll={handleScroll} ref={timelineViewRef}>
 		<div className="timeline-beginning">
-			<button onClick={loadHistory}>Load history</button>
+			{room.hasMoreHistory ? <button onClick={loadHistory} disabled={isLoadingHistory}>
+				{isLoadingHistory ? <><ScaleLoader /> Loading history...</> : "Load more history"}
+			</button> : "No more history available in this room"}
 		</div>
 		<div className="timeline-list">
 			<div className="timeline-top-ref" ref={topRef}/>
