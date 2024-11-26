@@ -58,3 +58,18 @@ export function parseMXC(mxc: unknown): [string, string] | [] {
 	}
 	return [match[1], match[2]]
 }
+
+export function ensureString(value: unknown): string {
+	if (typeof value !== "string") {
+		return ""
+	}
+	return value
+}
+
+export function ensureArray(val: unknown): unknown[] {
+	return Array.isArray(val) ? val : []
+}
+
+export function ensureStringArray(val: unknown): string[] {
+	return ensureArray(val).map(ensureString)
+}

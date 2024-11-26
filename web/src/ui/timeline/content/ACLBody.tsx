@@ -17,6 +17,7 @@ import { Fragment, JSX } from "react"
 import { ACLEventContent } from "@/api/types"
 import { listDiff } from "@/util/diff.ts"
 import { humanJoinReact, joinReact } from "@/util/reactjoin.tsx"
+import { ensureArray, ensureStringArray } from "@/util/validation.ts"
 import EventContentProps from "./props.ts"
 
 function joinServers(arr: string[]): JSX.Element[] {
@@ -49,15 +50,11 @@ function makeACLChangeString(
 	return joinReact(parts)
 }
 
-function ensureArray(val: unknown): string[] {
-	return Array.isArray(val) ? val : []
-}
-
 const ACLBody = ({ event, sender }: EventContentProps) => {
 	const content = event.content as ACLEventContent
 	const prevContent = event.unsigned.prev_content as ACLEventContent | undefined
-	const [addedAllow, removedAllow] = listDiff(ensureArray(content.allow), ensureArray(prevContent?.allow))
-	const [addedDeny, removedDeny] = listDiff(ensureArray(content.deny), ensureArray(prevContent?.deny))
+	const [addedAllow, removedAllow] = listDiff(ensureStringArray(content.allow), ensureStringArray(prevContent?.allow))
+	const [addedDeny, removedDeny] = listDiff(ensureStringArray(content.deny), ensureStringArray(prevContent?.deny))
 	const prevAllowIP = prevContent?.allow_ip_literals ?? true
 	const newAllowIP = content.allow_ip_literals ?? true
 	if (
