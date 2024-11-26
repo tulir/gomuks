@@ -91,6 +91,9 @@ const TimelineEvent = ({ evt, prevEvt, disableMenu }: TimelineEventProps) => {
 	if (evt.type === "m.room.member") {
 		wrapperClassNames.push("membership-event")
 	}
+	if (BodyType === HiddenEvent) {
+		wrapperClassNames.push("hidden-event")
+	}
 	let dateSeparator = null
 	const prevEvtDate = prevEvt ? new Date(prevEvt.timestamp) : null
 	if (prevEvtDate && (
@@ -107,7 +110,7 @@ const TimelineEvent = ({ evt, prevEvt, disableMenu }: TimelineEventProps) => {
 	let renderAvatar = true
 	let eventTimeOnly = false
 	if (isSmallEvent(BodyType)) {
-		wrapperClassNames.push("hidden-event")
+		wrapperClassNames.push("small-event")
 		smallAvatar = true
 		eventTimeOnly = true
 	} else if (prevEvt?.sender === evt.sender &&
