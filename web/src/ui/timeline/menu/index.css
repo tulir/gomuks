@@ -45,7 +45,7 @@ div.event-context-menu-extra {
 	}
 }
 
-div.confirm-message-modal {
+div.confirm-message-modal > form {
 	width: min(40rem, 80vw);
 	max-height: min(40rem, 80vh);
 	display: flex;

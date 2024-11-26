@@ -13,7 +13,7 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import { use, useCallback, useState } from "react"
+import React, { use, useCallback, useState } from "react"
 import { MemDBEvent } from "@/api/types"
 import useEvent from "@/util/useEvent.ts"
 import { ModalCloseContext } from "../../modal/Modal.tsx"
@@ -33,14 +33,15 @@ const ConfirmWithMessageModal = ({
 }: ConfirmWithMessageProps) => {
 	const [reason, setReason] = useState("")
 	const closeModal = use(ModalCloseContext)
-	const onConfirmWrapped = useEvent(() => {
+	const onConfirmWrapped = useEvent((evt: React.FormEvent) => {
+		evt.preventDefault()
 		closeModal()
 		onConfirm(reason)
 	})
 	const onChangeReason = useCallback((evt: React.ChangeEvent<HTMLInputElement>) => {
 		setReason(evt.target.value)
 	}, [])
-	return <>
+	return <form onSubmit={onConfirmWrapped}>
 		<h3>{title}</h3>
 		<div className="timeline-event-container">
 			<TimelineEvent evt={evt} prevEvt={null} disableMenu={true} />
@@ -50,10 +51,10 @@ const ConfirmWithMessageModal = ({
 		</div>
 		<input autoFocus value={reason} type="text" placeholder={placeholder} onChange={onChangeReason} />
 		<div className="confirm-buttons">
-			<button onClick={closeModal}>Cancel</button>
-			<button onClick={onConfirmWrapped}>{confirmButton}</button>
+			<button type="button" onClick={closeModal}>Cancel</button>
+			<button type="submit">{confirmButton}</button>
 		</div>
-	</>
+	</form>
 }
 
 export default ConfirmWithMessageModal
