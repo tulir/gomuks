@@ -96,7 +96,7 @@ func (gmx *Gomuks) LoadConfig() error {
 		gmx.Config.Web.TokenKey = random.String(64)
 		changed = true
 	}
-	if gmx.Config.Web.Username == "" || gmx.Config.Web.PasswordHash == "" {
+	if !gmx.DisableAuth && (gmx.Config.Web.Username == "" || gmx.Config.Web.PasswordHash == "") {
 		fmt.Println("Please create a username and password for authenticating the web app")
 		gmx.Config.Web.Username, err = readline.Line("Username: ")
 		if err != nil {

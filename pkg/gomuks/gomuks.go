@@ -59,7 +59,8 @@ type Gomuks struct {
 
 	FrontendFS embed.FS
 
-	Config Config
+	Config      Config
+	DisableAuth bool
 
 	stopOnce sync.Once
 	stopChan chan struct{}

@@ -41,7 +41,7 @@ import (
 	"go.mau.fi/gomuks/pkg/hicli"
 )
 
-func (gmx *Gomuks) StartServer() {
+func (gmx *Gomuks) CreateAPIRouter() http.Handler {
 	api := http.NewServeMux()
 	api.HandleFunc("GET /websocket", gmx.HandleWebsocket)
 	api.HandleFunc("POST /auth", gmx.Authenticate)
@@ -50,19 +50,25 @@ func (gmx *Gomuks) StartServer() {
 	api.HandleFunc("POST /sso", gmx.PrepareSSO)
 	api.HandleFunc("GET /media/{server}/{media_id}", gmx.DownloadMedia)
 	api.HandleFunc("GET /codeblock/{style}", gmx.GetCodeblockCSS)
-	apiHandler := exhttp.ApplyMiddleware(
+	return exhttp.ApplyMiddleware(
 		api,
 		hlog.NewHandler(*gmx.Log),
 		hlog.RequestIDHandler("request_id", "Request-ID"),
 		requestlog.AccessLogger(false),
-		exhttp.StripPrefix("/_gomuks"),
-		gmx.AuthMiddleware,
 	)
+}
+
+func (gmx *Gomuks) StartServer() {
+	api := gmx.CreateAPIRouter()
 	router := http.NewServeMux()
 	if gmx.Config.Web.DebugEndpoints {
 		router.Handle("/debug/", http.DefaultServeMux)
 	}
-	router.Handle("/_gomuks/", apiHandler)
+	router.Handle("/_gomuks/", exhttp.ApplyMiddleware(
+		api,
+		exhttp.StripPrefix("/_gomuks"),
+		gmx.AuthMiddleware,
+	))
 	if frontend, err := fs.Sub(gmx.FrontendFS, "dist"); err != nil {
 		gmx.Log.Warn().Msg("Frontend not found")
 	} else {
@@ -187,6 +193,10 @@ func (gmx *Gomuks) writeTokenCookie(w http.ResponseWriter) {
 }
 
 func (gmx *Gomuks) Authenticate(w http.ResponseWriter, r *http.Request) {
+	if gmx.DisableAuth {
+		w.WriteHeader(http.StatusOK)
+		return
+	}
 	authCookie, err := r.Cookie("gomuks_auth")
 	if err == nil && gmx.validateAuth(authCookie.Value, false) {
 		hlog.FromRequest(r).Debug().Msg("Authentication successful with existing cookie")

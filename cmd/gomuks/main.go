@@ -19,42 +19,20 @@ package main
 import (
 	"fmt"
 	"os"
-	"runtime"
-	"strings"
-	"time"
 
-	_ "github.com/mattn/go-sqlite3"
-	_ "go.mau.fi/util/dbutil/litestream"
 	flag "maunium.net/go/mauflag"
-	"maunium.net/go/mautrix"
 
 	"go.mau.fi/gomuks/pkg/gomuks"
 	"go.mau.fi/gomuks/pkg/hicli"
+	"go.mau.fi/gomuks/version"
 	"go.mau.fi/gomuks/web"
 )
 
-var (
-	Tag       = "unknown"
-	Commit    = "unknown"
-	BuildTime = "unknown"
-)
-
-const StaticVersion = "0.4.0"
-const URL = "https://github.com/tulir/gomuks"
-
-var (
-	Version          string
-	VersionDesc      string
-	LinkifiedVersion string
-	ParsedBuildTime  time.Time
-)
-
 var wantHelp, _ = flag.MakeHelpFlag()
-var version = flag.MakeFull("v", "version", "View gomuks version and quit.", "false").Bool()
+var wantVersion = flag.MakeFull("v", "version", "View gomuks version and quit.", "false").Bool()
 
 func main() {
 	hicli.InitialDeviceDisplayName = "gomuks web"
-	initVersion(Tag, Commit, BuildTime)
 	flag.SetHelpTitles(
 		"gomuks - A Matrix client written in Go.",
 		"gomuks [-hv]",
@@ -68,53 +46,16 @@ func main() {
 	} else if *wantHelp {
 		flag.PrintHelp()
 		os.Exit(0)
-	} else if *version {
-		fmt.Println(VersionDesc)
+	} else if *wantVersion {
+		fmt.Println(version.Description)
 		os.Exit(0)
 	}
 
 	gmx := gomuks.NewGomuks()
-	gmx.Version = Version
-	gmx.Commit = Commit
-	gmx.LinkifiedVersion = LinkifiedVersion
-	gmx.BuildTime = ParsedBuildTime
+	gmx.Version = version.Version
+	gmx.Commit = version.Commit
+	gmx.LinkifiedVersion = version.LinkifiedVersion
+	gmx.BuildTime = version.ParsedBuildTime
 	gmx.FrontendFS = web.Frontend
 	gmx.Run()
-}
-
-func initVersion(tag, commit, rawBuildTime string) {
-	if len(tag) > 0 && tag[0] == 'v' {
-		tag = tag[1:]
-	}
-	if tag != StaticVersion {
-		suffix := "+dev"
-		if len(commit) > 8 {
-			Version = fmt.Sprintf("%s%s.%s", StaticVersion, suffix, commit[:8])
-		} else {
-			Version = fmt.Sprintf("%s%s.unknown", StaticVersion, suffix)
-		}
-	} else {
-		Version = StaticVersion
-	}
-
-	LinkifiedVersion = fmt.Sprintf("v%s", Version)
-	if tag == Version {
-		LinkifiedVersion = fmt.Sprintf("[v%s](%s/releases/v%s)", Version, URL, tag)
-	} else if len(commit) > 8 {
-		LinkifiedVersion = strings.Replace(LinkifiedVersion, commit[:8], fmt.Sprintf("[%s](%s/commit/%s)", commit[:8], URL, commit), 1)
-	}
-	if rawBuildTime != "unknown" {
-		ParsedBuildTime, _ = time.Parse(time.RFC3339, rawBuildTime)
-	}
-	var builtWith string
-	if ParsedBuildTime.IsZero() {
-		rawBuildTime = "unknown"
-		builtWith = runtime.Version()
-	} else {
-		rawBuildTime = ParsedBuildTime.Format(time.RFC1123)
-		builtWith = fmt.Sprintf("built at %s with %s", rawBuildTime, runtime.Version())
-	}
-	mautrix.DefaultUserAgent = fmt.Sprintf("gomuks/%s %s", Version, mautrix.DefaultUserAgent)
-	VersionDesc = fmt.Sprintf("gomuks %s (%s)", Version, builtWith)
-	BuildTime = rawBuildTime
 }

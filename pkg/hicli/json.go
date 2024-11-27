@@ -28,30 +28,32 @@ type JSONEventHandler func(*JSONCommand)
 
 var outgoingEventCounter atomic.Int64
 
-func (jeh JSONEventHandler) HandleEvent(evt any) {
-	var command string
+func EventTypeName(evt any) string {
 	switch evt.(type) {
 	case *SyncComplete:
-		command = "sync_complete"
+		return "sync_complete"
 	case *SyncStatus:
-		command = "sync_status"
+		return "sync_status"
 	case *EventsDecrypted:
-		command = "events_decrypted"
+		return "events_decrypted"
 	case *Typing:
-		command = "typing"
+		return "typing"
 	case *SendComplete:
-		command = "send_complete"
+		return "send_complete"
 	case *ClientState:
-		command = "client_state"
+		return "client_state"
 	default:
 		panic(fmt.Errorf("unknown event type %T", evt))
 	}
+}
+
+func (jeh JSONEventHandler) HandleEvent(evt any) {
 	data, err := json.Marshal(evt)
 	if err != nil {
 		panic(fmt.Errorf("failed to marshal event %T: %w", evt, err))
 	}
 	jeh(&JSONCommand{
-		Command:   command,
+		Command:   EventTypeName(evt),
 		RequestID: -outgoingEventCounter.Add(1),
 		Data:      data,
 	})

@@ -37,7 +37,7 @@ frontend:
   - export GOPATH="$CI_PROJECT_DIR/.cache"
   - export GOCACHE="$CI_PROJECT_DIR/.cache/build"
   - export MAUTRIX_VERSION=$(cat go.mod | grep 'maunium.net/go/mautrix ' | awk '{ print $2 }')
-  - export GO_LDFLAGS="-s -w -linkmode external -extldflags -static -X main.Tag=$CI_COMMIT_TAG -X main.Commit=$CI_COMMIT_SHA -X 'main.BuildTime=`date -Iseconds`' -X 'maunium.net/go/mautrix.GoModVersion=$MAUTRIX_VERSION'"
+  - export GO_LDFLAGS="-s -w -linkmode external -extldflags -static -X go.mau.fi/gomuks/version.Tag=$CI_COMMIT_TAG -X go.mau.fi/gomuks/version.Commit=$CI_COMMIT_SHA -X 'go.mau.fi/gomuks/version.BuildTime=`date -Iseconds`' -X 'maunium.net/go/mautrix.GoModVersion=$MAUTRIX_VERSION'"
   script:
   - go build -ldflags "$GO_LDFLAGS" -o gomuks ./cmd/gomuks
   artifacts:
@@ -89,7 +89,7 @@ macos/arm64:
   before_script:
   - export PATH=/opt/homebrew/bin:$PATH
   - export MAUTRIX_VERSION=$(cat go.mod | grep 'maunium.net/go/mautrix ' | awk '{ print $2 }')
-  - export GO_LDFLAGS="-X main.Tag=$CI_COMMIT_TAG -X main.Commit=$CI_COMMIT_SHA -X 'main.BuildTime=`date -Iseconds`' -X 'maunium.net/go/mautrix.GoModVersion=$MAUTRIX_VERSION'"
+  - export GO_LDFLAGS="-X go.mau.fi/gomuks/version.Tag=$CI_COMMIT_TAG -X go.mau.fi/gomuks/version.Commit=$CI_COMMIT_SHA -X 'go.mau.fi/gomuks/version.BuildTime=`date -Iseconds`' -X 'maunium.net/go/mautrix.GoModVersion=$MAUTRIX_VERSION'"
   - export LIBRARY_PATH=$(brew --prefix)/lib
   - export CPATH=$(brew --prefix)/include
   script:
