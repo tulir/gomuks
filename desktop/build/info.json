@@ -1,0 +1,15 @@
+{
+	"fixed": {
+		"file_version": "0.4.0"
+	},
+	"info": {
+		"0000": {
+			"ProductVersion": "0.4.0",
+			"CompanyName": "",
+			"FileDescription": "",
+			"LegalCopyright": "© 2024, Tulir Asokan",
+			"ProductName": "gomuks desktop",
+			"Comments": ""
+		}
+	}
+}

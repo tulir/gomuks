@@ -16,6 +16,8 @@
 import { useEffect, useLayoutEffect, useMemo } from "react"
 import { ScaleLoader } from "react-spinners"
 import Client from "./api/client.ts"
+import RPCClient from "./api/rpc.ts"
+import WailsClient from "./api/wailsclient.ts"
 import WSClient from "./api/wsclient.ts"
 import ClientContext from "./ui/ClientContext.ts"
 import MainScreen from "./ui/MainScreen.tsx"
@@ -23,8 +25,15 @@ import { LoginScreen, VerificationScreen } from "./ui/login"
 import { LightboxWrapper } from "./ui/modal/Lightbox.tsx"
 import { useEventAsState } from "./util/eventdispatcher.ts"
 
+function makeRPCClient(): RPCClient {
+	if (window.wails || window._wails) {
+		return new WailsClient()
+	}
+	return new WSClient("_gomuks/websocket")
+}
+
 function App() {
-	const client = useMemo(() => new Client(new WSClient("_gomuks/websocket")), [])
+	const client = useMemo(() => new Client(makeRPCClient()), [])
 	const connState = useEventAsState(client.rpc.connect)
 	const clientState = useEventAsState(client.state)
 	useLayoutEffect(() => {

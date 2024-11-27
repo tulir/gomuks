@@ -16,6 +16,9 @@
 
 if (!window.Iterator?.prototype.map) {
 	(new Map([])).keys().__proto__.map = function(callbackFn) {
+		if (!this) {
+			return []
+		}
 		const output = []
 		let i = 0
 		for (const item of this) {
@@ -25,6 +28,9 @@ if (!window.Iterator?.prototype.map) {
 		return output
 	}
 	(new Map([])).keys().__proto__.filter = function(callbackFn) {
+		if (!this) {
+			return []
+		}
 		const output = []
 		let i = 0
 		for (const item of this) {
