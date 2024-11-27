@@ -43,6 +43,7 @@ div.room-entry {
 	width: 100%;
 	display: flex;
 	gap: 4px;
+	-webkit-user-select: none;
 	user-select: none;
 	cursor: var(--clickable-cursor);
 	height: 3rem;
