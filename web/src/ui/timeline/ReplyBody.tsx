@@ -85,6 +85,9 @@ export const ReplyBody = ({ room, event, onClose, isThread, isEditing }: ReplyBo
 	if (isEditing) {
 		classNames.push("editing")
 	}
+	if (event.sender === use(ClientContext)?.userID) {
+		classNames.push("sender-self")
+	}
 	const userColorIndex = getUserColorIndex(event.sender)
 	classNames.push(`sender-color-${userColorIndex}`)
 	return <blockquote data-reply-to={event.event_id} className={classNames.join(" ")} onClick={onClickReply}>

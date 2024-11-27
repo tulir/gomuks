@@ -94,6 +94,9 @@ const TimelineEvent = ({ evt, prevEvt, disableMenu }: TimelineEventProps) => {
 	if (BodyType === HiddenEvent) {
 		wrapperClassNames.push("hidden-event")
 	}
+	if (evt.sender === client.userID) {
+		wrapperClassNames.push("sender-self")
+	}
 	let dateSeparator = null
 	const prevEvtDate = prevEvt ? new Date(prevEvt.timestamp) : null
 	if (prevEvtDate && (
