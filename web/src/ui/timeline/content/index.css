@@ -105,6 +105,18 @@ div.html-body {
 		max-width: 5rem;
 	}
 
+	span.spoiler-reason {
+		font-size: .8em;
+		color: var(--secondary-text-color);
+
+		&::before {
+			content: "(";
+		}
+		&::after {
+			content: ") ";
+		}
+	}
+
 	span.hicli-spoiler {
 		filter: blur(4px);
 		transition: filter .5s;

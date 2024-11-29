@@ -441,7 +441,7 @@ func writeSpan(w *strings.Builder, attr []html.Attribute) {
 	if isSpoiler && spoiler != "" {
 		w.WriteString(`<span class="spoiler-reason">`)
 		w.WriteString(spoiler)
-		w.WriteString(" </span>")
+		w.WriteString("</span>")
 	}
 	w.WriteByte('<')
 	w.WriteString("span")
