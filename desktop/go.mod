@@ -15,6 +15,7 @@ require (
 	github.com/ProtonMail/go-crypto v0.0.0-20230828082145-3c4c8a2d2371 // indirect
 	github.com/alecthomas/chroma/v2 v2.14.0 // indirect
 	github.com/bep/debounce v1.2.1 // indirect
+	github.com/buckket/go-blurhash v1.1.0 // indirect
 	github.com/chzyer/readline v1.5.1 // indirect
 	github.com/cloudflare/circl v1.3.7 // indirect
 	github.com/coder/websocket v1.8.12 // indirect

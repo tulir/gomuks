@@ -35,6 +35,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/buckket/go-blurhash"
 	"github.com/gabriel-vasile/mimetype"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/hlog"
@@ -491,12 +492,19 @@ func (gmx *Gomuks) generateFileInfo(ctx context.Context, file *os.File) (event.M
 	case "image":
 		msgType = event.MsgImage
 		defaultFileName = "image" + mimeType.Extension()
-		cfg, _, err := image.DecodeConfig(file)
+		img, _, err := image.Decode(file)
 		if err != nil {
 			zerolog.Ctx(ctx).Warn().Err(err).Msg("Failed to decode image config")
+		} else {
+			bounds := img.Bounds()
+			info.Width = bounds.Dx()
+			info.Height = bounds.Dy()
+			hash, err := blurhash.Encode(4, 3, img)
+			if err != nil {
+				zerolog.Ctx(ctx).Warn().Err(err).Msg("Failed to generate image blurhash")
+			}
+			info.AnoaBlurhash = hash
 		}
-		info.Width = cfg.Width
-		info.Height = cfg.Height
 	case "video":
 		msgType = event.MsgVideo
 		defaultFileName = "video" + mimeType.Extension()
