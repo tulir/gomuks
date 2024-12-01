@@ -5,7 +5,7 @@ import svgr from "vite-plugin-svgr"
 export default defineConfig({
 	base: "./",
 	build: {
-		target: ["esnext", "firefox128"],
+		target: ["esnext", "firefox128", "chrome131", "safari18"],
 		rollupOptions: {
 			output: {
 				manualChunks: id => {
