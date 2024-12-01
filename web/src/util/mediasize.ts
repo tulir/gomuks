@@ -26,6 +26,7 @@ export interface ImageContainerSize {
 }
 
 export const defaultImageContainerSize: ImageContainerSize = { width: 320, height: 240 }
+export const defaultVideoContainerSize: ImageContainerSize = { width: 400, height: 320 }
 
 export function calculateMediaSize(
 	width?: number,

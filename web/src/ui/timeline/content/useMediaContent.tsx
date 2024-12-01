@@ -16,7 +16,7 @@
 import React, { CSSProperties, JSX, use } from "react"
 import { getEncryptedMediaURL, getMediaURL } from "@/api/media.ts"
 import type { EventType, MediaMessageEventContent } from "@/api/types"
-import { ImageContainerSize, calculateMediaSize } from "@/util/mediasize.ts"
+import { ImageContainerSize, calculateMediaSize, defaultVideoContainerSize } from "@/util/mediasize.ts"
 import { LightboxContext } from "../../modal/Lightbox.tsx"
 import DownloadIcon from "@/icons/download.svg?react"
 
@@ -42,6 +42,7 @@ export const useMediaContent = (
 			onClick={use(LightboxContext)}
 		/>, "image-container", style.container]
 	} else if (content.msgtype === "m.video") {
+		const style = calculateMediaSize(content.info?.w, content.info?.h, containerSize ?? defaultVideoContainerSize)
 		const autoplay = false
 		const controls = !content.info?.["fi.mau.hide_controls"]
 		const loop = !!content.info?.["fi.mau.loop"]
@@ -57,6 +58,7 @@ export const useMediaContent = (
 		return [<video
 			autoPlay={autoplay}
 			controls={controls}
+			style={style.media}
 			loop={loop}
 			poster={thumbnailURL}
 			onMouseOver={onMouseOver}
@@ -64,7 +66,7 @@ export const useMediaContent = (
 			preload="none"
 		>
 			<source src={mediaURL} type={content.info?.mimetype}/>
-		</video>, "video-container", {}]
+		</video>, "video-container", style.container]
 	} else if (content.msgtype === "m.audio") {
 		return [<audio controls src={mediaURL} preload="none"/>, "audio-container", {}]
 	} else if (content.msgtype === "m.file") {
