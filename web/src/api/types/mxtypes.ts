@@ -126,6 +126,11 @@ export interface RelatesTo {
 	}
 }
 
+export interface ContentWarning {
+	type: string
+	description?: string
+}
+
 export interface BaseMessageEventContent {
 	msgtype: string
 	body: string
@@ -133,6 +138,8 @@ export interface BaseMessageEventContent {
 	format?: "org.matrix.custom.html"
 	"m.mentions"?: Mentions
 	"m.relates_to"?: RelatesTo
+	"m.content_warning"?: ContentWarning
+	"town.robin.msc3725.content_warning"?: ContentWarning
 }
 
 export interface TextMessageEventContent extends BaseMessageEventContent {
@@ -178,6 +185,7 @@ export interface MediaInfo {
 
 	"fi.mau.hide_controls"?: boolean
 	"fi.mau.loop"?: boolean
+	"xyz.amorgan.blurhash"?: string
 }
 
 export interface LocationMessageEventContent extends BaseMessageEventContent {
