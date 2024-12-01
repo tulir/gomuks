@@ -2,6 +2,7 @@ div.message-composer {
 	border-top: 1px solid var(--border-color);
 	overflow: hidden;
 	grid-area: input;
+	min-height: 2.2rem;
 
 	blockquote.reply-body > pre {
 		text-wrap: auto !important;
