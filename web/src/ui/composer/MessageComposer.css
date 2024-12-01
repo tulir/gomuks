@@ -2,6 +2,8 @@ div.message-composer {
 	border-top: 1px solid var(--border-color);
 	overflow: hidden;
 	grid-area: input;
+	/* WebKit/Safari requires this hack for some reason, works fine without in other browsers */
+	min-height: 2.25rem;
 
 	blockquote.reply-body > pre {
 		text-wrap: auto !important;
