@@ -199,10 +199,6 @@ div.html-body {
 }
 
 div.media-container {
-	&.image-container, &.video-container {
-		contain: strict;
-	}
-
 	> div.placeholder {
 		position: relative;
 		width: 100%;

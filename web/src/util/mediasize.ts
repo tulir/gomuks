@@ -39,6 +39,10 @@ export function calculateMediaSize(
 			container: {
 				width: `${imageContainerWidth}px`,
 				height: `${imageContainerHeight}px`,
+				containIntrinsicWidth: `${imageContainerWidth}px`,
+				containIntrinsicHeight: `${imageContainerHeight}px`,
+				contentVisibility: "auto",
+				contain: "strict",
 			},
 			media: {},
 		}
@@ -64,6 +68,10 @@ export function calculateMediaSize(
 		container: {
 			width: `${width}px`,
 			height: `${height}px`,
+			containIntrinsicWidth: `${width}px`,
+			containIntrinsicHeight: `${height}px`,
+			contentVisibility: "auto",
+			contain: "strict",
 		},
 		media: {
 			aspectRatio: `${origWidth} / ${origHeight}`,

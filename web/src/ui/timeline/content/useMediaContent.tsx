@@ -25,7 +25,6 @@ export const useMediaContent = (
 	evtType: EventType,
 	containerSize?: ImageContainerSize,
 	onLoad?: () => void,
-	lazyLoad = true,
 ): [JSX.Element | null, string, CSSProperties] => {
 	const mediaURL = content.file?.url ? getEncryptedMediaURL(content.file.url) : getMediaURL(content.url)
 	const thumbnailURL = content.info?.thumbnail_file?.url
@@ -34,7 +33,6 @@ export const useMediaContent = (
 		const style = calculateMediaSize(content.info?.w, content.info?.h, containerSize)
 		return [<img
 			onLoad={onLoad}
-			loading={lazyLoad ? "lazy" : "eager"}
 			style={style.media}
 			src={mediaURL}
 			alt={content.filename ?? content.body}
