@@ -26,7 +26,7 @@ import { LightboxWrapper } from "./ui/modal/Lightbox.tsx"
 import { useEventAsState } from "./util/eventdispatcher.ts"
 
 function makeRPCClient(): RPCClient {
-	if (window.wails || window._wails) {
+	if (window.wails || window._wails || navigator.userAgent.includes("wails.io")) {
 		return new WailsClient()
 	}
 	return new WSClient("_gomuks/websocket")
