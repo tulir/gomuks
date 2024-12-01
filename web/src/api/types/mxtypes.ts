@@ -126,6 +126,18 @@ export interface RelatesTo {
 	}
 }
 
+export enum ContentWarningType {
+	Spoiler = "town.robin.msc3725.spoiler",
+	NSFW = "town.robin.msc3725.nsfw",
+	Graphic = "town.robin.msc3725.graphic",
+	Medical = "town.robin.msc3725.medical",
+}
+
+export interface ContentWarning {
+	type: ContentWarningType
+	description?: string
+}
+
 export interface BaseMessageEventContent {
 	msgtype: string
 	body: string
@@ -133,6 +145,9 @@ export interface BaseMessageEventContent {
 	format?: "org.matrix.custom.html"
 	"m.mentions"?: Mentions
 	"m.relates_to"?: RelatesTo
+	"town.robin.msc3725.content_warning"?: ContentWarning
+	"page.codeberg.everypizza.msc4193.spoiler"?: boolean
+	"page.codeberg.everypizza.msc4193.spoiler.reason"?: string
 }
 
 export interface TextMessageEventContent extends BaseMessageEventContent {
@@ -178,6 +193,7 @@ export interface MediaInfo {
 
 	"fi.mau.hide_controls"?: boolean
 	"fi.mau.loop"?: boolean
+	"xyz.amorgan.blurhash"?: string
 }
 
 export interface LocationMessageEventContent extends BaseMessageEventContent {

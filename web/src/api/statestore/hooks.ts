@@ -13,9 +13,10 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import { useMemo, useSyncExternalStore } from "react"
+import { useEffect, useMemo, useState, useSyncExternalStore } from "react"
 import { CustomEmojiPack } from "@/util/emoji"
 import type { EventID, EventType, MemDBEvent, UnknownEventContent } from "../types"
+import { Preferences, preferences } from "../types/preferences"
 import { StateStore } from "./main.ts"
 import { RoomStateStore } from "./room.ts"
 
@@ -70,6 +71,26 @@ export function useRoomAccountData(room: RoomStateStore | null, type: EventType)
 export function usePreferences(ss: StateStore, room: RoomStateStore | null) {
 	useSyncExternalStore(ss.preferenceSub.subscribe, ss.preferenceSub.getData)
 	useSyncExternalStore(room?.preferenceSub.subscribe ?? noopSubscribe, room?.preferenceSub.getData ?? returnNull)
+}
+
+export function usePreference<T extends keyof Preferences>(
+	ss: StateStore, room: RoomStateStore | null, key: T,
+): typeof preferences[T]["defaultValue"] {
+	const [val, setVal] = useState(
+		(room ? room.preferences[key] : ss.preferences[key]) ?? preferences[key].defaultValue,
+	)
+	useEffect(() => {
+		const checkChanges = () => {
+			setVal((room ? room.preferences[key] : ss.preferences[key]) ?? preferences[key].defaultValue)
+		}
+		const unsubMain = ss.preferenceSub.subscribe(checkChanges)
+		const unsubRoom = room?.preferenceSub.subscribe(checkChanges)
+		return () => {
+			unsubMain()
+			unsubRoom?.()
+		}
+	}, [ss, room, key])
+	return val
 }
 
 export function useCustomEmojis(

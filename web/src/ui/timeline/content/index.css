@@ -199,6 +199,37 @@ div.html-body {
 }
 
 div.media-container {
+	&.image-container, &.video-container {
+		contain: strict;
+	}
+
+	> div.placeholder {
+		position: relative;
+		width: 100%;
+		height: 100%;
+
+		> div.empty-placeholder {
+			background-color: var(--media-placeholder-default-background);
+			width: 100%;
+			height: 100%;
+		}
+
+		> div.placeholder-reason, > div.placeholder-spinner {
+			position: absolute;
+			top: 50%;
+			left: 50%;
+			transform: translate(-50%, -50%);
+		}
+
+		> div.placeholder-reason {
+			background-color: var(--media-placeholder-button-background);
+			padding: 0.5rem;
+			cursor: var(--clickable-cursor);
+			user-select: none;
+			border-radius: .25rem;
+		}
+	}
+
 	&.video-container {
 		width: 100%;
 		height: 240px;

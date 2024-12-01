@@ -14,8 +14,10 @@
 		"@types/react": "npm:types-react@rc",
 		"@types/react-dom": "npm:types-react-dom@rc",
 		"@wailsio/runtime": "^3.0.0-alpha.29",
+		"blurhash": "^2.0.5",
 		"katex": "^0.16.11",
 		"react": "^19.0.0-rc.1",
+		"react-blurhash": "^0.3.0",
 		"react-dom": "^19.0.0-rc.1",
 		"react-spinners": "^0.14.1",
 		"unhomoglyph": "^1.0.6"

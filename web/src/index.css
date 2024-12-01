@@ -13,6 +13,8 @@
 	--visited-link-text-color: var(--link-text-color);
 
 	--code-background-color: rgba(0, 0, 0, 0.15);
+	--media-placeholder-default-background: rgba(0, 0, 0, .1);
+	--media-placeholder-button-background: rgba(255, 255, 255, .5);
 
 	--primary-color: #00c853;
 	--primary-color-dark: #00b24a;
@@ -78,6 +80,8 @@
 		--link-text-color: #4187eb;
 
 		--code-background-color: rgba(255, 255, 255, 0.1);
+		--media-placeholder-default-background: rgba(255, 255, 255, .1);
+		--media-placeholder-button-background: rgba(0, 0, 0, .5);
 
 		--primary-color: #00b24a;
 		--primary-color-dark: #00c853;

@@ -13,7 +13,7 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import { CSSProperties, use } from "react"
+import React, { CSSProperties, JSX, use } from "react"
 import { getEncryptedMediaURL, getMediaURL } from "@/api/media.ts"
 import type { EventType, MediaMessageEventContent } from "@/api/types"
 import { ImageContainerSize, calculateMediaSize } from "@/util/mediasize.ts"
@@ -21,18 +21,24 @@ import { LightboxContext } from "../../modal/Lightbox.tsx"
 import DownloadIcon from "@/icons/download.svg?react"
 
 export const useMediaContent = (
-	content: MediaMessageEventContent, evtType: EventType, containerSize?: ImageContainerSize,
-): [React.ReactElement | null, string, CSSProperties] => {
+	content: MediaMessageEventContent,
+	evtType: EventType,
+	containerSize?: ImageContainerSize,
+	onLoad?: () => void,
+	lazyLoad = true,
+): [JSX.Element | null, string, CSSProperties] => {
 	const mediaURL = content.file?.url ? getEncryptedMediaURL(content.file.url) : getMediaURL(content.url)
 	const thumbnailURL = content.info?.thumbnail_file?.url
 		? getEncryptedMediaURL(content.info.thumbnail_file.url) : getMediaURL(content.info?.thumbnail_url)
 	if (content.msgtype === "m.image" || evtType === "m.sticker") {
 		const style = calculateMediaSize(content.info?.w, content.info?.h, containerSize)
 		return [<img
-			loading="lazy"
+			onLoad={onLoad}
+			loading={lazyLoad ? "lazy" : "eager"}
 			style={style.media}
 			src={mediaURL}
 			alt={content.filename ?? content.body}
+			title={content.filename ?? content.body}
 			onClick={use(LightboxContext)}
 		/>, "image-container", style.container]
 	} else if (content.msgtype === "m.video") {

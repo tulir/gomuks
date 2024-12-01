@@ -43,6 +43,12 @@ export const preferences = {
 		allowedContexts: anyContext,
 		defaultValue: true,
 	}),
+	show_media_previews: new Preference<boolean>({
+		displayName: "Show image and video previews",
+		description: "If disabled, images and videos will only be visible after clicking and will not be downloaded automatically.",
+		allowedContexts: anyContext,
+		defaultValue: true,
+	}),
 	code_block_line_wrap: new Preference<boolean>({
 		displayName: "Code block line wrap",
 		description: "Whether to wrap long lines in code blocks instead of scrolling horizontally.",
