@@ -93,6 +93,7 @@ func main() {
 	gmx.LinkifiedVersion = version.LinkifiedVersion
 	gmx.BuildTime = version.ParsedBuildTime
 	gmx.DisableAuth = true
+	hicli.InitialDeviceDisplayName = "gomuks desktop"
 
 	gmx.InitDirectories()
 	err := gmx.LoadConfig()
