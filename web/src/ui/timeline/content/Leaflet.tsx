@@ -14,8 +14,16 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import L from "leaflet"
+import markerIconRetinaUrl from "leaflet/dist/images/marker-icon-2x.png"
+import markerIconUrl from "leaflet/dist/images/marker-icon.png"
+import markerShadowUrl from "leaflet/dist/images/marker-shadow.png"
 import "leaflet/dist/leaflet.css"
-import { HTMLAttributes, useLayoutEffect, useRef } from "react"
+import { HTMLAttributes, useEffect, useRef } from "react"
+
+L.Icon.Default.prototype.options.iconUrl = markerIconUrl
+L.Icon.Default.prototype.options.iconRetinaUrl = markerIconRetinaUrl
+L.Icon.Default.prototype.options.shadowUrl = markerShadowUrl
+L.Icon.Default.imagePath = ""
 
 const attribution = `&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors`
 
@@ -29,7 +37,7 @@ export interface GomuksLeafletProps extends HTMLAttributes<HTMLDivElement> {
 
 const GomuksLeaflet = ({ tileTemplate, lat, long, prec, marker, ...rest }: GomuksLeafletProps) => {
 	const ref = useRef<HTMLDivElement>(null)
-	useLayoutEffect(() => {
+	useEffect(() => {
 		const container = ref.current
 		if (!container) {
 			return
