@@ -54,6 +54,16 @@ const BooleanPreferenceCell = ({ context, name, setPref, value, inheritedValue }
 	</div>
 }
 
+const TextPreferenceCell = ({ context, name, setPref, value, inheritedValue }: PreferenceCellProps<string>) => {
+	const onChange = useCallback((evt: React.ChangeEvent<HTMLInputElement>) => {
+		setPref(context, name, evt.target.value)
+	}, [setPref, context, name])
+	return <div className="preference string-preference">
+		<input value={value ?? inheritedValue} onChange={onChange}/>
+		{useRemover(context, setPref, name, value)}
+	</div>
+}
+
 const SelectPreferenceCell = ({ context, name, pref, setPref, value, inheritedValue }: PreferenceCellProps<string>) => {
 	const onChange = useCallback((evt: React.ChangeEvent<HTMLSelectElement>) => {
 		setPref(context, name, evt.target.value)
@@ -83,11 +93,16 @@ interface PreferenceRowProps {
 	roomLocal?: PreferenceValueType
 }
 
+const customUIPrefs = new Set([
+	"custom_css",
+	"custom_notification_sound",
+] as (keyof Preferences)[])
+
 const PreferenceRow = ({
 	name, pref, setPref, globalServer, globalLocal, roomServer, roomLocal,
 }: PreferenceRowProps) => {
 	const prefType = typeof pref.defaultValue
-	if (prefType !== "boolean" && !pref.allowedValues) {
+	if (customUIPrefs.has(name)) {
 		return null
 	}
 	const makeContentCell = (
@@ -104,8 +119,17 @@ const PreferenceRow = ({
 				value={val as boolean | undefined}
 				inheritedValue={inheritedVal as boolean}
 			/>
-		} else if (typeof prefType === "string" && pref.allowedValues) {
+		} else if (pref.allowedValues) {
 			return <SelectPreferenceCell
+				name={name}
+				setPref={setPref}
+				context={context}
+				pref={pref as Preference<string>}
+				value={val as string | undefined}
+				inheritedValue={inheritedVal as string}
+			/>
+		} else if (prefType === "string") {
+			return <TextPreferenceCell
 				name={name}
 				setPref={setPref}
 				context={context}

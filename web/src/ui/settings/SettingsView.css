@@ -14,8 +14,23 @@ div.settings-view {
 	table {
 		text-align: left;
 
+		tr {
+			height: 2.5rem;
+		}
+
 		div.preference {
 			display: flex;
+
+			&.select-preference > select {
+				padding: .25rem;
+			}
+
+			&.string-preference > input {
+				border: 1px solid var(--border-color);
+				padding: .25rem;
+				/* TODO make this less hacky */
+				width: 8rem;
+			}
 		}
 	}
 
