@@ -15,7 +15,8 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import React, { use, useCallback, useEffect, useLayoutEffect, useReducer, useRef, useState } from "react"
 import { ScaleLoader } from "react-spinners"
-import { useRoomEvent } from "@/api/statestore"
+import Client from "@/api/client.ts"
+import { RoomStateStore, usePreference, useRoomEvent } from "@/api/statestore"
 import type {
 	EventID,
 	MediaMessageEventContent,
@@ -31,6 +32,7 @@ import useEvent from "@/util/useEvent.ts"
 import ClientContext from "../ClientContext.ts"
 import EmojiPicker from "../emojipicker/EmojiPicker.tsx"
 import { keyToString } from "../keybindings.ts"
+import { LeafletPicker } from "../maps/async.tsx"
 import { ModalContext } from "../modal/Modal.tsx"
 import { useRoomContext } from "../roomview/roomcontext.ts"
 import { ReplyBody } from "../timeline/ReplyBody.tsx"
@@ -40,12 +42,20 @@ import { charToAutocompleteType, emojiQueryRegex, getAutocompleter } from "./get
 import AttachIcon from "@/icons/attach.svg?react"
 import CloseIcon from "@/icons/close.svg?react"
 import EmojiIcon from "@/icons/emoji-categories/smileys-emotion.svg?react"
+import LocationIcon from "@/icons/location.svg?react"
 import SendIcon from "@/icons/send.svg?react"
 import "./MessageComposer.css"
+
+export interface ComposerLocationValue {
+	lat: number
+	long: number
+	prec?: number
+}
 
 export interface ComposerState {
 	text: string
 	media: MediaMessageEventContent | null
+	location: ComposerLocationValue | null
 	replyTo: EventID | null
 	uninited?: boolean
 }
@@ -53,7 +63,7 @@ export interface ComposerState {
 const isMobileDevice = window.ontouchstart !== undefined && window.innerWidth < 800
 const MAX_TEXTAREA_ROWS = 10
 
-const emptyComposer: ComposerState = { text: "", media: null, replyTo: null }
+const emptyComposer: ComposerState = { text: "", media: null, replyTo: null, location: null }
 const uninitedComposer: ComposerState = { ...emptyComposer, uninited: true }
 const composerReducer = (state: ComposerState, action: Partial<ComposerState>) =>
 	({ ...state, ...action, uninited: undefined })
@@ -121,7 +131,7 @@ const MessageComposer = () => {
 	}, [room.roomID])
 	const sendMessage = useEvent((evt: React.FormEvent) => {
 		evt.preventDefault()
-		if (state.text === "" && !state.media) {
+		if (state.text === "" && !state.media && !state.location) {
 			return
 		}
 		if (editing) {
@@ -156,9 +166,30 @@ const MessageComposer = () => {
 				relates_to.is_falling_back = false
 			}
 		}
+		let base_content: MessageEventContent | undefined
+		let extra: Record<string, unknown> | undefined
+		if (state.media) {
+			base_content = state.media
+		} else if (state.location) {
+			base_content = {
+				body: "Location",
+				msgtype: "m.location",
+				geo_uri: `geo:${state.location.lat},${state.location.long}`,
+			}
+			extra = {
+				"org.matrix.msc3488.asset": {
+					type: "m.pin",
+				},
+				"org.matrix.msc3488.location": {
+					uri: `geo:${state.location.lat},${state.location.long}`,
+					description: state.text,
+				},
+			}
+		}
 		client.sendMessage({
 			room_id: room.roomID,
-			base_content: state.media ?? undefined,
+			base_content,
+			extra,
 			text: state.text,
 			relates_to,
 			mentions,
@@ -290,7 +321,7 @@ const MessageComposer = () => {
 				if (!res.ok) {
 					throw new Error(json.error)
 				} else {
-					setState({ media: json })
+					setState({ media: json, location: null })
 				}
 			})
 			.catch(err => window.alert("Failed to upload file: " + err))
@@ -352,14 +383,15 @@ const MessageComposer = () => {
 		if (state.uninited || editing) {
 			return
 		}
-		if (!state.text && !state.media && !state.replyTo) {
+		if (!state.text && !state.media && !state.replyTo && !state.location) {
 			draftStore.clear(room.roomID)
 		} else {
 			draftStore.set(room.roomID, state)
 		}
 	}, [roomCtx, room, state, editing])
 	const openFilePicker = useCallback(() => fileInput.current!.click(), [])
-	const clearMedia = useCallback(() => setState({ media: null }), [])
+	const clearMedia = useCallback(() => setState({ media: null, location: null }), [])
+	const onChangeLocation = useCallback((location: ComposerLocationValue) => setState({ location }), [])
 	const closeReply = useCallback((evt: React.MouseEvent) => {
 		evt.stopPropagation()
 		setState({ replyTo: null })
@@ -385,7 +417,22 @@ const MessageComposer = () => {
 			onClose: () => textInput.current?.focus(),
 		})
 	})
+	const openLocationPicker = useEvent(() => {
+		setState({ location: { lat: 0, long: 0, prec: 1 }, media: null })
+	})
 	const Autocompleter = getAutocompleter(autocomplete, client, room)
+	let mediaDisabledTitle: string | undefined
+	let locationDisabledTitle: string | undefined
+	if (state.media) {
+		mediaDisabledTitle = "You can only attach one file at a time"
+		locationDisabledTitle = "You can't attach a location to a message with a file"
+	} else if (state.location) {
+		mediaDisabledTitle = "You can't attach a file to a message with a location"
+		locationDisabledTitle = "You can only attach one location at a time"
+	} else if (loadingMedia) {
+		mediaDisabledTitle = "Uploading file..."
+		locationDisabledTitle = "You can't attach a location to a message with a file"
+	}
 	return <>
 		{Autocompleter && autocomplete && <div className="autocompletions-wrapper"><Autocompleter
 			params={autocomplete}
@@ -411,6 +458,10 @@ const MessageComposer = () => {
 			/>}
 			{loadingMedia && <div className="composer-media"><ScaleLoader/></div>}
 			{state.media && <ComposerMedia content={state.media} clearMedia={clearMedia}/>}
+			{state.location && <ComposerLocation
+				room={room} client={client}
+				location={state.location} onChange={onChangeLocation} clearLocation={clearMedia}
+			/>}
 			<div className="input-area">
 				<textarea
 					autoFocus={!isMobileDevice}
@@ -427,13 +478,18 @@ const MessageComposer = () => {
 				/>
 				<button onClick={openEmojiPicker}><EmojiIcon/></button>
 				<button
+					onClick={openLocationPicker}
+					disabled={!!locationDisabledTitle}
+					title={locationDisabledTitle}
+				><LocationIcon/></button>
+				<button
 					onClick={openFilePicker}
-					disabled={!!state.media || loadingMedia}
-					title={state.media ? "You can only attach one file at a time" : ""}
+					disabled={!!mediaDisabledTitle}
+					title={mediaDisabledTitle}
 				><AttachIcon/></button>
 				<button
 					onClick={sendMessage}
-					disabled={(!state.text && !state.media) || loadingMedia}
+					disabled={(!state.text && !state.media && !state.location) || loadingMedia}
 				><SendIcon/></button>
 				<input ref={fileInput} onChange={onAttachFile} type="file" value=""/>
 			</div>
@@ -456,6 +512,24 @@ const ComposerMedia = ({ content, clearMedia }: ComposerMediaProps) => {
 			{mediaContent}
 		</div>
 		<button onClick={clearMedia}><CloseIcon/></button>
+	</div>
+}
+
+interface ComposerLocationProps {
+	room: RoomStateStore
+	client: Client
+	location: ComposerLocationValue
+	onChange: (location: ComposerLocationValue) => void
+	clearLocation: () => void
+}
+
+const ComposerLocation = ({ client, room, location, onChange, clearLocation }: ComposerLocationProps) => {
+	const tileTemplate = usePreference(client.store, room, "leaflet_tile_template")
+	return <div className="composer-location">
+		<div className="location-container">
+			<LeafletPicker tileTemplate={tileTemplate} onChange={onChange} initialLocation={location}/>
+		</div>
+		<button onClick={clearLocation}><CloseIcon/></button>
 	</div>
 }
 

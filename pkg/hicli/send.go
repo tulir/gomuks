@@ -66,6 +66,7 @@ func (h *HiClient) SendMessage(
 	ctx context.Context,
 	roomID id.RoomID,
 	base *event.MessageEventContent,
+	extra map[string]any,
 	text string,
 	relatesTo *event.RelatesTo,
 	mentions *event.Mentions,
@@ -147,7 +148,7 @@ func (h *HiClient) SendMessage(
 			content.RelatesTo = relatesTo
 		}
 	}
-	return h.send(ctx, roomID, event.EventMessage, &content, origText)
+	return h.send(ctx, roomID, event.EventMessage, &event.Content{Parsed: content, Raw: extra}, origText)
 }
 
 func (h *HiClient) MarkRead(ctx context.Context, roomID id.RoomID, eventID id.EventID, receiptType event.ReceiptType) error {

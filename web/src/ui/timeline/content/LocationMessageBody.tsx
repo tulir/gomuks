@@ -13,16 +13,14 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import { Suspense, lazy, use } from "react"
-import { GridLoader } from "react-spinners"
+import { use } from "react"
 import { usePreference } from "@/api/statestore"
 import { LocationMessageEventContent } from "@/api/types"
 import { GOOGLE_MAPS_API_KEY } from "@/util/keys.ts"
 import { ensureString } from "@/util/validation.ts"
 import ClientContext from "../../ClientContext.ts"
+import { LeafletViewer } from "../../maps/async.tsx"
 import EventContentProps from "./props.ts"
-
-const GomuksLeaflet = lazy(() => import("./Leaflet.tsx"))
 
 function parseGeoURI(uri: unknown): [lat: number, long: number, prec: number] {
 	const geoURI = ensureString(uri)
@@ -31,7 +29,7 @@ function parseGeoURI(uri: unknown): [lat: number, long: number, prec: number] {
 	}
 	try {
 		const [coordinates/*, params*/] = geoURI.slice("geo:".length).split(";")
-		const [lat, long] = coordinates.split(",").map(parseFloat)
+		const [lat, long/*, altitude*/] = coordinates.split(",").map(parseFloat)
 		// const decodedParams = new URLSearchParams(params)
 		const prec = 13 // (+(decodedParams.get("u") ?? 0)) || 13
 		return [lat, long, prec]
@@ -39,8 +37,6 @@ function parseGeoURI(uri: unknown): [lat: number, long: number, prec: number] {
 		return [0, 0, 0]
 	}
 }
-
-const locationLoader = <div className="location-importer"><GridLoader color="var(--primary-color)" size={25}/></div>
 
 const LocationMessageBody = ({ event, room }: EventContentProps) => {
 	const content = event.content as LocationMessageEventContent
@@ -51,9 +47,7 @@ const LocationMessageBody = ({ event, room }: EventContentProps) => {
 	const marker = ensureString(content["org.matrix.msc3488.location"]?.description ?? content.body)
 	if (mapProvider === "leaflet") {
 		return <div className="location-container leaflet">
-			<Suspense fallback={locationLoader}>
-				<GomuksLeaflet tileTemplate={tileTemplate} lat={lat} long={long} prec={prec} marker={marker}/>
-			</Suspense>
+			<LeafletViewer tileTemplate={tileTemplate} lat={lat} long={long} prec={prec} marker={marker}/>
 		</div>
 	} else if (mapProvider === "google") {
 		const url = `https://www.google.com/maps/embed/v1/place?key=${GOOGLE_MAPS_API_KEY}&q=${lat},${long}`

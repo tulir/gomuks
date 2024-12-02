@@ -254,10 +254,10 @@ div.location-container.leaflet {
 		height: 25rem;
 		width: 100%;
 	}
+}
 
-	> div.location-importer {
-		display: flex;
-		justify-content: center;
-		align-items: center;
-	}
+div.location-importer {
+	display: flex;
+	justify-content: center;
+	align-items: center;
 }

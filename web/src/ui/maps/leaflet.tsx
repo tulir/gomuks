@@ -27,7 +27,7 @@ L.Icon.Default.imagePath = ""
 
 const attribution = `&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors`
 
-export interface GomuksLeafletProps extends HTMLAttributes<HTMLDivElement> {
+export interface LeafletViewerProps extends HTMLAttributes<HTMLDivElement> {
 	tileTemplate: string
 	lat: number
 	long: number
@@ -35,7 +35,7 @@ export interface GomuksLeafletProps extends HTMLAttributes<HTMLDivElement> {
 	marker: string
 }
 
-const GomuksLeaflet = ({ tileTemplate, lat, long, prec, marker, ...rest }: GomuksLeafletProps) => {
+export const LeafletViewer = ({ tileTemplate, lat, long, prec, marker, ...rest }: LeafletViewerProps) => {
 	const ref = useRef<HTMLDivElement>(null)
 	useEffect(() => {
 		const container = ref.current
@@ -54,4 +54,54 @@ const GomuksLeaflet = ({ tileTemplate, lat, long, prec, marker, ...rest }: Gomuk
 	return <div {...rest} ref={ref}/>
 }
 
-export default GomuksLeaflet
+export interface LocationValue {
+	lat: number
+	long: number
+	prec?: number
+}
+
+export interface LeafletPickerProps extends Omit<HTMLAttributes<HTMLDivElement>, "onChange"> {
+	tileTemplate: string
+	onChange: (geoURI: LocationValue) => void
+	initialLocation?: LocationValue
+}
+
+export const LeafletPicker = ({ tileTemplate, onChange, initialLocation, ...rest }: LeafletPickerProps) => {
+	const ref = useRef<HTMLDivElement>(null)
+	const leafletRef = useRef<L.Map>(null)
+	const markerRef = useRef<L.Marker>(null)
+	useEffect(() => {
+		const container = ref.current
+		if (!container) {
+			return
+		}
+		const rendered = L.map(container)
+		if (initialLocation) {
+			rendered.setView([initialLocation.lat, initialLocation.long], initialLocation.prec ?? 13)
+			markerRef.current = L.marker([initialLocation.lat, initialLocation.long]).addTo(rendered)
+		}
+		leafletRef.current = rendered
+		L.tileLayer(tileTemplate, { attribution }).addTo(rendered)
+		return () => {
+			rendered.remove()
+		}
+		// initialLocation is intentionally immutable/only read once
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [tileTemplate])
+	useEffect(() => {
+		const map = leafletRef.current
+		if (!map) {
+			return
+		}
+		const handler = (evt: L.LeafletMouseEvent) => {
+			markerRef.current?.removeFrom(map)
+			markerRef.current = L.marker(evt.latlng).addTo(map)
+			onChange({ lat: evt.latlng.lat, long: evt.latlng.lng })
+		}
+		map.on("click", handler)
+		return () => {
+			map.off("click", handler)
+		}
+	}, [onChange])
+	return <div {...rest} ref={ref}/>
+}

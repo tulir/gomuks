@@ -36,7 +36,7 @@ div.message-composer {
 		}
 	}
 
-	> div.composer-media {
+	> div.composer-media, > div.composer-location {
 		display: flex;
 		padding: .5rem;
 		justify-content: space-between;
@@ -45,6 +45,21 @@ div.message-composer {
 			height: 2.5rem;
 			width: 2.5rem;
 			padding: .5rem;
+		}
+	}
+
+	> div.composer-location {
+		height: 15rem;
+
+		> div.location-container {
+			height: 15rem;
+			max-width: 40rem;
+			width: 100%;
+
+			> div {
+				height: 15rem;
+				width: 100%;
+			}
 		}
 	}
 }

@@ -53,6 +53,7 @@ export class ErrorResponse extends Error {
 export interface SendMessageParams {
 	room_id: RoomID
 	base_content?: MessageEventContent
+	extra?: Record<string, unknown>
 	text: string
 	media_path?: string
 	relates_to?: RelatesTo
