@@ -69,18 +69,14 @@ export const useMediaContent = (
 	} else if (content.msgtype === "m.audio") {
 		return [<audio controls src={mediaURL} preload="none"/>, "audio-container", {}]
 	} else if (content.msgtype === "m.file") {
-		return [
-			<>
-				<a
-					href={mediaURL}
-					target="_blank"
-					rel="noopener noreferrer"
-					download={content.filename ?? content.body}
-				><DownloadIcon height={32} width={32}/> {content.filename ?? content.body}</a>
-			</>,
-			"file-container",
-			{},
-		]
+		return [<a
+			href={mediaURL}
+			target="_blank"
+			rel="noopener noreferrer"
+			download={content.filename ?? content.body}
+		>
+			<DownloadIcon height={32} width={32}/> {content.filename ?? content.body}
+		</a>, "file-container", {}]
 	}
 	return [null, "unknown-container", {}]
 }
