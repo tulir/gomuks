@@ -27,9 +27,11 @@ export const codeBlockStyles = [
 	"tokyonight-storm", "trac", "vim", "vs", "vulcan", "witchhazel", "xcode-dark", "xcode",
 ] as const
 export const mapProviders = ["leaflet", "google", "none"] as const
+export const gifProviders = ["giphy", "tenor"] as const
 
 export type CodeBlockStyle = typeof codeBlockStyles[number]
 export type MapProvider = typeof mapProviders[number]
+export type GIFProvider = typeof gifProviders[number]
 
 /* eslint-disable max-len */
 export const preferences = {
@@ -119,6 +121,20 @@ export const preferences = {
 		allowedContexts: anyContext,
 		defaultValue: "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
 	}),
+	gif_provider: new Preference<GIFProvider>({
+		displayName: "GIF provider",
+		description: "The service to use to search for GIFs",
+		allowedValues: gifProviders,
+		allowedContexts: anyContext,
+		defaultValue: "giphy",
+	}),
+	// TODO implement
+	// reupload_gifs: new Preference<boolean>({
+	// 	displayName: "Reupload GIFs",
+	// 	description: "Should GIFs be reuploaded to your server's media repo instead of using the proxy?",
+	// 	allowedContexts: anyContext,
+	// 	defaultValue: false,
+	// }),
 	custom_notification_sound: new Preference<ContentURI>({
 		displayName: "Custom notification sound",
 		description: "The mxc:// URI to a custom notification sound.",

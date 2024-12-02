@@ -59,7 +59,7 @@ interface EmojiPickerProps {
 	selected?: string[]
 }
 
-export const EmojiPicker = ({ style, selected, onSelect, room, allowFreeform, closeOnSelect }: EmojiPickerProps) => {
+const EmojiPicker = ({ style, selected, onSelect, room, allowFreeform, closeOnSelect }: EmojiPickerProps) => {
 	const client = use(ClientContext)!
 	const [query, setQuery] = useState("")
 	const [previewEmoji, setPreviewEmoji] = useState<Emoji>()

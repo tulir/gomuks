@@ -31,6 +31,7 @@ import { escapeMarkdown } from "@/util/markdown.ts"
 import useEvent from "@/util/useEvent.ts"
 import ClientContext from "../ClientContext.ts"
 import EmojiPicker from "../emojipicker/EmojiPicker.tsx"
+import GIFPicker from "../emojipicker/GIFPicker.tsx"
 import { keyToString } from "../keybindings.ts"
 import { LeafletPicker } from "../maps/async.tsx"
 import { ModalContext } from "../modal/Modal.tsx"
@@ -42,6 +43,7 @@ import { charToAutocompleteType, emojiQueryRegex, getAutocompleter } from "./get
 import AttachIcon from "@/icons/attach.svg?react"
 import CloseIcon from "@/icons/close.svg?react"
 import EmojiIcon from "@/icons/emoji-categories/smileys-emotion.svg?react"
+import GIFIcon from "@/icons/gif.svg?react"
 import LocationIcon from "@/icons/location.svg?react"
 import SendIcon from "@/icons/send.svg?react"
 import "./MessageComposer.css"
@@ -400,19 +402,26 @@ const MessageComposer = () => {
 		evt.stopPropagation()
 		roomCtx.setEditing(null)
 	}, [roomCtx])
-	const onSelectEmoji = useEvent((emoji: PartialEmoji) => {
-		setState({
-			text: state.text.slice(0, textInput.current?.selectionStart ?? 0)
-				+ emojiToMarkdown(emoji)
-				+ state.text.slice(textInput.current?.selectionEnd ?? 0),
-		})
-	})
 	const openEmojiPicker = useEvent(() => {
 		openModal({
 			content: <EmojiPicker
 				style={{ bottom: (composerRef.current?.clientHeight ?? 32) + 2, right: "1rem" }}
 				room={roomCtx.store}
-				onSelect={onSelectEmoji}
+				onSelect={(emoji: PartialEmoji) => setState({
+					text: state.text.slice(0, textInput.current?.selectionStart ?? 0)
+						+ emojiToMarkdown(emoji)
+						+ state.text.slice(textInput.current?.selectionEnd ?? 0),
+				})}
+			/>,
+			onClose: () => textInput.current?.focus(),
+		})
+	})
+	const openGIFPicker = useEvent(() => {
+		openModal({
+			content: <GIFPicker
+				style={{ bottom: (composerRef.current?.clientHeight ?? 32) + 2, right: "1rem" }}
+				room={roomCtx.store}
+				onSelect={media => setState({ media })}
 			/>,
 			onClose: () => textInput.current?.focus(),
 		})
@@ -476,20 +485,22 @@ const MessageComposer = () => {
 					placeholder="Send a message"
 					id="message-composer"
 				/>
-				<button onClick={openEmojiPicker}><EmojiIcon/></button>
+				<button onClick={openEmojiPicker} title="Add emoji"><EmojiIcon/></button>
+				<button onClick={openGIFPicker} title="Add gif attachment"><GIFIcon/></button>
 				<button
 					onClick={openLocationPicker}
 					disabled={!!locationDisabledTitle}
-					title={locationDisabledTitle}
+					title={locationDisabledTitle ?? "Add location"}
 				><LocationIcon/></button>
 				<button
 					onClick={openFilePicker}
 					disabled={!!mediaDisabledTitle}
-					title={mediaDisabledTitle}
+					title={mediaDisabledTitle ?? "Add file attachment"}
 				><AttachIcon/></button>
 				<button
 					onClick={sendMessage}
 					disabled={(!state.text && !state.media && !state.location) || loadingMedia}
+					title="Send message"
 				><SendIcon/></button>
 				<input ref={fileInput} onChange={onAttachFile} type="file" value=""/>
 			</div>

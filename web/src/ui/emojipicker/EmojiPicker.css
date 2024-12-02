@@ -1,4 +1,4 @@
-div.emoji-picker {
+div.emoji-picker, div.gif-picker {
 	position: fixed;
 	background-color: var(--background-color);
 	width: 22rem;
@@ -9,30 +9,7 @@ div.emoji-picker {
 	flex-direction: column;
 	box-shadow: 0 0 1rem var(--modal-box-shadow-color);
 
-	div.emoji-category-bar {
-		/*height: 2.5rem;*/
-		display: flex;
-		justify-content: center;
-		flex-wrap: wrap;
-		padding-top: .5rem;
-		border-bottom: 1px solid var(--border-color);
-
-		> button {
-			padding-top: .25rem;
-			width: 2.125rem;
-			height: 2.5rem;
-			box-sizing: border-box;
-
-			border-bottom-left-radius: 0;
-			border-bottom-right-radius: 0;
-			border-bottom: 2px solid transparent;
-			&:hover {
-				border-bottom: 2px solid var(--primary-color-dark);
-			}
-		}
-	}
-
-	div.emoji-search {
+	div.emoji-search, div.gif-search {
 		display: flex;
 		align-items: center;
 		margin: .5rem;
@@ -54,6 +31,68 @@ div.emoji-picker {
 			padding: .25rem;
 			border-bottom-left-radius: 0;
 			border-top-left-radius: 0;
+		}
+	}
+}
+
+div.gif-picker {
+	width: 32rem;
+
+	> div.gif-list {
+		overflow-y: auto;
+		padding: 0 1rem;
+		flex: 1;
+		display: flex;
+		flex-wrap: wrap;
+
+		> div.gif-entry {
+			cursor: var(--clickable-cursor);
+			max-width: 10rem;
+			display: flex;
+			justify-content: center;
+
+			&:hover {
+				background-color: var(--button-hover-color);
+			}
+
+			> img {
+				object-fit: contain;
+				width: 100%;
+				padding: .5rem;
+			}
+		}
+	}
+
+	div.powered-by-footer {
+		margin-top: auto;
+		margin-bottom: .5rem;
+		> img {
+			max-width: 100%;
+		}
+	}
+}
+
+div.emoji-picker {
+	div.emoji-category-bar {
+		/*height: 2.5rem;*/
+		display: flex;
+		justify-content: center;
+		flex-wrap: wrap;
+		padding-top: .5rem;
+		border-bottom: 1px solid var(--border-color);
+
+		> button {
+			padding-top: .25rem;
+			width: 2.125rem;
+			height: 2.5rem;
+			box-sizing: border-box;
+
+			border-bottom-left-radius: 0;
+			border-bottom-right-radius: 0;
+			border-bottom: 2px solid transparent;
+			&:hover {
+				border-bottom: 2px solid var(--primary-color-dark);
+			}
 		}
 	}
 
