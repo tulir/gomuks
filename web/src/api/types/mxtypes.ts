@@ -199,6 +199,13 @@ export interface MediaInfo {
 export interface LocationMessageEventContent extends BaseMessageEventContent {
 	msgtype: "m.location"
 	geo_uri: string
+	"org.matrix.msc3488.asset"?: {
+		type?: "m.pin"
+	}
+	"org.matrix.msc3488.location"?: {
+		uri: string
+		description?: string
+	}
 }
 
 export type MessageEventContent = TextMessageEventContent | MediaMessageEventContent | LocationMessageEventContent

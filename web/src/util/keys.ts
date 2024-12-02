@@ -1,0 +1,3 @@
+export const TENOR_API_KEY = "AIzaSyDCLXZasjWAGuxEGggz7ND-2BFHNIDyhGw"
+export const GOOGLE_MAPS_API_KEY = "AIzaSyDOrgHKWCoWyceDPAZDNQ0zU0vWwH8BzM4"
+export const GIPHY_API_KEY = "HQku8974Uq5MZn3MZns46kXn2R4GDm75"

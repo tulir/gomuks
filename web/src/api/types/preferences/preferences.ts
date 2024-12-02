@@ -26,8 +26,10 @@ export const codeBlockStyles = [
 	"solarized-dark", "solarized-light", "swapoff", "tango", "tokyonight-day", "tokyonight-moon", "tokyonight-night",
 	"tokyonight-storm", "trac", "vim", "vs", "vulcan", "witchhazel", "xcode-dark", "xcode",
 ] as const
+export const mapProviders = ["leaflet", "google", "none"] as const
 
 export type CodeBlockStyle = typeof codeBlockStyles[number]
+export type MapProvider = typeof mapProviders[number]
 
 /* eslint-disable max-len */
 export const preferences = {
@@ -103,6 +105,19 @@ export const preferences = {
 		description: "Whether to show custom emoji packs provided by the room. If disabled, only your personal packs are shown in all rooms.",
 		allowedContexts: anyContext,
 		defaultValue: true,
+	}),
+	map_provider: new Preference<MapProvider>({
+		displayName: "Map provider",
+		description: "The map provider to use for location messages.",
+		allowedValues: mapProviders,
+		allowedContexts: anyContext,
+		defaultValue: "leaflet",
+	}),
+	leaflet_tile_template: new Preference<string>({
+		displayName: "Leaflet tile URL template",
+		description: "When using Leaflet for maps, the URL template for map tile images.",
+		allowedContexts: anyContext,
+		defaultValue: "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
 	}),
 	custom_notification_sound: new Preference<ContentURI>({
 		displayName: "Custom notification sound",

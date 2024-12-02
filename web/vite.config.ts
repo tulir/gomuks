@@ -11,7 +11,7 @@ export default defineConfig({
 				manualChunks: id => {
 					if (id.includes("wailsio")) {
 						return "wails"
-					} else if (id.includes("node_modules") && !id.includes("katex")) {
+					} else if (id.includes("node_modules") && !id.includes("katex") && !id.includes("leaflet")) {
 						return "vendor"
 					} else if (id.endsWith("/emoji/data.json")) {
 						return "emoji"

@@ -238,3 +238,26 @@ div.media-container {
 		max-height: 100%;
 	}
 }
+
+iframe.location-container.google {
+	height: 25rem;
+	width: 100%;
+	max-width: 50rem;
+	border: none;
+}
+
+div.location-container.leaflet {
+	height: 25rem;
+	max-width: 50rem;
+
+	> div {
+		height: 25rem;
+		width: 100%;
+	}
+
+	> div.location-importer {
+		display: flex;
+		justify-content: center;
+		align-items: center;
+	}
+}

@@ -3,6 +3,7 @@ import { MemDBEvent } from "@/api/types"
 import ACLBody from "./ACLBody.tsx"
 import EncryptedBody from "./EncryptedBody.tsx"
 import HiddenEvent from "./HiddenEvent.tsx"
+import LocationMessageBody from "./LocationMessageBody.tsx"
 import MediaMessageBody from "./MediaMessageBody.tsx"
 import MemberBody from "./MemberBody.tsx"
 import PinnedEventsBody from "./PinnedEventsBody.tsx"
@@ -20,6 +21,7 @@ export { default as ContentErrorBoundary } from "./ContentErrorBoundary.tsx"
 export { default as EncryptedBody } from "./EncryptedBody.tsx"
 export { default as HiddenEvent } from "./HiddenEvent.tsx"
 export { default as MediaMessageBody } from "./MediaMessageBody.tsx"
+export { default as LocationMessageBody } from "./LocationMessageBody.tsx"
 export { default as MemberBody } from "./MemberBody.tsx"
 export { default as PinnedEventsBody } from "./PinnedEventsBody.tsx"
 export { default as PowerLevelBody } from "./PowerLevelBody.tsx"
@@ -53,8 +55,7 @@ export function getBodyType(evt: MemDBEvent, forReply = false): React.FunctionCo
 			}
 			return MediaMessageBody
 		case "m.location":
-			// return LocationMessageBody
-			// fallthrough
+			return LocationMessageBody
 		default:
 			return UnknownMessageBody
 		}
