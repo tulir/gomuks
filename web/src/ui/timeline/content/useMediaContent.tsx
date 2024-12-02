@@ -33,6 +33,7 @@ export const useMediaContent = (
 		const style = calculateMediaSize(content.info?.w, content.info?.h, containerSize)
 		return [<img
 			onLoad={onLoad}
+			loading="lazy"
 			style={style.media}
 			src={mediaURL}
 			alt={content.filename ?? content.body}

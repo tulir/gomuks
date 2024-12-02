@@ -224,6 +224,14 @@ div.media-container {
 			user-select: none;
 			border-radius: .25rem;
 		}
+
+		& + img {
+			/* In order loading=lazy to work, the image has to be visible,
+			   so put it behind the placeholder instead of below */
+			position: absolute;
+			top: 0;
+			z-index: -1;
+		}
 	}
 
 	> a {
