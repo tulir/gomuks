@@ -215,6 +215,26 @@ func (h *HiClient) Send(
 	return h.send(ctx, roomID, evtType, content, "")
 }
 
+func (h *HiClient) Resend(ctx context.Context, txnID string) (*database.Event, error) {
+	dbEvt, err := h.DB.Event.GetByTransactionID(ctx, txnID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get event by transaction ID: %w", err)
+	} else if dbEvt == nil {
+		return nil, fmt.Errorf("unknown transaction ID")
+	} else if dbEvt.ID != "" && !strings.HasPrefix(dbEvt.ID.String(), "~") {
+		return nil, fmt.Errorf("event was already sent successfully")
+	}
+	room, err := h.DB.Room.Get(ctx, dbEvt.RoomID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get room metadata: %w", err)
+	} else if room == nil {
+		return nil, fmt.Errorf("unknown room")
+	}
+	dbEvt.SendError = ""
+	go h.actuallySend(context.WithoutCancel(ctx), room, dbEvt, event.Type{Type: dbEvt.Type, Class: event.MessageEventType})
+	return dbEvt, nil
+}
+
 func (h *HiClient) send(
 	ctx context.Context,
 	roomID id.RoomID,
@@ -279,62 +299,64 @@ func (h *HiClient) send(
 			zerolog.Ctx(ctx).Err(err).Msg("Failed to stop typing while sending message")
 		}
 	}()
-	go func() {
-		var err error
-		defer func() {
-			if dbEvt.SendError != "" {
-				err2 := h.DB.Event.UpdateSendError(ctx, dbEvt.RowID, dbEvt.SendError)
-				if err2 != nil {
-					zerolog.Ctx(ctx).Err(err2).AnErr("send_error", err).
-						Msg("Failed to update send error in database after sending failed")
-				}
-			}
-			h.EventHandler(&SendComplete{
-				Event: dbEvt,
-				Error: err,
-			})
-		}()
-		if dbEvt.Decrypted != nil {
-			var encryptedContent *event.EncryptedEventContent
-			encryptedContent, err = h.Encrypt(ctx, room, evtType, dbEvt.Decrypted)
-			if err != nil {
-				dbEvt.SendError = fmt.Sprintf("failed to encrypt: %v", err)
-				zerolog.Ctx(ctx).Err(err).Msg("Failed to encrypt event")
-				return
-			}
-			evtType = event.EventEncrypted
-			dbEvt.MegolmSessionID = encryptedContent.SessionID
-			dbEvt.Content, err = json.Marshal(encryptedContent)
-			if err != nil {
-				dbEvt.SendError = fmt.Sprintf("failed to marshal encrypted content: %v", err)
-				zerolog.Ctx(ctx).Err(err).Msg("Failed to marshal encrypted content")
-				return
-			}
-			err = h.DB.Event.UpdateEncryptedContent(ctx, dbEvt)
-			if err != nil {
-				dbEvt.SendError = fmt.Sprintf("failed to save event after encryption: %v", err)
-				zerolog.Ctx(ctx).Err(err).Msg("Failed to save event after encryption")
-				return
+	go h.actuallySend(ctx, room, dbEvt, evtType)
+	return dbEvt, nil
+}
+
+func (h *HiClient) actuallySend(ctx context.Context, room *database.Room, dbEvt *database.Event, evtType event.Type) {
+	var err error
+	defer func() {
+		if dbEvt.SendError != "" {
+			err2 := h.DB.Event.UpdateSendError(ctx, dbEvt.RowID, dbEvt.SendError)
+			if err2 != nil {
+				zerolog.Ctx(ctx).Err(err2).AnErr("send_error", err).
+					Msg("Failed to update send error in database after sending failed")
 			}
 		}
-		var resp *mautrix.RespSendEvent
-		resp, err = h.Client.SendMessageEvent(ctx, room.ID, evtType, dbEvt.Content, mautrix.ReqSendEvent{
-			Timestamp:     dbEvt.Timestamp.UnixMilli(),
-			TransactionID: txnID,
-			DontEncrypt:   true,
+		h.EventHandler(&SendComplete{
+			Event: dbEvt,
+			Error: err,
 		})
+	}()
+	if dbEvt.Decrypted != nil && len(dbEvt.Content) <= 2 {
+		var encryptedContent *event.EncryptedEventContent
+		encryptedContent, err = h.Encrypt(ctx, room, evtType, dbEvt.Decrypted)
 		if err != nil {
-			dbEvt.SendError = err.Error()
-			err = fmt.Errorf("failed to send event: %w", err)
+			dbEvt.SendError = fmt.Sprintf("failed to encrypt: %v", err)
+			zerolog.Ctx(ctx).Err(err).Msg("Failed to encrypt event")
 			return
 		}
-		dbEvt.ID = resp.EventID
-		err = h.DB.Event.UpdateID(ctx, dbEvt.RowID, dbEvt.ID)
+		evtType = event.EventEncrypted
+		dbEvt.MegolmSessionID = encryptedContent.SessionID
+		dbEvt.Content, err = json.Marshal(encryptedContent)
 		if err != nil {
-			err = fmt.Errorf("failed to update event ID in database: %w", err)
+			dbEvt.SendError = fmt.Sprintf("failed to marshal encrypted content: %v", err)
+			zerolog.Ctx(ctx).Err(err).Msg("Failed to marshal encrypted content")
+			return
 		}
-	}()
-	return dbEvt, nil
+		err = h.DB.Event.UpdateEncryptedContent(ctx, dbEvt)
+		if err != nil {
+			dbEvt.SendError = fmt.Sprintf("failed to save event after encryption: %v", err)
+			zerolog.Ctx(ctx).Err(err).Msg("Failed to save event after encryption")
+			return
+		}
+	}
+	var resp *mautrix.RespSendEvent
+	resp, err = h.Client.SendMessageEvent(ctx, room.ID, evtType, dbEvt.Content, mautrix.ReqSendEvent{
+		Timestamp:     dbEvt.Timestamp.UnixMilli(),
+		TransactionID: dbEvt.TransactionID,
+		DontEncrypt:   true,
+	})
+	if err != nil {
+		dbEvt.SendError = err.Error()
+		err = fmt.Errorf("failed to send event: %w", err)
+		return
+	}
+	dbEvt.ID = resp.EventID
+	err = h.DB.Event.UpdateID(ctx, dbEvt.RowID, dbEvt.ID)
+	if err != nil {
+		err = fmt.Errorf("failed to update event ID in database: %w", err)
+	}
 }
 
 func (h *HiClient) Encrypt(ctx context.Context, room *database.Room, evtType event.Type, content any) (encrypted *event.EncryptedEventContent, err error) {

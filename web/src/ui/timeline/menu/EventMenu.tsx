@@ -25,6 +25,7 @@ import EventExtraMenu from "./EventExtraMenu.tsx"
 import EditIcon from "@/icons/edit.svg?react"
 import MoreIcon from "@/icons/more.svg?react"
 import ReactIcon from "@/icons/react.svg?react"
+import RefreshIcon from "@/icons/refresh.svg?react"
 import ReplyIcon from "@/icons/reply.svg?react"
 import "./index.css"
 
@@ -71,6 +72,13 @@ const EventMenu = ({ evt, setForceOpen }: EventHoverMenuProps) => {
 	const onClickEdit = useCallback(() => {
 		roomCtx.setEditing(evt)
 	}, [roomCtx, evt])
+	const onClickResend = useCallback(() => {
+		if (!evt.transaction_id) {
+			return
+		}
+		client.resendEvent(evt.transaction_id)
+			.catch(err => window.alert(`Failed to resend message: ${err}`))
+	}, [client, evt.transaction_id])
 	const onClickMore = useCallback((mevt: React.MouseEvent<HTMLButtonElement>) => {
 		const moreMenuHeight = 10 * 16
 		setForceOpen(true)
@@ -96,13 +104,14 @@ const EventMenu = ({ evt, setForceOpen }: EventHoverMenuProps) => {
 	const evtSendType = isEncrypted ? "m.room.encrypted" : evt.type === "m.sticker" ? "m.sticker" : "m.room.message"
 	const messageSendPL = pls.events?.[evtSendType] ?? pls.events_default ?? 0
 
-	const canSend = ownPL >= messageSendPL
+	const didFail = !!evt.send_error && evt.send_error !== "not sent" && !!evt.transaction_id
+	const canSend = !didFail && ownPL >= messageSendPL
 	const canEdit = canSend
 		&& evt.sender === userID
 		&& evt.type === "m.room.message"
 		&& evt.relation_type !== "m.replace"
 		&& !evt.redacted_by
-	const canReact = ownPL >= reactPL
+	const canReact = !didFail && ownPL >= reactPL
 
 	return <div className="event-hover-menu" ref={contextMenuRef}>
 		{canReact && <button disabled={isPending} title={pendingTitle} onClick={onClickReact}><ReactIcon/></button>}
@@ -112,6 +121,7 @@ const EventMenu = ({ evt, setForceOpen }: EventHoverMenuProps) => {
 			onClick={onClickReply}
 		><ReplyIcon/></button>}
 		{canEdit && <button onClick={onClickEdit} disabled={isPending} title={pendingTitle}><EditIcon/></button>}
+		{didFail && <button onClick={onClickResend} title="Resend message"><RefreshIcon/></button>}
 		<button onClick={onClickMore}><MoreIcon/></button>
 	</div>
 }

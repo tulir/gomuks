@@ -141,6 +141,10 @@ export default abstract class RPCClient {
 		return this.request("send_event", { room_id, type, content })
 	}
 
+	resendEvent(transaction_id: string): Promise<RawDBEvent> {
+		return this.request("resend_event", { transaction_id })
+	}
+
 	reportEvent(room_id: RoomID, event_id: EventID, reason: string): Promise<boolean> {
 		return this.request("report_event", { room_id, event_id, reason })
 	}

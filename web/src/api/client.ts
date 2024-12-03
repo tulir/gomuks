@@ -23,6 +23,7 @@ import type {
 	EventType,
 	ImagePackRooms,
 	RPCEvent,
+	RawDBEvent,
 	RoomID,
 	RoomStateGUID,
 	SyncStatus,
@@ -155,17 +156,30 @@ export default class Client {
 		await this.rpc.setState(room.roomID, "m.room.pinned_events", "", { pinned: pinnedEvents })
 	}
 
+	async resendEvent(txnID: string): Promise<void> {
+		const dbEvent = await this.rpc.resendEvent(txnID)
+		const room = this.store.rooms.get(dbEvent.room_id)
+		room?.applyEvent(dbEvent, true)
+		room?.notifyTimelineSubscribers()
+	}
+
+	#handleOutgoingEvent(dbEvent: RawDBEvent, room: RoomStateStore) {
+		if (!room.eventsByRowID.has(dbEvent.rowid)) {
+			if (!room.pendingEvents.includes(dbEvent.rowid)) {
+				room.pendingEvents.push(dbEvent.rowid)
+			}
+			room.applyEvent(dbEvent, true)
+			room.notifyTimelineSubscribers()
+		}
+	}
+
 	async sendEvent(roomID: RoomID, type: EventType, content: unknown): Promise<void> {
 		const room = this.store.rooms.get(roomID)
 		if (!room) {
 			throw new Error("Room not found")
 		}
 		const dbEvent = await this.rpc.sendEvent(roomID, type, content)
-		if (!room.eventsByRowID.has(dbEvent.rowid)) {
-			room.pendingEvents.push(dbEvent.rowid)
-			room.applyEvent(dbEvent, true)
-			room.notifyTimelineSubscribers()
-		}
+		this.#handleOutgoingEvent(dbEvent, room)
 	}
 
 	async sendMessage(params: SendMessageParams): Promise<void> {
@@ -174,11 +188,7 @@ export default class Client {
 			throw new Error("Room not found")
 		}
 		const dbEvent = await this.rpc.sendMessage(params)
-		if (!room.eventsByRowID.has(dbEvent.rowid)) {
-			room.pendingEvents.push(dbEvent.rowid)
-			room.applyEvent(dbEvent, true)
-			room.notifyTimelineSubscribers()
-		}
+		this.#handleOutgoingEvent(dbEvent, room)
 	}
 
 	async subscribeToEmojiPack(pack: RoomStateGUID, subscribe: boolean = true) {

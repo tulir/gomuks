@@ -34,6 +34,7 @@ const (
 	getEventByRowID                  = getEventBaseQuery + `WHERE rowid = $1`
 	getManyEventsByRowID             = getEventBaseQuery + `WHERE rowid IN (%s)`
 	getEventByID                     = getEventBaseQuery + `WHERE event_id = $1`
+	getEventByTransactionID          = getEventBaseQuery + `WHERE transaction_id = $1`
 	getFailedEventsByMegolmSessionID = getEventBaseQuery + `WHERE room_id = $1 AND megolm_session_id = $2 AND decryption_error IS NOT NULL`
 	insertEventBaseQuery             = `
 		INSERT INTO event (
@@ -101,6 +102,10 @@ func (eq *EventQuery) GetFailedByMegolmSessionID(ctx context.Context, roomID id.
 
 func (eq *EventQuery) GetByID(ctx context.Context, eventID id.EventID) (*Event, error) {
 	return eq.QueryOne(ctx, getEventByID, eventID)
+}
+
+func (eq *EventQuery) GetByTransactionID(ctx context.Context, txnID string) (*Event, error) {
+	return eq.QueryOne(ctx, getEventByTransactionID, txnID)
 }
 
 func (eq *EventQuery) GetByRowID(ctx context.Context, rowID EventRowID) (*Event, error) {
