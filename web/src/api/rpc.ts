@@ -129,6 +129,10 @@ export default abstract class RPCClient {
 		}, this.cancelRequest.bind(this, request_id))
 	}
 
+	logout(): Promise<boolean> {
+		return this.request("logout", {})
+	}
+
 	sendMessage(params: SendMessageParams): Promise<RawDBEvent> {
 		return this.request("send_message", params)
 	}

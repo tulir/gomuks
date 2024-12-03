@@ -82,7 +82,7 @@ const BeeperLogin = ({ domain, client }: BeeperLoginProps) => {
 			onChange={onChangeCode}
 		/>}
 		<button
-			className="beeper-login-button"
+			className="beeper-login-button primary-color-button"
 			type="submit"
 		>{requestID ? "Submit Code" : "Request Code"}</button>
 		{error && <div className="error">

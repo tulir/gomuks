@@ -72,4 +72,14 @@ div.settings-view {
 			}
 		}
 	}
+
+	button.logout {
+		margin-top: 1rem;
+		padding: .5rem 1rem;
+
+		&:hover, &:focus {
+			background-color: var(--error-color);
+			color: var(--inverted-text-color);
+		}
+	}
 }

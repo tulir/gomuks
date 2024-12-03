@@ -114,6 +114,11 @@ func (h *HiClient) handleJSONCommand(ctx context.Context, req *JSONCommand) (any
 		return unmarshalAndCall(req.Data, func(params *resolveAliasParams) (*mautrix.RespAliasResolve, error) {
 			return h.Client.ResolveAlias(ctx, params.Alias)
 		})
+	case "logout":
+		if h.LogoutFunc == nil {
+			return nil, errors.New("logout not supported")
+		}
+		return true, h.LogoutFunc(ctx)
 	case "login":
 		return unmarshalAndCall(req.Data, func(params *loginParams) (bool, error) {
 			return true, h.LoginPassword(ctx, params.HomeserverURL, params.Username, params.Password)

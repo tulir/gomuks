@@ -32,6 +32,7 @@ import (
 
 type HiClient struct {
 	DB          *database.Database
+	CryptoDB    *dbutil.Database
 	Account     *database.Account
 	Client      *mautrix.Client
 	Crypto      *crypto.OlmMachine
@@ -50,6 +51,7 @@ type HiClient struct {
 	lastSync   time.Time
 
 	EventHandler func(evt any)
+	LogoutFunc   func(context.Context) error
 
 	firstSyncReceived bool
 	syncingID         int
@@ -89,6 +91,9 @@ func New(rawDB, cryptoDB *dbutil.Database, log zerolog.Logger, pickleKey []byte,
 		paginationInterrupter: make(map[id.RoomID]context.CancelCauseFunc),
 
 		EventHandler: evtHandler,
+	}
+	if cryptoDB != rawDB {
+		c.CryptoDB = cryptoDB
 	}
 	c.SyncStatus.Store(syncWaiting)
 	c.ClientStore = &database.ClientStateStore{Database: db}
@@ -266,5 +271,11 @@ func (h *HiClient) Stop() {
 	err := h.DB.Close()
 	if err != nil {
 		h.Log.Err(err).Msg("Failed to close database cleanly")
+	}
+	if h.CryptoDB != nil {
+		err = h.CryptoDB.Close()
+		if err != nil {
+			h.Log.Err(err).Msg("Failed to close crypto database cleanly")
+		}
 	}
 }

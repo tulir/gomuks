@@ -44,7 +44,7 @@ export const VerificationScreen = ({ client, clientState }: LoginScreenProps) =>
 				value={recoveryKey}
 				onChange={evt => setRecoveryKey(evt.target.value)}
 			/>
-			<button className="mx-login-button" type="submit">Verify</button>
+			<button className="mx-login-button primary-color-button" type="submit">Verify</button>
 		</form>
 		{error && <div className="error">
 			{error}

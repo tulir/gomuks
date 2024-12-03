@@ -386,4 +386,17 @@ export class StateStore {
 		}
 		return { deletedEvents, deletedState } as const
 	}
+
+	clear() {
+		this.rooms.clear()
+		this.roomList.emit([])
+		this.accountData.clear()
+		this.currentRoomListFilter = ""
+		this.#frequentlyUsedEmoji = null
+		this.#emojiPackKeys = null
+		this.#watchedRoomEmojiPacks = null
+		this.#personalEmojiPack = null
+		this.serverPreferenceCache = {}
+		this.activeRoomID = undefined
+	}
 }

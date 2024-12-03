@@ -148,9 +148,9 @@ func main() {
 		URL:              "/",
 	})
 
-	gmx.Client.EventHandler = hicli.JSONEventHandler(func(command *hicli.JSONCommand) {
+	gmx.SubscribeEvents(nil, func(command *hicli.JSONCommand) {
 		app.EmitEvent("hicli_event", command)
-	}).HandleEvent
+	})
 
 	err = app.Run()
 	if err != nil {

@@ -259,6 +259,14 @@ const SettingsView = ({ room }: SettingsViewProps) => {
 			}
 		}
 	}, [client, room])
+	const onClickLogout = useCallback(() => {
+		if (window.confirm("Really log out and delete all local data?")) {
+			client.logout().then(
+				() => console.info("Successfully logged out"),
+				err => window.alert(`Failed to log out: ${err}`),
+			)
+		}
+	}, [client])
 	usePreferences(client.store, room)
 	const globalServer = client.store.serverPreferenceCache
 	const globalLocal = client.store.localPreferenceCache
@@ -293,6 +301,7 @@ const SettingsView = ({ room }: SettingsViewProps) => {
 		</table>
 		<CustomCSSInput setPref={setPref} room={room} />
 		<AppliedSettingsView room={room} />
+		<button className="logout" onClick={onClickLogout}>Logout</button>
 	</>
 }
 

@@ -293,4 +293,10 @@ export default class Client {
 			room.paginating = false
 		}
 	}
+
+	async logout() {
+		await this.rpc.logout()
+		localStorage.clear()
+		this.store.clear()
+	}
 }
