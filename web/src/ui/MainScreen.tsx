@@ -13,7 +13,7 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import { JSX, use, useEffect, useInsertionEffect, useLayoutEffect, useMemo, useReducer, useState } from "react"
+import { JSX, use, useEffect, useInsertionEffect, useLayoutEffect, useMemo, useState } from "react"
 import { SyncLoader } from "react-spinners"
 import Client from "@/api/client.ts"
 import { RoomStateStore } from "@/api/statestore"
@@ -43,18 +43,12 @@ function objectIsEqual(a: RightPanelProps | null, b: RightPanelProps | null): bo
 	return true
 }
 
-const rpReducer = (prevState: RightPanelProps | null, newState: RightPanelProps | null) => {
-	if (objectIsEqual(prevState, newState)) {
-		return null
-	}
-	return newState
-}
-
 class ContextFields implements MainScreenContextFields {
 	public keybindings: Keybindings
+	private rightPanelStack: RightPanelProps[] = []
 
 	constructor(
-		public setRightPanel: (props: RightPanelProps | null) => void,
+		private directSetRightPanel: (props: RightPanelProps | null) => void,
 		private directSetActiveRoom: (room: RoomStateStore | null) => void,
 		private client: Client,
 	) {
@@ -62,12 +56,47 @@ class ContextFields implements MainScreenContextFields {
 		client.store.switchRoom = this.setActiveRoom
 	}
 
+	get currentRightPanel(): RightPanelProps | null {
+		return this.rightPanelStack.length ? this.rightPanelStack[this.rightPanelStack.length-1] : null
+	}
+
+	setRightPanel = (props: RightPanelProps | null, pushState = true) => {
+		const isEqual = objectIsEqual(this.currentRightPanel, props)
+		if (isEqual && !pushState) {
+			return
+		}
+		if (isEqual || props === null) {
+			const length = this.rightPanelStack.length
+			this.rightPanelStack = []
+			this.directSetRightPanel(null)
+			if (length && pushState) {
+				history.go(-length)
+			}
+		} else {
+			this.directSetRightPanel(props)
+			for (let i = this.rightPanelStack.length - 1; i >= 0; i--) {
+				if (objectIsEqual(this.rightPanelStack[i], props)) {
+					this.rightPanelStack = this.rightPanelStack.slice(0, i + 1)
+					if (pushState) {
+						history.go(i - this.rightPanelStack.length)
+					}
+					return
+				}
+			} // else:
+			this.rightPanelStack.push(props)
+			if (pushState) {
+				history.pushState({ ...(history.state ?? {}), right_panel: props }, "")
+			}
+		}
+	}
+
 	setActiveRoom = (roomID: RoomID | null, pushState = true) => {
 		console.log("Switching to room", roomID)
 		const room = (roomID && this.client.store.rooms.get(roomID)) || null
 		window.activeRoom = room
 		this.directSetActiveRoom(room)
-		this.setRightPanel(null)
+		this.directSetRightPanel(null)
+		this.rightPanelStack = []
 		this.client.store.activeRoomID = room?.roomID ?? null
 		this.keybindings.activeRoom = room
 		if (room) {
@@ -113,11 +142,11 @@ const SYNC_ERROR_HIDE_DELAY = 30 * 1000
 
 const MainScreen = () => {
 	const [activeRoom, directSetActiveRoom] = useState<RoomStateStore | null>(null)
-	const [rightPanel, setRightPanel] = useReducer(rpReducer, null)
+	const [rightPanel, directSetRightPanel] = useState<RightPanelProps | null>(null)
 	const client = use(ClientContext)!
 	const syncStatus = useEventAsState(client.syncStatus)
 	const context = useMemo(
-		() => new ContextFields(setRightPanel, directSetActiveRoom, client),
+		() => new ContextFields(directSetRightPanel, directSetActiveRoom, client),
 		[client],
 	)
 	useLayoutEffect(() => {
@@ -129,6 +158,7 @@ const MainScreen = () => {
 			if (roomID !== client.store.activeRoomID) {
 				context.setActiveRoom(roomID, false)
 			}
+			context.setRightPanel(evt.state?.right_panel ?? null, false)
 		}
 		window.addEventListener("popstate", listener)
 		return () => window.removeEventListener("popstate", listener)
