@@ -53,6 +53,7 @@ const GIFPicker = ({ style, onSelect, room }: GIFPickerProps) => {
 		onSelect({
 			msgtype: "m.image",
 			body: gif.filename,
+			filename: gif.filename,
 			info: {
 				mimetype: "image/webp",
 				size: gif.size,
