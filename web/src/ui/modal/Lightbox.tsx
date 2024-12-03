@@ -44,18 +44,34 @@ export const LightboxWrapper = ({ children }: { children: React.ReactNode }) => 
 			if (!target.src) {
 				return
 			}
-			setParams({
+			params = {
 				src: target.src,
 				alt: target.alt,
-			})
+			}
+			setParams(params)
 		} else {
 			setParams(params as LightboxParams)
 		}
+		history.pushState({ ...(history.state ?? {}), lightbox: params }, "")
 	}, [])
 	useLayoutEffect(() => {
 		window.openLightbox = onOpen
+		const listener = (evt: PopStateEvent) => {
+			if (evt.state?.lightbox) {
+				setParams(evt.state.lightbox)
+			} else {
+				setParams(null)
+			}
+		}
+		window.addEventListener("popstate", listener)
+		return () => window.removeEventListener("popstate", listener)
 	}, [onOpen])
-	const onClose = useCallback(() => setParams(null), [])
+	const onClose = useCallback(() => {
+		setParams(null)
+		if (params?.src && history.state?.lightbox?.src === params?.src) {
+			history.back()
+		}
+	}, [params])
 	return <>
 		<LightboxContext value={onOpen}>
 			{children}

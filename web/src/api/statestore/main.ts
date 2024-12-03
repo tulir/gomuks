@@ -81,7 +81,7 @@ export class StateStore {
 	readonly localPreferenceCache: Preferences = getLocalStoragePreferences("global_prefs", this.preferenceSub.notify)
 	serverPreferenceCache: Preferences = {}
 	switchRoom?: (roomID: RoomID | null) => void
-	activeRoomID?: RoomID
+	activeRoomID: RoomID | null = null
 	imageAuthToken?: string
 
 	getFilteredRoomList(): RoomListEntry[] {
@@ -397,6 +397,6 @@ export class StateStore {
 		this.#watchedRoomEmojiPacks = null
 		this.#personalEmojiPack = null
 		this.serverPreferenceCache = {}
-		this.activeRoomID = undefined
+		this.activeRoomID = null
 	}
 }

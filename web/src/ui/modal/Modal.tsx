@@ -41,18 +41,37 @@ export const ModalWrapper = ({ children }: { children: React.ReactNode }) => {
 			return
 		}
 		setState(null)
+		if (history.state?.modal) {
+			history.back()
+		}
 	}, [])
 	const onKeyWrapper = useCallback((evt: React.KeyboardEvent<HTMLDivElement>) => {
 		if (evt.key === "Escape") {
 			setState(null)
+			if (history.state?.modal) {
+				history.back()
+			}
 		}
 		evt.stopPropagation()
+	}, [])
+	const openModal = useCallback((newState: ModalState) => {
+		if (!history.state?.modal) {
+			history.pushState({ ...(history.state ?? {}), modal: true }, "")
+		}
+		setState(newState)
 	}, [])
 	const wrapperRef = useRef<HTMLDivElement>(null)
 	useLayoutEffect(() => {
 		if (wrapperRef.current && (!document.activeElement || !wrapperRef.current.contains(document.activeElement))) {
 			wrapperRef.current.focus()
 		}
+		const listener = (evt: PopStateEvent) => {
+			if (!evt.state?.modal) {
+				setState(null)
+			}
+		}
+		window.addEventListener("popstate", listener)
+		return () => window.removeEventListener("popstate", listener)
 	}, [state])
 	let modal: JSX.Element | null = null
 	if (state) {
@@ -74,7 +93,7 @@ export const ModalWrapper = ({ children }: { children: React.ReactNode }) => {
 			{content}
 		</div>
 	}
-	return <ModalContext value={setState}>
+	return <ModalContext value={openModal}>
 		{children}
 		{modal}
 	</ModalContext>

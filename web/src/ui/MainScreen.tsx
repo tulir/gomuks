@@ -62,13 +62,13 @@ class ContextFields implements MainScreenContextFields {
 		client.store.switchRoom = this.setActiveRoom
 	}
 
-	setActiveRoom = (roomID: RoomID | null) => {
+	setActiveRoom = (roomID: RoomID | null, pushState = true) => {
 		console.log("Switching to room", roomID)
 		const room = (roomID && this.client.store.rooms.get(roomID)) || null
 		window.activeRoom = room
 		this.directSetActiveRoom(room)
 		this.setRightPanel(null)
-		this.client.store.activeRoomID = room?.roomID
+		this.client.store.activeRoomID = room?.roomID ?? null
 		this.keybindings.activeRoom = room
 		if (room) {
 			room.lastOpened = Date.now()
@@ -79,6 +79,9 @@ class ContextFields implements MainScreenContextFields {
 			document
 				.querySelector(`div.room-entry[data-room-id="${CSS.escape(room.roomID)}"]`)
 				?.scrollIntoView({ block: "nearest" })
+		}
+		if (pushState) {
+			history.pushState({ room_id: roomID }, "")
 		}
 	}
 
@@ -120,6 +123,16 @@ const MainScreen = () => {
 	useLayoutEffect(() => {
 		window.mainScreenContext = context
 	}, [context])
+	useEffect(() => {
+		const listener = (evt: PopStateEvent) => {
+			const roomID = evt.state?.room_id ?? null
+			if (roomID !== client.store.activeRoomID) {
+				context.setActiveRoom(roomID, false)
+			}
+		}
+		window.addEventListener("popstate", listener)
+		return () => window.removeEventListener("popstate", listener)
+	}, [context, client])
 	useEffect(() => context.keybindings.listen(), [context])
 	useInsertionEffect(() => {
 		const styleTags = document.createElement("style")
