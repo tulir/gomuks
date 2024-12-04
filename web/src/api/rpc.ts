@@ -25,6 +25,7 @@ import type {
 	Mentions,
 	MessageEventContent,
 	PaginationResponse,
+	ProfileView,
 	RPCCommand,
 	RPCEvent,
 	RawDBEvent,
@@ -173,6 +174,10 @@ export default abstract class RPCClient {
 
 	getProfile(user_id: UserID): Promise<UserProfile> {
 		return this.request("get_profile", { user_id })
+	}
+
+	getProfileView(room_id: RoomID | undefined, user_id: UserID): Promise<ProfileView> {
+		return this.request("get_profile_view", { room_id, user_id })
 	}
 
 	ensureGroupSessionShared(room_id: RoomID): Promise<boolean> {

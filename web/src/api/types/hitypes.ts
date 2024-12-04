@@ -16,6 +16,7 @@
 import {
 	ContentURI,
 	CreateEventContent,
+	DeviceID,
 	EncryptedEventContent,
 	EncryptionEventContent,
 	EventID,
@@ -26,6 +27,7 @@ import {
 	RoomID,
 	TombstoneEventContent,
 	UserID,
+	UserProfile,
 } from "./mxtypes.ts"
 
 export type EventRowID = number
@@ -219,3 +221,30 @@ export interface JWTLoginRequest {
 }
 
 export type LoginRequest = PasswordLoginRequest | SSOLoginRequest | JWTLoginRequest
+
+export type TrustState = "blacklisted" | "unverified" | "verified"
+	| "cross-signed-untrusted" | "cross-signed-tofu" | "cross-signed-verified"
+	| "unknown-device" | "forwarded" | "invalid"
+
+export interface ProfileViewDevice {
+	device_id: DeviceID
+	name: string
+	identity_key: string
+	signing_key: string
+	fingerprint: string
+	trust_state: TrustState
+}
+
+export interface ProfileView {
+	global_profile: UserProfile
+
+	devices_tracked: boolean
+	devices: ProfileViewDevice[]
+	master_key: string
+	first_master_key: string
+	user_trusted: boolean
+
+	mutual_rooms: RoomID[]
+
+	errors: string[]
+}

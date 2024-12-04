@@ -121,11 +121,17 @@ export class StateStore {
 	}
 
 	#makeRoomListEntry(entry: SyncRoom, room?: RoomStateStore): RoomListEntry | null {
-		if (this.#shouldHideRoom(entry)) {
-			return null
-		}
 		if (!room) {
 			room = this.rooms.get(entry.meta.room_id)
+		}
+		if (this.#shouldHideRoom(entry)) {
+			if (room) {
+				room.hidden = true
+			}
+			return null
+		}
+		if (room?.hidden) {
+			room.hidden = false
 		}
 		const preview_event = room?.eventsByRowID.get(entry.meta.preview_event_rowid)
 		const preview_sender = preview_event && room?.getStateEvent("m.room.member", preview_event.sender)

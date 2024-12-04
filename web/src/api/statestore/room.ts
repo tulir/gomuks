@@ -113,6 +113,7 @@ export class RoomStateStore {
 	paginationRequestedForRow = -1
 	readUpToRow = -1
 	hasMoreHistory = true
+	hidden = false
 
 	constructor(meta: DBRoom, private parent: StateStore) {
 		this.roomID = meta.room_id
