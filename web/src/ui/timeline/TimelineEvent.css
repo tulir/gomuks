@@ -2,12 +2,12 @@ div.timeline-event {
 	width: 100%;
 	max-width: 100%;
 	display: grid;
-	margin-top: .5rem;
+	margin-top: var(--timeline-message-gap);
 	grid-template:
-		"cmc      cmc  cmc     cmc"    0
-		"avatar   gap  sender  sender" auto
-		"avatar   gap  content status" auto
-		/ 2.5rem .5rem 1fr     2rem;
+		"cmc                          cmc                        cmc      cmc"    0
+		"avatar                       gap                        sender   sender" auto
+		"avatar                       gap                        content  status" auto
+		/ var(--timeline-avatar-size) var(--timeline-avatar-gap) 1fr      2rem;
 	contain: layout;
 
 	&.highlight {
@@ -37,17 +37,23 @@ div.timeline-event {
 	> div.sender-avatar {
 		grid-area: avatar;
 
-		width: 40px;
-		height: 40px;
+		width: var(--timeline-avatar-size);
+		height: var(--timeline-avatar-size);
 		margin-top: 2px;
+
+		> img.avatar:not(.small) {
+			width: 100%;
+			height: 100%;
+		}
 	}
 
 	> div.event-sender-and-time {
 		grid-area: sender;
+		margin-bottom: var(--timeline-sender-name-content-gap);
 
 		display: flex;
 		align-items: center;
-		gap: .25rem;
+		gap: var(--timeline-sender-name-timestamp-gap);
 		text-wrap: nowrap;
 
 		> span.event-sender {
@@ -87,7 +93,7 @@ div.timeline-event {
 		max-height: 1.25rem;
 
 		> svg {
-			height: 16px;
+			height: 1rem;
 		}
 
 		&.error {
@@ -111,10 +117,10 @@ div.timeline-event {
 
 	&.same-sender {
 		grid-template:
-			"cmc       cmc     cmc"    0
-			"timestamp content status" auto
-			/ 3rem     1fr     2rem;
-		margin-top: .25rem;
+			"cmc                                cmc     cmc"    0
+			"timestamp                          content status" auto
+			/ var(--timeline-avatar-total-size) 1fr     2rem;
+		margin-top: var(--timeline-message-gap-same-sender);
 
 		> div.sender-avatar, > div.event-sender-and-time {
 			display: none;
@@ -127,9 +133,9 @@ div.timeline-event {
 
 	&.small-event {
 		grid-template:
-			"cmc       cmc    cmc     cmc"    0
-			"timestamp avatar content status" auto
-			/ 3rem     1.5rem 1fr     2rem;
+			"cmc                                cmc    cmc     cmc"    0
+			"timestamp                          avatar content status" auto
+			/ var(--timeline-avatar-total-size) 1.5rem 1fr     2rem;
 
 		> div.sender-avatar {
 			width: 1.5rem;
@@ -145,7 +151,7 @@ div.timeline-event {
 		}
 
 		+ div.timeline-event.small-event {
-			margin-top: 0;
+			margin-top: var(--timeline-message-gap-small-event);
 		}
 	}
 }

@@ -71,6 +71,15 @@
 
 	--room-list-padding: .125rem;
 
+	--timeline-avatar-size: 2.5rem;
+	--timeline-avatar-gap: .5rem;
+	--timeline-avatar-total-size: calc(var(--timeline-avatar-size) + var(--timeline-avatar-gap));
+	--timeline-message-gap: .5rem;
+	--timeline-message-gap-same-sender: calc(var(--timeline-message-gap) / 2);
+	--timeline-message-gap-small-event: 0;
+	--timeline-sender-name-timestamp-gap: .25rem;
+	--timeline-sender-name-content-gap: 0;
+
 	@media (prefers-color-scheme: dark) {
 		color-scheme: dark;
 		--background-color: #000;
