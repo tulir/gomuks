@@ -28,6 +28,9 @@ export interface ImageContainerSize {
 export const defaultImageContainerSize: ImageContainerSize = { width: 320, height: 240 }
 export const defaultVideoContainerSize: ImageContainerSize = { width: 400, height: 320 }
 
+const minHeight = 40
+const minWidth = 40
+
 export function calculateMediaSize(
 	width?: number,
 	height?: number,
@@ -64,6 +67,19 @@ export function calculateMediaSize(
 			height = imageContainerHeight
 		}
 	}
+	const extraMediaStyle: CSSProperties = {}
+	// For very small images, force them to be bigger, but crop the result using object-fit
+	// The full image can always be viewed by clicking.
+	if (height < minHeight) {
+		height = minHeight
+		extraMediaStyle.objectFit = "cover"
+		extraMediaStyle.height = "100%"
+	}
+	if (width < minWidth) {
+		width = minWidth
+		extraMediaStyle.objectFit = "cover"
+		extraMediaStyle.width = "100%"
+	}
 	return {
 		container: {
 			width: `${width}px`,
@@ -75,6 +91,7 @@ export function calculateMediaSize(
 		},
 		media: {
 			aspectRatio: `${origWidth} / ${origHeight}`,
+			...extraMediaStyle,
 		},
 	}
 }
