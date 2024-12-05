@@ -4,10 +4,10 @@ div.timeline-event {
 	display: grid;
 	margin-top: .5rem;
 	grid-template:
-		"cmc    cmc cmc     cmc"    0
-		"avatar gap sender  sender" auto
-		"avatar gap content status" auto
-		/ 2.5rem .5rem 1fr 2rem;
+		"cmc      cmc  cmc     cmc"    0
+		"avatar   gap  sender  sender" auto
+		"avatar   gap  content status" auto
+		/ 2.5rem .5rem 1fr     2rem;
 	contain: layout;
 
 	&.highlight {
@@ -113,7 +113,7 @@ div.timeline-event {
 		grid-template:
 			"cmc       cmc     cmc"    0
 			"timestamp content status" auto
-			/ 3rem 1fr 2rem;
+			/ 3rem     1fr     2rem;
 		margin-top: .25rem;
 
 		> div.sender-avatar, > div.event-sender-and-time {
@@ -129,7 +129,7 @@ div.timeline-event {
 		grid-template:
 			"cmc       cmc    cmc     cmc"    0
 			"timestamp avatar content status" auto
-			/ 3rem 1.5rem 1fr 2rem;
+			/ 3rem     1.5rem 1fr     2rem;
 
 		> div.sender-avatar {
 			width: 1.5rem;
