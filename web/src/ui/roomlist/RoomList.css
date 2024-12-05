@@ -42,11 +42,12 @@ div.room-search-wrapper {
 div.room-entry {
 	width: 100%;
 	display: flex;
-	gap: 4px;
+	gap: .25rem;
 	user-select: none;
 	cursor: var(--clickable-cursor);
 	height: 3rem;
-	contain-intrinsic-height: 3rem;
+	padding: var(--room-list-padding) 0;
+	contain-intrinsic-height: calc(3rem + var(--room-list-padding) * 2);
 	content-visibility: auto;
 	contain: strict;
 

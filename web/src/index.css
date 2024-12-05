@@ -69,6 +69,8 @@
 	--lightbox-button-color: var(--border-color);
 	--clickable-cursor: default;
 
+	--room-list-padding: .125rem;
+
 	@media (prefers-color-scheme: dark) {
 		color-scheme: dark;
 		--background-color: #000;
