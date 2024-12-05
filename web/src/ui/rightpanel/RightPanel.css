@@ -132,7 +132,11 @@ div.right-panel-content.user {
 		}
 	}
 
-	div.devices > ul {
+	div.devices > details > summary > h4 {
+		display: inline-block;
+	}
+
+	div.devices > details > ul {
 		list-style-type: none;
 		padding: 0;
 		margin: 0;

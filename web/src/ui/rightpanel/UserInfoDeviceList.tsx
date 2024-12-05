@@ -1,0 +1,103 @@
+// gomuks - A Matrix client written in Go.
+// Copyright (C) 2024 Tulir Asokan
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Affero General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU Affero General Public License for more details.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
+import { RoomStateStore } from "@/api/statestore"
+import { ProfileView, ProfileViewDevice, TrustState } from "@/api/types"
+import EncryptedOffIcon from "@/icons/encrypted-off.svg?react"
+import EncryptedQuestionIcon from "@/icons/encrypted-question.svg?react"
+import EncryptedIcon from "@/icons/encrypted.svg?react"
+
+function trustStateDescription(state: TrustState): string {
+	switch (state) {
+	case "blacklisted":
+		return "Device has been blacklisted manually"
+	case "unverified":
+		return "Device has not been verified by cross-signing keys, or cross-signing keys were not found"
+	case "verified":
+		return "Device was verified manually"
+	case "cross-signed-untrusted":
+		return "Device is cross-signed, cross-signing keys are NOT trusted"
+	case "cross-signed-tofu":
+		return "Device is cross-signed, cross-signing keys were trusted on first use"
+	case "cross-signed-verified":
+		return "Device is cross-signed, cross-signing keys were verified manually"
+	default:
+		return "Invalid trust state"
+	}
+}
+
+function renderDevice(device: ProfileViewDevice) {
+	let Icon = EncryptedIcon
+	if (device.trust_state === "blacklisted") {
+		Icon = EncryptedOffIcon
+	} else if (device.trust_state === "cross-signed-untrusted" || device.trust_state === "unverified") {
+		Icon = EncryptedQuestionIcon
+	}
+	return <li key={device.device_id} className="device">
+		<div
+			className={`icon-wrapper trust-${device.trust_state}`}
+			title={trustStateDescription(device.trust_state)}
+		><Icon/></div>
+		<div title={device.device_id}>{device.name || device.device_id}</div>
+	</li>
+}
+
+interface DeviceListProps {
+	view: ProfileView
+	room?: RoomStateStore
+}
+
+const DeviceList = ({ view, room }: DeviceListProps) => {
+	const isEncrypted = room?.meta.current.encryption_event?.algorithm === "m.megolm.v1.aes-sha2"
+	const encryptionMessage = isEncrypted
+		? "Messages in this room are end-to-end encrypted."
+		: "Messages in this room are not end-to-end encrypted."
+	if (!view.devices_tracked) {
+		return <div className="devices not-tracked">
+			<h4>Security</h4>
+			<p>{encryptionMessage}</p>
+			<p>This user's device list is not being tracked.</p>
+			<hr/>
+		</div>
+	}
+	let verifiedMessage = null
+	if (view.user_trusted) {
+		verifiedMessage = <p className="verified-message verified" title={view.master_key}>
+			<EncryptedIcon/> You have verified this user
+		</p>
+	} else if (view.master_key) {
+		if (view.master_key === view.first_master_key) {
+			verifiedMessage = <p className="verified-message tofu" title={view.master_key}>
+				<EncryptedIcon/> Trusted master key on first use
+			</p>
+		} else {
+			verifiedMessage = <p className="verified-message tofu-broken" title={view.master_key}>
+				<EncryptedQuestionIcon/> Master key has changed
+			</p>
+		}
+	}
+	return <div className="devices">
+		<h4>Security</h4>
+		<p>{encryptionMessage}</p>
+		{verifiedMessage}
+		<details>
+			<summary><h4>{view.devices.length} devices</h4></summary>
+			<ul>{view.devices.map(renderDevice)}</ul>
+		</details>
+		<hr/>
+	</div>
+}
+
+export default DeviceList
