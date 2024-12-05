@@ -27,6 +27,7 @@ import { RoomContext } from "../roomview/roomcontext.ts"
 import EncryptedOffIcon from "@/icons/encrypted-off.svg?react"
 import EncryptedQuestionIcon from "@/icons/encrypted-question.svg?react"
 import EncryptedIcon from "@/icons/encrypted.svg?react"
+import ErrorIcon from "@/icons/error.svg?react"
 
 interface UserInfoProps {
 	userID: UserID
@@ -79,7 +80,10 @@ function renderErrors(errors: string[]) {
 	if (!errors.length) {
 		return null
 	}
-	return <div className="error">{errors.map((err, i) => <p key={i}>{err}</p>)}</div>
+	return <div className="errors">{errors.map((err, i) => <div className="error" key={i}>
+		<div className="icon"><ErrorIcon /></div>
+		<p>{err}</p>
+	</div>)}</div>
 }
 
 function renderFullInfo(
@@ -156,6 +160,7 @@ const DeviceList = ({ view, room }: DeviceListProps) => {
 			<h4>Security</h4>
 			<p>{encryptionMessage}</p>
 			<p>This user's device list is not being tracked.</p>
+			<hr/>
 		</div>
 	}
 	let verifiedMessage = null

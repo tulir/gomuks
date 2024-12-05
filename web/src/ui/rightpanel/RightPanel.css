@@ -167,6 +167,27 @@ div.right-panel-content.user {
 			}
 		}
 	}
+
+	div.errors {
+		display: flex;
+		flex-direction: column;
+		gap: .5rem;
+
+		> div.error {
+			display: flex;
+			gap: .25rem;
+
+			> p {
+				margin: 0;
+			}
+
+			> div.icon {
+				margin-top: .125rem;
+				color: var(--error-color);
+				flex-shrink: 0;
+			}
+		}
+	}
 }
 
 div.right-panel-content.members {
