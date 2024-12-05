@@ -16,6 +16,7 @@
 import React, { CSSProperties, use, useCallback, useEffect, useState } from "react"
 import { RoomStateStore, usePreference } from "@/api/statestore"
 import { MediaMessageEventContent } from "@/api/types"
+import { isMobileDevice } from "@/util/ismobile.ts"
 import ClientContext from "../ClientContext.ts"
 import { ModalCloseContext } from "../modal/Modal.tsx"
 import { GIF, getTrendingGIFs, searchGIF } from "./gifsource.ts"
@@ -104,7 +105,7 @@ const GIFPicker = ({ style, onSelect, room }: GIFPickerProps) => {
 	return <div className="gif-picker" style={style}>
 		<div className="gif-search">
 			<input
-				autoFocus
+				autoFocus={!isMobileDevice}
 				onChange={onChangeQuery}
 				value={query}
 				type="search"

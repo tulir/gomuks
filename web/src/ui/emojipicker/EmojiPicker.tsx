@@ -18,6 +18,7 @@ import { getMediaURL } from "@/api/media.ts"
 import { RoomStateStore, useCustomEmojis } from "@/api/statestore"
 import { roomStateGUIDToString } from "@/api/types"
 import { CATEGORY_FREQUENTLY_USED, Emoji, PartialEmoji, categories, useFilteredEmojis } from "@/util/emoji"
+import { isMobileDevice } from "@/util/ismobile.ts"
 import useEvent from "@/util/useEvent.ts"
 import ClientContext from "../ClientContext.ts"
 import { ModalCloseContext } from "../modal/Modal.tsx"
@@ -118,7 +119,13 @@ const EmojiPicker = ({ style, selected, onSelect, room, allowFreeform, closeOnSe
 			)}
 		</div>
 		<div className="emoji-search">
-			<input autoFocus onChange={onChangeQuery} value={query} type="search" placeholder="Search emojis"/>
+			<input
+				autoFocus={!isMobileDevice}
+				onChange={onChangeQuery}
+				value={query}
+				type="search"
+				placeholder="Search emojis"
+			/>
 			<button onClick={clearQuery} disabled={query === ""}>
 				{query !== "" ? <CloseIcon/> : <SearchIcon/>}
 			</button>

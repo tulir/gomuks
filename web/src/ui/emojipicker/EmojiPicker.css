@@ -199,3 +199,28 @@ div.emoji-picker {
 		margin-bottom: .25rem;
 	}
 }
+
+@media screen and (max-width: 37.5rem) {
+	div.emoji-picker, div.gif-picker {
+		inset: 0 0 40px 0 !important;
+		width: 100%;
+		height: calc(100% - 40px);
+		border-radius: 0;
+	}
+
+	div.gif-picker > div.gif-list > div.gif-entry {
+		max-width: 33%;
+	}
+}
+
+@media screen and (max-width: 30rem) {
+	div.gif-picker > div.gif-list > div.gif-entry {
+		max-width: 50%;
+	}
+}
+
+@media screen and (max-width: 20rem) {
+	div.gif-picker > div.gif-list > div.gif-entry {
+		max-width: 100%;
+	}
+}

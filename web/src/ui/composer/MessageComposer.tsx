@@ -27,6 +27,7 @@ import type {
 	RoomID,
 } from "@/api/types"
 import { PartialEmoji, emojiToMarkdown } from "@/util/emoji"
+import { isMobileDevice } from "@/util/ismobile.ts"
 import { escapeMarkdown } from "@/util/markdown.ts"
 import useEvent from "@/util/useEvent.ts"
 import ClientContext from "../ClientContext.ts"
@@ -62,7 +63,6 @@ export interface ComposerState {
 	uninited?: boolean
 }
 
-const isMobileDevice = window.ontouchstart !== undefined && window.innerWidth < 800
 const MAX_TEXTAREA_ROWS = 10
 
 const emptyComposer: ComposerState = { text: "", media: null, replyTo: null, location: null }
