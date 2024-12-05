@@ -570,12 +570,18 @@ func (gmx *Gomuks) generateVideoThumbnail(ctx context.Context, filePath string, 
 	if err != nil {
 		return fmt.Errorf("failed to seek to start of file: %w", err)
 	}
-	cfg, _, err := image.DecodeConfig(tempFile)
+	img, _, err := image.Decode(tempFile)
 	if err != nil {
 		zerolog.Ctx(ctx).Warn().Err(err).Msg("Failed to decode thumbnail image config")
 	} else {
-		thumbnailInfo.Width = cfg.Width
-		thumbnailInfo.Height = cfg.Height
+		bounds := img.Bounds()
+		thumbnailInfo.Width = bounds.Dx()
+		thumbnailInfo.Height = bounds.Dy()
+		hash, err := blurhash.Encode(4, 3, img)
+		if err != nil {
+			zerolog.Ctx(ctx).Warn().Err(err).Msg("Failed to generate image blurhash")
+		}
+		thumbnailInfo.AnoaBlurhash = hash
 	}
 	_ = tempFile.Close()
 	checksum := hasher.Sum(nil)
