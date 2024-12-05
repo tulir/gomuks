@@ -66,7 +66,7 @@ export default class Client {
 		}
 		console.log("Successfully authenticated, connecting to websocket")
 		this.rpc.start()
-		Notification.requestPermission()
+		window.Notification?.requestPermission()
 			.then(permission => console.log("Notification permission:", permission))
 	}
 

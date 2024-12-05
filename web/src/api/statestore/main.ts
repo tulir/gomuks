@@ -180,7 +180,7 @@ export class StateStore {
 				}
 			}
 
-			if (Notification.permission === "granted" && !focused.current) {
+			if (window.Notification?.permission === "granted" && !focused.current) {
 				for (const notification of data.notifications) {
 					this.showNotification(room, notification.event_rowid, notification.sound)
 				}
