@@ -42,8 +42,10 @@ function renderJSONValue(data: unknown, collapsed: boolean) {
 				return <span className="json-collapsed">…</span>
 			}
 			return <ol className="json-array-children">
-				{data.map((item, i) =>
-					<li key={i} className="json-array-entry"><JSONValueWithKey data={item}/></li>)}
+				{data.map((item, index, arr) =>
+					<li key={index} className="json-array-entry">
+						<JSONValueWithKey data={item} trailingComma={index < arr.length - 1}/>
+					</li>)}
 			</ol>
 		} else {
 			const entries = Object.entries(data)
