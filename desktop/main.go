@@ -81,6 +81,10 @@ func (c *CommandHandler) Init() {
 					Data:      marshaledPayload,
 				})
 			}
+			c.App.EmitEvent("hicli_event", &hicli.JSONCommand{
+				Command:   "init_complete",
+				RequestID: 0,
+			})
 			log.Info().Int("room_count", roomCount).Msg("Sent initial rooms to client")
 		}()
 	}

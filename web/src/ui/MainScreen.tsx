@@ -159,6 +159,7 @@ const handleURLHash = (client: Client, context: ContextFields) => {
 		console.error("Invalid matrix URI", decodedURI)
 		return
 	}
+	console.log("Handling URI", uri)
 	const newURL = new URL(location.href)
 	newURL.hash = ""
 	if (uri.identifier.startsWith("@")) {
@@ -206,9 +207,20 @@ const MainScreen = () => {
 			context.setRightPanel(evt.state?.right_panel ?? null, false)
 		}
 		window.addEventListener("popstate", listener)
-		listener({ state: history.state } as PopStateEvent)
-		handleURLHash(client, context)
-		return () => window.removeEventListener("popstate", listener)
+		const initHandle = () => {
+			listener({ state: history.state } as PopStateEvent)
+			handleURLHash(client, context)
+		}
+		let cancel = () => {}
+		if (client.initComplete.current) {
+			initHandle()
+		} else {
+			cancel = client.initComplete.once(initHandle)
+		}
+		return () => {
+			window.removeEventListener("popstate", listener)
+			cancel()
+		}
 	}, [context, client])
 	useEffect(() => context.keybindings.listen(), [context])
 	useInsertionEffect(() => {

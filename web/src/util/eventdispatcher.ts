@@ -33,6 +33,16 @@ export class EventDispatcher<T> {
 		return this.#listen(listener)
 	}
 
+	once(listener: (data: T) => void): () => void {
+		let unsub: (() => void) | undefined = undefined
+		const wrapped = (data: T) => {
+			unsub?.()
+			listener(data)
+		}
+		unsub = this.#listen(wrapped)
+		return unsub
+	}
+
 	#listen(listener: (data: T) => void): () => void {
 		this.#listeners.push(listener)
 		return () => {
@@ -72,6 +82,10 @@ export class CachedEventDispatcher<T> extends EventDispatcher<T> {
 		}
 		return unlisten
 	}
+
+	clearCache() {
+		this.current = null
+	}
 }
 
 export class NonNullCachedEventDispatcher<T> extends CachedEventDispatcher<T> {
@@ -80,5 +94,9 @@ export class NonNullCachedEventDispatcher<T> extends CachedEventDispatcher<T> {
 	constructor(cache: T) {
 		super(cache)
 		this.current = cache
+	}
+
+	clearCache() {
+		throw new Error("Cannot clear cache of NonNullCachedEventDispatcher")
 	}
 }

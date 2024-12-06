@@ -34,6 +34,7 @@ import type {
 export default class Client {
 	readonly state = new CachedEventDispatcher<ClientState>()
 	readonly syncStatus = new NonNullCachedEventDispatcher<SyncStatus>({ type: "waiting", error_count: 0 })
+	readonly initComplete = new NonNullCachedEventDispatcher<boolean>(false)
 	readonly store = new StateStore()
 	#stateRequests: RoomStateGUID[] = []
 	#stateRequestQueued = false
@@ -105,6 +106,8 @@ export default class Client {
 			this.state.emit(ev.data)
 		} else if (ev.command === "sync_status") {
 			this.syncStatus.emit(ev.data)
+		} else if (ev.command === "init_complete") {
+			this.initComplete.emit(true)
 		} else if (ev.command === "sync_complete") {
 			this.store.applySync(ev.data)
 		} else if (ev.command === "events_decrypted") {
@@ -317,9 +320,16 @@ export default class Client {
 		}
 	}
 
-	async logout() {
-		await this.rpc.logout()
+	clearState() {
+		this.initComplete.emit(false)
+		this.syncStatus.emit({ type: "waiting", error_count: 0 })
+		this.state.clearCache()
 		localStorage.clear()
 		this.store.clear()
+	}
+
+	async logout() {
+		await this.rpc.logout()
+		this.clearState()
 	}
 }

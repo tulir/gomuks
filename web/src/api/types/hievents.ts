@@ -118,6 +118,10 @@ export interface SyncStatusEvent extends RPCCommand<SyncStatus> {
 	command: "sync_status"
 }
 
+export interface InitCompleteEvent extends RPCCommand<void> {
+	command: "init_complete"
+}
+
 export type RPCEvent =
 	ClientStateEvent |
 	SyncStatusEvent |
@@ -125,4 +129,5 @@ export type RPCEvent =
 	SendCompleteEvent |
 	EventsDecryptedEvent |
 	SyncCompleteEvent |
-	ImageAuthTokenEvent
+	ImageAuthTokenEvent |
+	InitCompleteEvent

@@ -259,5 +259,13 @@ func (gmx *Gomuks) sendInitialData(ctx context.Context, conn *websocket.Conn) {
 			return
 		}
 	}
+	err := writeCmd(ctx, conn, &hicli.JSONCommand{
+		Command:   "init_complete",
+		RequestID: 0,
+	})
+	if err != nil {
+		log.Err(err).Msg("Failed to send initial rooms done event to client")
+		return
+	}
 	log.Info().Int("room_count", roomCount).Msg("Sent initial rooms to client")
 }
