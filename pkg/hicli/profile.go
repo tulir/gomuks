@@ -140,12 +140,14 @@ func (h *HiClient) GetProfileView(ctx context.Context, roomID id.RoomID, userID 
 			addError(fmt.Errorf("failed to get devices: %w", err))
 			return
 		}
-		if ownUserSigningKey != "" && theirMasterKey.Key != "" {
+		if userID == h.Account.UserID {
+			resp.UserTrusted, err = h.CryptoStore.IsKeySignedBy(ctx, userID, theirMasterKey.Key, userID, h.Crypto.OwnIdentity().SigningKey)
+		} else if ownUserSigningKey != "" && theirMasterKey.Key != "" {
 			resp.UserTrusted, err = h.CryptoStore.IsKeySignedBy(ctx, userID, theirMasterKey.Key, h.Account.UserID, ownUserSigningKey)
-			if err != nil {
-				log.Err(err).Msg("Failed to check if user is trusted")
-				addError(fmt.Errorf("failed to check if user is trusted: %w", err))
-			}
+		}
+		if err != nil {
+			log.Err(err).Msg("Failed to check if user is trusted")
+			addError(fmt.Errorf("failed to check if user is trusted: %w", err))
 		}
 		resp.Devices = make([]*ProfileViewDevice, len(devices))
 		i := 0
