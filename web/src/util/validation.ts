@@ -63,13 +63,13 @@ export function parseMatrixURI(uri: unknown): ParsedMatrixURI | undefined {
 		params: parsed.searchParams,
 	}
 	if (type === "u") {
-		output.identifier = `@${ident1}`
+		output.identifier = `@${decodeURIComponent(ident1)}`
 	} else if (type === "r") {
-		output.identifier = `#${ident1}`
+		output.identifier = `#${decodeURIComponent(ident1)}`
 	} else if (type === "roomid") {
-		output.identifier = `!${ident1}`
+		output.identifier = `!${decodeURIComponent(ident1)}`
 		if (subtype === "e") {
-			output.eventID = `$${ident2}`
+			output.eventID = `$${decodeURIComponent(ident2)}`
 		}
 	} else {
 		return
