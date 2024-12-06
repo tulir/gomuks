@@ -112,11 +112,9 @@ div.right-panel-content.user {
 		padding: .25rem 1rem;
 	}
 
-	div.full-info-loading {
-		display: flex;
-		align-items: center;
-		gap: .5rem;
-		flex-direction: column;
+	.user-info-loader {
+		display: flex !important;
+		justify-content: center;
 	}
 
 	p.verified-message {

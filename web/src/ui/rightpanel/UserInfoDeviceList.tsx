@@ -13,63 +13,54 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
+import { useEffect, useState } from "react"
+import { ScaleLoader } from "react-spinners"
+import Client from "@/api/client.ts"
 import { RoomStateStore } from "@/api/statestore"
-import { ProfileView, ProfileViewDevice, TrustState } from "@/api/types"
+import { ProfileDevice, ProfileEncryptionInfo, TrustState, UserID } from "@/api/types"
+import UserInfoError from "./UserInfoError.tsx"
 import EncryptedOffIcon from "@/icons/encrypted-off.svg?react"
 import EncryptedQuestionIcon from "@/icons/encrypted-question.svg?react"
 import EncryptedIcon from "@/icons/encrypted.svg?react"
 
-function trustStateDescription(state: TrustState): string {
-	switch (state) {
-	case "blacklisted":
-		return "Device has been blacklisted manually"
-	case "unverified":
-		return "Device has not been verified by cross-signing keys, or cross-signing keys were not found"
-	case "verified":
-		return "Device was verified manually"
-	case "cross-signed-untrusted":
-		return "Device is cross-signed, cross-signing keys are NOT trusted"
-	case "cross-signed-tofu":
-		return "Device is cross-signed, cross-signing keys were trusted on first use"
-	case "cross-signed-verified":
-		return "Device is cross-signed, cross-signing keys were verified manually"
-	default:
-		return "Invalid trust state"
-	}
-}
-
-function renderDevice(device: ProfileViewDevice) {
-	let Icon = EncryptedIcon
-	if (device.trust_state === "blacklisted") {
-		Icon = EncryptedOffIcon
-	} else if (device.trust_state === "cross-signed-untrusted" || device.trust_state === "unverified") {
-		Icon = EncryptedQuestionIcon
-	}
-	return <li key={device.device_id} className="device">
-		<div
-			className={`icon-wrapper trust-${device.trust_state}`}
-			title={trustStateDescription(device.trust_state)}
-		><Icon/></div>
-		<div title={device.device_id}>{device.name || device.device_id}</div>
-	</li>
-}
-
 interface DeviceListProps {
-	view: ProfileView
+	client: Client
 	room?: RoomStateStore
+	userID: UserID
 }
 
-const DeviceList = ({ view, room }: DeviceListProps) => {
+const DeviceList = ({ client, room, userID }: DeviceListProps) => {
+	const [view, setEncryptionInfo] = useState<ProfileEncryptionInfo | null>(null)
+	const [errors, setErrors] = useState<string[] | null>(null)
+	useEffect(() => {
+		setEncryptionInfo(null)
+		setErrors(null)
+		client.rpc.getProfileEncryptionInfo(userID).then(
+			resp => {
+				setEncryptionInfo(resp)
+				setErrors(resp.errors)
+			},
+			err => setErrors([`${err}`]),
+		)
+	}, [client, userID])
 	const isEncrypted = room?.meta.current.encryption_event?.algorithm === "m.megolm.v1.aes-sha2"
 	const encryptionMessage = isEncrypted
 		? "Messages in this room are end-to-end encrypted."
 		: "Messages in this room are not end-to-end encrypted."
+	if (view === null) {
+		return <div className="devices not-tracked">
+			<h4>Security</h4>
+			<p>{encryptionMessage}</p>
+			{!errors ? <ScaleLoader className="user-info-loader" color="var(--primary-color)"/> : null}
+			<UserInfoError errors={errors}/>
+		</div>
+	}
 	if (!view.devices_tracked) {
 		return <div className="devices not-tracked">
 			<h4>Security</h4>
 			<p>{encryptionMessage}</p>
 			<p>This user's device list is not being tracked.</p>
-			<hr/>
+			<UserInfoError errors={errors}/>
 		</div>
 	}
 	let verifiedMessage = null
@@ -96,8 +87,43 @@ const DeviceList = ({ view, room }: DeviceListProps) => {
 			<summary><h4>{view.devices.length} devices</h4></summary>
 			<ul>{view.devices.map(renderDevice)}</ul>
 		</details>
-		<hr/>
+		<UserInfoError errors={errors}/>
 	</div>
+}
+
+function renderDevice(device: ProfileDevice) {
+	let Icon = EncryptedIcon
+	if (device.trust_state === "blacklisted") {
+		Icon = EncryptedOffIcon
+	} else if (device.trust_state === "cross-signed-untrusted" || device.trust_state === "unverified") {
+		Icon = EncryptedQuestionIcon
+	}
+	return <li key={device.device_id} className="device">
+		<div
+			className={`icon-wrapper trust-${device.trust_state}`}
+			title={trustStateDescription(device.trust_state)}
+		><Icon/></div>
+		<div title={device.device_id}>{device.name || device.device_id}</div>
+	</li>
+}
+
+function trustStateDescription(state: TrustState): string {
+	switch (state) {
+	case "blacklisted":
+		return "Device has been blacklisted manually"
+	case "unverified":
+		return "Device has not been verified by cross-signing keys, or cross-signing keys were not found"
+	case "verified":
+		return "Device was verified manually"
+	case "cross-signed-untrusted":
+		return "Device is cross-signed, cross-signing keys are NOT trusted"
+	case "cross-signed-tofu":
+		return "Device is cross-signed, cross-signing keys were trusted on first use"
+	case "cross-signed-verified":
+		return "Device is cross-signed, cross-signing keys were verified manually"
+	default:
+		return "Invalid trust state"
+	}
 }
 
 export default DeviceList

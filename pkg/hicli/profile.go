@@ -11,15 +11,34 @@ import (
 	"fmt"
 	"slices"
 	"strings"
-	"sync"
 
 	"github.com/rs/zerolog"
-
 	"maunium.net/go/mautrix"
 	"maunium.net/go/mautrix/id"
 )
 
-type ProfileViewDevice struct {
+const MutualRoomsBatchLimit = 5
+
+func (h *HiClient) GetMutualRooms(ctx context.Context, userID id.UserID) (output []id.RoomID, err error) {
+	var nextBatch string
+	for i := 0; i < MutualRoomsBatchLimit; i++ {
+		mutualRooms, err := h.Client.GetMutualRooms(ctx, userID, mautrix.ReqMutualRooms{From: nextBatch})
+		if err != nil {
+			zerolog.Ctx(ctx).Err(err).Str("from_batch_token", nextBatch).Msg("Failed to get mutual rooms")
+			return nil, err
+		}
+		output = append(output, mutualRooms.Joined...)
+		nextBatch = mutualRooms.NextBatch
+		if nextBatch == "" {
+			break
+		}
+	}
+	slices.Sort(output)
+	output = slices.Compact(output)
+	return
+}
+
+type ProfileDevice struct {
 	DeviceID    id.DeviceID   `json:"device_id"`
 	Name        string        `json:"name"`
 	IdentityKey id.Curve25519 `json:"identity_key"`
@@ -28,158 +47,93 @@ type ProfileViewDevice struct {
 	Trust       id.TrustState `json:"trust_state"`
 }
 
-type ProfileViewData struct {
-	GlobalProfile *mautrix.RespUserProfile `json:"global_profile"`
-
-	DevicesTracked bool                 `json:"devices_tracked"`
-	Devices        []*ProfileViewDevice `json:"devices"`
-	MasterKey      string               `json:"master_key"`
-	FirstMasterKey string               `json:"first_master_key"`
-	UserTrusted    bool                 `json:"user_trusted"`
-
-	MutualRooms []id.RoomID `json:"mutual_rooms"`
-
-	Errors []string `json:"errors"`
+type ProfileEncryptionInfo struct {
+	DevicesTracked bool             `json:"devices_tracked"`
+	Devices        []*ProfileDevice `json:"devices"`
+	MasterKey      string           `json:"master_key"`
+	FirstMasterKey string           `json:"first_master_key"`
+	UserTrusted    bool             `json:"user_trusted"`
+	Errors         []string         `json:"errors"`
 }
 
-const MutualRoomsBatchLimit = 5
-
-func (h *HiClient) GetProfileView(ctx context.Context, roomID id.RoomID, userID id.UserID) (*ProfileViewData, error) {
-	log := zerolog.Ctx(ctx).With().
-		Stringer("room_id", roomID).
-		Stringer("target_user_id", userID).
-		Logger()
-	var resp ProfileViewData
-	resp.Devices = make([]*ProfileViewDevice, 0)
-	resp.GlobalProfile = &mautrix.RespUserProfile{}
-	resp.Errors = make([]string, 0)
-
-	var wg sync.WaitGroup
-	wg.Add(3)
-
-	var errorsLock sync.Mutex
-	addError := func(err error) {
-		errorsLock.Lock()
-		resp.Errors = append(resp.Errors, err.Error())
-		errorsLock.Unlock()
+func (h *HiClient) GetProfileEncryptionInfo(ctx context.Context, userID id.UserID) (*ProfileEncryptionInfo, error) {
+	var resp ProfileEncryptionInfo
+	log := zerolog.Ctx(ctx)
+	userIDs, err := h.CryptoStore.FilterTrackedUsers(ctx, []id.UserID{userID})
+	if err != nil {
+		log.Err(err).Msg("Failed to check if user's devices are tracked")
+		return nil, fmt.Errorf("failed to check if user's devices are tracked: %w", err)
+	} else if len(userIDs) == 0 {
+		return &resp, nil
 	}
-
-	go func() {
-		defer wg.Done()
-		profile, err := h.Client.GetProfile(ctx, userID)
+	ownKeys := h.Crypto.GetOwnCrossSigningPublicKeys(ctx)
+	var ownUserSigningKey id.Ed25519
+	if ownKeys != nil {
+		ownUserSigningKey = ownKeys.UserSigningKey
+	}
+	resp.DevicesTracked = true
+	csKeys, err := h.CryptoStore.GetCrossSigningKeys(ctx, userID)
+	theirMasterKey := csKeys[id.XSUsageMaster]
+	theirSelfSignKey := csKeys[id.XSUsageSelfSigning]
+	if err != nil {
+		log.Err(err).Msg("Failed to get cross-signing keys")
+		return nil, fmt.Errorf("failed to get cross-signing keys: %w", err)
+	} else if csKeys != nil && theirMasterKey.Key != "" {
+		resp.MasterKey = theirMasterKey.Key.Fingerprint()
+		resp.FirstMasterKey = theirMasterKey.First.Fingerprint()
+		selfKeySigned, err := h.CryptoStore.IsKeySignedBy(ctx, userID, theirSelfSignKey.Key, userID, theirMasterKey.Key)
 		if err != nil {
-			log.Err(err).Msg("Failed to get global profile")
-			addError(fmt.Errorf("failed to get global profile: %w", err))
-		} else {
-			resp.GlobalProfile = profile
+			log.Err(err).Msg("Failed to check if self-signing key is signed by master key")
+			return nil, fmt.Errorf("failed to check if self-signing key is signed by master key: %w", err)
+		} else if !selfKeySigned {
+			theirSelfSignKey = id.CrossSigningKey{}
+			resp.Errors = append(resp.Errors, "Self-signing key is not signed by master key")
 		}
-	}()
-	go func() {
-		defer wg.Done()
-		if userID == h.Account.UserID {
-			return
-		}
-		var nextBatch string
-		for i := 0; i < MutualRoomsBatchLimit; i++ {
-			mutualRooms, err := h.Client.GetMutualRooms(ctx, userID, mautrix.ReqMutualRooms{From: nextBatch})
-			if err != nil {
-				log.Err(err).Str("from_batch_token", nextBatch).Msg("Failed to get mutual rooms")
-				addError(fmt.Errorf("failed to get mutual rooms: %w", err))
-				break
+	} else {
+		resp.Errors = append(resp.Errors, "Cross-signing keys not found")
+	}
+	devices, err := h.CryptoStore.GetDevices(ctx, userID)
+	if err != nil {
+		log.Err(err).Msg("Failed to get devices for user")
+		return nil, fmt.Errorf("failed to get devices: %w", err)
+	}
+	if userID == h.Account.UserID {
+		resp.UserTrusted, err = h.CryptoStore.IsKeySignedBy(ctx, userID, theirMasterKey.Key, userID, h.Crypto.OwnIdentity().SigningKey)
+	} else if ownUserSigningKey != "" && theirMasterKey.Key != "" {
+		resp.UserTrusted, err = h.CryptoStore.IsKeySignedBy(ctx, userID, theirMasterKey.Key, h.Account.UserID, ownUserSigningKey)
+	}
+	if err != nil {
+		log.Err(err).Msg("Failed to check if user is trusted")
+		resp.Errors = append(resp.Errors, fmt.Sprintf("Failed to check if user is trusted: %v", err))
+	}
+	resp.Devices = make([]*ProfileDevice, len(devices))
+	i := 0
+	for _, device := range devices {
+		signatures, err := h.CryptoStore.GetSignaturesForKeyBy(ctx, device.UserID, device.SigningKey, device.UserID)
+		if err != nil {
+			log.Err(err).Stringer("device_id", device.DeviceID).Msg("Failed to get signatures for device")
+			resp.Errors = append(resp.Errors, fmt.Sprintf("Failed to get signatures for device %s: %v", device.DeviceID, err))
+		} else if _, signed := signatures[theirSelfSignKey.Key]; signed && device.Trust == id.TrustStateUnset && theirSelfSignKey.Key != "" {
+			if resp.UserTrusted {
+				device.Trust = id.TrustStateCrossSignedVerified
+			} else if theirMasterKey.Key == theirMasterKey.First {
+				device.Trust = id.TrustStateCrossSignedTOFU
 			} else {
-				resp.MutualRooms = mutualRooms.Joined
-				nextBatch = mutualRooms.NextBatch
-				if nextBatch == "" {
-					break
-				}
+				device.Trust = id.TrustStateCrossSignedUntrusted
 			}
 		}
-		slices.Sort(resp.MutualRooms)
-		resp.MutualRooms = slices.Compact(resp.MutualRooms)
-	}()
-	go func() {
-		defer wg.Done()
-		userIDs, err := h.CryptoStore.FilterTrackedUsers(ctx, []id.UserID{userID})
-		if err != nil {
-			log.Err(err).Msg("Failed to check if user's devices are tracked")
-			addError(fmt.Errorf("failed to check if user's devices are tracked: %w", err))
-			return
-		} else if len(userIDs) == 0 {
-			return
+		resp.Devices[i] = &ProfileDevice{
+			DeviceID:    device.DeviceID,
+			Name:        device.Name,
+			IdentityKey: device.IdentityKey,
+			SigningKey:  device.SigningKey,
+			Fingerprint: device.Fingerprint(),
+			Trust:       device.Trust,
 		}
-		ownKeys := h.Crypto.GetOwnCrossSigningPublicKeys(ctx)
-		var ownUserSigningKey id.Ed25519
-		if ownKeys != nil {
-			ownUserSigningKey = ownKeys.UserSigningKey
-		}
-		resp.DevicesTracked = true
-		csKeys, err := h.CryptoStore.GetCrossSigningKeys(ctx, userID)
-		theirMasterKey := csKeys[id.XSUsageMaster]
-		theirSelfSignKey := csKeys[id.XSUsageSelfSigning]
-		if err != nil {
-			log.Err(err).Msg("Failed to get cross-signing keys")
-			addError(fmt.Errorf("failed to get cross-signing keys: %w", err))
-			return
-		} else if csKeys != nil && theirMasterKey.Key != "" {
-			resp.MasterKey = theirMasterKey.Key.Fingerprint()
-			resp.FirstMasterKey = theirMasterKey.First.Fingerprint()
-			selfKeySigned, err := h.CryptoStore.IsKeySignedBy(ctx, userID, theirSelfSignKey.Key, userID, theirMasterKey.Key)
-			if err != nil {
-				log.Err(err).Msg("Failed to check if self-signing key is signed by master key")
-				addError(fmt.Errorf("failed to check if self-signing key is signed by master key: %w", err))
-			} else if !selfKeySigned {
-				theirSelfSignKey = id.CrossSigningKey{}
-				addError(fmt.Errorf("self-signing key is not signed by master key"))
-			}
-		} else {
-			addError(fmt.Errorf("cross-signing keys not found"))
-		}
-		devices, err := h.CryptoStore.GetDevices(ctx, userID)
-		if err != nil {
-			log.Err(err).Msg("Failed to get devices for user")
-			addError(fmt.Errorf("failed to get devices: %w", err))
-			return
-		}
-		if userID == h.Account.UserID {
-			resp.UserTrusted, err = h.CryptoStore.IsKeySignedBy(ctx, userID, theirMasterKey.Key, userID, h.Crypto.OwnIdentity().SigningKey)
-		} else if ownUserSigningKey != "" && theirMasterKey.Key != "" {
-			resp.UserTrusted, err = h.CryptoStore.IsKeySignedBy(ctx, userID, theirMasterKey.Key, h.Account.UserID, ownUserSigningKey)
-		}
-		if err != nil {
-			log.Err(err).Msg("Failed to check if user is trusted")
-			addError(fmt.Errorf("failed to check if user is trusted: %w", err))
-		}
-		resp.Devices = make([]*ProfileViewDevice, len(devices))
-		i := 0
-		for _, device := range devices {
-			signatures, err := h.CryptoStore.GetSignaturesForKeyBy(ctx, device.UserID, device.SigningKey, device.UserID)
-			if err != nil {
-				log.Err(err).Stringer("device_id", device.DeviceID).Msg("Failed to get signatures for device")
-				addError(fmt.Errorf("failed to get signatures for device %s: %w", device.DeviceID, err))
-			} else if _, signed := signatures[theirSelfSignKey.Key]; signed && device.Trust == id.TrustStateUnset && theirSelfSignKey.Key != "" {
-				if resp.UserTrusted {
-					device.Trust = id.TrustStateCrossSignedVerified
-				} else if theirMasterKey.Key == theirMasterKey.First {
-					device.Trust = id.TrustStateCrossSignedTOFU
-				} else {
-					device.Trust = id.TrustStateCrossSignedUntrusted
-				}
-			}
-			resp.Devices[i] = &ProfileViewDevice{
-				DeviceID:    device.DeviceID,
-				Name:        device.Name,
-				IdentityKey: device.IdentityKey,
-				SigningKey:  device.SigningKey,
-				Fingerprint: device.Fingerprint(),
-				Trust:       device.Trust,
-			}
-			i++
-		}
-		slices.SortFunc(resp.Devices, func(a, b *ProfileViewDevice) int {
-			return strings.Compare(a.DeviceID.String(), b.DeviceID.String())
-		})
-	}()
-
-	wg.Wait()
+		i++
+	}
+	slices.SortFunc(resp.Devices, func(a, b *ProfileDevice) int {
+		return strings.Compare(a.DeviceID.String(), b.DeviceID.String())
+	})
 	return &resp, nil
 }

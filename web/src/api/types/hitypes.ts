@@ -27,7 +27,6 @@ import {
 	RoomID,
 	TombstoneEventContent,
 	UserID,
-	UserProfile,
 } from "./mxtypes.ts"
 
 export type EventRowID = number
@@ -226,7 +225,7 @@ export type TrustState = "blacklisted" | "unverified" | "verified"
 	| "cross-signed-untrusted" | "cross-signed-tofu" | "cross-signed-verified"
 	| "unknown-device" | "forwarded" | "invalid"
 
-export interface ProfileViewDevice {
+export interface ProfileDevice {
 	device_id: DeviceID
 	name: string
 	identity_key: string
@@ -235,16 +234,11 @@ export interface ProfileViewDevice {
 	trust_state: TrustState
 }
 
-export interface ProfileView {
-	global_profile: UserProfile
-
+export interface ProfileEncryptionInfo {
 	devices_tracked: boolean
-	devices: ProfileViewDevice[]
+	devices: ProfileDevice[]
 	master_key: string
 	first_master_key: string
 	user_trusted: boolean
-
-	mutual_rooms: RoomID[]
-
 	errors: string[]
 }

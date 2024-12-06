@@ -25,7 +25,7 @@ import type {
 	Mentions,
 	MessageEventContent,
 	PaginationResponse,
-	ProfileView,
+	ProfileEncryptionInfo,
 	RPCCommand,
 	RPCEvent,
 	RawDBEvent,
@@ -176,8 +176,12 @@ export default abstract class RPCClient {
 		return this.request("get_profile", { user_id })
 	}
 
-	getProfileView(room_id: RoomID | undefined, user_id: UserID): Promise<ProfileView> {
-		return this.request("get_profile_view", { room_id, user_id })
+	getMutualRooms(user_id: UserID): Promise<RoomID[]> {
+		return this.request("get_mutual_rooms", { user_id })
+	}
+
+	getProfileEncryptionInfo(user_id: UserID): Promise<ProfileEncryptionInfo> {
+		return this.request("get_profile_encryption_info", { user_id })
 	}
 
 	ensureGroupSessionShared(room_id: RoomID): Promise<boolean> {

@@ -14,18 +14,17 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import { use, useEffect, useState } from "react"
-import { PuffLoader, ScaleLoader } from "react-spinners"
-import Client from "@/api/client.ts"
+import { PuffLoader } from "react-spinners"
 import { getAvatarURL } from "@/api/media.ts"
-import { RoomStateStore, useRoomState } from "@/api/statestore"
-import { MemberEventContent, ProfileView, UserID } from "@/api/types"
+import { useRoomState } from "@/api/statestore"
+import { MemberEventContent, UserID, UserProfile } from "@/api/types"
 import { getLocalpart } from "@/util/validation.ts"
 import ClientContext from "../ClientContext.ts"
 import { LightboxContext } from "../modal/Lightbox.tsx"
 import { RoomContext } from "../roomview/roomcontext.ts"
 import DeviceList from "./UserInfoDeviceList.tsx"
+import UserInfoError from "./UserInfoError.tsx"
 import MutualRooms from "./UserInfoMutualRooms.tsx"
-import ErrorIcon from "@/icons/error.svg?react"
 
 interface UserInfoProps {
 	userID: UserID
@@ -40,30 +39,27 @@ const UserInfo = ({ userID }: UserInfoProps) => {
 	if (!memberEvt) {
 		use(ClientContext)?.requestMemberEvent(roomCtx?.store, userID)
 	}
-	const [view, setView] = useState<ProfileView | null>(null)
-	const [errors, setErrors] = useState<string[]>([])
+	const [globalProfile, setGlobalProfile] = useState<UserProfile | null>(null)
+	const [errors, setErrors] = useState<string[] | null>(null)
 	useEffect(() => {
-		setErrors([])
-		setView(null)
-		client.rpc.getProfileView(roomCtx?.store.roomID, userID).then(
-			resp => {
-				setView(resp)
-				setErrors(resp.errors)
-			},
+		setErrors(null)
+		setGlobalProfile(null)
+		client.rpc.getProfile(userID).then(
+			setGlobalProfile,
 			err => setErrors([`${err}`]),
 		)
 	}, [roomCtx, userID, client])
 
-	const displayname = member?.displayname || view?.global_profile?.displayname || getLocalpart(userID)
+	const displayname = member?.displayname || globalProfile?.displayname || getLocalpart(userID)
 	return <>
 		<div className="avatar-container">
-			{member === null && view === null && !errors.length ? <PuffLoader
+			{member === null && globalProfile === null && errors == null ? <PuffLoader
 				color="var(--primary-color)"
 				size="100%"
 				className="avatar-loader"
 			/> : <img
 				className="avatar"
-				src={getAvatarURL(userID, member ?? view?.global_profile)}
+				src={getAvatarURL(userID, member ?? globalProfile)}
 				onClick={openLightbox}
 				alt=""
 			/>}
@@ -71,45 +67,14 @@ const UserInfo = ({ userID }: UserInfoProps) => {
 		<div className="displayname" title={displayname}>{displayname}</div>
 		<div className="userid" title={userID}>{userID}</div>
 		<hr/>
-		{renderFullInfo(client, roomCtx?.store, view, !!errors.length)}
-		{renderErrors(errors)}
-	</>
-}
-
-function renderErrors(errors: string[]) {
-	if (!errors.length) {
-		return null
-	}
-	return <div className="errors">{errors.map((err, i) => <div className="error" key={i}>
-		<div className="icon"><ErrorIcon /></div>
-		<p>{err}</p>
-	</div>)}</div>
-}
-
-function renderFullInfo(
-	client: Client,
-	room: RoomStateStore | undefined,
-	view: ProfileView | null,
-	hasErrors: boolean,
-) {
-	if (view === null) {
-		if (hasErrors) {
-			return null
-		}
-		return <>
-			<div className="full-info-loading">
-				Loading full profile
-				<ScaleLoader color="var(--primary-color)"/>
-			</div>
+		{userID !== client.userID && <>
+			<MutualRooms client={client} userID={userID}/>
 			<hr/>
-		</>
-	}
-	return <>
-		{view.mutual_rooms && <MutualRooms client={client} rooms={view.mutual_rooms}/>}
-		<DeviceList view={view} room={room}/>
+		</>}
+		<DeviceList client={client} room={roomCtx?.store} userID={userID}/>
+		<hr/>
+		<UserInfoError errors={errors}/>
 	</>
 }
-
-
 
 export default UserInfo

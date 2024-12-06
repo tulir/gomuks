@@ -86,9 +86,13 @@ func (h *HiClient) handleJSONCommand(ctx context.Context, req *JSONCommand) (any
 		return unmarshalAndCall(req.Data, func(params *getProfileParams) (*mautrix.RespUserProfile, error) {
 			return h.Client.GetProfile(ctx, params.UserID)
 		})
-	case "get_profile_view":
-		return unmarshalAndCall(req.Data, func(params *getProfileViewParams) (*ProfileViewData, error) {
-			return h.GetProfileView(ctx, params.RoomID, params.UserID)
+	case "get_mutual_rooms":
+		return unmarshalAndCall(req.Data, func(params *getProfileParams) ([]id.RoomID, error) {
+			return h.GetMutualRooms(ctx, params.UserID)
+		})
+	case "get_profile_encryption_info":
+		return unmarshalAndCall(req.Data, func(params *getProfileParams) (*ProfileEncryptionInfo, error) {
+			return h.GetProfileEncryptionInfo(ctx, params.UserID)
 		})
 	case "get_event":
 		return unmarshalAndCall(req.Data, func(params *getEventParams) (*database.Event, error) {
@@ -239,11 +243,6 @@ type setTypingParams struct {
 }
 
 type getProfileParams struct {
-	UserID id.UserID `json:"user_id"`
-}
-
-type getProfileViewParams struct {
-	RoomID id.RoomID `json:"room_id"`
 	UserID id.UserID `json:"user_id"`
 }
 
