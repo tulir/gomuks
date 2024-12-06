@@ -54,6 +54,8 @@ export function getLocalStoragePreferences(localStorageKey: string, onChange: ()
 			delete target[key]
 			if (Object.keys(target).length === 0) {
 				localStorage.removeItem(localStorageKey)
+			} else {
+				localStorage.setItem(localStorageKey, JSON.stringify(target))
 			}
 			onChange()
 			return true
