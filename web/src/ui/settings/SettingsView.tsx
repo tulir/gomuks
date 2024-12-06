@@ -16,6 +16,7 @@
 import { Suspense, lazy, use, useCallback, useRef, useState } from "react"
 import { ScaleLoader } from "react-spinners"
 import Client from "@/api/client.ts"
+import { getRoomAvatarURL } from "@/api/media.ts"
 import { RoomStateStore, usePreferences } from "@/api/statestore"
 import {
 	Preference,
@@ -25,8 +26,10 @@ import {
 	preferenceContextToInt,
 	preferences,
 } from "@/api/types/preferences"
+import { useEventAsState } from "@/util/eventdispatcher.ts"
 import useEvent from "@/util/useEvent.ts"
 import ClientContext from "../ClientContext.ts"
+import { LightboxContext } from "../modal/Lightbox.tsx"
 import JSONView from "../util/JSONView.tsx"
 import Toggle from "../util/Toggle.tsx"
 import CloseIcon from "@/icons/close.svg?react"
@@ -289,6 +292,7 @@ const AppliedSettingsView = ({ room }: SettingsViewProps) => {
 }
 
 const SettingsView = ({ room }: SettingsViewProps) => {
+	const roomMeta = useEventAsState(room.meta)
 	const client = use(ClientContext)!
 	const setPref = useCallback((context: PreferenceContext, key: keyof Preferences, value: PreferenceValueType | undefined) => {
 		if (context === PreferenceContext.Account) {
@@ -330,7 +334,20 @@ const SettingsView = ({ room }: SettingsViewProps) => {
 	const roomLocal = room.localPreferenceCache
 	return <>
 		<h2>Settings</h2>
-		<code>{room.roomID}</code>
+		<div className="room-details">
+			<img
+				className="avatar large"
+				loading="lazy"
+				src={getRoomAvatarURL(roomMeta)}
+				onClick={use(LightboxContext)}
+				alt=""
+			/>
+			<div>
+				{roomMeta.name && <div className="room-name">{roomMeta.name}</div>}
+				<code>{room.roomID}</code>
+				<div>{roomMeta.topic}</div>
+			</div>
+		</div>
 		<table>
 			<thead>
 				<tr>

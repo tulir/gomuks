@@ -1,4 +1,20 @@
 div.settings-view {
+	div.room-details {
+		display: flex;
+		gap: .5rem;
+
+		img.avatar {
+			margin-top: 0.5rem;
+		}
+
+		div.room-name {
+			font-size: 1.2rem;
+			font-weight: bold;
+			text-overflow: ellipsis;
+			text-wrap: nowrap;
+		}
+	}
+
 	width: min(60rem, 80vw);
 	display: flex;
 	flex-direction: column;
