@@ -59,11 +59,12 @@ function renderRightPanelContent(props: RightPanelProps): JSX.Element | null {
 }
 
 const RightPanel = (props: RightPanelProps) => {
+	const mainScreen = use(MainScreenContext)
 	let backButton: JSX.Element | null = null
 	if (props.type === "user") {
 		backButton = <button
 			data-target-panel="members"
-			onClick={use(MainScreenContext).clickRightPanelOpener}
+			onClick={mainScreen.clickRightPanelOpener}
 		><BackIcon/></button>
 	}
 	return <div className="right-panel">
@@ -72,7 +73,7 @@ const RightPanel = (props: RightPanelProps) => {
 				{backButton}
 				<div className="panel-name">{getTitle(props.type)}</div>
 			</div>
-			<button onClick={use(MainScreenContext).closeRightPanel}><CloseIcon/></button>
+			<button onClick={mainScreen.closeRightPanel}><CloseIcon/></button>
 		</div>
 		<div className={`right-panel-content ${props.type}`}>
 			{renderRightPanelContent(props)}

@@ -37,15 +37,18 @@ export function useRoomState(
 	)
 }
 
+
 export function useRoomMembers(room?: RoomStateStore): MemDBEvent[] {
 	return useSyncExternalStore(
 		room ? room.stateSubs.getSubscriber("m.room.member") : noopSubscribe,
-		room ? room.getMembers : () => [],
+		room ? room.getMembers : returnEmptyArray,
 	)
 }
 
 const noopSubscribe = () => () => {}
 const returnNull = () => null
+const emptyArray: never[] = []
+const returnEmptyArray = () => emptyArray
 
 export function useRoomEvent(room: RoomStateStore, eventID: EventID | null): MemDBEvent | null {
 	return useSyncExternalStore(

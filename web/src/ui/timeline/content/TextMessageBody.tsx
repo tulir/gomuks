@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import { MessageEventContent } from "@/api/types"
-import { getDisplayname } from "@/util/validation.ts"
+import { getDisplayname, parseMatrixURI } from "@/util/validation.ts"
 import EventContentProps from "./props.ts"
 
 function isImageElement(elem: EventTarget): elem is HTMLImageElement {
@@ -26,21 +26,19 @@ function isAnchorElement(elem: EventTarget): elem is HTMLAnchorElement {
 }
 
 function onClickMatrixURI(href: string) {
-	const url = new URL(href)
-	const pathParts = url.pathname.split("/")
-	const decodedPart = decodeURIComponent(pathParts[1])
-	switch (pathParts[0]) {
-	case "u":
+	const  uri = parseMatrixURI(href)
+	switch (uri?.identifier[0]) {
+	case "@":
 		return window.mainScreenContext.setRightPanel({
 			type: "user",
-			userID: `@${decodedPart}`,
+			userID: uri.identifier,
 		})
-	case "roomid":
-		return window.mainScreenContext.setActiveRoom(`!${decodedPart}`)
-	case "r":
-		return window.client.rpc.resolveAlias(`#${decodedPart}`).then(
+	case "!":
+		return window.mainScreenContext.setActiveRoom(uri.identifier)
+	case "#":
+		return window.client.rpc.resolveAlias(uri.identifier).then(
 			res => window.mainScreenContext.setActiveRoom(res.room_id),
-			err => window.alert(`Failed to resolve room alias #${decodedPart}: ${err}`),
+			err => window.alert(`Failed to resolve room alias ${uri.identifier}: ${err}`),
 		)
 	}
 }

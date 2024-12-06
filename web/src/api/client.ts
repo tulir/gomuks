@@ -13,6 +13,7 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
+import type { MouseEvent } from "react"
 import { CachedEventDispatcher, NonNullCachedEventDispatcher } from "../util/eventdispatcher.ts"
 import RPCClient, { SendMessageParams } from "./rpc.ts"
 import { RoomStateStore, StateStore } from "./statestore"
@@ -66,8 +67,20 @@ export default class Client {
 		}
 		console.log("Successfully authenticated, connecting to websocket")
 		this.rpc.start()
-		window.Notification?.requestPermission()
-			.then(permission => console.log("Notification permission:", permission))
+		this.requestNotificationPermission()
+	}
+
+	requestNotificationPermission = (evt?: MouseEvent) => {
+		window.Notification?.requestPermission().then(permission => {
+			console.log("Notification permission:", permission)
+			if (evt) {
+				window.alert(`Notification permission: ${permission}`)
+			}
+		})
+	}
+
+	registerURIHandler = () => {
+		navigator.registerProtocolHandler("matrix", "#/uri/%s")
 	}
 
 	start(): () => void {

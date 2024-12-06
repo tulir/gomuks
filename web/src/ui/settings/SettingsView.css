@@ -88,13 +88,17 @@ div.settings-view {
 		}
 	}
 
-	button.logout {
-		margin-top: 1rem;
+	> div.misc-buttons > button {
 		padding: .5rem 1rem;
+		display: block;
 
-		&:hover, &:focus {
-			background-color: var(--error-color);
-			color: var(--inverted-text-color);
+		&.logout {
+			margin-top: 2rem;
+
+			&:hover, &:focus {
+				background-color: var(--error-color);
+				color: var(--inverted-text-color);
+			}
 		}
 	}
 }

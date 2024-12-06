@@ -357,7 +357,13 @@ const SettingsView = ({ room }: SettingsViewProps) => {
 		</table>
 		<CustomCSSInput setPref={setPref} room={room} />
 		<AppliedSettingsView room={room} />
-		<button className="logout" onClick={onClickLogout}>Logout</button>
+		<div className="misc-buttons">
+			{window.Notification && <button onClick={client.requestNotificationPermission}>
+				Request notification permission
+			</button>}
+			<button onClick={client.registerURIHandler}>Register <code>matrix:</code> URI handler</button>
+			<button className="logout" onClick={onClickLogout}>Logout</button>
+		</div>
 	</>
 }
 

@@ -39,6 +39,44 @@ export const isRoomID = (roomID: unknown) => isIdentifier<RoomID>(roomID, "!", t
 export const isRoomAlias = (roomAlias: unknown) => isIdentifier<RoomAlias>(roomAlias, "#", true)
 export const isMXC = (mxc: unknown): mxc is ContentURI => typeof mxc === "string" && mediaRegex.test(mxc)
 
+export interface ParsedMatrixURI {
+	identifier: UserID | RoomID | RoomAlias
+	eventID?: EventID
+	params: URLSearchParams
+}
+
+export function parseMatrixURI(uri: unknown): ParsedMatrixURI | undefined {
+	if (typeof uri !== "string") {
+		return
+	}
+	let parsed: URL
+	try {
+		parsed = new URL(uri)
+	} catch {
+		return
+	}
+	if (parsed.protocol !== "matrix:") {
+		return
+	}
+	const [type, ident1, subtype, ident2] = parsed.pathname.split("/")
+	const output: Partial<ParsedMatrixURI> = {
+		params: parsed.searchParams,
+	}
+	if (type === "u") {
+		output.identifier = `@${ident1}`
+	} else if (type === "r") {
+		output.identifier = `#${ident1}`
+	} else if (type === "roomid") {
+		output.identifier = `!${ident1}`
+		if (subtype === "e") {
+			output.eventID = `$${ident2}`
+		}
+	} else {
+		return
+	}
+	return output as ParsedMatrixURI
+}
+
 export function getLocalpart(userID: UserID): string {
 	const idx = userID.indexOf(":")
 	return idx > 0 ? userID.slice(1, idx) : userID.slice(1)
