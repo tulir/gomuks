@@ -206,6 +206,37 @@ button, a.button, span.button {
 	}
 }
 
+div.connection-error-wrapper {
+	position: fixed;
+	inset: 0;
+	z-index: 100;
+	display: flex;
+	align-items: center;
+	flex-direction: column;
+	justify-content: center;
+
+	&.post-connect {
+		background-color: var(--dimmed-overlay-background-color);
+	}
+
+	> div.connection-error-inner {
+		background-color: var(--background-color);
+		border: 2px solid var(--error-color);
+		border-radius: .5rem;
+		margin-top: 2rem;
+		padding: 1rem;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 1rem;
+	}
+}
+
+div.pre-connect {
+	margin-top: 2rem;
+	text-align: center;
+}
+
 a {
 	text-decoration: none;
 	color: var(--link-text-color);

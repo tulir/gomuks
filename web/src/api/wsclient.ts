@@ -25,6 +25,9 @@ export default class WSClient extends RPCClient {
 	#pingInterval: number | null = null
 	#lastReceivedEvt: number = 0
 	#resumeRunID: string = ""
+	#stopped = false
+	#reconnectTimeout: number | null = null
+	#connectFailures: number = 0
 
 	constructor(readonly addr: string) {
 		super()
@@ -32,6 +35,7 @@ export default class WSClient extends RPCClient {
 
 	start() {
 		try {
+			this.#stopped = false
 			this.#lastMessage = Date.now()
 			const params = new URLSearchParams({
 				run_id: this.#resumeRunID,
@@ -44,9 +48,8 @@ export default class WSClient extends RPCClient {
 			this.#conn.onopen = this.#onOpen
 			this.#conn.onerror = this.#onError
 			this.#conn.onclose = this.#onClose
-			this.#pingInterval = setInterval(this.#pingLoop, PING_INTERVAL)
 		} catch (err) {
-			this.#dispatchConnectionStatus(false, err as Error)
+			this.#dispatchConnectionStatus(false, false, `Failed to create websocket: ${err}`)
 		}
 	}
 
@@ -66,8 +69,10 @@ export default class WSClient extends RPCClient {
 	}
 
 	stop() {
+		this.#stopped = true
 		if (this.#pingInterval !== null) {
 			clearInterval(this.#pingInterval)
+			this.#pingInterval = null
 		}
 		this.#conn?.close(1000, "Client closed")
 	}
@@ -105,13 +110,20 @@ export default class WSClient extends RPCClient {
 		this.onCommand(parsed)
 	}
 
-	#dispatchConnectionStatus(connected: boolean, error: Error | null) {
-		this.connect.emit({ connected, error })
+	#dispatchConnectionStatus(connected: boolean, reconnecting: boolean, error: string | null, nextAttempt?: number) {
+		this.connect.emit({
+			connected,
+			reconnecting,
+			error,
+			nextAttempt: nextAttempt ? new Date(nextAttempt).toLocaleTimeString() : undefined,
+		})
 	}
 
 	#onOpen = () => {
 		console.info("Websocket opened")
-		this.#dispatchConnectionStatus(true, null)
+		this.#dispatchConnectionStatus(true, false, null)
+		this.#connectFailures = 0
+		this.#pingInterval = setInterval(this.#pingLoop, PING_INTERVAL)
 	}
 
 	#clearPending = () => {
@@ -123,13 +135,33 @@ export default class WSClient extends RPCClient {
 
 	#onError = (ev: Event) => {
 		console.error("Websocket error:", ev)
-		this.#dispatchConnectionStatus(false, new Error("Websocket error"))
-		this.#clearPending()
 	}
 
 	#onClose = (ev: CloseEvent) => {
+		this.#connectFailures++
 		console.warn("Websocket closed:", ev)
-		this.#dispatchConnectionStatus(false, new Error(`Websocket closed: ${ev.code} ${ev.reason}`))
 		this.#clearPending()
+		if (this.#pingInterval !== null) {
+			clearInterval(this.#pingInterval)
+			this.#pingInterval = null
+		}
+		const willReconnect = !this.#stopped && !this.#reconnectTimeout
+		const backoff = Math.min(2 ** (this.#connectFailures - 4), 10) * 1000
+		this.#dispatchConnectionStatus(
+			false,
+			willReconnect,
+			`Websocket closed: ${ev.code} ${ev.reason}`,
+			Date.now() + backoff,
+		)
+		if (willReconnect) {
+			console.log("Attempting to reconnect in", backoff, "ms")
+			this.#reconnectTimeout = setTimeout(() => {
+				console.log("Reconnecting now")
+				this.#reconnectTimeout = null
+				this.start()
+			}, backoff)
+		} else {
+			console.log(`Not reconnecting (stopped=${this.#stopped}, reconnectTimeout=${this.#reconnectTimeout})`)
+		}
 	}
 }

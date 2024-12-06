@@ -41,15 +41,41 @@ function App() {
 	}, [client])
 	useEffect(() => client.start(), [client])
 
-	if (connState?.error) {
-		return <div>
-			{`${connState.error} \u{1F63F}`}
+	const afterConnectError = Boolean(connState?.error && connState.reconnecting && clientState?.is_verified)
+	useEffect(() => {
+		if (afterConnectError) {
+			const cancelKeys = (evt: KeyboardEvent | MouseEvent) => evt.stopPropagation()
+			document.body.addEventListener("keydown", cancelKeys, { capture: true })
+			document.body.addEventListener("keyup", cancelKeys, { capture: true })
+			document.body.addEventListener("click", cancelKeys, { capture: true })
+			return () => {
+				document.body.removeEventListener("keydown", cancelKeys, { capture: true })
+				document.body.removeEventListener("keyup", cancelKeys, { capture: true })
+				document.body.removeEventListener("click", cancelKeys, { capture: true })
+			}
+		}
+	}, [afterConnectError])
+	const errorOverlay = connState?.error ? <div
+		className={`connection-error-wrapper ${afterConnectError ? "post-connect" : ""}`}
+		tabIndex={-1}
+	>
+		<div className="connection-error-inner">
+			<div>{connState.error} &#x1F63F;</div>
+			{connState.reconnecting && <div>
+				<ScaleLoader width="2rem" height="2rem" color="var(--primary-color)"/>
+				Reconnecting to backend...
+				{connState.nextAttempt ? <div><small>(next attempt at {connState.nextAttempt})</small></div> : null}
+			</div>}
 		</div>
-	} else if (!connState?.connected || !clientState) {
+	</div> : null
+
+	if (connState?.error && !afterConnectError) {
+		return errorOverlay
+	} else if ((!connState?.connected && !afterConnectError) || !clientState) {
 		const msg = connState?.connected ?
 			"Waiting for client state..." : "Connecting to backend..."
-		return <div>
-			<ScaleLoader/>
+		return <div className="pre-connect">
+			<ScaleLoader width="2rem" height="2rem" color="var(--primary-color)"/>
 			{msg}
 		</div>
 	} else if (!clientState.is_logged_in) {
@@ -61,6 +87,7 @@ function App() {
 			<LightboxWrapper>
 				<MainScreen/>
 			</LightboxWrapper>
+			{errorOverlay}
 		</ClientContext>
 	}
 }

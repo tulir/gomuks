@@ -42,7 +42,9 @@ import type {
 
 export interface ConnectionEvent {
 	connected: boolean
-	error: Error | null
+	reconnecting: boolean
+	error: string | null
+	nextAttempt?: string
 }
 
 export class ErrorResponse extends Error {

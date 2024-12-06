@@ -39,7 +39,7 @@ export default class WailsClient extends RPCClient {
 			this.event.emit(evt.data[0])
 		})
 		this.#wails.Call.ByName("main.CommandHandler.Init")
-		this.connect.emit({ connected: true, error: null })
+		this.connect.emit({ connected: true, reconnecting: false, error: null })
 	}
 
 	async stop() {}

@@ -52,16 +52,16 @@ export default class Client {
 				method: "POST",
 				signal,
 			})
-			if (!resp.ok) {
+			if (!resp.ok && !signal.aborted) {
 				this.rpc.connect.emit({
 					connected: false,
-					error: new Error(`Authentication failed: ${resp.statusText}`),
+					reconnecting: false,
+					error: `Authentication failed: ${resp.statusText}`,
 				})
 				return
 			}
 		} catch (err) {
-			const error = err instanceof Error ? err : new Error(`${err}`)
-			this.rpc.connect.emit({ connected: false, error })
+			this.rpc.connect.emit({ connected: false, reconnecting: false, error: `Authentication failed: ${err}` })
 		}
 		if (signal.aborted) {
 			return
