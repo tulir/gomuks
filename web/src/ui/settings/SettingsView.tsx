@@ -13,7 +13,8 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import { lazy, use, useCallback, useRef, useState } from "react"
+import { Suspense, lazy, use, useCallback, useRef, useState } from "react"
+import { ScaleLoader } from "react-spinners"
 import Client from "@/api/client.ts"
 import { RoomStateStore, usePreferences } from "@/api/statestore"
 import {
@@ -242,12 +243,14 @@ const CustomCSSInput = ({ setPref, room }: { setPref: SetPrefFunc, room: RoomSta
 				</span>}
 		</div>
 		{vscodeOpen ? <div className="vscode-wrapper">
-			<Monaco
-				initData={vscodeInitialContentRef.current}
-				onClose={closeVSCode}
-				onSave={onSave}
-				contentRef={vscodeContentRef}
-			/>
+			<Suspense fallback={<div className="loader"><ScaleLoader width={40} height={80} color="var(--primary-color)"/></div>}>
+				<Monaco
+					initData={vscodeInitialContentRef.current}
+					onClose={closeVSCode}
+					onSave={onSave}
+					contentRef={vscodeContentRef}
+				/>
+			</Suspense>
 		</div> : <textarea value={text} onChange={onChangeText}/>}
 		<div className="buttons">
 			<button onClick={onClickVSCode}>Open in VS Code</button>

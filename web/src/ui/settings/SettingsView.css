@@ -60,6 +60,15 @@ div.settings-view {
 			position: fixed;
 			inset: 0;
 			z-index: 10;
+			background-color: var(--background-color);
+
+			> div.loader {
+				position: absolute;
+				inset: 0;
+				display: flex;
+				justify-content: center;
+				align-items: center;
+			}
 		}
 
 		> div.buttons {
