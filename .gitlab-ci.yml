@@ -20,7 +20,7 @@ frontend:
     - web/node_modules
   script:
   - cd web
-  - npm install --legacy-peer-deps --include=dev
+  - npm install --include=dev
   - npm run build
   artifacts:
     paths:

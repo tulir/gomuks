@@ -370,8 +370,7 @@ tasks:
       - sh: npm version
         msg: "Looks like npm isn't installed. Npm is part of the Node installer: https://nodejs.org/en/download/"
     cmds:
-      # - npm install --silent --no-progress
-      - npm install --legacy-peer-deps
+      - npm install --silent --no-progress
 
   build:frontend:
     summary: Build the frontend project

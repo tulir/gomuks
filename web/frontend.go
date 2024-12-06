@@ -20,7 +20,7 @@ import (
 	"embed"
 )
 
-//go:generate npm install --legacy-peer-deps
+//go:generate npm install
 //go:generate npm run build
 //go:embed dist
 var Frontend embed.FS
