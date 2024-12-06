@@ -13,9 +13,17 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import { use, useCallback, useState } from "react"
+import { lazy, use, useCallback, useRef, useState } from "react"
+import Client from "@/api/client.ts"
 import { RoomStateStore, usePreferences } from "@/api/statestore"
-import { Preference, PreferenceContext, PreferenceValueType, Preferences, preferences } from "@/api/types/preferences"
+import {
+	Preference,
+	PreferenceContext,
+	PreferenceValueType,
+	Preferences,
+	preferenceContextToInt,
+	preferences,
+} from "@/api/types/preferences"
 import useEvent from "@/util/useEvent.ts"
 import ClientContext from "../ClientContext.ts"
 import JSONView from "../util/JSONView.tsx"
@@ -155,9 +163,24 @@ interface SettingsViewProps {
 	room: RoomStateStore
 }
 
+function getActiveCSSContext(client: Client, room: RoomStateStore): PreferenceContext {
+	if (room.localPreferenceCache.custom_css !== undefined) {
+		return PreferenceContext.RoomDevice
+	} else if (room.serverPreferenceCache.custom_css !== undefined) {
+		return PreferenceContext.RoomAccount
+	} else if (client.store.localPreferenceCache.custom_css !== undefined) {
+		return PreferenceContext.Device
+	} else {
+		return PreferenceContext.Account
+	}
+}
+
+const Monaco = lazy(() => import("../util/monaco.tsx"))
+
 const CustomCSSInput = ({ setPref, room }: { setPref: SetPrefFunc, room: RoomStateStore }) => {
 	const client = use(ClientContext)!
-	const [context, setContext] = useState(PreferenceContext.Account)
+	const appliedContext = getActiveCSSContext(client, room)
+	const [context, setContext] = useState(appliedContext)
 	const getContextText = useCallback((context: PreferenceContext) => {
 		if (context === PreferenceContext.Account) {
 			return client.store.serverPreferenceCache.custom_css
@@ -180,12 +203,30 @@ const CustomCSSInput = ({ setPref, room }: { setPref: SetPrefFunc, room: RoomSta
 		setText(evt.target.value)
 	}, [])
 	const onSave = useEvent(() => {
-		setPref(context, "custom_css", text)
+		if (vscodeOpen) {
+			setText(vscodeContentRef.current)
+			setPref(context, "custom_css", vscodeContentRef.current)
+		} else {
+			setPref(context, "custom_css", text)
+		}
 	})
 	const onDelete = useEvent(() => {
 		setPref(context, "custom_css", undefined)
 		setText("")
 	})
+	const [vscodeOpen, setVSCodeOpen] = useState(false)
+	const vscodeContentRef = useRef("")
+	const vscodeInitialContentRef = useRef("")
+	const onClickVSCode = useEvent(() => {
+		vscodeContentRef.current = text
+		vscodeInitialContentRef.current = text
+		setVSCodeOpen(true)
+	})
+	const closeVSCode = useCallback(() => {
+		setVSCodeOpen(false)
+		setText(vscodeContentRef.current)
+		vscodeContentRef.current = ""
+	}, [])
 	return <div className="custom-css-input">
 		<div className="header">
 			<h3>Custom CSS</h3>
@@ -195,9 +236,21 @@ const CustomCSSInput = ({ setPref, room }: { setPref: SetPrefFunc, room: RoomSta
 				<option value={PreferenceContext.RoomAccount}>Room (account)</option>
 				<option value={PreferenceContext.RoomDevice}>Room (device)</option>
 			</select>
+			{preferenceContextToInt(context) < preferenceContextToInt(appliedContext) &&
+				<span className="warning">
+					&#x26a0;&#xfe0f; This context will not be applied, <code>{appliedContext}</code> has content
+				</span>}
 		</div>
-		<textarea value={text} onChange={onChangeText}/>
+		{vscodeOpen ? <div className="vscode-wrapper">
+			<Monaco
+				initData={vscodeInitialContentRef.current}
+				onClose={closeVSCode}
+				onSave={onSave}
+				contentRef={vscodeContentRef}
+			/>
+		</div> : <textarea value={text} onChange={onChangeText}/>}
 		<div className="buttons">
+			<button onClick={onClickVSCode}>Open in VS Code</button>
 			{origText !== undefined && <button className="delete" onClick={onDelete}>Delete</button>}
 			<button className="save primary-color-button" onClick={onSave} disabled={origText === text}>Save</button>
 		</div>

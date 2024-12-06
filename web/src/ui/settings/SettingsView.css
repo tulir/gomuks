@@ -56,6 +56,12 @@ div.settings-view {
 			font-family: var(--monospace-font-stack);
 		}
 
+		> div.vscode-wrapper {
+			position: fixed;
+			inset: 0;
+			z-index: 10;
+		}
+
 		> div.buttons {
 			display: flex;
 			justify-content: right;

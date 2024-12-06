@@ -21,6 +21,21 @@ export enum PreferenceContext {
 	RoomDevice = "room_device",
 }
 
+export function preferenceContextToInt(context: PreferenceContext): number {
+	switch (context) {
+	case PreferenceContext.Config:
+		return 0
+	case PreferenceContext.Account:
+		return 1
+	case PreferenceContext.Device:
+		return 2
+	case PreferenceContext.RoomAccount:
+		return 3
+	case PreferenceContext.RoomDevice:
+		return 4
+	}
+}
+
 export const anyContext = [
 	PreferenceContext.RoomDevice,
 	PreferenceContext.RoomAccount,
