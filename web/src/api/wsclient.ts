@@ -23,6 +23,8 @@ export default class WSClient extends RPCClient {
 	#conn: WebSocket | null = null
 	#lastMessage: number = 0
 	#pingInterval: number | null = null
+	#lastReceivedEvt: number = 0
+	#resumeRunID: string = ""
 
 	constructor(readonly addr: string) {
 		super()
@@ -31,8 +33,13 @@ export default class WSClient extends RPCClient {
 	start() {
 		try {
 			this.#lastMessage = Date.now()
-			console.info("Connecting to websocket", this.addr)
-			this.#conn = new WebSocket(this.addr)
+			const params = new URLSearchParams({
+				run_id: this.#resumeRunID,
+				last_received_event: this.#lastReceivedEvt.toString(),
+			}).toString()
+			const addr = this.#lastReceivedEvt && this.#resumeRunID ? `${this.addr}?${params}` : this.addr
+			console.info("Connecting to websocket", addr)
+			this.#conn = new WebSocket(addr)
 			this.#conn.onmessage = this.#onMessage
 			this.#conn.onopen = this.#onOpen
 			this.#conn.onerror = this.#onError
@@ -49,7 +56,13 @@ export default class WSClient extends RPCClient {
 			this.#conn?.close(4002, "Ping timeout")
 			return
 		}
-		this.send(JSON.stringify({ command: "ping", request_id: this.nextRequestID }))
+		this.send(JSON.stringify({
+			command: "ping",
+			data: {
+				last_received_id: this.#lastReceivedEvt,
+			},
+			request_id: this.nextRequestID,
+		}))
 	}
 
 	stop() {
@@ -72,7 +85,7 @@ export default class WSClient extends RPCClient {
 
 	#onMessage = (ev: MessageEvent) => {
 		this.#lastMessage = Date.now()
-		let parsed: RPCCommand<unknown>
+		let parsed: RPCCommand
 		try {
 			parsed = JSON.parse(ev.data)
 			if (!parsed.command) {
@@ -83,6 +96,11 @@ export default class WSClient extends RPCClient {
 			console.error("Message:", ev.data)
 			this.#conn?.close(1003, "Malformed JSON")
 			return
+		}
+		if (parsed.request_id < 0) {
+			this.#lastReceivedEvt = parsed.request_id
+		} else if (parsed.command === "run_id") {
+			this.#resumeRunID = parsed.data
 		}
 		this.onCommand(parsed)
 	}

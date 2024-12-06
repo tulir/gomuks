@@ -324,12 +324,12 @@ export default class Client {
 		this.initComplete.emit(false)
 		this.syncStatus.emit({ type: "waiting", error_count: 0 })
 		this.state.clearCache()
-		localStorage.clear()
 		this.store.clear()
 	}
 
 	async logout() {
 		await this.rpc.logout()
 		this.clearState()
+		localStorage.clear()
 	}
 }

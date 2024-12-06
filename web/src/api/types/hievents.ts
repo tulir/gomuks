@@ -28,7 +28,7 @@ import {
 	UserID,
 } from "./mxtypes.ts"
 
-export interface RPCCommand<T> {
+interface BaseRPCCommand<T> {
 	command: string
 	request_id: number
 	data: T
@@ -39,7 +39,7 @@ export interface TypingEventData {
 	user_ids: UserID[]
 }
 
-export interface TypingEvent extends RPCCommand<TypingEventData> {
+export interface TypingEvent extends BaseRPCCommand<TypingEventData> {
 	command: "typing"
 }
 
@@ -48,7 +48,7 @@ export interface SendCompleteData {
 	error: string | null
 }
 
-export interface SendCompleteEvent extends RPCCommand<SendCompleteData> {
+export interface SendCompleteEvent extends BaseRPCCommand<SendCompleteData> {
 	command: "send_complete"
 }
 
@@ -58,11 +58,11 @@ export interface EventsDecryptedData {
 	events: RawDBEvent[]
 }
 
-export interface EventsDecryptedEvent extends RPCCommand<EventsDecryptedData> {
+export interface EventsDecryptedEvent extends BaseRPCCommand<EventsDecryptedData> {
 	command: "events_decrypted"
 }
 
-export interface ImageAuthTokenEvent extends RPCCommand<string> {
+export interface ImageAuthTokenEvent extends BaseRPCCommand<string> {
 	command: "image_auth_token"
 }
 
@@ -85,9 +85,11 @@ export interface SyncCompleteData {
 	rooms: Record<RoomID, SyncRoom>
 	left_rooms: RoomID[]
 	account_data: Record<EventType, DBAccountData>
+	since?: string
+	clear_state?: boolean
 }
 
-export interface SyncCompleteEvent extends RPCCommand<SyncCompleteData> {
+export interface SyncCompleteEvent extends BaseRPCCommand<SyncCompleteData> {
 	command: "sync_complete"
 }
 
@@ -103,7 +105,7 @@ export type ClientState = {
 	homeserver_url: string
 }
 
-export interface ClientStateEvent extends RPCCommand<ClientState> {
+export interface ClientStateEvent extends BaseRPCCommand<ClientState> {
 	command: "client_state"
 }
 
@@ -114,12 +116,24 @@ export interface SyncStatus {
 	last_sync?: number
 }
 
-export interface SyncStatusEvent extends RPCCommand<SyncStatus> {
+export interface SyncStatusEvent extends BaseRPCCommand<SyncStatus> {
 	command: "sync_status"
 }
 
-export interface InitCompleteEvent extends RPCCommand<void> {
+export interface InitCompleteEvent extends BaseRPCCommand<void> {
 	command: "init_complete"
+}
+
+export interface RunIDEvent extends BaseRPCCommand<string> {
+	command: "run_id"
+}
+
+export interface ResponseCommand extends BaseRPCCommand<unknown> {
+	command: "response"
+}
+
+export interface ErrorCommand extends BaseRPCCommand<unknown> {
+	command: "error"
 }
 
 export type RPCEvent =
@@ -130,4 +144,7 @@ export type RPCEvent =
 	EventsDecryptedEvent |
 	SyncCompleteEvent |
 	ImageAuthTokenEvent |
-	InitCompleteEvent
+	InitCompleteEvent |
+	RunIDEvent
+
+export type RPCCommand = RPCEvent | ResponseCommand | ErrorCommand

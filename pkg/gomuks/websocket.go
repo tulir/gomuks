@@ -22,6 +22,7 @@ import (
 	"errors"
 	"net/http"
 	"runtime/debug"
+	"strconv"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -52,6 +53,12 @@ const (
 
 var emptyObject = json.RawMessage("{}")
 
+type PingRequestData struct {
+	LastReceivedID int64 `json:"last_received_id"`
+}
+
+var runID = time.Now().UnixNano()
+
 func (gmx *Gomuks) HandleWebsocket(w http.ResponseWriter, r *http.Request) {
 	var conn *websocket.Conn
 	log := zerolog.Ctx(r.Context())
@@ -80,15 +87,23 @@ func (gmx *Gomuks) HandleWebsocket(w http.ResponseWriter, r *http.Request) {
 		log.Warn().Err(acceptErr).Msg("Failed to accept websocket connection")
 		return
 	}
-	log.Info().Msg("Accepted new websocket connection")
+	resumeFrom, _ := strconv.ParseInt(r.URL.Query().Get("last_received_event"), 10, 64)
+	resumeRunID, _ := strconv.ParseInt(r.URL.Query().Get("run_id"), 10, 64)
+	log.Info().
+		Int64("resume_from", resumeFrom).
+		Int64("resume_run_id", resumeRunID).
+		Int64("current_run_id", runID).
+		Msg("Accepted new websocket connection")
 	conn.SetReadLimit(128 * 1024)
 	ctx, cancel := context.WithCancel(context.Background())
 	ctx = log.WithContext(ctx)
-	unsubscribe := func() {}
+	var listenerID uint64
 	evts := make(chan *hicli.JSONCommand, 32)
 	forceClose := func() {
 		cancel()
-		unsubscribe()
+		if listenerID != 0 {
+			gmx.EventBuffer.Unsubscribe(listenerID)
+		}
 		_ = conn.CloseNow()
 		close(evts)
 	}
@@ -99,7 +114,11 @@ func (gmx *Gomuks) HandleWebsocket(w http.ResponseWriter, r *http.Request) {
 		_ = conn.Close(statusCode, reason)
 		closeOnce.Do(forceClose)
 	}
-	unsubscribe = gmx.SubscribeEvents(closeManually, func(evt *hicli.JSONCommand) {
+	if resumeRunID != runID {
+		resumeFrom = 0
+	}
+	var resumeData []*hicli.JSONCommand
+	listenerID, resumeData = gmx.EventBuffer.Subscribe(resumeFrom, closeManually, func(evt *hicli.JSONCommand) {
 		if ctx.Err() != nil {
 			return
 		}
@@ -115,6 +134,7 @@ func (gmx *Gomuks) HandleWebsocket(w http.ResponseWriter, r *http.Request) {
 			}()
 		}
 	})
+	didResume := resumeData != nil
 
 	lastDataReceived := &atomic.Int64{}
 	lastDataReceived.Store(time.Now().UnixMilli())
@@ -133,6 +153,16 @@ func (gmx *Gomuks) HandleWebsocket(w http.ResponseWriter, r *http.Request) {
 	go func() {
 		defer recoverPanic("event loop")
 		defer closeOnce.Do(forceClose)
+		for _, cmd := range resumeData {
+			err := writeCmd(ctx, conn, cmd)
+			if err != nil {
+				log.Err(err).Int64("req_id", cmd.RequestID).Msg("Failed to write outgoing event from resume data")
+				return
+			} else {
+				log.Trace().Int64("req_id", cmd.RequestID).Msg("Sent outgoing event from resume data")
+			}
+		}
+		resumeData = nil
 		ticker := time.NewTicker(60 * time.Second)
 		defer ticker.Stop()
 		ctxDone := ctx.Done()
@@ -176,7 +206,22 @@ func (gmx *Gomuks) HandleWebsocket(w http.ResponseWriter, r *http.Request) {
 			Str("command", cmd.Command).
 			RawJSON("data", cmd.Data).
 			Msg("Received command")
-		resp := gmx.Client.SubmitJSONCommand(ctx, cmd)
+		var resp *hicli.JSONCommand
+		if cmd.Command == "ping" {
+			resp = &hicli.JSONCommand{
+				Command:   "pong",
+				RequestID: cmd.RequestID,
+			}
+			var pingData PingRequestData
+			err := json.Unmarshal(cmd.Data, &pingData)
+			if err != nil {
+				log.Err(err).Msg("Failed to parse ping data")
+			} else if pingData.LastReceivedID != 0 {
+				gmx.EventBuffer.SetLastAckedID(listenerID, pingData.LastReceivedID)
+			}
+		} else {
+			resp = gmx.Client.SubmitJSONCommand(ctx, cmd)
+		}
 		if ctx.Err() != nil {
 			return
 		}
@@ -188,7 +233,15 @@ func (gmx *Gomuks) HandleWebsocket(w http.ResponseWriter, r *http.Request) {
 			log.Trace().Int64("req_id", cmd.RequestID).Msg("Sent response to command")
 		}
 	}
-	initErr := writeCmd(ctx, conn, &hicli.JSONCommandCustom[*hicli.ClientState]{
+	initErr := writeCmd(ctx, conn, &hicli.JSONCommandCustom[string]{
+		Command: "run_id",
+		Data:    strconv.FormatInt(runID, 10),
+	})
+	if initErr != nil {
+		log.Err(initErr).Msg("Failed to write init client state message")
+		return
+	}
+	initErr = writeCmd(ctx, conn, &hicli.JSONCommandCustom[*hicli.ClientState]{
 		Command: "client_state",
 		Data:    gmx.Client.State(),
 	})
@@ -205,10 +258,10 @@ func (gmx *Gomuks) HandleWebsocket(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	go sendImageAuthToken()
-	if gmx.Client.IsLoggedIn() {
+	if gmx.Client.IsLoggedIn() && !didResume {
 		go gmx.sendInitialData(ctx, conn)
 	}
-	log.Debug().Msg("Connection initialization complete")
+	log.Debug().Bool("did_resume", didResume).Msg("Connection initialization complete")
 	var closeErr websocket.CloseError
 	for {
 		msgType, reader, err := conn.Reader(ctx)
@@ -218,6 +271,9 @@ func (gmx *Gomuks) HandleWebsocket(w http.ResponseWriter, r *http.Request) {
 					Stringer("status_code", closeErr.Code).
 					Str("reason", closeErr.Reason).
 					Msg("Connection closed")
+				if closeErr.Code == websocket.StatusGoingAway {
+					gmx.EventBuffer.ClearListenerLastAckedID(listenerID)
+				}
 			} else {
 				log.Err(err).Msg("Failed to read message")
 			}

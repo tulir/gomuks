@@ -152,7 +152,7 @@ func main() {
 		URL:              "/",
 	})
 
-	gmx.SubscribeEvents(nil, func(command *hicli.JSONCommand) {
+	gmx.EventBuffer.Subscribe(0, nil, func(command *hicli.JSONCommand) {
 		app.EmitEvent("hicli_event", command)
 	})
 

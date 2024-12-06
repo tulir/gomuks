@@ -76,12 +76,6 @@ func (h *HiClient) dispatchCurrentState() {
 }
 
 func (h *HiClient) SubmitJSONCommand(ctx context.Context, req *JSONCommand) *JSONCommand {
-	if req.Command == "ping" {
-		return &JSONCommand{
-			Command:   "pong",
-			RequestID: req.RequestID,
-		}
-	}
 	log := h.Log.With().Int64("request_id", req.RequestID).Str("command", req.Command).Logger()
 	ctx, cancel := context.WithCancelCause(ctx)
 	defer func() {

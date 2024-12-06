@@ -29,6 +29,7 @@ func (h *hiSyncer) ProcessResponse(ctx context.Context, resp *mautrix.RespSync, 
 	c := (*HiClient)(h)
 	c.lastSync = time.Now()
 	ctx = context.WithValue(ctx, syncContextKey, &syncContext{evt: &SyncComplete{
+		Since:     &since,
 		Rooms:     make(map[id.RoomID]*SyncRoom, len(resp.Rooms.Join)),
 		LeftRooms: make([]id.RoomID, 0, len(resp.Rooms.Leave)),
 	}})

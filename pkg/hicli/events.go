@@ -30,6 +30,8 @@ type SyncNotification struct {
 }
 
 type SyncComplete struct {
+	Since       *string                              `json:"since,omitempty"`
+	ClearState  bool                                 `json:"clear_state,omitempty"`
 	Rooms       map[id.RoomID]*SyncRoom              `json:"rooms"`
 	AccountData map[event.Type]*database.AccountData `json:"account_data"`
 	LeftRooms   []id.RoomID                          `json:"left_rooms"`

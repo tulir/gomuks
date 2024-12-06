@@ -76,6 +76,9 @@ func (h *HiClient) GetInitialSync(ctx context.Context, batchSize int) iter.Seq[*
 				LeftRooms:   make([]id.RoomID, 0),
 				AccountData: make(map[event.Type]*database.AccountData),
 			}
+			if i == 0 {
+				payload.ClearState = true
+			}
 			for _, room := range rooms {
 				if room.SortingTimestamp == rooms[len(rooms)-1].SortingTimestamp {
 					break
