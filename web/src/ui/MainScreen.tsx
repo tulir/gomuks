@@ -112,6 +112,11 @@ class ContextFields implements MainScreenContextFields {
 		if (pushState) {
 			history.pushState({ room_id: roomID }, "")
 		}
+		let roomNameForTitle = room?.meta.current.name
+		if (roomNameForTitle && roomNameForTitle.length > 48) {
+			roomNameForTitle = roomNameForTitle.slice(0, 45) + "…"
+		}
+		document.title = roomNameForTitle ? `${roomNameForTitle} - gomuks web` : "gomuks web"
 	}
 
 	clickRoom = (evt: React.MouseEvent) => {
