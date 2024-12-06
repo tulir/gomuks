@@ -151,4 +151,9 @@ img.avatar {
 		width: 1rem;
 		height: 1rem;
 	}
+
+	&.large {
+		width: 5rem;
+		height: 5rem;
+	}
 }

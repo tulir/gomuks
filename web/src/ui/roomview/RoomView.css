@@ -5,7 +5,7 @@ div.room-view {
 	display: grid;
 	outline: none;
 	grid-template:
-		"header" 3rem
+		"header" 3.5rem
 		"messageview" 1fr
 		"autocomplete" 0
 		"input" auto
