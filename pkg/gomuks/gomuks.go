@@ -68,8 +68,7 @@ type Gomuks struct {
 
 func NewGomuks() *Gomuks {
 	return &Gomuks{
-		stopChan:    make(chan struct{}),
-		EventBuffer: NewEventBuffer(512),
+		stopChan: make(chan struct{}),
 	}
 }
 
