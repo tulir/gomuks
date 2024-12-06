@@ -48,7 +48,7 @@ func NewEventBuffer(maxSize int) *EventBuffer {
 		websocketClosers: make(map[uint64]WebsocketCloseFunc),
 		lastAckedID:      make(map[uint64]int64),
 		eventListeners:   make(map[uint64]func(*hicli.JSONCommand)),
-		buf:              make([]*hicli.JSONCommand, 0, maxSize*2),
+		buf:              make([]*hicli.JSONCommand, 0, 32),
 		MaxSize:          maxSize,
 		minID:            -1,
 	}
