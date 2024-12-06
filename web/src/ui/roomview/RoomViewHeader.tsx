@@ -52,8 +52,13 @@ const RoomViewHeader = ({ room }: RoomViewHeaderProps) => {
 			onClick={use(LightboxContext)}
 			alt=""
 		/>
-		<div className="room-name">
-			{roomMeta.name ?? roomMeta.room_id}
+		<div className="room-name-and-topic">
+			<div className="room-name">
+				{roomMeta.name ?? roomMeta.room_id}
+			</div>
+			{roomMeta.topic && <div className="room-topic">
+				{roomMeta.topic}
+			</div>}
 		</div>
 		<div className="right-buttons">
 			<button

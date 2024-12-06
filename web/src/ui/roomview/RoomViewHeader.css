@@ -6,12 +6,26 @@ div.room-header {
 	border-bottom: 1px solid var(--border-color);
 	overflow: hidden;
 
-	> div.room-name {
-		font-weight: bold;
-		overflow: hidden;
-		text-overflow: ellipsis;
-		text-wrap: nowrap;
+	> div.room-name-and-topic {
 		flex: 1;
+		display: flex;
+		flex-direction: column;
+		overflow: hidden;
+
+		> div.room-name, > div.room-topic {
+			overflow: hidden;
+			text-overflow: ellipsis;
+			text-wrap: nowrap;
+		}
+
+		> div.room-name {
+			font-weight: bold;
+		}
+
+		> div.room-topic {
+			font-size: 0.85rem;
+			color: var(--secondary-text-color);
+		}
 	}
 
 	> button.back {
