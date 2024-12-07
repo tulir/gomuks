@@ -149,7 +149,7 @@ class ContextFields implements MainScreenContextFields {
 
 const SYNC_ERROR_HIDE_DELAY = 30 * 1000
 
-const handleURLHash = (client: Client, context: ContextFields) => {
+const handleURLHash = (client: Client) => {
 	if (!location.hash.startsWith("#/uri/")) {
 		if (location.search) {
 			const currentETag = (
@@ -181,28 +181,31 @@ const handleURLHash = (client: Client, context: ContextFields) => {
 	newURL.hash = ""
 	newURL.search = ""
 	if (uri.identifier.startsWith("@")) {
-		const right_panel = {
-			type: "user",
-			userID: uri.identifier,
-		} as RightPanelProps
-		history.replaceState({ right_panel }, "", newURL.toString())
-		context.setRightPanel(right_panel, false)
+		const newState = {
+			right_panel: {
+				type: "user",
+				userID: uri.identifier,
+			},
+		}
+		history.replaceState(newState, "", newURL.toString())
+		return newState
 	} else if (uri.identifier.startsWith("!")) {
-		history.replaceState({ room_id: uri.identifier }, "", newURL.toString())
-		context.setActiveRoom(uri.identifier, false)
+		const newState = { room_id: uri.identifier }
+		history.replaceState(newState, "", newURL.toString())
+		return newState
 	} else if (uri.identifier.startsWith("#")) {
 		// TODO loading indicator or something for this?
 		client.rpc.resolveAlias(uri.identifier).then(
 			res => {
-				history.replaceState({ room_id: res.room_id }, "", newURL.toString())
-				context.setActiveRoom(res.room_id, false)
+				history.pushState({ room_id: res.room_id }, "", newURL.toString())
 			},
 			err => window.alert(`Failed to resolve room alias ${uri.identifier}: ${err}`),
 		)
+		return null
 	} else {
 		console.error("Invalid matrix URI", uri)
 	}
-	return null
+	return history.state
 }
 
 const MainScreen = () => {
@@ -227,7 +230,7 @@ const MainScreen = () => {
 		}
 		window.addEventListener("popstate", listener)
 		const initHandle = () => {
-			const state = handleURLHash(client, context)
+			const state = handleURLHash(client)
 			listener({ state } as PopStateEvent)
 		}
 		let cancel = () => {}
