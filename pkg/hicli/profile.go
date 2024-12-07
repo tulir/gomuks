@@ -8,12 +8,13 @@ package hicli
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"slices"
-	"strings"
 
 	"github.com/rs/zerolog"
+
 	"maunium.net/go/mautrix"
+	"maunium.net/go/mautrix/crypto"
 	"maunium.net/go/mautrix/id"
 )
 
@@ -59,81 +60,34 @@ type ProfileEncryptionInfo struct {
 func (h *HiClient) GetProfileEncryptionInfo(ctx context.Context, userID id.UserID) (*ProfileEncryptionInfo, error) {
 	var resp ProfileEncryptionInfo
 	log := zerolog.Ctx(ctx)
-	userIDs, err := h.CryptoStore.FilterTrackedUsers(ctx, []id.UserID{userID})
-	if err != nil {
-		log.Err(err).Msg("Failed to check if user's devices are tracked")
-		return nil, fmt.Errorf("failed to check if user's devices are tracked: %w", err)
-	} else if len(userIDs) == 0 {
+	cachedDevices, err := h.Crypto.GetCachedDevices(ctx, userID)
+	if errors.Is(err, crypto.ErrUserNotTracked) {
 		return &resp, nil
-	}
-	ownKeys := h.Crypto.GetOwnCrossSigningPublicKeys(ctx)
-	var ownUserSigningKey id.Ed25519
-	if ownKeys != nil {
-		ownUserSigningKey = ownKeys.UserSigningKey
+	} else if err != nil {
+		log.Err(err).Msg("Failed to get cached devices")
+		return nil, err
 	}
 	resp.DevicesTracked = true
-	csKeys, err := h.CryptoStore.GetCrossSigningKeys(ctx, userID)
-	theirMasterKey := csKeys[id.XSUsageMaster]
-	theirSelfSignKey := csKeys[id.XSUsageSelfSigning]
-	if err != nil {
-		log.Err(err).Msg("Failed to get cross-signing keys")
-		return nil, fmt.Errorf("failed to get cross-signing keys: %w", err)
-	} else if csKeys != nil && theirMasterKey.Key != "" {
-		resp.MasterKey = theirMasterKey.Key.Fingerprint()
-		resp.FirstMasterKey = theirMasterKey.First.Fingerprint()
-		selfKeySigned, err := h.CryptoStore.IsKeySignedBy(ctx, userID, theirSelfSignKey.Key, userID, theirMasterKey.Key)
-		if err != nil {
-			log.Err(err).Msg("Failed to check if self-signing key is signed by master key")
-			return nil, fmt.Errorf("failed to check if self-signing key is signed by master key: %w", err)
-		} else if !selfKeySigned {
-			theirSelfSignKey = id.CrossSigningKey{}
+	if cachedDevices.MasterKey != nil {
+		resp.MasterKey = cachedDevices.MasterKey.Key.Fingerprint()
+		resp.FirstMasterKey = cachedDevices.MasterKey.First.Fingerprint()
+		if !cachedDevices.HasValidSelfSigningKey {
 			resp.Errors = append(resp.Errors, "Self-signing key is not signed by master key")
 		}
 	} else {
 		resp.Errors = append(resp.Errors, "Cross-signing keys not found")
 	}
-	devices, err := h.CryptoStore.GetDevices(ctx, userID)
-	if err != nil {
-		log.Err(err).Msg("Failed to get devices for user")
-		return nil, fmt.Errorf("failed to get devices: %w", err)
-	}
-	if userID == h.Account.UserID {
-		resp.UserTrusted, err = h.CryptoStore.IsKeySignedBy(ctx, userID, theirMasterKey.Key, userID, h.Crypto.OwnIdentity().SigningKey)
-	} else if ownUserSigningKey != "" && theirMasterKey.Key != "" {
-		resp.UserTrusted, err = h.CryptoStore.IsKeySignedBy(ctx, userID, theirMasterKey.Key, h.Account.UserID, ownUserSigningKey)
-	}
-	if err != nil {
-		log.Err(err).Msg("Failed to check if user is trusted")
-		resp.Errors = append(resp.Errors, fmt.Sprintf("Failed to check if user is trusted: %v", err))
-	}
-	resp.Devices = make([]*ProfileDevice, len(devices))
-	i := 0
-	for _, device := range devices {
-		signatures, err := h.CryptoStore.GetSignaturesForKeyBy(ctx, device.UserID, device.SigningKey, device.UserID)
-		if err != nil {
-			log.Err(err).Stringer("device_id", device.DeviceID).Msg("Failed to get signatures for device")
-			resp.Errors = append(resp.Errors, fmt.Sprintf("Failed to get signatures for device %s: %v", device.DeviceID, err))
-		} else if _, signed := signatures[theirSelfSignKey.Key]; signed && device.Trust == id.TrustStateUnset && theirSelfSignKey.Key != "" {
-			if resp.UserTrusted {
-				device.Trust = id.TrustStateCrossSignedVerified
-			} else if theirMasterKey.Key == theirMasterKey.First {
-				device.Trust = id.TrustStateCrossSignedTOFU
-			} else {
-				device.Trust = id.TrustStateCrossSignedUntrusted
-			}
-		}
+	resp.UserTrusted = cachedDevices.MasterKeySignedByUs
+	resp.Devices = make([]*ProfileDevice, len(cachedDevices.Devices))
+	for i, dev := range cachedDevices.Devices {
 		resp.Devices[i] = &ProfileDevice{
-			DeviceID:    device.DeviceID,
-			Name:        device.Name,
-			IdentityKey: device.IdentityKey,
-			SigningKey:  device.SigningKey,
-			Fingerprint: device.Fingerprint(),
-			Trust:       device.Trust,
+			DeviceID:    dev.DeviceID,
+			Name:        dev.Name,
+			IdentityKey: dev.IdentityKey,
+			SigningKey:  dev.SigningKey,
+			Fingerprint: dev.Fingerprint(),
+			Trust:       dev.Trust,
 		}
-		i++
 	}
-	slices.SortFunc(resp.Devices, func(a, b *ProfileDevice) int {
-		return strings.Compare(a.DeviceID.String(), b.DeviceID.String())
-	})
 	return &resp, nil
 }
