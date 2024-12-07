@@ -26,6 +26,7 @@ import (
 	"runtime"
 
 	"github.com/wailsapp/wails/v3/pkg/application"
+	"go.mau.fi/util/exhttp"
 
 	"go.mau.fi/gomuks/pkg/gomuks"
 	"go.mau.fi/gomuks/pkg/hicli"
@@ -100,6 +101,7 @@ func main() {
 	gmx.LinkifiedVersion = version.LinkifiedVersion
 	gmx.BuildTime = version.ParsedBuildTime
 	gmx.DisableAuth = true
+	exhttp.AutoAllowCORS = false
 	hicli.InitialDeviceDisplayName = "gomuks desktop"
 
 	gmx.InitDirectories()

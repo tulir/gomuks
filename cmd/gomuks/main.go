@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"os"
 
+	"go.mau.fi/util/exhttp"
 	flag "maunium.net/go/mauflag"
 
 	"go.mau.fi/gomuks/pkg/gomuks"
@@ -33,6 +34,7 @@ var wantVersion = flag.MakeFull("v", "version", "View gomuks version and quit.",
 
 func main() {
 	hicli.InitialDeviceDisplayName = "gomuks web"
+	exhttp.AutoAllowCORS = false
 	flag.SetHelpTitles(
 		"gomuks - A Matrix client written in Go.",
 		"gomuks [-hv]",

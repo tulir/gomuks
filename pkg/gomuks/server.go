@@ -249,12 +249,6 @@ func (gmx *Gomuks) Authenticate(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func isUserFetch(header http.Header) bool {
-	return header.Get("Sec-Fetch-Mode") == "navigate" &&
-		header.Get("Sec-Fetch-Dest") == "document" &&
-		header.Get("Sec-Fetch-User") == "?1"
-}
-
 func isImageFetch(header http.Header) bool {
 	return header.Get("Sec-Fetch-Site") == "cross-site" &&
 		header.Get("Sec-Fetch-Mode") == "no-cors" &&
@@ -268,17 +262,6 @@ func (gmx *Gomuks) AuthMiddleware(next http.Handler) http.Handler {
 			gmx.validateAuth(r.URL.Query().Get("image_auth"), true) &&
 			r.URL.Query().Get("encrypted") == "false" {
 			next.ServeHTTP(w, r)
-			return
-		} else if r.Header.Get("Sec-Fetch-Site") != "" &&
-			r.Header.Get("Sec-Fetch-Site") != "same-origin" &&
-			!isUserFetch(r.Header) {
-			hlog.FromRequest(r).Debug().
-				Str("site", r.Header.Get("Sec-Fetch-Site")).
-				Str("dest", r.Header.Get("Sec-Fetch-Dest")).
-				Str("mode", r.Header.Get("Sec-Fetch-Mode")).
-				Str("user", r.Header.Get("Sec-Fetch-User")).
-				Msg("Invalid Sec-Fetch-Site header")
-			ErrInvalidHeader.WithMessage("Invalid Sec-Fetch-Site header").Write(w)
 			return
 		}
 		if r.URL.Path != "/auth" {

@@ -6,7 +6,10 @@ toolchain go1.23.3
 
 require github.com/wailsapp/wails/v3 v3.0.0-alpha.7
 
-require go.mau.fi/gomuks v0.3.1
+require (
+	go.mau.fi/gomuks v0.3.1
+	go.mau.fi/util v0.8.3-0.20241207221539-07bba6a0c5eb
+)
 
 require (
 	dario.cat/mergo v1.0.0 // indirect
@@ -59,7 +62,6 @@ require (
 	github.com/wailsapp/mimetype v1.4.1 // indirect
 	github.com/xanzy/ssh-agent v0.3.3 // indirect
 	github.com/yuin/goldmark v1.7.8 // indirect
-	go.mau.fi/util v0.8.2 // indirect
 	go.mau.fi/zeroconfig v0.1.3 // indirect
 	golang.org/x/crypto v0.29.0 // indirect
 	golang.org/x/exp v0.0.0-20241108190413-2d47ceb2692f // indirect
