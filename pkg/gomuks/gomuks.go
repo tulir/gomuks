@@ -55,7 +55,9 @@ type Gomuks struct {
 	TempDir   string
 	LogDir    string
 
-	FrontendFS embed.FS
+	FrontendFS    embed.FS
+	indexWithETag []byte
+	frontendETag  string
 
 	Config      Config
 	DisableAuth bool

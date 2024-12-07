@@ -59,6 +59,11 @@ type PingRequestData struct {
 
 var runID = time.Now().UnixNano()
 
+type RunData struct {
+	RunID string `json:"run_id"`
+	ETag  string `json:"etag"`
+}
+
 func (gmx *Gomuks) HandleWebsocket(w http.ResponseWriter, r *http.Request) {
 	var conn *websocket.Conn
 	log := zerolog.Ctx(r.Context())
@@ -233,9 +238,12 @@ func (gmx *Gomuks) HandleWebsocket(w http.ResponseWriter, r *http.Request) {
 			log.Trace().Int64("req_id", cmd.RequestID).Msg("Sent response to command")
 		}
 	}
-	initErr := writeCmd(ctx, conn, &hicli.JSONCommandCustom[string]{
+	initErr := writeCmd(ctx, conn, &hicli.JSONCommandCustom[*RunData]{
 		Command: "run_id",
-		Data:    strconv.FormatInt(runID, 10),
+		Data: &RunData{
+			RunID: strconv.FormatInt(runID, 10),
+			ETag:  gmx.frontendETag,
+		},
 	})
 	if initErr != nil {
 		log.Err(initErr).Msg("Failed to write init client state message")
@@ -314,6 +322,9 @@ func (gmx *Gomuks) sendInitialData(ctx context.Context, conn *websocket.Conn) {
 			log.Err(err).Msg("Failed to send initial rooms to client")
 			return
 		}
+	}
+	if ctx.Err() != nil {
+		return
 	}
 	err := writeCmd(ctx, conn, &hicli.JSONCommand{
 		Command:   "init_complete",

@@ -19,6 +19,35 @@ import type { RPCCommand } from "./types"
 const PING_INTERVAL = 15_000
 const RECV_TIMEOUT = 4 * PING_INTERVAL
 
+function checkUpdate(etag: string) {
+	if (!import.meta.env.PROD) {
+		return
+	} else if (!etag) {
+		console.log("Not checking for update, frontend etag not found in websocket init")
+		return
+	}
+	const currentETag = (
+		document.querySelector("meta[name=gomuks-frontend-etag]") as HTMLMetaElement
+	)?.content
+	if (!currentETag) {
+		console.log("Not checking for update, frontend etag not found in head")
+	} else if (currentETag === etag) {
+		console.log("Frontend is up to date")
+	} else if (localStorage.lastUpdateTo === etag) {
+		console.warn(
+			`Frontend etag mismatch ${currentETag} !== ${etag}, `,
+			"but localstorage says an update was already attempted",
+		)
+	} else {
+		console.info(`Frontend etag mismatch ${currentETag} !== ${etag}, reloading`)
+		localStorage.lastUpdateTo = etag
+		location.search = "?" + new URLSearchParams({
+			updateTo: etag,
+			state: JSON.stringify(history.state),
+		})
+	}
+}
+
 export default class WSClient extends RPCClient {
 	#conn: WebSocket | null = null
 	#lastMessage: number = 0
@@ -105,7 +134,9 @@ export default class WSClient extends RPCClient {
 		if (parsed.request_id < 0) {
 			this.#lastReceivedEvt = parsed.request_id
 		} else if (parsed.command === "run_id") {
-			this.#resumeRunID = parsed.data
+			console.log("Received run ID", parsed.data)
+			this.#resumeRunID = parsed.data.run_id
+			checkUpdate(parsed.data.etag)
 		}
 		this.onCommand(parsed)
 	}

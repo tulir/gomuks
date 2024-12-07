@@ -81,6 +81,9 @@ func (c *CommandHandler) Init() {
 					Data:      marshaledPayload,
 				})
 			}
+			if ctx.Err() != nil {
+				return
+			}
 			c.App.EmitEvent("hicli_event", &hicli.JSONCommand{
 				Command:   "init_complete",
 				RequestID: 0,

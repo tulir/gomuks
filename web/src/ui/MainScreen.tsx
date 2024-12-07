@@ -58,7 +58,7 @@ class ContextFields implements MainScreenContextFields {
 	}
 
 	get currentRightPanel(): RightPanelProps | null {
-		return this.rightPanelStack.length ? this.rightPanelStack[this.rightPanelStack.length-1] : null
+		return this.rightPanelStack.length ? this.rightPanelStack[this.rightPanelStack.length - 1] : null
 	}
 
 	setRightPanel = (props: RightPanelProps | null, pushState = true) => {
@@ -151,17 +151,35 @@ const SYNC_ERROR_HIDE_DELAY = 30 * 1000
 
 const handleURLHash = (client: Client, context: ContextFields) => {
 	if (!location.hash.startsWith("#/uri/")) {
-		return
+		if (location.search) {
+			const currentETag = (
+				document.querySelector("meta[name=gomuks-frontend-etag]") as HTMLMetaElement
+			)?.content
+			const newURL = new URL(location.href)
+			const updateTo = newURL.searchParams.get("updateTo")
+			if (updateTo === currentETag) {
+				console.info("Update to etag", updateTo, "successful")
+			} else {
+				console.warn("Update to etag", updateTo, "failed, got", currentETag)
+			}
+			const state = JSON.parse(newURL.searchParams.get("state") || "{}")
+			newURL.search = ""
+			history.replaceState(state, "", newURL.toString())
+			return state
+		}
+		return history.state
 	}
+
 	const decodedURI = decodeURIComponent(location.hash.slice("#/uri/".length))
 	const uri = parseMatrixURI(decodedURI)
 	if (!uri) {
 		console.error("Invalid matrix URI", decodedURI)
-		return
+		return history.state
 	}
 	console.log("Handling URI", uri)
 	const newURL = new URL(location.href)
 	newURL.hash = ""
+	newURL.search = ""
 	if (uri.identifier.startsWith("@")) {
 		const right_panel = {
 			type: "user",
@@ -184,6 +202,7 @@ const handleURLHash = (client: Client, context: ContextFields) => {
 	} else {
 		console.error("Invalid matrix URI", uri)
 	}
+	return null
 }
 
 const MainScreen = () => {
@@ -208,8 +227,8 @@ const MainScreen = () => {
 		}
 		window.addEventListener("popstate", listener)
 		const initHandle = () => {
-			listener({ state: history.state } as PopStateEvent)
-			handleURLHash(client, context)
+			const state = handleURLHash(client, context)
+			listener({ state } as PopStateEvent)
 		}
 		let cancel = () => {}
 		if (client.initComplete.current) {

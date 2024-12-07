@@ -124,7 +124,12 @@ export interface InitCompleteEvent extends BaseRPCCommand<void> {
 	command: "init_complete"
 }
 
-export interface RunIDEvent extends BaseRPCCommand<string> {
+export interface RunData {
+	run_id: string
+	etag: string
+}
+
+export interface RunIDEvent extends BaseRPCCommand<RunData> {
 	command: "run_id"
 }
 
