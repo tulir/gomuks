@@ -151,11 +151,11 @@ div.right-panel-content.user {
 				height: 1.5rem;
 				width: 1.5rem;
 
-				&.trust-blacklisted {
+				&.trust-blacklisted, &.trust-unverified.has-master-key {
 					color: var(--error-color);
 				}
 
-				&.trust-cross-signed-untrusted, &.trust-unverified {
+				&.trust-cross-signed-untrusted, &.trust-unverified.no-master-key {
 					color: darkorange;
 				}
 

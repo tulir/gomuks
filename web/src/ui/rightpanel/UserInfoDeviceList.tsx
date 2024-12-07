@@ -85,13 +85,13 @@ const DeviceList = ({ client, room, userID }: DeviceListProps) => {
 		{verifiedMessage}
 		<details>
 			<summary><h4>{view.devices.length} devices</h4></summary>
-			<ul>{view.devices.map(renderDevice)}</ul>
+			<ul>{view.devices.map(dev => renderDevice(dev, view.master_key !== ""))}</ul>
 		</details>
 		<UserInfoError errors={errors}/>
 	</div>
 }
 
-function renderDevice(device: ProfileDevice) {
+function renderDevice(device: ProfileDevice, hasCSKeys: boolean) {
 	let Icon = EncryptedIcon
 	if (device.trust_state === "blacklisted") {
 		Icon = EncryptedOffIcon
@@ -100,19 +100,23 @@ function renderDevice(device: ProfileDevice) {
 	}
 	return <li key={device.device_id} className="device">
 		<div
-			className={`icon-wrapper trust-${device.trust_state}`}
-			title={trustStateDescription(device.trust_state)}
+			className={`icon-wrapper trust-${device.trust_state} ${hasCSKeys ? "has-master-key" : "no-master-key"}`}
+			title={trustStateDescription(device.trust_state, hasCSKeys)}
 		><Icon/></div>
 		<div title={device.device_id}>{device.name || device.device_id}</div>
 	</li>
 }
 
-function trustStateDescription(state: TrustState): string {
+function trustStateDescription(state: TrustState, hasCSKeys: boolean): string {
 	switch (state) {
 	case "blacklisted":
 		return "Device has been blacklisted manually"
 	case "unverified":
-		return "Device has not been verified by cross-signing keys, or cross-signing keys were not found"
+		if (hasCSKeys) {
+			return "Device has not been verified by cross-signing keys"
+		} else {
+			return "No cross-signing keys were found"
+		}
 	case "verified":
 		return "Device was verified manually"
 	case "cross-signed-untrusted":
