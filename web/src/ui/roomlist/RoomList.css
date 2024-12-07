@@ -106,22 +106,28 @@ div.room-entry {
 		width: 3rem;
 
 		> div.unread-count {
+			--unread-count-size: 1rem;
+			--unread-count-padding-inline: calc(1rem/4);
+			--unread-count-padding-block: calc(1rem/8);
+
 			display: flex;
 			align-items: center;
 			justify-content: center;
-			border-radius: 50%;
+            border-radius: var(--unread-count-size);
 			color: var(--unread-counter-text-color);
 
 			background-color: var(--unread-counter-message-bg);
-			width: 1rem;
-			height: 1rem;
+			height: var(--unread-count-size);
+            min-width: calc(var(--unread-count-size) - 2*(var(--unread-count-padding-inline) - var(--unread-count-padding-block)));
+
 			line-height: 1;
 			font-size: .75em;
 
+            padding-inline: var(--unread-count-padding-inline);
+			padding-block: var(--unread-count-padding-block);
+
 			&.notified, &.marked-unread, &.highlighted {
-				width: 1.5rem;
-				height: 1.5rem;
-				padding-bottom: 0;
+				--unread-count-size: 1.5rem;
 				font-size: 1em;
 				font-weight: bold;
 			}
