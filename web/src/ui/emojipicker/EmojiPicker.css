@@ -90,6 +90,11 @@ div.emoji-picker {
 			border-bottom-left-radius: 0;
 			border-bottom-right-radius: 0;
 			border-bottom: 2px solid transparent;
+
+			&.visible {
+				border-bottom: 2px solid var(--primary-color);
+			}
+
 			&:hover {
 				border-bottom: 2px solid var(--primary-color-dark);
 			}

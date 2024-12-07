@@ -90,6 +90,7 @@ export const EmojiGroup = ({
 		ref={divRef}
 		className="emoji-category"
 		id={`emoji-category-${categoryID}`}
+		data-category-id={categoryID}
 		style={{ containIntrinsicHeight: `${1.5 + Math.ceil(emojis.length / 8) * 2.5}rem` }}
 	>
 		<h4 className="emoji-category-name">

@@ -13,7 +13,7 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import React, { CSSProperties, JSX, use, useCallback, useState } from "react"
+import React, { CSSProperties, JSX, use, useCallback, useEffect, useRef, useState } from "react"
 import { getMediaURL } from "@/api/media.ts"
 import { RoomStateStore, useCustomEmojis } from "@/api/statestore"
 import { roomStateGUIDToString } from "@/api/types"
@@ -64,6 +64,8 @@ const EmojiPicker = ({ style, selected, onSelect, room, allowFreeform, closeOnSe
 	const client = use(ClientContext)!
 	const [query, setQuery] = useState("")
 	const [previewEmoji, setPreviewEmoji] = useState<Emoji>()
+	const emojiCategoryBarRef = useRef<HTMLDivElement>(null)
+	const emojiListRef = useRef<HTMLDivElement>(null)
 	const watchedEmojiPackKeys = client.store.getEmojiPackKeys().map(roomStateGUIDToString)
 	const customEmojiPacks = useCustomEmojis(client.store, room)
 	const emojis = useFilteredEmojis(query, {
@@ -89,8 +91,33 @@ const EmojiPicker = ({ style, selected, onSelect, room, allowFreeform, closeOnSe
 		const categoryID = evt.currentTarget.getAttribute("data-category-id")!
 		document.getElementById(`emoji-category-${categoryID}`)?.scrollIntoView()
 	}, [])
+	useEffect(() => {
+		const cats = emojiCategoryBarRef.current
+		const lists = emojiListRef.current
+		if (!cats || !lists) {
+			return
+		}
+		const observer = new IntersectionObserver(entries => {
+			for (const entry of entries) {
+				const catID = entry.target.getAttribute("data-category-id")
+				const cat = catID && cats.querySelector(`.emoji-category-icon[data-category-id="${catID}"]`)
+				if (!cat) {
+					continue
+				}
+				if (entry.isIntersecting) {
+					cat.classList.add("visible")
+				} else {
+					cat.classList.remove("visible")
+				}
+			}
+		})
+		for (const cat of lists.getElementsByClassName("emoji-category")) {
+			observer.observe(cat)
+		}
+		return () => observer.disconnect()
+	}, [])
 	return <div className="emoji-picker" style={style}>
-		<div className="emoji-category-bar">
+		<div className="emoji-category-bar" ref={emojiCategoryBarRef}>
 			<button
 				className="emoji-category-icon"
 				data-category-id={CATEGORY_FREQUENTLY_USED}
@@ -132,7 +159,7 @@ const EmojiPicker = ({ style, selected, onSelect, room, allowFreeform, closeOnSe
 		</div>
 		<div className="emoji-list">
 			{/* Chrome is dumb and doesn't allow scrolling without an inner div */}
-			<div className="emoji-list-inner">
+			<div className="emoji-list-inner" ref={emojiListRef}>
 				{emojis.map(group => {
 					if (!group?.length) {
 						return null
