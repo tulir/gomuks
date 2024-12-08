@@ -107,8 +107,8 @@ div.room-entry {
 
 		> div.unread-count {
 			--unread-count-size: 1rem;
-			--unread-count-padding-inline: calc(1rem/4);
-			--unread-count-padding-block: calc(1rem/8);
+			--unread-count-padding-inline: calc(var(--unread-count-size)/4);
+			--unread-count-padding-block: calc(var(--unread-count-size)/8);
 
 			display: flex;
 			align-items: center;
