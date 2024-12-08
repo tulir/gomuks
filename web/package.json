@@ -19,6 +19,7 @@
 		"react": "^19.0.0",
 		"react-blurhash": "^0.3.0",
 		"react-dom": "^19.0.0",
+		"react-intl": "^7.0.2",
 		"react-spinners": "^0.15.0",
 		"unhomoglyph": "^1.0.6"
 	},
