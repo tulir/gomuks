@@ -13,7 +13,12 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-export function humanJoin(arr: string[], sep: string = ", ", lastSep: string = " and "): string {
+export function humanJoin(
+	arr: string[],
+	sep: string = ", ",
+	sep2: string = " and ",
+	lastSep: string = " and ",
+): string {
 	if (arr.length === 0) {
 		return ""
 	}
@@ -21,7 +26,9 @@ export function humanJoin(arr: string[], sep: string = ", ", lastSep: string = "
 		return arr[0]
 	}
 	if (arr.length === 2) {
-		return arr.join(lastSep)
+		return arr.join(sep2)
 	}
 	return arr.slice(0, -1).join(sep) + lastSep + arr[arr.length - 1]
 }
+
+export const oxfordHumanJoin = (arr: string[]) => humanJoin(arr, ", ", " and ", ", and ")
