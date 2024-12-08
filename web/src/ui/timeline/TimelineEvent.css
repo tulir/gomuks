@@ -1,8 +1,8 @@
 div.timeline-event {
-	width: 100%;
-	max-width: 100%;
+	width: calc(100% - 2 * 1.6rem);
+	max-width: calc(100% - 2 * 1.6rem);
+	padding: calc(var(--timeline-message-gap)/2) 1.6rem;
 	display: grid;
-	margin-top: var(--timeline-message-gap);
 	grid-template:
 		"cmc                          cmc                        cmc      cmc"    0
 		"avatar                       gap                        sender   sender" auto
@@ -209,6 +209,7 @@ div.date-separator {
 	display: flex;
 	align-items: center;
 	gap: .5rem;
+	padding: calc(var(--timeline-message-gap)/2) 0;
 
 	> hr {
 		flex: 1;

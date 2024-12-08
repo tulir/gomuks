@@ -27,6 +27,8 @@
 	--button-hover-color: rgba(0, 0, 0, .2);
 	--light-hover-color: rgba(0, 0, 0, .1);
 
+	--composer-background-color: #eeeeee;
+
 	--timeline-hover-bg-color: #eee;
 	--timeline-highlight-bg-color: rgba(255, 255, 0, .1);
 	--timeline-highlight-hover-bg-color: #eec;
@@ -102,6 +104,8 @@
 		--pill-background-color: #222;
 		--button-hover-color: rgba(255, 255, 255, .2);
 		--light-hover-color: rgba(255, 255, 255, .1);
+
+		--composer-background-color: #0a0a0a;
 
 		--timeline-hover-bg-color: #111;
 		--timeline-highlight-bg-color: rgba(255, 255, 0, .1);

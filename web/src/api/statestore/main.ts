@@ -32,6 +32,7 @@ import {
 	SendCompleteData,
 	SyncCompleteData,
 	SyncRoom,
+	TypingEventData,
 	UnknownEventContent,
 	UserID,
 	roomStateGUIDToString,
@@ -380,6 +381,15 @@ export class StateStore {
 				this.roomList.emit(updatedRoomList)
 			}
 		}
+	}
+
+	applyTyping(typing: TypingEventData) {
+		const room = this.rooms.get(typing.room_id)
+		if (!room) {
+			// TODO log or something?
+			return
+		}
+		room.applyTyping(typing.user_ids)
 	}
 
 	doGarbageCollection() {

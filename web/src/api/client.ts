@@ -116,6 +116,8 @@ export default class Client {
 			this.store.applySendComplete(ev.data)
 		} else if (ev.command === "image_auth_token") {
 			this.store.imageAuthToken = ev.data
+		} else if (ev.command === "typing") {
+			this.store.applyTyping(ev.data)
 		}
 	}
 
