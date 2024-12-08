@@ -27,5 +27,4 @@ export function humanJoinReact(
 		</Fragment>)
 }
 
-export const oxfordHumanJoinReact = (arr: (string | JSX.Element)[]) => humanJoinReact(arr, ", ", ", and ")
 export const joinReact = (arr: (string | JSX.Element)[]) => humanJoinReact(arr, " ", " ")

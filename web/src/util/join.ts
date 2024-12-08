@@ -25,5 +25,3 @@ export function humanJoin(arr: string[], sep: string = ", ", lastSep: string = "
 	}
 	return arr.slice(0, -1).join(sep) + lastSep + arr[arr.length - 1]
 }
-
-export const oxfordHumanJoin = (arr: string[]) => humanJoin(arr, ", ", ", and ")

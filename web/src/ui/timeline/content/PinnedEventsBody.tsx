@@ -15,18 +15,18 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import { PinnedEventsContent } from "@/api/types"
 import { listDiff } from "@/util/diff.ts"
-import { oxfordHumanJoin } from "@/util/join.ts"
+import { humanJoin } from "@/util/join.ts"
 import EventContentProps from "./props.ts"
 
 function renderPinChanges(content: PinnedEventsContent, prevContent?: PinnedEventsContent): string {
 	const [added, removed] = listDiff(content.pinned ?? [], prevContent?.pinned ?? [])
 	if (added.length) {
 		if (removed.length) {
-			return `pinned ${oxfordHumanJoin(added)} and unpinned ${oxfordHumanJoin(removed)}`
+			return `pinned ${humanJoin(added)} and unpinned ${humanJoin(removed)}`
 		}
-		return `pinned ${oxfordHumanJoin(added)}`
+		return `pinned ${humanJoin(added)}`
 	} else if (removed.length) {
-		return `unpinned ${oxfordHumanJoin(removed)}`
+		return `unpinned ${humanJoin(removed)}`
 	} else {
 		return "sent a no-op pin event"
 	}
