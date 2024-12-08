@@ -37,7 +37,8 @@ const MemberRow = ({ evt, onClick }: MemberRowProps) => {
 			alt=""
 			loading="lazy"
 		/>
-		<span className="displayname">{getDisplayname(userID, content)}</span>
+		<div className="displayname">{getDisplayname(userID, content)}</div>
+		<div className="user-id">{userID}</div>
 	</div>
 }
 

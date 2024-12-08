@@ -210,21 +210,57 @@ div.right-panel-content.members {
 		overflow: auto;
 
 		> div.member {
-			display: flex;
-			align-items: center;
-			gap: .5rem;
+			display: grid;
+			column-gap: .5rem;
 			cursor: var(--clickable-cursor);
 
 			content-visibility: auto;
 			contain-intrinsic-height: 3rem;
 			height: 3rem;
 			padding: .25rem;
+			align-items: center;
 
-			> span.displayname {
+			grid-template:
+				"avatar  displayname" 3rem
+				/ 2.5rem 1fr;
+
+			&:hover {
+				grid-template:
+					"avatar  displayname" auto
+					"avatar  userid"      auto
+					/ 2.5rem 1fr;
+
+				> div.user-id {
+					display: block;
+					align-self: start;
+				}
+
+				> div.displayname {
+					align-self: end;
+				}
+			}
+
+			> div.displayname, > div.user-id {
 				overflow: hidden;
 				text-wrap: nowrap;
 				text-overflow: ellipsis;
 				user-select: none;
+			}
+
+			> div.displayname {
+				grid-area: displayname;
+			}
+
+			> img.avatar {
+				grid-area: avatar;
+			}
+
+			> div.user-id {
+				grid-area: userid;
+				font-family: var(--monospace-font-stack);
+				font-size: .75rem;
+				opacity: .7;
+				display: none;
 			}
 
 			&:hover, &:focus {
