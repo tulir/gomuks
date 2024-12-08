@@ -14,6 +14,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import { useEffect, useLayoutEffect, useMemo } from "react"
+import { IntlProvider } from "react-intl"
 import { ScaleLoader } from "react-spinners"
 import Client from "./api/client.ts"
 import RPCClient from "./api/rpc.ts"
@@ -84,10 +85,12 @@ function App() {
 		return <VerificationScreen client={client} clientState={clientState}/>
 	} else {
 		return <ClientContext value={client}>
-			<LightboxWrapper>
-				<MainScreen/>
-			</LightboxWrapper>
-			{errorOverlay}
+			<IntlProvider locale="en">
+				<LightboxWrapper>
+					<MainScreen/>
+				</LightboxWrapper>
+				{errorOverlay}
+			</IntlProvider>
 		</ClientContext>
 	}
 }

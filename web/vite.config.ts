@@ -7,6 +7,7 @@ const splitDeps = ["katex", "leaflet", "monaco-editor"]
 export default defineConfig({
 	base: "./",
 	build: {
+
 		target: ["esnext", "firefox128", "chrome131", "safari18"],
 		chunkSizeWarningLimit: 3500,
 		rollupOptions: {
@@ -36,6 +37,7 @@ export default defineConfig({
 	resolve: {
 		alias: {
 			"@": "/src",
+			"@formatjs/icu-messageformat-parser": "@formatjs/icu-messageformat-parser/no-parser",
 		},
 	},
 	server: {
