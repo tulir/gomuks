@@ -13,13 +13,13 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import { use, useCallback, useState } from "react"
+import React, { use, useCallback, useState } from "react"
 import { getAvatarURL } from "@/api/media.ts"
-import { useRoomMembers } from "@/api/statestore"
 import { MemDBEvent, MemberEventContent } from "@/api/types"
 import { getDisplayname } from "@/util/validation.ts"
 import ClientContext from "../ClientContext.ts"
 import MainScreenContext from "../MainScreenContext.ts"
+import { useFilteredMembers } from "../composer/userautocomplete.ts"
 import { RoomContext } from "../roomview/roomcontext.ts"
 
 interface MemberRowProps {
@@ -42,23 +42,25 @@ const MemberRow = ({ evt, onClick }: MemberRowProps) => {
 }
 
 const MemberList = () => {
-	const [limit, setLimit] = useState(50)
+	const [filter, setFilter] = useState("")
+	const [limit, setLimit] = useState(30)
 	const increaseLimit = useCallback(() => setLimit(limit => limit + 50), [])
+	const onChangeFilter = useCallback((e: React.ChangeEvent<HTMLInputElement>) => setFilter(e.target.value), [])
 	const roomCtx = use(RoomContext)
 	if (roomCtx?.store && !roomCtx?.store.membersRequested && !roomCtx?.store.fullMembersLoaded) {
 		roomCtx.store.membersRequested = true
 		use(ClientContext)?.loadRoomState(roomCtx.store.roomID, { omitMembers: false, refetch: false })
 	}
-	const memberEvents = useRoomMembers(roomCtx?.store)
+	const memberEvents = useFilteredMembers(roomCtx?.store, filter)
 	if (!roomCtx) {
 		return null
 	}
 	const mainScreen = use(MainScreenContext)
 	const members = []
-	for (const evt of memberEvents) {
+	for (const member of memberEvents) {
 		members.push(<MemberRow
-			key={evt.state_key}
-			evt={evt}
+			key={member.userID}
+			evt={member.event}
 			onClick={mainScreen.clickRightPanelOpener}
 		/>)
 		if (members.length >= limit) {
@@ -66,10 +68,13 @@ const MemberList = () => {
 		}
 	}
 	return <>
-		{members}
-		{memberEvents.length > limit ? <button onClick={increaseLimit}>
-			and {memberEvents.length - limit} others…
-		</button> : null}
+		<input className="member-filter" value={filter} onChange={onChangeFilter} placeholder="Filter members" />
+		<div className="member-list">
+			{members}
+			{memberEvents.length > limit ? <button onClick={increaseLimit}>
+				and {memberEvents.length - limit} others…
+			</button> : null}
+		</div>
 	</>
 }
 

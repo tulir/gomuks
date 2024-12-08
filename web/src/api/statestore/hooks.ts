@@ -14,11 +14,11 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import { useEffect, useMemo, useState, useSyncExternalStore } from "react"
-import { CustomEmojiPack } from "@/util/emoji"
+import type { CustomEmojiPack } from "@/util/emoji"
 import type { EventID, EventType, MemDBEvent, UnknownEventContent } from "../types"
 import { Preferences, preferences } from "../types/preferences"
-import { StateStore } from "./main.ts"
-import { RoomStateStore } from "./room.ts"
+import type { StateStore } from "./main.ts"
+import type { AutocompleteMemberEntry, RoomStateStore } from "./room.ts"
 
 export function useRoomTimeline(room: RoomStateStore): (MemDBEvent | null)[] {
 	return useSyncExternalStore(
@@ -38,7 +38,7 @@ export function useRoomState(
 }
 
 
-export function useRoomMembers(room?: RoomStateStore): MemDBEvent[] {
+export function useRoomMembers(room?: RoomStateStore): AutocompleteMemberEntry[] {
 	return useSyncExternalStore(
 		room ? room.stateSubs.getSubscriber("m.room.member") : noopSubscribe,
 		room ? room.getMembers : returnEmptyArray,

@@ -15,13 +15,13 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import { JSX, RefObject, use, useEffect } from "react"
 import { getAvatarURL, getMediaURL } from "@/api/media.ts"
-import { RoomStateStore, useCustomEmojis } from "@/api/statestore"
+import { AutocompleteMemberEntry, RoomStateStore, useCustomEmojis } from "@/api/statestore"
 import { Emoji, emojiToMarkdown, useSortedAndFilteredEmojis } from "@/util/emoji"
 import { escapeMarkdown } from "@/util/markdown.ts"
 import useEvent from "@/util/useEvent.ts"
 import ClientContext from "../ClientContext.ts"
 import type { ComposerState } from "./MessageComposer.tsx"
-import { AutocompleteUser, useFilteredMembers } from "./userautocomplete.ts"
+import { useFilteredMembers } from "./userautocomplete.ts"
 import "./Autocompleter.css"
 
 export interface AutocompleteQuery {
@@ -131,10 +131,10 @@ export const EmojiAutocompleter = ({ params, room, ...rest }: AutocompleterProps
 const escapeDisplayname = (input: string) => escapeMarkdown(input).replace("\n", " ")
 
 const userFuncs = {
-	getText: (user: AutocompleteUser) =>
+	getText: (user: AutocompleteMemberEntry) =>
 		`[${escapeDisplayname(user.displayName)}](https://matrix.to/#/${encodeURIComponent(user.userID)}) `,
-	getKey: (user: AutocompleteUser) => user.userID,
-	render: (user: AutocompleteUser) => <>
+	getKey: (user: AutocompleteMemberEntry) => user.userID,
+	render: (user: AutocompleteMemberEntry) => <>
 		<img
 			className="small avatar"
 			loading="lazy"

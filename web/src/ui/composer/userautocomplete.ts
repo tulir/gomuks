@@ -13,19 +13,11 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import { useMemo, useRef } from "react"
-import { RoomStateStore } from "@/api/statestore"
-import type { ContentURI, UserID } from "@/api/types"
+import { useRef } from "react"
+import { AutocompleteMemberEntry, RoomStateStore, useRoomMembers } from "@/api/statestore"
 import toSearchableString from "@/util/searchablestring.ts"
 
-export interface AutocompleteUser {
-	userID: UserID
-	displayName: string
-	avatarURL?: ContentURI
-	searchString: string
-}
-
-export function filterAndSort(users: AutocompleteUser[], query: string): AutocompleteUser[] {
+export function filterAndSort(users: AutocompleteMemberEntry[], query: string): AutocompleteMemberEntry[] {
 	query = toSearchableString(query)
 	return users
 		.map(user => ({ user, matchIndex: user.searchString.indexOf(query) }))
@@ -34,28 +26,30 @@ export function filterAndSort(users: AutocompleteUser[], query: string): Autocom
 		.map(({ user }) => user)
 }
 
-interface filteredUserCache {
-	query: string
-	result: AutocompleteUser[]
+export function filter(users: AutocompleteMemberEntry[], query: string): AutocompleteMemberEntry[] {
+	query = toSearchableString(query)
+	return users.filter(user => user.searchString.includes(query))
 }
 
-export function useFilteredMembers(room: RoomStateStore, query: string): AutocompleteUser[] {
-	const allMembers = useMemo(
-		() => room.getAutocompleteMembers(),
-		// fullMembersLoaded needs to be monitored for when the member list loads
-		// eslint-disable-next-line react-hooks/exhaustive-deps
-		[room, room.fullMembersLoaded],
-	)
+interface filteredUserCache {
+	query: string
+	result: AutocompleteMemberEntry[]
+}
+
+export function useFilteredMembers(
+	room: RoomStateStore | undefined, query: string, sort = true, slice = true,
+): AutocompleteMemberEntry[] {
+	const allMembers = useRoomMembers(room)
 	const prev = useRef<filteredUserCache>({ query: "", result: allMembers })
 	if (!query) {
 		prev.current.query = ""
 		prev.current.result = allMembers
 	} else if (prev.current.query !== query) {
-		prev.current.result = filterAndSort(
+		prev.current.result = (sort ? filterAndSort : filter)(
 			query.startsWith(prev.current.query) ? prev.current.result : allMembers,
 			query,
 		)
-		if (prev.current.result.length > 100) {
+		if (prev.current.result.length > 100 && slice) {
 			prev.current.result = prev.current.result.slice(0, 100)
 		}
 		prev.current.query = query
