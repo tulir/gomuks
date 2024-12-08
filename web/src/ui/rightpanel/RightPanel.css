@@ -5,7 +5,7 @@ div.right-panel {
 	overflow: hidden;
 
 	> div.right-panel-header {
-		height: 3rem;
+		height: 3.5rem;
 		border-bottom: 1px solid var(--border-color);
 		box-sizing: border-box;
 		display: flex;
