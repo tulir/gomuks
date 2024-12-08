@@ -1,8 +1,8 @@
 div.timeline-event {
-	width: 100%;
-	max-width: 100%;
+	width: calc(100% - 2 * 1.6rem);
+	max-width: calc(100% - 2 * 1.6rem);
+	padding: calc(var(--timeline-message-gap)/2) 1.6rem;
 	display: grid;
-	margin-top: var(--timeline-message-gap);
 	grid-template:
 		"cmc                          cmc                        cmc      cmc"    0
 		"avatar                       gap                        sender   sender" auto
@@ -120,7 +120,7 @@ div.timeline-event {
 			"cmc                                cmc     cmc"    0
 			"timestamp                          content status" auto
 			/ var(--timeline-avatar-total-size) 1fr     2rem;
-		margin-top: var(--timeline-message-gap-same-sender);
+		padding-top: calc(var(--timeline-message-gap-same-sender)/2);
 
 		> div.sender-avatar, > div.event-sender-and-time {
 			display: none;
@@ -209,6 +209,7 @@ div.date-separator {
 	display: flex;
 	align-items: center;
 	gap: .5rem;
+	padding: calc(var(--timeline-message-gap)/2) 0;
 
 	> hr {
 		flex: 1;
