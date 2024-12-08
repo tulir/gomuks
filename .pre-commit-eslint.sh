@@ -2,5 +2,5 @@
 cd web > /dev/null
 if [[ -f "./node_modules/.bin/eslint" ]]; then
 	ARGS=("$@")
-	eslint --fix ${ARGS[@]/#web\// }
+	./node_modules/.bin/eslint --fix ${ARGS[@]/#web\// }
 fi
