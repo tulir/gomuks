@@ -55,6 +55,15 @@ interface InnerProps {
 
 const EntryInner = ({ room }: InnerProps) => {
 	const [previewText, croppedPreviewText] = usePreviewText(room.preview_event, room.preview_sender)
+	const unreadCount = room.unread_messages || room.unread_notifications || room.unread_highlights
+	const countIsBig = Boolean(room.unread_notifications || room.unread_highlights)
+	let unreadCountDisplay = unreadCount.toString()
+	if (unreadCount > 999 && countIsBig) {
+		unreadCountDisplay = "99+"
+	} else if (unreadCount > 9999 && countIsBig) {
+		unreadCountDisplay = "999+"
+	}
+
 	return <>
 		<div className="room-entry-left">
 			<img
@@ -69,12 +78,12 @@ const EntryInner = ({ room }: InnerProps) => {
 			{previewText && <div className="message-preview" title={previewText}>{croppedPreviewText}</div>}
 		</div>
 		{(room.unread_messages || room.marked_unread) ? <div className="room-entry-unreads">
-			<div className={`unread-count ${
+			<div title={unreadCount.toString()} className={`unread-count ${
 				room.marked_unread ? "marked-unread" : ""} ${
 				room.unread_notifications ? "notified" : ""} ${
 				room.unread_highlights ? "highlighted" : ""}`}
 			>
-				{room.unread_messages || room.unread_notifications || room.unread_highlights}
+				{unreadCountDisplay}
 			</div>
 		</div> : null}
 	</>
