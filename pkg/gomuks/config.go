@@ -111,7 +111,7 @@ func (gmx *Gomuks) LoadConfig() error {
 		gmx.Config.Web.TokenKey = random.String(64)
 		changed = true
 	}
-	if !gmx.DisableAuth && (gmx.Config.Web.Username == "" || gmx.Config.Web.PasswordHash == "") {
+	if !gmx.DisableAuth && gmx.TUI == nil && (gmx.Config.Web.Username == "" || gmx.Config.Web.PasswordHash == "") {
 		fmt.Println("Please create a username and password for authenticating the web app")
 		fmt.Println("This is only used for gomuks and is NOT your Matrix account")
 		gmx.Config.Web.Username, err = readline.Line("Username: ")

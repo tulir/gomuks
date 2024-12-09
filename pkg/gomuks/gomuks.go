@@ -25,6 +25,7 @@ import (
 	"os/signal"
 	"path/filepath"
 	"runtime"
+	"slices"
 	"sync"
 	"syscall"
 	"time"
@@ -34,6 +35,7 @@ import (
 	"go.mau.fi/util/dbutil"
 	"go.mau.fi/util/exerrors"
 	"go.mau.fi/util/exzerolog"
+	"go.mau.fi/zeroconfig"
 	"go.mau.fi/util/ptr"
 	"golang.org/x/net/http2"
 	"maunium.net/go/mautrix/event"
@@ -75,6 +77,11 @@ type Gomuks struct {
 	// previews to permanent MXC URIs suitable for sending in an inline preview
 	temporaryMXCToPermanent         map[id.ContentURIString]id.ContentURIString
 	temporaryMXCToEncryptedFileInfo map[id.ContentURIString]*event.EncryptedFileInfo
+	TUI         tui
+}
+
+type tui interface {
+	Run()
 }
 
 func NewGomuks() *Gomuks {
@@ -159,6 +166,12 @@ func (gmx *Gomuks) InitDirectories() {
 }
 
 func (gmx *Gomuks) SetupLog() {
+	if gmx.TUI != nil {
+		// Remove stdout and stderr writers if TUI is enabled
+		gmx.Config.Logging.Writers = slices.DeleteFunc(gmx.Config.Logging.Writers, func(config zeroconfig.WriterConfig) bool {
+			return config.Type == zeroconfig.WriterTypeStdout || config.Type == zeroconfig.WriterTypeStderr
+		})
+	}
 	gmx.Log = exerrors.Must(gmx.Config.Logging.Compile())
 	exzerolog.SetupDefaults(gmx.Log)
 }
@@ -261,7 +274,11 @@ func (gmx *Gomuks) Run() {
 	gmx.StartServer()
 	gmx.StartClient()
 	gmx.Log.Info().Msg("Initialization complete")
-	gmx.WaitForInterrupt()
+	if gmx.TUI != nil {
+		gmx.TUI.Run()
+	} else {
+		gmx.WaitForInterrupt()
+	}
 	gmx.Log.Info().Msg("Shutting down...")
 	gmx.DirectStop()
 	gmx.Log.Info().Msg("Shutdown complete")

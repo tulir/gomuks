@@ -238,6 +238,9 @@ func (gmx *Gomuks) Authenticate(w http.ResponseWriter, r *http.Request) {
 	if gmx.DisableAuth {
 		w.WriteHeader(http.StatusOK)
 		return
+	} else if gmx.Config.Web.Username == "" || gmx.Config.Web.PasswordHash == "" {
+		w.WriteHeader(http.StatusForbidden)
+		return
 	}
 	jsonOutput := r.URL.Query().Get("output") == "json"
 	allowPrompt := r.URL.Query().Get("no_prompt") != "true"

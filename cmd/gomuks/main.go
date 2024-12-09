@@ -25,12 +25,14 @@ import (
 
 	"go.mau.fi/gomuks/pkg/gomuks"
 	"go.mau.fi/gomuks/pkg/hicli"
+	"go.mau.fi/gomuks/tui"
 	"go.mau.fi/gomuks/version"
 	"go.mau.fi/gomuks/web"
 )
 
 var wantHelp, _ = flag.MakeHelpFlag()
 var wantVersion = flag.MakeFull("v", "version", "View gomuks version and quit.", "false").Bool()
+var wantTUI = flag.MakeFull("t", "tui", "Open gomuks terminal", "false").Bool()
 
 func main() {
 	hicli.InitialDeviceDisplayName = "gomuks web"
@@ -59,5 +61,8 @@ func main() {
 	gmx.LinkifiedVersion = version.LinkifiedVersion
 	gmx.BuildTime = version.ParsedBuildTime
 	gmx.FrontendFS = web.Frontend
+	if *wantTUI {
+		gmx.TUI = tui.New(gmx)
+	}
 	gmx.Run()
 }
