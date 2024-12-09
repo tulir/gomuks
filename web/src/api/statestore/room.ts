@@ -90,10 +90,12 @@ export class RoomStateStore {
 	timelineCache: (MemDBEvent | null)[] = []
 	state: Map<EventType, Map<string, EventRowID>> = new Map()
 	stateLoaded = false
+	typing: UserID[] = []
 	fullMembersLoaded = false
 	readonly eventsByRowID: Map<EventRowID, MemDBEvent> = new Map()
 	readonly eventsByID: Map<EventID, MemDBEvent> = new Map()
 	readonly timelineSub = new Subscribable()
+	readonly typingSub = new Subscribable()
 	readonly stateSubs = new MultiSubscribable()
 	readonly eventSubs = new MultiSubscribable()
 	readonly requestedEvents: Set<EventID> = new Set()
@@ -416,6 +418,11 @@ export class RoomStateStore {
 		if (decrypted.preview_event_rowid) {
 			this.meta.current.preview_event_rowid = decrypted.preview_event_rowid
 		}
+	}
+
+	applyTyping(users: string[]) {
+		this.typing = users
+		this.typingSub.notify()
 	}
 
 	doGarbageCollection() {

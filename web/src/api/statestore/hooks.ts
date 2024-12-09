@@ -27,6 +27,10 @@ export function useRoomTimeline(room: RoomStateStore): (MemDBEvent | null)[] {
 	)
 }
 
+export function useRoomTyping(room: RoomStateStore): string[] {
+	return useSyncExternalStore(room.typingSub.subscribe, () => room.typing)
+}
+
 export function useRoomState(
 	room?: RoomStateStore, type?: EventType, stateKey: string | undefined = "",
 ): MemDBEvent | null {
