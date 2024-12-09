@@ -163,7 +163,7 @@ const TimelineEvent = ({ evt, prevEvt, disableMenu }: TimelineEventProps) => {
 			<span className="event-time" title={editTime ? `${fullTime} - ${editTime}` : fullTime}>{shortTime}</span>
 		</div>}
 		<div className="event-content">
-			{isEventID(replyTo) && BodyType !== HiddenEvent ? <ReplyIDBody
+			{isEventID(replyTo) && BodyType !== HiddenEvent && !evt.redacted_by ? <ReplyIDBody
 				room={roomCtx.store}
 				eventID={replyTo}
 				isThread={relatesTo?.rel_type === "m.thread"}
