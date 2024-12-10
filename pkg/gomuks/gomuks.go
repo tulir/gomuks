@@ -217,9 +217,11 @@ func (gmx *Gomuks) DirectStop() {
 		closer(websocket.StatusServiceRestart, "Server shutting down")
 	}
 	gmx.Client.Stop()
-	err := gmx.Server.Close()
-	if err != nil {
-		gmx.Log.Error().Err(err).Msg("Failed to close server")
+	if gmx.Server != nil {
+		err := gmx.Server.Close()
+		if err != nil {
+			gmx.Log.Error().Err(err).Msg("Failed to close server")
+		}
 	}
 }
 
