@@ -374,11 +374,17 @@ const MessageComposer = () => {
 		// checking scrollHeight seems to be the only reliable way to get the size of the text.
 		textInput.current.rows = 1
 		const newTextRows = Math.min((textInput.current.scrollHeight - 16) / 20, MAX_TEXTAREA_ROWS)
+		if (newTextRows === MAX_TEXTAREA_ROWS) {
+			textInput.current.style.overflowY = "auto"
+		} else {
+			// There's a weird 1px scroll when using line-height, so set overflow to hidden when it's not needed
+			textInput.current.style.overflowY = "hidden"
+		}
 		textInput.current.rows = newTextRows
 		textRows.current = newTextRows
 		// This has to be called unconditionally, because setting rows = 1 messes up the scroll state otherwise
 		roomCtx.scrollToBottom()
-	}, [state, roomCtx])
+	}, [state.text, roomCtx])
 	// Saving to localStorage could be done in the reducer, but that's not very proper, so do it in an effect.
 	useEffect(() => {
 		roomCtx.isEditing.emit(editing !== null)
