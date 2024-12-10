@@ -384,7 +384,9 @@ const MessageComposer = () => {
 		textRows.current = newTextRows
 		// This has to be called unconditionally, because setting rows = 1 messes up the scroll state otherwise
 		roomCtx.scrollToBottom()
-	}, [state.text, roomCtx])
+		// scrollToBottom needs to be called when replies/attachments/etc change,
+		// so listen to state instead of only state.text
+	}, [state, roomCtx])
 	// Saving to localStorage could be done in the reducer, but that's not very proper, so do it in an effect.
 	useEffect(() => {
 		roomCtx.isEditing.emit(editing !== null)
