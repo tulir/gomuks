@@ -7,7 +7,7 @@ div.message-composer {
 	grid-area: input;
 	/* WebKit/Safari requires this hack for some reason, works fine without in other browsers */
 	min-height: 2.25rem;
-	z-index: 999;
+	z-index: 1;
 	box-shadow: 0 0 1rem var(--modal-box-shadow-color);
 
 	blockquote.reply-body > pre {
