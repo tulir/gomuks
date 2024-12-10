@@ -1,5 +1,5 @@
 div.message-composer {
-	margin: -1rem 1.6rem 0 1.6rem;
+	margin: -1rem var(--timeline-horizontal-padding) 0;
 	background-color: var(--composer-background-color);
 	border: 1px solid var(--border-color);
 	border-radius: 0.5rem;

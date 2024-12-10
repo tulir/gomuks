@@ -16,7 +16,7 @@ main.matrix-main {
 			/ var(--room-list-width) 0   1fr      0   var(--right-panel-width);
 	}
 
-	@media screen and (max-width: 750px) {
+	@media screen and (max-width: 45rem) {
 		&.right-panel-open {
 			grid-template: "rightpanel" 1fr / 1fr;
 			> div.room-list-wrapper {

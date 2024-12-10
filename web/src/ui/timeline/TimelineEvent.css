@@ -1,7 +1,7 @@
 div.timeline-event {
-	width: calc(100% - 2 * 1.6rem);
-	max-width: calc(100% - 2 * 1.6rem);
-	padding: 0 1.6rem;
+	width: calc(100% - 2 * var(--timeline-horizontal-padding));
+	max-width: calc(100% - 2 * var(--timeline-horizontal-padding));
+	padding: 0 var(--timeline-horizontal-padding);
 	display: grid;
 	grid-template:
 		"cmc                          cmc                        cmc      cmc"    0

@@ -1,7 +1,7 @@
 div.typing-notifications {
 	grid-area: typing;
 	height: 1.6rem;
-	margin: 0 1.6rem;
+	margin: 0 var(--timeline-horizontal-padding);
 	display: flex;
 	gap: 0.5rem;
 	align-items: center;

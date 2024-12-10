@@ -5,8 +5,8 @@ div.autocompletions-wrapper {
 
 div.autocompletions {
 	position: absolute;
-	bottom: 1.2rem;
-	left: 1.6rem;
+	bottom: 1.25rem;
+	left: var(--timeline-horizontal-padding);
 	border: 1px solid var(--border-color);
 	border-radius: 0.5rem;
 	box-shadow: 0 0 1rem var(--modal-box-shadow-color);
