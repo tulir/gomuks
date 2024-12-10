@@ -100,10 +100,10 @@ export const ReplyBody = ({ room, event, onClose, isThread, isEditing }: ReplyBo
 			<span className={`event-sender sender-color-${userColorIndex}`}>
 				{getDisplayname(event.sender, memberEvtContent)}
 			</span>
-			{onClose && <button className="close-reply" onClick={onClose}><CloseIcon/></button>}
 		</div>
 		<ContentErrorBoundary>
 			<BodyType room={room} event={event} sender={memberEvt}/>
 		</ContentErrorBoundary>
+		{onClose && <button className="close-reply" onClick={onClose}><CloseIcon/></button>}
 	</blockquote>
 }
