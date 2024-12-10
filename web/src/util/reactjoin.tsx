@@ -18,20 +18,13 @@ import { Fragment, JSX } from "react"
 export function humanJoinReact(
 	arr: (string | JSX.Element)[],
 	sep: string | JSX.Element = ", ",
-	sep2: string | JSX.Element = " and ",
 	lastSep: string | JSX.Element = " and ",
 ): JSX.Element[] {
-	return arr.map((elem, idx) => {
-		let separator = sep
-		if (idx === arr.length - 2) {
-			separator = (arr.length === 2) ? sep2 : lastSep
-		}
-		return <Fragment key={idx}>
+	return arr.map((elem, idx) =>
+		<Fragment key={idx}>
 			{elem}
-			{idx < arr.length - 1 ? separator : null}
-		</Fragment>
-	})
+			{idx < arr.length - 1 ? (idx === arr.length - 2 ? lastSep : sep) : null}
+		</Fragment>)
 }
 
-export const oxfordHumanJoinReact = (arr: (string | JSX.Element)[]) => humanJoinReact(arr, ", ", " and ", ", and ")
-export const joinReact = (arr: (string | JSX.Element)[]) => humanJoinReact(arr, " ", " ", " ")
+export const joinReact = (arr: (string | JSX.Element)[]) => humanJoinReact(arr, " ", " ")
