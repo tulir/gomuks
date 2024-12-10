@@ -43,7 +43,7 @@ div.message-composer {
 
 	> div.composer-media, > div.composer-location {
 		display: flex;
-		padding: .5rem;
+		padding: .5rem .5rem 0;
 		justify-content: space-between;
 
 		> button {

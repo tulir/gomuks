@@ -22,6 +22,10 @@ blockquote.reply-body {
 		}
 	}
 
+	&.composer {
+		margin: .5rem .5rem 0;
+	}
+
 	&:hover, &.composer {
 		> div.message-text {
 			color: var(--text-color);

@@ -27,7 +27,7 @@
 	--button-hover-color: rgba(0, 0, 0, .2);
 	--light-hover-color: rgba(0, 0, 0, .1);
 
-	--composer-background-color: #eeeeee;
+	--composer-background-color: #f0f0f0;
 
 	--timeline-hover-bg-color: #eee;
 	--timeline-highlight-bg-color: rgba(255, 255, 0, .1);
@@ -44,7 +44,7 @@
 	--room-list-entry-selected-color: rgba(0, 0, 0, 0.125);
 
 	--dimmed-overlay-background-color: rgba(0, 0, 0, .75);
-	--modal-box-shadow-color: rgba(0, 0, 0, 0.15);
+	--modal-box-shadow-color: rgba(0, 0, 0, 0.1);
 
 	--emoji-selected-border-color: #cec;
 

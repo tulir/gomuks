@@ -30,7 +30,7 @@ const TypingNotifications = () => {
 	const typing = useRoomTyping(room).filter(u => u !== client.userID)
 	let loader: JSX.Element | null = null
 	if (typing.length > 0) {
-		loader = <PulseLoader size={5} color="var(--primary-color)" />
+		loader = <PulseLoader speedMultiplier={0.5} size={5} color="var(--primary-color)" />
 	}
 	const avatars: JSX.Element[] = []
 	const memberNames: string[] = []
