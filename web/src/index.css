@@ -27,6 +27,8 @@
 	--button-hover-color: rgba(0, 0, 0, .2);
 	--light-hover-color: rgba(0, 0, 0, .1);
 
+	--composer-background-color: #f0f0f0;
+
 	--timeline-hover-bg-color: #eee;
 	--timeline-highlight-bg-color: rgba(255, 255, 0, .1);
 	--timeline-highlight-hover-bg-color: #eec;
@@ -42,7 +44,7 @@
 	--room-list-entry-selected-color: rgba(0, 0, 0, 0.125);
 
 	--dimmed-overlay-background-color: rgba(0, 0, 0, .75);
-	--modal-box-shadow-color: rgba(0, 0, 0, 0.15);
+	--modal-box-shadow-color: rgba(0, 0, 0, 0.1);
 
 	--emoji-selected-border-color: #cec;
 
@@ -79,6 +81,11 @@
 	--timeline-message-gap-small-event: 0;
 	--timeline-sender-name-timestamp-gap: .25rem;
 	--timeline-sender-name-content-gap: 0;
+	--timeline-horizontal-padding: 1.5rem;
+
+	@media screen and (max-width: 45rem) {
+		--timeline-horizontal-padding: .5rem;
+	}
 
 	@media (prefers-color-scheme: dark) {
 		color-scheme: dark;
@@ -103,6 +110,8 @@
 		--button-hover-color: rgba(255, 255, 255, .2);
 		--light-hover-color: rgba(255, 255, 255, .1);
 
+		--composer-background-color: #0a0a0a;
+
 		--timeline-hover-bg-color: #111;
 		--timeline-highlight-bg-color: rgba(255, 255, 0, .1);
 		--timeline-highlight-hover-bg-color: #331;
@@ -115,7 +124,7 @@
 		--room-list-entry-hover-color: rgba(255, 255, 255, 0.075);
 		--room-list-entry-selected-color: rgba(255, 255, 255, 0.125);
 
-		--modal-box-shadow-color: rgba(255, 255, 255, 0.1);
+		--modal-box-shadow-color: rgba(255, 255, 255, 0.04);
 
 		--emoji-selected-border-color: #131;
 

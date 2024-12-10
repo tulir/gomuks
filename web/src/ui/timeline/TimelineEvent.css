@@ -1,14 +1,16 @@
 div.timeline-event {
 	width: 100%;
 	max-width: 100%;
+	box-sizing: border-box;
+	padding: 0 var(--timeline-horizontal-padding);
 	display: grid;
-	margin-top: var(--timeline-message-gap);
 	grid-template:
 		"cmc                          cmc                        cmc      cmc"    0
 		"avatar                       gap                        sender   sender" auto
 		"avatar                       gap                        content  status" auto
 		/ var(--timeline-avatar-size) var(--timeline-avatar-gap) 1fr      2rem;
 	contain: layout;
+	margin-top: var(--timeline-message-gap);
 
 	&.highlight {
 		background-color: var(--timeline-highlight-bg-color);
@@ -209,6 +211,7 @@ div.date-separator {
 	display: flex;
 	align-items: center;
 	gap: .5rem;
+	padding: calc(var(--timeline-message-gap)/2) 0;
 
 	> hr {
 		flex: 1;
