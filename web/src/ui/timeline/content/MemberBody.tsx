@@ -30,8 +30,9 @@ function useChangeDescription(
 		alt=""
 	/>
 	const targetElem = <>
-		{content.avatar_url && targetAvatar}
-		<span className="name">{content.displayname ?? target}</span>
+		{content.avatar_url && targetAvatar} <span className="name">
+			{content.displayname ?? target}
+		</span>
 	</>
 	if (content.membership === prevContent?.membership) {
 		if (content.displayname !== prevContent.displayname) {
@@ -43,10 +44,9 @@ function useChangeDescription(
 				return <>set their displayname to <span className="name">{content.displayname}</span></>
 			}
 			return <>
-				changed their displayname from
-				<span className="name">{prevContent.displayname}</span>
-				to
-				<span className="name">{content.displayname}</span>
+				changed their displayname from <span className="name">
+					{prevContent.displayname}
+				</span> to <span className="name">{content.displayname}</span>
 			</>
 		} else if (content.avatar_url !== prevContent.avatar_url) {
 			if (!content.avatar_url) {
@@ -95,11 +95,12 @@ const MemberBody = ({ event, sender }: EventContentProps) => {
 	const content = event.content as MemberEventContent
 	const prevContent = event.unsigned.prev_content as MemberEventContent | undefined
 	return <div className="member-body">
-		<span className="name sender-name">{sender?.content.displayname ?? event.sender}</span>
-		<span className="change-description">
+		<span className="name sender-name">
+			{sender?.content.displayname ?? event.sender}
+		</span> <span className="change-description">
 			{useChangeDescription(event.sender, event.state_key as UserID, content, prevContent)}
 		</span>
-		{content.reason ? <span className="reason">for {content.reason}</span> : null}
+		{content.reason ? <span className="reason"> for {content.reason}</span> : null}
 	</div>
 }
 

@@ -24,23 +24,13 @@ div.redacted-body, div.decryption-pending-body {
 }
 
 div.member-body {
-	display: flex;
-	align-items: center;
-	gap: .25rem;
-
-	span.name {
+	span.name, span.reason {
 		unicode-bidi: isolate;
-		max-width: 40ch;
-		text-wrap: nowrap;
-		overflow: hidden;
-		text-overflow: ellipsis;
 	}
 
-	> span.change-description {
-		display: flex;
-		align-items: center;
-		gap: .25rem;
-		text-wrap: nowrap;
+	img {
+		/* Hacky vertical align with text. Can't use flex because it breaks line wrapping */
+		margin-bottom: -.125rem;
 	}
 }
 
