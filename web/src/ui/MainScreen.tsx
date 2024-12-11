@@ -259,10 +259,12 @@ const MainScreen = () => {
 		}
 	}, [client.userID])
 	const [roomListWidth, resizeHandle1] = useResizeHandle(
-		300, 48, 900, "roomListWidth", { className: "room-list-resizer" },
+		300, 48, Math.min(900, window.innerWidth * 0.4),
+		"roomListWidth", { className: "room-list-resizer" },
 	)
 	const [rightPanelWidth, resizeHandle2] = useResizeHandle(
-		300, 100, 900, "rightPanelWidth", { className: "right-panel-resizer", inverted: true },
+		300, 100, Math.min(900, window.innerWidth * 0.4),
+		"rightPanelWidth", { className: "right-panel-resizer", inverted: true },
 	)
 	const extraStyle = {
 		["--room-list-width" as string]: `${roomListWidth}px`,
