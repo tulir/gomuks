@@ -13,30 +13,35 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
+import { IntlShape, useIntl } from "react-intl"
 import { PinnedEventsContent } from "@/api/types"
 import { listDiff } from "@/util/diff.ts"
-import { humanJoin } from "@/util/join.ts"
 import EventContentProps from "./props.ts"
 
-function renderPinChanges(content: PinnedEventsContent, prevContent?: PinnedEventsContent): string {
+function renderPinChanges(intl: IntlShape, content: PinnedEventsContent, prevContent?: PinnedEventsContent): string {
+	const list = (items: ReadonlyArray<string>) => intl.formatList(items, { type: "conjunction" })
 	const [added, removed] = listDiff(content.pinned ?? [], prevContent?.pinned ?? [])
-	if (added.length) {
-		if (removed.length) {
-			return `pinned ${humanJoin(added)} and unpinned ${humanJoin(removed)}`
+	if (added.length || removed.length) {
+		const items = []
+		if (added.length) {
+			items.push(`pinned ${list(added)}`)
 		}
-		return `pinned ${humanJoin(added)}`
-	} else if (removed.length) {
-		return `unpinned ${humanJoin(removed)}`
+		if (removed.length) {
+			items.push(`unpinned ${list(removed)}`)
+		}
+		return list(items)
 	} else {
 		return "sent a no-op pin event"
 	}
 }
 
 const PinnedEventsBody = ({ event, sender }: EventContentProps) => {
+
+	const intl = useIntl()
 	const content = event.content as PinnedEventsContent
 	const prevContent = event.unsigned.prev_content as PinnedEventsContent | undefined
 	return <div className="pinned-events-body">
-		{sender?.content.displayname ?? event.sender} {renderPinChanges(content, prevContent)}
+		{sender?.content.displayname ?? event.sender} {renderPinChanges(intl, content, prevContent)}
 	</div>
 }
 

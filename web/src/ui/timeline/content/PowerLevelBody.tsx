@@ -13,9 +13,9 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
+import { FormattedList } from "react-intl"
 import { PowerLevelEventContent } from "@/api/types"
 import { objectDiff } from "@/util/diff.ts"
-import { humanJoin } from "@/util/join.ts"
 import EventContentProps from "./props.ts"
 
 function intDiff(messageParts: TemplateStringsArray, oldVal: number, newVal: number): string | null {
@@ -68,7 +68,8 @@ const PowerLevelBody = ({ event, sender }: EventContentProps) => {
 	const content = event.content as PowerLevelEventContent
 	const prevContent = event.unsigned.prev_content as PowerLevelEventContent | undefined
 	return <div className="power-level-body">
-		{sender?.content.displayname ?? event.sender} {humanJoin(renderPowerLevels(content, prevContent))}
+		{sender?.content.displayname ?? event.sender}
+		<FormattedList type="conjunction" value={renderPowerLevels(content, prevContent)}/>
 	</div>
 }
 

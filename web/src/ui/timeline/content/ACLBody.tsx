@@ -14,14 +14,14 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import { Fragment, JSX } from "react"
+import { FormattedList } from "react-intl"
 import { ACLEventContent } from "@/api/types"
 import { listDiff } from "@/util/diff.ts"
-import { humanJoinReact, joinReact } from "@/util/reactjoin.tsx"
 import { ensureArray, ensureStringArray } from "@/util/validation.ts"
 import EventContentProps from "./props.ts"
 
-function joinServers(arr: string[]): JSX.Element[] {
-	return humanJoinReact(arr.map(item => <code className="server-name">{item}</code>))
+function joinServers(arr: string[]): JSX.Element {
+	return <FormattedList type="conjunction" value={(arr.map(item => <code className="server-name">{item}</code>))}/>
 }
 
 function makeACLChangeString(
@@ -47,7 +47,7 @@ function makeACLChangeString(
 			<>Participating from a server using an IP literal hostname is now {newAllowIP ? "allowed" : "banned"}.</>,
 		)
 	}
-	return joinReact(parts)
+	return <FormattedList type="conjunction" value={parts}/>
 }
 
 const ACLBody = ({ event, sender }: EventContentProps) => {
@@ -68,9 +68,9 @@ const ACLBody = ({ event, sender }: EventContentProps) => {
 	}
 	let changeString = makeACLChangeString(addedAllow, removedAllow, addedDeny, removedDeny, prevAllowIP, newAllowIP)
 	if (ensureArray(content.allow).length === 0) {
-		changeString = [<Fragment key="yay">
+		changeString = <Fragment key="yay">
 			🎉 All servers are banned from participating! This room can no longer be used.
-		</Fragment>]
+		</Fragment>
 	}
 	return <div className="acl-body">
 		{sender?.content.displayname ?? event.sender} changed the server ACLs: {changeString}
