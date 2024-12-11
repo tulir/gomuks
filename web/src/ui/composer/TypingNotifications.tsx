@@ -52,9 +52,9 @@ const TypingNotifications = () => {
 
 	let description: JSX.Element | null = null
 	if (typing.length > 4) {
-		description = <div>{typing.length} users are typing</div>
+		description = <div className="description">{typing.length} users are typing</div>
 	} else if (typing.length > 0) {
-		description = <div>
+		description = <div className="description">
 			{humanJoinReact(memberNames)}
 			{typing.length === 1 ? " is " : " are "}
 			typing

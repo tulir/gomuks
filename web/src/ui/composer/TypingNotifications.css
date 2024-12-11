@@ -6,6 +6,7 @@ div.typing-notifications {
 	gap: 0.5rem;
 	align-items: center;
 	font-size: 0.9rem;
+	overflow: hidden;
 
 	> div.avatars {
 		display: flex;
@@ -15,5 +16,12 @@ div.typing-notifications {
 		> img {
 			margin-left: -0.35rem;
 		}
+	}
+
+	> div.description {
+		text-wrap: nowrap;
+		/* TODO detect overflow and show "x users are typing" instead? */
+		overflow: hidden;
+		text-overflow: ellipsis;
 	}
 }
