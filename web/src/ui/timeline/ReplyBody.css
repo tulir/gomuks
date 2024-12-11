@@ -62,16 +62,21 @@ blockquote.reply-body {
 			margin-right: .25rem;
 		}
 
-		> button.close-reply {
-			display: flex;
+		> div.buttons {
 			margin-left: auto;
-			align-items: center;
-			border-radius: .25rem;
-			padding: 0;
+			display: flex;
+			gap: .25rem;
 
-			> svg {
-				height: 24px;
-				width: 24px;
+			> button {
+				display: flex;
+				align-items: center;
+				border-radius: .25rem;
+				padding: 0;
+
+				> svg {
+					height: 24px;
+					width: 24px;
+				}
 			}
 		}
 	}

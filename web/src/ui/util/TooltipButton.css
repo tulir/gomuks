@@ -1,0 +1,36 @@
+button.with-tooltip {
+	position: relative;
+
+	div.button-tooltip {
+		display: none;
+		position: absolute;
+		z-index: 5;
+		background-color: white;
+		border: 1px solid var(--border-color);
+		padding: .25rem;
+		border-radius: .25rem;
+		text-wrap: wrap;
+		width: max-content;
+
+		&.button-tooltip-top {
+			bottom: 100%;
+			margin-bottom: .25rem;
+		}
+		&.button-tooltip-bottom {
+			top: 100%;
+			margin-top: .25rem;
+		}
+		&.button-tooltip-left {
+			right: 100%;
+			margin-right: .25rem;
+		}
+		&.button-tooltip-right {
+			left: 100%;
+			margin-left: .25rem;
+		}
+	}
+
+	&:hover > div.button-tooltip {
+		display: block;
+	}
+}

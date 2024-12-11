@@ -19,8 +19,13 @@ import { RoomStateStore, useRoomEvent, useRoomState } from "@/api/statestore"
 import type { EventID, MemDBEvent, MemberEventContent } from "@/api/types"
 import { getDisplayname } from "@/util/validation.ts"
 import ClientContext from "../ClientContext.ts"
+import TooltipButton from "../util/TooltipButton.tsx"
 import { ContentErrorBoundary, getBodyType } from "./content"
 import CloseIcon from "@/icons/close.svg?react"
+import NotificationsOffIcon from "@/icons/notifications-off.svg?react"
+import NotificationsIcon from "@/icons/notifications.svg?react"
+import ReplyIcon from "@/icons/reply.svg?react"
+import ThreadIcon from "@/icons/thread.svg?react"
 import "./ReplyBody.css"
 
 interface ReplyBodyProps {
@@ -29,6 +34,10 @@ interface ReplyBodyProps {
 	isThread: boolean
 	isEditing?: boolean
 	onClose?: (evt: React.MouseEvent) => void
+	isSilent?: boolean
+	onSetSilent?: (evt: React.MouseEvent) => void
+	isExplicitInThread?: boolean
+	onSetExplicitInThread?: (evt: React.MouseEvent) => void
 }
 
 interface ReplyIDBodyProps {
@@ -68,7 +77,9 @@ const onClickReply = (evt: React.MouseEvent) => {
 	}
 }
 
-export const ReplyBody = ({ room, event, onClose, isThread, isEditing }: ReplyBodyProps) => {
+export const ReplyBody = ({
+	room, event, onClose, isThread, isEditing, isSilent, onSetSilent, isExplicitInThread, onSetExplicitInThread,
+}: ReplyBodyProps) => {
 	const memberEvt = useRoomState(room, "m.room.member", event.sender)
 	if (!memberEvt) {
 		use(ClientContext)?.requestMemberEvent(room, event.sender)
@@ -100,7 +111,29 @@ export const ReplyBody = ({ room, event, onClose, isThread, isEditing }: ReplyBo
 			<span className={`event-sender sender-color-${userColorIndex}`}>
 				{getDisplayname(event.sender, memberEvtContent)}
 			</span>
-			{onClose && <button className="close-reply" onClick={onClose}><CloseIcon/></button>}
+			{onClose && <div className="buttons">
+				{onSetSilent && (isExplicitInThread || !isThread) && <TooltipButton
+					tooltipText={isSilent
+						? "Click to enable pinging the original author"
+						: "Click to disable pinging the original author"}
+					tooltipDirection="left"
+					className="silent-reply"
+					onClick={onSetSilent}
+				>
+					{isSilent ? <NotificationsOffIcon /> : <NotificationsIcon />}
+				</TooltipButton>}
+				{isThread && onSetExplicitInThread && <TooltipButton
+					tooltipText={isExplicitInThread
+						? "Click to respond in thread without replying to a specific message"
+						: "Click to reply explicitly in thread"}
+					tooltipDirection="left"
+					className="thread-explicit-reply"
+					onClick={onSetExplicitInThread}
+				>
+					{isExplicitInThread ? <ReplyIcon /> : <ThreadIcon />}
+				</TooltipButton>}
+				{onClose && <button className="close-reply" onClick={onClose}><CloseIcon/></button>}
+			</div>}
 		</div>
 		<ContentErrorBoundary>
 			<BodyType room={room} event={event} sender={memberEvt}/>

@@ -60,15 +60,30 @@ export interface ComposerState {
 	media: MediaMessageEventContent | null
 	location: ComposerLocationValue | null
 	replyTo: EventID | null
+	silentReply: boolean
+	explicitReplyInThread: boolean
 	uninited?: boolean
 }
 
 const MAX_TEXTAREA_ROWS = 10
 
-const emptyComposer: ComposerState = { text: "", media: null, replyTo: null, location: null }
+const emptyComposer: ComposerState = {
+	text: "",
+	media: null,
+	replyTo: null,
+	location: null,
+	silentReply: false,
+	explicitReplyInThread: false,
+}
 const uninitedComposer: ComposerState = { ...emptyComposer, uninited: true }
-const composerReducer = (state: ComposerState, action: Partial<ComposerState>) =>
-	({ ...state, ...action, uninited: undefined })
+const composerReducer = (
+	state: ComposerState,
+	action: Partial<ComposerState> | ((current: ComposerState) => Partial<ComposerState>),
+) => ({
+	...state,
+	...(typeof action === "function" ? action(state) : action),
+	uninited: undefined,
+})
 
 const draftStore = {
 	get: (roomID: RoomID): ComposerState | null => {
@@ -108,8 +123,24 @@ const MessageComposer = () => {
 		document.execCommand("insertText", false, text)
 	}, [])
 	roomCtx.setReplyTo = useCallback((evt: EventID | null) => {
-		setState({ replyTo: evt })
+		setState({ replyTo: evt, silentReply: false, explicitReplyInThread: false })
 		textInput.current?.focus()
+	}, [])
+	const setSilentReply = useCallback((newVal: boolean | React.MouseEvent) => {
+		if (typeof newVal === "boolean") {
+			setState({ silentReply: newVal })
+		} else {
+			newVal.stopPropagation()
+			setState(state => ({ silentReply: !state.silentReply }))
+		}
+	}, [])
+	const setExplicitReplyInThread = useCallback((newVal: boolean | React.MouseEvent) => {
+		if (typeof newVal === "boolean") {
+			setState({ explicitReplyInThread: newVal })
+		} else {
+			newVal.stopPropagation()
+			setState(state => ({ explicitReplyInThread: !state.explicitReplyInThread }))
+		}
 	}, [])
 	roomCtx.setEditing = useCallback((evt: MemDBEvent | null) => {
 		if (evt === null) {
@@ -128,6 +159,8 @@ const MessageComposer = () => {
 				? (evt.local_content?.edit_source ?? evtContent.body ?? "")
 				: "",
 			replyTo: null,
+			silentReply: false,
+			explicitReplyInThread: false,
 		})
 		textInput.current?.focus()
 	}, [room.roomID])
@@ -154,18 +187,20 @@ const MessageComposer = () => {
 				event_id: editing.event_id,
 			}
 		} else if (replyToEvt) {
-			mentions.user_ids.push(replyToEvt.sender)
+			const isThread = replyToEvt.content?.["m.relates_to"]?.rel_type === "m.thread"
+				&& typeof replyToEvt.content?.["m.relates_to"]?.event_id === "string"
+			if (!state.silentReply && (!isThread || state.explicitReplyInThread)) {
+				mentions.user_ids.push(replyToEvt.sender)
+			}
 			relates_to = {
 				"m.in_reply_to": {
 					event_id: replyToEvt.event_id,
 				},
 			}
-			if (replyToEvt.content?.["m.relates_to"]?.rel_type === "m.thread"
-				&& typeof replyToEvt.content?.["m.relates_to"]?.event_id === "string") {
+			if (isThread) {
 				relates_to.rel_type = "m.thread"
 				relates_to.event_id = replyToEvt.content?.["m.relates_to"].event_id
-				// TODO set this to true if replying to the last event in a thread?
-				relates_to.is_falling_back = false
+				relates_to.is_falling_back = !state.explicitReplyInThread
 			}
 		}
 		let base_content: MessageEventContent | undefined
@@ -465,6 +500,10 @@ const MessageComposer = () => {
 				event={replyToEvt}
 				onClose={closeReply}
 				isThread={replyToEvt.content?.["m.relates_to"]?.rel_type === "m.thread"}
+				isSilent={state.silentReply}
+				onSetSilent={setSilentReply}
+				isExplicitInThread={state.explicitReplyInThread}
+				onSetExplicitInThread={setExplicitReplyInThread}
 			/>}
 			{editing && <ReplyBody
 				room={room}
