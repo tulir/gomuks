@@ -38,7 +38,7 @@ func main() {
 	exhttp.AutoAllowCORS = false
 	flag.SetHelpTitles(
 		"gomuks - A Matrix client written in Go.",
-		"gomuks [-hvl]",
+		"gomuks [-hv] [--listen <listen_address>]",
 	)
 	err := flag.Parse()
 
