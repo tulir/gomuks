@@ -54,7 +54,7 @@ func main() {
 		os.Exit(0)
 	}
 
-	
+
 	gmx := gomuks.NewGomuks()
 	if *wantListen != "" {
 		gmx.Config.Web.ListenAddress = *wantListen
