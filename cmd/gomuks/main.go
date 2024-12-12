@@ -31,13 +31,14 @@ import (
 
 var wantHelp, _ = flag.MakeHelpFlag()
 var wantVersion = flag.MakeFull("v", "version", "View gomuks version and quit.", "false").Bool()
+var wantListen	= flag.MakeFull("l", "listen", "Set webserver listen address", "").String()
 
 func main() {
 	hicli.InitialDeviceDisplayName = "gomuks web"
 	exhttp.AutoAllowCORS = false
 	flag.SetHelpTitles(
 		"gomuks - A Matrix client written in Go.",
-		"gomuks [-hv]",
+		"gomuks [-hvl]",
 	)
 	err := flag.Parse()
 
@@ -53,7 +54,11 @@ func main() {
 		os.Exit(0)
 	}
 
+	
 	gmx := gomuks.NewGomuks()
+	if *wantListen != "" {
+		gmx.Config.Web.ListenAddress = *wantListen
+	}
 	gmx.Version = version.Version
 	gmx.Commit = version.Commit
 	gmx.LinkifiedVersion = version.LinkifiedVersion
