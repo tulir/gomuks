@@ -1,5 +1,4 @@
 div.timeline-view {
-	padding: 1rem 0 2rem 0;
 	overflow-y: scroll;
 
 	display: flex;
@@ -9,11 +8,16 @@ div.timeline-view {
 	> div.timeline-beginning {
 		display: flex;
 		justify-content: space-around;
+		margin-top: 1rem;
 
 		> button {
 			display: flex;
 			padding: .5rem 1rem;
 			gap: .5rem;
 		}
+	}
+
+	> div.timeline-list {
+		padding-bottom: 2rem;
 	}
 }
