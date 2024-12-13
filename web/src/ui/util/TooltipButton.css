@@ -5,7 +5,7 @@ button.with-tooltip {
 		display: none;
 		position: absolute;
 		z-index: 5;
-		background-color: white;
+		background-color: var(--background-color);
 		border: 1px solid var(--border-color);
 		padding: .25rem;
 		border-radius: .25rem;
