@@ -445,10 +445,14 @@ const MessageComposer = () => {
 		evt.stopPropagation()
 		roomCtx.setEditing(null)
 	}, [roomCtx])
+	const getEmojiPickerStyle = () => ({
+		bottom: (composerRef.current?.clientHeight ?? 32) + 4 + 24,
+		right: "var(--timeline-horizontal-padding)",
+	})
 	const openEmojiPicker = useEvent(() => {
 		openModal({
 			content: <EmojiPicker
-				style={{ bottom: (composerRef.current?.clientHeight ?? 32) + 2, right: "1rem" }}
+				style={getEmojiPickerStyle()}
 				room={roomCtx.store}
 				onSelect={(emoji: PartialEmoji) => setState({
 					text: state.text.slice(0, textInput.current?.selectionStart ?? 0)
@@ -462,7 +466,7 @@ const MessageComposer = () => {
 	const openGIFPicker = useEvent(() => {
 		openModal({
 			content: <GIFPicker
-				style={{ bottom: (composerRef.current?.clientHeight ?? 32) + 2, right: "1rem" }}
+				style={getEmojiPickerStyle()}
 				room={roomCtx.store}
 				onSelect={media => setState({ media })}
 			/>,

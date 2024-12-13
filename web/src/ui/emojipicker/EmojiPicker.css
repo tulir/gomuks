@@ -207,9 +207,9 @@ div.emoji-picker {
 
 @media screen and (max-width: 37.5rem) {
 	div.emoji-picker, div.gif-picker {
-		inset: 0 0 40px 0 !important;
+		inset: 0 0 3rem 0 !important;
 		width: 100%;
-		height: calc(100% - 40px);
+		height: calc(100% - 3rem);
 		border-radius: 0;
 	}
 
