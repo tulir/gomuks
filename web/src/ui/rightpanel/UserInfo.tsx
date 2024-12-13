@@ -73,7 +73,10 @@ const UserInfo = ({ userID }: UserInfoProps) => {
 		</>}
 		<DeviceList client={client} room={roomCtx?.store} userID={userID}/>
 		<hr/>
-		<UserInfoError errors={errors}/>
+		{errors?.length ? <>
+			<UserInfoError errors={errors}/>
+			<hr/>
+		</> : null}
 	</>
 }
 

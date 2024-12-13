@@ -13,12 +13,13 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useState, useTransition } from "react"
 import { ScaleLoader } from "react-spinners"
 import Client from "@/api/client.ts"
 import { RoomStateStore } from "@/api/statestore"
 import { ProfileDevice, ProfileEncryptionInfo, TrustState, UserID } from "@/api/types"
 import UserInfoError from "./UserInfoError.tsx"
+import DevicesIcon from "@/icons/devices.svg?react"
 import EncryptedOffIcon from "@/icons/encrypted-off.svg?react"
 import EncryptedQuestionIcon from "@/icons/encrypted-question.svg?react"
 import EncryptedIcon from "@/icons/encrypted.svg?react"
@@ -32,6 +33,18 @@ interface DeviceListProps {
 const DeviceList = ({ client, room, userID }: DeviceListProps) => {
 	const [view, setEncryptionInfo] = useState<ProfileEncryptionInfo | null>(null)
 	const [errors, setErrors] = useState<string[] | null>(null)
+	const [trackChangePending, startTransition] = useTransition()
+	const doTrackDeviceList = useCallback(() => {
+		startTransition(async () => {
+			try {
+				const resp = await client.rpc.trackUserDevices(userID)
+				setEncryptionInfo(resp)
+				setErrors(resp.errors)
+			} catch (err) {
+				setErrors([`${err}`])
+			}
+		})
+	}, [client, userID])
 	useEffect(() => {
 		setEncryptionInfo(null)
 		setErrors(null)
@@ -60,6 +73,9 @@ const DeviceList = ({ client, room, userID }: DeviceListProps) => {
 			<h4>Security</h4>
 			<p>{encryptionMessage}</p>
 			<p>This user's device list is not being tracked.</p>
+			<button className="action" onClick={doTrackDeviceList} disabled={trackChangePending}>
+				<DevicesIcon /> Start tracking device list
+			</button>
 			<UserInfoError errors={errors}/>
 		</div>
 	}

@@ -186,6 +186,10 @@ export default abstract class RPCClient {
 		return this.request("get_profile_encryption_info", { user_id })
 	}
 
+	trackUserDevices(user_id: UserID): Promise<ProfileEncryptionInfo> {
+		return this.request("track_user_devices", { user_id })
+	}
+
 	ensureGroupSessionShared(room_id: RoomID): Promise<boolean> {
 		return this.request("ensure_group_session_shared", { room_id })
 	}

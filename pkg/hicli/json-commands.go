@@ -90,6 +90,14 @@ func (h *HiClient) handleJSONCommand(ctx context.Context, req *JSONCommand) (any
 		return unmarshalAndCall(req.Data, func(params *getProfileParams) ([]id.RoomID, error) {
 			return h.GetMutualRooms(ctx, params.UserID)
 		})
+	case "track_user_devices":
+		return unmarshalAndCall(req.Data, func(params *getProfileParams) (*ProfileEncryptionInfo, error) {
+			err := h.TrackUserDevices(ctx, params.UserID)
+			if err != nil {
+				return nil, err
+			}
+			return h.GetProfileEncryptionInfo(ctx, params.UserID)
+		})
 	case "get_profile_encryption_info":
 		return unmarshalAndCall(req.Data, func(params *getProfileParams) (*ProfileEncryptionInfo, error) {
 			return h.GetProfileEncryptionInfo(ctx, params.UserID)

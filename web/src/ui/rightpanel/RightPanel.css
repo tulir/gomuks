@@ -135,6 +135,13 @@ div.right-panel-content.user {
 		display: inline-block;
 	}
 
+	button.action {
+		padding: .5rem 1rem;
+		width: 100%;
+		gap: .25rem;
+		justify-content: left;
+	}
+
 	div.devices > details > ul {
 		list-style-type: none;
 		padding: 0;
