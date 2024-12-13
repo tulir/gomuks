@@ -76,10 +76,11 @@ const TimelineEvent = ({ evt, prevEvt, disableMenu }: TimelineEventProps) => {
 	const openModal = use(ModalContext)
 	const [forceContextMenuOpen, setForceContextMenuOpen] = useState(false)
 	const onContextMenu = useCallback((mouseEvt: React.MouseEvent) => {
+		const targetElem = mouseEvt.target as HTMLElement
 		if (
 			!roomCtx.store.preferences.message_context_menu
-			|| mouseEvt.currentTarget.tagName === "A"
-			|| mouseEvt.currentTarget.tagName === "IMG"
+			|| targetElem.tagName === "A"
+			|| targetElem.tagName === "IMG"
 			|| window.getSelection()?.type === "Range"
 		) {
 			return
