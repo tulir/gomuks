@@ -31,7 +31,7 @@ import (
 
 var wantHelp, _ = flag.MakeHelpFlag()
 var wantVersion = flag.MakeFull("v", "version", "View gomuks version and quit.", "false").Bool()
-var wantListen	= flag.MakeFull("l", "listen", "Set webserver listen address", "").String()
+var wantListen = flag.MakeFull("l", "listen", "Set webserver listen address", "").String()
 
 func main() {
 	hicli.InitialDeviceDisplayName = "gomuks web"
@@ -53,7 +53,6 @@ func main() {
 		fmt.Println(version.Description)
 		os.Exit(0)
 	}
-
 
 	gmx := gomuks.NewGomuks()
 	if *wantListen != "" {
