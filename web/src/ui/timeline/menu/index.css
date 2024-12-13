@@ -16,7 +16,7 @@ div.event-hover-menu {
 	}
 }
 
-div.event-context-menu-extra {
+div.event-context-menu {
 	position: fixed;
 	background-color: var(--background-color);
 	border-radius: .5rem;
@@ -25,6 +25,11 @@ div.event-context-menu-extra {
 
 	display: flex;
 	flex-direction: column;
+
+	> hr {
+		margin: 0;
+		opacity: .2;
+	}
 
 	> button {
 		border-radius: 0;

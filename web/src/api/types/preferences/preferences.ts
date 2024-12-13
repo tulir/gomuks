@@ -135,6 +135,12 @@ export const preferences = {
 	// 	allowedContexts: anyContext,
 	// 	defaultValue: false,
 	// }),
+	message_context_menu: new Preference<boolean>({
+		displayName: "Right-click menu on messages",
+		description: "Show a context menu when right-clicking on messages.",
+		allowedContexts: anyContext,
+		defaultValue: true,
+	}),
 	custom_notification_sound: new Preference<ContentURI>({
 		displayName: "Custom notification sound",
 		description: "The mxc:// URI to a custom notification sound.",

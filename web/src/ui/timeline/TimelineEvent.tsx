@@ -13,17 +13,18 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import React, { use, useState } from "react"
+import React, { use, useCallback, useState } from "react"
 import { getAvatarURL, getMediaURL, getUserColorIndex } from "@/api/media.ts"
 import { useRoomState } from "@/api/statestore"
 import { MemDBEvent, MemberEventContent, UnreadType } from "@/api/types"
 import { getDisplayname, isEventID } from "@/util/validation.ts"
 import ClientContext from "../ClientContext.ts"
 import MainScreenContext from "../MainScreenContext.ts"
+import { ModalContext } from "../modal/Modal.tsx"
 import { useRoomContext } from "../roomview/roomcontext.ts"
 import { ReplyIDBody } from "./ReplyBody.tsx"
 import { ContentErrorBoundary, HiddenEvent, getBodyType, isSmallEvent } from "./content"
-import EventMenu from "./menu/EventMenu.tsx"
+import { EventFullMenu, EventHoverMenu, getModalStyleFromMouse } from "./menu"
 import ErrorIcon from "../../icons/error.svg?react"
 import PendingIcon from "../../icons/pending.svg?react"
 import SentIcon from "../../icons/sent.svg?react"
@@ -72,7 +73,21 @@ const TimelineEvent = ({ evt, prevEvt, disableMenu }: TimelineEventProps) => {
 	const roomCtx = useRoomContext()
 	const client = use(ClientContext)!
 	const mainScreen = use(MainScreenContext)
+	const openModal = use(ModalContext)
 	const [forceContextMenuOpen, setForceContextMenuOpen] = useState(false)
+	const onContextMenu = useCallback((mouseEvt: React.MouseEvent) => {
+		if (!roomCtx.store.preferences.message_context_menu) {
+			return
+		}
+		mouseEvt.preventDefault()
+		openModal({
+			content: <EventFullMenu
+				evt={evt}
+				roomCtx={roomCtx}
+				style={getModalStyleFromMouse(mouseEvt, 9 * 40)}
+			/>,
+		})
+	}, [openModal, evt, roomCtx])
 	const memberEvt = useRoomState(roomCtx.store, "m.room.member", evt.sender)
 	if (!memberEvt) {
 		client.requestMemberEvent(roomCtx.store, evt.sender)
@@ -129,9 +144,13 @@ const TimelineEvent = ({ evt, prevEvt, disableMenu }: TimelineEventProps) => {
 	const editTime = editEventTS ? `Edited at ${fullTimeFormatter.format(editEventTS)}` : null
 	const relatesTo = (evt.orig_content ?? evt.content)?.["m.relates_to"]
 	const replyTo = relatesTo?.["m.in_reply_to"]?.event_id
-	const mainEvent = <div data-event-id={evt.event_id} className={wrapperClassNames.join(" ")}>
+	const mainEvent = <div
+		data-event-id={evt.event_id}
+		className={wrapperClassNames.join(" ")}
+		onContextMenu={onContextMenu}
+	>
 		{!disableMenu && <div className={`context-menu-container ${forceContextMenuOpen ? "force-open" : ""}`}>
-			<EventMenu evt={evt} setForceOpen={setForceContextMenuOpen}/>
+			<EventHoverMenu evt={evt} setForceOpen={setForceContextMenuOpen}/>
 		</div>}
 		{renderAvatar && <div
 			className="sender-avatar"

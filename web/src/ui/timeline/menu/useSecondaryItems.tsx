@@ -13,29 +13,26 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import { CSSProperties, use, useCallback } from "react"
-import { RoomStateStore, useRoomState } from "@/api/statestore"
-import { MemDBEvent, PowerLevelEventContent } from "@/api/types"
-import ClientContext from "../../ClientContext.ts"
+import { use, useCallback } from "react"
+import Client from "@/api/client.ts"
+import { useRoomState } from "@/api/statestore"
+import { MemDBEvent } from "@/api/types"
 import { ModalCloseContext, ModalContext } from "../../modal/Modal.tsx"
 import { RoomContext, RoomContextData } from "../../roomview/roomcontext.ts"
 import JSONView from "../../util/JSONView.tsx"
 import ConfirmWithMessageModal from "./ConfirmWithMessageModal.tsx"
+import { getPending, getPowerLevels } from "./util.ts"
 import ViewSourceIcon from "@/icons/code.svg?react"
 import DeleteIcon from "@/icons/delete.svg?react"
 import PinIcon from "@/icons/pin.svg?react"
 import ReportIcon from "@/icons/report.svg?react"
 import UnpinIcon from "@/icons/unpin.svg?react"
 
-interface EventExtraMenuProps {
-	evt: MemDBEvent
-	room: RoomStateStore
-	style: CSSProperties
-}
-
-const EventExtraMenu = ({ evt, room, style }: EventExtraMenuProps) => {
-	const client = use(ClientContext)!
-	const userID = client.userID
+export const useSecondaryItems = (
+	client: Client,
+	roomCtx: RoomContextData,
+	evt: MemDBEvent,
+) => {
 	const closeModal = use(ModalCloseContext)
 	const openModal = use(ModalContext)
 	const onClickViewSource = useCallback(() => {
@@ -50,7 +47,7 @@ const EventExtraMenu = ({ evt, room, style }: EventExtraMenuProps) => {
 			dimmed: true,
 			boxed: true,
 			innerBoxClass: "confirm-message-modal",
-			content: <RoomContext value={new RoomContextData(room)}>
+			content: <RoomContext value={roomCtx}>
 				<ConfirmWithMessageModal
 					evt={evt}
 					title="Report Message"
@@ -64,13 +61,13 @@ const EventExtraMenu = ({ evt, room, style }: EventExtraMenuProps) => {
 				/>
 			</RoomContext>,
 		})
-	}, [evt, room, openModal, client])
+	}, [evt, roomCtx, openModal, client])
 	const onClickRedact = useCallback(() => {
 		openModal({
 			dimmed: true,
 			boxed: true,
 			innerBoxClass: "confirm-message-modal",
-			content: <RoomContext value={new RoomContextData(room)}>
+			content: <RoomContext value={roomCtx}>
 				<ConfirmWithMessageModal
 					evt={evt}
 					title="Remove Message"
@@ -84,32 +81,32 @@ const EventExtraMenu = ({ evt, room, style }: EventExtraMenuProps) => {
 				/>
 			</RoomContext>,
 		})
-	}, [evt, room, openModal, client])
+	}, [evt, roomCtx, openModal, client])
 	const onClickPin = useCallback(() => {
 		closeModal()
-		client.pinMessage(room, evt.event_id, true)
+		client.pinMessage(roomCtx.store, evt.event_id, true)
 			.catch(err => window.alert(`Failed to pin message: ${err}`))
-	}, [closeModal, client, room, evt.event_id])
+	}, [closeModal, client, roomCtx, evt.event_id])
 	const onClickUnpin = useCallback(() => {
 		closeModal()
-		client.pinMessage(room, evt.event_id, false)
+		client.pinMessage(roomCtx.store, evt.event_id, false)
 			.catch(err => window.alert(`Failed to unpin message: ${err}`))
-	}, [closeModal, client, room, evt.event_id])
+	}, [closeModal, client, roomCtx, evt.event_id])
 
-	const isPending = evt.event_id.startsWith("~")
-	const pendingTitle = isPending ? "Can't action messages that haven't been sent yet" : undefined
-	const plEvent = useRoomState(room, "m.room.power_levels", "")
+	const [isPending, pendingTitle] = getPending(evt)
+	useRoomState(roomCtx.store, "m.room.power_levels", "")
 	// We get pins from getPinnedEvents, but use the hook anyway to subscribe to changes
-	useRoomState(room, "m.room.pinned_events", "")
-	const pls = (plEvent?.content ?? {}) as PowerLevelEventContent
-	const pins = room.getPinnedEvents()
-	const ownPL = pls.users?.[userID] ?? pls.users_default ?? 0
+	useRoomState(roomCtx.store, "m.room.pinned_events", "")
+	const [pls, ownPL] = getPowerLevels(roomCtx.store, client)
+	const pins = roomCtx.store.getPinnedEvents()
 	const pinPL = pls.events?.["m.room.pinned_events"] ?? pls.state_default ?? 50
 	const redactEvtPL = pls.events?.["m.room.redaction"] ?? pls.events_default ?? 0
 	const redactOtherPL = pls.redact ?? 50
-	const canRedact = !evt.redacted_by && ownPL >= redactEvtPL && (evt.sender === userID || ownPL >= redactOtherPL)
+	const canRedact = !evt.redacted_by
+		&& ownPL >= redactEvtPL
+		&& (evt.sender === client.userID || ownPL >= redactOtherPL)
 
-	return <div style={style} className="event-context-menu-extra">
+	return <>
 		<button onClick={onClickViewSource}><ViewSourceIcon/>View source</button>
 		{ownPL >= pinPL && (pins.includes(evt.event_id)
 			? <button onClick={onClickUnpin}><UnpinIcon/>Unpin message</button>
@@ -121,7 +118,5 @@ const EventExtraMenu = ({ evt, room, style }: EventExtraMenuProps) => {
 			title={pendingTitle}
 			className="redact-button"
 		><DeleteIcon/>Remove</button>}
-	</div>
+	</>
 }
-
-export default EventExtraMenu
