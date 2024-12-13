@@ -109,7 +109,7 @@ func cacheEntryToHeaders(w http.ResponseWriter, entry *database.Media) {
 	w.Header().Set("Content-Type", entry.MimeType)
 	w.Header().Set("Content-Length", strconv.FormatInt(entry.Size, 10))
 	w.Header().Set("Content-Disposition", mime.FormatMediaType(entry.ContentDisposition(), map[string]string{"filename": entry.FileName}))
-	w.Header().Set("Content-Security-Policy", "sandbox; default-src 'none'; script-src 'none';")
+	w.Header().Set("Content-Security-Policy", "sandbox; default-src 'none'; script-src 'none'; media-src 'self';")
 	w.Header().Set("Cache-Control", "max-age=2592000, immutable")
 	w.Header().Set("ETag", entry.ETag())
 }
