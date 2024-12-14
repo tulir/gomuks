@@ -36,8 +36,8 @@ import (
 	"maunium.net/go/mautrix/id"
 
 	"maunium.net/go/gomuks/debug"
-	"maunium.net/go/gomuks/tui/messages"
-	"maunium.net/go/gomuks/tui/widget"
+	//"maunium.net/go/gomuks/tui/messages"
+	//"maunium.net/go/gomuks/tui/widget"
 )
 
 type RoomView struct {

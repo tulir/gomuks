@@ -8,7 +8,11 @@ require github.com/wailsapp/wails/v3 v3.0.0-alpha.8.3
 
 require (
 	go.mau.fi/gomuks v0.3.1
+<<<<<<< HEAD
 	go.mau.fi/util v0.8.4-0.20250106152331-30b8c95e7d7a
+=======
+	go.mau.fi/util v0.8.3-0.20241212004537-24c1a9b1d8f6
+>>>>>>> a1ca3e2 (dependencies: update)
 )
 
 require (
@@ -64,6 +68,7 @@ require (
 	github.com/xanzy/ssh-agent v0.3.3 // indirect
 	github.com/yuin/goldmark v1.7.8 // indirect
 	go.mau.fi/zeroconfig v0.1.3 // indirect
+<<<<<<< HEAD
 	golang.org/x/crypto v0.32.0 // indirect
 	golang.org/x/exp v0.0.0-20250103183323-7d7fa50e5329 // indirect
 	golang.org/x/image v0.23.0 // indirect
@@ -71,13 +76,27 @@ require (
 	golang.org/x/net v0.33.0 // indirect
 	golang.org/x/sync v0.10.0 // indirect
 	golang.org/x/sys v0.29.0 // indirect
+=======
+	golang.org/x/crypto v0.31.0 // indirect
+	golang.org/x/exp v0.0.0-20241210194714-1829a127f884 // indirect
+	golang.org/x/image v0.23.0 // indirect
+	golang.org/x/mod v0.22.0 // indirect
+	golang.org/x/net v0.32.0 // indirect
+	golang.org/x/sync v0.10.0 // indirect
+	golang.org/x/sys v0.28.0 // indirect
+>>>>>>> a1ca3e2 (dependencies: update)
 	golang.org/x/text v0.21.0 // indirect
 	golang.org/x/tools v0.28.0 // indirect
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
+<<<<<<< HEAD
 	maunium.net/go/mautrix v0.22.2-0.20250106152426-68eaa9d1df1f // indirect
 	mvdan.cc/xurls/v2 v2.6.0 // indirect
+=======
+	maunium.net/go/mautrix v0.22.1-0.20241212004632-bfdd0efd0e2e // indirect
+	mvdan.cc/xurls/v2 v2.5.0 // indirect
+>>>>>>> a1ca3e2 (dependencies: update)
 )
 
 replace go.mau.fi/gomuks => ../
