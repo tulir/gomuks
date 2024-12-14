@@ -17,6 +17,7 @@ import React, { use, useCallback, useState } from "react"
 import { getAvatarURL, getMediaURL, getUserColorIndex } from "@/api/media.ts"
 import { useRoomState } from "@/api/statestore"
 import { MemDBEvent, MemberEventContent, UnreadType } from "@/api/types"
+import { isMobileDevice } from "@/util/ismobile.ts"
 import { getDisplayname, isEventID } from "@/util/validation.ts"
 import ClientContext from "../ClientContext.ts"
 import MainScreenContext from "../MainScreenContext.ts"
@@ -155,7 +156,9 @@ const TimelineEvent = ({ evt, prevEvt, disableMenu }: TimelineEventProps) => {
 		className={wrapperClassNames.join(" ")}
 		onContextMenu={onContextMenu}
 	>
-		{!disableMenu && <div className={`context-menu-container ${forceContextMenuOpen ? "force-open" : ""}`}>
+		{!disableMenu && !isMobileDevice && <div
+			className={`context-menu-container ${forceContextMenuOpen ? "force-open" : ""}`}
+		>
 			<EventHoverMenu evt={evt} setForceOpen={setForceContextMenuOpen}/>
 		</div>}
 		{renderAvatar && <div
