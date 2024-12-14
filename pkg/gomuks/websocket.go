@@ -86,7 +86,7 @@ func (gmx *Gomuks) HandleWebsocket(w http.ResponseWriter, r *http.Request) {
 	defer recoverPanic("read loop")
 
 	conn, acceptErr := websocket.Accept(w, r, &websocket.AcceptOptions{
-		OriginPatterns: []string{"localhost:*"},
+		OriginPatterns: gmx.Config.Web.OriginPatterns,
 	})
 	if acceptErr != nil {
 		log.Warn().Err(acceptErr).Msg("Failed to accept websocket connection")

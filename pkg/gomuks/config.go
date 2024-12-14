@@ -42,12 +42,13 @@ type MatrixConfig struct {
 }
 
 type WebConfig struct {
-	ListenAddress   string `yaml:"listen_address"`
-	Username        string `yaml:"username"`
-	PasswordHash    string `yaml:"password_hash"`
-	TokenKey        string `yaml:"token_key"`
-	DebugEndpoints  bool   `yaml:"debug_endpoints"`
-	EventBufferSize int    `yaml:"event_buffer_size"`
+	ListenAddress   string   `yaml:"listen_address"`
+	Username        string   `yaml:"username"`
+	PasswordHash    string   `yaml:"password_hash"`
+	TokenKey        string   `yaml:"token_key"`
+	DebugEndpoints  bool     `yaml:"debug_endpoints"`
+	EventBufferSize int      `yaml:"event_buffer_size"`
+	OriginPatterns  []string `yaml:"origin_patterns"`
 }
 
 var defaultFileWriter = zeroconfig.WriterConfig{
@@ -118,6 +119,10 @@ func (gmx *Gomuks) LoadConfig() error {
 	}
 	if gmx.Config.Web.EventBufferSize <= 0 {
 		gmx.Config.Web.EventBufferSize = 512
+		changed = true
+	}
+	if len(gmx.Config.Web.OriginPatterns) == 0 {
+		gmx.Config.Web.OriginPatterns = []string{"localhost:*", "*.localhost:*"}
 		changed = true
 	}
 	if changed {
