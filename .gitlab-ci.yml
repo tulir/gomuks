@@ -39,7 +39,7 @@ frontend:
   - export MAUTRIX_VERSION=$(cat go.mod | grep 'maunium.net/go/mautrix ' | awk '{ print $2 }')
   - export GO_LDFLAGS="-s -w -linkmode external -extldflags -static -X go.mau.fi/gomuks/version.Tag=$CI_COMMIT_TAG -X go.mau.fi/gomuks/version.Commit=$CI_COMMIT_SHA -X 'go.mau.fi/gomuks/version.BuildTime=`date -Iseconds`' -X 'maunium.net/go/mautrix.GoModVersion=$MAUTRIX_VERSION'"
   script:
-  - go build -ldflags "$GO_LDFLAGS" -o gomuks ./cmd/gomuks
+  - go build -ldflags "$GO_LDFLAGS" ./cmd/gomuks
   artifacts:
     paths:
     - gomuks
@@ -80,6 +80,16 @@ linux/arm64:
   tags:
   - linux
   - arm64
+
+windows/amd64:
+  <<: *build-linux
+  image: dock.mau.dev/tulir/gomuks-build-docker:windows-amd64
+  artifacts:
+    paths:
+    - gomuks.exe
+  tags:
+  - linux
+  - amd64
 
 macos/arm64:
   stage: build
