@@ -1,4 +1,4 @@
--- v0 -> v7 (compatible with v5+): Latest revision
+-- v0 -> v8 (compatible with v5+): Latest revision
 CREATE TABLE account (
 	user_id        TEXT NOT NULL PRIMARY KEY,
 	device_id      TEXT NOT NULL,
@@ -37,6 +37,7 @@ CREATE TABLE room (
 ) STRICT;
 CREATE INDEX room_type_idx ON room (creation_content ->> 'type');
 CREATE INDEX room_sorting_timestamp_idx ON room (sorting_timestamp DESC);
+CREATE INDEX room_preview_idx ON room (preview_event_rowid);
 -- CREATE INDEX room_sorting_timestamp_idx ON room (unread_notifications > 0);
 -- CREATE INDEX room_sorting_timestamp_idx ON room (unread_messages > 0);
 
@@ -248,7 +249,8 @@ CREATE TABLE current_state (
 
 	PRIMARY KEY (room_id, event_type, state_key),
 	CONSTRAINT current_state_room_fkey FOREIGN KEY (room_id) REFERENCES room (room_id) ON DELETE CASCADE,
-	CONSTRAINT current_state_event_fkey FOREIGN KEY (event_rowid) REFERENCES event (rowid)
+	CONSTRAINT current_state_event_fkey FOREIGN KEY (event_rowid) REFERENCES event (rowid),
+	CONSTRAINT current_state_rowid_unique UNIQUE (event_rowid)
 ) STRICT, WITHOUT ROWID;
 
 CREATE TABLE receipt (
