@@ -1,6 +1,7 @@
 stages:
 - frontend
 - build
+- build desktop
 - docker
 
 default:
@@ -164,3 +165,55 @@ docker/manifest:
     docker manifest create $MANIFEST_NAME $CI_REGISTRY_IMAGE:$CI_COMMIT_SHA-amd64 $CI_REGISTRY_IMAGE:$CI_COMMIT_SHA-arm64
     docker manifest push $MANIFEST_NAME
   - docker rmi $CI_REGISTRY_IMAGE:$CI_COMMIT_SHA-amd64 $CI_REGISTRY_IMAGE:$CI_COMMIT_SHA-arm64
+
+.build-desktop: &build-desktop
+  stage: build desktop
+  cache:
+    paths:
+    - .cache
+  before_script:
+  - mkdir -p .cache
+  - export GOPATH="$CI_PROJECT_DIR/.cache"
+  - export GOCACHE="$CI_PROJECT_DIR/.cache/build"
+  script:
+  - cd desktop
+  - wails3 task $PLATFORM:package
+  - ls bin
+  artifacts:
+    paths:
+    - desktop/bin/*
+  dependencies:
+  - frontend
+  needs:
+  - frontend
+
+desktop/linux/amd64:
+  <<: *build-desktop
+  image: dock.mau.dev/tulir/gomuks-build-docker/wails:linux-amd64
+  variables:
+    PLATFORM: linux
+  tags:
+  - linux
+  - amd64
+
+desktop/linux/arm64:
+  <<: *build-desktop
+  image: dock.mau.dev/tulir/gomuks-build-docker/wails:linux-arm64-native
+  variables:
+    PLATFORM: linux
+  tags:
+  - linux
+  - arm64
+
+desktop/windows/amd64:
+  <<: *build-desktop
+  image: dock.mau.dev/tulir/gomuks-build-docker/wails:windows-amd64
+  variables:
+    PLATFORM: windows
+
+desktop/macos/arm64:
+  <<: *build-desktop
+  cache: {}
+  before_script: []
+  variables:
+    PLATFORM: darwin
