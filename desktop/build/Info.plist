@@ -22,6 +22,6 @@
         <key>NSHighResolutionCapable</key>
         <string>true</string>
         <key>NSHumanReadableCopyright</key>
-        <string>© 2024, Tulir Asokan</string>
+        <string>© 2024, gomuks authors</string>
     </dict>
 </plist>

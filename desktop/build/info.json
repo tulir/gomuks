@@ -6,8 +6,8 @@
 		"0000": {
 			"ProductVersion": "0.4.0",
 			"CompanyName": "",
-			"FileDescription": "",
-			"LegalCopyright": "© 2024, Tulir Asokan",
+			"FileDescription": "A Matrix client written in Go and React",
+			"LegalCopyright": "© 2024, gomuks authors",
 			"ProductName": "gomuks desktop",
 			"Comments": ""
 		}
