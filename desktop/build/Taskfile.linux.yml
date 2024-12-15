@@ -29,7 +29,7 @@ tasks:
         vars:
           PRODUCTION: "true"
     cmds:
-      - task: create:appimage
+      #- task: create:appimage
       - task: create:deb
       - task: create:rpm
       - task: create:aur
