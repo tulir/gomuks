@@ -108,8 +108,9 @@ tasks:
       APP_NAME: '{{.APP_NAME}}'
       EXEC: '{{.APP_NAME}}'
       ICON: 'appicon'
-      CATEGORIES: 'Development;'
-      OUTPUTFILE: '{{.ROOT_DIR}}/build/appimage/{{.APP_NAME}}.desktop'
+      CATEGORIES: 'Network;InstantMessaging;Chat;'
+      #OUTPUTFILE: '{{.ROOT_DIR}}/build/appimage/{{.APP_NAME}}.desktop'
+      OUTPUTFILE: '{{.ROOT_DIR}}/build/nfpm/bin/{{.APP_NAME}}.desktop'
 
   run:
     cmds:
