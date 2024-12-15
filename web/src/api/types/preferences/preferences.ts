@@ -141,6 +141,12 @@ export const preferences = {
 		allowedContexts: anyContext,
 		defaultValue: true,
 	}),
+	ctrl_enter_send: new Preference<boolean>({
+		displayName: "Use Ctrl+Enter to send",
+		description: "Disable sending on enter and use Ctrl+Enter for sending instead",
+		allowedContexts: anyContext,
+		defaultValue: false,
+	}),
 	custom_notification_sound: new Preference<ContentURI>({
 		displayName: "Custom notification sound",
 		description: "The mxc:// URI to a custom notification sound.",

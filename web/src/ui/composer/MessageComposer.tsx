@@ -274,7 +274,10 @@ const MessageComposer = () => {
 	const onComposerKeyDown = useEvent((evt: React.KeyboardEvent<HTMLTextAreaElement>) => {
 		const inp = evt.currentTarget
 		const fullKey = keyToString(evt)
-		if (fullKey === "Enter" && (
+		const sendKey = fullKey === "Enter" || fullKey === "Ctrl+Enter"
+			? (room.preferences.ctrl_enter_send ? "Ctrl+Enter" : "Enter")
+			: null
+		if (fullKey === sendKey && (
 			// If the autocomplete already has a selected item or has no results, send message even if it's open.
 			// Otherwise, don't send message on enter, select the first autocomplete entry instead.
 			!autocomplete
