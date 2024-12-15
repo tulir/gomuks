@@ -216,6 +216,8 @@ desktop/macos/arm64:
   cache: {}
   before_script:
   - export PATH=/opt/homebrew/bin:/usr/local/bin:$PATH
+  - export LIBRARY_PATH=$(brew --prefix)/lib
+  - export CPATH=$(brew --prefix)/include
   variables:
     PLATFORM: darwin
   tags:
