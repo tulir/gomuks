@@ -208,6 +208,11 @@ desktop/linux/arm64:
 desktop/windows/amd64:
   <<: *build-desktop
   image: dock.mau.dev/tulir/gomuks-build-docker/wails:windows-amd64
+  after_script:
+  - mv desktop/bin/gomuks-desktop.exe .
+  artifacts:
+    paths:
+    - gomuks-desktop.exe
   variables:
     PLATFORM: windows
 
