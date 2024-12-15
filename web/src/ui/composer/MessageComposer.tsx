@@ -13,7 +13,7 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import React, { use, useCallback, useEffect, useLayoutEffect, useReducer, useRef, useState } from "react"
+import React, { CSSProperties, use, useCallback, useEffect, useLayoutEffect, useReducer, useRef, useState } from "react"
 import { ScaleLoader } from "react-spinners"
 import Client from "@/api/client.ts"
 import { RoomStateStore, usePreference, useRoomEvent } from "@/api/statestore"
@@ -46,6 +46,7 @@ import CloseIcon from "@/icons/close.svg?react"
 import EmojiIcon from "@/icons/emoji-categories/smileys-emotion.svg?react"
 import GIFIcon from "@/icons/gif.svg?react"
 import LocationIcon from "@/icons/location.svg?react"
+import MoreIcon from "@/icons/more.svg?react"
 import SendIcon from "@/icons/send.svg?react"
 import "./MessageComposer.css"
 
@@ -164,9 +165,10 @@ const MessageComposer = () => {
 		})
 		textInput.current?.focus()
 	}, [room.roomID])
+	const canSend = Boolean(state.text || state.media || state.location)
 	const sendMessage = useEvent((evt: React.FormEvent) => {
 		evt.preventDefault()
-		if (state.text === "" && !state.media && !state.location) {
+		if (!canSend) {
 			return
 		}
 		if (editing) {
@@ -460,7 +462,7 @@ const MessageComposer = () => {
 						+ state.text.slice(textInput.current?.selectionEnd ?? 0),
 				})}
 			/>,
-			onClose: () => textInput.current?.focus(),
+			onClose: () => !isMobileDevice && textInput.current?.focus(),
 		})
 	})
 	const openGIFPicker = useEvent(() => {
@@ -470,7 +472,7 @@ const MessageComposer = () => {
 				room={roomCtx.store}
 				onSelect={media => setState({ media })}
 			/>,
-			onClose: () => textInput.current?.focus(),
+			onClose: () => !isMobileDevice && textInput.current?.focus(),
 		})
 	})
 	const openLocationPicker = useEvent(() => {
@@ -489,6 +491,34 @@ const MessageComposer = () => {
 		mediaDisabledTitle = "Uploading file..."
 		locationDisabledTitle = "You can't attach a location to a message with a file"
 	}
+	const makeAttachmentButtons = (includeText = false) => {
+		return <>
+			<button onClick={openEmojiPicker} title="Add emoji"><EmojiIcon/>{includeText && "Emoji"}</button>
+			<button onClick={openGIFPicker} title="Add gif attachment"><GIFIcon/>{includeText && "GIF"}</button>
+			<button
+				onClick={openLocationPicker}
+				disabled={!!locationDisabledTitle}
+				title={locationDisabledTitle ?? "Add location"}
+			><LocationIcon/>{includeText && "Location"}</button>
+			<button
+				onClick={openFilePicker}
+				disabled={!!mediaDisabledTitle}
+				title={mediaDisabledTitle ?? "Add file attachment"}
+			><AttachIcon/>{includeText && "File"}</button>
+		</>
+	}
+	const openButtonsModal = useEvent(() => {
+		const style: CSSProperties = getEmojiPickerStyle()
+		style.left = style.right
+		delete style.right
+		openModal({
+			content: <div className="event-context-menu" style={style}>
+				{makeAttachmentButtons(true)}
+			</div>,
+		})
+	})
+	const inlineButtons = state.text === "" || window.innerWidth > 720
+	const showSendButton = canSend || window.innerWidth > 720
 	return <>
 		{Autocompleter && autocomplete && <div className="autocompletions-wrapper"><Autocompleter
 			params={autocomplete}
@@ -523,6 +553,7 @@ const MessageComposer = () => {
 				location={state.location} onChange={onChangeLocation} clearLocation={clearMedia}
 			/>}
 			<div className="input-area">
+				{!inlineButtons && <button className="show-more" onClick={openButtonsModal}><MoreIcon/></button>}
 				<textarea
 					autoFocus={!isMobileDevice}
 					ref={textInput}
@@ -536,23 +567,12 @@ const MessageComposer = () => {
 					placeholder="Send a message"
 					id="message-composer"
 				/>
-				<button onClick={openEmojiPicker} title="Add emoji"><EmojiIcon/></button>
-				<button onClick={openGIFPicker} title="Add gif attachment"><GIFIcon/></button>
-				<button
-					onClick={openLocationPicker}
-					disabled={!!locationDisabledTitle}
-					title={locationDisabledTitle ?? "Add location"}
-				><LocationIcon/></button>
-				<button
-					onClick={openFilePicker}
-					disabled={!!mediaDisabledTitle}
-					title={mediaDisabledTitle ?? "Add file attachment"}
-				><AttachIcon/></button>
-				<button
+				{inlineButtons && makeAttachmentButtons()}
+				{showSendButton && <button
 					onClick={sendMessage}
-					disabled={(!state.text && !state.media && !state.location) || loadingMedia}
+					disabled={!canSend || loadingMedia}
 					title="Send message"
-				><SendIcon/></button>
+				><SendIcon/></button>}
 				<input ref={fileInput} onChange={onAttachFile} type="file" value=""/>
 			</div>
 		</div>

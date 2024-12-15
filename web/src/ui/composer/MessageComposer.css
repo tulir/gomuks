@@ -39,6 +39,14 @@ div.message-composer {
 		> input[type="file"] {
 			display: none;
 		}
+
+		@media screen and (max-width: 45rem) {
+			margin-right: 0;
+
+			> textarea:not(:empty) {
+				padding: .5rem 0;
+			}
+		}
 	}
 
 	> div.composer-media, > div.composer-location {
