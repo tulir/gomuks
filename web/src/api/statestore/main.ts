@@ -338,9 +338,10 @@ export class StateStore {
 		const notif = new Notification(title, {
 			body,
 			icon,
-			badge: "/gomuks.png",
+			badge: "gomuks.png",
 			// timestamp: evt.timestamp,
 			// image: ...,
+			silent: !sound,
 			tag: rowid.toString(),
 		})
 		room.openNotifications.set(rowid, notif)
