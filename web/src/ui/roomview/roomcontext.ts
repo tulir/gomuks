@@ -24,11 +24,11 @@ const noop = (name: string) => () => {
 }
 
 export class RoomContextData {
-	public timelineBottomRef: RefObject<HTMLDivElement | null> = createRef()
+	public readonly timelineBottomRef: RefObject<HTMLDivElement | null> = createRef()
 	public setReplyTo: (eventID: EventID | null) => void = noop("setReplyTo")
 	public setEditing: (evt: MemDBEvent | null) => void = noop("setEditing")
 	public insertText: (text: string) => void = noop("insertText")
-	public isEditing = new NonNullCachedEventDispatcher<boolean>(false)
+	public readonly isEditing = new NonNullCachedEventDispatcher<boolean>(false)
 	public ownMessages: EventRowID[] = []
 	public scrolledToBottom = true
 
