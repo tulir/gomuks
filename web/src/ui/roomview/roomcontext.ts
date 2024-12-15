@@ -34,7 +34,7 @@ export class RoomContextData {
 
 	constructor(public store: RoomStateStore) {}
 
-	scrollToBottom() {
+	scrollToBottom = () => {
 		if (this.scrolledToBottom) {
 			this.timelineBottomRef.current?.scrollIntoView()
 		}

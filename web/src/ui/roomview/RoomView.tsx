@@ -13,7 +13,7 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import { JSX, useRef } from "react"
+import { JSX, useEffect, useState } from "react"
 import { RoomStateStore } from "@/api/statestore"
 import MessageComposer from "../composer/MessageComposer.tsx"
 import TypingNotifications from "../composer/TypingNotifications.tsx"
@@ -30,11 +30,18 @@ interface RoomViewProps {
 }
 
 const RoomView = ({ room, rightPanelResizeHandle, rightPanel }: RoomViewProps) => {
-	const roomContextDataRef = useRef<RoomContextData | undefined>(undefined)
-	if (roomContextDataRef.current === undefined) {
-		roomContextDataRef.current = new RoomContextData(room)
-	}
-	return <RoomContext value={roomContextDataRef.current}>
+	const [roomContextData] = useState(() => new RoomContextData(room))
+	useEffect(() => {
+		window.activeRoomContext = roomContextData
+		window.addEventListener("resize", roomContextData.scrollToBottom)
+		return () => {
+			window.removeEventListener("resize", roomContextData.scrollToBottom)
+			if (window.activeRoomContext === roomContextData) {
+				window.activeRoomContext = undefined
+			}
+		}
+	}, [roomContextData])
+	return <RoomContext value={roomContextData}>
 		<div className="room-view">
 			<RoomViewHeader room={room}/>
 			<TimelineView/>
