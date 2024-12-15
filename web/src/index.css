@@ -162,6 +162,7 @@ body {
 
 html {
 	touch-action: none;
+	background-color: var(--background-color);
 }
 
 #root {

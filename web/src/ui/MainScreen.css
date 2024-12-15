@@ -17,25 +17,24 @@ main.matrix-main {
 	}
 
 	@media screen and (max-width: 45rem) {
+		&, &.right-panel-open {
+			grid-template:
+				"roomlist roomview rightpanel" 1fr
+				/ 100%    100%    100%;
+		}
+		/* Note: this timeout must match the one in MainScreen.tsx */
+		transition: .3s;
+
+		@media (prefers-reduced-motion: reduce) {
+			transition: none;
+		}
+
+		&.room-selected {
+			translate: -100% 0;
+		}
+
 		&.right-panel-open {
-			grid-template: "rightpanel" 1fr / 1fr;
-			> div.room-list-wrapper {
-				display: none;
-			}
-			> div.room-view {
-				display: none;
-			}
-		}
-
-		&.room-selected:not(.right-panel-open) {
-			grid-template: "roomview" 1fr / 1fr;
-			> div.room-list-wrapper {
-				display: none;
-			}
-		}
-
-		&:not(.room-selected):not(.right-panel-open) {
-			grid-template: "roomlist" 1fr / 1fr;
+			translate: -200% 0;
 		}
 	}
 
