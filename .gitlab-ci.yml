@@ -214,7 +214,8 @@ desktop/windows/amd64:
 desktop/macos/arm64:
   <<: *build-desktop
   cache: {}
-  before_script: []
+  before_script:
+  - export PATH=/opt/homebrew/bin:/usr/local/bin:$PATH
   variables:
     PLATFORM: darwin
   tags:
