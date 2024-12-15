@@ -13,7 +13,7 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import { JSX, use, useEffect, useInsertionEffect, useLayoutEffect, useMemo, useReducer, useState } from "react"
+import { JSX, use, useEffect, useInsertionEffect, useLayoutEffect, useMemo, useReducer, useRef, useState } from "react"
 import { SyncLoader } from "react-spinners"
 import Client from "@/api/client.ts"
 import { RoomStateStore } from "@/api/statestore"
@@ -221,7 +221,8 @@ const activeRoomReducer = (prev: ActiveRoomType, active: RoomStateStore | "clear
 }
 
 const MainScreen = () => {
-	const [[prevActiveRoom, activeRoom], directSetActiveRoom] = useReducer(activeRoomReducer, [null, null] as const)
+	const [[prevActiveRoom, activeRoom], directSetActiveRoom] = useReducer(activeRoomReducer, [null, null])
+	const skipNextTransitionRef = useRef(false)
 	const [rightPanel, directSetRightPanel] = useState<RightPanelProps | null>(null)
 	const client = use(ClientContext)!
 	const syncStatus = useEventAsState(client.syncStatus)
@@ -234,6 +235,7 @@ const MainScreen = () => {
 	}, [context])
 	useEffect(() => {
 		const listener = (evt: PopStateEvent) => {
+			skipNextTransitionRef.current = evt.hasUAVisualTransition
 			const roomID = evt.state?.room_id ?? null
 			if (roomID !== client.store.activeRoomID) {
 				context.setActiveRoom(roomID, false)
@@ -281,6 +283,10 @@ const MainScreen = () => {
 	const extraStyle = {
 		["--room-list-width" as string]: `${roomListWidth}px`,
 		["--right-panel-width" as string]: `${rightPanelWidth}px`,
+	}
+	if (skipNextTransitionRef.current) {
+		extraStyle["transition"] = "none"
+		skipNextTransitionRef.current = false
 	}
 	const classNames = ["matrix-main"]
 	if (activeRoom) {
