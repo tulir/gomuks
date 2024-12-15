@@ -30,7 +30,11 @@ tasks:
   package:
     summary: Packages a production build of the application into a `.exe` bundle
     cmds:
-      - task: create:nsis:installer
+      - task: build
+        vars:
+          PRODUCTION: "true"
+    #cmds:
+    #  - task: create:nsis:installer
 
   generate:syso:
     summary: Generates Windows `.syso` file
