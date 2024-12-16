@@ -123,7 +123,7 @@ func main() {
 	ch := &CommandHandler{Gomuks: gmx, Ctx: cmdCtx}
 	app := application.New(application.Options{
 		Name:        "gomuks-desktop",
-		Description: "A Matrix client written in Go",
+		Description: "A Matrix client written in Go and React",
 		Services: []application.Service{
 			application.NewService(
 				&PointableHandler{gmx.CreateAPIRouter()},

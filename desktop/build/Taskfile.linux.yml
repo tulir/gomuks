@@ -1,0 +1,117 @@
+version: '3'
+
+includes:
+  common: Taskfile.common.yml
+
+tasks:
+  build:
+    summary: Builds the application for Linux
+    deps: []
+      #- task: common:go:mod:tidy
+      #- task: common:build:frontend
+      #- task: common:generate:icons
+    cmds:
+      - MAUTRIX_VERSION=$(cat go.mod | grep 'maunium.net/go/mautrix ' | awk '{ print $2 }')
+      - GO_LDFLAGS="-s -w -X go.mau.fi/gomuks/version.Tag=$CI_COMMIT_TAG -X go.mau.fi/gomuks/version.Commit=$CI_COMMIT_SHA -X 'go.mau.fi/gomuks/version.BuildTime=`date -Iseconds`' -X 'maunium.net/go/mautrix.GoModVersion=$MAUTRIX_VERSION'"
+      - go build {{.BUILD_FLAGS}} -ldflags "$GO_LDFLAGS" -o {{.BIN_DIR}}/{{.APP_NAME}}
+    vars:
+      BUILD_FLAGS: '{{if eq .PRODUCTION "true"}}-tags production -trimpath{{else}}-gcflags=all="-l"{{end}}'
+    env:
+      GOOS: linux
+      CGO_ENABLED: 1
+      GOARCH: '{{.ARCH | default ARCH}}'
+      PRODUCTION: '{{.PRODUCTION | default "false"}}'
+
+  package:
+    summary: Packages a production build of the application for Linux
+    deps:
+      - task: build
+        vars:
+          PRODUCTION: "true"
+    cmds:
+      #- task: create:appimage
+      - task: create:deb
+      #- task: create:rpm
+      #- task: create:aur
+
+  create:appimage:
+    summary: Creates an AppImage
+    dir: build/appimage
+    deps:
+      - task: build
+        vars:
+          PRODUCTION: "true"
+      - task: generate:dotdesktop
+    cmds:
+      - cp {{.APP_BINARY}} {{.APP_NAME}}
+      - cp ../appicon.png appicon.png
+      - wails3 generate appimage -binary {{.APP_NAME}} -icon {{.ICON}} -desktopfile {{.DESKTOP_FILE}} -outputdir {{.OUTPUT_DIR}} -builddir {{.ROOT_DIR}}/build/appimage
+    vars:
+      APP_NAME: '{{.APP_NAME}}'
+      APP_BINARY: '../../bin/{{.APP_NAME}}'
+      ICON: '../appicon.png'
+      DESKTOP_FILE: '{{.APP_NAME}}.desktop'
+      OUTPUT_DIR: '../../bin'
+
+  create:deb:
+    summary: Creates a deb package
+    deps:
+      - task: build
+        vars:
+          PRODUCTION: "true"
+    cmds:
+      - task: generate:dotdesktop
+      - task: generate:deb
+
+  create:rpm:
+    summary: Creates a rpm package
+    deps:
+      - task: build
+        vars:
+          PRODUCTION: "true"
+    cmds:
+      - task: generate:dotdesktop
+      - task: generate:rpm
+
+  create:aur:
+    summary: Creates a arch linux packager package
+    deps:
+      - task: build
+        vars:
+          PRODUCTION: "true"
+    cmds:
+      - task: generate:dotdesktop
+      - task: generate:aur
+
+  generate:deb:
+    summary: Creates a deb package
+    cmds:
+      - wails3 tool package -name {{.APP_NAME}} -format deb -config ./build/nfpm/nfpm.yaml
+
+  generate:rpm:
+    summary: Creates a rpm package
+    cmds:
+      - wails3 tool package -name {{.APP_NAME}} -format rpm -config ./build/nfpm/nfpm.yaml
+
+  generate:aur:
+    summary: Creates a arch linux packager package
+    cmds:
+      - wails3 tool package -name {{.APP_NAME}} -format arch -config ./build/nfpm/nfpm.yaml
+
+  generate:dotdesktop:
+    summary: Generates a `.desktop` file
+    dir: build
+    cmds:
+      - mkdir -p {{.ROOT_DIR}}/build/nfpm/bin
+      - wails3 generate .desktop -name "{{.APP_NAME}}" -exec "{{.EXEC}}" -icon "{{.ICON}}" -outputfile {{.ROOT_DIR}}/build/{{.APP_NAME}}.desktop -categories "{{.CATEGORIES}}"
+      - cp {{.ROOT_DIR}}/build/{{.APP_NAME}}.desktop {{.ROOT_DIR}}/build/nfpm/bin/{{.APP_NAME}}.desktop
+    vars:
+      APP_NAME: '{{.APP_NAME}}'
+      EXEC: '{{.APP_NAME}}'
+      ICON: 'appicon'
+      CATEGORIES: 'Network;InstantMessaging;Chat;'
+      OUTPUTFILE: '{{.ROOT_DIR}}/build/{{.APP_NAME}}.desktop'
+
+  run:
+    cmds:
+      - '{{.BIN_DIR}}/{{.APP_NAME}}'

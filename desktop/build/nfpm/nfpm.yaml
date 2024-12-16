@@ -1,0 +1,50 @@
+# Feel free to remove those if you don't want/need to use them.
+# Make sure to check the documentation at https://nfpm.goreleaser.com
+#
+# The lines below are called `modelines`. See `:help modeline`
+
+name: "gomuks-desktop"
+arch: ${GOARCH}
+platform: "linux"
+version: "0.4.0"
+section: "default"
+priority: "extra"
+maintainer: Tulir Asokan <tulir@maunium.net>
+description: "A Matrix client written in Go and React"
+vendor: ""
+homepage: "https://wails.io"
+license: "MIT"
+release: "1"
+
+contents:
+  - src: "./bin/gomuks-desktop"
+    dst: "/usr/local/bin/gomuks-desktop"
+  - src: "./build/appicon.png"
+    dst: "/usr/share/icons/hicolor/128x128/apps/gomuks-desktop.png"
+  - src: "./build/gomuks-desktop.desktop"
+    dst: "/usr/share/applications/gomuks-desktop.desktop"
+
+depends:
+  - gtk3
+  - libwebkit2gtk
+
+# replaces:
+#   - foobar
+# provides:
+#   - bar
+# depends:
+#   - gtk3
+#   - libwebkit2gtk
+recommends:
+  - ffmpeg
+# suggests:
+#   - something-else
+# conflicts:
+#   - not-foo
+#   - not-bar
+# changelog: "changelog.yaml"
+# scripts:
+#   preinstall: ./build/nfpm/scripts/preinstall.sh
+#   postinstall: ./build/nfpm/scripts/postinstall.sh
+#   preremove: ./build/nfpm/scripts/preremove.sh
+#   postremove: ./build/nfpm/scripts/postremove.sh
