@@ -223,6 +223,12 @@ desktop/macos/arm64:
   - export PATH=/opt/homebrew/bin:/usr/local/bin:$PATH
   - export LIBRARY_PATH=$(brew --prefix)/lib
   - export CPATH=$(brew --prefix)/include
+  after_script:
+  - hdiutil create -srcFolder ./desktop/bin/gomuks-desktop.app/ -o ./gomuks-desktop.dmg
+  - codesign -s - --timestamp -i fi.mau.gomuks.desktop.mac gomuks-desktop.dmg
+  artifacts:
+    paths:
+    - gomuks-desktop.dmg
   variables:
     PLATFORM: darwin
   tags:
