@@ -192,6 +192,13 @@ desktop/linux/amd64:
   image: dock.mau.dev/tulir/gomuks-build-docker/wails:linux-amd64
   variables:
     PLATFORM: linux
+  after_script:
+  - mv desktop/bin/gomuks-desktop .
+  - mv desktop/build/nfpm/bin/gomuks-desktop.deb .
+  artifacts:
+    paths:
+    - gomuks-desktop
+    - gomuks-desktop.deb
   tags:
   - linux
   - amd64
@@ -201,6 +208,13 @@ desktop/linux/arm64:
   image: dock.mau.dev/tulir/gomuks-build-docker/wails:linux-arm64-native
   variables:
     PLATFORM: linux
+  after_script:
+  - mv desktop/bin/gomuks-desktop .
+  - mv desktop/build/nfpm/bin/gomuks-desktop.deb .
+  artifacts:
+    paths:
+    - gomuks-desktop
+    - gomuks-desktop.deb
   tags:
   - linux
   - arm64

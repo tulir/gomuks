@@ -9,7 +9,7 @@ platform: "linux"
 version: "0.4.0"
 section: "default"
 priority: "extra"
-maintainer: ${GIT_COMMITTER_NAME} <${GIT_COMMITTER_EMAIL}>
+maintainer: Tulir Asokan <tulir@maunium.net>
 description: "A Matrix client written in Go and React"
 vendor: ""
 homepage: "https://wails.io"
@@ -35,8 +35,8 @@ depends:
 # depends:
 #   - gtk3
 #   - libwebkit2gtk
-# recommends:
-#   - whatever
+recommends:
+  - ffmpeg
 # suggests:
 #   - something-else
 # conflicts:

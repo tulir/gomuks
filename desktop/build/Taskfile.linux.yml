@@ -31,8 +31,8 @@ tasks:
     cmds:
       #- task: create:appimage
       - task: create:deb
-      - task: create:rpm
-      - task: create:aur
+      #- task: create:rpm
+      #- task: create:aur
 
   create:appimage:
     summary: Creates an AppImage
@@ -102,15 +102,14 @@ tasks:
     summary: Generates a `.desktop` file
     dir: build
     cmds:
-      - mkdir -p {{.ROOT_DIR}}/build/nfpm/bin
-      - wails3 generate .desktop -name "{{.APP_NAME}}" -exec "{{.EXEC}}" -icon "{{.ICON}}" -outputfile {{.ROOT_DIR}}/build/nfpm/bin/{{.APP_NAME}}.desktop -categories "{{.CATEGORIES}}"
+      - mkdir -p {{.ROOT_DIR}}/build
+      - wails3 generate .desktop -name "{{.APP_NAME}}" -exec "{{.EXEC}}" -icon "{{.ICON}}" -outputfile {{.ROOT_DIR}}/build/{{.APP_NAME}}.desktop -categories "{{.CATEGORIES}}"
     vars:
       APP_NAME: '{{.APP_NAME}}'
       EXEC: '{{.APP_NAME}}'
       ICON: 'appicon'
       CATEGORIES: 'Network;InstantMessaging;Chat;'
-      #OUTPUTFILE: '{{.ROOT_DIR}}/build/appimage/{{.APP_NAME}}.desktop'
-      OUTPUTFILE: '{{.ROOT_DIR}}/build/nfpm/bin/{{.APP_NAME}}.desktop'
+      OUTPUTFILE: '{{.ROOT_DIR}}/build/{{.APP_NAME}}.desktop'
 
   run:
     cmds:
