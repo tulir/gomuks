@@ -102,8 +102,9 @@ tasks:
     summary: Generates a `.desktop` file
     dir: build
     cmds:
-      - mkdir -p {{.ROOT_DIR}}/build
+      - mkdir -p {{.ROOT_DIR}}/build/nfpm/bin
       - wails3 generate .desktop -name "{{.APP_NAME}}" -exec "{{.EXEC}}" -icon "{{.ICON}}" -outputfile {{.ROOT_DIR}}/build/{{.APP_NAME}}.desktop -categories "{{.CATEGORIES}}"
+      - cp {{.ROOT_DIR}}/build/{{.APP_NAME}}.desktop {{.ROOT_DIR}}/build/nfpm/bin/{{.APP_NAME}}.desktop
     vars:
       APP_NAME: '{{.APP_NAME}}'
       EXEC: '{{.APP_NAME}}'
