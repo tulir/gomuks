@@ -240,9 +240,12 @@ desktop/macos/arm64:
   after_script:
   - hdiutil create -srcFolder ./desktop/bin/gomuks-desktop.app/ -o ./gomuks-desktop.dmg
   - codesign -s - --timestamp -i fi.mau.gomuks.desktop.mac gomuks-desktop.dmg
+  - mv desktop/bin/gomuks-desktop .
   artifacts:
     paths:
-    - gomuks-desktop.dmg
+    - gomuks-desktop
+    # TODO generate proper dmgs
+    #- gomuks-desktop.dmg
   variables:
     PLATFORM: darwin
   tags:
