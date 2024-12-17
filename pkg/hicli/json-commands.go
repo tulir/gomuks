@@ -106,10 +106,10 @@ func (h *HiClient) handleJSONCommand(ctx context.Context, req *JSONCommand) (any
 		return unmarshalAndCall(req.Data, func(params *getEventParams) (*database.Event, error) {
 			return h.GetEvent(ctx, params.RoomID, params.EventID)
 		})
-	case "get_events_by_rowids":
-		return unmarshalAndCall(req.Data, func(params *getEventsByRowIDsParams) ([]*database.Event, error) {
-			return h.GetEventsByRowIDs(ctx, params.RowIDs)
-		})
+	//case "get_events_by_rowids":
+	//	return unmarshalAndCall(req.Data, func(params *getEventsByRowIDsParams) ([]*database.Event, error) {
+	//		return h.GetEventsByRowIDs(ctx, params.RowIDs)
+	//	})
 	case "get_room_state":
 		return unmarshalAndCall(req.Data, func(params *getRoomStateParams) ([]*database.Event, error) {
 			return h.GetRoomState(ctx, params.RoomID, params.IncludeMembers, params.FetchMembers, params.Refetch)
@@ -259,9 +259,9 @@ type getEventParams struct {
 	EventID id.EventID `json:"event_id"`
 }
 
-type getEventsByRowIDsParams struct {
-	RowIDs []database.EventRowID `json:"row_ids"`
-}
+//type getEventsByRowIDsParams struct {
+//	RowIDs []database.EventRowID `json:"row_ids"`
+//}
 
 type getRoomStateParams struct {
 	RoomID         id.RoomID `json:"room_id"`

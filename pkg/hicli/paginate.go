@@ -22,7 +22,7 @@ import (
 
 var ErrPaginationAlreadyInProgress = errors.New("pagination is already in progress")
 
-func (h *HiClient) GetEventsByRowIDs(ctx context.Context, rowIDs []database.EventRowID) ([]*database.Event, error) {
+/*func (h *HiClient) GetEventsByRowIDs(ctx context.Context, rowIDs []database.EventRowID) ([]*database.Event, error) {
 	events, err := h.DB.Event.GetByRowIDs(ctx, rowIDs...)
 	if err != nil {
 		return nil, err
@@ -51,7 +51,7 @@ func (h *HiClient) GetEventsByRowIDs(ctx context.Context, rowIDs []database.Even
 		// TODO slow path where events are collected and filling is done one room at a time?
 	}
 	return events, nil
-}
+}*/
 
 func (h *HiClient) GetEvent(ctx context.Context, roomID id.RoomID, eventID id.EventID) (*database.Event, error) {
 	if evt, err := h.DB.Event.GetByID(ctx, eventID); err != nil {
