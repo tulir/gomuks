@@ -44,9 +44,10 @@ func (c *SyncComplete) IsEmpty() bool {
 type SyncStatusType string
 
 const (
-	SyncStatusOK      SyncStatusType = "ok"
-	SyncStatusWaiting SyncStatusType = "waiting"
-	SyncStatusErrored SyncStatusType = "errored"
+	SyncStatusOK       SyncStatusType = "ok"
+	SyncStatusWaiting  SyncStatusType = "waiting"
+	SyncStatusErroring SyncStatusType = "erroring"
+	SyncStatusFailed   SyncStatusType = "permanently-failed"
 )
 
 type SyncStatus struct {

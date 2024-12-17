@@ -39,12 +39,15 @@ type syncContext struct {
 	evt *SyncComplete
 }
 
-func (h *HiClient) markSyncErrored(err error) {
+func (h *HiClient) markSyncErrored(err error, permanent bool) {
 	stat := &SyncStatus{
-		Type:       SyncStatusErrored,
+		Type:       SyncStatusErroring,
 		Error:      err.Error(),
 		ErrorCount: h.syncErrors,
 		LastSync:   jsontime.UM(h.lastSync),
+	}
+	if permanent {
+		stat.Type = SyncStatusFailed
 	}
 	h.SyncStatus.Store(stat)
 	h.EventHandler(stat)

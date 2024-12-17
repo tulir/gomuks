@@ -252,7 +252,7 @@ func (h *HiClient) Sync() {
 	log.Info().Msg("Starting syncing")
 	err := h.Client.SyncWithContext(ctx)
 	if err != nil && ctx.Err() == nil {
-		h.markSyncErrored(err)
+		h.markSyncErrored(err, true)
 		log.Err(err).Msg("Fatal error in syncer")
 	} else {
 		h.SyncStatus.Store(syncWaiting)

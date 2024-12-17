@@ -302,12 +302,16 @@ const MainScreen = () => {
 			Waiting for first sync...
 		</div>
 	} else if (
-		syncStatus.type === "errored"
+		syncStatus.type === "erroring"
 		&& (syncStatus.error_count > 2 || (syncStatus.last_sync ?? 0) + SYNC_ERROR_HIDE_DELAY < Date.now())
 	) {
 		syncLoader = <div className="sync-status errored" title={syncStatus.error}>
 			<SyncLoader color="var(--error-color)"/>
 			Sync is failing
+		</div>
+	} else if (syncStatus.type === "permanently-failed") {
+		syncLoader = <div className="sync-status errored" title={syncStatus.error}>
+			Sync failed permanently
 		</div>
 	}
 	const renderedRoom = activeRoom ?? prevActiveRoom

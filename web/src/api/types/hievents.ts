@@ -110,7 +110,7 @@ export interface ClientStateEvent extends BaseRPCCommand<ClientState> {
 }
 
 export interface SyncStatus {
-	type: "ok" | "waiting" | "errored"
+	type: "ok" | "waiting" | "erroring" | "permanently-failed"
 	error?: string
 	error_count: number
 	last_sync?: number
