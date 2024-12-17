@@ -327,12 +327,17 @@ func (m EventRowID) GetMassInsertValues() [1]any {
 }
 
 type LocalContent struct {
-	SanitizedHTML string `json:"sanitized_html,omitempty"`
-	HTMLVersion   int    `json:"html_version,omitempty"`
-	WasPlaintext  bool   `json:"was_plaintext,omitempty"`
-	BigEmoji      bool   `json:"big_emoji,omitempty"`
-	HasMath       bool   `json:"has_math,omitempty"`
-	EditSource    string `json:"edit_source,omitempty"`
+	SanitizedHTML        string `json:"sanitized_html,omitempty"`
+	HTMLVersion          int    `json:"html_version,omitempty"`
+	WasPlaintext         bool   `json:"was_plaintext,omitempty"`
+	BigEmoji             bool   `json:"big_emoji,omitempty"`
+	HasMath              bool   `json:"has_math,omitempty"`
+	EditSource           string `json:"edit_source,omitempty"`
+	ReplyFallbackRemoved bool   `json:"reply_fallback_removed,omitempty"`
+}
+
+func (c *LocalContent) GetReplyFallbackRemoved() bool {
+	return c != nil && c.ReplyFallbackRemoved
 }
 
 type Event struct {
@@ -544,4 +549,11 @@ func (e *Event) CanUseForPreview() bool {
 func (e *Event) BumpsSortingTimestamp() bool {
 	return (e.Type == event.EventMessage.Type || e.Type == event.EventSticker.Type || e.Type == event.EventEncrypted.Type) &&
 		e.RelationType != event.RelReplace
+}
+
+func (e *Event) MarkReplyFallbackRemoved() {
+	if e.LocalContent == nil {
+		e.LocalContent = &LocalContent{}
+	}
+	e.LocalContent.ReplyFallbackRemoved = true
 }

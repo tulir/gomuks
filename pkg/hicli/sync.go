@@ -291,20 +291,34 @@ func removeReplyFallback(evt *event.Event) []byte {
 	return nil
 }
 
-func (h *HiClient) decryptEvent(ctx context.Context, evt *event.Event) (*event.Event, []byte, string, error) {
+func (h *HiClient) decryptEvent(ctx context.Context, evt *event.Event) (*event.Event, []byte, bool, string, error) {
 	err := evt.Content.ParseRaw(evt.Type)
 	if err != nil && !errors.Is(err, event.ErrContentAlreadyParsed) {
-		return nil, nil, "", err
+		return nil, nil, false, "", err
 	}
 	decrypted, err := h.Crypto.DecryptMegolmEvent(ctx, evt)
 	if err != nil {
-		return nil, nil, "", err
+		return nil, nil, false, "", err
 	}
 	withoutFallback := removeReplyFallback(decrypted)
 	if withoutFallback != nil {
-		return decrypted, withoutFallback, decrypted.Type.Type, nil
+		return decrypted, withoutFallback, true, decrypted.Type.Type, nil
 	}
-	return decrypted, decrypted.Content.VeryRaw, decrypted.Type.Type, nil
+	return decrypted, decrypted.Content.VeryRaw, false, decrypted.Type.Type, nil
+}
+
+func (h *HiClient) decryptEventInto(ctx context.Context, evt *event.Event, dbEvt *database.Event) (*event.Event, error) {
+	decryptedEvt, rawContent, fallbackRemoved, decryptedType, err := h.decryptEvent(ctx, evt)
+	if err != nil {
+		dbEvt.DecryptionError = err.Error()
+		return nil, err
+	}
+	dbEvt.Decrypted = rawContent
+	if fallbackRemoved {
+		dbEvt.MarkReplyFallbackRemoved()
+	}
+	dbEvt.DecryptedType = decryptedType
+	return decryptedEvt, nil
 }
 
 func (h *HiClient) addMediaCache(
@@ -445,12 +459,13 @@ func (h *HiClient) calculateLocalContent(ctx context.Context, dbEvt *database.Ev
 			wasPlaintext = true
 		}
 		return &database.LocalContent{
-			SanitizedHTML: sanitizedHTML,
-			HTMLVersion:   CurrentHTMLSanitizerVersion,
-			WasPlaintext:  wasPlaintext,
-			BigEmoji:      bigEmoji,
-			HasMath:       hasMath,
-			EditSource:    editSource,
+			SanitizedHTML:        sanitizedHTML,
+			HTMLVersion:          CurrentHTMLSanitizerVersion,
+			WasPlaintext:         wasPlaintext,
+			BigEmoji:             bigEmoji,
+			HasMath:              hasMath,
+			EditSource:           editSource,
+			ReplyFallbackRemoved: dbEvt.LocalContent.GetReplyFallbackRemoved(),
 		}, inlineImages
 	}
 	return nil, nil
@@ -502,14 +517,12 @@ func (h *HiClient) processEvent(
 	contentWithoutFallback := removeReplyFallback(evt)
 	if contentWithoutFallback != nil {
 		dbEvt.Content = contentWithoutFallback
+		dbEvt.MarkReplyFallbackRemoved()
 	}
 	var decryptionErr error
 	var decryptedMautrixEvt *event.Event
 	if evt.Type == event.EventEncrypted && dbEvt.RedactedBy == "" {
-		decryptedMautrixEvt, dbEvt.Decrypted, dbEvt.DecryptedType, decryptionErr = h.decryptEvent(ctx, evt)
-		if decryptionErr != nil {
-			dbEvt.DecryptionError = decryptionErr.Error()
-		}
+		decryptedMautrixEvt, decryptionErr = h.decryptEventInto(ctx, evt, dbEvt)
 	} else if evt.Type == event.EventRedaction {
 		if evt.Redacts != "" && gjson.GetBytes(evt.Content.VeryRaw, "redacts").Str != evt.Redacts.String() {
 			var err error
