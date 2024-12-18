@@ -16,7 +16,7 @@
 import { use, useEffect, useState } from "react"
 import { PuffLoader } from "react-spinners"
 import { getAvatarURL } from "@/api/media.ts"
-import { useRoomState } from "@/api/statestore"
+import { useRoomMember } from "@/api/statestore"
 import { MemberEventContent, UserID, UserProfile } from "@/api/types"
 import { getLocalpart } from "@/util/validation.ts"
 import ClientContext from "../ClientContext.ts"
@@ -34,11 +34,8 @@ const UserInfo = ({ userID }: UserInfoProps) => {
 	const client = use(ClientContext)!
 	const roomCtx = use(RoomContext)
 	const openLightbox = use(LightboxContext)!
-	const memberEvt = useRoomState(roomCtx?.store, "m.room.member", userID)
+	const memberEvt = useRoomMember(client, roomCtx?.store, userID)
 	const member = (memberEvt?.content ?? null) as MemberEventContent | null
-	if (!memberEvt) {
-		use(ClientContext)?.requestMemberEvent(roomCtx?.store, userID)
-	}
 	const [globalProfile, setGlobalProfile] = useState<UserProfile | null>(null)
 	const [errors, setErrors] = useState<string[] | null>(null)
 	useEffect(() => {

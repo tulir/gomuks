@@ -15,7 +15,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import { use } from "react"
 import { getAvatarURL, getUserColorIndex } from "@/api/media.ts"
-import { RoomStateStore, useRoomEvent, useRoomState } from "@/api/statestore"
+import { RoomStateStore, useRoomEvent, useRoomMember } from "@/api/statestore"
 import type { EventID, MemDBEvent, MemberEventContent } from "@/api/types"
 import { getDisplayname } from "@/util/validation.ts"
 import ClientContext from "../ClientContext.ts"
@@ -80,10 +80,8 @@ const onClickReply = (evt: React.MouseEvent) => {
 export const ReplyBody = ({
 	room, event, onClose, isThread, isEditing, isSilent, onSetSilent, isExplicitInThread, onSetExplicitInThread,
 }: ReplyBodyProps) => {
-	const memberEvt = useRoomState(room, "m.room.member", event.sender)
-	if (!memberEvt) {
-		use(ClientContext)?.requestMemberEvent(room, event.sender)
-	}
+	const client = use(ClientContext)
+	const memberEvt = useRoomMember(client, room, event.sender)
 	const memberEvtContent = memberEvt?.content as MemberEventContent | undefined
 	const BodyType = getBodyType(event, true)
 	const classNames = ["reply-body"]

@@ -16,9 +16,9 @@
 import { JSX, use } from "react"
 import { PulseLoader } from "react-spinners"
 import { getAvatarURL } from "@/api/media.ts"
-import { useRoomTyping } from "@/api/statestore"
-import { MemberEventContent } from "@/api/types/mxtypes.ts"
+import { useMultipleRoomMembers, useRoomTyping } from "@/api/statestore"
 import { humanJoin } from "@/util/join.ts"
+import { getDisplayname } from "@/util/validation.ts"
 import ClientContext from "../ClientContext.ts"
 import { useRoomContext } from "../roomview/roomcontext.ts"
 import "./TypingNotifications.css"
@@ -28,19 +28,14 @@ const TypingNotifications = () => {
 	const client = use(ClientContext)!
 	const room = roomCtx.store
 	const typing = useRoomTyping(room).filter(u => u !== client.userID)
+	const memberEvts = useMultipleRoomMembers(client, room, typing.slice(0, 5))
 	let loader: JSX.Element | null = null
 	if (typing.length > 0) {
 		loader = <PulseLoader speedMultiplier={0.5} size={5} color="var(--primary-color)" />
 	}
 	const avatars: JSX.Element[] = []
 	const memberNames: string[] = []
-	for (let i = 0; i < 5 && i < typing.length; i++) {
-		const sender = typing[i]
-		const memberEvt = room.getStateEvent("m.room.member", sender)
-		const member = (memberEvt?.content ?? null) as MemberEventContent | null
-		if (!memberEvt) {
-			use(ClientContext)?.requestMemberEvent(room, sender)
-		}
+	for (const [sender, member] of memberEvts) {
 		avatars.push(<img
 			key={sender}
 			className="small avatar"
@@ -48,7 +43,7 @@ const TypingNotifications = () => {
 			src={getAvatarURL(sender, member)}
 			alt=""
 		/>)
-		memberNames.push(member?.displayname ?? sender)
+		memberNames.push(getDisplayname(sender, member))
 	}
 
 	let description: JSX.Element | null = null

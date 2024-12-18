@@ -96,6 +96,7 @@ div.timeline-event {
 
 		> svg {
 			height: 1rem;
+			width: 1rem;
 		}
 
 		&.error {

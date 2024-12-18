@@ -281,11 +281,12 @@ export class RoomStateStore {
 			}
 			const oldArr = this.receiptsByEventID.get(existingReceipt.event_id)
 			if (oldArr) {
-				const idx = oldArr.indexOf(existingReceipt)
-				if (idx >= 0) {
-					oldArr.splice(idx, 1)
-					if (oldArr.length === 0) {
+				const updated = oldArr.filter(r => r !== existingReceipt)
+				if (updated.length !== oldArr.length) {
+					if (updated.length === 0) {
 						this.receiptsByEventID.delete(existingReceipt.event_id)
+					} else {
+						this.receiptsByEventID.set(existingReceipt.event_id, updated)
 					}
 					this.receiptSubs.notify(existingReceipt.event_id)
 				}

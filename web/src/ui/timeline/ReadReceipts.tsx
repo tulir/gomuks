@@ -15,28 +15,22 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import { use } from "react"
 import { getAvatarURL } from "@/api/media.ts"
-import { RoomStateStore, useReadReceipts } from "@/api/statestore"
-import { EventID, MemberEventContent } from "@/api/types"
+import { RoomStateStore, useMultipleRoomMembers, useReadReceipts } from "@/api/statestore"
+import { EventID } from "@/api/types"
 import { humanJoin } from "@/util/join.ts"
 import { getDisplayname } from "@/util/validation.ts"
 import ClientContext from "../ClientContext.ts"
 import "./ReadReceipts.css"
 
 const ReadReceipts = ({ room, eventID }: { room: RoomStateStore, eventID: EventID }) => {
+	const client = use(ClientContext)!
 	const receipts = useReadReceipts(room, eventID)
+	const memberEvts = useMultipleRoomMembers(client, room, receipts.map(receipt => receipt.user_id))
 	if (receipts.length === 0) {
 		return null
 	}
 	// Hacky hack for mobile clients. Would be nicer to get the number based on the CSS variable defining the size
 	const maxAvatarCount = window.innerWidth > 720 ? 4 : 2
-	const memberEvts = receipts.map(receipt => {
-		const memberEvt = room.getStateEvent("m.room.member", receipt.user_id)
-		const member = (memberEvt?.content ?? null) as MemberEventContent | null
-		if (!memberEvt) {
-			use(ClientContext)?.requestMemberEvent(room, receipt.user_id)
-		}
-		return [receipt.user_id, member] as const
-	})
 	const avatarMembers = receipts.length > maxAvatarCount ? memberEvts.slice(-maxAvatarCount+1) : memberEvts
 	const avatars = avatarMembers.map(([userID, member]) => {
 		return <img
