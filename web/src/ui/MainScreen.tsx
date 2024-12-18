@@ -13,7 +13,7 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import { JSX, use, useEffect, useInsertionEffect, useLayoutEffect, useMemo, useReducer, useRef, useState } from "react"
+import { JSX, use, useEffect, useLayoutEffect, useMemo, useReducer, useRef, useState } from "react"
 import { SyncLoader } from "react-spinners"
 import Client from "@/api/client.ts"
 import { RoomStateStore } from "@/api/statestore"
@@ -259,19 +259,6 @@ const MainScreen = () => {
 		}
 	}, [context, client])
 	useEffect(() => context.keybindings.listen(), [context])
-	useInsertionEffect(() => {
-		const styleTags = document.createElement("style")
-		styleTags.textContent = `
-			div.html-body > a.hicli-matrix-uri-user[href="matrix:u/${client.userID.slice(1).replaceAll(`"`, `\\"`)}"] {
-				background-color: var(--highlight-pill-background-color);
-				color: var(--highlight-pill-text-color);
-			}
-		`
-		document.head.appendChild(styleTags)
-		return () => {
-			document.head.removeChild(styleTags)
-		}
-	}, [client.userID])
 	const [roomListWidth, resizeHandle1] = useResizeHandle(
 		300, 48, Math.min(900, window.innerWidth * 0.4),
 		"roomListWidth", { className: "room-list-resizer" },
