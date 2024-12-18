@@ -42,6 +42,7 @@ const TypingNotifications = () => {
 			use(ClientContext)?.requestMemberEvent(room, sender)
 		}
 		avatars.push(<img
+			key={sender}
 			className="small avatar"
 			loading="lazy"
 			src={getAvatarURL(sender, member)}

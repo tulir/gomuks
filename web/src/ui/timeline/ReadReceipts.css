@@ -1,0 +1,29 @@
+div.timeline-event > div.read-receipts {
+	grid-area: status;
+	display: flex;
+	justify-content: right;
+	align-items: end;
+	overflow: hidden;
+	margin-bottom: .125rem;
+
+	> div.overflow-count {
+		font-size: .75rem;
+		color: var(--secondary-text-color);
+		margin-right: .125rem;
+		user-select: none;
+	}
+
+	> div.avatars {
+		display: flex;
+		margin-left: .35rem;
+
+		> img {
+			margin-left: -.35rem;
+			border: 1px solid var(--background-color);
+		}
+	}
+
+	& + div.event-send-status {
+		display: none;
+	}
+}

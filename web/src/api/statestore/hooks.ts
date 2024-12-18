@@ -15,7 +15,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import { useEffect, useMemo, useState, useSyncExternalStore } from "react"
 import type { CustomEmojiPack } from "@/util/emoji"
-import type { EventID, EventType, MemDBEvent, UnknownEventContent } from "../types"
+import type { EventID, EventType, MemDBEvent, MemReceipt, UnknownEventContent } from "../types"
 import { Preferences, preferences } from "../types/preferences"
 import type { StateStore } from "./main.ts"
 import type { AutocompleteMemberEntry, RoomStateStore } from "./room.ts"
@@ -29,6 +29,13 @@ export function useRoomTimeline(room: RoomStateStore): (MemDBEvent | null)[] {
 
 export function useRoomTyping(room: RoomStateStore): string[] {
 	return useSyncExternalStore(room.typingSub.subscribe, () => room.typing)
+}
+
+export function useReadReceipts(room: RoomStateStore, evtID: EventID): MemReceipt[] {
+	return useSyncExternalStore(
+		room.receiptSubs.getSubscriber(evtID),
+		() => room.receiptsByEventID.get(evtID) ?? emptyArray,
+	)
 }
 
 export function useRoomState(

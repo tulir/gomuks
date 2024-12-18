@@ -22,6 +22,7 @@ type SyncRoom struct {
 	Events        []*database.Event                             `json:"events"`
 	Reset         bool                                          `json:"reset"`
 	Notifications []SyncNotification                            `json:"notifications"`
+	Receipts      map[id.EventID][]*database.Receipt            `json:"receipts"`
 }
 
 type SyncNotification struct {

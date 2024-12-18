@@ -21,6 +21,7 @@ import Subscribable, { MultiSubscribable, NoDataSubscribable } from "@/util/subs
 import { getDisplayname } from "@/util/validation.ts"
 import {
 	ContentURI,
+	DBReceipt,
 	DBRoom,
 	EncryptedEventContent,
 	EventID,
@@ -30,6 +31,7 @@ import {
 	ImagePack,
 	LazyLoadSummary,
 	MemDBEvent,
+	MemReceipt,
 	MemberEventContent,
 	PowerLevelEventContent,
 	RawDBEvent,
@@ -83,6 +85,8 @@ export interface AutocompleteMemberEntry {
 
 const collator = new Intl.Collator()
 
+const UNSENT_TIMELINE_ROWID_BASE = 1000000000000000
+
 export class RoomStateStore {
 	readonly roomID: RoomID
 	readonly meta: NonNullCachedEventDispatcher<DBRoom>
@@ -98,6 +102,9 @@ export class RoomStateStore {
 	readonly typingSub = new Subscribable()
 	readonly stateSubs = new MultiSubscribable()
 	readonly eventSubs = new MultiSubscribable()
+	readonly receiptsByEventID: Map<EventID, MemReceipt[]> = new Map()
+	readonly receiptsByUserID: Map<UserID, MemReceipt> = new Map()
+	readonly receiptSubs = new MultiSubscribable()
 	readonly requestedEvents: Set<EventID> = new Set()
 	readonly requestedMembers: Set<UserID> = new Set()
 	readonly accountData: Map<string, UnknownEventContent> = new Map()
@@ -126,7 +133,7 @@ export class RoomStateStore {
 		this.preferences = getPreferenceProxy(parent, this)
 	}
 
-	notifyTimelineSubscribers() {
+	#updateTimelineCache() {
 		this.timelineCache = this.timeline.map(rt => {
 			const evt = this.eventsByRowID.get(rt.event_rowid)
 			if (!evt) {
@@ -137,6 +144,10 @@ export class RoomStateStore {
 		}).concat(this.pendingEvents
 			.map(rowID => this.eventsByRowID.get(rowID))
 			.filter(evt => !!evt))
+	}
+
+	notifyTimelineSubscribers() {
+		this.#updateTimelineCache()
 		this.timelineSub.notify()
 	}
 
@@ -232,7 +243,7 @@ export class RoomStateStore {
 		return []
 	}
 
-	applyPagination(history: RawDBEvent[]) {
+	applyPagination(history: RawDBEvent[], allReceipts: Record<EventID, DBReceipt[]>) {
 		// Pagination comes in newest to oldest, timeline is in the opposite order
 		history.reverse()
 		const newTimeline = history.map(evt => {
@@ -241,6 +252,50 @@ export class RoomStateStore {
 		})
 		this.timeline.splice(0, 0, ...newTimeline)
 		this.notifyTimelineSubscribers()
+		for (const [evtID, receipts] of Object.entries(allReceipts)) {
+			this.applyReceipts(receipts, evtID, true)
+		}
+	}
+
+	applyReceipts(receipts: DBReceipt[], evtID: EventID, override: boolean) {
+		const evt = this.eventsByID.get(evtID)
+		if (!evt?.timeline_rowid) {
+			return
+		}
+		const filtered = receipts.filter(receipt => this.applyReceipt(receipt, evt))
+		filtered.sort((a, b) => a.timestamp - b.timestamp)
+		if (override) {
+			this.receiptsByEventID.set(evtID, filtered)
+		} else {
+			const existing = this.receiptsByEventID.get(evtID) ?? []
+			this.receiptsByEventID.set(evtID, existing.concat(filtered))
+		}
+		this.receiptSubs.notify(evtID)
+	}
+
+	applyReceipt(receipt: DBReceipt, evt: MemDBEvent): receipt is MemReceipt {
+		const existingReceipt = this.receiptsByUserID.get(receipt.user_id)
+		if (existingReceipt) {
+			if (existingReceipt.timeline_rowid >= evt.timeline_rowid) {
+				return false
+			}
+			const oldArr = this.receiptsByEventID.get(existingReceipt.event_id)
+			if (oldArr) {
+				const idx = oldArr.indexOf(existingReceipt)
+				if (idx >= 0) {
+					oldArr.splice(idx, 1)
+					if (oldArr.length === 0) {
+						this.receiptsByEventID.delete(existingReceipt.event_id)
+					}
+					this.receiptSubs.notify(existingReceipt.event_id)
+				}
+			}
+		}
+		const memReceipt = receipt as MemReceipt
+		memReceipt.timeline_rowid = evt.timeline_rowid > UNSENT_TIMELINE_ROWID_BASE ? 1 : evt.timeline_rowid
+		memReceipt.event_rowid = evt.rowid
+		this.receiptsByUserID.set(receipt.user_id, memReceipt)
+		return true
 	}
 
 	applyEvent(evt: RawDBEvent, pending: boolean = false) {
@@ -248,7 +303,7 @@ export class RoomStateStore {
 		memEvt.mem = true
 		memEvt.pending = pending
 		if (pending) {
-			memEvt.timeline_rowid = 1000000000000000 + memEvt.timestamp
+			memEvt.timeline_rowid = UNSENT_TIMELINE_ROWID_BASE + memEvt.timestamp
 		}
 		if (evt.type === "m.room.encrypted" && evt.decrypted && evt.decrypted_type) {
 			memEvt.type = evt.decrypted_type
@@ -287,6 +342,7 @@ export class RoomStateStore {
 			}
 		}
 		this.eventSubs.notify(memEvt.event_id)
+		return memEvt
 	}
 
 	applySendComplete(evt: RawDBEvent) {
@@ -354,6 +410,9 @@ export class RoomStateStore {
 			this.openNotifications.clear()
 		}
 		this.notifyTimelineSubscribers()
+		for (const [evtID, receipts] of Object.entries(sync.receipts)) {
+			this.applyReceipts(receipts, evtID, false)
+		}
 	}
 
 	applyState(evt: RawDBEvent) {
@@ -473,6 +532,8 @@ export class RoomStateStore {
 		const deletedEvents = this.eventsByRowID.size - eventsToKeep.size
 		this.eventsByRowID.clear()
 		this.eventsByID.clear()
+		this.receiptsByEventID.clear()
+		this.receiptsByUserID.clear()
 		for (const evt of eventsToKeepList) {
 			this.eventsByRowID.set(evt.rowid, evt)
 			this.eventsByID.set(evt.event_id, evt)

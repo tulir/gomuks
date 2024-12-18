@@ -316,7 +316,7 @@ export default class Client {
 				throw new Error("Timeline changed while loading history")
 			}
 			room.hasMoreHistory = resp.has_more
-			room.applyPagination(resp.events)
+			room.applyPagination(resp.events, resp.receipts)
 		} finally {
 			room.paginating = false
 		}

@@ -118,6 +118,10 @@ func (h *HiClient) handleJSONCommand(ctx context.Context, req *JSONCommand) (any
 		return unmarshalAndCall(req.Data, func(params *getSpecificRoomStateParams) ([]*database.Event, error) {
 			return h.DB.CurrentState.GetMany(ctx, params.Keys)
 		})
+	case "get_receipts":
+		return unmarshalAndCall(req.Data, func(params *getReceiptsParams) (map[id.EventID][]*database.Receipt, error) {
+			return h.GetReceipts(ctx, params.RoomID, params.EventIDs)
+		})
 	case "paginate":
 		return unmarshalAndCall(req.Data, func(params *paginateParams) (*PaginationResponse, error) {
 			return h.Paginate(ctx, params.RoomID, params.MaxTimelineID, params.Limit)
@@ -309,4 +313,9 @@ type paginateParams struct {
 	RoomID        id.RoomID              `json:"room_id"`
 	MaxTimelineID database.TimelineRowID `json:"max_timeline_id"`
 	Limit         int                    `json:"limit"`
+}
+
+type getReceiptsParams struct {
+	RoomID   id.RoomID    `json:"room_id"`
+	EventIDs []id.EventID `json:"event_ids"`
 }

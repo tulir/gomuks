@@ -19,6 +19,7 @@ func (h *HiClient) getInitialSyncRoom(ctx context.Context, room *database.Room) 
 		Timeline:      make([]database.TimelineRowTuple, 0),
 		State:         map[event.Type]map[string]database.EventRowID{},
 		Notifications: make([]SyncNotification, 0),
+		Receipts:      make(map[id.EventID][]*database.Receipt),
 	}
 	ad, err := h.DB.AccountData.GetAllRoom(ctx, h.Account.UserID, room.ID)
 	if err != nil {

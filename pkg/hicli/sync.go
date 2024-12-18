@@ -180,6 +180,9 @@ func (h *HiClient) receiptsToList(content *event.ReceiptEventContent) ([]*databa
 				if userID == h.Account.UserID {
 					newOwnReceipts = append(newOwnReceipts, eventID)
 				}
+				if receiptInfo.ThreadID == event.ReadReceiptThreadMain {
+					receiptInfo.ThreadID = ""
+				}
 				receiptList = append(receiptList, &database.Receipt{
 					UserID:      userID,
 					ReceiptType: receiptType,
@@ -718,15 +721,38 @@ func (h *HiClient) processStateAndTimeline(
 		setNewState(evt.Type, *evt.StateKey, rowID)
 	}
 	var timelineRowTuples []database.TimelineRowTuple
+	receiptMap := make(map[id.EventID][]*database.Receipt)
+	for _, receipt := range receipts {
+		if receipt.UserID != h.Account.UserID {
+			receiptMap[receipt.EventID] = append(receiptMap[receipt.EventID], receipt)
+		}
+	}
 	var err error
 	if len(timeline.Events) > 0 {
 		timelineIDs := make([]database.EventRowID, len(timeline.Events))
+		encounteredReceiptUsers := make(map[id.UserID]struct{})
 		readUpToIndex := -1
 		for i := len(timeline.Events) - 1; i >= 0; i-- {
 			evt := timeline.Events[i]
+			for _, receipt := range receiptMap[evt.ID] {
+				encounteredReceiptUsers[receipt.UserID] = struct{}{}
+			}
 			isRead := slices.Contains(newOwnReceipts, evt.ID)
 			isOwnEvent := evt.Sender == h.Account.UserID
-			if isRead || isOwnEvent {
+			_, alreadyEncountered := encounteredReceiptUsers[evt.Sender]
+			if !isOwnEvent && !alreadyEncountered {
+				encounteredReceiptUsers[evt.Sender] = struct{}{}
+				injectedReceipt := &database.Receipt{
+					RoomID:      room.ID,
+					UserID:      evt.Sender,
+					ReceiptType: event.ReceiptTypeRead,
+					EventID:     evt.ID,
+					Timestamp:   jsontime.UM(time.UnixMilli(evt.Timestamp)),
+				}
+				receipts = append(receipts, injectedReceipt)
+				receiptMap[evt.ID] = append(receiptMap[evt.ID], injectedReceipt)
+			}
+			if readUpToIndex == -1 && (isRead || isOwnEvent) {
 				readUpToIndex = i
 				// Reset unread counts if we see our own read receipt in the timeline.
 				// It'll be updated with new unreads (if any) at the end.
@@ -741,7 +767,6 @@ func (h *HiClient) processStateAndTimeline(
 					})
 					newOwnReceipts = append(newOwnReceipts, evt.ID)
 				}
-				break
 			}
 		}
 		for i, evt := range timeline.Events {
@@ -841,7 +866,10 @@ func (h *HiClient) processStateAndTimeline(
 		}
 	}
 	// TODO why is *old* unread count sometimes zero when processing the read receipt that is making it zero?
-	if roomChanged || len(accountData) > 0 || len(newOwnReceipts) > 0 || len(timelineRowTuples) > 0 || len(allNewEvents) > 0 {
+	if roomChanged || len(accountData) > 0 || len(newOwnReceipts) > 0 || len(receipts) > 0 || len(timelineRowTuples) > 0 || len(allNewEvents) > 0 {
+		for _, receipt := range receipts {
+			receipt.RoomID = ""
+		}
 		ctx.Value(syncContextKey).(*syncContext).evt.Rooms[room.ID] = &SyncRoom{
 			Meta:          room,
 			Timeline:      timelineRowTuples,
@@ -850,6 +878,7 @@ func (h *HiClient) processStateAndTimeline(
 			Reset:         timeline.Limited,
 			Events:        allNewEvents,
 			Notifications: newNotifications,
+			Receipts:      receiptMap,
 		}
 	}
 	return nil

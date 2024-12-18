@@ -5,10 +5,10 @@ div.timeline-event {
 	padding: 0 var(--timeline-horizontal-padding);
 	display: grid;
 	grid-template:
-		"cmc                          cmc                        cmc      cmc"    0
+		"cmc                          cmc                        cmc      empty"    0
 		"avatar                       gap                        sender   sender" auto
 		"avatar                       gap                        content  status" auto
-		/ var(--timeline-avatar-size) var(--timeline-avatar-gap) 1fr      2rem;
+		/ var(--timeline-avatar-size) var(--timeline-avatar-gap) 1fr      var(--timeline-status-size);
 	contain: layout;
 	margin-top: var(--timeline-message-gap);
 
@@ -119,9 +119,9 @@ div.timeline-event {
 
 	&.same-sender {
 		grid-template:
-			"cmc                                cmc     cmc"    0
+			"cmc                                cmc     empty"    0
 			"timestamp                          content status" auto
-			/ var(--timeline-avatar-total-size) 1fr     2rem;
+			/ var(--timeline-avatar-total-size) 1fr     var(--timeline-status-size);
 		margin-top: var(--timeline-message-gap-same-sender);
 
 		> div.sender-avatar, > div.event-sender-and-time {
@@ -135,9 +135,9 @@ div.timeline-event {
 
 	&.small-event {
 		grid-template:
-			"cmc                                cmc    cmc     cmc"    0
+			"cmc                                cmc    cmc     empty"    0
 			"timestamp                          avatar content status" auto
-			/ var(--timeline-avatar-total-size) 1.5rem 1fr     2rem;
+			/ var(--timeline-avatar-total-size) 1.5rem 1fr     var(--timeline-status-size);
 
 		> div.sender-avatar {
 			width: 1.5rem;

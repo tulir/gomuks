@@ -23,6 +23,7 @@ import ClientContext from "../ClientContext.ts"
 import MainScreenContext from "../MainScreenContext.ts"
 import { ModalContext } from "../modal/Modal.tsx"
 import { useRoomContext } from "../roomview/roomcontext.ts"
+import ReadReceipts from "./ReadReceipts.tsx"
 import { ReplyIDBody } from "./ReplyBody.tsx"
 import { ContentErrorBoundary, HiddenEvent, getBodyType, isSmallEvent } from "./content"
 import { EventFullMenu, EventHoverMenu, getModalStyleFromMouse } from "./menu"
@@ -201,6 +202,7 @@ const TimelineEvent = ({ evt, prevEvt, disableMenu }: TimelineEventProps) => {
 			</ContentErrorBoundary>
 			{evt.reactions ? <EventReactions reactions={evt.reactions}/> : null}
 		</div>
+		{!evt.event_id.startsWith("~") && <ReadReceipts room={roomCtx.store} eventID={evt.event_id} />}
 		{evt.sender === client.userID && evt.transaction_id ? <EventSendStatus evt={evt}/> : null}
 	</div>
 	return <>

@@ -22,6 +22,7 @@ import {
 	EventID,
 	EventType,
 	LazyLoadSummary,
+	ReceiptType,
 	RelationType,
 	RoomAlias,
 	RoomID,
@@ -145,8 +146,22 @@ export interface DBRoomAccountData {
 	content: UnknownEventContent
 }
 
+export interface DBReceipt {
+	user_id: UserID
+	receipt_type: ReceiptType
+	thread_id?: EventID | "main"
+	event_id: EventID
+	timestamp: number
+}
+
+export interface MemReceipt extends DBReceipt {
+	event_rowid: EventRowID
+	timeline_rowid: TimelineRowID
+}
+
 export interface PaginationResponse {
 	events: RawDBEvent[]
+	receipts: Record<EventID, DBReceipt[]>
 	has_more: boolean
 }
 

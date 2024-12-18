@@ -162,6 +162,7 @@ func (h *HiClient) processGetRoomState(ctx context.Context, roomID id.RoomID, fe
 							Events:        make([]*database.Event, 0),
 							Reset:         false,
 							Notifications: make([]SyncNotification, 0),
+							Receipts:      make(map[id.EventID][]*database.Receipt),
 						},
 					},
 					AccountData: make(map[event.Type]*database.AccountData),
@@ -196,22 +197,69 @@ func (h *HiClient) GetRoomState(ctx context.Context, roomID id.RoomID, includeMe
 }
 
 type PaginationResponse struct {
-	Events  []*database.Event `json:"events"`
-	HasMore bool              `json:"has_more"`
+	Events   []*database.Event                  `json:"events"`
+	Receipts map[id.EventID][]*database.Receipt `json:"receipts"`
+	HasMore  bool                               `json:"has_more"`
 }
 
 func (h *HiClient) Paginate(ctx context.Context, roomID id.RoomID, maxTimelineID database.TimelineRowID, limit int) (*PaginationResponse, error) {
 	evts, err := h.DB.Timeline.Get(ctx, roomID, limit, maxTimelineID)
 	if err != nil {
 		return nil, err
-	} else if len(evts) > 0 {
+	}
+	var resp *PaginationResponse
+	if len(evts) > 0 {
 		for _, evt := range evts {
 			h.ReprocessExistingEvent(ctx, evt)
 		}
-		return &PaginationResponse{Events: evts, HasMore: true}, nil
+		resp = &PaginationResponse{Events: evts, HasMore: true}
 	} else {
-		return h.PaginateServer(ctx, roomID, limit)
+		resp, err = h.PaginateServer(ctx, roomID, limit)
+		if err != nil {
+			return nil, err
+		}
 	}
+	eventIDs := make([]id.EventID, len(resp.Events))
+	for i, evt := range resp.Events {
+		eventIDs[i] = evt.ID
+	}
+	resp.Receipts, err = h.GetReceipts(ctx, roomID, eventIDs)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get receipts: %w", err)
+	}
+	return resp, nil
+}
+
+func (h *HiClient) GetReceipts(ctx context.Context, roomID id.RoomID, eventIDs []id.EventID) (map[id.EventID][]*database.Receipt, error) {
+	receipts, err := h.DB.Receipt.GetManyRead(ctx, roomID, eventIDs)
+	if err != nil {
+		return nil, err
+	}
+	encounteredUsers := map[id.UserID]struct{}{
+		// Never include own receipts
+		h.Account.UserID: {},
+	}
+	// If there are multiple receipts (e.g. due to threads), only keep the one for the latest event (first in the array)
+	// The input event IDs are already sorted in reverse chronological order
+	for _, evtID := range eventIDs {
+		receiptArr := receipts[evtID]
+		i := 0
+		for _, receipt := range receiptArr {
+			_, alreadyEncountered := encounteredUsers[receipt.UserID]
+			if alreadyEncountered {
+				continue
+			}
+			// Clear room ID for efficiency
+			receipt.RoomID = ""
+			encounteredUsers[receipt.UserID] = struct{}{}
+			receiptArr[i] = receipt
+			i++
+		}
+		if len(receiptArr) > 0 && i < len(receiptArr) {
+			receipts[evtID] = receiptArr[:i]
+		}
+	}
+	return receipts, nil
 }
 
 func (h *HiClient) PaginateServer(ctx context.Context, roomID id.RoomID, limit int) (*PaginationResponse, error) {

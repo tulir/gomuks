@@ -15,6 +15,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import {
 	DBAccountData,
+	DBReceipt,
 	DBRoom,
 	DBRoomAccountData,
 	EventRowID,
@@ -23,6 +24,7 @@ import {
 } from "./hitypes.ts"
 import {
 	DeviceID,
+	EventID,
 	EventType,
 	RoomID,
 	UserID,
@@ -74,6 +76,7 @@ export interface SyncRoom {
 	reset: boolean
 	notifications: SyncNotification[]
 	account_data: Record<EventType, DBRoomAccountData>
+	receipts: Record<EventID, DBReceipt[]>
 }
 
 export interface SyncNotification {
