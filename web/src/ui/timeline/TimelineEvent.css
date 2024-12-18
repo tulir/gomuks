@@ -159,6 +159,19 @@ div.timeline-event {
 	}
 }
 
+div.pinned-event > div.timeline-event {
+	--timeline-status-size: 0;
+	--timeline-horizontal-padding: 0;
+
+	> div.event-send-status {
+		display: none;
+	}
+
+	> div.read-receipts {
+		display: none;
+	}
+}
+
 span.event-sender {
 	overflow: hidden;
 	text-overflow: ellipsis;
