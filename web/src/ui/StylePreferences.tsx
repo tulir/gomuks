@@ -32,29 +32,39 @@ function css(strings: TemplateStringsArray, ...values: unknown[]) {
 	return newStyleSheet(String.raw(strings, ...values))
 }
 
+function pushSheet(sheet: CSSStyleSheet): () => void {
+	document.adoptedStyleSheets.push(sheet)
+	return () => {
+		const idx = document.adoptedStyleSheets.indexOf(sheet)
+		if (idx !== -1) {
+			document.adoptedStyleSheets.splice(idx, 1)
+		}
+	}
+}
+
 function useStyle(callback: () => CSSStyleSheet | false | undefined | null | "", dependencies: unknown[]) {
 	useInsertionEffect(() => {
 		const sheet = callback()
 		if (!sheet) {
 			return
 		}
-		document.adoptedStyleSheets.push(sheet)
-		return () => {
-			const idx = document.adoptedStyleSheets.indexOf(sheet)
-			if (idx !== -1) {
-				document.adoptedStyleSheets.splice(idx, 1)
-			}
-		}
+		return pushSheet(sheet)
 	}, dependencies)
 }
 
-function useAsyncStyle(callback: () => string | false | undefined | null, dependencies: unknown[]) {
+function useAsyncStyle(callback: () => string | false | undefined | null, dependencies: unknown[], id?: string) {
 	useInsertionEffect(() => {
 		const sheet = callback()
 		if (!sheet) {
 			return
 		}
+		if (!sheet.includes("@import")) {
+			return pushSheet(newStyleSheet(sheet))
+		}
 		const styleTags = document.createElement("style")
+		if (id) {
+			styleTags.id = id
+		}
 		styleTags.textContent = sheet
 		document.head.appendChild(styleTags)
 		return () => {
@@ -116,8 +126,8 @@ const StylePreferences = ({ client, activeRoom }: StylePreferencesProps) => {
 		}
 	` : `
 		@import url("_gomuks/codeblock/${preferences.code_block_theme}.css");
-	`, [preferences.code_block_theme])
-	useStyle(() => preferences.custom_css && newStyleSheet(preferences.custom_css), [preferences.custom_css])
+	`, [preferences.code_block_theme], "gomuks-pref-code-block-theme")
+	useAsyncStyle(() => preferences.custom_css, [preferences.custom_css], "gomuks-pref-custom-css")
 	return null
 }
 
