@@ -102,6 +102,11 @@ const StylePreferences = ({ client, activeRoom }: StylePreferencesProps) => {
 			display: none;
 		}
 	`, [preferences.show_date_separators])
+	useStyle(() => !preferences.display_read_receipts && css`
+		:root {
+			--timeline-status-size: 2rem;
+		}
+	`, [preferences.display_read_receipts])
 	useAsyncStyle(() => preferences.code_block_theme === "auto" ? `
 		@import url("_gomuks/codeblock/github.css") (prefers-color-scheme: light);
 		@import url("_gomuks/codeblock/github-dark.css") (prefers-color-scheme: dark);

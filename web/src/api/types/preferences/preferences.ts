@@ -47,6 +47,12 @@ export const preferences = {
 		allowedContexts: anyContext,
 		defaultValue: true,
 	}),
+	display_read_receipts: new Preference<boolean>({
+		displayName: "Display read receipts",
+		description: "Should read receipts be rendered in the timeline?",
+		allowedContexts: anyContext,
+		defaultValue: true,
+	}),
 	show_media_previews: new Preference<boolean>({
 		displayName: "Show image and video previews",
 		description: "If disabled, images and videos will only be visible after clicking and will not be downloaded automatically.",
