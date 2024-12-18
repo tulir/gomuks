@@ -111,32 +111,32 @@ export const ReplyBody = ({
 			<span className={`event-sender sender-color-${userColorIndex}`}>
 				{getDisplayname(event.sender, memberEvtContent)}
 			</span>
-			{onClose && <div className="buttons">
-				{onSetSilent && (isExplicitInThread || !isThread) && <TooltipButton
-					tooltipText={isSilent
-						? "Click to enable pinging the original author"
-						: "Click to disable pinging the original author"}
-					tooltipDirection="left"
-					className="silent-reply"
-					onClick={onSetSilent}
-				>
-					{isSilent ? <NotificationsOffIcon /> : <NotificationsIcon />}
-				</TooltipButton>}
-				{isThread && onSetExplicitInThread && <TooltipButton
-					tooltipText={isExplicitInThread
-						? "Click to respond in thread without replying to a specific message"
-						: "Click to reply explicitly in thread"}
-					tooltipDirection="left"
-					className="thread-explicit-reply"
-					onClick={onSetExplicitInThread}
-				>
-					{isExplicitInThread ? <ReplyIcon /> : <ThreadIcon />}
-				</TooltipButton>}
-				{onClose && <button className="close-reply" onClick={onClose}><CloseIcon/></button>}
-			</div>}
 		</div>
 		<ContentErrorBoundary>
 			<BodyType room={room} event={event} sender={memberEvt}/>
 		</ContentErrorBoundary>
+		{onClose && <div className="buttons">
+			{onSetSilent && (isExplicitInThread || !isThread) && <TooltipButton
+				tooltipText={isSilent
+					? "Click to enable pinging the original author"
+					: "Click to disable pinging the original author"}
+				tooltipDirection="left"
+				className="silent-reply"
+				onClick={onSetSilent}
+			>
+				{isSilent ? <NotificationsOffIcon /> : <NotificationsIcon />}
+			</TooltipButton>}
+			{isThread && onSetExplicitInThread && <TooltipButton
+				tooltipText={isExplicitInThread
+					? "Click to respond in thread without replying to a specific message"
+					: "Click to reply explicitly in thread"}
+				tooltipDirection="left"
+				className="thread-explicit-reply"
+				onClick={onSetExplicitInThread}
+			>
+				{isExplicitInThread ? <ReplyIcon /> : <ThreadIcon />}
+			</TooltipButton>}
+			{onClose && <button className="close-reply" onClick={onClose}><CloseIcon/></button>}
+		</div>}
 	</blockquote>
 }
