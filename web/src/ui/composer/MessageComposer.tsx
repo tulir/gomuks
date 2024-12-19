@@ -459,11 +459,20 @@ const MessageComposer = () => {
 			content: <EmojiPicker
 				style={getEmojiPickerStyle()}
 				room={roomCtx.store}
-				onSelect={(emoji: PartialEmoji) => setState({
-					text: state.text.slice(0, textInput.current?.selectionStart ?? 0)
-						+ emojiToMarkdown(emoji)
-						+ state.text.slice(textInput.current?.selectionEnd ?? 0),
-				})}
+				onSelect={(emoji: PartialEmoji) => {
+					const mdEmoji = emojiToMarkdown(emoji)
+					setState({
+						text: state.text.slice(0, textInput.current?.selectionStart ?? 0)
+							+ mdEmoji
+							+ state.text.slice(textInput.current?.selectionEnd ?? 0),
+					})
+					if (textInput.current) {
+						textInput.current.setSelectionRange(textInput.current.selectionStart + mdEmoji.length, 0)
+					}
+				}}
+				// TODO allow keeping open on select on non-mobile devices
+				//      (requires onSelect to be able to keep track of the state after updating it)
+				closeOnSelect={true}
 			/>,
 			onClose: () => !isMobileDevice && textInput.current?.focus(),
 		})
