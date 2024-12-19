@@ -164,7 +164,9 @@ const handleURLHash = (client: Client) => {
 			}
 			const state = JSON.parse(newURL.searchParams.get("state") || "{}")
 			newURL.search = ""
-			history.replaceState(state, "", newURL.toString())
+			// Set an extra empty state to ensure back button goes to room list instead of reloading the page.
+			history.replaceState({}, "", newURL.toString())
+			history.pushState(state, "")
 			return state
 		}
 		return history.state
