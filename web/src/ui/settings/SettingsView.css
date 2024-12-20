@@ -13,6 +13,15 @@ div.settings-view {
 			text-overflow: ellipsis;
 			text-wrap: nowrap;
 		}
+
+		button.leave-room {
+			padding: .5rem 1rem;
+
+			&:hover, &:focus {
+				background-color: var(--error-color);
+				color: var(--inverted-text-color);
+			}
+		}
 	}
 
 	width: min(60rem, 80vw);

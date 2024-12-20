@@ -30,6 +30,7 @@ import { useEventAsState } from "@/util/eventdispatcher.ts"
 import useEvent from "@/util/useEvent.ts"
 import ClientContext from "../ClientContext.ts"
 import { LightboxContext } from "../modal/Lightbox.tsx"
+import { ModalCloseContext } from "../modal/Modal.tsx"
 import JSONView from "../util/JSONView.tsx"
 import Toggle from "../util/Toggle.tsx"
 import CloseIcon from "@/icons/close.svg?react"
@@ -294,6 +295,7 @@ const AppliedSettingsView = ({ room }: SettingsViewProps) => {
 const SettingsView = ({ room }: SettingsViewProps) => {
 	const roomMeta = useEventAsState(room.meta)
 	const client = use(ClientContext)!
+	const closeModal = use(ModalCloseContext)
 	const setPref = useCallback((context: PreferenceContext, key: keyof Preferences, value: PreferenceValueType | undefined) => {
 		if (context === PreferenceContext.Account) {
 			client.rpc.setAccountData("fi.mau.gomuks.preferences", {
@@ -327,6 +329,17 @@ const SettingsView = ({ room }: SettingsViewProps) => {
 			)
 		}
 	}, [client])
+	const onClickLeave = useCallback(() => {
+		if (window.confirm(`Really leave ${room.meta.current.name}?`)) {
+			client.rpc.leaveRoom(room.roomID).then(
+				() => {
+					console.info("Successfully left", room.roomID)
+					closeModal()
+				},
+				err => window.alert(`Failed to leave room: ${err}`),
+			)
+		}
+	}, [client, room, closeModal])
 	usePreferences(client.store, room)
 	const globalServer = client.store.serverPreferenceCache
 	const globalLocal = client.store.localPreferenceCache
@@ -346,6 +359,7 @@ const SettingsView = ({ room }: SettingsViewProps) => {
 				{roomMeta.name && <div className="room-name">{roomMeta.name}</div>}
 				<code>{room.roomID}</code>
 				<div>{roomMeta.topic}</div>
+				<button className="leave-room" onClick={onClickLeave}>Leave room</button>
 			</div>
 		</div>
 		<table>
