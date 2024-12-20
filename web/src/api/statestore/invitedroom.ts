@@ -32,6 +32,7 @@ import type { RoomListEntry, StateStore } from "./main.ts"
 export class InvitedRoomStore implements RoomListEntry, RoomSummary {
 	readonly room_id: RoomID
 	readonly sorting_timestamp: number
+	readonly date: string
 	readonly name: string = ""
 	readonly search_name: string
 	readonly dm_user_id?: UserID
@@ -40,13 +41,16 @@ export class InvitedRoomStore implements RoomListEntry, RoomSummary {
 	readonly avatar?: ContentURI
 	readonly encryption?: "m.megolm.v1.aes-sha2"
 	readonly room_version?: RoomVersion
-	readonly join_rules?: JoinRule
+	readonly join_rule?: JoinRule
 	readonly invited_by?: UserID
 	readonly inviter_profile?: MemberEventContent
+	readonly is_direct: boolean
 
 	constructor(public readonly meta: DBInvitedRoom, parent: StateStore) {
 		this.room_id = meta.room_id
 		this.sorting_timestamp = 1000000000000000 + meta.created_at
+		this.date = new Date(meta.created_at - new Date().getTimezoneOffset() * 60000)
+			.toISOString().replace("T", " ").replace("Z", "")
 		const members = new Map<UserID, StrippedStateEvent>()
 		for (const state of this.meta.invite_state) {
 			if (state.type === "m.room.name") {
@@ -57,14 +61,14 @@ export class InvitedRoomStore implements RoomListEntry, RoomSummary {
 				this.topic = ensureString(state.content.topic)
 			} else if (state.type === "m.room.avatar") {
 				this.avatar = ensureString(state.content.url)
-			} else if (state.type === "m.room.encryption" && state.content.algorithm === "m.megolm.v1.aes-sha2") {
-				this.encryption = state.content.algorithm
+			} else if (state.type === "m.room.encryption") {
+				this.encryption = state.content.algorithm as "m.megolm.v1.aes-sha2"
 			} else if (state.type === "m.room.create") {
 				this.room_version = ensureString(state.content.version) as RoomVersion
 			} else if (state.type === "m.room.member") {
 				members.set(state.state_key, state)
 			} else if (state.type === "m.room.join_rules") {
-				this.join_rules = ensureString(state.content.join_rule) as JoinRule
+				this.join_rule = ensureString(state.content.join_rule) as JoinRule
 			}
 		}
 		this.search_name = toSearchableString(this.name ?? "")
@@ -73,14 +77,15 @@ export class InvitedRoomStore implements RoomListEntry, RoomSummary {
 			this.invited_by = ownMemberEvt.sender
 			this.inviter_profile = members.get(ownMemberEvt.sender)?.content as MemberEventContent
 		}
+		this.is_direct = Boolean(ownMemberEvt?.content.is_direct)
 		if (
 			!this.name
 			&& !this.avatar
 			&& !this.topic
 			&& !this.canonical_alias
-			&& this.join_rules === "invite"
+			&& this.join_rule === "invite"
 			&& this.invited_by
-			&& ownMemberEvt?.content.is_direct
+			&& this.is_direct
 		) {
 			this.dm_user_id = this.invited_by
 			this.name = getDisplayname(this.invited_by, this.inviter_profile)

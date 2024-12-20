@@ -36,6 +36,14 @@ div.room-view.preview > div.preview-inner {
 		gap: .25rem;
 	}
 
+	> details.room-invite-meta {
+		width: 100%;
+
+		> table > tr > td:nth-of-type(2) {
+			font-family: var(--monospace-font-stack);
+		}
+	}
+
 	> div.room-topic {
 		white-space: pre-wrap;
 		max-height: 15rem;
@@ -56,6 +64,7 @@ div.room-view.preview > div.preview-inner {
 		width: 100%;
 		display: flex;
 		gap: .25rem;
+		margin-top: 1rem;
 
 		> button {
 			padding: .5rem;

@@ -93,7 +93,10 @@ const RoomPreview = ({ roomID, via, alias, invite }: RoomPreviewProps) => {
 					src={getAvatarURL(invite.invited_by, invite.inviter_profile)}
 					alt=""
 				/>
-				{getDisplayname(invite.invited_by, invite.inviter_profile)} invited you to
+				<span className="inviter-name" title={invite.invited_by}>
+					{getDisplayname(invite.invited_by, invite.inviter_profile)}
+				</span>
+				invited you to
 			</div> : null}
 			<h2 className="room-name">{name}</h2>
 			<img
@@ -105,7 +108,40 @@ const RoomPreview = ({ roomID, via, alias, invite }: RoomPreviewProps) => {
 			{loading && <ScaleLoader color="var(--primary-color)"/>}
 			{memberCount && <div className="member-count"><GroupIcon/> {memberCount} members</div>}
 			<div className="room-topic">{topic}</div>
-			{invite?.invited_by && <MutualRooms client={client} userID={invite.invited_by} />}
+			{invite && <details className="room-invite-meta">
+				<summary>Invite metadata</summary>
+				<table>
+					<tr>
+						<td>Invited by</td>
+						<td>{invite.invited_by}</td>
+					</tr>
+					<tr>
+						<td>Room ID</td>
+						<td>{roomID}</td>
+					</tr>
+					<tr>
+						<td>Room alias</td>
+						<td>{invite.canonical_alias ?? summary?.canonical_alias}</td>
+					</tr>
+					<tr>
+						<td>Is direct</td>
+						<td>{invite.is_direct.toString()}</td>
+					</tr>
+					<tr>
+						<td>Encryption</td>
+						<td>{invite.encryption ?? summary?.encryption ?? summary?.["im.nheko.summary.encryption"]}</td>
+					</tr>
+					<tr>
+						<td>Join rule</td>
+						<td>{invite.join_rule ?? summary?.join_rule}</td>
+					</tr>
+					<tr>
+						<td>Timestamp</td>
+						<td>{invite.date}</td>
+					</tr>
+				</table>
+			</details>}
+			{invite?.invited_by && <MutualRooms client={client} userID={invite.invited_by}/>}
 			<div className="buttons">
 				{invite && <button
 					disabled={buttonClicked}
