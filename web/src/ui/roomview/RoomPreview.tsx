@@ -93,9 +93,10 @@ const RoomPreview = ({ roomID, via, alias, invite }: RoomPreviewProps) => {
 					src={getAvatarURL(invite.invited_by, invite.inviter_profile)}
 					alt=""
 				/>
-				{getDisplayname(invite.invited_by, invite.inviter_profile)} invited you to
+				{getDisplayname(invite.invited_by, invite.inviter_profile)} ({invite.invited_by}) invited you to
 			</div> : null}
 			<h2 className="room-name">{name}</h2>
+			<code>{invite?.room_id}</code>
 			<img
 				src={getRoomAvatarURL(invite ?? summary ?? { room_id: roomID })}
 				className="large avatar"
