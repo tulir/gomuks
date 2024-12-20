@@ -1,0 +1,70 @@
+
+div.room-view.preview > div.preview-inner {
+	width: 100%;
+	max-height: 100%;
+	height: auto;
+	max-width: 30rem;
+
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: .5rem;
+
+	> img.avatar {
+		width: 7.5rem;
+		height: 7.5rem;
+		border: 1px solid var(--border-color);
+	}
+
+	> h2.room-name {
+		margin: 0;
+	}
+
+	> div.mutual-rooms {
+		width: 100%;
+		max-height: 20rem;
+		overflow: auto;
+
+		> h4 {
+			margin: .5rem 0 0;
+		}
+	}
+
+	> div.error, > div.member-count, > div.inviter-info {
+		display: flex;
+		align-items: center;
+		gap: .25rem;
+	}
+
+	> div.room-topic {
+		white-space: pre-wrap;
+		max-height: 15rem;
+		overflow: auto;
+
+		@media screen and (max-height: 50rem) {
+			max-height: 7.5rem;
+		}
+	}
+
+	> div.error > svg {
+		flex-shrink: 0;
+		width: 1.5rem;
+		height: 1.5rem;
+	}
+
+	> div.buttons {
+		width: 100%;
+		display: flex;
+		gap: .25rem;
+
+		> button {
+			padding: .5rem;
+			width: 100%;
+
+			&.reject {
+				border: 2px solid var(--error-color);
+				padding: .25rem .5rem;
+			}
+		}
+	}
+}

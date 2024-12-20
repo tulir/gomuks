@@ -20,6 +20,7 @@ type Database struct {
 	Account        AccountQuery
 	AccountData    AccountDataQuery
 	Room           RoomQuery
+	InvitedRoom    InvitedRoomQuery
 	Event          EventQuery
 	CurrentState   CurrentStateQuery
 	Timeline       TimelineQuery
@@ -37,6 +38,7 @@ func New(rawDB *dbutil.Database) *Database {
 		Account:        AccountQuery{QueryHelper: dbutil.MakeQueryHelper(rawDB, newAccount)},
 		AccountData:    AccountDataQuery{QueryHelper: dbutil.MakeQueryHelper(rawDB, newAccountData)},
 		Room:           RoomQuery{QueryHelper: dbutil.MakeQueryHelper(rawDB, newRoom)},
+		InvitedRoom:    InvitedRoomQuery{QueryHelper: dbutil.MakeQueryHelper(rawDB, newInvitedRoom)},
 		Event:          EventQuery{QueryHelper: eventQH},
 		CurrentState:   CurrentStateQuery{QueryHelper: eventQH},
 		Timeline:       TimelineQuery{QueryHelper: eventQH},
@@ -56,6 +58,10 @@ func newEvent(_ *dbutil.QueryHelper[*Event]) *Event {
 
 func newRoom(_ *dbutil.QueryHelper[*Room]) *Room {
 	return &Room{}
+}
+
+func newInvitedRoom(_ *dbutil.QueryHelper[*InvitedRoom]) *InvitedRoom {
+	return &InvitedRoom{}
 }
 
 func newReceipt(_ *dbutil.QueryHelper[*Receipt]) *Receipt {

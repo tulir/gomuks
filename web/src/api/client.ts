@@ -104,6 +104,7 @@ export default class Client {
 	#handleEvent = (ev: RPCEvent) => {
 		if (ev.command === "client_state") {
 			this.state.emit(ev.data)
+			this.store.userID = ev.data.is_logged_in ? ev.data.user_id : ""
 		} else if (ev.command === "sync_status") {
 			this.syncStatus.emit(ev.data)
 		} else if (ev.command === "init_complete") {

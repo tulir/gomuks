@@ -32,9 +32,11 @@ import type {
 	ReceiptType,
 	RelatesTo,
 	ResolveAliasResponse,
+	RespRoomJoin,
 	RoomAlias,
 	RoomID,
 	RoomStateGUID,
+	RoomSummary,
 	TimelineRowID,
 	UserID,
 	UserProfile,
@@ -218,6 +220,18 @@ export default abstract class RPCClient {
 
 	paginateServer(room_id: RoomID, limit: number): Promise<PaginationResponse> {
 		return this.request("paginate_server", { room_id, limit })
+	}
+
+	getRoomSummary(room_id_or_alias: RoomID | RoomAlias, via?: string[]): Promise<RoomSummary> {
+		return this.request("get_room_summary", { room_id_or_alias, via })
+	}
+
+	joinRoom(room_id_or_alias: RoomID | RoomAlias, via?: string[], reason?: string): Promise<RespRoomJoin> {
+		return this.request("join_room", { room_id_or_alias, via, reason })
+	}
+
+	leaveRoom(room_id: RoomID, reason?: string): Promise<Record<string, never>> {
+		return this.request("leave_room", { room_id, reason })
 	}
 
 	resolveAlias(alias: RoomAlias): Promise<ResolveAliasResponse> {

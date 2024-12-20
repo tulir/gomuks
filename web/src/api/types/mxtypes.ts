@@ -68,8 +68,10 @@ export interface UserProfile {
 	[custom: string]: unknown
 }
 
+export type Membership = "join" | "leave" | "ban" | "invite" | "knock"
+
 export interface MemberEventContent extends UserProfile {
-	membership: "join" | "leave" | "ban" | "invite" | "knock"
+	membership: Membership
 	reason?: string
 }
 
@@ -234,4 +236,31 @@ export interface ImagePackRooms {
 
 export interface ElementRecentEmoji {
 	recent_emoji: [string, number][]
+}
+
+export type JoinRule = "public" | "knock" | "restricted" | "knock_restricted" | "invite" | "private"
+
+export interface RoomSummary {
+	room_id: RoomID
+	membership?: Membership
+
+	room_version?: RoomVersion
+	"im.nheko.summary.room_version"?: RoomVersion
+	"im.nheko.summary.version"?: RoomVersion
+	encryption?: "m.megolm.v1.aes-sha2"
+	"im.nheko.summary.encryption"?: "m.megolm.v1.aes-sha2"
+
+	avatar_url?: ContentURI
+	canonical_alias?: RoomAlias
+	guest_can_join: boolean
+	join_rule?: JoinRule
+	name?: string
+	num_joined_members: number
+	room_type: RoomType
+	topic?: string
+	world_readable: boolean
+}
+
+export interface RespRoomJoin {
+	room_id: RoomID
 }

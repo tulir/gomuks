@@ -15,6 +15,8 @@ import (
 	"github.com/mattn/go-sqlite3"
 	"maunium.net/go/mautrix"
 	"maunium.net/go/mautrix/id"
+
+	"go.mau.fi/gomuks/pkg/hicli/database"
 )
 
 type hiSyncer HiClient
@@ -31,9 +33,10 @@ func (h *hiSyncer) ProcessResponse(ctx context.Context, resp *mautrix.RespSync, 
 	c := (*HiClient)(h)
 	c.lastSync = time.Now()
 	ctx = context.WithValue(ctx, syncContextKey, &syncContext{evt: &SyncComplete{
-		Since:     &since,
-		Rooms:     make(map[id.RoomID]*SyncRoom, len(resp.Rooms.Join)),
-		LeftRooms: make([]id.RoomID, 0, len(resp.Rooms.Leave)),
+		Since:        &since,
+		Rooms:        make(map[id.RoomID]*SyncRoom, len(resp.Rooms.Join)),
+		InvitedRooms: make([]*database.InvitedRoom, 0, len(resp.Rooms.Invite)),
+		LeftRooms:    make([]id.RoomID, 0, len(resp.Rooms.Leave)),
 	}})
 	err := c.preProcessSyncResponse(ctx, resp, since)
 	if err != nil {
@@ -73,23 +76,23 @@ func (h *hiSyncer) OnFailedSync(_ *mautrix.RespSync, err error) (time.Duration, 
 func (h *hiSyncer) GetFilterJSON(_ id.UserID) *mautrix.Filter {
 	if !h.Verified {
 		return &mautrix.Filter{
-			Presence: mautrix.FilterPart{
+			Presence: &mautrix.FilterPart{
 				NotRooms: []id.RoomID{"*"},
 			},
-			Room: mautrix.RoomFilter{
+			Room: &mautrix.RoomFilter{
 				NotRooms: []id.RoomID{"*"},
 			},
 		}
 	}
 	return &mautrix.Filter{
-		Presence: mautrix.FilterPart{
+		Presence: &mautrix.FilterPart{
 			NotRooms: []id.RoomID{"*"},
 		},
-		Room: mautrix.RoomFilter{
-			State: mautrix.FilterPart{
+		Room: &mautrix.RoomFilter{
+			State: &mautrix.FilterPart{
 				LazyLoadMembers: true,
 			},
-			Timeline: mautrix.FilterPart{
+			Timeline: &mautrix.FilterPart{
 				Limit:           100,
 				LazyLoadMembers: true,
 			},

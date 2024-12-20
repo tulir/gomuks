@@ -151,14 +151,20 @@ func (h *HiClient) processSyncResponse(ctx context.Context, resp *mautrix.RespSy
 		}
 	}
 	ctx.Value(syncContextKey).(*syncContext).evt.AccountData = accountData
+	for roomID, room := range resp.Rooms.Invite {
+		err = h.processSyncInvitedRoom(ctx, roomID, room)
+		if err != nil {
+			return fmt.Errorf("failed to process invited room %s: %w", roomID, err)
+		}
+	}
 	for roomID, room := range resp.Rooms.Join {
-		err := h.processSyncJoinedRoom(ctx, roomID, room)
+		err = h.processSyncJoinedRoom(ctx, roomID, room)
 		if err != nil {
 			return fmt.Errorf("failed to process joined room %s: %w", roomID, err)
 		}
 	}
 	for roomID, room := range resp.Rooms.Leave {
-		err := h.processSyncLeftRoom(ctx, roomID, room)
+		err = h.processSyncLeftRoom(ctx, roomID, room)
 		if err != nil {
 			return fmt.Errorf("failed to process left room %s: %w", roomID, err)
 		}
@@ -194,6 +200,27 @@ func (h *HiClient) receiptsToList(content *event.ReceiptEventContent) ([]*databa
 		}
 	}
 	return receiptList, newOwnReceipts
+}
+
+func (h *HiClient) processSyncInvitedRoom(ctx context.Context, roomID id.RoomID, room *mautrix.SyncInvitedRoom) error {
+	ir := &database.InvitedRoom{
+		ID:          roomID,
+		CreatedAt:   jsontime.UnixMilliNow(),
+		InviteState: room.State.Events,
+	}
+	for _, evt := range room.State.Events {
+		if evt.Type == event.StateMember && evt.GetStateKey() == h.Account.UserID.String() && evt.Timestamp != 0 {
+			ir.CreatedAt = jsontime.UM(time.UnixMilli(evt.Timestamp))
+			break
+		}
+	}
+	err := h.DB.InvitedRoom.Upsert(ctx, ir)
+	if err != nil {
+		return fmt.Errorf("failed to save invited room: %w", err)
+	}
+	syncEvt := ctx.Value(syncContextKey).(*syncContext).evt
+	syncEvt.InvitedRooms = append(syncEvt.InvitedRooms, ir)
+	return nil
 }
 
 func (h *HiClient) processSyncJoinedRoom(ctx context.Context, roomID id.RoomID, room *mautrix.SyncJoinedRoom) error {
@@ -264,6 +291,10 @@ func (h *HiClient) processSyncLeftRoom(ctx context.Context, roomID id.RoomID, ro
 	err := h.DB.Room.Delete(ctx, roomID)
 	if err != nil {
 		return fmt.Errorf("failed to delete room: %w", err)
+	}
+	err = h.DB.InvitedRoom.Delete(ctx, roomID)
+	if err != nil {
+		return fmt.Errorf("failed to delete invited room: %w", err)
 	}
 	payload := ctx.Value(syncContextKey).(*syncContext).evt
 	payload.LeftRooms = append(payload.LeftRooms, roomID)

@@ -27,9 +27,9 @@ import ReadReceipts from "./ReadReceipts.tsx"
 import { ReplyIDBody } from "./ReplyBody.tsx"
 import { ContentErrorBoundary, HiddenEvent, getBodyType, isSmallEvent } from "./content"
 import { EventFullMenu, EventHoverMenu, getModalStyleFromMouse } from "./menu"
-import ErrorIcon from "../../icons/error.svg?react"
-import PendingIcon from "../../icons/pending.svg?react"
-import SentIcon from "../../icons/sent.svg?react"
+import ErrorIcon from "@/icons/error.svg?react"
+import PendingIcon from "@/icons/pending.svg?react"
+import SentIcon from "@/icons/sent.svg?react"
 import "./TimelineEvent.css"
 
 export interface TimelineEventProps {

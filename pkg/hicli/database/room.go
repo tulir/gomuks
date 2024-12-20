@@ -262,7 +262,7 @@ func (r *Room) Scan(row dbutil.Scannable) (*Room, error) {
 	}
 	r.PrevBatch = prevBatch.String
 	r.PreviewEventRowID = EventRowID(previewEventRowID.Int64)
-	r.SortingTimestamp = jsontime.UM(time.UnixMilli(sortingTimestamp.Int64))
+	r.SortingTimestamp = jsontime.UMInt(sortingTimestamp.Int64)
 	return r, nil
 }
 

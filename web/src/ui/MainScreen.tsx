@@ -19,7 +19,7 @@ import Client from "@/api/client.ts"
 import { RoomStateStore } from "@/api/statestore"
 import type { RoomID } from "@/api/types"
 import { useEventAsState } from "@/util/eventdispatcher.ts"
-import { parseMatrixURI } from "@/util/validation.ts"
+import { ensureString, ensureStringArray, parseMatrixURI } from "@/util/validation.ts"
 import ClientContext from "./ClientContext.ts"
 import MainScreenContext, { MainScreenContextFields } from "./MainScreenContext.ts"
 import StylePreferences from "./StylePreferences.tsx"
@@ -27,6 +27,7 @@ import Keybindings from "./keybindings.ts"
 import { ModalWrapper } from "./modal/Modal.tsx"
 import RightPanel, { RightPanelProps } from "./rightpanel/RightPanel.tsx"
 import RoomList from "./roomlist/RoomList.tsx"
+import RoomPreview, { RoomPreviewProps } from "./roomview/RoomPreview.tsx"
 import RoomView from "./roomview/RoomView.tsx"
 import { useResizeHandle } from "./util/useResizeHandle.tsx"
 import "./MainScreen.css"
@@ -50,7 +51,7 @@ class ContextFields implements MainScreenContextFields {
 
 	constructor(
 		private directSetRightPanel: (props: RightPanelProps | null) => void,
-		private directSetActiveRoom: (room: RoomStateStore | null) => void,
+		private directSetActiveRoom: (room: RoomStateStore | RoomPreviewProps | null) => void,
 		private client: Client,
 	) {
 		this.keybindings = new Keybindings(client.store, this)
@@ -94,33 +95,73 @@ class ContextFields implements MainScreenContextFields {
 		}
 	}
 
-	setActiveRoom = (roomID: RoomID | null, pushState = true) => {
+	setActiveRoom = (roomID: RoomID | null, previewMeta?: Partial<RoomPreviewProps>, pushState = true) => {
 		console.log("Switching to room", roomID)
-		const room = (roomID && this.client.store.rooms.get(roomID)) || null
+		if (roomID) {
+			const room = this.client.store.rooms.get(roomID)
+			if (room) {
+				this.#setActiveRoom(room, pushState)
+			} else {
+				this.#setPreviewRoom(roomID, pushState, previewMeta)
+			}
+		} else {
+			this.#closeActiveRoom(pushState)
+		}
+	}
+
+	#setPreviewRoom(roomID: RoomID, pushState: boolean, meta?: Partial<RoomPreviewProps>) {
+		const invite = this.client.store.inviteRooms.get(roomID)
+		this.#closeActiveRoom(false)
+		this.directSetActiveRoom({ roomID, ...(meta ?? {}), invite })
+		this.client.store.activeRoomID = roomID
+		this.client.store.activeRoomIsPreview = true
+		if (pushState) {
+			history.pushState({
+				room_id: roomID,
+				source_via: meta?.via,
+				source_alias: meta?.alias,
+			}, "")
+		}
+	}
+
+	#setActiveRoom(room: RoomStateStore, pushState: boolean) {
 		window.activeRoom = room
 		this.directSetActiveRoom(room)
 		this.directSetRightPanel(null)
 		this.rightPanelStack = []
-		this.client.store.activeRoomID = room?.roomID ?? null
+		this.client.store.activeRoomID = room.roomID
+		this.client.store.activeRoomIsPreview = false
 		this.keybindings.activeRoom = room
-		if (room) {
-			room.lastOpened = Date.now()
-			if (!room.stateLoaded) {
-				this.client.loadRoomState(room.roomID)
-					.catch(err => console.error("Failed to load room state", err))
-			}
-			document
-				.querySelector(`div.room-entry[data-room-id="${CSS.escape(room.roomID)}"]`)
-				?.scrollIntoView({ block: "nearest" })
+		room.lastOpened = Date.now()
+		if (!room.stateLoaded) {
+			this.client.loadRoomState(room.roomID)
+				.catch(err => console.error("Failed to load room state", err))
 		}
+		document
+			.querySelector(`div.room-entry[data-room-id="${CSS.escape(room.roomID)}"]`)
+			?.scrollIntoView({ block: "nearest" })
 		if (pushState) {
-			history.pushState({ room_id: roomID }, "")
+			history.pushState({ room_id: room.roomID }, "")
 		}
-		let roomNameForTitle = room?.meta.current.name
+		let roomNameForTitle = room.meta.current.name
 		if (roomNameForTitle && roomNameForTitle.length > 48) {
 			roomNameForTitle = roomNameForTitle.slice(0, 45) + "…"
 		}
-		document.title = roomNameForTitle ? `${roomNameForTitle} - gomuks web` : "gomuks web"
+		document.title = `${roomNameForTitle} - gomuks web`
+	}
+
+	#closeActiveRoom(pushState: boolean) {
+		window.activeRoom = null
+		this.directSetActiveRoom(null)
+		this.directSetRightPanel(null)
+		this.rightPanelStack = []
+		this.client.store.activeRoomID = null
+		this.client.store.activeRoomIsPreview = false
+		this.keybindings.activeRoom = null
+		if (pushState) {
+			history.pushState({}, "")
+		}
+		document.title = "gomuks web"
 	}
 
 	clickRoom = (evt: React.MouseEvent) => {
@@ -192,14 +233,18 @@ const handleURLHash = (client: Client) => {
 		history.replaceState(newState, "", newURL.toString())
 		return newState
 	} else if (uri.identifier.startsWith("!")) {
-		const newState = { room_id: uri.identifier }
+		const newState = { room_id: uri.identifier, source_via: uri.params.getAll("via") }
 		history.replaceState(newState, "", newURL.toString())
 		return newState
 	} else if (uri.identifier.startsWith("#")) {
+		history.replaceState(history.state, "", newURL.toString())
 		// TODO loading indicator or something for this?
 		client.rpc.resolveAlias(uri.identifier).then(
 			res => {
-				history.pushState({ room_id: res.room_id }, "", newURL.toString())
+				window.mainScreenContext.setActiveRoom(res.room_id, {
+					alias: uri.identifier,
+					via: res.servers.slice(0, 3),
+				})
 			},
 			err => window.alert(`Failed to resolve room alias ${uri.identifier}: ${err}`),
 		)
@@ -210,9 +255,12 @@ const handleURLHash = (client: Client) => {
 	return history.state
 }
 
-type ActiveRoomType = [RoomStateStore | null, RoomStateStore | null]
+type ActiveRoomType = [RoomStateStore | RoomPreviewProps | null, RoomStateStore | RoomPreviewProps | null]
 
-const activeRoomReducer = (prev: ActiveRoomType, active: RoomStateStore | "clear-animation" | null): ActiveRoomType => {
+const activeRoomReducer = (
+	prev: ActiveRoomType,
+	active: RoomStateStore | RoomPreviewProps | "clear-animation" | null,
+): ActiveRoomType => {
 	if (active === "clear-animation") {
 		return prev[1] === null ? [null, null] : prev
 	} else if (window.innerWidth > 720 || window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
@@ -240,7 +288,10 @@ const MainScreen = () => {
 			skipNextTransitionRef.current = evt.hasUAVisualTransition
 			const roomID = evt.state?.room_id ?? null
 			if (roomID !== client.store.activeRoomID) {
-				context.setActiveRoom(roomID, false)
+				context.setActiveRoom(roomID, {
+					alias: ensureString(evt?.state.source_alias) || undefined,
+					via: ensureStringArray(evt?.state.source_via),
+				}, false)
 			}
 			context.setRightPanel(evt.state?.right_panel ?? null, false)
 		}
@@ -303,6 +354,7 @@ const MainScreen = () => {
 			Sync failed permanently
 		</div>
 	}
+	const activeRealRoom = activeRoom instanceof RoomStateStore ? activeRoom : null
 	const renderedRoom = activeRoom ?? prevActiveRoom
 	useEffect(() => {
 		if (prevActiveRoom !== null && activeRoom === null) {
@@ -313,17 +365,19 @@ const MainScreen = () => {
 	}, [activeRoom, prevActiveRoom])
 	return <MainScreenContext value={context}>
 		<ModalWrapper>
-			<StylePreferences client={client} activeRoom={activeRoom}/>
+			<StylePreferences client={client} activeRoom={activeRealRoom}/>
 			<main className={classNames.join(" ")} style={extraStyle}>
 				<RoomList activeRoomID={activeRoom?.roomID ?? null}/>
 				{resizeHandle1}
 				{renderedRoom
-					? <RoomView
-						key={renderedRoom.roomID}
-						room={renderedRoom}
-						rightPanel={rightPanel}
-						rightPanelResizeHandle={resizeHandle2}
-					/>
+					? renderedRoom instanceof RoomStateStore
+						? <RoomView
+							key={renderedRoom.roomID}
+							room={renderedRoom}
+							rightPanel={rightPanel}
+							rightPanelResizeHandle={resizeHandle2}
+						/>
+						: <RoomPreview {...renderedRoom} />
 					: rightPanel && <>
 						<div className="room-view placeholder"/>
 						{resizeHandle2}

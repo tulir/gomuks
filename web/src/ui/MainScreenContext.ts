@@ -16,9 +16,10 @@
 import { createContext } from "react"
 import type { RoomID } from "@/api/types"
 import type { RightPanelProps } from "./rightpanel/RightPanel.tsx"
+import type { RoomPreviewProps } from "./roomview/RoomPreview.tsx"
 
 export interface MainScreenContextFields {
-	setActiveRoom: (roomID: RoomID | null) => void
+	setActiveRoom: (roomID: RoomID | null, previewMeta?: Partial<RoomPreviewProps>) => void
 	clickRoom: (evt: React.MouseEvent) => void
 	clearActiveRoom: () => void
 

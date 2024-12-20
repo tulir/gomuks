@@ -74,6 +74,19 @@ export interface DBRoom {
 //eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type UnknownEventContent = Record<string, any>
 
+export interface StrippedStateEvent {
+	type: EventType
+	sender: UserID
+	state_key: string
+	content: UnknownEventContent
+}
+
+export interface DBInvitedRoom {
+	room_id: RoomID
+	created_at: number
+	invite_state: StrippedStateEvent[]
+}
+
 export enum UnreadType {
 	None = 0b0000,
 	Normal = 0b0001,

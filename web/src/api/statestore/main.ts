@@ -37,6 +37,7 @@ import {
 	UserID,
 	roomStateGUIDToString,
 } from "../types"
+import { InvitedRoomStore } from "./invitedroom.ts"
 import { RoomStateStore } from "./room.ts"
 
 export interface RoomListEntry {
@@ -67,7 +68,9 @@ window.gcSettings ??= {
 }
 
 export class StateStore {
+	userID: UserID = ""
 	readonly rooms: Map<RoomID, RoomStateStore> = new Map()
+	readonly inviteRooms: Map<RoomID, InvitedRoomStore> = new Map()
 	readonly roomList = new NonNullCachedEventDispatcher<RoomListEntry[]>([])
 	currentRoomListFilter: string = ""
 	readonly accountData: Map<string, UnknownEventContent> = new Map()
@@ -83,6 +86,7 @@ export class StateStore {
 	serverPreferenceCache: Preferences = {}
 	switchRoom?: (roomID: RoomID | null) => void
 	activeRoomID: RoomID | null = null
+	activeRoomIsPreview: boolean = false
 	imageAuthToken?: string
 
 	getFilteredRoomList(): RoomListEntry[] {
@@ -161,12 +165,26 @@ export class StateStore {
 		}
 		const resyncRoomList = this.roomList.current.length === 0
 		const changedRoomListEntries = new Map<RoomID, RoomListEntry | null>()
+		for (const data of sync.invited_rooms) {
+			const room = new InvitedRoomStore(data, this)
+			this.inviteRooms.set(room.room_id, room)
+			if (!resyncRoomList) {
+				changedRoomListEntries.set(room.room_id, room)
+			}
+			if (this.activeRoomID === room.room_id) {
+				this.switchRoom?.(room.room_id)
+			}
+		}
+		const hasInvites = this.inviteRooms.size > 0
 		for (const [roomID, data] of Object.entries(sync.rooms)) {
 			let isNewRoom = false
 			let room = this.rooms.get(roomID)
 			if (!room) {
 				room = new RoomStateStore(data.meta, this)
 				this.rooms.set(roomID, room)
+				if (hasInvites) {
+					this.inviteRooms.delete(roomID)
+				}
 				isNewRoom = true
 			}
 			const roomListEntryChanged = !resyncRoomList && (isNewRoom || this.#roomListEntryChanged(data, room))
@@ -190,6 +208,9 @@ export class StateStore {
 					this.showNotification(room, notification.event_rowid, notification.sound)
 				}
 			}
+			if (this.activeRoomID === roomID && this.activeRoomIsPreview) {
+				this.switchRoom?.(roomID)
+			}
 		}
 		for (const ad of Object.values(sync.account_data)) {
 			if (ad.type === "io.element.recent_emoji") {
@@ -211,9 +232,10 @@ export class StateStore {
 
 		let updatedRoomList: RoomListEntry[] | undefined
 		if (resyncRoomList) {
-			updatedRoomList = Object.values(sync.rooms)
+			updatedRoomList = this.inviteRooms.values().toArray()
+			updatedRoomList = updatedRoomList.concat(Object.values(sync.rooms)
 				.map(entry => this.#makeRoomListEntry(entry))
-				.filter(entry => entry !== null)
+				.filter(entry => entry !== null))
 			updatedRoomList.sort((r1, r2) => r1.sorting_timestamp - r2.sorting_timestamp)
 		} else if (changedRoomListEntries.size > 0) {
 			updatedRoomList = this.roomList.current.filter(entry => !changedRoomListEntries.has(entry.room_id))
@@ -410,6 +432,7 @@ export class StateStore {
 
 	clear() {
 		this.rooms.clear()
+		this.inviteRooms.clear()
 		this.roomList.emit([])
 		this.accountData.clear()
 		this.currentRoomListFilter = ""

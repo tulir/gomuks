@@ -34,10 +34,15 @@ function onClickMatrixURI(href: string) {
 			userID: uri.identifier,
 		})
 	case "!":
-		return window.mainScreenContext.setActiveRoom(uri.identifier)
+		return window.mainScreenContext.setActiveRoom(uri.identifier, {
+			via: uri.params.getAll("via"),
+		})
 	case "#":
 		return window.client.rpc.resolveAlias(uri.identifier).then(
-			res => window.mainScreenContext.setActiveRoom(res.room_id),
+			res => window.mainScreenContext.setActiveRoom(res.room_id, {
+				alias: uri.identifier,
+				via: res.servers.slice(0, 3),
+			}),
 			err => window.alert(`Failed to resolve room alias ${uri.identifier}: ${err}`),
 		)
 	}

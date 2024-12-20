@@ -130,6 +130,21 @@ func (h *HiClient) handleJSONCommand(ctx context.Context, req *JSONCommand) (any
 		return unmarshalAndCall(req.Data, func(params *paginateParams) (*PaginationResponse, error) {
 			return h.PaginateServer(ctx, params.RoomID, params.Limit)
 		})
+	case "get_room_summary":
+		return unmarshalAndCall(req.Data, func(params *joinRoomParams) (*mautrix.RespRoomSummary, error) {
+			return h.Client.GetRoomSummary(ctx, params.RoomIDOrAlias, params.Via...)
+		})
+	case "join_room":
+		return unmarshalAndCall(req.Data, func(params *joinRoomParams) (*mautrix.RespJoinRoom, error) {
+			return h.Client.JoinRoom(ctx, params.RoomIDOrAlias, &mautrix.ReqJoinRoom{
+				Via:    params.Via,
+				Reason: params.Reason,
+			})
+		})
+	case "leave_room":
+		return unmarshalAndCall(req.Data, func(params *leaveRoomParams) (*mautrix.RespLeaveRoom, error) {
+			return h.Client.LeaveRoom(ctx, params.RoomID, &mautrix.ReqLeave{Reason: params.Reason})
+		})
 	case "ensure_group_session_shared":
 		return unmarshalAndCall(req.Data, func(params *ensureGroupSessionSharedParams) (bool, error) {
 			return true, h.EnsureGroupSessionShared(ctx, params.RoomID)
@@ -313,6 +328,17 @@ type paginateParams struct {
 	RoomID        id.RoomID              `json:"room_id"`
 	MaxTimelineID database.TimelineRowID `json:"max_timeline_id"`
 	Limit         int                    `json:"limit"`
+}
+
+type joinRoomParams struct {
+	RoomIDOrAlias string   `json:"room_id_or_alias"`
+	Via           []string `json:"via"`
+	Reason        string   `json:"reason"`
+}
+
+type leaveRoomParams struct {
+	RoomID id.RoomID `json:"room_id"`
+	Reason string    `json:"reason"`
 }
 
 type getReceiptsParams struct {

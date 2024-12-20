@@ -165,8 +165,9 @@ func (h *HiClient) processGetRoomState(ctx context.Context, roomID id.RoomID, fe
 							Receipts:      make(map[id.EventID][]*database.Receipt),
 						},
 					},
-					AccountData: make(map[event.Type]*database.AccountData),
-					LeftRooms:   make([]id.RoomID, 0),
+					InvitedRooms: make([]*database.InvitedRoom, 0),
+					AccountData:  make(map[event.Type]*database.AccountData),
+					LeftRooms:    make([]id.RoomID, 0),
 				})
 			}
 		}

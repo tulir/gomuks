@@ -13,9 +13,8 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import type { RoomListEntry } from "@/api/statestore"
 import { parseMXC } from "@/util/validation.ts"
-import { ContentURI, DBRoom, UserID, UserProfile } from "./types"
+import { ContentURI, LazyLoadSummary, RoomID, UserID, UserProfile } from "./types"
 
 export const getMediaURL = (mxc?: string, encrypted: boolean = false): string | undefined => {
 	const [server, mediaID] = parseMXC(mxc)
@@ -90,7 +89,16 @@ export const getAvatarURL = (userID: UserID, content?: UserProfile | null): stri
 	return `_gomuks/media/${server}/${mediaID}?encrypted=false&fallback=${encodeURIComponent(fallback)}`
 }
 
-export const getRoomAvatarURL = (room: DBRoom | RoomListEntry, avatarOverride?: ContentURI): string | undefined => {
+interface RoomForAvatarURL {
+	room_id: RoomID
+	name?: string
+	dm_user_id?: UserID
+	lazy_load_summary?: LazyLoadSummary
+	avatar?: ContentURI
+	avatar_url?: ContentURI
+}
+
+export const getRoomAvatarURL = (room: RoomForAvatarURL, avatarOverride?: ContentURI): string | undefined => {
 	let dmUserID: UserID | undefined
 	if ("dm_user_id" in room) {
 		dmUserID = room.dm_user_id
@@ -98,5 +106,8 @@ export const getRoomAvatarURL = (room: DBRoom | RoomListEntry, avatarOverride?: 
 		dmUserID = room.lazy_load_summary?.heroes?.length === 1
 			? room.lazy_load_summary.heroes[0] : undefined
 	}
-	return getAvatarURL(dmUserID ?? room.room_id, { displayname: room.name, avatar_url: avatarOverride ?? room.avatar })
+	return getAvatarURL(dmUserID ?? room.room_id, {
+		displayname: room.name,
+		avatar_url: avatarOverride ?? room.avatar ?? room.avatar_url,
+	})
 }

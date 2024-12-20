@@ -12,4 +12,10 @@ div.room-view {
 		"typing" auto
 		/ 1fr;
 	contain: strict;
+
+	&.preview {
+		display: flex;
+		justify-content: center;
+		align-items: center;
+	}
 }

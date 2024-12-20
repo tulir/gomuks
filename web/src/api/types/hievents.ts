@@ -15,6 +15,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import {
 	DBAccountData,
+	DBInvitedRoom,
 	DBReceipt,
 	DBRoom,
 	DBRoomAccountData,
@@ -86,6 +87,7 @@ export interface SyncNotification {
 
 export interface SyncCompleteData {
 	rooms: Record<RoomID, SyncRoom>
+	invited_rooms: DBInvitedRoom[]
 	left_rooms: RoomID[]
 	account_data: Record<EventType, DBAccountData>
 	since?: string

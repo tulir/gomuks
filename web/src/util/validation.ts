@@ -82,6 +82,11 @@ export function getLocalpart(userID: UserID): string {
 	return idx > 0 ? userID.slice(1, idx) : userID.slice(1)
 }
 
+export function getServerName(userID: UserID): string {
+	const idx = userID.indexOf(":")
+	return userID.slice(idx+1)
+}
+
 export function getDisplayname(userID: UserID, profile?: UserProfile | null): string {
 	return profile?.displayname || getLocalpart(userID)
 }
@@ -108,6 +113,10 @@ export function ensureArray(val: unknown): unknown[] {
 	return Array.isArray(val) ? val : []
 }
 
+export function isString(val: unknown): val is string {
+	return typeof val === "string"
+}
+
 export function ensureStringArray(val: unknown): string[] {
-	return ensureArray(val).map(ensureString)
+	return ensureArray(val).filter(isString)
 }
