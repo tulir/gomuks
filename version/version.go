@@ -72,5 +72,5 @@ func init() {
 		builtWith = fmt.Sprintf("built at %s with %s", BuildTime, runtime.Version())
 	}
 	mautrix.DefaultUserAgent = fmt.Sprintf("gomuks/%s %s", Version, mautrix.DefaultUserAgent)
-	Description = fmt.Sprintf("gomuks %s (%s)", Version, builtWith)
+	Description = fmt.Sprintf("gomuks %s on %s/%s (%s)", Version, runtime.GOOS, runtime.GOARCH, builtWith)
 }
