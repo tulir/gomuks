@@ -39,7 +39,7 @@ div.room-view.preview > div.preview-inner {
 	> details.room-invite-meta {
 		width: 100%;
 
-		> table > tr > td:nth-of-type(2) {
+		> table > tbody > tr > td:nth-of-type(2) {
 			font-family: var(--monospace-font-stack);
 		}
 	}

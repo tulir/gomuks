@@ -111,34 +111,38 @@ const RoomPreview = ({ roomID, via, alias, invite }: RoomPreviewProps) => {
 			{invite && <details className="room-invite-meta">
 				<summary>Invite metadata</summary>
 				<table>
-					<tr>
-						<td>Invited by</td>
-						<td>{invite.invited_by}</td>
-					</tr>
-					<tr>
-						<td>Room ID</td>
-						<td>{roomID}</td>
-					</tr>
-					<tr>
-						<td>Room alias</td>
-						<td>{invite.canonical_alias ?? summary?.canonical_alias}</td>
-					</tr>
-					<tr>
-						<td>Is direct</td>
-						<td>{invite.is_direct.toString()}</td>
-					</tr>
-					<tr>
-						<td>Encryption</td>
-						<td>{invite.encryption ?? summary?.encryption ?? summary?.["im.nheko.summary.encryption"]}</td>
-					</tr>
-					<tr>
-						<td>Join rule</td>
-						<td>{invite.join_rule ?? summary?.join_rule}</td>
-					</tr>
-					<tr>
-						<td>Timestamp</td>
-						<td>{invite.date}</td>
-					</tr>
+					<tbody>
+						<tr>
+							<td>Invited by</td>
+							<td>{invite.invited_by}</td>
+						</tr>
+						<tr>
+							<td>Room ID</td>
+							<td>{roomID}</td>
+						</tr>
+						<tr>
+							<td>Room alias</td>
+							<td>{invite.canonical_alias ?? summary?.canonical_alias}</td>
+						</tr>
+						<tr>
+							<td>Is direct</td>
+							<td>{invite.is_direct.toString()}</td>
+						</tr>
+						<tr>
+							<td>Encryption</td>
+							<td>
+								{invite.encryption ?? summary?.encryption ?? summary?.["im.nheko.summary.encryption"]}
+							</td>
+						</tr>
+						<tr>
+							<td>Join rule</td>
+							<td>{invite.join_rule ?? summary?.join_rule}</td>
+						</tr>
+						<tr>
+							<td>Timestamp</td>
+							<td>{invite.date}</td>
+						</tr>
+					</tbody>
 				</table>
 			</details>}
 			{invite?.invited_by && <MutualRooms client={client} userID={invite.invited_by}/>}
