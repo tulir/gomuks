@@ -33,7 +33,7 @@ const StickerPicker = ({ style, onSelect, room }: MediaPickerProps) => {
 	const [query, setQuery] = useState("")
 	const [emojiCategoryBarRef, emojiListRef] = useCategoryUnderline()
 	const watchedEmojiPackKeys = client.store.getEmojiPackKeys().map(roomStateGUIDToString)
-	const customEmojiPacks = useCustomEmojis(client.store, room)
+	const customEmojiPacks = useCustomEmojis(client.store, room, "stickers")
 	const emojis = useFilteredEmojis(query, {
 		// frequentlyUsed: client.store.frequentlyUsedStickers,
 		customEmojiPacks,

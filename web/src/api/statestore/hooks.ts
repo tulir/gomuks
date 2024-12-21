@@ -145,7 +145,7 @@ export function usePreference<T extends keyof Preferences>(
 }
 
 export function useCustomEmojis(
-	ss: StateStore, room: RoomStateStore,
+	ss: StateStore, room: RoomStateStore, usage: "stickers" | "emojis" = "emojis",
 ): CustomEmojiPack[] {
 	const personalPack = useSyncExternalStore(
 		ss.accountDataSubs.getSubscriber("im.ponies.user_emotes"),
@@ -164,6 +164,6 @@ export function useCustomEmojis(
 		if (personalPack) {
 			allPacksObject.personal = personalPack
 		}
-		return Object.values(allPacksObject)
-	}, [personalPack, watchedRoomPacks, specialRoomPacks])
+		return Object.values(allPacksObject).filter(pack => pack[usage].length > 0)
+	}, [personalPack, watchedRoomPacks, specialRoomPacks, usage])
 }
