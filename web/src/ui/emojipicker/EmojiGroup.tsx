@@ -98,7 +98,7 @@ export const EmojiGroup = ({
 		style={{ containIntrinsicHeight: `${1.5 + Math.ceil(emojis.length / itemsPerRow) * rowSize}rem` }}
 	>
 		<h4 className="emoji-category-name">
-			{categoryName}
+			<span title={categoryName}>{categoryName}</span>
 			{pack && <button
 				className="emoji-category-add"
 				onClick={isWatched ? onClickUnsubscribePack : onClickSubscribePack}

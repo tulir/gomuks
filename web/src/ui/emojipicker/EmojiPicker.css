@@ -166,6 +166,13 @@ div.emoji-picker, div.sticker-picker {
 		display: flex;
 		align-items: center;
 
+		> span {
+			flex: 1;
+			white-space: nowrap;
+			overflow: hidden;
+			text-overflow: ellipsis;
+		}
+
 		> button {
 			margin-left: .25rem;
 			font-size: .8rem;
