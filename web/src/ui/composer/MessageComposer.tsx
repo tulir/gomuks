@@ -159,9 +159,12 @@ const MessageComposer = () => {
 		const isMedia = mediaMsgTypes.includes(evtContent.msgtype)
 			&& Boolean(evt.content?.url || evt.content?.file?.url)
 		rawSetEditing(evt)
+		const textIsEditable = (evt.content.filename && evt.content.filename !== evt.content.body)
+			|| evt.type === "m.sticker"
+			|| !isMedia
 		setState({
 			media: isMedia ? evtContent as MediaMessageEventContent : null,
-			text: (evt.content.filename && evt.content.filename !== evt.content.body) || evt.type === "m.sticker"
+			text: textIsEditable
 				? (evt.local_content?.edit_source ?? evtContent.body ?? "")
 				: "",
 			replyTo: null,
