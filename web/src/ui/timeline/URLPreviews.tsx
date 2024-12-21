@@ -46,39 +46,33 @@ const URLPreviews = ({ event, room }: {
 				let containerSize: ImageContainerSize | undefined
 				let inline = false
 				if (aspectRatio < 1.2) {
-					containerSize = { width: 70, height: 70 }
+					containerSize = { width: 80, height: 80 }
 					inline = true
 				}
 				const style = calculateMediaSize(p["og:image:width"], p["og:image:height"], containerSize)
 
-				const title = p["og:title"] ?? p["og:url"] ?? p.matched_url
+				const url = p["og:url"] ?? p.matched_url
+				const title = p["og:title"] ?? p["og:url"] ?? url
+				const mediaContainer = <div className="media-container" style={style.container}>
+					<img
+						loading="lazy"
+						style={style.media}
+						src={mediaURL}
+						alt=""
+					/>
+				</div>
 				return <div
+					key={url}
 					className={inline ? "url-preview inline" : "url-preview"}
-					style={inline ? {} : { width: style.container.width }}>
-					{mediaURL && inline && <div className="media-container" style={style.container}>
-						<img
-							loading="lazy"
-							style={style.media}
-							src={mediaURL}
-							alt={p["og:title"]}
-							title={p["og:title"]}
-						/>
-					</div>}
-					<div className="title-description">
-						<div className="title">
-							<a href={p.matched_url} title={title} target="_blank"><b>{title}</b></a>
-						</div>
-						<div className="description">{p["og:description"]}</div>
+					style={inline ? {} : { width: style.container.width }}
+				>
+					<div className="title">
+						<a href={url} title={title} target="_blank" rel="noreferrer noopener">{title}</a>
 					</div>
-					{mediaURL && !inline && <div className="media-container" style={style.container}>
-						<img
-							loading="lazy"
-							style={style.media}
-							src={mediaURL}
-							alt={p["og:title"]}
-							title={p["og:title"]}
-						/>
-					</div>}
+					<div className="description">{p["og:description"]}</div>
+					{mediaURL && (inline
+						? <div className="inline-media-wrapper">{mediaContainer}</div>
+						: mediaContainer)}
 				</div>
 			})}
 	</div>

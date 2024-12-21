@@ -7,41 +7,57 @@ div.url-previews {
 	> div.url-preview {
 		margin: 0.5rem 0;
 		border-radius: 0.5rem;
-		background-color: var(--pill-background-color);
-		border: 1px solid var(--border-color);
+		background-color: var(--url-preview-background-color);
+		border: 1px solid var(--url-preview-background-color);
+		display: grid;
+
+		grid-template:
+			"title"       auto
+			"description" auto
+			"media"       auto
+			/ 1fr;
 
 		div.title {
-			margin: 0.5rem 0.5rem 0 0.5rem;
-			display: -webkit-box;
-			-webkit-line-clamp: 1;
-			line-clamp: 1;
-			-webkit-box-orient: vertical;
+			grid-area: title;
+			margin: 0.5rem 0.5rem 0;
 			overflow: hidden;
+			white-space: nowrap;
+			text-overflow: ellipsis;
+			font-weight: bold;
 		}
 
 		div.description {
-			margin: 0 0.5rem 0.5rem 0.5rem;
+			grid-area: description;
+			margin: 0 0.5rem 0.5rem;
 			display: -webkit-box;
-			-webkit-line-clamp: 3;
-			line-clamp: 3;
-			-webkit-box-orient: vertical;
 			overflow: hidden;
+			-webkit-line-clamp: 3;
+			-webkit-box-orient: vertical;
 			color: var(--semisecondary-text-color);
 		}
 
 		> div.media-container {
-			border-radius: 0 0 0.5rem 0.5rem;
+			grid-area: media;
+			border-radius: 0 0 .5rem .5rem;
+			background-color: var(--background-color);
 		}
 
 		&.inline {
-			display: flex;
-			flex-direction: row;
-			min-width: 320px;
-			max-width: 320px;
+			grid-template:
+				"media title"       auto
+				"media description" auto
+				/ auto auto;
+			width: 100%;
+			max-width: 20rem;
 
-			> div.media-container {
-				border-radius: none;
-				margin: 0.5rem;
+			> div.inline-media-wrapper {
+				grid-area: media;
+				display: flex;
+				justify-content: center;
+				align-items: center;
+				background-color: var(--background-color);
+				border-radius: .5rem 0 0 .5rem;
+				padding: .5rem;
 			}
 		}
 	}

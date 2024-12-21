@@ -22,6 +22,7 @@
 
 	--border-color: #ccc;
 	--pill-background-color: #ccc;
+	--url-preview-background-color: #ddd;
 	--highlight-pill-background-color: #c00;
 	--highlight-pill-text-color: #fff;
 	--button-hover-color: rgba(0, 0, 0, .2);
@@ -109,6 +110,7 @@
 
 		--border-color: #222;
 		--pill-background-color: #222;
+		--url-preview-background-color: #222;
 		--button-hover-color: rgba(255, 255, 255, .2);
 		--light-hover-color: rgba(255, 255, 255, .1);
 
