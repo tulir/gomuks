@@ -25,6 +25,7 @@ import { RoomContext } from "../roomview/roomcontext.ts"
 import DeviceList from "./UserInfoDeviceList.tsx"
 import UserInfoError from "./UserInfoError.tsx"
 import MutualRooms from "./UserInfoMutualRooms.tsx"
+import { ErrorResponse } from "@/api/rpc.ts"
 
 interface UserInfoProps {
 	userID: UserID
@@ -43,7 +44,7 @@ const UserInfo = ({ userID }: UserInfoProps) => {
 	const memberEvt = useRoomMember(client, roomCtx?.store, userID)
 	const member = (memberEvt?.content ?? null) as MemberEventContent | null
 	const [globalProfile, setGlobalProfile] = useState<UserProfile | null>(null)
-	const [presence, setPresence] = useState<Presence>({ presence: "offline"})
+	const [presence, setPresence] = useState<Presence | null>(null)
 	const [errors, setErrors] = useState<string[] | null>(null)
 	useEffect(() => {
 		setErrors(null)
@@ -54,7 +55,15 @@ const UserInfo = ({ userID }: UserInfoProps) => {
 		)
 		client.rpc.getPresence(userID).then(
 			setPresence,
-			err => setErrors([`${err}`]),
+			err => {
+				// A 404 is to be expected if the user has not federated presence.
+				if (err instanceof ErrorResponse && err.message.startsWith("M_NOT_FOUND")) {
+					setPresence(null)
+				} else {
+					if(errors) {setErrors([...errors, `${err}`])}
+					else {setErrors([`${err}`])}
+				}
+			}
 		)
 	}, [roomCtx, userID, client])
 
@@ -78,7 +87,7 @@ const UserInfo = ({ userID }: UserInfoProps) => {
 			<>
 			<div className="presence" title={presence.presence}>{PresenceEmojis[presence.presence]} {presence.presence}</div>
 			{
-				presence.status_msg?.length && (
+				presence.status_msg && (
 					<div className="statusmessage" title={"Status message"}><blockquote>{presence.status_msg}</blockquote></div>
 				)
 			}
