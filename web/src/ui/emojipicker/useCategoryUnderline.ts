@@ -38,6 +38,9 @@ const useCategoryUnderline = () => {
 					cat.classList.remove("visible")
 				}
 			}
+		}, {
+			rootMargin: `-8px 0px 0px 0px`,
+			root: lists.parentElement,
 		})
 		for (const cat of lists.getElementsByClassName("emoji-category")) {
 			observer.observe(cat)
