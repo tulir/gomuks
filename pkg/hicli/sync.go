@@ -644,6 +644,7 @@ func (h *HiClient) processStateAndTimeline(
 	}
 	decryptionQueue := make(map[id.SessionID]*database.SessionRequest)
 	allNewEvents := make([]*database.Event, 0, len(state.Events)+len(timeline.Events))
+	addedEvents := make(map[database.EventRowID]struct{})
 	newNotifications := make([]SyncNotification, 0)
 	var recalculatePreviewEvent, unreadMessagesWereMaybeRedacted bool
 	var newUnreadCounts database.UnreadCounts
@@ -658,7 +659,11 @@ func (h *HiClient) processStateAndTimeline(
 		} else if dbEvt == nil {
 			return nil, nil
 		}
-		allNewEvents = append(allNewEvents, dbEvt)
+		_, alreadyAdded := addedEvents[dbEvt.RowID]
+		if !alreadyAdded {
+			addedEvents[dbEvt.RowID] = struct{}{}
+			allNewEvents = append(allNewEvents, dbEvt)
+		}
 		return dbEvt, nil
 	}
 	processRedaction := func(evt *event.Event) error {
@@ -723,6 +728,7 @@ func (h *HiClient) processStateAndTimeline(
 			processImportantEvent(ctx, evt, room, updatedRoom)
 		}
 		allNewEvents = append(allNewEvents, dbEvt)
+		addedEvents[dbEvt.RowID] = struct{}{}
 		if evt.Type == event.EventRedaction && evt.Redacts != "" {
 			err = processRedaction(evt)
 			if err != nil {
@@ -732,6 +738,11 @@ func (h *HiClient) processStateAndTimeline(
 			_, err = addOldEvent(0, dbEvt.RelatesTo)
 			if err != nil {
 				return -1, fmt.Errorf("failed to get relation target of event: %w", err)
+			}
+		} else if replyTo := dbEvt.GetReplyTo(); replyTo != "" {
+			_, err = addOldEvent(0, replyTo)
+			if err != nil {
+				return -1, fmt.Errorf("failed to get reply target of event: %w", err)
 			}
 		}
 		return dbEvt.RowID, nil

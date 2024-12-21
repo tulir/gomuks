@@ -466,6 +466,7 @@ func (e *Event) Scan(row dbutil.Scannable) (*Event, error) {
 
 var relatesToPath = exgjson.Path("m.relates_to", "event_id")
 var relationTypePath = exgjson.Path("m.relates_to", "rel_type")
+var replyToPath = exgjson.Path("m.relates_to", "m.in_reply_to", "event_id")
 
 func getRelatesToFromEvent(evt *event.Event) (id.EventID, event.RelationType) {
 	if evt.StateKey != nil {
@@ -489,6 +490,18 @@ func getMegolmSessionID(evt *event.Event) id.SessionID {
 	res := gjson.GetBytes(evt.Content.VeryRaw, "session_id")
 	if res.Exists() && res.Type == gjson.String {
 		return id.SessionID(res.Str)
+	}
+	return ""
+}
+
+func (e *Event) GetReplyTo() id.EventID {
+	content := e.Content
+	if e.Decrypted != nil {
+		content = e.Decrypted
+	}
+	result := gjson.GetBytes(content, replyToPath)
+	if result.Type == gjson.String {
+		return id.EventID(result.Str)
 	}
 	return ""
 }

@@ -175,6 +175,7 @@ export interface MemReceipt extends DBReceipt {
 export interface PaginationResponse {
 	events: RawDBEvent[]
 	receipts: Record<EventID, DBReceipt[]>
+	related_events: RawDBEvent[]
 	has_more: boolean
 }
 

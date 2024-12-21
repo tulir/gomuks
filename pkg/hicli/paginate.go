@@ -198,9 +198,10 @@ func (h *HiClient) GetRoomState(ctx context.Context, roomID id.RoomID, includeMe
 }
 
 type PaginationResponse struct {
-	Events   []*database.Event                  `json:"events"`
-	Receipts map[id.EventID][]*database.Receipt `json:"receipts"`
-	HasMore  bool                               `json:"has_more"`
+	Events        []*database.Event                  `json:"events"`
+	Receipts      map[id.EventID][]*database.Receipt `json:"receipts"`
+	RelatedEvents []*database.Event                  `json:"related_events"`
+	HasMore       bool                               `json:"has_more"`
 }
 
 func (h *HiClient) Paginate(ctx context.Context, roomID id.RoomID, maxTimelineID database.TimelineRowID, limit int) (*PaginationResponse, error) {
@@ -220,9 +221,26 @@ func (h *HiClient) Paginate(ctx context.Context, roomID id.RoomID, maxTimelineID
 			return nil, err
 		}
 	}
+	resp.RelatedEvents = make([]*database.Event, 0)
 	eventIDs := make([]id.EventID, len(resp.Events))
-	for i, evt := range resp.Events {
+	eventMap := make(map[id.EventID]struct{})
+	for i := len(resp.Events) - 1; i >= 0; i-- {
+		evt := resp.Events[i]
 		eventIDs[i] = evt.ID
+		eventMap[evt.ID] = struct{}{}
+		replyTo := evt.GetReplyTo()
+		if replyTo != "" {
+			_, replyToAdded := eventMap[replyTo]
+			if !replyToAdded {
+				dbEvt, err := h.DB.Event.GetByID(ctx, replyTo)
+				if err != nil {
+					return nil, fmt.Errorf("failed to get reply-to event: %w", err)
+				} else if dbEvt != nil {
+					resp.RelatedEvents = append(resp.RelatedEvents, dbEvt)
+					eventMap[replyTo] = struct{}{}
+				}
+			}
+		}
 	}
 	resp.Receipts, err = h.GetReceipts(ctx, roomID, eventIDs)
 	if err != nil {
