@@ -83,6 +83,20 @@ div.right-panel-content.user {
 		font-family: var(--monospace-font-stack);
 	}
 
+	div.presence {
+		text-align: center;
+		font-size: 1.125rem;
+		
+	}
+
+	div.statusmessage {
+		text-align: center;
+		font-size: 1rem;
+		font-style: italic;
+		/* Wrap words that are so long that they spill out of bounds */
+		word-wrap: break-word;
+	}
+
 	div.userid, div.displayname {
 		/* Ensure names aren't too long */
 		display: -webkit-box;

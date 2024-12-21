@@ -25,6 +25,7 @@ import type {
 	Mentions,
 	MessageEventContent,
 	PaginationResponse,
+	Presence,
 	ProfileEncryptionInfo,
 	RPCCommand,
 	RPCEvent,
@@ -178,6 +179,10 @@ export default abstract class RPCClient {
 
 	getProfile(user_id: UserID): Promise<UserProfile> {
 		return this.request("get_profile", { user_id })
+	}
+
+	getPresence(user_id: UserID): Promise<Presence> {
+		return this.request("get_presence", { user_id })
 	}
 
 	getMutualRooms(user_id: UserID): Promise<RoomID[]> {

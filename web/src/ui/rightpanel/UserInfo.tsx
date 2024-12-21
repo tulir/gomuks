@@ -17,7 +17,7 @@ import { use, useEffect, useState } from "react"
 import { PuffLoader } from "react-spinners"
 import { getAvatarURL } from "@/api/media.ts"
 import { useRoomMember } from "@/api/statestore"
-import { MemberEventContent, UserID, UserProfile } from "@/api/types"
+import { MemberEventContent, UserID, UserProfile, Presence } from "@/api/types"
 import { getLocalpart } from "@/util/validation.ts"
 import ClientContext from "../ClientContext.ts"
 import { LightboxContext } from "../modal/Lightbox.tsx"
@@ -30,6 +30,12 @@ interface UserInfoProps {
 	userID: UserID
 }
 
+const PresenceEmojis = {
+	online: "🟢",
+	offline: "⚫",
+	unavailable: "🔴",
+}
+
 const UserInfo = ({ userID }: UserInfoProps) => {
 	const client = use(ClientContext)!
 	const roomCtx = use(RoomContext)
@@ -37,12 +43,17 @@ const UserInfo = ({ userID }: UserInfoProps) => {
 	const memberEvt = useRoomMember(client, roomCtx?.store, userID)
 	const member = (memberEvt?.content ?? null) as MemberEventContent | null
 	const [globalProfile, setGlobalProfile] = useState<UserProfile | null>(null)
+	const [presence, setPresence] = useState<Presence>({ presence: "offline"})
 	const [errors, setErrors] = useState<string[] | null>(null)
 	useEffect(() => {
 		setErrors(null)
 		setGlobalProfile(null)
 		client.rpc.getProfile(userID).then(
 			setGlobalProfile,
+			err => setErrors([`${err}`]),
+		)
+		client.rpc.getPresence(userID).then(
+			setPresence,
 			err => setErrors([`${err}`]),
 		)
 	}, [roomCtx, userID, client])
@@ -63,6 +74,17 @@ const UserInfo = ({ userID }: UserInfoProps) => {
 		</div>
 		<div className="displayname" title={displayname}>{displayname}</div>
 		<div className="userid" title={userID}>{userID}</div>
+		{presence && (
+			<>
+			<div className="presence" title={presence.presence}>{PresenceEmojis[presence.presence]} {presence.presence}</div>
+			{
+				presence.status_msg?.length && (
+					<div className="statusmessage" title={"Status message"}><blockquote>{presence.status_msg}</blockquote></div>
+				)
+			}
+			</>
+			)
+		}
 		<hr/>
 		{userID !== client.userID && <>
 			<MutualRooms client={client} userID={userID}/>

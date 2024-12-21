@@ -86,6 +86,10 @@ func (h *HiClient) handleJSONCommand(ctx context.Context, req *JSONCommand) (any
 		return unmarshalAndCall(req.Data, func(params *getProfileParams) (*mautrix.RespUserProfile, error) {
 			return h.Client.GetProfile(ctx, params.UserID)
 		})
+	case "get_presence":
+		return unmarshalAndCall(req.Data, func(params *getProfileParams) (*mautrix.RespPresence, error) {
+			return h.Client.GetPresence(ctx, params.UserID)
+		})
 	case "get_mutual_rooms":
 		return unmarshalAndCall(req.Data, func(params *getProfileParams) ([]id.RoomID, error) {
 			return h.GetMutualRooms(ctx, params.UserID)
