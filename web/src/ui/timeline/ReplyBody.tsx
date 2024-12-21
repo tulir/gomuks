@@ -32,6 +32,7 @@ interface ReplyBodyProps {
 	room: RoomStateStore
 	event: MemDBEvent
 	isThread: boolean
+	small?: boolean
 	isEditing?: boolean
 	onClose?: (evt: React.MouseEvent) => void
 	isSilent?: boolean
@@ -44,9 +45,10 @@ interface ReplyIDBodyProps {
 	room: RoomStateStore
 	eventID: EventID
 	isThread: boolean
+	small: boolean
 }
 
-export const ReplyIDBody = ({ room, eventID, isThread }: ReplyIDBodyProps) => {
+export const ReplyIDBody = ({ room, eventID, isThread, small }: ReplyIDBodyProps) => {
 	const event = useRoomEvent(room, eventID)
 	if (!event) {
 		// This caches whether the event is requested or not, so it doesn't need to be wrapped in an effect.
@@ -55,7 +57,7 @@ export const ReplyIDBody = ({ room, eventID, isThread }: ReplyIDBodyProps) => {
 			Reply to unknown event<br/><code>{eventID}</code>
 		</blockquote>
 	}
-	return <ReplyBody room={room} event={event} isThread={isThread}/>
+	return <ReplyBody room={room} event={event} isThread={isThread} small={small}/>
 }
 
 const onClickReply = (evt: React.MouseEvent) => {
@@ -78,7 +80,7 @@ const onClickReply = (evt: React.MouseEvent) => {
 }
 
 export const ReplyBody = ({
-	room, event, onClose, isThread, isEditing, isSilent, onSetSilent, isExplicitInThread, onSetExplicitInThread,
+	room, event, onClose, isThread, isEditing, isSilent, onSetSilent, isExplicitInThread, onSetExplicitInThread, small,
 }: ReplyBodyProps) => {
 	const client = use(ClientContext)
 	const memberEvt = useRoomMember(client, room, event.sender)
@@ -94,9 +96,13 @@ export const ReplyBody = ({
 	if (isEditing) {
 		classNames.push("editing")
 	}
+	if (small) {
+		classNames.push("small")
+	}
 	const userColorIndex = getUserColorIndex(event.sender)
 	classNames.push(`sender-color-${userColorIndex}`)
 	return <blockquote data-reply-to={event.event_id} className={classNames.join(" ")} onClick={onClickReply}>
+		{small && <div className="reply-spine"/>}
 		<div className="reply-sender">
 			<div className="sender-avatar" title={event.sender}>
 				<img

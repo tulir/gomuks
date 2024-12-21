@@ -108,6 +108,12 @@ export const preferences = {
 		allowedContexts: anyContext,
 		defaultValue: true,
 	}),
+	small_replies: new Preference<boolean>({
+		displayName: "Compact reply style",
+		description: "Whether to use a Discord-like compact style for replies instead of the traditional style.",
+		allowedContexts: anyContext,
+		defaultValue: false,
+	}),
 	show_date_separators: new Preference<boolean>({
 		displayName: "Show date separators",
 		description: "Whether messages in different days should have a date separator between them in the room timeline.",

@@ -15,7 +15,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import { use, useCallback, useEffect, useLayoutEffect, useRef, useState } from "react"
 import { ScaleLoader } from "react-spinners"
-import { useRoomTimeline } from "@/api/statestore"
+import { usePreference, useRoomTimeline } from "@/api/statestore"
 import { MemDBEvent } from "@/api/types"
 import useFocus from "@/util/focus.ts"
 import ClientContext from "../ClientContext.ts"
@@ -42,6 +42,7 @@ const TimelineView = () => {
 	const oldestTimelineRow = timeline[0]?.timeline_rowid
 	const oldScrollHeight = useRef(0)
 	const focused = useFocus()
+	const smallReplies = usePreference(client.store, room, "small_replies")
 
 	// When the user scrolls the timeline manually, remember if they were at the bottom,
 	// so that we can keep them at the bottom when new events are added.
@@ -131,7 +132,7 @@ const TimelineView = () => {
 					return null
 				}
 				const thisEvt = <TimelineEvent
-					key={entry.rowid} evt={entry} prevEvt={prevEvt}
+					key={entry.rowid} evt={entry} prevEvt={prevEvt} smallReplies={smallReplies}
 				/>
 				prevEvt = entry
 				return thisEvt

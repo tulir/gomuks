@@ -5,7 +5,7 @@ div.timeline-event {
 	padding: 0 var(--timeline-horizontal-padding);
 	display: grid;
 	grid-template:
-		"cmc                          cmc                        cmc      empty"    0
+		"cmc                          cmc                        cmc      empty"  0
 		"avatar                       gap                        sender   sender" auto
 		"avatar                       gap                        content  status" auto
 		/ var(--timeline-avatar-size) var(--timeline-avatar-gap) 1fr      var(--timeline-status-size);
@@ -156,6 +156,15 @@ div.timeline-event {
 		+ div.timeline-event.small-event {
 			margin-top: var(--timeline-message-gap-small-event);
 		}
+	}
+
+	&.reply-above {
+		grid-template:
+			"cmc                          cmc                        cmc      empty"  0
+			"reply                        reply                      reply    empty"  auto
+			"avatar                       gap                        sender   sender" auto
+			"avatar                       gap                        content  status" auto
+			/ var(--timeline-avatar-size) var(--timeline-avatar-gap) 1fr      var(--timeline-status-size);
 	}
 }
 

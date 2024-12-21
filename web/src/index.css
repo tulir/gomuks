@@ -11,6 +11,7 @@
 	--semisecondary-text-color: #555;
 	--link-text-color: #0467dd;
 	--visited-link-text-color: var(--link-text-color);
+	--small-font-size: .875rem;
 
 	--code-background-color: rgba(0, 0, 0, 0.15);
 	--media-placeholder-default-background: rgba(0, 0, 0, .1);

@@ -13,7 +13,7 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import React, { use, useCallback, useState } from "react"
+import React, { JSX, use, useCallback, useState } from "react"
 import { getAvatarURL, getMediaURL, getUserColorIndex } from "@/api/media.ts"
 import { useRoomMember } from "@/api/statestore"
 import { MemDBEvent, MemberEventContent, UnreadType } from "@/api/types"
@@ -37,6 +37,7 @@ export interface TimelineEventProps {
 	evt: MemDBEvent
 	prevEvt: MemDBEvent | null
 	disableMenu?: boolean
+	smallReplies?: boolean
 }
 
 const fullTimeFormatter = new Intl.DateTimeFormat("en-GB", { dateStyle: "full", timeStyle: "medium" })
@@ -72,7 +73,7 @@ const EventSendStatus = ({ evt }: { evt: MemDBEvent }) => {
 	}
 }
 
-const TimelineEvent = ({ evt, prevEvt, disableMenu }: TimelineEventProps) => {
+const TimelineEvent = ({ evt, prevEvt, disableMenu, smallReplies }: TimelineEventProps) => {
 	const roomCtx = useRoomContext()
 	const client = use(ClientContext)!
 	const mainScreen = use(MainScreenContext)
@@ -130,17 +131,39 @@ const TimelineEvent = ({ evt, prevEvt, disableMenu }: TimelineEventProps) => {
 			<hr role="none"/>
 		</div>
 	}
+	const isSmallBodyType = isSmallEvent(BodyType)
+	const relatesTo = (evt.orig_content ?? evt.content)?.["m.relates_to"]
+	const replyTo = relatesTo?.["m.in_reply_to"]?.event_id
+	let replyAboveMessage: JSX.Element | null = null
+	let replyInMessage: JSX.Element | null = null
+	if (isEventID(replyTo) && BodyType !== HiddenEvent && !evt.redacted_by) {
+		const replyElem = <ReplyIDBody
+			room={roomCtx.store}
+			eventID={replyTo}
+			isThread={relatesTo?.rel_type === "m.thread"}
+			small={!!smallReplies}
+		/>
+		if (smallReplies && !isSmallBodyType) {
+			replyAboveMessage = replyElem
+			wrapperClassNames.push("reply-above")
+		} else {
+			replyInMessage = replyElem
+		}
+	}
 	let smallAvatar = false
 	let renderAvatar = true
 	let eventTimeOnly = false
-	if (isSmallEvent(BodyType)) {
+	if (isSmallBodyType) {
 		wrapperClassNames.push("small-event")
 		smallAvatar = true
 		eventTimeOnly = true
-	} else if (prevEvt?.sender === evt.sender &&
-		prevEvt.timestamp + 15 * 60 * 1000 > evt.timestamp &&
-		!isSmallEvent(getBodyType(prevEvt)) &&
-		dateSeparator === null) {
+	} else if (
+		prevEvt?.sender === evt.sender
+		&& prevEvt.timestamp + 15 * 60 * 1000 > evt.timestamp
+		&& dateSeparator === null
+		&& !replyAboveMessage
+		&& !isSmallEvent(getBodyType(prevEvt))
+	) {
 		wrapperClassNames.push("same-sender")
 		eventTimeOnly = true
 		renderAvatar = false
@@ -148,8 +171,6 @@ const TimelineEvent = ({ evt, prevEvt, disableMenu }: TimelineEventProps) => {
 	const fullTime = fullTimeFormatter.format(eventTS)
 	const shortTime = formatShortTime(eventTS)
 	const editTime = editEventTS ? `Edited at ${fullTimeFormatter.format(editEventTS)}` : null
-	const relatesTo = (evt.orig_content ?? evt.content)?.["m.relates_to"]
-	const replyTo = relatesTo?.["m.in_reply_to"]?.event_id
 	const mainEvent = <div
 		data-event-id={evt.event_id}
 		className={wrapperClassNames.join(" ")}
@@ -160,6 +181,7 @@ const TimelineEvent = ({ evt, prevEvt, disableMenu }: TimelineEventProps) => {
 		>
 			<EventHoverMenu evt={evt} setForceOpen={setForceContextMenuOpen}/>
 		</div>}
+		{replyAboveMessage}
 		{renderAvatar && <div
 			className="sender-avatar"
 			title={evt.sender}
@@ -190,11 +212,7 @@ const TimelineEvent = ({ evt, prevEvt, disableMenu }: TimelineEventProps) => {
 			<span className="event-time" title={editTime ? `${fullTime} - ${editTime}` : fullTime}>{shortTime}</span>
 		</div>}
 		<div className="event-content">
-			{isEventID(replyTo) && BodyType !== HiddenEvent && !evt.redacted_by ? <ReplyIDBody
-				room={roomCtx.store}
-				eventID={replyTo}
-				isThread={relatesTo?.rel_type === "m.thread"}
-			/> : null}
+			{replyInMessage}
 			<ContentErrorBoundary>
 				<BodyType room={roomCtx.store} sender={memberEvt} event={evt}/>
 				<URLPreviews room={roomCtx.store} event={evt}/>
