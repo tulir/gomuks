@@ -100,7 +100,7 @@ export const usePrimaryItems = (
 	const canSend = !didFail && ownPL >= messageSendPL
 	const canEdit = canSend
 		&& evt.sender === client.userID
-		&& evt.type === "m.room.message"
+		&& (evt.type === "m.room.message" || evt.type === "m.sticker")
 		&& evt.relation_type !== "m.replace"
 		&& !evt.redacted_by
 	const canReact = !didFail && ownPL >= reactPL

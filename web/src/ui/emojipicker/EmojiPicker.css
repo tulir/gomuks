@@ -1,4 +1,4 @@
-div.emoji-picker, div.gif-picker {
+div.emoji-picker, div.sticker-picker, div.gif-picker {
 	position: fixed;
 	background-color: var(--background-color);
 	width: 22rem;
@@ -72,7 +72,7 @@ div.gif-picker {
 	}
 }
 
-div.emoji-picker {
+div.emoji-picker, div.sticker-picker {
 	div.emoji-category-bar {
 		/*height: 2.5rem;*/
 		display: flex;
@@ -194,6 +194,17 @@ div.emoji-picker {
 		&.selected {
 			border: 1px solid var(--emoji-selected-border-color);
 			opacity: .8;
+		}
+	}
+
+	button.sticker {
+		width: 5rem;
+		height: 5rem;
+
+		> img {
+			object-fit: contain;
+			width: 100%;
+			padding: .5rem;
 		}
 	}
 

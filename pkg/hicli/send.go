@@ -153,7 +153,12 @@ func (h *HiClient) SendMessage(
 			content.RelatesTo = relatesTo
 		}
 	}
-	return h.send(ctx, roomID, event.EventMessage, &event.Content{Parsed: content, Raw: extra}, origText, unencrypted)
+	evtType := event.EventMessage
+	if content.MsgType == "m.sticker" {
+		content.MsgType = ""
+		evtType = event.EventSticker
+	}
+	return h.send(ctx, roomID, evtType, &event.Content{Parsed: content, Raw: extra}, origText, unencrypted)
 }
 
 func (h *HiClient) MarkRead(ctx context.Context, roomID id.RoomID, eventID id.EventID, receiptType event.ReceiptType) error {
@@ -287,7 +292,7 @@ func (h *HiClient) send(
 	var inlineImages []id.ContentURI
 	mautrixEvt := dbEvt.AsRawMautrix()
 	dbEvt.LocalContent, inlineImages = h.calculateLocalContent(ctx, dbEvt, mautrixEvt)
-	if overrideEditSource != "" {
+	if overrideEditSource != "" && dbEvt.LocalContent != nil {
 		dbEvt.LocalContent.EditSource = overrideEditSource
 	}
 	_, err = h.DB.Event.Insert(ctx, dbEvt)

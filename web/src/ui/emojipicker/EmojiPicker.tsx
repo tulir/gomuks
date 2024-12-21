@@ -13,7 +13,7 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import React, { CSSProperties, JSX, use, useCallback, useEffect, useRef, useState } from "react"
+import React, { CSSProperties, JSX, use, useCallback, useState } from "react"
 import { getMediaURL } from "@/api/media.ts"
 import { RoomStateStore, useCustomEmojis } from "@/api/statestore"
 import { roomStateGUIDToString } from "@/api/types"
@@ -24,6 +24,7 @@ import ClientContext from "../ClientContext.ts"
 import { ModalCloseContext } from "../modal/Modal.tsx"
 import { EmojiGroup } from "./EmojiGroup.tsx"
 import renderEmoji from "./renderEmoji.tsx"
+import useCategoryUnderline from "./useCategoryUnderline.ts"
 import FallbackPackIcon from "@/icons/category.svg?react"
 import CloseIcon from "@/icons/close.svg?react"
 import ActivitiesIcon from "@/icons/emoji-categories/activities.svg?react"
@@ -64,8 +65,7 @@ const EmojiPicker = ({ style, selected, onSelect, room, allowFreeform, closeOnSe
 	const client = use(ClientContext)!
 	const [query, setQuery] = useState("")
 	const [previewEmoji, setPreviewEmoji] = useState<Emoji>()
-	const emojiCategoryBarRef = useRef<HTMLDivElement>(null)
-	const emojiListRef = useRef<HTMLDivElement>(null)
+	const [emojiCategoryBarRef, emojiListRef] = useCategoryUnderline()
 	const watchedEmojiPackKeys = client.store.getEmojiPackKeys().map(roomStateGUIDToString)
 	const customEmojiPacks = useCustomEmojis(client.store, room)
 	const emojis = useFilteredEmojis(query, {
@@ -90,31 +90,6 @@ const EmojiPicker = ({ style, selected, onSelect, room, allowFreeform, closeOnSe
 	const onClickCategoryButton = useCallback((evt: React.MouseEvent) => {
 		const categoryID = evt.currentTarget.getAttribute("data-category-id")!
 		document.getElementById(`emoji-category-${categoryID}`)?.scrollIntoView()
-	}, [])
-	useEffect(() => {
-		const cats = emojiCategoryBarRef.current
-		const lists = emojiListRef.current
-		if (!cats || !lists) {
-			return
-		}
-		const observer = new IntersectionObserver(entries => {
-			for (const entry of entries) {
-				const catID = entry.target.getAttribute("data-category-id")
-				const cat = catID && cats.querySelector(`.emoji-category-icon[data-category-id="${catID}"]`)
-				if (!cat) {
-					continue
-				}
-				if (entry.isIntersecting) {
-					cat.classList.add("visible")
-				} else {
-					cat.classList.remove("visible")
-				}
-			}
-		})
-		for (const cat of lists.getElementsByClassName("emoji-category")) {
-			observer.observe(cat)
-		}
-		return () => observer.disconnect()
 	}, [])
 	return <div className="emoji-picker" style={style}>
 		<div className="emoji-category-bar" ref={emojiCategoryBarRef}>
@@ -175,6 +150,7 @@ const EmojiPicker = ({ style, selected, onSelect, room, allowFreeform, closeOnSe
 						isWatched={typeof categoryID === "string" && watchedEmojiPackKeys.includes(categoryID)}
 						onSelect={onSelectWrapped}
 						setPreviewEmoji={setPreviewEmoji}
+						imageType="emoji"
 					/>
 				})}
 				{allowFreeform && query && <button

@@ -16,7 +16,7 @@
 import React, { use, useCallback } from "react"
 import { stringToRoomStateGUID } from "@/api/types"
 import useContentVisibility from "@/util/contentvisibility.ts"
-import { CATEGORY_FREQUENTLY_USED, CustomEmojiPack, Emoji, PartialEmoji, categories } from "@/util/emoji"
+import { CATEGORY_FREQUENTLY_USED, CustomEmojiPack, Emoji, categories } from "@/util/emoji"
 import useEvent from "@/util/useEvent.ts"
 import ClientContext from "../ClientContext.ts"
 import renderEmoji from "./renderEmoji.tsx"
@@ -27,8 +27,9 @@ interface EmojiGroupProps {
 	selected?: string[]
 	pack?: CustomEmojiPack
 	isWatched?: boolean
-	onSelect: (emoji?: PartialEmoji) => void
-	setPreviewEmoji: (emoji?: Emoji) => void
+	onSelect: (emoji?: Emoji) => void
+	setPreviewEmoji?: (emoji?: Emoji) => void
+	imageType: "emoji" | "sticker"
 }
 
 export const EmojiGroup = ({
@@ -39,6 +40,7 @@ export const EmojiGroup = ({
 	isWatched,
 	onSelect,
 	setPreviewEmoji,
+	imageType,
 }: EmojiGroupProps) => {
 	const client = use(ClientContext)!
 	const [isVisible, divRef] = useContentVisibility<HTMLDivElement>(true)
@@ -57,8 +59,8 @@ export const EmojiGroup = ({
 	const onClickEmoji = useEvent((evt: React.MouseEvent<HTMLButtonElement>) =>
 		onSelect(getEmojiFromAttrs(evt.currentTarget)))
 	const onMouseOverEmoji = useEvent((evt: React.MouseEvent<HTMLButtonElement>) =>
-		setPreviewEmoji(getEmojiFromAttrs(evt.currentTarget)))
-	const onMouseOutEmoji = useCallback(() => setPreviewEmoji(undefined), [setPreviewEmoji])
+		setPreviewEmoji?.(getEmojiFromAttrs(evt.currentTarget)))
+	const onMouseOutEmoji = useCallback(() => setPreviewEmoji?.(undefined), [setPreviewEmoji])
 	const onClickSubscribePack = useEvent((evt: React.MouseEvent<HTMLButtonElement>) => {
 		const guid = stringToRoomStateGUID(evt.currentTarget.getAttribute("data-pack-id"))
 		if (!guid) {
@@ -86,12 +88,14 @@ export const EmojiGroup = ({
 	} else {
 		categoryName = "Unknown category"
 	}
+	const itemsPerRow = imageType === "sticker" ? 4 : 8
+	const rowSize = imageType === "sticker" ? 5 : 2.5
 	return <div
 		ref={divRef}
 		className="emoji-category"
 		id={`emoji-category-${categoryID}`}
 		data-category-id={categoryID}
-		style={{ containIntrinsicHeight: `${1.5 + Math.ceil(emojis.length / 8) * 2.5}rem` }}
+		style={{ containIntrinsicHeight: `${1.5 + Math.ceil(emojis.length / itemsPerRow) * rowSize}rem` }}
 	>
 		<h4 className="emoji-category-name">
 			{categoryName}
@@ -104,11 +108,12 @@ export const EmojiGroup = ({
 		<div className="emoji-category-list">
 			{isVisible ? emojis.map((emoji, idx) => <button
 				key={emoji.u}
-				className={`emoji ${selected?.includes(emoji.u) ? "selected" : ""}`}
+				className={`${imageType} ${selected?.includes(emoji.u) ? "selected" : ""}`}
 				data-emoji-index={idx}
 				onMouseOver={onMouseOverEmoji}
 				onMouseOut={onMouseOutEmoji}
 				onClick={onClickEmoji}
+				title={emoji.t}
 			>{renderEmoji(emoji)}</button>) : null}
 		</div>
 	</div>

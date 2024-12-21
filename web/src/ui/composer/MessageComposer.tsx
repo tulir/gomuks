@@ -33,6 +33,7 @@ import useEvent from "@/util/useEvent.ts"
 import ClientContext from "../ClientContext.ts"
 import EmojiPicker from "../emojipicker/EmojiPicker.tsx"
 import GIFPicker from "../emojipicker/GIFPicker.tsx"
+import StickerPicker from "../emojipicker/StickerPicker.tsx"
 import { keyToString } from "../keybindings.ts"
 import { LeafletPicker } from "../maps/async.tsx"
 import { ModalContext } from "../modal/Modal.tsx"
@@ -48,6 +49,7 @@ import GIFIcon from "@/icons/gif.svg?react"
 import LocationIcon from "@/icons/location.svg?react"
 import MoreIcon from "@/icons/more.svg?react"
 import SendIcon from "@/icons/send.svg?react"
+import StickerIcon from "@/icons/sticker.svg?react"
 import "./MessageComposer.css"
 
 export interface ComposerLocationValue {
@@ -150,13 +152,16 @@ const MessageComposer = () => {
 			return
 		}
 		const evtContent = evt.content as MessageEventContent
-		const mediaMsgTypes = ["m.image", "m.audio", "m.video", "m.file"]
+		const mediaMsgTypes = ["m.sticker", "m.image", "m.audio", "m.video", "m.file"]
+		if (evt.type === "m.sticker") {
+			evtContent.msgtype = "m.sticker"
+		}
 		const isMedia = mediaMsgTypes.includes(evtContent.msgtype)
 			&& Boolean(evt.content?.url || evt.content?.file?.url)
 		rawSetEditing(evt)
 		setState({
 			media: isMedia ? evtContent as MediaMessageEventContent : null,
-			text: (!evt.content.filename || evt.content.filename !== evt.content.body)
+			text: (evt.content.filename && evt.content.filename !== evt.content.body) || evt.type === "m.sticker"
 				? (evt.local_content?.edit_source ?? evtContent.body ?? "")
 				: "",
 			replyTo: null,
@@ -171,6 +176,9 @@ const MessageComposer = () => {
 		if (!canSend) {
 			return
 		}
+		doSendMessage(state)
+	})
+	const doSendMessage = (state: ComposerState) => {
 		if (editing) {
 			setState(draftStore.get(room.roomID) ?? emptyComposer)
 		} else {
@@ -233,7 +241,7 @@ const MessageComposer = () => {
 			relates_to,
 			mentions,
 		}).catch(err => window.alert("Failed to send message: " + err))
-	})
+	}
 	const onComposerCaretChange = useEvent((evt: CaretEvent<HTMLTextAreaElement>, newText?: string) => {
 		const area = evt.currentTarget
 		if (area.selectionStart <= (autocomplete?.startPos ?? 0)) {
@@ -487,11 +495,22 @@ const MessageComposer = () => {
 			onClose: () => !isMobileDevice && textInput.current?.focus(),
 		})
 	})
+	const openStickerPicker = useEvent(() => {
+		openModal({
+			content: <StickerPicker
+				style={getEmojiPickerStyle()}
+				room={roomCtx.store}
+				onSelect={media => doSendMessage({ ...state, media, text: "" })}
+			/>,
+			onClose: () => !isMobileDevice && textInput.current?.focus(),
+		})
+	})
 	const openLocationPicker = useEvent(() => {
 		setState({ location: { lat: 0, long: 0, prec: 1 }, media: null })
 	})
 	const Autocompleter = getAutocompleter(autocomplete, client, room)
 	let mediaDisabledTitle: string | undefined
+	let stickerDisabledTitle: string | undefined
 	let locationDisabledTitle: string | undefined
 	if (state.media) {
 		mediaDisabledTitle = "You can only attach one file at a time"
@@ -503,10 +522,31 @@ const MessageComposer = () => {
 		mediaDisabledTitle = "Uploading file..."
 		locationDisabledTitle = "You can't attach a location to a message with a file"
 	}
+	if (state.media?.msgtype !== "m.sticker") {
+		stickerDisabledTitle = mediaDisabledTitle
+		if (!stickerDisabledTitle && editing) {
+			stickerDisabledTitle = "You can't edit a message into a sticker"
+		}
+	} else if (state.text && !editing) {
+		stickerDisabledTitle = "You can't attach a sticker to a message with text"
+	}
 	const makeAttachmentButtons = (includeText = false) => {
 		return <>
 			<button onClick={openEmojiPicker} title="Add emoji"><EmojiIcon/>{includeText && "Emoji"}</button>
-			<button onClick={openGIFPicker} title="Add gif attachment"><GIFIcon/>{includeText && "GIF"}</button>
+			<button
+				onClick={openStickerPicker}
+				disabled={!!stickerDisabledTitle}
+				title={stickerDisabledTitle ?? "Add sticker attachment"}
+			>
+				<StickerIcon/>{includeText && "Sticker"}
+			</button>
+			<button
+				onClick={openGIFPicker}
+				disabled={!!mediaDisabledTitle}
+				title={mediaDisabledTitle ?? "Add gif attachment"}
+			>
+				<GIFIcon/>{includeText && "GIF"}
+			</button>
 			<button
 				onClick={openLocationPicker}
 				disabled={!!locationDisabledTitle}
@@ -531,6 +571,7 @@ const MessageComposer = () => {
 	})
 	const inlineButtons = state.text === "" || window.innerWidth > 720
 	const showSendButton = canSend || window.innerWidth > 720
+	const disableClearMedia = editing && state.media?.msgtype === "m.sticker"
 	return <>
 		{Autocompleter && autocomplete && <div className="autocompletions-wrapper"><Autocompleter
 			params={autocomplete}
@@ -559,7 +600,7 @@ const MessageComposer = () => {
 				onClose={stopEditing}
 			/>}
 			{loadingMedia && <div className="composer-media"><ScaleLoader/></div>}
-			{state.media && <ComposerMedia content={state.media} clearMedia={clearMedia}/>}
+			{state.media && <ComposerMedia content={state.media} clearMedia={!disableClearMedia && clearMedia}/>}
 			{state.location && <ComposerLocation
 				room={room} client={client}
 				location={state.location} onChange={onChangeLocation} clearLocation={clearMedia}
@@ -593,11 +634,10 @@ const MessageComposer = () => {
 
 interface ComposerMediaProps {
 	content: MediaMessageEventContent
-	clearMedia: () => void
+	clearMedia: false | (() => void)
 }
 
 const ComposerMedia = ({ content, clearMedia }: ComposerMediaProps) => {
-	// TODO stickers?
 	const [mediaContent, containerClass, containerStyle] = useMediaContent(
 		content, "m.room.message", { height: 120, width: 360 },
 	)
@@ -605,7 +645,7 @@ const ComposerMedia = ({ content, clearMedia }: ComposerMediaProps) => {
 		<div className={`media-container ${containerClass}`} style={containerStyle}>
 			{mediaContent}
 		</div>
-		<button onClick={clearMedia}><CloseIcon/></button>
+		{clearMedia && <button onClick={clearMedia}><CloseIcon/></button>}
 	</div>
 }
 

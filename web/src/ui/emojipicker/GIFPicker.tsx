@@ -23,7 +23,7 @@ import { GIF, getTrendingGIFs, searchGIF } from "./gifsource.ts"
 import CloseIcon from "@/icons/close.svg?react"
 import SearchIcon from "@/icons/search.svg?react"
 
-interface GIFPickerProps {
+export interface MediaPickerProps {
 	style: CSSProperties
 	onSelect: (media: MediaMessageEventContent) => void
 	room: RoomStateStore
@@ -31,7 +31,7 @@ interface GIFPickerProps {
 
 const trendingCache = new Map<string, GIF[]>()
 
-const GIFPicker = ({ style, onSelect, room }: GIFPickerProps) => {
+const GIFPicker = ({ style, onSelect, room }: MediaPickerProps) => {
 	const [query, setQuery] = useState("")
 	const [results, setResults] = useState<GIF[]>([])
 	const [error, setError] = useState<unknown>()

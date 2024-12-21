@@ -157,7 +157,7 @@ export interface TextMessageEventContent extends BaseMessageEventContent {
 }
 
 export interface MediaMessageEventContent extends BaseMessageEventContent {
-	msgtype: "m.image" | "m.file" | "m.audio" | "m.video"
+	msgtype: "m.sticker" | "m.image" | "m.file" | "m.audio" | "m.video"
 	filename?: string
 	url?: ContentURI
 	file?: EncryptedFile
