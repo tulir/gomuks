@@ -55,6 +55,9 @@ export function getBodyType(evt: MemDBEvent, forReply = false): React.FunctionCo
 			}
 			return MediaMessageBody
 		case "m.location":
+			if (forReply) {
+				return TextMessageBody
+			}
 			return LocationMessageBody
 		default:
 			return UnknownMessageBody
