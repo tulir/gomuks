@@ -395,12 +395,7 @@ func (h *HiClient) addMediaCache(
 }
 
 func (h *HiClient) cacheMedia(ctx context.Context, evt *event.Event, rowID database.EventRowID) {
-	switch evt.Type {
-	case event.EventMessage, event.EventSticker:
-		content, ok := evt.Content.Parsed.(*event.MessageEventContent)
-		if !ok {
-			return
-		}
+	cacheMessageEventContent := func(content *event.MessageEventContent) {
 		if content.File != nil {
 			h.addMediaCache(ctx, rowID, content.File.URL, content.File, content.Info, content.GetFileName())
 		} else if content.URL != "" {
@@ -426,6 +421,19 @@ func (h *HiClient) cacheMedia(ctx context.Context, evt *event.Event, rowID datab
 			} else if preview.ImageURL != "" {
 				h.addMediaCache(ctx, rowID, preview.ImageURL, nil, info, "")
 			}
+		}
+	}
+
+	switch evt.Type {
+	case event.EventMessage, event.EventSticker:
+		content, ok := evt.Content.Parsed.(*event.MessageEventContent)
+		if !ok {
+			return
+		}
+
+		cacheMessageEventContent(content)
+		if content.NewContent != nil {
+			cacheMessageEventContent(content.NewContent)
 		}
 	case event.StateRoomAvatar:
 		_ = evt.Content.ParseRaw(evt.Type)
