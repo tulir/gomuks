@@ -602,7 +602,7 @@ const MessageComposer = () => {
 				isThread={false}
 				onClose={stopEditing}
 			/>}
-			{loadingMedia && <div className="composer-media"><ScaleLoader/></div>}
+			{loadingMedia && <div className="composer-media"><ScaleLoader color="var(--primary-color)"/></div>}
 			{state.media && <ComposerMedia content={state.media} clearMedia={!disableClearMedia && clearMedia}/>}
 			{state.location && <ComposerLocation
 				room={room} client={client}
