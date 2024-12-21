@@ -119,7 +119,9 @@ const TimelineView = () => {
 	return <div className="timeline-view" onScroll={handleScroll} ref={timelineViewRef}>
 		<div className="timeline-beginning">
 			{room.hasMoreHistory ? <button onClick={loadHistory} disabled={isLoadingHistory}>
-				{isLoadingHistory ? <><ScaleLoader /> Loading history...</> : "Load more history"}
+				{isLoadingHistory
+					? <><ScaleLoader color="var(--primary-color)"/> Loading history...</>
+					: "Load more history"}
 			</button> : "No more history available in this room"}
 		</div>
 		<div className="timeline-list">
