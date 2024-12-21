@@ -140,6 +140,19 @@ export interface ContentWarning {
 	description?: string
 }
 
+export interface URLPreview {
+	matched_url: string
+	"beeper:image:encryption"?: EncryptedFile
+	"matrix:image:size": number
+	"og:image"?: ContentURI
+	"og:url": string
+	"og:image:width"?: number
+	"og:image:height"?: number
+	"og:image:type"?: string
+	"og:title"?: string
+	"og:description"?: string
+}
+
 export interface BaseMessageEventContent {
 	msgtype: string
 	body: string
@@ -150,6 +163,8 @@ export interface BaseMessageEventContent {
 	"town.robin.msc3725.content_warning"?: ContentWarning
 	"page.codeberg.everypizza.msc4193.spoiler"?: boolean
 	"page.codeberg.everypizza.msc4193.spoiler.reason"?: string
+	"m.url_previews"?: URLPreview[]
+	"com.beeper.linkpreviews"?: URLPreview[]
 }
 
 export interface TextMessageEventContent extends BaseMessageEventContent {

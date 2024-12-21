@@ -1,0 +1,48 @@
+div.url-previews {
+	display: flex;
+	flex-direction: row;
+	gap: 1rem;
+	overflow-x: scroll;
+
+	> div.url-preview {
+		margin: 0.5rem 0;
+		border-radius: 0.5rem;
+		background-color: var(--pill-background-color);
+		border: 1px solid var(--border-color);
+
+		div.title {
+			margin: 0.5rem 0.5rem 0 0.5rem;
+			display: -webkit-box;
+			-webkit-line-clamp: 1;
+			line-clamp: 1;
+			-webkit-box-orient: vertical;
+			overflow: hidden;
+		}
+
+		div.description {
+			margin: 0 0.5rem 0.5rem 0.5rem;
+			display: -webkit-box;
+			-webkit-line-clamp: 3;
+			line-clamp: 3;
+			-webkit-box-orient: vertical;
+			overflow: hidden;
+			color: var(--semisecondary-text-color);
+		}
+
+		> div.media-container {
+			border-radius: 0 0 0.5rem 0.5rem;
+		}
+
+		&.inline {
+			display: flex;
+			flex-direction: row;
+			min-width: 320px;
+			max-width: 320px;
+
+			> div.media-container {
+				border-radius: none;
+				margin: 0.5rem;
+			}
+		}
+	}
+}

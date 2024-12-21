@@ -102,6 +102,12 @@ export const preferences = {
 		allowedContexts: anyContext,
 		defaultValue: true,
 	}),
+	render_url_previews: new Preference<boolean>({
+		displayName: "Render URL previews",
+		description: "Whether to render MSC4095 URL previews in the room timeline.",
+		allowedContexts: anyContext,
+		defaultValue: true,
+	}),
 	show_date_separators: new Preference<boolean>({
 		displayName: "Show date separators",
 		description: "Whether messages in different days should have a date separator between them in the room timeline.",

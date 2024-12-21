@@ -411,6 +411,22 @@ func (h *HiClient) cacheMedia(ctx context.Context, evt *event.Event, rowID datab
 		} else if content.GetInfo().ThumbnailURL != "" {
 			h.addMediaCache(ctx, rowID, content.Info.ThumbnailURL, nil, content.Info.ThumbnailInfo, "")
 		}
+
+		for _, image := range content.BeeperGalleryImages {
+			h.cacheMedia(ctx, &event.Event{
+				Type:    event.EventMessage,
+				Content: event.Content{Parsed: image},
+			}, rowID)
+		}
+
+		for _, preview := range content.BeeperLinkPreviews {
+			info := &event.FileInfo{MimeType: preview.ImageType}
+			if preview.ImageEncryption != nil {
+				h.addMediaCache(ctx, rowID, preview.ImageEncryption.URL, preview.ImageEncryption, info, "")
+			} else if preview.ImageURL != "" {
+				h.addMediaCache(ctx, rowID, preview.ImageURL, nil, info, "")
+			}
+		}
 	case event.StateRoomAvatar:
 		_ = evt.Content.ParseRaw(evt.Type)
 		content, ok := evt.Content.Parsed.(*event.RoomAvatarEventContent)
