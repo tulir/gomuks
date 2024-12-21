@@ -79,7 +79,7 @@ const StickerPicker = ({ style, onSelect, room }: MediaPickerProps) => {
 				onChange={onChangeQuery}
 				value={query}
 				type="search"
-				placeholder="Search emojis"
+				placeholder="Search stickers"
 			/>
 			<button onClick={clearQuery} disabled={query === ""}>
 				{query !== "" ? <CloseIcon/> : <SearchIcon/>}
