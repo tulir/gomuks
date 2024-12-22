@@ -84,6 +84,10 @@
 	--timeline-horizontal-padding: 1.5rem;
 	--timeline-status-size: 4rem;
 
+	--presence-online: green;
+	--presence-offline: grey;
+	--presence-unavailable: red;
+
 	@media screen and (max-width: 45rem) {
 		--timeline-horizontal-padding: .5rem;
 		--timeline-status-size: 2.25rem;

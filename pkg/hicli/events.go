@@ -82,3 +82,9 @@ type ClientState struct {
 	DeviceID      id.DeviceID `json:"device_id,omitempty"`
 	HomeserverURL string      `json:"homeserver_url,omitempty"`
 }
+
+type UpdatePresence struct {
+	Presence  event.Presence `json:"presence"`
+	StatusMsg string         `json:"status_msg,omitempty"`
+	UserID    id.UserID      `json:"user_id"`
+}

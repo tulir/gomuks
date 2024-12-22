@@ -169,6 +169,20 @@ func (h *HiClient) processSyncResponse(ctx context.Context, resp *mautrix.RespSy
 			return fmt.Errorf("failed to process left room %s: %w", roomID, err)
 		}
 	}
+	for _, presenceEvent := range resp.Presence.Events {
+		presenceEvent.Type.Class = event.EphemeralEventPresence.Class
+		if presenceEvent.Content.ParseRaw(event.EphemeralEventPresence) != nil {
+			zerolog.Ctx(ctx).Warn().Stringer("event_id", presenceEvent.ID).Msg(fmt.Sprintf("Failed to parse presence event content: %s", presenceEvent.Content.VeryRaw))
+			continue
+		}
+		body := presenceEvent.Content.AsPresence()
+		presence := UpdatePresence{
+			Presence:  body.Presence,
+			StatusMsg: body.StatusMessage,
+			UserID:    presenceEvent.Sender,
+		}
+		h.EventHandler(presence)
+	}
 	h.Account.NextBatch = resp.NextBatch
 	err = h.DB.Account.PutNextBatch(ctx, h.Account.UserID, resp.NextBatch)
 	if err != nil {

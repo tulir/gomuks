@@ -46,6 +46,16 @@ export interface TypingEvent extends BaseRPCCommand<TypingEventData> {
 	command: "typing"
 }
 
+export interface UpdatePresenceEventData {
+	user_id: UserID
+	presence: "online" | "offline" | "unavailable"
+	status_msg?: string
+}
+
+export interface UpdatePresenceEvent extends BaseRPCCommand<UpdatePresenceEventData> {
+	command: "update_presence"
+}
+
 export interface SendCompleteData {
 	event: RawDBEvent
 	error: string | null
@@ -155,6 +165,7 @@ export type RPCEvent =
 	SyncCompleteEvent |
 	ImageAuthTokenEvent |
 	InitCompleteEvent |
-	RunIDEvent
+	RunIDEvent |
+	UpdatePresenceEvent
 
 export type RPCCommand = RPCEvent | ResponseCommand | ErrorCommand

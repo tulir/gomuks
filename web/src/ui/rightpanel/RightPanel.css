@@ -86,7 +86,22 @@ div.right-panel-content.user {
 	div.presence {
 		text-align: center;
 		font-size: 1.125rem;
-		
+	}
+
+	svg.presence-indicator {
+		width: 1em;
+		height: 1em;
+		border-radius: 50%;
+		vertical-align: middle;
+	}
+	svg.presence-online {
+		fill: var(--presence-online);
+	}
+	svg.presence-offline {
+		fill: var(--presence-offline);
+	}
+	svg.presence-unavailable {
+		fill: var(--presence-unavailable);
 	}
 
 	div.statusmessage {
@@ -99,7 +114,49 @@ div.right-panel-content.user {
 
 	div.presencesetter {
 		display: grid;
+		grid-template-columns: 1fr;
+		grid-template-rows: repeat(3, 1fr);
+		justify-content: left;
+		justify-items: left;
+		gap: .5rem;
+		
+	}
+
+	div.presencesetter > button {
+		width: 100%;
+		text-align: left;
+		padding: .5rem 0;
+		justify-content: left;
+	}
+
+	div.statussetter > form {
+		display: grid;
+	}
+	form.canclear {
+		grid-template-columns: repeat(4, 1fr);
+	}
+	form.cannotclear {
 		grid-template-columns: repeat(3, 1fr);
+
+		& input[type="submit"] {
+			grid-column: 1 / span 3;
+		}
+	}
+
+	div.statussetter > form > input[type="text"] {
+		grid-column: 1 / span 2;
+		border: none;
+		transition: border-bottom .2s;
+		border-bottom: 1px solid var(--blockquote-border-color);
+	}
+
+	div.statussetter > form > input[type="text"]:focus {
+		border-bottom: 1px solid var(--primary-color);
+		outline: none;
+	}
+
+	div.statussetter > form > input[type="submit"]:hover {
+		background-color: var(--primary-color);
 	}
 
 	div.userid, div.displayname {

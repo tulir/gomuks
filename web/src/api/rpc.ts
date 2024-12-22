@@ -186,7 +186,7 @@ export default abstract class RPCClient {
 	}
 
 	setPresence(presence: Presence): Promise<boolean> {
-		return this.request("set_presence", { presence })
+		return this.request("set_presence", presence)
 	}
 
 	getMutualRooms(user_id: UserID): Promise<RoomID[]> {
