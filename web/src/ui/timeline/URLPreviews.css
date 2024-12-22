@@ -10,6 +10,7 @@ div.url-previews {
 		background-color: var(--url-preview-background-color);
 		border: 1px solid var(--url-preview-background-color);
 		display: grid;
+		flex-shrink: 0;
 
 		grid-template:
 			"title"       auto
