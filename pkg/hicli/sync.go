@@ -88,6 +88,7 @@ func (h *HiClient) preProcessSyncResponse(ctx context.Context, resp *mautrix.Res
 		}
 	}
 	resp.ToDevice.Events = postponedToDevices
+	h.Crypto.MarkOlmHashSavePoint(ctx)
 
 	return nil
 }
