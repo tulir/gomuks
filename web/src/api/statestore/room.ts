@@ -92,6 +92,7 @@ export class RoomStateStore {
 	readonly meta: NonNullCachedEventDispatcher<DBRoom>
 	timeline: TimelineRowTuple[] = []
 	timelineCache: (MemDBEvent | null)[] = []
+	editTargets: EventRowID[] = []
 	state: Map<EventType, Map<string, EventRowID>> = new Map()
 	stateLoaded = false
 	typing: UserID[] = []
@@ -134,16 +135,25 @@ export class RoomStateStore {
 	}
 
 	#updateTimelineCache() {
+		const ownMessages: EventRowID[] = []
 		this.timelineCache = this.timeline.map(rt => {
 			const evt = this.eventsByRowID.get(rt.event_rowid)
 			if (!evt) {
 				return null
 			}
 			evt.timeline_rowid = rt.timeline_rowid
+			if (
+				evt.sender === this.parent.userID
+				&& evt.type === "m.room.message"
+				&& evt.relation_type !== "m.replace"
+			) {
+				ownMessages.push(evt.rowid)
+			}
 			return evt
 		}).concat(this.pendingEvents
 			.map(rowID => this.eventsByRowID.get(rowID))
 			.filter(evt => !!evt))
+		this.editTargets = ownMessages
 	}
 
 	notifyTimelineSubscribers() {

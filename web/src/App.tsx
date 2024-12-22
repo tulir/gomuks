@@ -13,7 +13,7 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import { useEffect, useLayoutEffect, useMemo } from "react"
+import { useEffect, useMemo } from "react"
 import { ScaleLoader } from "react-spinners"
 import Client from "./api/client.ts"
 import RPCClient from "./api/rpc.ts"
@@ -36,10 +36,10 @@ function App() {
 	const client = useMemo(() => new Client(makeRPCClient()), [])
 	const connState = useEventAsState(client.rpc.connect)
 	const clientState = useEventAsState(client.state)
-	useLayoutEffect(() => {
+	useEffect(() => {
 		window.client = client
+		client.start()
 	}, [client])
-	useEffect(() => client.start(), [client])
 
 	const afterConnectError = Boolean(connState?.error && connState.reconnecting && clientState?.is_verified)
 	useEffect(() => {

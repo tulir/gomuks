@@ -13,7 +13,7 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import { JSX, use, useEffect, useLayoutEffect, useMemo, useReducer, useRef, useState } from "react"
+import { JSX, use, useEffect, useMemo, useReducer, useRef, useState } from "react"
 import { SyncLoader } from "react-spinners"
 import Client from "@/api/client.ts"
 import { RoomStateStore } from "@/api/statestore"
@@ -280,10 +280,8 @@ const MainScreen = () => {
 		() => new ContextFields(directSetRightPanel, directSetActiveRoom, client),
 		[client],
 	)
-	useLayoutEffect(() => {
-		window.mainScreenContext = context
-	}, [context])
 	useEffect(() => {
+		window.mainScreenContext = context
 		const listener = (evt: PopStateEvent) => {
 			skipNextTransitionRef.current = evt.hasUAVisualTransition
 			const roomID = evt.state?.room_id ?? null

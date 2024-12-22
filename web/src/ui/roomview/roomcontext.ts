@@ -15,7 +15,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import { RefObject, createContext, createRef, use } from "react"
 import { RoomStateStore } from "@/api/statestore"
-import { EventID, EventRowID, MemDBEvent } from "@/api/types"
+import { EventID, MemDBEvent } from "@/api/types"
 import { NonNullCachedEventDispatcher } from "@/util/eventdispatcher.ts"
 import { escapeMarkdown } from "@/util/markdown.ts"
 
@@ -29,7 +29,6 @@ export class RoomContextData {
 	public setEditing: (evt: MemDBEvent | null) => void = noop("setEditing")
 	public insertText: (text: string) => void = noop("insertText")
 	public readonly isEditing = new NonNullCachedEventDispatcher<boolean>(false)
-	public ownMessages: EventRowID[] = []
 	public scrolledToBottom = true
 
 	constructor(public store: RoomStateStore) {}

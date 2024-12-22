@@ -67,12 +67,6 @@ const TimelineView = () => {
 			timelineViewRef.current.scrollTop += timelineViewRef.current.scrollHeight - oldScrollHeight.current
 		}
 		prevOldestTimelineRow.current = timeline[0]?.timeline_rowid ?? 0
-		roomCtx.ownMessages = timeline
-			.filter(evt => evt !== null
-				&& evt.sender === client.userID
-				&& evt.type === "m.room.message"
-				&& evt.relation_type !== "m.replace")
-			.map(evt => evt!.rowid)
 	}, [client.userID, roomCtx, timeline])
 	useEffect(() => {
 		const newestEvent = timeline[timeline.length - 1]

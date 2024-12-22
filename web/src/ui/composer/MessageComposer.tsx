@@ -310,18 +310,18 @@ const MessageComposer = () => {
 			}
 		} else if (fullKey === "ArrowUp" && inp.selectionStart === 0 && inp.selectionEnd === 0) {
 			const currentlyEditing = editing
-				? roomCtx.ownMessages.indexOf(editing.rowid)
-				: roomCtx.ownMessages.length
-			const prevEventToEditID = roomCtx.ownMessages[currentlyEditing - 1]
+				? room.editTargets.indexOf(editing.rowid)
+				: room.editTargets.length
+			const prevEventToEditID = room.editTargets[currentlyEditing - 1]
 			const prevEventToEdit = prevEventToEditID ? room.eventsByRowID.get(prevEventToEditID) : undefined
 			if (prevEventToEdit) {
 				roomCtx.setEditing(prevEventToEdit)
 				evt.preventDefault()
 			}
 		} else if (editing && fullKey === "ArrowDown" && inp.selectionStart === state.text.length) {
-			const currentlyEditingIdx = roomCtx.ownMessages.indexOf(editing.rowid)
+			const currentlyEditingIdx = room.editTargets.indexOf(editing.rowid)
 			const nextEventToEdit = currentlyEditingIdx
-				? room.eventsByRowID.get(roomCtx.ownMessages[currentlyEditingIdx + 1]) : undefined
+				? room.eventsByRowID.get(room.editTargets[currentlyEditingIdx + 1]) : undefined
 			roomCtx.setEditing(nextEventToEdit ?? null)
 			// This timeout is very hacky and probably doesn't work in every case
 			setTimeout(() => inp.setSelectionRange(0, 0), 0)
