@@ -70,6 +70,7 @@ func (h *HiClient) SendMessage(
 	text string,
 	relatesTo *event.RelatesTo,
 	mentions *event.Mentions,
+	urlPreviews *[]*event.BeeperLinkPreview,
 ) (*database.Event, error) {
 	var unencrypted bool
 	if strings.HasPrefix(text, "/unencrypted ") {
@@ -168,6 +169,9 @@ func (h *HiClient) SendMessage(
 	if content.MsgType == "m.sticker" {
 		content.MsgType = ""
 		evtType = event.EventSticker
+	}
+	if urlPreviews != nil {
+		content.BeeperLinkPreviews = *urlPreviews
 	}
 	return h.send(ctx, roomID, evtType, &event.Content{Parsed: content, Raw: extra}, origText, unencrypted)
 }
