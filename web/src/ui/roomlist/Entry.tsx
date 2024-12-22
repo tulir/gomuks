@@ -28,11 +28,12 @@ export interface RoomListEntryProps {
 	hidden: boolean
 }
 
-function usePreviewText(evt?: MemDBEvent, senderMemberEvt?: MemDBEvent | null): [string, string] {
+function getPreviewText(evt?: MemDBEvent, senderMemberEvt?: MemDBEvent | null): [string, string] {
 	if (!evt) {
 		return ["", ""]
 	}
 	if ((evt.type === "m.room.message" || evt.type === "m.sticker") && typeof evt.content.body === "string") {
+		// eslint-disable-next-line react-hooks/rules-of-hooks
 		const client = use(ClientContext)!
 		const displayname = evt.sender === client.userID
 			? "You"
@@ -49,12 +50,8 @@ function usePreviewText(evt?: MemDBEvent, senderMemberEvt?: MemDBEvent | null): 
 	return ["", ""]
 }
 
-interface InnerProps {
-	room: RoomListEntry
-}
-
-const EntryInner = ({ room }: InnerProps) => {
-	const [previewText, croppedPreviewText] = usePreviewText(room.preview_event, room.preview_sender)
+function renderEntry(room: RoomListEntry) {
+	const [previewText, croppedPreviewText] = getPreviewText(room.preview_event, room.preview_sender)
 	const unreadCount = room.unread_messages || room.unread_notifications || room.unread_highlights
 	const countIsBig = Boolean(room.unread_notifications || room.unread_highlights)
 	let unreadCountDisplay = unreadCount.toString()
@@ -97,7 +94,7 @@ const Entry = ({ room, isActive, hidden }: RoomListEntryProps) => {
 		onClick={use(MainScreenContext).clickRoom}
 		data-room-id={room.room_id}
 	>
-		{isVisible ? <EntryInner room={room}/> : null}
+		{isVisible ? renderEntry(room) : null}
 	</div>
 }
 
