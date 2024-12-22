@@ -23,7 +23,7 @@
 
 	--border-color: #ccc;
 	--pill-background-color: #ccc;
-	--url-preview-background-color: #ddd;
+	--url-preview-background-color: rgba(0, 0, 0, .05);
 	--highlight-pill-background-color: #c00;
 	--highlight-pill-text-color: #fff;
 	--button-hover-color: rgba(0, 0, 0, .2);

@@ -71,7 +71,7 @@ const URLPreviews = ({ event, room }: {
 					<div className="title">
 						<a href={url} title={title} target="_blank" rel="noreferrer noopener">{title}</a>
 					</div>
-					<div className="description">{p["og:description"]}</div>
+					<div className="description" title={p["og:description"]}>{p["og:description"]}</div>
 					{mediaURL && (inline
 						? <div className="inline-media-wrapper">{mediaContainer}</div>
 						: mediaContainer)}
