@@ -97,6 +97,11 @@ div.right-panel-content.user {
 		word-wrap: break-word;
 	}
 
+	div.presencesetter {
+		display: grid;
+		grid-template-columns: repeat(3, 1fr);
+	}
+
 	div.userid, div.displayname {
 		/* Ensure names aren't too long */
 		display: -webkit-box;

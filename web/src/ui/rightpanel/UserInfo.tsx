@@ -67,6 +67,14 @@ const UserInfo = ({ userID }: UserInfoProps) => {
 		)
 	}, [roomCtx, userID, client])
 
+	const sendNewPresence = (newPresence: Presence) => {
+		console.log("Setting new presence", newPresence)
+		client.rpc.setPresence(newPresence).then(
+			() => setPresence(newPresence),
+			err => setErrors((errors && [...errors, `${err}`] || [`${err}`])),
+		)
+	}
+
 	const displayname = member?.displayname || globalProfile?.displayname || getLocalpart(userID)
 	return <>
 		<div className="avatar-container">
@@ -101,6 +109,20 @@ const UserInfo = ({ userID }: UserInfoProps) => {
 		</>}
 		<DeviceList client={client} room={roomCtx?.store} userID={userID}/>
 		<hr/>
+		{userID === client.userID && <>
+			<h3>Set presence</h3>
+			<div className="presencesetter">
+				<button title="Set presence to online" onClick={() => sendNewPresence({...(presence || {}), "presence": "online"})} type="button">{PresenceEmojis["online"]}</button>
+				<button title="Set presence to unavailable" onClick={() => sendNewPresence({...(presence || {}), "presence": "unavailable"})} type="button">{PresenceEmojis["unavailable"]}</button>
+				<button title="Set presence to offline" onClick={() => sendNewPresence({...(presence || {}), "presence": "offline"})} type="button">{PresenceEmojis["offline"]}</button>
+			</div>
+			<div className="statussetter">
+				<form onSubmit={(e) => {e.preventDefault(); sendNewPresence({...(presence || {"presence": "offline"}), "status_msg": ((e.target as HTMLFormElement).children[0] as HTMLInputElement).value})}}>
+					<input type="text" placeholder="Status message" defaultValue={presence?.status_msg || ""}/><button title="Set status message" onClick={() => alert("Set status message")} type="submit">Set</button>
+				</form>
+			</div>
+			<hr/>
+			</>}
 		{errors?.length ? <>
 			<UserInfoError errors={errors}/>
 			<hr/>
