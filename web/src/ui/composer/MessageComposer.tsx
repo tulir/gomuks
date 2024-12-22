@@ -24,6 +24,7 @@ import type {
 	MessageEventContent,
 	RelatesTo,
 	RoomID,
+	URLPreview as URLPreviewType,
 } from "@/api/types"
 import { PartialEmoji, emojiToMarkdown } from "@/util/emoji"
 import { isMobileDevice } from "@/util/ismobile.ts"
@@ -36,6 +37,7 @@ import { keyToString } from "../keybindings.ts"
 import { ModalContext } from "../modal"
 import { useRoomContext } from "../roomview/roomcontext.ts"
 import { ReplyBody } from "../timeline/ReplyBody.tsx"
+import URLPreview from "../urlpreview/URLPreview.tsx"
 import type { AutocompleteQuery } from "./Autocompleter.tsx"
 import { ComposerLocation, ComposerLocationValue, ComposerMedia } from "./ComposerMedia.tsx"
 import { charToAutocompleteType, emojiQueryRegex, getAutocompleter } from "./getAutocompleter.ts"
@@ -52,6 +54,7 @@ export interface ComposerState {
 	text: string
 	media: MediaMessageEventContent | null
 	location: ComposerLocationValue | null
+	previews: Record<string, URLPreviewType | "cleared" | "loading">
 	replyTo: EventID | null
 	silentReply: boolean
 	explicitReplyInThread: boolean
@@ -63,8 +66,9 @@ const MAX_TEXTAREA_ROWS = 10
 const emptyComposer: ComposerState = {
 	text: "",
 	media: null,
-	replyTo: null,
 	location: null,
+	previews: {},
+	replyTo: null,
 	silentReply: false,
 	explicitReplyInThread: false,
 }
@@ -105,6 +109,7 @@ const MessageComposer = () => {
 	const [state, setState] = useReducer(composerReducer, uninitedComposer)
 	const [editing, rawSetEditing] = useState<MemDBEvent | null>(null)
 	const [loadingMedia, setLoadingMedia] = useState(false)
+	const [loadingPreviews, setLoadingPreviews] = useState(false)
 	const fileInput = useRef<HTMLInputElement>(null)
 	const textInput = useRef<HTMLTextAreaElement>(null)
 	const composerRef = useRef<HTMLDivElement>(null)
@@ -166,7 +171,7 @@ const MessageComposer = () => {
 	const canSend = Boolean(state.text || state.media || state.location)
 	const onClickSend = (evt: React.FormEvent) => {
 		evt.preventDefault()
-		if (!canSend || loadingMedia) {
+		if (!canSend || loadingMedia || loadingPreviews) {
 			return
 		}
 		doSendMessage(state)
@@ -233,6 +238,7 @@ const MessageComposer = () => {
 			text: state.text,
 			relates_to,
 			mentions,
+			url_previews: Object.values(state.previews).filter(p => p !== "loading" && p !== "cleared"),
 		}).catch(err => window.alert("Failed to send message: " + err))
 	}
 	const onComposerCaretChange = (evt: CaretEvent<HTMLTextAreaElement>, newText?: string) => {
@@ -388,6 +394,47 @@ const MessageComposer = () => {
 		}
 		evt.preventDefault()
 	}
+	const resolvePreviews = useCallback((
+		urls: string[],
+		existingPreviews: Record<string, URLPreviewType | "cleared" | "loading">,
+	) => {
+		const encrypt = !!room.meta.current.encryption_event
+		const previews: Record<string, URLPreviewType | "cleared" | "loading"> = {}
+		let changed = urls.length !== Object.keys(existingPreviews).length
+		urls.forEach(url => {
+			if (existingPreviews[url] === undefined) {
+				changed = true
+				previews[url] = "loading"
+				fetch(`_gomuks/url_preview?encrypt=${encrypt}&url=${encodeURIComponent(url)}`, {
+					method: "GET",
+				})
+					.then(async res => {
+						const json = await res.json()
+						if (!res.ok) {
+							throw new Error(json.error)
+						} else {
+							setState(s => ({
+								previews: Object.assign(s.previews, { [url]: json }),
+							}))
+						}
+					})
+					.catch(err => {
+						console.error("Error fetchnig preview for URL", url, err)
+						setState(s => ({
+							previews: Object.assign(s.previews, { [url]: "cleared" }),
+						}))
+					})
+			} else if (existingPreviews[url]) {
+				previews[url] = existingPreviews[url]
+			} else {
+				changed = true
+			}
+		})
+		if (changed) {
+			setState({ previews })
+		}
+		setLoadingPreviews(false)
+	}, [room.meta])
 	// To ensure the cursor jumps to the end, do this in an effect rather than as the initial value of useState
 	// To try to avoid the input bar flashing, use useLayoutEffect instead of useEffect
 	useLayoutEffect(() => {
@@ -437,6 +484,28 @@ const MessageComposer = () => {
 			draftStore.set(room.roomID, state)
 		}
 	}, [roomCtx, room, state, editing])
+	useEffect(() => {
+		if (!room.preferences.send_bundled_url_previews) {
+			setState({ previews: {}})
+			return
+		}
+		const urls = state.text.matchAll(/\bhttps?:\/\/[^\s/_*]+(?:\/\S*)?\b/gi).map(m => m[0]).toArray()
+		if (!urls.length && Object.keys(state.previews).length > 0) {
+			setState({ previews: {}})
+			return
+		}
+
+		const currentUrls = Object.keys(state.previews)
+			.filter(u => !u.startsWith("https://matrix.to"))
+		if (currentUrls.length !== urls.length || !currentUrls.every((p, i) => urls[i] == p)) {
+			setLoadingPreviews(true)
+			const timeout = setTimeout(() => resolvePreviews(currentUrls, state.previews), 500)
+			return () => {
+				setLoadingPreviews(false)
+				clearTimeout(timeout)
+			}
+		}
+	}, [room.preferences, state.text, state.previews, resolvePreviews])
 	const clearMedia = useCallback(() => setState({ media: null, location: null }), [])
 	const onChangeLocation = useCallback((location: ComposerLocationValue) => setState({ location }), [])
 	const closeReply = useCallback((evt: React.MouseEvent) => {
@@ -594,6 +663,17 @@ const MessageComposer = () => {
 				room={room} client={client}
 				location={state.location} onChange={onChangeLocation} clearLocation={clearMedia}
 			/>}
+			{Object.keys(state.previews).length ? <div className="url-previews">
+				{Object.entries(state.previews).map(([url, preview], i) =>
+					preview !== "cleared"
+						? <URLPreview key={i} url={url} preview={preview}
+							clearPreview={() => setState(s => ({
+								previews: Object.assign(s.previews, { [url]: "cleared" }),
+							}))}
+						/>
+						: null,
+				)}
+			</div> : null}
 			<div className="input-area">
 				{!inlineButtons && <button className="show-more" onClick={openButtonsModal}><MoreIcon/></button>}
 				<textarea
@@ -612,7 +692,7 @@ const MessageComposer = () => {
 				{inlineButtons && makeAttachmentButtons()}
 				{showSendButton && <button
 					onClick={onClickSend}
-					disabled={!canSend || loadingMedia}
+					disabled={!canSend || loadingMedia || loadingPreviews}
 					title="Send message"
 				><SendIcon/></button>}
 				<input
