@@ -16,7 +16,6 @@
 import React, { useCallback, useEffect, useState } from "react"
 import type Client from "@/api/client.ts"
 import type { ClientState } from "@/api/types"
-import useEvent from "@/util/useEvent.ts"
 import BeeperLogin from "./BeeperLogin.tsx"
 import "./LoginScreen.css"
 
@@ -34,7 +33,7 @@ export const LoginScreen = ({ client }: LoginScreenProps) => {
 	const [loginFlows, setLoginFlows] = useState<string[] | null>(null)
 	const [error, setError] = useState("")
 
-	const loginSSO = useEvent(() => {
+	const loginSSO = () => {
 		fetch("_gomuks/sso", {
 			method: "POST",
 			body: JSON.stringify({ homeserver_url: homeserverURL }),
@@ -53,9 +52,9 @@ export const LoginScreen = ({ client }: LoginScreenProps) => {
 			},
 			err => setError(`Failed to start SSO login: ${err}`),
 		)
-	})
+	}
 
-	const login = useEvent((evt: React.FormEvent) => {
+	const login = (evt: React.FormEvent) => {
 		evt.preventDefault()
 		if (!loginFlows) {
 			// do nothing
@@ -67,7 +66,7 @@ export const LoginScreen = ({ client }: LoginScreenProps) => {
 				err => setError(err.toString()),
 			)
 		}
-	})
+	}
 
 	const resolveLoginFlows = useCallback((serverURL: string) => {
 		client.rpc.getLoginFlows(serverURL).then(
@@ -108,16 +107,10 @@ export const LoginScreen = ({ client }: LoginScreenProps) => {
 			clearTimeout(timeout)
 		}
 	}, [homeserverURL, loginFlows, resolveLoginFlows])
-	const onChangeUsername = useCallback((evt: React.ChangeEvent<HTMLInputElement>) => {
-		setUsername(evt.target.value)
-	}, [])
-	const onChangePassword = useCallback((evt: React.ChangeEvent<HTMLInputElement>) => {
-		setPassword(evt.target.value)
-	}, [])
-	const onChangeHomeserverURL = useCallback((evt: React.ChangeEvent<HTMLInputElement>) => {
+	const onChangeHomeserverURL = (evt: React.ChangeEvent<HTMLInputElement>) => {
 		setLoginFlows(null)
 		setHomeserverURL(evt.target.value)
-	}, [])
+	}
 
 	const supportsSSO = loginFlows?.includes("m.login.sso") ?? false
 	const supportsPassword = loginFlows?.includes("m.login.password")
@@ -130,7 +123,7 @@ export const LoginScreen = ({ client }: LoginScreenProps) => {
 				id="mxlogin-username"
 				placeholder="User ID"
 				value={username}
-				onChange={onChangeUsername}
+				onChange={evt => setUsername(evt.target.value)}
 			/>
 			<input
 				type="text"
@@ -144,7 +137,7 @@ export const LoginScreen = ({ client }: LoginScreenProps) => {
 				id="mxlogin-password"
 				placeholder="Password"
 				value={password}
-				onChange={onChangePassword}
+				onChange={evt => setPassword(evt.target.value)}
 			/>}
 			<div className="buttons">
 				{supportsSSO && <button

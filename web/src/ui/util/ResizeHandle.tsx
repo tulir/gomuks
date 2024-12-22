@@ -14,7 +14,6 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import React, { CSSProperties } from "react"
-import useEvent from "@/util/useEvent.ts"
 import "./ResizeHandle.css"
 
 export interface ResizeHandleProps {
@@ -28,7 +27,7 @@ export interface ResizeHandleProps {
 }
 
 const ResizeHandle = ({ width, minWidth, maxWidth, setWidth, style, className, inverted }: ResizeHandleProps) => {
-	const onMouseDown = useEvent((evt: React.MouseEvent<HTMLDivElement>) => {
+	const onMouseDown = (evt: React.MouseEvent<HTMLDivElement>) => {
 		const origWidth = width
 		const startPos = evt.clientX
 		const onMouseMove = (evt: MouseEvent) => {
@@ -46,7 +45,7 @@ const ResizeHandle = ({ width, minWidth, maxWidth, setWidth, style, className, i
 		document.addEventListener("mousemove", onMouseMove)
 		document.addEventListener("mouseup", onMouseUp)
 		evt.preventDefault()
-	})
+	}
 	return <div className={`resize-handle-outer ${className ?? ""}`} style={style}>
 		<div className="resize-handle-inner" onMouseDown={onMouseDown}/>
 	</div>

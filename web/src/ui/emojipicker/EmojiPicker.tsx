@@ -19,7 +19,6 @@ import { RoomStateStore, useCustomEmojis } from "@/api/statestore"
 import { roomStateGUIDToString } from "@/api/types"
 import { CATEGORY_FREQUENTLY_USED, Emoji, PartialEmoji, categories, useFilteredEmojis } from "@/util/emoji"
 import { isMobileDevice } from "@/util/ismobile.ts"
-import useEvent from "@/util/useEvent.ts"
 import ClientContext from "../ClientContext.ts"
 import { ModalCloseContext } from "../modal/Modal.tsx"
 import { EmojiGroup } from "./EmojiGroup.tsx"
@@ -72,7 +71,6 @@ const EmojiPicker = ({ style, selected, onSelect, room, allowFreeform, closeOnSe
 		frequentlyUsed: client.store.frequentlyUsedEmoji,
 		customEmojiPacks,
 	})
-	const clearQuery = useCallback(() => setQuery(""), [])
 	const close = closeOnSelect ? use(ModalCloseContext) : null
 	const onSelectWrapped = useCallback((emoji?: PartialEmoji) => {
 		if (!emoji) {
@@ -85,12 +83,10 @@ const EmojiPicker = ({ style, selected, onSelect, room, allowFreeform, closeOnSe
 		}
 		close?.()
 	}, [onSelect, selected, client, close])
-	const onClickFreeformReact = useEvent(() => onSelectWrapped({ u: query }))
-	const onChangeQuery = useCallback((evt: React.ChangeEvent<HTMLInputElement>) => setQuery(evt.target.value), [])
-	const onClickCategoryButton = useCallback((evt: React.MouseEvent) => {
+	const onClickCategoryButton = (evt: React.MouseEvent) => {
 		const categoryID = evt.currentTarget.getAttribute("data-category-id")!
 		document.getElementById(`emoji-category-${categoryID}`)?.scrollIntoView()
-	}, [])
+	}
 	return <div className="emoji-picker" style={style}>
 		<div className="emoji-category-bar" ref={emojiCategoryBarRef}>
 			<button
@@ -123,12 +119,12 @@ const EmojiPicker = ({ style, selected, onSelect, room, allowFreeform, closeOnSe
 		<div className="emoji-search">
 			<input
 				autoFocus={!isMobileDevice}
-				onChange={onChangeQuery}
+				onChange={evt => setQuery(evt.target.value)}
 				value={query}
 				type="search"
 				placeholder="Search emojis"
 			/>
-			<button onClick={clearQuery} disabled={query === ""}>
+			<button onClick={() => setQuery("")} disabled={query === ""}>
 				{query !== "" ? <CloseIcon/> : <SearchIcon/>}
 			</button>
 		</div>
@@ -155,7 +151,7 @@ const EmojiPicker = ({ style, selected, onSelect, room, allowFreeform, closeOnSe
 				})}
 				{allowFreeform && query && <button
 					className="freeform-react"
-					onClick={onClickFreeformReact}
+					onClick={() => onSelectWrapped({ u: query })}
 				>React with "{query}"</button>}
 			</div>
 		</div>

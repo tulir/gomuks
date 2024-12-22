@@ -13,11 +13,10 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import React, { use, useCallback } from "react"
+import React, { use } from "react"
 import { stringToRoomStateGUID } from "@/api/types"
 import useContentVisibility from "@/util/contentvisibility.ts"
 import { CATEGORY_FREQUENTLY_USED, CustomEmojiPack, Emoji, categories } from "@/util/emoji"
-import useEvent from "@/util/useEvent.ts"
 import ClientContext from "../ClientContext.ts"
 import renderEmoji from "./renderEmoji.tsx"
 
@@ -56,27 +55,25 @@ export const EmojiGroup = ({
 		}
 		return emoji
 	}
-	const onClickEmoji = useEvent((evt: React.MouseEvent<HTMLButtonElement>) =>
-		onSelect(getEmojiFromAttrs(evt.currentTarget)))
-	const onMouseOverEmoji = useEvent((evt: React.MouseEvent<HTMLButtonElement>) =>
-		setPreviewEmoji?.(getEmojiFromAttrs(evt.currentTarget)))
-	const onMouseOutEmoji = useCallback(() => setPreviewEmoji?.(undefined), [setPreviewEmoji])
-	const onClickSubscribePack = useEvent((evt: React.MouseEvent<HTMLButtonElement>) => {
+	const onMouseOverEmoji = setPreviewEmoji && ((evt: React.MouseEvent<HTMLButtonElement>) =>
+		setPreviewEmoji(getEmojiFromAttrs(evt.currentTarget)))
+	const onMouseOutEmoji = setPreviewEmoji && (() => setPreviewEmoji(undefined))
+	const onClickSubscribePack = (evt: React.MouseEvent<HTMLButtonElement>) => {
 		const guid = stringToRoomStateGUID(evt.currentTarget.getAttribute("data-pack-id"))
 		if (!guid) {
 			return
 		}
 		client.subscribeToEmojiPack(guid, true)
 			.catch(err => window.alert(`Failed to subscribe to emoji pack: ${err}`))
-	})
-	const onClickUnsubscribePack = useEvent((evt: React.MouseEvent<HTMLButtonElement>) => {
+	}
+	const onClickUnsubscribePack = (evt: React.MouseEvent<HTMLButtonElement>) => {
 		const guid = stringToRoomStateGUID(evt.currentTarget.getAttribute("data-pack-id"))
 		if (!guid) {
 			return
 		}
 		client.subscribeToEmojiPack(guid, false)
 			.catch(err => window.alert(`Failed to unsubscribe from emoji pack: ${err}`))
-	})
+	}
 
 	let categoryName: string
 	if (typeof categoryID === "number") {
@@ -112,7 +109,7 @@ export const EmojiGroup = ({
 				data-emoji-index={idx}
 				onMouseOver={onMouseOverEmoji}
 				onMouseOut={onMouseOutEmoji}
-				onClick={onClickEmoji}
+				onClick={evt => onSelect(getEmojiFromAttrs(evt.currentTarget))}
 				title={emoji.t}
 			>{renderEmoji(emoji)}</button>) : null}
 		</div>

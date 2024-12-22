@@ -46,13 +46,13 @@ const TimelineView = () => {
 
 	// When the user scrolls the timeline manually, remember if they were at the bottom,
 	// so that we can keep them at the bottom when new events are added.
-	const handleScroll = useCallback(() => {
+	const handleScroll = () => {
 		if (!timelineViewRef.current) {
 			return
 		}
 		const timelineView = timelineViewRef.current
 		roomCtx.scrolledToBottom = timelineView.scrollTop + timelineView.clientHeight + 1 >= timelineView.scrollHeight
-	}, [roomCtx])
+	}
 	// Save the scroll height prior to updating the timeline, so that we can adjust the scroll position if needed.
 	if (timelineViewRef.current) {
 		oldScrollHeight.current = timelineViewRef.current.scrollHeight

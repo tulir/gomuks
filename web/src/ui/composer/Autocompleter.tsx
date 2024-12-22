@@ -80,13 +80,13 @@ function useAutocompleter<T>({
 		})
 		document.querySelector(`div.autocompletion-item[data-index='${index}']`)?.scrollIntoView({ block: "nearest" })
 	})
-	const onClick = useEvent((evt: React.MouseEvent<HTMLDivElement>) => {
+	const onClick = (evt: React.MouseEvent<HTMLDivElement>) => {
 		const idx = evt.currentTarget.getAttribute("data-index")
 		if (idx) {
 			onSelect(+idx)
 			setAutocomplete(null)
 		}
-	})
+	}
 	useEffect(() => {
 		if (params.selected !== undefined) {
 			onSelect(params.selected)

@@ -13,7 +13,7 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import React, { JSX, use, useCallback, useState } from "react"
+import React, { JSX, use, useState } from "react"
 import { getAvatarURL, getMediaURL, getUserColorIndex } from "@/api/media.ts"
 import { useRoomMember } from "@/api/statestore"
 import { MemDBEvent, MemberEventContent, UnreadType } from "@/api/types"
@@ -79,7 +79,7 @@ const TimelineEvent = ({ evt, prevEvt, disableMenu, smallReplies }: TimelineEven
 	const mainScreen = use(MainScreenContext)
 	const openModal = use(ModalContext)
 	const [forceContextMenuOpen, setForceContextMenuOpen] = useState(false)
-	const onContextMenu = useCallback((mouseEvt: React.MouseEvent) => {
+	const onContextMenu = (mouseEvt: React.MouseEvent) => {
 		const targetElem = mouseEvt.target as HTMLElement
 		if (
 			!roomCtx.store.preferences.message_context_menu
@@ -97,7 +97,7 @@ const TimelineEvent = ({ evt, prevEvt, disableMenu, smallReplies }: TimelineEven
 				style={getModalStyleFromMouse(mouseEvt, 9 * 40)}
 			/>,
 		})
-	}, [openModal, evt, roomCtx])
+	}
 	const memberEvt = useRoomMember(client, roomCtx.store, evt.sender)
 	const memberEvtContent = memberEvt?.content as MemberEventContent | undefined
 	const BodyType = getBodyType(evt)

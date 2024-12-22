@@ -13,7 +13,7 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import React, { CSSProperties, use, useCallback } from "react"
+import React, { CSSProperties, use } from "react"
 import Client from "@/api/client.ts"
 import { MemDBEvent } from "@/api/types"
 import { emojiToReactionContent } from "@/util/emoji"
@@ -43,11 +43,11 @@ export const usePrimaryItems = (
 	const closeModal = !isHover ? use(ModalCloseContext) : noop
 	const openModal = use(ModalContext)
 
-	const onClickReply = useCallback(() => {
+	const onClickReply = () => {
 		roomCtx.setReplyTo(evt.event_id)
 		closeModal()
-	}, [roomCtx, evt.event_id, closeModal])
-	const onClickReact = useCallback((mevt: React.MouseEvent<HTMLButtonElement>) => {
+	}
+	const onClickReact = (mevt: React.MouseEvent<HTMLButtonElement>) => {
 		const emojiPickerHeight = 34 * 16
 		setForceOpen?.(true)
 		openModal({
@@ -63,20 +63,20 @@ export const usePrimaryItems = (
 			/>,
 			onClose: () => setForceOpen?.(false),
 		})
-	}, [client, roomCtx, evt, style, setForceOpen, openModal])
-	const onClickEdit = useCallback(() => {
+	}
+	const onClickEdit = () => {
 		closeModal()
 		roomCtx.setEditing(evt)
-	}, [roomCtx, evt, closeModal])
-	const onClickResend = useCallback(() => {
+	}
+	const onClickResend = () => {
 		if (!evt.transaction_id) {
 			return
 		}
 		closeModal()
 		client.resendEvent(evt.transaction_id)
 			.catch(err => window.alert(`Failed to resend message: ${err}`))
-	}, [client, evt.transaction_id, closeModal])
-	const onClickMore = useCallback((mevt: React.MouseEvent<HTMLButtonElement>) => {
+	}
+	const onClickMore = (mevt: React.MouseEvent<HTMLButtonElement>) => {
 		const moreMenuHeight = 4 * 40
 		setForceOpen!(true)
 		openModal({
@@ -87,7 +87,7 @@ export const usePrimaryItems = (
 			/>,
 			onClose: () => setForceOpen!(false),
 		})
-	}, [evt, roomCtx, setForceOpen, openModal])
+	}
 	const isEditing = useEventAsState(roomCtx.isEditing)
 	const [isPending, pendingTitle] = getPending(evt)
 	const isEncrypted = getEncryption(roomCtx.store)

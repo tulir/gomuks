@@ -45,52 +45,39 @@ interface PreferenceCellProps<T extends PreferenceValueType> {
 	inheritedValue: T
 }
 
-const useRemover = (
+const makeRemover = (
 	context: PreferenceContext, setPref: SetPrefFunc, name: keyof Preferences, value: PreferenceValueType | undefined,
 ) => {
-	const onClear = useCallback(() => {
-		setPref(context, name, undefined)
-	}, [setPref, context, name])
 	if (value === undefined) {
 		return null
 	}
-	return <button onClick={onClear}><CloseIcon /></button>
+	return <button onClick={() => setPref(context, name, undefined)}><CloseIcon /></button>
 }
 
 const BooleanPreferenceCell = ({ context, name, setPref, value, inheritedValue }: PreferenceCellProps<boolean>) => {
-	const onChange = useCallback((evt: React.ChangeEvent<HTMLInputElement>) => {
-		setPref(context, name, evt.target.checked)
-	}, [setPref, context, name])
 	return <div className="preference boolean-preference">
-		<Toggle checked={value ?? inheritedValue} onChange={onChange}/>
-		{useRemover(context, setPref, name, value)}
+		<Toggle checked={value ?? inheritedValue} onChange={evt => setPref(context, name, evt.target.checked)}/>
+		{makeRemover(context, setPref, name, value)}
 	</div>
 }
 
 const TextPreferenceCell = ({ context, name, setPref, value, inheritedValue }: PreferenceCellProps<string>) => {
-	const onChange = useCallback((evt: React.ChangeEvent<HTMLInputElement>) => {
-		setPref(context, name, evt.target.value)
-	}, [setPref, context, name])
 	return <div className="preference string-preference">
-		<input value={value ?? inheritedValue} onChange={onChange}/>
-		{useRemover(context, setPref, name, value)}
+		<input value={value ?? inheritedValue} onChange={evt => setPref(context, name, evt.target.value)}/>
+		{makeRemover(context, setPref, name, value)}
 	</div>
 }
 
 const SelectPreferenceCell = ({ context, name, pref, setPref, value, inheritedValue }: PreferenceCellProps<string>) => {
-	const onChange = useCallback((evt: React.ChangeEvent<HTMLSelectElement>) => {
-		setPref(context, name, evt.target.value)
-	}, [setPref, context, name])
-	const remover = useRemover(context, setPref, name, value)
 	if (!pref.allowedValues) {
 		return null
 	}
 	return <div className="preference select-preference">
-		<select value={value ?? inheritedValue} onChange={onChange}>
+		<select value={value ?? inheritedValue} onChange={evt => setPref(context, name, evt.target.value)}>
 			{pref.allowedValues.map(value =>
 				<option key={value} value={value}>{value}</option>)}
 		</select>
-		{remover}
+		{makeRemover(context, setPref, name, value)}
 	</div>
 }
 
@@ -186,7 +173,7 @@ const CustomCSSInput = ({ setPref, room }: { setPref: SetPrefFunc, room: RoomSta
 	const client = use(ClientContext)!
 	const appliedContext = getActiveCSSContext(client, room)
 	const [context, setContext] = useState(appliedContext)
-	const getContextText = useCallback((context: PreferenceContext) => {
+	const getContextText = (context: PreferenceContext) => {
 		if (context === PreferenceContext.Account) {
 			return client.store.serverPreferenceCache.custom_css
 		} else if (context === PreferenceContext.Device) {
@@ -196,17 +183,17 @@ const CustomCSSInput = ({ setPref, room }: { setPref: SetPrefFunc, room: RoomSta
 		} else if (context === PreferenceContext.RoomDevice) {
 			return room.localPreferenceCache.custom_css
 		}
-	}, [client, room])
+	}
 	const origText = getContextText(context)
 	const [text, setText] = useState(origText ?? "")
-	const onChangeContext = useCallback((evt: React.ChangeEvent<HTMLSelectElement>) => {
+	const onChangeContext = (evt: React.ChangeEvent<HTMLSelectElement>) => {
 		const newContext = evt.target.value as PreferenceContext
 		setContext(newContext)
 		setText(getContextText(newContext) ?? "")
-	}, [getContextText])
-	const onChangeText = useCallback((evt: React.ChangeEvent<HTMLTextAreaElement>) => {
+	}
+	const onChangeText = (evt: React.ChangeEvent<HTMLTextAreaElement>) => {
 		setText(evt.target.value)
-	}, [])
+	}
 	const onSave = useEvent(() => {
 		if (vscodeOpen) {
 			setText(vscodeContentRef.current)
@@ -215,18 +202,18 @@ const CustomCSSInput = ({ setPref, room }: { setPref: SetPrefFunc, room: RoomSta
 			setPref(context, "custom_css", text)
 		}
 	})
-	const onDelete = useEvent(() => {
+	const onDelete = () => {
 		setPref(context, "custom_css", undefined)
 		setText("")
-	})
+	}
 	const [vscodeOpen, setVSCodeOpen] = useState(false)
 	const vscodeContentRef = useRef("")
 	const vscodeInitialContentRef = useRef("")
-	const onClickVSCode = useEvent(() => {
+	const onClickVSCode = () => {
 		vscodeContentRef.current = text
 		vscodeInitialContentRef.current = text
 		setVSCodeOpen(true)
-	})
+	}
 	const closeVSCode = useCallback(() => {
 		setVSCodeOpen(false)
 		setText(vscodeContentRef.current)
@@ -296,7 +283,9 @@ const SettingsView = ({ room }: SettingsViewProps) => {
 	const roomMeta = useEventAsState(room.meta)
 	const client = use(ClientContext)!
 	const closeModal = use(ModalCloseContext)
-	const setPref = useCallback((context: PreferenceContext, key: keyof Preferences, value: PreferenceValueType | undefined) => {
+	const setPref = useCallback((
+		context: PreferenceContext, key: keyof Preferences, value: PreferenceValueType | undefined,
+	) => {
 		if (context === PreferenceContext.Account) {
 			client.rpc.setAccountData("fi.mau.gomuks.preferences", {
 				...client.store.serverPreferenceCache,
@@ -321,15 +310,15 @@ const SettingsView = ({ room }: SettingsViewProps) => {
 			}
 		}
 	}, [client, room])
-	const onClickLogout = useCallback(() => {
+	const onClickLogout = () => {
 		if (window.confirm("Really log out and delete all local data?")) {
 			client.logout().then(
 				() => console.info("Successfully logged out"),
 				err => window.alert(`Failed to log out: ${err}`),
 			)
 		}
-	}, [client])
-	const onClickLeave = useCallback(() => {
+	}
+	const onClickLeave = () => {
 		if (window.confirm(`Really leave ${room.meta.current.name}?`)) {
 			client.rpc.leaveRoom(room.roomID).then(
 				() => {
@@ -339,7 +328,7 @@ const SettingsView = ({ room }: SettingsViewProps) => {
 				err => window.alert(`Failed to leave room: ${err}`),
 			)
 		}
-	}, [client, room, closeModal])
+	}
 	usePreferences(client.store, room)
 	const globalServer = client.store.serverPreferenceCache
 	const globalLocal = client.store.localPreferenceCache

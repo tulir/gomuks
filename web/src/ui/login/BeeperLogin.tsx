@@ -13,10 +13,9 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import React, { useCallback, useState } from "react"
+import React, { useState } from "react"
 import * as beeper from "@/api/beeper.ts"
 import type Client from "@/api/client.ts"
-import useEvent from "@/util/useEvent.ts"
 
 interface BeeperLoginProps {
 	domain: string
@@ -29,18 +28,18 @@ const BeeperLogin = ({ domain, client }: BeeperLoginProps) => {
 	const [code, setCode] = useState("")
 	const [error, setError] = useState("")
 
-	const onChangeEmail = useCallback((evt: React.ChangeEvent<HTMLInputElement>) => {
+	const onChangeEmail = (evt: React.ChangeEvent<HTMLInputElement>) => {
 		setEmail(evt.target.value)
-	}, [])
-	const onChangeCode = useCallback((evt: React.ChangeEvent<HTMLInputElement>) => {
+	}
+	const onChangeCode = (evt: React.ChangeEvent<HTMLInputElement>) => {
 		let codeDigits = evt.target.value.replace(/\D/g, "").slice(0, 6)
 		if (codeDigits.length > 3) {
 			codeDigits = codeDigits.slice(0, 3) + " " + codeDigits.slice(3)
 		}
 		setCode(codeDigits)
-	}, [])
+	}
 
-	const requestCode = useEvent((evt: React.FormEvent) => {
+	const requestCode = (evt: React.FormEvent) => {
 		evt.preventDefault()
 		beeper.doStartLogin(domain).then(
 			request => beeper.doRequestCode(domain, request, email).then(
@@ -49,8 +48,8 @@ const BeeperLogin = ({ domain, client }: BeeperLoginProps) => {
 			),
 			err => setError(`Failed to start login: ${err}`),
 		)
-	})
-	const submitCode = useEvent((evt: React.FormEvent) => {
+	}
+	const submitCode = (evt: React.FormEvent) => {
 		evt.preventDefault()
 		beeper.doSubmitCode(domain, requestID, code).then(
 			token => {
@@ -61,7 +60,7 @@ const BeeperLogin = ({ domain, client }: BeeperLoginProps) => {
 			},
 			err => setError(`Failed to submit code: ${err}`),
 		)
-	})
+	}
 
 	return <form onSubmit={requestID ? submitCode : requestCode} className="beeper-login">
 		<h2>Beeper email login</h2>

@@ -13,7 +13,7 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import React, { use, useCallback, useRef, useState } from "react"
+import React, { use, useRef, useState } from "react"
 import type { RoomID } from "@/api/types"
 import { useEventAsState } from "@/util/eventdispatcher.ts"
 import reverseMap from "@/util/reversemap.ts"
@@ -38,18 +38,18 @@ const RoomList = ({ activeRoomID }: RoomListProps) => {
 	const [roomFilter, setRoomFilter] = useState("")
 	const [realRoomFilter, setRealRoomFilter] = useState("")
 
-	const updateRoomFilter = useCallback((evt: React.ChangeEvent<HTMLInputElement>) => {
+	const updateRoomFilter = (evt: React.ChangeEvent<HTMLInputElement>) => {
 		setRoomFilter(evt.target.value)
 		client.store.currentRoomListFilter = toSearchableString(evt.target.value)
 		setRealRoomFilter(client.store.currentRoomListFilter)
-	}, [client])
-	const clearQuery = useCallback(() => {
+	}
+	const clearQuery = () => {
 		setRoomFilter("")
 		client.store.currentRoomListFilter = ""
 		setRealRoomFilter("")
 		roomFilterRef.current?.focus()
-	}, [client])
-	const onKeyDown = useCallback((evt: React.KeyboardEvent<HTMLInputElement>) => {
+	}
+	const onKeyDown = (evt: React.KeyboardEvent<HTMLInputElement>) => {
 		const key = keyToString(evt)
 		if (key === "Escape") {
 			clearQuery()
@@ -62,7 +62,7 @@ const RoomList = ({ activeRoomID }: RoomListProps) => {
 			evt.stopPropagation()
 			evt.preventDefault()
 		}
-	}, [mainScreen, client.store, clearQuery])
+	}
 
 	return <div className="room-list-wrapper">
 		<div className="room-search-wrapper">

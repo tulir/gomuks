@@ -45,7 +45,7 @@ export const ModalWrapper = ({ children }: { children: React.ReactNode }) => {
 			history.back()
 		}
 	}, [])
-	const onKeyWrapper = useCallback((evt: React.KeyboardEvent<HTMLDivElement>) => {
+	const onKeyWrapper = (evt: React.KeyboardEvent<HTMLDivElement>) => {
 		if (evt.key === "Escape") {
 			setState(null)
 			if (history.state?.modal) {
@@ -53,7 +53,7 @@ export const ModalWrapper = ({ children }: { children: React.ReactNode }) => {
 			}
 		}
 		evt.stopPropagation()
-	}, [])
+	}
 	const openModal = useCallback((newState: ModalState) => {
 		if (!history.state?.modal) {
 			history.pushState({ ...(history.state ?? {}), modal: true }, "")
