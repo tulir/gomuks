@@ -16,8 +16,14 @@
 import React, { JSX, use, useCallback, useState } from "react"
 import { createPortal } from "react-dom"
 import { getAvatarThumbnailURL, getMediaURL, getUserColorIndex } from "@/api/media.ts"
-import { applyPerMessageSender, maybeRedactMemberEvent, useRoomMember } from "@/api/statestore"
-import { MemDBEvent, UnreadType } from "@/api/types"
+import {
+	RoomStateStore,
+	applyPerMessageSender,
+	maybeRedactMemberEvent,
+	usePreference,
+	useRoomMember,
+} from "@/api/statestore"
+import { MemDBEvent, URLPreview as URLPreviewType, UnreadType } from "@/api/types"
 import { isMobileDevice } from "@/util/ismobile.ts"
 import { getDisplayname, isEventID } from "@/util/validation.ts"
 import ClientContext from "../ClientContext.ts"
@@ -25,10 +31,10 @@ import MainScreenContext from "../MainScreenContext.ts"
 import { EventFixedMenu, EventFullMenu, EventHoverMenu, getModalStyleFromMouse } from "../menu"
 import { ModalContext, NestableModalContext } from "../modal"
 import { useRoomContext } from "../roomview/roomcontext.ts"
+import URLPreview from "../urlpreview/URLPreview.tsx"
 import EventEditHistory from "./EventEditHistory.tsx"
 import ReadReceipts from "./ReadReceipts.tsx"
 import { ReplyIDBody } from "./ReplyBody.tsx"
-import URLPreviews from "./URLPreviews.tsx"
 import { ContentErrorBoundary, HiddenEvent, getBodyType, getPerMessageProfile, isSmallEvent } from "./content"
 import ErrorIcon from "@/icons/error.svg?react"
 import PendingIcon from "@/icons/pending.svg?react"
@@ -80,6 +86,25 @@ const EventSendStatus = ({ evt }: { evt: MemDBEvent }) => {
 	} else {
 		return <div title="Event sent and remote echo received" className="event-send-status sent"><SentIcon/></div>
 	}
+}
+
+const EventURLPreviews = ({ event, room }: {
+	room: RoomStateStore
+	event: MemDBEvent
+}) => {
+	const client = use(ClientContext)!
+	const renderPreviews = usePreference(client.store, room, "render_url_previews")
+	if (event.redacted_by || !renderPreviews) {
+		return null
+	}
+
+	const previews = (event.content["com.beeper.linkpreviews"] ?? event.content["m.url_previews"]) as URLPreviewType[]
+	if (!previews) {
+		return null
+	}
+	return <div className="url-previews">
+		{previews.map((p, i) => <URLPreview key={i} url={p.matched_url} preview={p}/>)}
+	</div>
 }
 
 const TimelineEvent = ({
@@ -291,7 +316,7 @@ const TimelineEvent = ({
 			{replyInMessage}
 			<ContentErrorBoundary>
 				<BodyType room={roomCtx.store} sender={memberEvt} event={evt}/>
-				{!isSmallBodyType && <URLPreviews room={roomCtx.store} event={evt}/>}
+				{!isSmallBodyType && <EventURLPreviews room={roomCtx.store} event={evt}/>}
 			</ContentErrorBoundary>
 			{(!editHistoryView && editEventTS) ? <div
 				className="event-edited"

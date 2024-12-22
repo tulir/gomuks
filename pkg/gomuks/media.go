@@ -602,22 +602,94 @@ func (gmx *Gomuks) reencodeMedia(ctx context.Context, query url.Values, tempFile
 
 func (gmx *Gomuks) UploadMedia(w http.ResponseWriter, r *http.Request) {
 	log := hlog.FromRequest(r)
+	encrypt, _ := strconv.ParseBool(r.URL.Query().Get("encrypt"))
+	content, err := gmx.cacheAndUploadMedia(r.Context(), r.Body, encrypt, r.URL.Query().Get("filename"))
+	if err != nil {
+		log.Err(err).Msg("Failed to upload media")
+		writeMaybeRespError(err, w)
+		return
+	}
+	exhttp.WriteJSONResponse(w, http.StatusOK, content)
+}
+
+func (gmx *Gomuks) GetURLPreview(w http.ResponseWriter, r *http.Request) {
+	log := hlog.FromRequest(r)
+	url := r.URL.Query().Get("url")
+	if url == "" {
+		mautrix.MInvalidParam.WithMessage("URL must be provided to preview").Write(w)
+		return
+	}
+	linkPreview, err := gmx.Client.Client.GetURLPreview(r.Context(), url)
+	if err != nil {
+		log.Err(err).Msg("Failed to get URL preview")
+		writeMaybeRespError(err, w)
+		return
+	}
+
+	preview := event.BeeperLinkPreview{
+		LinkPreview: *linkPreview,
+		MatchedURL:  url,
+	}
+
+	if preview.ImageURL != "" {
+		encrypt, _ := strconv.ParseBool(r.URL.Query().Get("encrypt"))
+
+		var content *event.MessageEventContent
+
+		if encrypt {
+			if fileInfo, ok := gmx.temporaryMXCToEncryptedFileInfo[preview.ImageURL]; ok {
+				content = &event.MessageEventContent{File: fileInfo}
+			}
+		} else {
+			if mxc, ok := gmx.temporaryMXCToPermanent[preview.ImageURL]; ok {
+				content = &event.MessageEventContent{URL: mxc}
+			}
+		}
+
+		if content == nil {
+			resp, err := gmx.Client.Client.Download(r.Context(), preview.ImageURL.ParseOrIgnore())
+			if err != nil {
+				log.Err(err).Msg("Failed to download URL preview image")
+				writeMaybeRespError(err, w)
+				return
+			}
+			defer resp.Body.Close()
+
+			content, err = gmx.cacheAndUploadMedia(r.Context(), resp.Body, encrypt, "")
+			if err != nil {
+				log.Err(err).Msg("Failed to upload URL preview image")
+				writeMaybeRespError(err, w)
+				return
+			}
+
+			if encrypt {
+				gmx.temporaryMXCToEncryptedFileInfo[preview.ImageURL] = content.File
+			} else {
+				gmx.temporaryMXCToPermanent[preview.ImageURL] = content.URL
+			}
+		}
+
+		preview.ImageURL = content.URL
+		preview.ImageEncryption = content.File
+	}
+
+	exhttp.WriteJSONResponse(w, http.StatusOK, preview)
+}
+
+func (gmx *Gomuks) cacheAndUploadMedia(ctx context.Context, reader io.Reader, encrypt bool, fileName string) (*event.MessageEventContent, error) {
+	log := zerolog.Ctx(ctx)
 	tempFile, err := os.CreateTemp(gmx.TempDir, "upload-*")
 	if err != nil {
-		log.Err(err).Msg("Failed to create temporary file")
-		mautrix.MUnknown.WithMessage(fmt.Sprintf("Failed to create temp file: %v", err)).Write(w)
-		return
+		return nil, fmt.Errorf("failed to create temp file %w", err)
 	}
 	defer func() {
 		_ = tempFile.Close()
 		_ = os.Remove(tempFile.Name())
 	}()
 	hasher := sha256.New()
-	_, err = io.Copy(tempFile, io.TeeReader(r.Body, hasher))
+	_, err = io.Copy(tempFile, io.TeeReader(reader, hasher))
 	if err != nil {
-		log.Err(err).Msg("Failed to copy upload media to temporary file")
-		mautrix.MUnknown.WithMessage(fmt.Sprintf("Failed to copy media to temp file: %v", err)).Write(w)
-		return
+		return nil, fmt.Errorf("failed to copy upload media to temp file: %w", err)
 	}
 	checksum := hasher.Sum(nil)
 	if newHash, err := gmx.reencodeMedia(r.Context(), r.URL.Query(), tempFile); err != nil {
@@ -634,39 +706,29 @@ func (gmx *Gomuks) UploadMedia(w http.ResponseWriter, r *http.Request) {
 	} else {
 		err = os.MkdirAll(filepath.Dir(cachePath), 0700)
 		if err != nil {
-			log.Err(err).Msg("Failed to create cache directory")
-			mautrix.MUnknown.WithMessage(fmt.Sprintf("Failed to create cache directory: %v", err)).Write(w)
-			return
+			return nil, fmt.Errorf("failed to create cache directory: %w", err)
 		}
 		err = os.Rename(tempFile.Name(), cachePath)
 		if err != nil {
-			log.Err(err).Msg("Failed to rename temporary file")
-			mautrix.MUnknown.WithMessage(fmt.Sprintf("Failed to rename temp file: %v", err)).Write(w)
-			return
+			return nil, fmt.Errorf("failed to rename temp file: %w", err)
 		}
 	}
 
 	cacheFile, err := os.Open(cachePath)
 	if err != nil {
-		log.Err(err).Msg("Failed to open cache file")
-		mautrix.MUnknown.WithMessage(fmt.Sprintf("Failed to open cache file: %v", err)).Write(w)
-		return
+		return nil, fmt.Errorf("failed to open cache file: %w", err)
 	}
 
-	msgType, info, defaultFileName, err := gmx.generateFileInfo(r.Context(), cacheFile)
+	msgType, info, defaultFileName, err := gmx.generateFileInfo(ctx, cacheFile)
 	if err != nil {
-		log.Err(err).Msg("Failed to generate file info")
-		mautrix.MUnknown.WithMessage(fmt.Sprintf("Failed to generate file info: %v", err)).Write(w)
-		return
+		return nil, fmt.Errorf("failed to generate file info: %w", err)
 	}
-	encrypt, _ := strconv.ParseBool(r.URL.Query().Get("encrypt"))
 	if msgType == event.MsgVideo {
-		err = gmx.generateVideoThumbnail(r.Context(), cacheFile.Name(), encrypt, info)
+		err = gmx.generateVideoThumbnail(ctx, cacheFile.Name(), encrypt, info)
 		if err != nil {
 			log.Warn().Err(err).Msg("Failed to generate video thumbnail")
 		}
 	}
-	fileName := r.URL.Query().Get("filename")
 	if fileName == "" {
 		fileName = defaultFileName
 	}
@@ -676,13 +738,11 @@ func (gmx *Gomuks) UploadMedia(w http.ResponseWriter, r *http.Request) {
 		Info:     info,
 		FileName: fileName,
 	}
-	content.File, content.URL, err = gmx.uploadFile(r.Context(), checksum, cacheFile, encrypt, int64(info.Size), info.MimeType, fileName)
+	content.File, content.URL, err = gmx.uploadFile(ctx, checksum, cacheFile, encrypt, int64(info.Size), info.MimeType, fileName)
 	if err != nil {
-		log.Err(err).Msg("Failed to upload media")
-		writeMaybeRespError(err, w)
-		return
+		return nil, fmt.Errorf("failed to upload media: %w", err)
 	}
-	exhttp.WriteJSONResponse(w, http.StatusOK, content)
+	return content, nil
 }
 
 func (gmx *Gomuks) uploadFile(ctx context.Context, checksum []byte, cacheFile *os.File, encrypt bool, fileSize int64, mimeType, fileName string) (*event.EncryptedFileInfo, id.ContentURIString, error) {
