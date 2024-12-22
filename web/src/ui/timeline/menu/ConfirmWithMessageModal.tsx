@@ -16,7 +16,7 @@
 import React, { use, useState } from "react"
 import { MemDBEvent } from "@/api/types"
 import { isMobileDevice } from "@/util/ismobile.ts"
-import { ModalCloseContext } from "../../modal/Modal.tsx"
+import { ModalCloseContext } from "../../modal"
 import TimelineEvent from "../TimelineEvent.tsx"
 
 interface ConfirmWithMessageProps {

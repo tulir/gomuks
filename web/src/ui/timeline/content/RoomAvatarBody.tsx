@@ -17,7 +17,7 @@ import { JSX, use } from "react"
 import { getRoomAvatarURL } from "@/api/media.ts"
 import { ContentURI, RoomAvatarEventContent } from "@/api/types"
 import { ensureString } from "@/util/validation.ts"
-import { LightboxContext } from "../../modal/Lightbox.tsx"
+import { LightboxContext } from "../../modal"
 import EventContentProps from "./props.ts"
 
 const RoomAvatarBody = ({ event, sender, room }: EventContentProps) => {

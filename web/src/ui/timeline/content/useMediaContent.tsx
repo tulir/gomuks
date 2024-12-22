@@ -17,7 +17,7 @@ import React, { CSSProperties, JSX, use } from "react"
 import { getEncryptedMediaURL, getMediaURL } from "@/api/media.ts"
 import type { EventType, MediaMessageEventContent } from "@/api/types"
 import { ImageContainerSize, calculateMediaSize, defaultVideoContainerSize } from "@/util/mediasize.ts"
-import { LightboxContext } from "../../modal/Lightbox.tsx"
+import { LightboxContext } from "../../modal"
 import DownloadIcon from "@/icons/download.svg?react"
 
 export const useMediaContent = (

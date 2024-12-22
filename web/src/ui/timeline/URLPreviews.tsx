@@ -19,7 +19,7 @@ import { RoomStateStore, usePreference } from "@/api/statestore"
 import { MemDBEvent, URLPreview } from "@/api/types"
 import { ImageContainerSize, calculateMediaSize } from "@/util/mediasize"
 import ClientContext from "../ClientContext"
-import { LightboxContext } from "../modal/Lightbox.tsx"
+import { LightboxContext } from "../modal"
 import "./URLPreviews.css"
 
 const URLPreviews = ({ event, room }: {

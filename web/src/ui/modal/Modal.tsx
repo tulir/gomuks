@@ -13,25 +13,10 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import React, { JSX, createContext, useCallback, useLayoutEffect, useReducer, useRef } from "react"
+import React, { JSX, useCallback, useLayoutEffect, useReducer, useRef } from "react"
+import { ModalCloseContext, ModalContext, ModalState } from "./contexts.ts"
 
-export interface ModalState {
-	content: JSX.Element
-	dimmed?: boolean
-	boxed?: boolean
-	boxClass?: string
-	innerBoxClass?: string
-	onClose?: () => void
-}
-
-type openModal = (state: ModalState) => void
-
-export const ModalContext = createContext<openModal>(() =>
-	console.error("Tried to open modal without being inside context"))
-
-export const ModalCloseContext = createContext<() => void>(() => {})
-
-export const ModalWrapper = ({ children }: { children: React.ReactNode }) => {
+const ModalWrapper = ({ children }: { children: React.ReactNode }) => {
 	const [state, setState] = useReducer((prevState: ModalState | null, newState: ModalState | null) => {
 		prevState?.onClose?.()
 		return newState
@@ -98,3 +83,5 @@ export const ModalWrapper = ({ children }: { children: React.ReactNode }) => {
 		{modal}
 	</ModalContext>
 }
+
+export default ModalWrapper
