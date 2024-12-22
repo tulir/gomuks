@@ -117,7 +117,7 @@ const UserInfo = ({ userID }: UserInfoProps) => {
 				<button title="Set presence to offline" onClick={() => sendNewPresence({...(presence || {}), "presence": "offline"})} type="button">{PresenceEmojis["offline"]}</button>
 			</div>
 			<div className="statussetter">
-				<form onSubmit={(e) => {e.preventDefault(); sendNewPresence({...(presence || {"presence": "offline"}), "status_msg": ((e.target as HTMLFormElement).children[0] as HTMLInputElement).value})}}>
+				<form onSubmit={(e) => {e.preventDefault(); sendNewPresence({...(presence || {"presence": "offline"}), "status_msg": ((e.currentTarget as HTMLFormElement).children[0] as HTMLInputElement).value})}}>
 					<input type="text" placeholder="Status message" defaultValue={presence?.status_msg || ""}/><button title="Set status message" onClick={() => alert("Set status message")} type="submit">Set</button>
 				</form>
 			</div>
