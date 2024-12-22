@@ -35,6 +35,7 @@ blockquote.reply-body {
 
 		> div.message-text {
 			-webkit-line-clamp: 1;
+			font-size: var(--small-font-size);
 		}
 	}
 
@@ -63,6 +64,15 @@ blockquote.reply-body {
 		overflow: hidden;
 		color: var(--semisecondary-text-color);
 		user-select: none;
+
+		h1, h2, h3, h4, h5, h6 {
+			font-size: 1em;
+		}
+
+		img {
+			vertical-align: baseline;
+			height: 1em;
+		}
 	}
 
 	&.thread > div.reply-sender > span.event-sender::after {
