@@ -21,8 +21,7 @@ blockquote.reply-body {
 		font-size: var(--small-font-size);
 		height: calc(var(--small-font-size) * 1.5);
 		border-left: none;
-		padding-left: 0;
-		padding-bottom: 0;
+		padding: 0;
 
 		> div.reply-spine {
 			margin-top: calc(var(--small-font-size) * 0.75 - 1px);
