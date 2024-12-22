@@ -19,6 +19,7 @@ import { RoomStateStore, usePreference } from "@/api/statestore"
 import { MemDBEvent, URLPreview } from "@/api/types"
 import { ImageContainerSize, calculateMediaSize } from "@/util/mediasize"
 import ClientContext from "../ClientContext"
+import { LightboxContext } from "../modal/Lightbox.tsx"
 import "./URLPreviews.css"
 
 const URLPreviews = ({ event, room }: {
@@ -58,6 +59,7 @@ const URLPreviews = ({ event, room }: {
 						loading="lazy"
 						style={style.media}
 						src={mediaURL}
+						onClick={use(LightboxContext)!}
 						alt=""
 					/>
 				</div>
