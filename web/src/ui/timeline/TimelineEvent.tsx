@@ -215,7 +215,7 @@ const TimelineEvent = ({ evt, prevEvt, disableMenu, smallReplies }: TimelineEven
 			{replyInMessage}
 			<ContentErrorBoundary>
 				<BodyType room={roomCtx.store} sender={memberEvt} event={evt}/>
-				<URLPreviews room={roomCtx.store} event={evt}/>
+				{!isSmallBodyType && <URLPreviews room={roomCtx.store} event={evt}/>}
 			</ContentErrorBoundary>
 			{evt.reactions ? <EventReactions reactions={evt.reactions}/> : null}
 		</div>
