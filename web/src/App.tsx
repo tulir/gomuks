@@ -38,7 +38,7 @@ function App() {
 	const clientState = useEventAsState(client.state)
 	useEffect(() => {
 		window.client = client
-		client.start()
+		return client.start()
 	}, [client])
 
 	const afterConnectError = Boolean(connState?.error && connState.reconnecting && clientState?.is_verified)
