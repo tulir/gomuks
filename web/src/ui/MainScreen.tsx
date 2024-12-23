@@ -124,6 +124,13 @@ class ContextFields implements MainScreenContextFields {
 		}
 	}
 
+	#getWindowTitle(room?: RoomStateStore, name?: string) {
+		if (!room) {
+			return this.client.store.preferences.window_title
+		}
+		return room.preferences.room_window_title.replace("$room", name!)
+	}
+
 	#setActiveRoom(room: RoomStateStore, pushState: boolean) {
 		window.activeRoom = room
 		this.directSetActiveRoom(room)
@@ -147,7 +154,7 @@ class ContextFields implements MainScreenContextFields {
 		if (roomNameForTitle && roomNameForTitle.length > 48) {
 			roomNameForTitle = roomNameForTitle.slice(0, 45) + "…"
 		}
-		document.title = `${roomNameForTitle} - gomuks web`
+		document.title = this.#getWindowTitle(room, roomNameForTitle)
 	}
 
 	#closeActiveRoom(pushState: boolean) {
@@ -161,7 +168,7 @@ class ContextFields implements MainScreenContextFields {
 		if (pushState) {
 			history.pushState({}, "")
 		}
-		document.title = "gomuks web"
+		document.title = this.#getWindowTitle()
 	}
 
 	clickRoom = (evt: React.MouseEvent) => {

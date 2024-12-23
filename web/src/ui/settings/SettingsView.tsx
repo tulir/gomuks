@@ -110,6 +110,9 @@ const PreferenceRow = ({
 		val: PreferenceValueType | undefined,
 		inheritedVal: PreferenceValueType,
 	) => {
+		if (!pref.allowedContexts.includes(context)) {
+			return null
+		}
 		if (prefType === "boolean") {
 			return <BooleanPreferenceCell
 				name={name}

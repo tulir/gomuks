@@ -112,7 +112,7 @@ export class RoomStateStore {
 	readonly accountDataSubs = new MultiSubscribable()
 	readonly openNotifications: Map<EventRowID, Notification> = new Map()
 	readonly #emojiPacksCache: Map<string, CustomEmojiPack | null> = new Map()
-	readonly preferences: Preferences
+	readonly preferences: Required<Preferences>
 	readonly localPreferenceCache: Preferences
 	readonly preferenceSub = new NoDataSubscribable()
 	serverPreferenceCache: Preferences = {}

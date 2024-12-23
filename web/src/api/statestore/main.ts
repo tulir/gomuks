@@ -76,7 +76,7 @@ export class StateStore {
 	readonly accountData: Map<string, UnknownEventContent> = new Map()
 	readonly accountDataSubs = new MultiSubscribable()
 	readonly emojiRoomsSub = new Subscribable()
-	readonly preferences: Preferences = getPreferenceProxy(this)
+	readonly preferences = getPreferenceProxy(this)
 	#frequentlyUsedEmoji: Map<string, number> | null = null
 	#emojiPackKeys: RoomStateGUID[] | null = null
 	#watchedRoomEmojiPacks: Record<string, CustomEmojiPack> | null = null
