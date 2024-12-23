@@ -34,6 +34,11 @@ div.message-composer {
 			height: 2rem;
 			width: 2rem;
 			padding: .25rem;
+
+			> svg {
+				width: 1.5rem;
+				height: 1.5rem;
+			}
 		}
 
 		> input[type="file"] {

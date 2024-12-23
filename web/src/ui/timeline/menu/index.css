@@ -37,6 +37,11 @@ div.event-context-menu {
 		justify-content: left;
 		gap: .5rem;
 
+		> svg {
+			width: 1.5rem;
+			height: 1.5rem;
+		}
+
 		&:first-of-type {
 			border-radius: .5rem .5rem 0 0;
 		}
