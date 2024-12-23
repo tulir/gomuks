@@ -40,10 +40,12 @@ main.matrix-main {
 
 	> div.room-list-resizer {
 		grid-area: rh1;
+		z-index: 1;
 	}
 
 	> div.right-panel-resizer {
 		grid-area: rh2;
+		z-index: 1;
 	}
 }
 
