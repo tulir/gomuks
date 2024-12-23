@@ -183,6 +183,12 @@ export const preferences = {
 		allowedContexts: anyGlobalContext,
 		defaultValue: "gomuks web",
 	}),
+	favicon: new Preference<string>({
+		displayName: "Favicon",
+		description: "The URL to use for the favicon.",
+		allowedContexts: anyContext,
+		defaultValue: "gomuks.png",
+	}),
 } as const
 
 export const existingPreferenceKeys = new Set(Object.keys(preferences))
