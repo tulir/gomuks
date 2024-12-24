@@ -378,20 +378,43 @@ func (gmx *Gomuks) GetURLPreview(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if preview.ImageURL != "" {
-		resp, err := gmx.Client.Client.Download(r.Context(), preview.ImageURL.ParseOrIgnore())
-		if err != nil {
-			log.Err(err).Msg("Failed to download URL preview image")
-			writeMaybeRespError(err, w)
-			return
-		}
 		encrypt, _ := strconv.ParseBool(r.URL.Query().Get("encrypt"))
-		defer resp.Body.Close()
-		content, err := gmx.cacheAndUploadMedia(r.Context(), resp.Body, encrypt, "")
-		if err != nil {
-			log.Err(err).Msg("Failed to upload URL preview image")
-			writeMaybeRespError(err, w)
-			return
+
+		var content *event.MessageEventContent
+
+		if encrypt {
+			if fileInfo, ok := gmx.temporaryMXCToEncryptedFileInfo[preview.ImageURL]; ok {
+				content = &event.MessageEventContent{File: fileInfo}
+			}
+		} else {
+			if mxc, ok := gmx.temporaryToPermanentMXC[preview.ImageURL]; ok {
+				content = &event.MessageEventContent{URL: mxc}
+			}
 		}
+
+		if content == nil {
+			resp, err := gmx.Client.Client.Download(r.Context(), preview.ImageURL.ParseOrIgnore())
+			if err != nil {
+				log.Err(err).Msg("Failed to download URL preview image")
+				writeMaybeRespError(err, w)
+				return
+			}
+			defer resp.Body.Close()
+
+			content, err = gmx.cacheAndUploadMedia(r.Context(), resp.Body, encrypt, "")
+			if err != nil {
+				log.Err(err).Msg("Failed to upload URL preview image")
+				writeMaybeRespError(err, w)
+				return
+			}
+
+			if encrypt {
+				gmx.temporaryMXCToEncryptedFileInfo[preview.ImageURL] = content.File
+			} else {
+				gmx.temporaryToPermanentMXC[preview.ImageURL] = content.URL
+			}
+		}
+
 		preview.ImageURL = content.URL
 		preview.ImageEncryption = content.File
 	}
