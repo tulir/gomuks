@@ -54,6 +54,7 @@ func (gmx *Gomuks) CreateAPIRouter() http.Handler {
 	api.HandleFunc("POST /sso", gmx.PrepareSSO)
 	api.HandleFunc("GET /media/{server}/{media_id}", gmx.DownloadMedia)
 	api.HandleFunc("GET /codeblock/{style}", gmx.GetCodeblockCSS)
+	api.HandleFunc("GET /url_preview", gmx.GetURLPreview)
 	return exhttp.ApplyMiddleware(
 		api,
 		hlog.NewHandler(*gmx.Log),

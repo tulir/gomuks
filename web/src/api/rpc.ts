@@ -38,6 +38,7 @@ import type {
 	RoomStateGUID,
 	RoomSummary,
 	TimelineRowID,
+	URLPreview,
 	UserID,
 	UserProfile,
 } from "./types"
@@ -63,6 +64,7 @@ export interface SendMessageParams {
 	media_path?: string
 	relates_to?: RelatesTo
 	mentions?: Mentions
+	url_previews?: URLPreview[]
 }
 
 export default abstract class RPCClient {
