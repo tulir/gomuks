@@ -387,7 +387,7 @@ func (gmx *Gomuks) GetURLPreview(w http.ResponseWriter, r *http.Request) {
 				content = &event.MessageEventContent{File: fileInfo}
 			}
 		} else {
-			if mxc, ok := gmx.temporaryToPermanentMXC[preview.ImageURL]; ok {
+			if mxc, ok := gmx.temporaryMXCToPermanent[preview.ImageURL]; ok {
 				content = &event.MessageEventContent{URL: mxc}
 			}
 		}
@@ -411,7 +411,7 @@ func (gmx *Gomuks) GetURLPreview(w http.ResponseWriter, r *http.Request) {
 			if encrypt {
 				gmx.temporaryMXCToEncryptedFileInfo[preview.ImageURL] = content.File
 			} else {
-				gmx.temporaryToPermanentMXC[preview.ImageURL] = content.URL
+				gmx.temporaryMXCToPermanent[preview.ImageURL] = content.URL
 			}
 		}
 
