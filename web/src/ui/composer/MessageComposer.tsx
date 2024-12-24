@@ -488,7 +488,7 @@ const MessageComposer = () => {
 			return
 		}
 		const urls = state.text.matchAll(/\bhttps?:\/\/[^\s/_*]+(?:\/\S*)?\b/gi).map(m => m[0]).toArray()
-		if (!urls.length) {
+		if (!urls.length && Object.keys(state.previews).length > 0) {
 			setState({ previews: {}})
 			return
 		}
