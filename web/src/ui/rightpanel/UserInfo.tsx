@@ -17,7 +17,7 @@ import { use, useEffect, useState } from "react"
 import { PuffLoader } from "react-spinners"
 import { getAvatarURL } from "@/api/media.ts"
 import { useRoomMember } from "@/api/statestore"
-import { MemberEventContent, UserID, UserProfile } from "@/api/types"
+import { MemberEventContent, UserID, UserProfile, Presence } from "@/api/types"
 import { getLocalpart } from "@/util/validation.ts"
 import ClientContext from "../ClientContext.ts"
 import { LightboxContext } from "../modal"
@@ -25,6 +25,8 @@ import { RoomContext } from "../roomview/roomcontext.ts"
 import DeviceList from "./UserInfoDeviceList.tsx"
 import UserInfoError from "./UserInfoError.tsx"
 import MutualRooms from "./UserInfoMutualRooms.tsx"
+import { ErrorResponse } from "@/api/rpc.ts"
+import { UserPresence } from "./UserPresence.tsx"
 
 interface UserInfoProps {
 	userID: UserID
@@ -63,6 +65,7 @@ const UserInfo = ({ userID }: UserInfoProps) => {
 		</div>
 		<div className="displayname" title={displayname}>{displayname}</div>
 		<div className="userid" title={userID}>{userID}</div>
+		<UserPresence client={client} userID={userID}/>
 		<hr/>
 		{userID !== client.userID && <>
 			<MutualRooms client={client} userID={userID}/>
