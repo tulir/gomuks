@@ -70,18 +70,18 @@ function App() {
 	</div> : null
 
 	if (connState?.error && !afterConnectError) {
-		return errorOverlay
+		return <div className="pre-main">{errorOverlay}</div>
 	} else if ((!connState?.connected && !afterConnectError) || !clientState) {
 		const msg = connState?.connected ?
 			"Waiting for client state..." : "Connecting to backend..."
-		return <div className="pre-connect">
+		return <div className="pre-main waiting-to-connect">
 			<ScaleLoader width="2rem" height="2rem" color="var(--primary-color)"/>
 			{msg}
 		</div>
 	} else if (!clientState.is_logged_in) {
-		return <LoginScreen client={client} clientState={clientState}/>
+		return <div className="pre-main"><LoginScreen client={client} clientState={clientState}/></div>
 	} else if (!clientState.is_verified) {
-		return <VerificationScreen client={client} clientState={clientState}/>
+		return <div className="pre-main"><VerificationScreen client={client} clientState={clientState}/></div>
 	} else {
 		return <ClientContext value={client}>
 			<LightboxWrapper>

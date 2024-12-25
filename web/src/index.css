@@ -158,7 +158,7 @@ body {
 	font-family: var(--font-stack);
 	margin: 0;
 	padding: 0;
-	background-color: var(--login-background-color);
+	background-color: var(--background-color);
 	line-height: 1.5;
 	font-size: 16px;
 	touch-action: none;
@@ -248,9 +248,15 @@ div.connection-error-wrapper {
 	}
 }
 
-div.pre-connect {
-	margin-top: 2rem;
-	text-align: center;
+div.pre-main {
+	position: fixed;
+	inset: 0;
+	background-color: var(--login-background-color);
+
+	&.waiting-to-connect {
+		padding-top: 2rem;
+		text-align: center;
+	}
 }
 
 a {
