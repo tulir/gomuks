@@ -59,7 +59,9 @@ const MediaMessageBody = ({ event, room, sender }: EventContentProps) => {
 		}
 	}
 	const renderMediaElem = !supportsClickToShow || showPreviewsByDefault || clickedShow
-	const renderPlaceholderElem = supportsClickToShow && (!renderMediaElem || !!contentWarning || !loaded)
+	const renderPlaceholderElem = supportsClickToShow
+		&& !clickedShow
+		&& (!renderMediaElem || !!contentWarning || !loaded)
 	const isLoadingOnlyCover = !loaded && !contentWarning && renderMediaElem
 
 	const [mediaContent, containerClass, containerStyle] = useMediaContent(content, event.type, undefined, onLoad)

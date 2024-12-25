@@ -14,7 +14,7 @@
 	--small-font-size: .875rem;
 
 	--code-background-color: rgba(0, 0, 0, 0.15);
-	--media-placeholder-default-background: rgba(0, 0, 0, .1);
+	--media-placeholder-default-background: #ccc;
 	--media-placeholder-button-background: rgba(255, 255, 255, .5);
 
 	--primary-color: #00c853;
@@ -102,7 +102,7 @@
 		--link-text-color: #4187eb;
 
 		--code-background-color: rgba(255, 255, 255, 0.1);
-		--media-placeholder-default-background: rgba(255, 255, 255, .1);
+		--media-placeholder-default-background: #333;
 		--media-placeholder-button-background: rgba(0, 0, 0, .5);
 
 		--primary-color: #00b24a;
