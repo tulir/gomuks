@@ -47,7 +47,7 @@ const StickerPicker = ({ style, onSelect, room }: MediaPickerProps) => {
 		onSelect({
 			msgtype: "m.sticker",
 			body: emoji.t,
-			info: emoji.i,
+			info: emoji.i ?? {},
 			url: emoji.u,
 		})
 		close()
