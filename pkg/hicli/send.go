@@ -91,6 +91,17 @@ func (h *HiClient) SendMessage(
 			return nil, fmt.Errorf("invalid JSON in /raw command")
 		}
 		return h.send(ctx, roomID, event.Type{Type: parts[1]}, content, "", unencrypted)
+	} else if strings.HasPrefix(text, "/rawstate ") {
+		parts := strings.SplitN(text, " ", 4)
+		if len(parts) < 4 || len(parts[1]) == 0 {
+			return nil, fmt.Errorf("invalid /rawstate command")
+		}
+		content := json.RawMessage(parts[3])
+		if !json.Valid(content) {
+			return nil, fmt.Errorf("invalid JSON in /rawstate command")
+		}
+		_, err := h.SetState(ctx, roomID, event.Type{Type: parts[1], Class: event.StateEventType}, parts[2], content)
+		return nil, err
 	}
 	var content event.MessageEventContent
 	msgType := event.MsgText

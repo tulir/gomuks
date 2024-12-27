@@ -138,7 +138,7 @@ export default abstract class RPCClient {
 		return this.request("logout", {})
 	}
 
-	sendMessage(params: SendMessageParams): Promise<RawDBEvent> {
+	sendMessage(params: SendMessageParams): Promise<RawDBEvent | null> {
 		return this.request("send_message", params)
 	}
 
