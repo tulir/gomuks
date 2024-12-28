@@ -283,7 +283,6 @@ CREATE TABLE receipt (
 CREATE TABLE space_edge (
 	space_id           TEXT    NOT NULL,
 	child_id           TEXT    NOT NULL,
-	depth              INTEGER,
 
 	-- m.space.child fields
 	child_event_rowid  INTEGER,

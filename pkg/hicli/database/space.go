@@ -16,43 +16,23 @@ import (
 
 const (
 	getAllSpaceChildren = `
-		SELECT space_id, child_id, depth, child_event_rowid, "order", suggested, parent_event_rowid, canonical, parent_validated
+		SELECT space_id, child_id, child_event_rowid, "order", suggested, parent_event_rowid, canonical, parent_validated
 		FROM space_edge
-		WHERE (space_id = $1 OR $1 = '') AND depth IS NOT NULL AND (child_event_rowid IS NOT NULL OR parent_validated)
-		ORDER BY depth, space_id, "order", child_id
+		-- This check should be redundant thanks to parent_validated and validation before insert for children
+		--INNER JOIN room ON space_id = room.room_id AND room.room_type = 'm.space'
+		WHERE (space_id = $1 OR $1 = '') AND (child_event_rowid IS NOT NULL OR parent_validated)
+		ORDER BY space_id, "order", child_id
 	`
-	// language=sqlite - for some reason GoLand doesn't auto-detect SQL when using WITH RECURSIVE
-	recalculateAllSpaceChildDepths = `
-		UPDATE space_edge SET depth = NULL;
-		WITH RECURSIVE
-			top_level_spaces AS (
-				SELECT space_id
-				FROM (SELECT DISTINCT(space_id) FROM space_edge) outeredge
-				INNER JOIN room ON outeredge.space_id = room.room_id AND room.room_type = 'm.space'
-				WHERE NOT EXISTS(
-					SELECT 1
-					FROM space_edge inneredge
-					INNER JOIN room ON inneredge.space_id = room.room_id
-					WHERE inneredge.child_id=outeredge.space_id
-						AND (inneredge.child_event_rowid IS NOT NULL OR inneredge.parent_validated)
-				)
-			),
-			children AS (
-				SELECT space_id, child_id, 1 AS depth, space_id AS path
-				FROM space_edge
-				WHERE space_id IN top_level_spaces AND (child_event_rowid IS NOT NULL OR parent_validated)
-				UNION
-				SELECT se.space_id, se.child_id, c.depth+1, c.path || se.space_id
-				FROM space_edge se
-					INNER JOIN children c ON se.space_id = c.child_id
-				WHERE instr(c.path, se.space_id) = 0
-					AND c.depth < 10
-					AND (child_event_rowid IS NOT NULL OR parent_validated)
-			)
-		UPDATE space_edge
-		SET depth = c.depth
-		FROM children c
-		WHERE space_edge.space_id = c.space_id AND space_edge.child_id = c.child_id;
+	getTopLevelSpaces = `
+		SELECT space_id
+		FROM (SELECT DISTINCT(space_id) FROM space_edge) outeredge
+		WHERE NOT EXISTS(
+			SELECT 1
+			FROM space_edge inneredge
+			INNER JOIN room ON inneredge.space_id = room.room_id
+			WHERE inneredge.child_id = outeredge.space_id
+				AND (inneredge.child_event_rowid IS NOT NULL OR inneredge.parent_validated)
+		)
 	`
 	revalidateAllParents = `
 		UPDATE space_edge
@@ -202,10 +182,6 @@ func (seq *SpaceEdgeQuery) RevalidateSpecificParentValidity(ctx context.Context,
 	return seq.Exec(ctx, revalidateSpecificParentQuery, spaceID, childID)
 }
 
-func (seq *SpaceEdgeQuery) RecalculateAllChildDepths(ctx context.Context) error {
-	return seq.Exec(ctx, recalculateAllSpaceChildDepths)
-}
-
 func (seq *SpaceEdgeQuery) GetAll(ctx context.Context, spaceID id.RoomID) (map[id.RoomID][]*SpaceEdge, error) {
 	edges := make(map[id.RoomID][]*SpaceEdge)
 	err := seq.QueryManyIter(ctx, getAllSpaceChildren, spaceID).Iter(func(edge *SpaceEdge) (bool, error) {
@@ -223,7 +199,6 @@ func (seq *SpaceEdgeQuery) GetAll(ctx context.Context, spaceID id.RoomID) (map[i
 type SpaceEdge struct {
 	SpaceID id.RoomID `json:"space_id,omitempty"`
 	ChildID id.RoomID `json:"child_id"`
-	Depth   int       `json:"-"`
 
 	ChildEventRowID EventRowID `json:"child_event_rowid,omitempty"`
 	Order           string     `json:"order,omitempty"`
@@ -237,7 +212,7 @@ type SpaceEdge struct {
 func (se *SpaceEdge) Scan(row dbutil.Scannable) (*SpaceEdge, error) {
 	var childRowID, parentRowID sql.NullInt64
 	err := row.Scan(
-		&se.SpaceID, &se.ChildID, &se.Depth,
+		&se.SpaceID, &se.ChildID,
 		&childRowID, &se.Order, &se.Suggested,
 		&parentRowID, &se.Canonical, &se.ParentValidated,
 	)

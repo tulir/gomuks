@@ -7,7 +7,6 @@ CREATE INDEX room_type_idx ON room (room_type);
 CREATE TABLE space_edge (
 	space_id           TEXT    NOT NULL,
 	child_id           TEXT    NOT NULL,
-	depth              INTEGER,
 
 	-- m.space.child fields
 	child_event_rowid  INTEGER,
@@ -82,32 +81,3 @@ SET parent_validated=(SELECT EXISTS(
 		)
 ))
 WHERE parent_event_rowid IS NOT NULL;
-
-WITH RECURSIVE
-	top_level_spaces AS (
-		SELECT space_id
-		FROM (SELECT DISTINCT(space_id) FROM space_edge) outeredge
-		WHERE NOT EXISTS(
-			SELECT 1
-			FROM space_edge inneredge
-			INNER JOIN room ON inneredge.space_id = room.room_id
-			WHERE inneredge.child_id=outeredge.space_id
-				AND (inneredge.child_event_rowid IS NOT NULL OR inneredge.parent_validated)
-		)
-	),
-	children AS (
-		SELECT space_id, child_id, 1 AS depth, space_id AS path
-		FROM space_edge
-		WHERE space_id IN top_level_spaces AND (child_event_rowid IS NOT NULL OR parent_validated)
-		UNION
-		SELECT se.space_id, se.child_id, c.depth+1, c.path || se.space_id
-		FROM space_edge se
-			INNER JOIN children c ON se.space_id=c.child_id
-		WHERE instr(c.path, se.space_id)=0
-		  AND c.depth < 10
-		  AND (child_event_rowid IS NOT NULL OR parent_validated)
-	)
-UPDATE space_edge
-SET depth = c.depth
-FROM children c
-WHERE space_edge.space_id = c.space_id AND space_edge.child_id = c.child_id;
