@@ -13,7 +13,7 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import { memo, use } from "react"
+import { JSX, memo, use } from "react"
 import { getRoomAvatarURL } from "@/api/media.ts"
 import type { RoomListEntry } from "@/api/statestore"
 import type { MemDBEvent, MemberEventContent } from "@/api/types"
@@ -28,9 +28,9 @@ export interface RoomListEntryProps {
 	hidden: boolean
 }
 
-function getPreviewText(evt?: MemDBEvent, senderMemberEvt?: MemDBEvent | null): [string, string] {
+function getPreviewText(evt?: MemDBEvent, senderMemberEvt?: MemDBEvent | null): [string, JSX.Element | null] {
 	if (!evt) {
-		return ["", ""]
+		return ["", null]
 	}
 	if ((evt.type === "m.room.message" || evt.type === "m.sticker") && typeof evt.content.body === "string") {
 		// eslint-disable-next-line react-hooks/rules-of-hooks
@@ -44,10 +44,14 @@ function getPreviewText(evt?: MemDBEvent, senderMemberEvt?: MemDBEvent | null): 
 		}
 		return [
 			`${displayname}: ${evt.content.body}`,
-			`${displayname.length > 16 ? displayname.slice(0, 12) + "…" : displayname}: ${previewText}`,
+			<>
+				<span style={{ unicodeBidi: "isolate" }}>
+					{displayname.length > 16 ? displayname.slice(0, 12) + "…" : displayname}
+				</span>: {previewText}
+			</>,
 		]
 	}
-	return ["", ""]
+	return ["", null]
 }
 
 function renderEntry(room: RoomListEntry) {
