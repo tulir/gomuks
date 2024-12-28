@@ -27,6 +27,7 @@ const (
 		FROM room
 	`
 	getRoomsBySortingTimestampQuery = getRoomBaseQuery + `WHERE sorting_timestamp < $1 AND sorting_timestamp > 0 ORDER BY sorting_timestamp DESC LIMIT $2`
+	getRoomsByTypeQuery             = getRoomBaseQuery + `WHERE room_type = $1`
 	getRoomByIDQuery                = getRoomBaseQuery + `WHERE room_id = $1`
 	ensureRoomExistsQuery           = `
 		INSERT INTO room (room_id) VALUES ($1)
@@ -94,6 +95,10 @@ func (rq *RoomQuery) Get(ctx context.Context, roomID id.RoomID) (*Room, error) {
 
 func (rq *RoomQuery) GetBySortTS(ctx context.Context, maxTS time.Time, limit int) ([]*Room, error) {
 	return rq.QueryMany(ctx, getRoomsBySortingTimestampQuery, maxTS.UnixMilli(), limit)
+}
+
+func (rq *RoomQuery) GetAllSpaces(ctx context.Context) ([]*Room, error) {
+	return rq.QueryMany(ctx, getRoomsByTypeQuery, event.RoomTypeSpace)
 }
 
 func (rq *RoomQuery) Upsert(ctx context.Context, room *Room) error {

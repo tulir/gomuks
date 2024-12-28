@@ -92,6 +92,7 @@ export interface SyncCompleteData {
 	left_rooms: RoomID[] | null
 	account_data: Record<EventType, DBAccountData> | null
 	space_edges: Record<RoomID, Omit<DBSpaceEdge, "space_id">[]> | null
+	top_level_spaces: RoomID[] | null
 	since?: string
 	clear_state?: boolean
 }

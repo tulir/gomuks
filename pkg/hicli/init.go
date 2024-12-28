@@ -66,6 +66,49 @@ func (h *HiClient) getInitialSyncRoom(ctx context.Context, room *database.Room) 
 func (h *HiClient) GetInitialSync(ctx context.Context, batchSize int) iter.Seq[*SyncComplete] {
 	return func(yield func(*SyncComplete) bool) {
 		maxTS := time.Now().Add(1 * time.Hour)
+		{
+			spaces, err := h.DB.Room.GetAllSpaces(ctx)
+			if err != nil {
+				if ctx.Err() == nil {
+					zerolog.Ctx(ctx).Err(err).Msg("Failed to get initial spaces to send to client")
+				}
+				return
+			}
+			payload := SyncComplete{
+				Rooms: make(map[id.RoomID]*SyncRoom, len(spaces)),
+			}
+			for _, room := range spaces {
+				payload.Rooms[room.ID] = h.getInitialSyncRoom(ctx, room)
+				if ctx.Err() != nil {
+					return
+				}
+			}
+			payload.TopLevelSpaces, err = h.DB.SpaceEdge.GetTopLevelIDs(ctx, h.Account.UserID)
+			if err != nil {
+				if ctx.Err() == nil {
+					zerolog.Ctx(ctx).Err(err).Msg("Failed to get top-level space IDs to send to client")
+				}
+				return
+			}
+			payload.SpaceEdges, err = h.DB.SpaceEdge.GetAll(ctx, "")
+			if err != nil {
+				if ctx.Err() == nil {
+					zerolog.Ctx(ctx).Err(err).Msg("Failed to get space edges to send to client")
+				}
+				return
+			}
+			payload.InvitedRooms, err = h.DB.InvitedRoom.GetAll(ctx)
+			if err != nil {
+				if ctx.Err() == nil {
+					zerolog.Ctx(ctx).Err(err).Msg("Failed to get invited rooms to send to client")
+				}
+				return
+			}
+			payload.ClearState = true
+			if !yield(&payload) {
+				return
+			}
+		}
 		for i := 0; ; i++ {
 			rooms, err := h.DB.Room.GetBySortTS(ctx, maxTS, batchSize)
 			if err != nil {
@@ -77,24 +120,6 @@ func (h *HiClient) GetInitialSync(ctx context.Context, batchSize int) iter.Seq[*
 			payload := SyncComplete{
 				Rooms: make(map[id.RoomID]*SyncRoom, len(rooms)),
 			}
-			if i == 0 {
-				payload.InvitedRooms, err = h.DB.InvitedRoom.GetAll(ctx)
-				if err != nil {
-					if ctx.Err() == nil {
-						zerolog.Ctx(ctx).Err(err).Msg("Failed to get invited rooms to send to client")
-					}
-					return
-				}
-				// TODO include space rooms in first batch too?
-				payload.SpaceEdges, err = h.DB.SpaceEdge.GetAll(ctx, "")
-				if err != nil {
-					if ctx.Err() == nil {
-						zerolog.Ctx(ctx).Err(err).Msg("Failed to get space edges to send to client")
-					}
-					return
-				}
-				payload.ClearState = true
-			}
 			for _, room := range rooms {
 				if room.SortingTimestamp == rooms[len(rooms)-1].SortingTimestamp {
 					break
@@ -105,7 +130,9 @@ func (h *HiClient) GetInitialSync(ctx context.Context, batchSize int) iter.Seq[*
 					return
 				}
 			}
-			if !yield(&payload) || len(rooms) < batchSize {
+			if !yield(&payload) {
+				return
+			} else if len(rooms) < batchSize {
 				break
 			}
 		}

@@ -26,13 +26,18 @@ const (
 	getTopLevelSpaces = `
 		SELECT space_id
 		FROM (SELECT DISTINCT(space_id) FROM space_edge) outeredge
+		LEFT JOIN room_account_data ON
+			room_account_data.user_id = $1
+			AND room_account_data.room_id = outeredge.space_id
+			AND room_account_data.type = 'org.matrix.msc3230.space_order'
 		WHERE NOT EXISTS(
 			SELECT 1
 			FROM space_edge inneredge
 			INNER JOIN room ON inneredge.space_id = room.room_id
 			WHERE inneredge.child_id = outeredge.space_id
 				AND (inneredge.child_event_rowid IS NOT NULL OR inneredge.parent_validated)
-		)
+		) AND EXISTS(SELECT 1 FROM room WHERE room_id = space_id AND room_type = 'm.space')
+		ORDER BY room_account_data.content->>'$.order' NULLS LAST, space_id
 	`
 	revalidateAllParents = `
 		UPDATE space_edge
@@ -194,6 +199,12 @@ func (seq *SpaceEdgeQuery) GetAll(ctx context.Context, spaceID id.RoomID) (map[i
 		return true, nil
 	})
 	return edges, err
+}
+
+var roomIDScanner = dbutil.ConvertRowFn[id.RoomID](dbutil.ScanSingleColumn[id.RoomID])
+
+func (seq *SpaceEdgeQuery) GetTopLevelIDs(ctx context.Context, userID id.UserID) ([]id.RoomID, error) {
+	return roomIDScanner.NewRowIter(seq.GetDB().Query(ctx, getTopLevelSpaces, userID)).AsList()
 }
 
 type SpaceEdge struct {
