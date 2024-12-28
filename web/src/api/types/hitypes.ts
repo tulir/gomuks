@@ -72,7 +72,7 @@ export interface DBRoom {
 }
 
 export interface DBSpaceEdge {
-	space_id: RoomID
+	// space_id: RoomID
 	child_id: RoomID
 
 	child_event_rowid?: EventRowID

@@ -318,7 +318,7 @@ const MainScreen = () => {
 	}, [context, client])
 	useEffect(() => context.keybindings.listen(), [context])
 	const [roomListWidth, resizeHandle1] = useResizeHandle(
-		300, 48, Math.min(900, window.innerWidth * 0.4),
+		350, 96, Math.min(900, window.innerWidth * 0.4),
 		"roomListWidth", { className: "room-list-resizer" },
 	)
 	const [rightPanelWidth, resizeHandle2] = useResizeHandle(
