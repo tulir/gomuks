@@ -14,12 +14,9 @@ import (
 
 func (h *HiClient) getInitialSyncRoom(ctx context.Context, room *database.Room) *SyncRoom {
 	syncRoom := &SyncRoom{
-		Meta:          room,
-		Events:        make([]*database.Event, 0, 2),
-		Timeline:      make([]database.TimelineRowTuple, 0),
-		State:         map[event.Type]map[string]database.EventRowID{},
-		Notifications: make([]SyncNotification, 0),
-		Receipts:      make(map[id.EventID][]*database.Receipt),
+		Meta:   room,
+		Events: make([]*database.Event, 0, 2),
+		State:  map[event.Type]map[string]database.EventRowID{},
 	}
 	ad, err := h.DB.AccountData.GetAllRoom(ctx, h.Account.UserID, room.ID)
 	if err != nil {
@@ -27,7 +24,6 @@ func (h *HiClient) getInitialSyncRoom(ctx context.Context, room *database.Room) 
 		if ctx.Err() != nil {
 			return nil
 		}
-		syncRoom.AccountData = make(map[event.Type]*database.AccountData)
 	} else {
 		syncRoom.AccountData = make(map[event.Type]*database.AccountData, len(ad))
 		for _, data := range ad {
@@ -79,9 +75,7 @@ func (h *HiClient) GetInitialSync(ctx context.Context, batchSize int) iter.Seq[*
 				return
 			}
 			payload := SyncComplete{
-				Rooms:       make(map[id.RoomID]*SyncRoom, len(rooms)-1),
-				LeftRooms:   make([]id.RoomID, 0),
-				AccountData: make(map[event.Type]*database.AccountData),
+				Rooms: make(map[id.RoomID]*SyncRoom, len(rooms)),
 			}
 			if i == 0 {
 				payload.InvitedRooms, err = h.DB.InvitedRoom.GetAll(ctx)
@@ -91,6 +85,7 @@ func (h *HiClient) GetInitialSync(ctx context.Context, batchSize int) iter.Seq[*
 					}
 					return
 				}
+				// TODO include space rooms in first batch too?
 				payload.SpaceEdges, err = h.DB.SpaceEdge.GetAll(ctx, "")
 				if err != nil {
 					if ctx.Err() == nil {
@@ -99,12 +94,6 @@ func (h *HiClient) GetInitialSync(ctx context.Context, batchSize int) iter.Seq[*
 					return
 				}
 				payload.ClearState = true
-			}
-			if payload.InvitedRooms == nil {
-				payload.InvitedRooms = make([]*database.InvitedRoom, 0)
-			}
-			if payload.SpaceEdges == nil {
-				payload.SpaceEdges = make(map[id.RoomID][]*database.SpaceEdge)
 			}
 			for _, room := range rooms {
 				if room.SortingTimestamp == rooms[len(rooms)-1].SortingTimestamp {
@@ -127,10 +116,7 @@ func (h *HiClient) GetInitialSync(ctx context.Context, batchSize int) iter.Seq[*
 			return
 		}
 		payload := SyncComplete{
-			Rooms:        make(map[id.RoomID]*SyncRoom),
-			InvitedRooms: make([]*database.InvitedRoom, 0),
-			LeftRooms:    make([]id.RoomID, 0),
-			AccountData:  make(map[event.Type]*database.AccountData, len(ad)),
+			AccountData: make(map[event.Type]*database.AccountData, len(ad)),
 		}
 		for _, data := range ad {
 			payload.AccountData[event.Type{Type: data.Type, Class: event.AccountDataEventType}] = data

@@ -38,7 +38,6 @@ func (h *hiSyncer) ProcessResponse(ctx context.Context, resp *mautrix.RespSync, 
 		Rooms:        make(map[id.RoomID]*SyncRoom, len(resp.Rooms.Join)),
 		InvitedRooms: make([]*database.InvitedRoom, 0, len(resp.Rooms.Invite)),
 		LeftRooms:    make([]id.RoomID, 0, len(resp.Rooms.Leave)),
-		SpaceEdges:   make(map[id.RoomID][]*database.SpaceEdge),
 	}})
 	err := c.preProcessSyncResponse(ctx, resp, since)
 	if err != nil {

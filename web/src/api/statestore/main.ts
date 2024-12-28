@@ -122,7 +122,7 @@ export class StateStore {
 			entry.meta.unread_highlights !== oldEntry.meta.current.unread_highlights ||
 			entry.meta.marked_unread !== oldEntry.meta.current.marked_unread ||
 			entry.meta.preview_event_rowid !== oldEntry.meta.current.preview_event_rowid ||
-			entry.events.findIndex(evt => evt.rowid === entry.meta.preview_event_rowid) !== -1
+			(entry.events ?? []).findIndex(evt => evt.rowid === entry.meta.preview_event_rowid) !== -1
 	}
 
 	#makeRoomListEntry(entry: SyncRoom, room?: RoomStateStore): RoomListEntry | null {
@@ -165,7 +165,7 @@ export class StateStore {
 		}
 		const resyncRoomList = this.roomList.current.length === 0
 		const changedRoomListEntries = new Map<RoomID, RoomListEntry | null>()
-		for (const data of sync.invited_rooms) {
+		for (const data of sync.invited_rooms ?? []) {
 			const room = new InvitedRoomStore(data, this)
 			this.inviteRooms.set(room.room_id, room)
 			if (!resyncRoomList) {
@@ -176,7 +176,7 @@ export class StateStore {
 			}
 		}
 		const hasInvites = this.inviteRooms.size > 0
-		for (const [roomID, data] of Object.entries(sync.rooms)) {
+		for (const [roomID, data] of Object.entries(sync.rooms ?? {})) {
 			let isNewRoom = false
 			let room = this.rooms.get(roomID)
 			if (!room) {
@@ -203,7 +203,7 @@ export class StateStore {
 				}
 			}
 
-			if (window.Notification?.permission === "granted" && !focused.current) {
+			if (window.Notification?.permission === "granted" && !focused.current && data.notifications) {
 				for (const notification of data.notifications) {
 					this.showNotification(room, notification.event_rowid, notification.sound)
 				}
@@ -212,7 +212,7 @@ export class StateStore {
 				this.switchRoom?.(roomID)
 			}
 		}
-		for (const ad of Object.values(sync.account_data)) {
+		for (const ad of Object.values(sync.account_data ?? {})) {
 			if (ad.type === "io.element.recent_emoji") {
 				this.#frequentlyUsedEmoji = null
 			} else if (ad.type === "fi.mau.gomuks.preferences") {
@@ -222,7 +222,7 @@ export class StateStore {
 			this.accountData.set(ad.type, ad.content)
 			this.accountDataSubs.notify(ad.type)
 		}
-		for (const roomID of sync.left_rooms) {
+		for (const roomID of sync.left_rooms ?? []) {
 			if (this.activeRoomID === roomID) {
 				this.switchRoom?.(null)
 			}
@@ -233,7 +233,7 @@ export class StateStore {
 		let updatedRoomList: RoomListEntry[] | undefined
 		if (resyncRoomList) {
 			updatedRoomList = this.inviteRooms.values().toArray()
-			updatedRoomList = updatedRoomList.concat(Object.values(sync.rooms)
+			updatedRoomList = updatedRoomList.concat(Object.values(sync.rooms ?? {})
 				.map(entry => this.#makeRoomListEntry(entry))
 				.filter(entry => entry !== null))
 			updatedRoomList.sort((r1, r2) => r1.sorting_timestamp - r2.sorting_timestamp)
