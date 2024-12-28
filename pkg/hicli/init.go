@@ -91,10 +91,20 @@ func (h *HiClient) GetInitialSync(ctx context.Context, batchSize int) iter.Seq[*
 					}
 					return
 				}
+				payload.SpaceEdges, err = h.DB.SpaceEdge.GetAll(ctx, "")
+				if err != nil {
+					if ctx.Err() == nil {
+						zerolog.Ctx(ctx).Err(err).Msg("Failed to get space edges to send to client")
+					}
+					return
+				}
 				payload.ClearState = true
 			}
 			if payload.InvitedRooms == nil {
 				payload.InvitedRooms = make([]*database.InvitedRoom, 0)
+			}
+			if payload.SpaceEdges == nil {
+				payload.SpaceEdges = make(map[id.RoomID][]*database.SpaceEdge)
 			}
 			for _, room := range rooms {
 				if room.SortingTimestamp == rooms[len(rooms)-1].SortingTimestamp {

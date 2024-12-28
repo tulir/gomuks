@@ -37,6 +37,7 @@ type SyncComplete struct {
 	Rooms        map[id.RoomID]*SyncRoom              `json:"rooms"`
 	LeftRooms    []id.RoomID                          `json:"left_rooms"`
 	InvitedRooms []*database.InvitedRoom              `json:"invited_rooms"`
+	SpaceEdges   map[id.RoomID][]*database.SpaceEdge  `json:"space_edges"`
 }
 
 func (c *SyncComplete) IsEmpty() bool {

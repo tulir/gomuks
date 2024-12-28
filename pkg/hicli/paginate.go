@@ -121,13 +121,14 @@ func (h *HiClient) processGetRoomState(ctx context.Context, roomID id.RoomID, fe
 		if err != nil {
 			return fmt.Errorf("failed to save events: %w", err)
 		}
+		sdc := &spaceDataCollector{}
 		for i := range currentStateEntries {
 			currentStateEntries[i].EventRowID = dbEvts[i].RowID
 			if mediaReferenceEntries[i] != nil {
 				mediaReferenceEntries[i].EventRowID = dbEvts[i].RowID
 			}
 			if evts[i].Type != event.StateMember {
-				processImportantEvent(ctx, evts[i], room, updatedRoom)
+				processImportantEvent(ctx, evts[i], room, updatedRoom, dbEvts[i].RowID, sdc)
 			}
 		}
 		err = h.DB.Media.AddMany(ctx, mediaCacheEntries)
@@ -146,6 +147,10 @@ func (h *HiClient) processGetRoomState(ctx context.Context, roomID id.RoomID, fe
 			return fmt.Errorf("failed to save current state entries: %w", err)
 		}
 		roomChanged := updatedRoom.CheckChangesAndCopyInto(room)
+		err = sdc.Apply(ctx, room, h.DB.SpaceEdge)
+		if err != nil {
+			return err
+		}
 		if roomChanged {
 			err = h.DB.Room.Upsert(ctx, updatedRoom)
 			if err != nil {
@@ -168,6 +173,8 @@ func (h *HiClient) processGetRoomState(ctx context.Context, roomID id.RoomID, fe
 					InvitedRooms: make([]*database.InvitedRoom, 0),
 					AccountData:  make(map[event.Type]*database.AccountData),
 					LeftRooms:    make([]id.RoomID, 0),
+					// TODO dispatch space edge changes if something changed? (fairly unlikely though)
+					SpaceEdges: make(map[id.RoomID][]*database.SpaceEdge),
 				})
 			}
 		}

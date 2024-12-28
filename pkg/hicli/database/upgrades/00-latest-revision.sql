@@ -1,4 +1,4 @@
--- v0 -> v9 (compatible with v5+): Latest revision
+-- v0 -> v10 (compatible with v10+): Latest revision
 CREATE TABLE account (
 	user_id        TEXT NOT NULL PRIMARY KEY,
 	device_id      TEXT NOT NULL,
@@ -10,6 +10,7 @@ CREATE TABLE account (
 
 CREATE TABLE room (
 	room_id              TEXT    NOT NULL PRIMARY KEY,
+	room_type            TEXT,
 	creation_content     TEXT,
 	tombstone_content    TEXT,
 
@@ -35,7 +36,7 @@ CREATE TABLE room (
 
 	CONSTRAINT room_preview_event_fkey FOREIGN KEY (preview_event_rowid) REFERENCES event (rowid) ON DELETE SET NULL
 ) STRICT;
-CREATE INDEX room_type_idx ON room (creation_content ->> 'type');
+CREATE INDEX room_type_idx ON room (room_type);
 CREATE INDEX room_sorting_timestamp_idx ON room (sorting_timestamp DESC);
 CREATE INDEX room_preview_idx ON room (preview_event_rowid);
 -- CREATE INDEX room_sorting_timestamp_idx ON room (unread_notifications > 0);
@@ -278,3 +279,25 @@ CREATE TABLE receipt (
 	CONSTRAINT receipt_room_fkey FOREIGN KEY (room_id) REFERENCES room (room_id) ON DELETE CASCADE
 	-- note: there's no foreign key on event ID because receipts could point at events that are too far in history.
 ) STRICT;
+
+CREATE TABLE space_edge (
+	space_id           TEXT    NOT NULL,
+	child_id           TEXT    NOT NULL,
+	depth              INTEGER,
+
+	-- m.space.child fields
+	child_event_rowid  INTEGER,
+	"order"            TEXT    NOT NULL DEFAULT '',
+	suggested          INTEGER NOT NULL DEFAULT false CHECK ( suggested IN (false, true) ),
+	-- m.space.parent fields
+	parent_event_rowid INTEGER,
+	canonical          INTEGER NOT NULL DEFAULT false CHECK ( canonical IN (false, true) ),
+	parent_validated   INTEGER NOT NULL DEFAULT false CHECK ( parent_validated IN (false, true) ),
+
+	PRIMARY KEY (space_id, child_id),
+	CONSTRAINT space_edge_child_event_fkey FOREIGN KEY (child_event_rowid) REFERENCES event (rowid) ON DELETE CASCADE,
+	CONSTRAINT space_edge_parent_event_fkey FOREIGN KEY (parent_event_rowid) REFERENCES event (rowid) ON DELETE CASCADE,
+	CONSTRAINT space_edge_child_event_unique UNIQUE (child_event_rowid),
+	CONSTRAINT space_edge_parent_event_unique UNIQUE (parent_event_rowid)
+) STRICT;
+CREATE INDEX space_edge_child_idx ON space_edge (child_id);
