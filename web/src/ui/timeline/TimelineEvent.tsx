@@ -107,9 +107,21 @@ const TimelineEvent = ({ evt, prevEvt, disableMenu, smallReplies }: TimelineEven
 			return
 		}
 		mouseEvt.preventDefault()
-		openModal({
-			content: <EventFixedMenu evt={evt} roomCtx={roomCtx} />,
-		})
+		if (window.hackyOpenEventContextMenu === evt.event_id) {
+			window.closeModal()
+			window.hackyOpenEventContextMenu = undefined
+		} else {
+			openModal({
+				content: <EventFixedMenu evt={evt} roomCtx={roomCtx} />,
+				captureInput: false,
+				onClose: () => {
+					if (window.hackyOpenEventContextMenu === evt.event_id) {
+						window.hackyOpenEventContextMenu = undefined
+					}
+				},
+			})
+			window.hackyOpenEventContextMenu = evt.event_id
+		}
 	}
 	const memberEvt = useRoomMember(client, roomCtx.store, evt.sender)
 	const memberEvtContent = memberEvt?.content as MemberEventContent | undefined

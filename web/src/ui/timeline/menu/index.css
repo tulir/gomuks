@@ -28,6 +28,7 @@ div.event-fixed-menu {
 	box-sizing: border-box;
 	justify-content: right;
 	flex-direction: row-reverse;
+	overflow-x: auto;
 
 	> button {
 		width: 3rem;

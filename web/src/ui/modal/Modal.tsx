@@ -13,7 +13,7 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import React, { JSX, useCallback, useLayoutEffect, useReducer, useRef } from "react"
+import React, { JSX, useCallback, useEffect, useLayoutEffect, useReducer, useRef } from "react"
 import { ModalCloseContext, ModalContext, ModalState } from "./contexts.ts"
 
 const ModalWrapper = ({ children }: { children: React.ReactNode }) => {
@@ -40,7 +40,7 @@ const ModalWrapper = ({ children }: { children: React.ReactNode }) => {
 		evt.stopPropagation()
 	}
 	const openModal = useCallback((newState: ModalState) => {
-		if (!history.state?.modal) {
+		if (!history.state?.modal && newState.captureInput !== false) {
 			history.pushState({ ...(history.state ?? {}), modal: true }, "")
 		}
 		setState(newState)
@@ -50,6 +50,9 @@ const ModalWrapper = ({ children }: { children: React.ReactNode }) => {
 		if (wrapperRef.current && (!document.activeElement || !wrapperRef.current.contains(document.activeElement))) {
 			wrapperRef.current.focus()
 		}
+	}, [state])
+	useEffect(() => {
+		window.closeModal = onClickWrapper
 		const listener = (evt: PopStateEvent) => {
 			if (!evt.state?.modal) {
 				setState(null)
@@ -57,7 +60,7 @@ const ModalWrapper = ({ children }: { children: React.ReactNode }) => {
 		}
 		window.addEventListener("popstate", listener)
 		return () => window.removeEventListener("popstate", listener)
-	}, [state])
+	}, [])
 	let modal: JSX.Element | null = null
 	if (state) {
 		let content = <ModalCloseContext value={onClickWrapper}>{state.content}</ModalCloseContext>
@@ -68,15 +71,19 @@ const ModalWrapper = ({ children }: { children: React.ReactNode }) => {
 				</div>
 			</div>
 		}
-		modal = <div
-			className={`overlay modal ${state.dimmed ? "dimmed" : ""}`}
-			onClick={onClickWrapper}
-			onKeyDown={onKeyWrapper}
-			tabIndex={-1}
-			ref={wrapperRef}
-		>
-			{content}
-		</div>
+		if (state.captureInput !== false) {
+			modal = <div
+				className={`overlay modal ${state.dimmed ? "dimmed" : ""}`}
+				onClick={onClickWrapper}
+				onKeyDown={onKeyWrapper}
+				tabIndex={-1}
+				ref={wrapperRef}
+			>
+				{content}
+			</div>
+		} else {
+			modal = content
+		}
 	}
 	return <ModalContext value={openModal}>
 		{children}

@@ -32,6 +32,7 @@ export interface ModalState {
 	boxClass?: string
 	innerBoxClass?: string
 	onClose?: () => void
+	captureInput?: boolean
 }
 
 type openModal = (state: ModalState) => void
