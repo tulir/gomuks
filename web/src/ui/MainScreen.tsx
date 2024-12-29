@@ -294,8 +294,8 @@ const MainScreen = () => {
 			const roomID = evt.state?.room_id ?? null
 			if (roomID !== client.store.activeRoomID) {
 				context.setActiveRoom(roomID, {
-					alias: ensureString(evt?.state.source_alias) || undefined,
-					via: ensureStringArray(evt?.state.source_via),
+					alias: ensureString(evt.state?.source_alias) || undefined,
+					via: ensureStringArray(evt.state?.source_via),
 				}, false)
 			}
 			context.setRightPanel(evt.state?.right_panel ?? null, false)
