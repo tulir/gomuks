@@ -29,10 +29,12 @@ div.event-fixed-menu {
 	justify-content: right;
 	flex-direction: row-reverse;
 	overflow-x: auto;
+	overflow-y: hidden;
 
 	> button {
 		width: 3rem;
 		height: 3rem;
+		flex-shrink: 0;
 
 		&.redact-button {
 			color: var(--error-color);
