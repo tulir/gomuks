@@ -39,7 +39,7 @@ import type {
 	RoomSummary,
 	TimelineRowID,
 	UserID,
-	UserProfile,
+	UserProfile, JSONValue,
 } from "./types"
 
 export interface ConnectionEvent {
@@ -178,6 +178,10 @@ export default abstract class RPCClient {
 
 	getProfile(user_id: UserID): Promise<UserProfile> {
 		return this.request("get_profile", { user_id })
+	}
+
+	setProfileField(field: string, value: JSONValue): Promise<boolean> {
+		return this.request("set_profile_field", { field, value })
 	}
 
 	getMutualRooms(user_id: UserID): Promise<RoomID[]> {

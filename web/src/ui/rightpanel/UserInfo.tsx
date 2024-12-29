@@ -47,6 +47,8 @@ const UserInfo = ({ userID }: UserInfoProps) => {
 			err => setErrors([`${err}`]),
 		)
 	}, [roomCtx, userID, client])
+
+
 	const displayname = member?.displayname || globalProfile?.displayname || getLocalpart(userID)
 	return <>
 		<div className="avatar-container">
@@ -63,7 +65,7 @@ const UserInfo = ({ userID }: UserInfoProps) => {
 		</div>
 		<div className="displayname" title={displayname}>{displayname}</div>
 		<div className="userid" title={userID}>{userID}</div>
-		{globalProfile && <><hr/><UserExtendedProfile profile={globalProfile}/></>}
+		{globalProfile && <UserExtendedProfile profile={globalProfile} client={client} userID={userID}/>}
 		<hr/>
 		{userID !== client.userID && <>
 			<MutualRooms client={client} userID={userID}/>

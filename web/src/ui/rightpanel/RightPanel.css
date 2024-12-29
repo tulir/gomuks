@@ -72,6 +72,13 @@ div.right-panel-content.user {
 		}
 	}
 
+	input.text-input {
+		border: 0;
+		width: 100%;
+		box-sizing: border-box;
+		border-bottom: 1px solid var(--blockquote-border-color);
+	}
+
 	div.displayname {
 		font-size: 1.5rem;
 		font-weight: bold;
@@ -92,14 +99,9 @@ div.right-panel-content.user {
 	}
 
 	div.extended-profile {
-		display: flex;
-		flex-direction: column;
+		display: grid;
 		gap: 0.25rem;
-
-		div.profile-row {
-			display: grid;
-			grid-template-columns: 1fr 1fr;
-		}
+		grid-template-columns: 1fr 1fr;
 	}
 
 	hr {
