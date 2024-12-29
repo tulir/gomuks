@@ -39,7 +39,7 @@ import {
 } from "../types"
 import { InvitedRoomStore } from "./invitedroom.ts"
 import { RoomStateStore } from "./room.ts"
-import { RoomListFilter, SpaceEdgeStore } from "./space.ts"
+import { RoomListFilter, SpaceEdgeStore, SpaceOrphansSpace } from "./space.ts"
 
 export interface RoomListEntry {
 	room_id: RoomID
@@ -75,6 +75,7 @@ export class StateStore {
 	readonly roomList = new NonNullCachedEventDispatcher<RoomListEntry[]>([])
 	readonly topLevelSpaces = new NonNullCachedEventDispatcher<RoomID[]>([])
 	readonly spaceEdges: Map<RoomID, SpaceEdgeStore> = new Map()
+	readonly spaceOrphans = new SpaceOrphansSpace(this)
 	currentRoomListQuery: string = ""
 	currentRoomListFilter: RoomListFilter | null = null
 	readonly accountData: Map<string, UnknownEventContent> = new Map()
@@ -277,11 +278,18 @@ export class StateStore {
 		if (updatedRoomList) {
 			this.roomList.emit(updatedRoomList)
 		}
-		for (const [spaceID, children] of Object.entries(sync.space_edges ?? {})) {
-			this.getSpaceStore(spaceID, true).children = children
+		if (sync.space_edges) {
+			// Ensure all space stores exist first
+			for (const spaceID of Object.keys(sync.space_edges)) {
+				this.getSpaceStore(spaceID, true)
+			}
+			for (const [spaceID, children] of Object.entries(sync.space_edges ?? {})) {
+				this.getSpaceStore(spaceID, true).children = children
+			}
 		}
 		if (sync.top_level_spaces) {
 			this.topLevelSpaces.emit(sync.top_level_spaces)
+			this.spaceOrphans.children = sync.top_level_spaces.map(child_id => ({ child_id }))
 		}
 	}
 

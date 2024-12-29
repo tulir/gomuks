@@ -44,11 +44,11 @@ export class SpaceEdgeStore implements RoomListFilter {
 	constructor(public id: RoomID, private parent: StateStore) {
 	}
 
-	addParent(parent: SpaceEdgeStore) {
+	#addParent(parent: SpaceEdgeStore) {
 		this.#parentSpaces.add(parent)
 	}
 
-	removeParent(parent: SpaceEdgeStore) {
+	#removeParent(parent: SpaceEdgeStore) {
 		this.#parentSpaces.delete(parent)
 	}
 
@@ -95,28 +95,42 @@ export class SpaceEdgeStore implements RoomListFilter {
 			const spaceStore = this.parent.getSpaceStore(child.child_id)
 			if (spaceStore) {
 				newChildSpaces.add(spaceStore)
-				spaceStore.addParent(this)
+				spaceStore.#addParent(this)
 			} else {
 				newChildRooms.add(child.child_id)
 			}
 		}
 		for (const space of this.#childSpaces) {
 			if (!newChildSpaces.has(space)) {
-				space.removeParent(this)
+				space.#removeParent(this)
 			}
 		}
 		const addedRooms = newChildRooms.difference(this.#childRooms)
 		const removedRooms = this.#childRooms.difference(newChildRooms)
+		const didAddChildren = newChildSpaces.difference(this.#childSpaces).size > 0
+		const recalculateFlattened = removedRooms.size > 0 || didAddChildren
 		this.#children = newChildren
 		this.#childRooms = newChildRooms
 		this.#childSpaces = newChildSpaces
 		if (this.#childSpaces.size > 0) {
-			this.#updateFlattened(removedRooms.size > 0, addedRooms)
+			this.#updateFlattened(recalculateFlattened, addedRooms)
 		} else {
 			this.#flattenedRooms = newChildRooms
 		}
 		if (this.#parentSpaces.size > 0) {
-			this.#notifyParentsOfChange(removedRooms.size > 0, addedRooms, new WeakSet())
+			this.#notifyParentsOfChange(recalculateFlattened, addedRooms, new WeakSet())
 		}
+	}
+}
+
+export class SpaceOrphansSpace extends SpaceEdgeStore {
+	static id = "fi.mau.gomuks.space_orphans"
+
+	constructor(parent: StateStore) {
+		super(SpaceOrphansSpace.id, parent)
+	}
+
+	include(room: RoomListEntry): boolean {
+		return !super.include(room) && !room.dm_user_id
 	}
 }

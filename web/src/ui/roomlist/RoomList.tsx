@@ -75,6 +75,12 @@ const RoomList = ({ activeRoomID }: RoomListProps) => {
 	}
 
 	const roomListFilter = client.store.roomListFilterFunc
+	const pseudoSpaces = [
+		null,
+		DirectChatSpace,
+		UnreadsSpace,
+		client.store.spaceOrphans,
+	]
 	return <div className="room-list-wrapper">
 		<div className="room-search-wrapper">
 			<input
@@ -92,9 +98,12 @@ const RoomList = ({ activeRoomID }: RoomListProps) => {
 			</button>
 		</div>
 		<div className="space-bar">
-			<FakeSpace space={null} setSpace={setSpace} isActive={space === null} />
-			<FakeSpace space={DirectChatSpace} setSpace={setSpace} isActive={space?.id === DirectChatSpace.id} />
-			<FakeSpace space={UnreadsSpace} setSpace={setSpace} isActive={space?.id === UnreadsSpace.id} />
+			{pseudoSpaces.map(pseudoSpace => <FakeSpace
+				key={pseudoSpace?.id ?? "null"}
+				space={pseudoSpace}
+				setSpace={setSpace}
+				isActive={space?.id === pseudoSpace?.id}
+			/>)}
 			{spaces.map(roomID => <Space
 				roomID={roomID}
 				client={client}
