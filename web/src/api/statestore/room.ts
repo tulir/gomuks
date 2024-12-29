@@ -62,7 +62,7 @@ function arraysAreEqual<T>(arr1?: T[], arr2?: T[]): boolean {
 function llSummaryIsEqual(ll1?: LazyLoadSummary, ll2?: LazyLoadSummary): boolean {
 	return ll1?.["m.joined_member_count"] === ll2?.["m.joined_member_count"] &&
 		ll1?.["m.invited_member_count"] === ll2?.["m.invited_member_count"] &&
-		arraysAreEqual(ll1?.heroes, ll2?.heroes)
+		arraysAreEqual(ll1?.["m.heroes"], ll2?.["m.heroes"])
 }
 
 function visibleMetaIsEqual(meta1: DBRoom, meta2: DBRoom): boolean {

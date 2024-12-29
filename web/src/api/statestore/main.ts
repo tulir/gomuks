@@ -143,8 +143,8 @@ export class StateStore {
 		const name = entry.meta.name ?? "Unnamed room"
 		return {
 			room_id: entry.meta.room_id,
-			dm_user_id: entry.meta.lazy_load_summary?.heroes?.length === 1
-				? entry.meta.lazy_load_summary.heroes[0] : undefined,
+			dm_user_id: entry.meta.lazy_load_summary?.["m.heroes"]?.length === 1
+				? entry.meta.lazy_load_summary["m.heroes"][0] : undefined,
 			sorting_timestamp: entry.meta.sorting_timestamp,
 			preview_event,
 			preview_sender,

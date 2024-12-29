@@ -103,8 +103,8 @@ export const getRoomAvatarURL = (room: RoomForAvatarURL, avatarOverride?: Conten
 	if ("dm_user_id" in room) {
 		dmUserID = room.dm_user_id
 	} else if ("lazy_load_summary" in room) {
-		dmUserID = room.lazy_load_summary?.heroes?.length === 1
-			? room.lazy_load_summary.heroes[0] : undefined
+		dmUserID = room.lazy_load_summary?.["m.heroes"]?.length === 1
+			? room.lazy_load_summary["m.heroes"][0] : undefined
 	}
 	return getAvatarURL(dmUserID ?? room.room_id, {
 		displayname: room.name,

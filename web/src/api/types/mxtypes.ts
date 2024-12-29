@@ -43,7 +43,7 @@ export interface TombstoneEventContent {
 }
 
 export interface LazyLoadSummary {
-	heroes?: UserID[]
+	"m.heroes"?: UserID[]
 	"m.joined_member_count"?: number
 	"m.invited_member_count"?: number
 }
