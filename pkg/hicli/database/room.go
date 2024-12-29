@@ -27,6 +27,7 @@ const (
 		FROM room
 	`
 	getRoomsBySortingTimestampQuery = getRoomBaseQuery + `WHERE sorting_timestamp < $1 AND sorting_timestamp > 0 ORDER BY sorting_timestamp DESC LIMIT $2`
+	getRoomsByTypeQuery             = getRoomBaseQuery + `WHERE room_type = $1`
 	getRoomByIDQuery                = getRoomBaseQuery + `WHERE room_id = $1`
 	ensureRoomExistsQuery           = `
 		INSERT INTO room (room_id) VALUES ($1)
@@ -34,7 +35,8 @@ const (
 	`
 	upsertRoomFromSyncQuery = `
 		UPDATE room
-		SET creation_content = COALESCE(room.creation_content, $2),
+		SET room_type = COALESCE(room.room_type, json($2)->>'$.type'),
+		    creation_content = COALESCE(room.creation_content, $2),
 		    tombstone_content = COALESCE(room.tombstone_content, $3),
 			name = COALESCE($4, room.name),
 			name_quality = CASE WHEN $4 IS NOT NULL THEN $5 ELSE room.name_quality END,
@@ -93,6 +95,10 @@ func (rq *RoomQuery) Get(ctx context.Context, roomID id.RoomID) (*Room, error) {
 
 func (rq *RoomQuery) GetBySortTS(ctx context.Context, maxTS time.Time, limit int) ([]*Room, error) {
 	return rq.QueryMany(ctx, getRoomsBySortingTimestampQuery, maxTS.UnixMilli(), limit)
+}
+
+func (rq *RoomQuery) GetAllSpaces(ctx context.Context) ([]*Room, error) {
+	return rq.QueryMany(ctx, getRoomsByTypeQuery, event.RoomTypeSpace)
 }
 
 func (rq *RoomQuery) Upsert(ctx context.Context, room *Room) error {

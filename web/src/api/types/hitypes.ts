@@ -71,6 +71,18 @@ export interface DBRoom {
 	prev_batch: string
 }
 
+export interface DBSpaceEdge {
+	// space_id: RoomID
+	child_id: RoomID
+
+	child_event_rowid?: EventRowID
+	order?: string
+	suggested?: true
+
+	parent_event_rowid?: EventRowID
+	canonical?: true
+}
+
 //eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type UnknownEventContent = Record<string, any>
 

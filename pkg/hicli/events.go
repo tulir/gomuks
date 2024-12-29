@@ -31,12 +31,14 @@ type SyncNotification struct {
 }
 
 type SyncComplete struct {
-	Since        *string                              `json:"since,omitempty"`
-	ClearState   bool                                 `json:"clear_state,omitempty"`
-	AccountData  map[event.Type]*database.AccountData `json:"account_data"`
-	Rooms        map[id.RoomID]*SyncRoom              `json:"rooms"`
-	LeftRooms    []id.RoomID                          `json:"left_rooms"`
-	InvitedRooms []*database.InvitedRoom              `json:"invited_rooms"`
+	Since          *string                              `json:"since,omitempty"`
+	ClearState     bool                                 `json:"clear_state,omitempty"`
+	AccountData    map[event.Type]*database.AccountData `json:"account_data"`
+	Rooms          map[id.RoomID]*SyncRoom              `json:"rooms"`
+	LeftRooms      []id.RoomID                          `json:"left_rooms"`
+	InvitedRooms   []*database.InvitedRoom              `json:"invited_rooms"`
+	SpaceEdges     map[id.RoomID][]*database.SpaceEdge  `json:"space_edges"`
+	TopLevelSpaces []id.RoomID                          `json:"top_level_spaces"`
 }
 
 func (c *SyncComplete) IsEmpty() bool {

@@ -125,7 +125,7 @@ func (new *noErrorWriter) Write(p []byte) (n int, err error) {
 
 // note: this should stay in sync with makeAvatarFallback in web/src/api/media.ts
 const fallbackAvatarTemplate = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000">
-  <circle cx="500" cy="500" r="500" fill="%s"/>
+  <rect x="0" y="0" width="1000" height="1000" fill="%s"/>
   <text x="500" y="750" text-anchor="middle" fill="#fff" font-weight="bold" font-size="666"
     font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif"
   >%s</text>

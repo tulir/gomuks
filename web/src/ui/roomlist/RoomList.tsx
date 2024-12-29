@@ -13,7 +13,8 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import React, { use, useRef, useState } from "react"
+import React, { use, useCallback, useRef, useState } from "react"
+import { DirectChatSpace, RoomListFilter, UnreadsSpace } from "@/api/statestore/space.ts"
 import type { RoomID } from "@/api/types"
 import { useEventAsState } from "@/util/eventdispatcher.ts"
 import reverseMap from "@/util/reversemap.ts"
@@ -22,6 +23,8 @@ import ClientContext from "../ClientContext.ts"
 import MainScreenContext from "../MainScreenContext.ts"
 import { keyToString } from "../keybindings.ts"
 import Entry from "./Entry.tsx"
+import FakeSpace from "./FakeSpace.tsx"
+import Space from "./Space.tsx"
 import CloseIcon from "@/icons/close.svg?react"
 import SearchIcon from "@/icons/search.svg?react"
 import "./RoomList.css"
@@ -34,20 +37,27 @@ const RoomList = ({ activeRoomID }: RoomListProps) => {
 	const client = use(ClientContext)!
 	const mainScreen = use(MainScreenContext)
 	const roomList = useEventAsState(client.store.roomList)
-	const roomFilterRef = useRef<HTMLInputElement>(null)
-	const [roomFilter, setRoomFilter] = useState("")
-	const [realRoomFilter, setRealRoomFilter] = useState("")
+	const spaces = useEventAsState(client.store.topLevelSpaces)
+	const searchInputRef = useRef<HTMLInputElement>(null)
+	const [query, directSetQuery] = useState("")
+	const [space, directSetSpace] = useState<RoomListFilter | null>(null)
 
-	const updateRoomFilter = (evt: React.ChangeEvent<HTMLInputElement>) => {
-		setRoomFilter(evt.target.value)
-		client.store.currentRoomListFilter = toSearchableString(evt.target.value)
-		setRealRoomFilter(client.store.currentRoomListFilter)
+	const setQuery = (evt: React.ChangeEvent<HTMLInputElement>) => {
+		client.store.currentRoomListQuery = toSearchableString(evt.target.value)
+		directSetQuery(evt.target.value)
 	}
+	const setSpace = useCallback((space: RoomListFilter | null) => {
+		directSetSpace(space)
+		client.store.currentRoomListFilter = space
+	}, [client])
+	const onClickSpace = useCallback((evt: React.MouseEvent<HTMLDivElement>) => {
+		const store = client.store.getSpaceStore(evt.currentTarget.getAttribute("data-target-space")!)
+		setSpace(store)
+	}, [setSpace, client])
 	const clearQuery = () => {
-		setRoomFilter("")
-		client.store.currentRoomListFilter = ""
-		setRealRoomFilter("")
-		roomFilterRef.current?.focus()
+		client.store.currentRoomListQuery = ""
+		directSetQuery("")
+		searchInputRef.current?.focus()
 	}
 	const onKeyDown = (evt: React.KeyboardEvent<HTMLInputElement>) => {
 		const key = keyToString(evt)
@@ -64,28 +74,49 @@ const RoomList = ({ activeRoomID }: RoomListProps) => {
 		}
 	}
 
+	const roomListFilter = client.store.roomListFilterFunc
+	const pseudoSpaces = [
+		null,
+		DirectChatSpace,
+		UnreadsSpace,
+		client.store.spaceOrphans,
+	]
 	return <div className="room-list-wrapper">
 		<div className="room-search-wrapper">
 			<input
-				value={roomFilter}
-				onChange={updateRoomFilter}
+				value={query}
+				onChange={setQuery}
 				onKeyDown={onKeyDown}
 				className="room-search"
 				type="text"
 				placeholder="Search rooms"
-				ref={roomFilterRef}
+				ref={searchInputRef}
 				id="room-search"
 			/>
-			<button onClick={clearQuery} disabled={roomFilter === ""}>
-				{roomFilter !== "" ? <CloseIcon/> : <SearchIcon/>}
+			<button onClick={clearQuery} disabled={query === ""}>
+				{query !== "" ? <CloseIcon/> : <SearchIcon/>}
 			</button>
+		</div>
+		<div className="space-bar">
+			{pseudoSpaces.map(pseudoSpace => <FakeSpace
+				key={pseudoSpace?.id ?? "null"}
+				space={pseudoSpace}
+				setSpace={setSpace}
+				isActive={space?.id === pseudoSpace?.id}
+			/>)}
+			{spaces.map(roomID => <Space
+				roomID={roomID}
+				client={client}
+				onClick={onClickSpace}
+				isActive={space?.id === roomID}
+			/>)}
 		</div>
 		<div className="room-list">
 			{reverseMap(roomList, room =>
 				<Entry
 					key={room.room_id}
 					isActive={room.room_id === activeRoomID}
-					hidden={roomFilter ? !room.search_name.includes(realRoomFilter) : false}
+					hidden={roomListFilter ? !roomListFilter(room) : false}
 					room={room}
 				/>,
 			)}

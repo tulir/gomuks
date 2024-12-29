@@ -5,14 +5,53 @@ div.room-list-wrapper {
 	box-sizing: border-box;
 	overflow: hidden;
 	scrollbar-color: var(--room-list-scrollbar-color);
-	display: flex;
-	flex-direction: column;
+	display: grid;
+	grid-template:
+		"spacebar search" 3.5rem
+		"spacebar roomlist" 1fr
+		/ 3rem    1fr;
 }
 
 div.room-list {
 	background-color: var(--room-list-background-overlay);
 	overflow-y: auto;
-	flex: 1;
+	grid-area: roomlist;
+}
+
+div.space-bar {
+	background-color: var(--space-list-background-overlay);
+	grid-area: spacebar;
+	overflow: auto;
+	scrollbar-width: none;
+
+	> div.space-entry {
+		width: 2rem;
+		height: 2rem;
+		padding: .25rem;
+		margin: .25rem;
+		border-radius: .25rem;
+		cursor: var(--clickable-cursor);
+
+		&:hover, &:focus {
+			background-color: var(--room-list-entry-hover-color);
+		}
+
+		&.active {
+			background-color: var(--room-list-entry-selected-color);
+		}
+
+		> svg {
+			width: 100%;
+			height: 100%;
+		}
+
+		> img.avatar {
+			border-radius: 0;
+			clip-path: url(#squircle);
+			width: 100%;
+			height: 100%;
+		}
+	}
 }
 
 div.room-search-wrapper {
@@ -21,6 +60,7 @@ div.room-search-wrapper {
 	align-items: center;
 	height: 3.5rem;
 	background-color: var(--room-list-search-background-overlay);
+	grid-area: search;
 
 	> input {
 		padding: 0 0 0 1rem;

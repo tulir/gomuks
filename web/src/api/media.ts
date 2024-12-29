@@ -54,7 +54,7 @@ export const getUserColor = (userID: UserID) => {
 // note: this should stay in sync with fallbackAvatarTemplate in cmd/gomuks.media.go
 function makeFallbackAvatar(backgroundColor: string, fallbackCharacter: string): string {
 	return "data:image/svg+xml," + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000">
-  <circle cx="500" cy="500" r="500" fill="${backgroundColor}"/>
+  <rect x="0" y="0" width="1000" height="1000" fill="${backgroundColor}"/>
   <text x="500" y="750" text-anchor="middle" fill="#fff" font-weight="bold" font-size="666"
     font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif"
   >${escapeHTMLChar(fallbackCharacter)}</text>
@@ -103,8 +103,8 @@ export const getRoomAvatarURL = (room: RoomForAvatarURL, avatarOverride?: Conten
 	if ("dm_user_id" in room) {
 		dmUserID = room.dm_user_id
 	} else if ("lazy_load_summary" in room) {
-		dmUserID = room.lazy_load_summary?.heroes?.length === 1
-			? room.lazy_load_summary.heroes[0] : undefined
+		dmUserID = room.lazy_load_summary?.["m.heroes"]?.length === 1
+			? room.lazy_load_summary["m.heroes"][0] : undefined
 	}
 	return getAvatarURL(dmUserID ?? room.room_id, {
 		displayname: room.name,

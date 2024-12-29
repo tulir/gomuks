@@ -37,9 +37,11 @@ export const usePrimaryItems = (
 	roomCtx: RoomContextData,
 	evt: MemDBEvent,
 	isHover: boolean,
+	isFixed: boolean,
 	style?: CSSProperties,
 	setForceOpen?: (forceOpen: boolean) => void,
 ) => {
+	const names = !isHover && !isFixed
 	const closeModal = !isHover ? use(ModalCloseContext) : noop
 	const openModal = use(ModalContext)
 
@@ -108,11 +110,11 @@ export const usePrimaryItems = (
 	return <>
 		{didFail && <button onClick={onClickResend} title="Resend message">
 			<RefreshIcon/>
-			{!isHover && "Resend"}
+			{names && "Resend"}
 		</button>}
 		{canReact && <button disabled={isPending} title={pendingTitle} onClick={onClickReact}>
 			<ReactIcon/>
-			{!isHover && "React"}
+			{names && "React"}
 		</button>}
 		{canSend && <button
 			disabled={isEditing || isPending}
@@ -120,11 +122,11 @@ export const usePrimaryItems = (
 			onClick={onClickReply}
 		>
 			<ReplyIcon/>
-			{!isHover && "Reply"}
+			{names && "Reply"}
 		</button>}
 		{canEdit && <button onClick={onClickEdit} disabled={isPending} title={pendingTitle}>
 			<EditIcon/>
-			{!isHover && "Edit"}
+			{names && "Edit"}
 		</button>}
 		{isHover && <button onClick={onClickMore}><MoreIcon/></button>}
 	</>

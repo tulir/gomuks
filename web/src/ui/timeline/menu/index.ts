@@ -13,5 +13,5 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-export { EventExtraMenu, EventFullMenu, EventHoverMenu } from "./EventMenu.tsx"
+export { EventExtraMenu, EventFixedMenu, EventFullMenu, EventHoverMenu } from "./EventMenu.tsx"
 export { getModalStyleFromMouse } from "./util.ts"

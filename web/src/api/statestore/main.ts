@@ -39,6 +39,7 @@ import {
 } from "../types"
 import { InvitedRoomStore } from "./invitedroom.ts"
 import { RoomStateStore } from "./room.ts"
+import { RoomListFilter, SpaceEdgeStore, SpaceOrphansSpace } from "./space.ts"
 
 export interface RoomListEntry {
 	room_id: RoomID
@@ -72,7 +73,11 @@ export class StateStore {
 	readonly rooms: Map<RoomID, RoomStateStore> = new Map()
 	readonly inviteRooms: Map<RoomID, InvitedRoomStore> = new Map()
 	readonly roomList = new NonNullCachedEventDispatcher<RoomListEntry[]>([])
-	currentRoomListFilter: string = ""
+	readonly topLevelSpaces = new NonNullCachedEventDispatcher<RoomID[]>([])
+	readonly spaceEdges: Map<RoomID, SpaceEdgeStore> = new Map()
+	readonly spaceOrphans = new SpaceOrphansSpace(this)
+	currentRoomListQuery: string = ""
+	currentRoomListFilter: RoomListFilter | null = null
 	readonly accountData: Map<string, UnknownEventContent> = new Map()
 	readonly accountDataSubs = new MultiSubscribable()
 	readonly emojiRoomsSub = new Subscribable()
@@ -89,11 +94,25 @@ export class StateStore {
 	activeRoomIsPreview: boolean = false
 	imageAuthToken?: string
 
-	getFilteredRoomList(): RoomListEntry[] {
-		if (!this.currentRoomListFilter) {
-			return this.roomList.current
+	#roomListFilterFunc = (entry: RoomListEntry) => {
+		if (this.currentRoomListQuery && !entry.search_name.includes(this.currentRoomListQuery)) {
+			return false
+		} else if (this.currentRoomListFilter && !this.currentRoomListFilter.include(entry)) {
+			return false
 		}
-		return this.roomList.current.filter(entry => entry.search_name.includes(this.currentRoomListFilter))
+		return true
+	}
+
+	get roomListFilterFunc(): ((entry: RoomListEntry) => boolean) | null {
+		if (!this.currentRoomListFilter && !this.currentRoomListQuery) {
+			return null
+		}
+		return this.#roomListFilterFunc
+	}
+
+	getFilteredRoomList(): RoomListEntry[] {
+		const fn = this.roomListFilterFunc
+		return fn ? this.roomList.current.filter(fn) : this.roomList.current
 	}
 
 	#shouldHideRoom(entry: SyncRoom): boolean {
@@ -122,7 +141,7 @@ export class StateStore {
 			entry.meta.unread_highlights !== oldEntry.meta.current.unread_highlights ||
 			entry.meta.marked_unread !== oldEntry.meta.current.marked_unread ||
 			entry.meta.preview_event_rowid !== oldEntry.meta.current.preview_event_rowid ||
-			entry.events.findIndex(evt => evt.rowid === entry.meta.preview_event_rowid) !== -1
+			(entry.events ?? []).findIndex(evt => evt.rowid === entry.meta.preview_event_rowid) !== -1
 	}
 
 	#makeRoomListEntry(entry: SyncRoom, room?: RoomStateStore): RoomListEntry | null {
@@ -143,8 +162,8 @@ export class StateStore {
 		const name = entry.meta.name ?? "Unnamed room"
 		return {
 			room_id: entry.meta.room_id,
-			dm_user_id: entry.meta.lazy_load_summary?.heroes?.length === 1
-				? entry.meta.lazy_load_summary.heroes[0] : undefined,
+			dm_user_id: entry.meta.lazy_load_summary?.["m.heroes"]?.length === 1
+				? entry.meta.lazy_load_summary["m.heroes"][0] : undefined,
 			sorting_timestamp: entry.meta.sorting_timestamp,
 			preview_event,
 			preview_sender,
@@ -165,7 +184,7 @@ export class StateStore {
 		}
 		const resyncRoomList = this.roomList.current.length === 0
 		const changedRoomListEntries = new Map<RoomID, RoomListEntry | null>()
-		for (const data of sync.invited_rooms) {
+		for (const data of sync.invited_rooms ?? []) {
 			const room = new InvitedRoomStore(data, this)
 			this.inviteRooms.set(room.room_id, room)
 			if (!resyncRoomList) {
@@ -176,7 +195,7 @@ export class StateStore {
 			}
 		}
 		const hasInvites = this.inviteRooms.size > 0
-		for (const [roomID, data] of Object.entries(sync.rooms)) {
+		for (const [roomID, data] of Object.entries(sync.rooms ?? {})) {
 			let isNewRoom = false
 			let room = this.rooms.get(roomID)
 			if (!room) {
@@ -203,7 +222,7 @@ export class StateStore {
 				}
 			}
 
-			if (window.Notification?.permission === "granted" && !focused.current) {
+			if (window.Notification?.permission === "granted" && !focused.current && data.notifications) {
 				for (const notification of data.notifications) {
 					this.showNotification(room, notification.event_rowid, notification.sound)
 				}
@@ -212,7 +231,7 @@ export class StateStore {
 				this.switchRoom?.(roomID)
 			}
 		}
-		for (const ad of Object.values(sync.account_data)) {
+		for (const ad of Object.values(sync.account_data ?? {})) {
 			if (ad.type === "io.element.recent_emoji") {
 				this.#frequentlyUsedEmoji = null
 			} else if (ad.type === "fi.mau.gomuks.preferences") {
@@ -222,7 +241,7 @@ export class StateStore {
 			this.accountData.set(ad.type, ad.content)
 			this.accountDataSubs.notify(ad.type)
 		}
-		for (const roomID of sync.left_rooms) {
+		for (const roomID of sync.left_rooms ?? []) {
 			if (this.activeRoomID === roomID) {
 				this.switchRoom?.(null)
 			}
@@ -233,7 +252,7 @@ export class StateStore {
 		let updatedRoomList: RoomListEntry[] | undefined
 		if (resyncRoomList) {
 			updatedRoomList = this.inviteRooms.values().toArray()
-			updatedRoomList = updatedRoomList.concat(Object.values(sync.rooms)
+			updatedRoomList = updatedRoomList.concat(Object.values(sync.rooms ?? {})
 				.map(entry => this.#makeRoomListEntry(entry))
 				.filter(entry => entry !== null))
 			updatedRoomList.sort((r1, r2) => r1.sorting_timestamp - r2.sorting_timestamp)
@@ -258,6 +277,19 @@ export class StateStore {
 		}
 		if (updatedRoomList) {
 			this.roomList.emit(updatedRoomList)
+		}
+		if (sync.space_edges) {
+			// Ensure all space stores exist first
+			for (const spaceID of Object.keys(sync.space_edges)) {
+				this.getSpaceStore(spaceID, true)
+			}
+			for (const [spaceID, children] of Object.entries(sync.space_edges ?? {})) {
+				this.getSpaceStore(spaceID, true).children = children
+			}
+		}
+		if (sync.top_level_spaces) {
+			this.topLevelSpaces.emit(sync.top_level_spaces)
+			this.spaceOrphans.children = sync.top_level_spaces.map(child_id => ({ child_id }))
 		}
 	}
 
@@ -322,6 +354,20 @@ export class StateStore {
 			)
 		}
 		return this.#watchedRoomEmojiPacks ?? {}
+	}
+
+	getSpaceStore(spaceID: RoomID, force: true): SpaceEdgeStore
+	getSpaceStore(spaceID: RoomID): SpaceEdgeStore | null
+	getSpaceStore(spaceID: RoomID, force?: true): SpaceEdgeStore | null {
+		let store = this.spaceEdges.get(spaceID)
+		if (!store) {
+			if (!force && this.rooms.get(spaceID)?.meta.current.creation_content?.type !== "m.space") {
+				return null
+			}
+			store = new SpaceEdgeStore(spaceID, this)
+			this.spaceEdges.set(spaceID, store)
+		}
+		return store
 	}
 
 	get frequentlyUsedEmoji(): Map<string, number> {
@@ -433,9 +479,12 @@ export class StateStore {
 	clear() {
 		this.rooms.clear()
 		this.inviteRooms.clear()
+		this.spaceEdges.clear()
 		this.roomList.emit([])
+		this.topLevelSpaces.emit([])
 		this.accountData.clear()
-		this.currentRoomListFilter = ""
+		this.currentRoomListQuery = ""
+		this.currentRoomListFilter = null
 		this.#frequentlyUsedEmoji = null
 		this.#emojiPackKeys = null
 		this.#watchedRoomEmojiPacks = null

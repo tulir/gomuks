@@ -667,6 +667,7 @@ func (h *HiClient) processStateAndTimeline(
 		updatedRoom.LazyLoadSummary = summary
 		heroesChanged = true
 	}
+	sdc := &spaceDataCollector{}
 	decryptionQueue := make(map[id.SessionID]*database.SessionRequest)
 	allNewEvents := make([]*database.Event, 0, len(state.Events)+len(timeline.Events))
 	addedEvents := make(map[database.EventRowID]struct{})
@@ -750,7 +751,7 @@ func (h *HiClient) processStateAndTimeline(
 			if err != nil {
 				return -1, fmt.Errorf("failed to save current state event ID %s for %s/%s: %w", evt.ID, evt.Type.Type, *evt.StateKey, err)
 			}
-			processImportantEvent(ctx, evt, room, updatedRoom)
+			processImportantEvent(ctx, evt, room, updatedRoom, dbEvt.RowID, sdc)
 		}
 		allNewEvents = append(allNewEvents, dbEvt)
 		addedEvents[dbEvt.RowID] = struct{}{}
@@ -932,6 +933,10 @@ func (h *HiClient) processStateAndTimeline(
 			return fmt.Errorf("failed to save room data: %w", err)
 		}
 	}
+	err = sdc.Apply(ctx, room, h.DB.SpaceEdge)
+	if err != nil {
+		return err
+	}
 	// TODO why is *old* unread count sometimes zero when processing the read receipt that is making it zero?
 	if roomChanged || len(accountData) > 0 || len(newOwnReceipts) > 0 || len(receipts) > 0 || len(timelineRowTuples) > 0 || len(allNewEvents) > 0 {
 		for _, receipt := range receipts {
@@ -1033,13 +1038,101 @@ func intPtrEqual(a, b *int) bool {
 	return *a == *b
 }
 
-func processImportantEvent(ctx context.Context, evt *event.Event, existingRoomData, updatedRoom *database.Room) (roomDataChanged bool) {
+type spaceDataCollector struct {
+	Children          []database.SpaceChildEntry
+	Parents           []database.SpaceParentEntry
+	RemovedChildren   []id.RoomID
+	RemovedParents    []id.RoomID
+	PowerLevelChanged bool
+	IsFullState       bool
+}
+
+func (sdc *spaceDataCollector) Collect(evt *event.Event, rowID database.EventRowID) {
+	switch evt.Type {
+	case event.StatePowerLevels:
+		sdc.PowerLevelChanged = true
+	case event.StateCreate:
+		sdc.IsFullState = true
+	case event.StateSpaceChild:
+		content := evt.Content.AsSpaceChild()
+		if len(content.Via) == 0 {
+			sdc.RemovedChildren = append(sdc.RemovedChildren, id.RoomID(*evt.StateKey))
+		} else {
+			sdc.Children = append(sdc.Children, database.SpaceChildEntry{
+				ChildID:    id.RoomID(*evt.StateKey),
+				EventRowID: rowID,
+				Order:      content.Order,
+				Suggested:  content.Suggested,
+			})
+		}
+	case event.StateSpaceParent:
+		content := evt.Content.AsSpaceParent()
+		if len(content.Via) == 0 {
+			sdc.RemovedParents = append(sdc.RemovedParents, id.RoomID(*evt.StateKey))
+		} else {
+			sdc.Parents = append(sdc.Parents, database.SpaceParentEntry{
+				ParentID:   id.RoomID(*evt.StateKey),
+				EventRowID: rowID,
+				Canonical:  content.Canonical,
+			})
+		}
+	}
+}
+
+func (sdc *spaceDataCollector) Apply(ctx context.Context, room *database.Room, seq *database.SpaceEdgeQuery) error {
+	if room.CreationContent == nil || room.CreationContent.Type != event.RoomTypeSpace {
+		sdc.Children = nil
+		sdc.RemovedChildren = nil
+		sdc.PowerLevelChanged = false
+	}
+	if len(sdc.Children) == 0 && len(sdc.RemovedChildren) == 0 &&
+		len(sdc.Parents) == 0 && len(sdc.RemovedParents) == 0 &&
+		!sdc.PowerLevelChanged {
+		return nil
+	}
+	return seq.GetDB().DoTxn(ctx, nil, func(ctx context.Context) error {
+		if len(sdc.Children) > 0 || len(sdc.RemovedChildren) > 0 {
+			err := seq.SetChildren(ctx, room.ID, sdc.Children, sdc.RemovedChildren, sdc.IsFullState)
+			if err != nil {
+				return fmt.Errorf("failed to set space children: %w", err)
+			}
+		}
+		if len(sdc.Parents) > 0 || len(sdc.RemovedParents) > 0 {
+			err := seq.SetParents(ctx, room.ID, sdc.Parents, sdc.RemovedParents, sdc.IsFullState)
+			if err != nil {
+				return fmt.Errorf("failed to set space parents: %w", err)
+			}
+			if len(sdc.Parents) > 0 {
+				err = seq.RevalidateAllParentsOfRoomValidity(ctx, room.ID)
+				if err != nil {
+					return fmt.Errorf("failed to revalidate own parent references: %w", err)
+				}
+			}
+		}
+		if sdc.PowerLevelChanged {
+			err := seq.RevalidateAllChildrenOfParentValidity(ctx, room.ID)
+			if err != nil {
+				return fmt.Errorf("failed to revalidate child parent references to self: %w", err)
+			}
+		}
+		return nil
+	})
+}
+
+func processImportantEvent(
+	ctx context.Context,
+	evt *event.Event,
+	existingRoomData, updatedRoom *database.Room,
+	rowID database.EventRowID,
+	sdc *spaceDataCollector,
+) (roomDataChanged bool) {
 	if evt.StateKey == nil {
 		return
 	}
 	switch evt.Type {
 	case event.StateCreate, event.StateTombstone, event.StateRoomName, event.StateCanonicalAlias,
-		event.StateRoomAvatar, event.StateTopic, event.StateEncryption:
+		event.StateRoomAvatar, event.StateTopic, event.StateEncryption,
+		event.StateSpaceChild, event.StateSpaceParent, event.StatePowerLevels:
 		if *evt.StateKey != "" {
 			return
 		}
@@ -1047,6 +1140,7 @@ func processImportantEvent(ctx context.Context, evt *event.Event, existingRoomDa
 		return
 	}
 	err := evt.Content.ParseRaw(evt.Type)
+	sdc.Collect(evt, rowID)
 	if err != nil && !errors.Is(err, event.ErrContentAlreadyParsed) {
 		zerolog.Ctx(ctx).Warn().Err(err).
 			Stringer("event_type", &evt.Type).

@@ -294,8 +294,8 @@ const MainScreen = () => {
 			const roomID = evt.state?.room_id ?? null
 			if (roomID !== client.store.activeRoomID) {
 				context.setActiveRoom(roomID, {
-					alias: ensureString(evt?.state.source_alias) || undefined,
-					via: ensureStringArray(evt?.state.source_via),
+					alias: ensureString(evt.state?.source_alias) || undefined,
+					via: ensureStringArray(evt.state?.source_via),
 				}, false)
 			}
 			context.setRightPanel(evt.state?.right_panel ?? null, false)
@@ -318,7 +318,7 @@ const MainScreen = () => {
 	}, [context, client])
 	useEffect(() => context.keybindings.listen(), [context])
 	const [roomListWidth, resizeHandle1] = useResizeHandle(
-		300, 48, Math.min(900, window.innerWidth * 0.4),
+		350, 96, Math.min(900, window.innerWidth * 0.4),
 		"roomListWidth", { className: "room-list-resizer" },
 	)
 	const [rightPanelWidth, resizeHandle2] = useResizeHandle(
