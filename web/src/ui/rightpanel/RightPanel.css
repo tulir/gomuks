@@ -91,6 +91,17 @@ div.right-panel-content.user {
 		word-break: break-word;
 	}
 
+	div.extended-profile {
+		display: flex;
+		flex-direction: column;
+		gap: 0.25rem;
+
+		div.profile-row {
+			display: grid;
+			grid-template-columns: 1fr 1fr;
+		}
+	}
+
 	hr {
 		width: 100%;
 		opacity: .2;

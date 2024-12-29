@@ -18,6 +18,7 @@ import { PuffLoader } from "react-spinners"
 import { getAvatarURL } from "@/api/media.ts"
 import { useRoomMember } from "@/api/statestore"
 import { MemberEventContent, UserID, UserProfile } from "@/api/types"
+import UserExtendedProfile from "@/ui/rightpanel/UserExtendedProfile.tsx"
 import { getLocalpart } from "@/util/validation.ts"
 import ClientContext from "../ClientContext.ts"
 import { LightboxContext } from "../modal"
@@ -46,7 +47,6 @@ const UserInfo = ({ userID }: UserInfoProps) => {
 			err => setErrors([`${err}`]),
 		)
 	}, [roomCtx, userID, client])
-
 	const displayname = member?.displayname || globalProfile?.displayname || getLocalpart(userID)
 	return <>
 		<div className="avatar-container">
@@ -63,6 +63,7 @@ const UserInfo = ({ userID }: UserInfoProps) => {
 		</div>
 		<div className="displayname" title={displayname}>{displayname}</div>
 		<div className="userid" title={userID}>{userID}</div>
+		{globalProfile && <><hr/><UserExtendedProfile profile={globalProfile}/></>}
 		<hr/>
 		{userID !== client.userID && <>
 			<MutualRooms client={client} userID={userID}/>
