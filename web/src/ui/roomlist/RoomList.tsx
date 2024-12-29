@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import React, { use, useCallback, useRef, useState } from "react"
-import type { RoomListFilter } from "@/api/statestore/space.ts"
+import { DirectChatSpace, RoomListFilter, UnreadsSpace } from "@/api/statestore/space.ts"
 import type { RoomID } from "@/api/types"
 import { useEventAsState } from "@/util/eventdispatcher.ts"
 import reverseMap from "@/util/reversemap.ts"
@@ -23,9 +23,9 @@ import ClientContext from "../ClientContext.ts"
 import MainScreenContext from "../MainScreenContext.ts"
 import { keyToString } from "../keybindings.ts"
 import Entry from "./Entry.tsx"
+import FakeSpace from "./FakeSpace.tsx"
 import Space from "./Space.tsx"
 import CloseIcon from "@/icons/close.svg?react"
-import HomeIcon from "@/icons/home.svg?react"
 import SearchIcon from "@/icons/search.svg?react"
 import "./RoomList.css"
 
@@ -92,9 +92,9 @@ const RoomList = ({ activeRoomID }: RoomListProps) => {
 			</button>
 		</div>
 		<div className="space-bar">
-			<div className={`space-entry ${space === null ? "active" : ""}`} onClick={() => setSpace(null)}>
-				<HomeIcon />
-			</div>
+			<FakeSpace space={null} setSpace={setSpace} isActive={space === null} />
+			<FakeSpace space={DirectChatSpace} setSpace={setSpace} isActive={space?.id === DirectChatSpace.id} />
+			<FakeSpace space={UnreadsSpace} setSpace={setSpace} isActive={space?.id === UnreadsSpace.id} />
 			{spaces.map(roomID => <Space
 				roomID={roomID}
 				client={client}

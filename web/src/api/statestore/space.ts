@@ -17,11 +17,24 @@ import { RoomListEntry, StateStore } from "@/api/statestore/main.ts"
 import { DBSpaceEdge, RoomID } from "@/api/types"
 
 export interface RoomListFilter {
-	id: unknown
+	id: string
 	include(room: RoomListEntry): boolean
 }
 
-export class SpaceEdgeStore {
+export const DirectChatSpace: RoomListFilter = {
+	id: "fi.mau.gomuks.direct_chats",
+	include: room => !!room.dm_user_id,
+}
+
+export const UnreadsSpace: RoomListFilter = {
+	id: "fi.mau.gomuks.unreads",
+	include: room => Boolean(room.unread_messages
+		|| room.unread_notifications
+		|| room.unread_highlights
+		|| room.marked_unread),
+}
+
+export class SpaceEdgeStore implements RoomListFilter {
 	#children: DBSpaceEdge[] = []
 	#childRooms: Set<RoomID> = new Set()
 	#flattenedRooms: Set<RoomID> = new Set()
