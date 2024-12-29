@@ -22,9 +22,10 @@ div.event-hover-menu, div.event-fixed-menu {
 div.event-fixed-menu {
 	position: fixed;
 	inset: 0 0 auto;
-	height: 3rem;
+	height: 3.5rem;
 	padding: .25rem;
 	border-bottom: 1px solid var(--border-color);
+	box-sizing: border-box;
 	justify-content: right;
 	flex-direction: row-reverse;
 
