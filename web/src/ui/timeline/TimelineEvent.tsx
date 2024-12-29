@@ -27,7 +27,7 @@ import ReadReceipts from "./ReadReceipts.tsx"
 import { ReplyIDBody } from "./ReplyBody.tsx"
 import URLPreviews from "./URLPreviews.tsx"
 import { ContentErrorBoundary, HiddenEvent, getBodyType, isSmallEvent } from "./content"
-import { EventFullMenu, EventHoverMenu, getModalStyleFromMouse } from "./menu"
+import { EventFixedMenu, EventFullMenu, EventHoverMenu, getModalStyleFromMouse } from "./menu"
 import ErrorIcon from "@/icons/error.svg?react"
 import PendingIcon from "@/icons/pending.svg?react"
 import SentIcon from "@/icons/sent.svg?react"
@@ -96,6 +96,19 @@ const TimelineEvent = ({ evt, prevEvt, disableMenu, smallReplies }: TimelineEven
 				roomCtx={roomCtx}
 				style={getModalStyleFromMouse(mouseEvt, 9 * 40)}
 			/>,
+		})
+	}
+	const onClick = (mouseEvt: React.MouseEvent) => {
+		const targetElem = mouseEvt.target as HTMLElement
+		if (
+			targetElem.tagName === "A"
+			|| targetElem.tagName === "IMG"
+		) {
+			return
+		}
+		mouseEvt.preventDefault()
+		openModal({
+			content: <EventFixedMenu evt={evt} roomCtx={roomCtx} />,
 		})
 	}
 	const memberEvt = useRoomMember(client, roomCtx.store, evt.sender)
@@ -175,11 +188,12 @@ const TimelineEvent = ({ evt, prevEvt, disableMenu, smallReplies }: TimelineEven
 		data-event-id={evt.event_id}
 		className={wrapperClassNames.join(" ")}
 		onContextMenu={onContextMenu}
+		onClick={!disableMenu && isMobileDevice ? onClick : undefined}
 	>
 		{!disableMenu && !isMobileDevice && <div
 			className={`context-menu-container ${forceContextMenuOpen ? "force-open" : ""}`}
 		>
-			<EventHoverMenu evt={evt} setForceOpen={setForceContextMenuOpen}/>
+			<EventHoverMenu evt={evt} roomCtx={roomCtx} setForceOpen={setForceContextMenuOpen}/>
 		</div>}
 		{replyAboveMessage}
 		{renderAvatar && <div

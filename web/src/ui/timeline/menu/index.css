@@ -2,17 +2,35 @@ div.event-hover-menu {
 	position: absolute;
 	right: .5rem;
 	top: -1.5rem;
-	background-color: var(--background-color);
 	border: 1px solid var(--border-color);
 	border-radius: .5rem;
-	display: flex;
-	gap: .25rem;
 	padding: .125rem;
-	z-index: 1;
 
 	> button {
 		width: 2rem;
 		height: 2rem;
+	}
+}
+
+div.event-hover-menu, div.event-fixed-menu {
+	display: flex;
+	gap: .25rem;
+	background-color: var(--background-color);
+	z-index: 1;
+}
+
+div.event-fixed-menu {
+	position: fixed;
+	inset: 0 0 auto;
+	height: 3rem;
+	padding: .25rem;
+	border-bottom: 1px solid var(--border-color);
+	justify-content: right;
+	flex-direction: row-reverse;
+
+	> button {
+		width: 3rem;
+		height: 3rem;
 	}
 }
 

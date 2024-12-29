@@ -32,6 +32,7 @@ export const useSecondaryItems = (
 	client: Client,
 	roomCtx: RoomContextData,
 	evt: MemDBEvent,
+	names = true,
 ) => {
 	const closeModal = use(ModalCloseContext)
 	const openModal = use(ModalContext)
@@ -102,20 +103,22 @@ export const useSecondaryItems = (
 		&& (evt.sender === client.userID || ownPL >= redactOtherPL)
 
 	return <>
-		<button onClick={onClickViewSource}><ViewSourceIcon/>View source</button>
+		<button onClick={onClickViewSource}><ViewSourceIcon/>{names && "View source"}</button>
 		{ownPL >= pinPL && (pins.includes(evt.event_id)
 			? <button onClick={onClickPin(false)}>
-				<UnpinIcon/>Unpin message
+				<UnpinIcon/>{names && "Unpin message"}
 			</button>
 			: <button onClick={onClickPin(true)} title={pendingTitle} disabled={isPending}>
-				<PinIcon/>Pin message
+				<PinIcon/>{names && "Pin message"}
 			</button>)}
-		<button onClick={onClickReport} disabled={isPending} title={pendingTitle}><ReportIcon/>Report</button>
+		<button onClick={onClickReport} disabled={isPending} title={pendingTitle}>
+			<ReportIcon/>{names && "Report"}
+		</button>
 		{canRedact && <button
 			onClick={onClickRedact}
 			disabled={isPending}
 			title={pendingTitle}
 			className="redact-button"
-		><DeleteIcon/>Remove</button>}
+		><DeleteIcon/>{names && "Remove"}</button>}
 	</>
 }
