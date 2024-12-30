@@ -27,6 +27,7 @@ export interface FakeSpaceProps {
 	space: Space | null
 	setSpace: (space: RoomListFilter | null) => void
 	isActive: boolean
+	onClickUnread?: (evt: React.MouseEvent<HTMLDivElement> | null, space: Space | null) => void
 }
 
 const getFakeSpaceIcon = (space: RoomListFilter | null): JSX.Element | null => {
@@ -44,10 +45,11 @@ const getFakeSpaceIcon = (space: RoomListFilter | null): JSX.Element | null => {
 	}
 }
 
-const FakeSpace = ({ space, setSpace, isActive }: FakeSpaceProps) => {
+const FakeSpace = ({ space, setSpace, isActive, onClickUnread }: FakeSpaceProps) => {
 	const unreads = useEventAsState(space?.counts)
+	const onClickUnreadWrapped = onClickUnread ? () => onClickUnread(null, space) : undefined
 	return <div className={`space-entry ${isActive ? "active" : ""}`} onClick={() => setSpace(space)}>
-		<UnreadCount counts={unreads} space={true} />
+		<UnreadCount counts={unreads} space={true} onClick={onClickUnreadWrapped} />
 		{getFakeSpaceIcon(space)}
 	</div>
 }

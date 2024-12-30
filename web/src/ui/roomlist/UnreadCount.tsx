@@ -22,9 +22,10 @@ interface UnreadCounts extends SpaceUnreadCounts {
 interface UnreadCountProps {
 	counts: UnreadCounts | null
 	space?: true
+	onClick?: (evt: React.MouseEvent<HTMLDivElement>) => void
 }
 
-const UnreadCount = ({ counts, space }: UnreadCountProps) => {
+const UnreadCount = ({ counts, space, onClick }: UnreadCountProps) => {
 	if (!counts) {
 		return null
 	}
@@ -46,15 +47,15 @@ const UnreadCount = ({ counts, space }: UnreadCountProps) => {
 	if (countIsBig) {
 		classNames.push("big")
 	}
-	let unreadCountTitle = unreadCount.toString()
 	if (space) {
 		classNames.push("space")
-		unreadCountTitle = [
-			counts.unread_highlights && `${counts.unread_highlights} highlights`,
-			counts.unread_notifications && `${counts.unread_notifications} notifications`,
-			counts.unread_messages && `${counts.unread_messages} messages`,
-		].filter(x => !!x).join("\n")
 	}
+	const unreadCountTitle = [
+		counts.unread_highlights && `${counts.unread_highlights} highlights`,
+		counts.unread_notifications && `${counts.unread_notifications} notifications`,
+		counts.unread_messages && `${counts.unread_messages} messages`,
+		counts.marked_unread && "Marked unread",
+	].filter(x => !!x).join("\n")
 	if (counts.marked_unread) {
 		classNames.push("marked-unread")
 	}
@@ -65,7 +66,7 @@ const UnreadCount = ({ counts, space }: UnreadCountProps) => {
 		classNames.push("highlighted")
 	}
 	return <div className="room-entry-unreads">
-		<div title={unreadCountTitle} className={classNames.join(" ")}>
+		<div title={unreadCountTitle} className={classNames.join(" ")} onClick={onClick}>
 			{unreadCountDisplay}
 		</div>
 	</div>
