@@ -71,7 +71,7 @@ const TimelineView = () => {
 	}, [client.userID, roomCtx, timeline])
 	useEffect(() => {
 		roomCtx.directSetFocusedEventRowID = directSetFocusedEventRowID
-	}, [])
+	}, [roomCtx])
 	useEffect(() => {
 		const newestEvent = timeline[timeline.length - 1]
 		if (
