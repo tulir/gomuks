@@ -52,7 +52,7 @@ const (
 				AND COALESCE(
 					(
 						SELECT value
-						FROM json_each(pls.content, 'users')
+						FROM json_each(pls.content, '$.users')
 						WHERE key=edgeevt.sender AND type='integer'
 					),
 					pls.content->>'$.users_default',
