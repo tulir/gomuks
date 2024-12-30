@@ -19,7 +19,7 @@ import type {
 	ClientWellKnown,
 	EventID,
 	EventRowID,
-	EventType,
+	EventType, JSONValue,
 	LoginFlowsResponse,
 	LoginRequest,
 	Mentions,
@@ -39,7 +39,7 @@ import type {
 	RoomSummary,
 	TimelineRowID,
 	UserID,
-	UserProfile, JSONValue,
+	UserProfile,
 } from "./types"
 
 export interface ConnectionEvent {

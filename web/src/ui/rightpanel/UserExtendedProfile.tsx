@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react"
+import Client from "@/api/client.ts"
 import { UserProfile } from "@/api/types"
 import { ensureArray } from "@/util/validation.ts"
-import Client from "@/api/client.ts";
 
 interface PronounSet {
 	subject: string
@@ -28,7 +28,7 @@ interface SetTimezoneProps {
 	client: Client
 }
 
-const getCurrentTimezone = () => Intl.DateTimeFormat().resolvedOptions().timeZone
+const getCurrentTimezone = () => new Intl.DateTimeFormat().resolvedOptions().timeZone
 
 const currentTimeAdjusted = (tz: string) => {
 	const lang = navigator.language || "en-US"
