@@ -287,3 +287,18 @@ export interface RoomSummary {
 export interface RespRoomJoin {
 	room_id: RoomID
 }
+
+export interface PronounSet {
+	subject?: string
+	object?: string
+	possessive_determiner?: string
+	possessive_pronoun?: string
+	reflexive?: string
+	summary: string
+	language: string
+}
+
+export interface ExtendedProfileAttributes {
+	"us.cloke.msc4175.tz"?: string
+	"io.fsky.nyx.pronouns"?: PronounSet[]
+}

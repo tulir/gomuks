@@ -1,21 +1,7 @@
 import { useEffect, useState } from "react"
 import Client from "@/api/client.ts"
-import { UserProfile } from "@/api/types"
+import { ExtendedProfileAttributes, PronounSet, UserProfile } from "@/api/types"
 import { ensureArray } from "@/util/validation.ts"
-
-interface PronounSet {
-	subject: string
-	object: string
-	possessive_determiner: string
-	possessive_pronoun: string
-	reflexive: string
-	summary: string
-}
-
-interface ExtendedProfileAttributes {
-	"us.cloke.msc4175.tz"?: string
-	"io.fsky.nyx.pronouns"?: PronounSet[]
-}
 
 interface ExtendedProfileProps {
 	profile: UserProfile & ExtendedProfileAttributes
