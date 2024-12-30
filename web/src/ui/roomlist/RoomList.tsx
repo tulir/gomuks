@@ -105,6 +105,7 @@ const RoomList = ({ activeRoomID }: RoomListProps) => {
 				isActive={space?.id === pseudoSpace?.id}
 			/>)}
 			{spaces.map(roomID => <Space
+				key={roomID}
 				roomID={roomID}
 				client={client}
 				onClick={onClickSpace}
