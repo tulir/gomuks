@@ -23,6 +23,7 @@ div.room-view {
 div#mobile-event-menu-container {
 	grid-area: header;
 	overflow: hidden;
+	border-bottom: 1px solid var(--border-color);
 
 	&:empty {
 		display: none;

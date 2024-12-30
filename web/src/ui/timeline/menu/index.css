@@ -21,7 +21,6 @@ div.event-hover-menu, div.event-fixed-menu {
 
 div.event-fixed-menu {
 	padding: .25rem;
-	border-bottom: 1px solid var(--border-color);
 	justify-content: right;
 	flex-direction: row-reverse;
 	overflow-x: auto;
