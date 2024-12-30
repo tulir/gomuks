@@ -74,6 +74,7 @@ div.right-panel-content.user {
 
 	input.text-input {
 		border: 0;
+		padding: 0;  /* Necessary to prevent alignment issues with other cells */
 		width: 100%;
 		box-sizing: border-box;
 		border-bottom: 1px solid var(--blockquote-border-color);
