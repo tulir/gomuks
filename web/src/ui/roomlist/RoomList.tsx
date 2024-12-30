@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import React, { use, useCallback, useRef, useState } from "react"
-import { DirectChatSpace, RoomListFilter, UnreadsSpace } from "@/api/statestore/space.ts"
+import { RoomListFilter } from "@/api/statestore/space.ts"
 import type { RoomID } from "@/api/types"
 import { useEventAsState } from "@/util/eventdispatcher.ts"
 import reverseMap from "@/util/reversemap.ts"
@@ -75,12 +75,6 @@ const RoomList = ({ activeRoomID }: RoomListProps) => {
 	}
 
 	const roomListFilter = client.store.roomListFilterFunc
-	const pseudoSpaces = [
-		null,
-		DirectChatSpace,
-		UnreadsSpace,
-		client.store.spaceOrphans,
-	]
 	return <div className="room-list-wrapper">
 		<div className="room-search-wrapper">
 			<input
@@ -98,11 +92,12 @@ const RoomList = ({ activeRoomID }: RoomListProps) => {
 			</button>
 		</div>
 		<div className="space-bar">
-			{pseudoSpaces.map(pseudoSpace => <FakeSpace
-				key={pseudoSpace?.id ?? "null"}
+			<FakeSpace space={null} setSpace={setSpace} isActive={space === null} />
+			{client.store.pseudoSpaces.map(pseudoSpace => <FakeSpace
+				key={pseudoSpace.id}
 				space={pseudoSpace}
 				setSpace={setSpace}
-				isActive={space?.id === pseudoSpace?.id}
+				isActive={space?.id === pseudoSpace.id}
 			/>)}
 			{spaces.map(roomID => <Space
 				key={roomID}

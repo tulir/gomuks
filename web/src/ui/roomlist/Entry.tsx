@@ -21,6 +21,7 @@ import useContentVisibility from "@/util/contentvisibility.ts"
 import { getDisplayname } from "@/util/validation.ts"
 import ClientContext from "../ClientContext.ts"
 import MainScreenContext from "../MainScreenContext.ts"
+import UnreadCount from "./UnreadCount.tsx"
 
 export interface RoomListEntryProps {
 	room: RoomListEntry
@@ -56,14 +57,6 @@ function getPreviewText(evt?: MemDBEvent, senderMemberEvt?: MemDBEvent | null): 
 
 function renderEntry(room: RoomListEntry) {
 	const [previewText, croppedPreviewText] = getPreviewText(room.preview_event, room.preview_sender)
-	const unreadCount = room.unread_messages || room.unread_notifications || room.unread_highlights
-	const countIsBig = Boolean(room.unread_notifications || room.unread_highlights)
-	let unreadCountDisplay = unreadCount.toString()
-	if (unreadCount > 999 && countIsBig) {
-		unreadCountDisplay = "99+"
-	} else if (unreadCount > 9999 && countIsBig) {
-		unreadCountDisplay = "999+"
-	}
 
 	return <>
 		<div className="room-entry-left">
@@ -78,15 +71,7 @@ function renderEntry(room: RoomListEntry) {
 			<div className="room-name">{room.name}</div>
 			{previewText && <div className="message-preview" title={previewText}>{croppedPreviewText}</div>}
 		</div>
-		{(room.unread_messages || room.marked_unread) ? <div className="room-entry-unreads">
-			<div title={unreadCount.toString()} className={`unread-count ${
-				room.marked_unread ? "marked-unread" : ""} ${
-				room.unread_notifications ? "notified" : ""} ${
-				room.unread_highlights ? "highlighted" : ""}`}
-			>
-				{unreadCountDisplay}
-			</div>
-		</div> : null}
+		<UnreadCount counts={room} />
 	</>
 }
 

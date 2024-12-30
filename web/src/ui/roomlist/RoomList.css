@@ -51,6 +51,17 @@ div.space-bar {
 			width: 100%;
 			height: 100%;
 		}
+
+		> div.room-entry-unreads {
+			z-index: 2;
+			height: 0;
+			position: relative;
+
+			> div.unread-count {
+				position: absolute;
+				top: 0;
+			}
+		}
 	}
 }
 
@@ -138,51 +149,64 @@ div.room-entry {
 			}
 		}
 	}
+}
 
-	> div.room-entry-unreads {
+div.room-entry-unreads {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 3rem;
+	margin-right: .25rem;
+
+	> div.unread-count {
+		--unread-count-size: 1rem;
+		--unread-count-padding-inline: calc(var(--unread-count-size)/4);
+		--unread-count-padding-block: calc(var(--unread-count-size)/8);
+
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		width: 3rem;
-		margin-right: .25rem;
+		border-radius: var(--unread-count-size);
+		color: var(--unread-counter-text-color);
 
-		> div.unread-count {
-			--unread-count-size: 1rem;
-			--unread-count-padding-inline: calc(var(--unread-count-size)/4);
-			--unread-count-padding-block: calc(var(--unread-count-size)/8);
+		background-color: var(--unread-counter-message-bg);
+		height: var(--unread-count-size);
+		min-width: calc(var(--unread-count-size) - 2*(var(--unread-count-padding-inline) - var(--unread-count-padding-block)));
 
-			display: flex;
-			align-items: center;
-			justify-content: center;
-            border-radius: var(--unread-count-size);
-			color: var(--unread-counter-text-color);
+		line-height: 1;
+		font-size: .75em;
 
-			background-color: var(--unread-counter-message-bg);
-			height: var(--unread-count-size);
-            min-width: calc(var(--unread-count-size) - 2*(var(--unread-count-padding-inline) - var(--unread-count-padding-block)));
+		padding-inline: var(--unread-count-padding-inline);
+		padding-block: var(--unread-count-padding-block);
 
-			line-height: 1;
-			font-size: .75em;
+		&.big {
+			--unread-count-size: 1.5rem;
+			font-size: 1em;
+			font-weight: bold;
+		}
 
-            padding-inline: var(--unread-count-padding-inline);
-			padding-block: var(--unread-count-padding-block);
+		&.marked-unread {
+			background-color: var(--unread-counter-marked-unread-bg);
+		}
 
-			&.notified, &.marked-unread, &.highlighted {
-				--unread-count-size: 1.5rem;
-				font-size: 1em;
-				font-weight: bold;
-			}
+		&.notified {
+			background-color: var(--unread-counter-notification-bg);
+		}
 
-			&.marked-unread {
-				background-color: var(--unread-counter-marked-unread-bg);
-			}
+		&.highlighted {
+			background-color: var(--unread-counter-highlight-bg);
+		}
+
+		&.space {
+			--unread-count-size: .75rem;
+			background-color: var(--space-unread-counter-message-bg);
 
 			&.notified {
-				background-color: var(--unread-counter-notification-bg);
+				background-color: var(--space-unread-counter-notification-bg);
 			}
 
 			&.highlighted {
-				background-color: var(--unread-counter-highlight-bg);
+				background-color: var(--space-unread-counter-highlight-bg);
 			}
 		}
 	}
