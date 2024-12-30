@@ -22,6 +22,7 @@ div.room-view {
 
 div#mobile-event-menu-container {
 	grid-area: header;
+	overflow: hidden;
 
 	&:empty {
 		display: none;
