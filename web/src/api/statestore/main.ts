@@ -39,7 +39,7 @@ import {
 } from "../types"
 import { InvitedRoomStore } from "./invitedroom.ts"
 import { RoomStateStore } from "./room.ts"
-import { RoomListFilter, SpaceEdgeStore, SpaceOrphansSpace } from "./space.ts"
+import { DirectChatSpace, RoomListFilter, SpaceEdgeStore, SpaceOrphansSpace, UnreadsSpace } from "./space.ts"
 
 export interface RoomListEntry {
 	room_id: RoomID
@@ -76,6 +76,13 @@ export class StateStore {
 	readonly topLevelSpaces = new NonNullCachedEventDispatcher<RoomID[]>([])
 	readonly spaceEdges: Map<RoomID, SpaceEdgeStore> = new Map()
 	readonly spaceOrphans = new SpaceOrphansSpace(this)
+	readonly directChatsSpace = new DirectChatSpace()
+	readonly unreadsSpace = new UnreadsSpace()
+	readonly pseudoSpaces = [
+		this.spaceOrphans,
+		this.directChatsSpace,
+		this.unreadsSpace,
+	] as const
 	currentRoomListQuery: string = ""
 	currentRoomListFilter: RoomListFilter | null = null
 	readonly accountData: Map<string, UnknownEventContent> = new Map()
@@ -177,6 +184,25 @@ export class StateStore {
 		}
 	}
 
+	#applyUnreadModification(meta: RoomListEntry | null, oldMeta: RoomListEntry | undefined | null) {
+		const someMeta = meta ?? oldMeta
+		if (!someMeta) {
+			return
+		}
+		if (this.spaceOrphans.include(someMeta)) {
+			this.spaceOrphans.applyUnreads(meta, oldMeta)
+			return
+		}
+		if (this.directChatsSpace.include(someMeta)) {
+			this.directChatsSpace.applyUnreads(meta, oldMeta)
+		}
+		for (const space of this.spaceEdges.values()) {
+			if (space.include(someMeta)) {
+				space.applyUnreads(meta, oldMeta)
+			}
+		}
+	}
+
 	applySync(sync: SyncCompleteData) {
 		if (sync.clear_state && this.rooms.size > 0) {
 			console.info("Clearing state store as sync told to reset and there are rooms in the store")
@@ -186,9 +212,11 @@ export class StateStore {
 		const changedRoomListEntries = new Map<RoomID, RoomListEntry | null>()
 		for (const data of sync.invited_rooms ?? []) {
 			const room = new InvitedRoomStore(data, this)
+			const oldEntry = this.inviteRooms.get(room.room_id)
 			this.inviteRooms.set(room.room_id, room)
 			if (!resyncRoomList) {
 				changedRoomListEntries.set(room.room_id, room)
+				this.#applyUnreadModification(room, oldEntry)
 			}
 			if (this.activeRoomID === room.room_id) {
 				this.switchRoom?.(room.room_id)
@@ -209,7 +237,10 @@ export class StateStore {
 			const roomListEntryChanged = !resyncRoomList && (isNewRoom || this.#roomListEntryChanged(data, room))
 			room.applySync(data)
 			if (roomListEntryChanged) {
-				changedRoomListEntries.set(roomID, this.#makeRoomListEntry(data, room))
+				const entry = this.#makeRoomListEntry(data, room)
+				changedRoomListEntries.set(roomID, entry)
+				this.#applyUnreadModification(entry, room.roomListEntry)
+				room.roomListEntry = entry
 			}
 			if (!resyncRoomList) {
 				// When we join a valid replacement room, hide the tombstoned room.
@@ -256,6 +287,10 @@ export class StateStore {
 				.map(entry => this.#makeRoomListEntry(entry))
 				.filter(entry => entry !== null))
 			updatedRoomList.sort((r1, r2) => r1.sorting_timestamp - r2.sorting_timestamp)
+			for (const entry of updatedRoomList) {
+				this.#applyUnreadModification(entry, undefined)
+				this.rooms.get(entry.room_id)!.roomListEntry = entry
+			}
 		} else if (changedRoomListEntries.size > 0) {
 			updatedRoomList = this.roomList.current.filter(entry => !changedRoomListEntries.has(entry.room_id))
 			for (const entry of changedRoomListEntries.values()) {

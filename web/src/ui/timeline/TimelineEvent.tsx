@@ -14,6 +14,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import React, { JSX, use, useState } from "react"
+import { createPortal } from "react-dom"
 import { getAvatarURL, getMediaURL, getUserColorIndex } from "@/api/media.ts"
 import { useRoomMember } from "@/api/statestore"
 import { MemDBEvent, MemberEventContent, UnreadType } from "@/api/types"
@@ -38,6 +39,7 @@ export interface TimelineEventProps {
 	prevEvt: MemDBEvent | null
 	disableMenu?: boolean
 	smallReplies?: boolean
+	isFocused?: boolean
 }
 
 const fullTimeFormatter = new Intl.DateTimeFormat("en-GB", { dateStyle: "full", timeStyle: "medium" })
@@ -73,7 +75,7 @@ const EventSendStatus = ({ evt }: { evt: MemDBEvent }) => {
 	}
 }
 
-const TimelineEvent = ({ evt, prevEvt, disableMenu, smallReplies }: TimelineEventProps) => {
+const TimelineEvent = ({ evt, prevEvt, disableMenu, smallReplies, isFocused }: TimelineEventProps) => {
 	const roomCtx = useRoomContext()
 	const client = use(ClientContext)!
 	const mainScreen = use(MainScreenContext)
@@ -107,21 +109,8 @@ const TimelineEvent = ({ evt, prevEvt, disableMenu, smallReplies }: TimelineEven
 			return
 		}
 		mouseEvt.preventDefault()
-		if (window.hackyOpenEventContextMenu === evt.event_id) {
-			window.closeModal()
-			window.hackyOpenEventContextMenu = undefined
-		} else {
-			openModal({
-				content: <EventFixedMenu evt={evt} roomCtx={roomCtx} />,
-				captureInput: false,
-				onClose: () => {
-					if (window.hackyOpenEventContextMenu === evt.event_id) {
-						window.hackyOpenEventContextMenu = undefined
-					}
-				},
-			})
-			window.hackyOpenEventContextMenu = evt.event_id
-		}
+		mouseEvt.stopPropagation()
+		roomCtx.setFocusedEventRowID(roomCtx.focusedEventRowID === evt.rowid ? null : evt.rowid)
 	}
 	const memberEvt = useRoomMember(client, roomCtx.store, evt.sender)
 	const memberEvtContent = memberEvt?.content as MemberEventContent | undefined
@@ -143,6 +132,12 @@ const TimelineEvent = ({ evt, prevEvt, disableMenu, smallReplies }: TimelineEven
 	}
 	if (evt.sender === client.userID) {
 		wrapperClassNames.push("own-event")
+	}
+	if (isMobileDevice || disableMenu) {
+		wrapperClassNames.push("no-hover")
+	}
+	if (isFocused) {
+		wrapperClassNames.push("focused-event")
 	}
 	let dateSeparator = null
 	const prevEvtDate = prevEvt ? new Date(prevEvt.timestamp) : null
@@ -207,6 +202,10 @@ const TimelineEvent = ({ evt, prevEvt, disableMenu, smallReplies }: TimelineEven
 		>
 			<EventHoverMenu evt={evt} roomCtx={roomCtx} setForceOpen={setForceContextMenuOpen}/>
 		</div>}
+		{isMobileDevice && isFocused && createPortal(
+			<EventFixedMenu evt={evt} roomCtx={roomCtx} />,
+			document.getElementById("mobile-event-menu-container")!,
+		)}
 		{replyAboveMessage}
 		{renderAvatar && <div
 			className="sender-avatar"

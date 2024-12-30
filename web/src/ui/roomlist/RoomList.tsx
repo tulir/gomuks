@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import React, { use, useCallback, useRef, useState } from "react"
-import { DirectChatSpace, RoomListFilter, UnreadsSpace } from "@/api/statestore/space.ts"
+import { RoomListFilter, Space as SpaceStore, SpaceUnreadCounts } from "@/api/statestore/space.ts"
 import type { RoomID } from "@/api/types"
 import { useEventAsState } from "@/util/eventdispatcher.ts"
 import reverseMap from "@/util/reversemap.ts"
@@ -54,6 +54,38 @@ const RoomList = ({ activeRoomID }: RoomListProps) => {
 		const store = client.store.getSpaceStore(evt.currentTarget.getAttribute("data-target-space")!)
 		setSpace(store)
 	}, [setSpace, client])
+	const onClickSpaceUnread = useCallback((
+		evt: React.MouseEvent<HTMLDivElement> | null, space?: SpaceStore | null,
+	) => {
+		if (evt) {
+			const targetSpace = evt.currentTarget.closest("div.space-entry")?.getAttribute("data-target-space")
+			if (!targetSpace) {
+				return
+			}
+			space = client.store.getSpaceStore(targetSpace)
+		}
+		if (!space) {
+			return
+		}
+		const counts = space.counts.current
+		let wantedField: keyof SpaceUnreadCounts
+		if (counts.unread_highlights > 0) {
+			wantedField = "unread_highlights"
+		} else if (counts.unread_notifications > 0) {
+			wantedField = "unread_notifications"
+		} else if (counts.unread_messages > 0) {
+			wantedField = "unread_messages"
+		} else {
+			return
+		}
+		for (let i = client.store.roomList.current.length - 1; i >= 0; i--) {
+			const entry = client.store.roomList.current[i]
+			if (entry[wantedField] > 0 && space.include(entry)) {
+				mainScreen.setActiveRoom(entry.room_id)
+				break
+			}
+		}
+	}, [mainScreen, client])
 	const clearQuery = () => {
 		client.store.currentRoomListQuery = ""
 		directSetQuery("")
@@ -75,12 +107,6 @@ const RoomList = ({ activeRoomID }: RoomListProps) => {
 	}
 
 	const roomListFilter = client.store.roomListFilterFunc
-	const pseudoSpaces = [
-		null,
-		DirectChatSpace,
-		UnreadsSpace,
-		client.store.spaceOrphans,
-	]
 	return <div className="room-list-wrapper">
 		<div className="room-search-wrapper">
 			<input
@@ -98,17 +124,21 @@ const RoomList = ({ activeRoomID }: RoomListProps) => {
 			</button>
 		</div>
 		<div className="space-bar">
-			{pseudoSpaces.map(pseudoSpace => <FakeSpace
-				key={pseudoSpace?.id ?? "null"}
+			<FakeSpace space={null} setSpace={setSpace} isActive={space === null} />
+			{client.store.pseudoSpaces.map(pseudoSpace => <FakeSpace
+				key={pseudoSpace.id}
 				space={pseudoSpace}
 				setSpace={setSpace}
-				isActive={space?.id === pseudoSpace?.id}
+				onClickUnread={onClickSpaceUnread}
+				isActive={space?.id === pseudoSpace.id}
 			/>)}
 			{spaces.map(roomID => <Space
+				key={roomID}
 				roomID={roomID}
 				client={client}
 				onClick={onClickSpace}
 				isActive={space?.id === roomID}
+				onClickUnread={onClickSpaceUnread}
 			/>)}
 		</div>
 		<div className="room-list">

@@ -18,21 +18,25 @@ import Client from "@/api/client.ts"
 import { getRoomAvatarURL } from "@/api/media.ts"
 import type { RoomID } from "@/api/types"
 import { useEventAsState } from "@/util/eventdispatcher.ts"
+import UnreadCount from "./UnreadCount.tsx"
 import "./RoomList.css"
 
 export interface SpaceProps {
 	roomID: RoomID
 	client: Client
 	onClick: (evt: React.MouseEvent<HTMLDivElement>) => void
+	onClickUnread: (evt: React.MouseEvent<HTMLDivElement>) => void
 	isActive: boolean
 }
 
-const Space = ({ roomID, client, onClick, isActive }: SpaceProps) => {
+const Space = ({ roomID, client, onClick, isActive, onClickUnread }: SpaceProps) => {
+	const unreads = useEventAsState(client.store.spaceEdges.get(roomID)?.counts)
 	const room = useEventAsState(client.store.rooms.get(roomID)?.meta)
 	if (!room) {
 		return
 	}
 	return <div className={`space-entry ${isActive ? "active" : ""}`} onClick={onClick} data-target-space={roomID}>
+		<UnreadCount counts={unreads} space={true} onClick={onClickUnread} />
 		<img src={getRoomAvatarURL(room)} alt={room.name} title={room.name} className="avatar" />
 	</div>
 }

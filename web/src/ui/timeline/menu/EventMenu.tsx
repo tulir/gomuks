@@ -19,10 +19,14 @@ import ClientContext from "../../ClientContext.ts"
 import { RoomContextData } from "../../roomview/roomcontext.ts"
 import { usePrimaryItems } from "./usePrimaryItems.tsx"
 import { useSecondaryItems } from "./useSecondaryItems.tsx"
+import CloseIcon from "@/icons/close.svg?react"
 
-interface EventHoverMenuProps {
+interface BaseEventMenuProps {
 	evt: MemDBEvent
 	roomCtx: RoomContextData
+}
+
+interface EventHoverMenuProps extends BaseEventMenuProps {
 	setForceOpen: (forceOpen: boolean) => void
 }
 
@@ -31,9 +35,7 @@ export const EventHoverMenu = ({ evt, roomCtx, setForceOpen }: EventHoverMenuPro
 	return <div className="event-hover-menu">{elements}</div>
 }
 
-interface EventContextMenuProps {
-	evt: MemDBEvent
-	roomCtx: RoomContextData
+interface EventContextMenuProps extends BaseEventMenuProps {
 	style: CSSProperties
 }
 
@@ -53,12 +55,15 @@ export const EventFullMenu = ({ evt, roomCtx, style }: EventContextMenuProps) =>
 	</div>
 }
 
-export const EventFixedMenu = ({ evt, roomCtx }: Omit<EventContextMenuProps, "style">) => {
+export const EventFixedMenu = ({ evt, roomCtx }: BaseEventMenuProps) => {
 	const client = use(ClientContext)!
 	const primary = usePrimaryItems(client, roomCtx, evt, false, true, undefined, undefined)
 	const secondary = useSecondaryItems(client, roomCtx, evt, false)
 	return <div className="event-fixed-menu">
 		{primary}
+		<div className="vertical-line"/>
 		{secondary}
+		<div className="vertical-line"/>
+		<button className="close"><CloseIcon/></button>
 	</div>
 }

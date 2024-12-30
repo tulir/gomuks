@@ -3,6 +3,7 @@ blockquote.reply-body {
 	border-left: 2px solid var(--reply-border-color);
 	padding: .25rem .5rem;
 
+	&.sender-color-null { --reply-border-color: var(--blockquote-border-color); }
 	&.sender-color-0 { --reply-border-color: var(--sender-color-0); }
 	&.sender-color-1 { --reply-border-color: var(--sender-color-1); }
 	&.sender-color-2 { --reply-border-color: var(--sender-color-2); }

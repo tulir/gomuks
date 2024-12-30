@@ -1131,9 +1131,12 @@ func processImportantEvent(
 	}
 	switch evt.Type {
 	case event.StateCreate, event.StateTombstone, event.StateRoomName, event.StateCanonicalAlias,
-		event.StateRoomAvatar, event.StateTopic, event.StateEncryption,
-		event.StateSpaceChild, event.StateSpaceParent, event.StatePowerLevels:
+		event.StateRoomAvatar, event.StateTopic, event.StateEncryption, event.StatePowerLevels:
 		if *evt.StateKey != "" {
+			return
+		}
+	case event.StateSpaceChild, event.StateSpaceParent:
+		if !strings.HasPrefix(*evt.StateKey, "!") {
 			return
 		}
 	default:

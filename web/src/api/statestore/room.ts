@@ -42,7 +42,7 @@ import {
 	UserID,
 	roomStateGUIDToString,
 } from "../types"
-import type { StateStore } from "./main.ts"
+import type { RoomListEntry, StateStore } from "./main.ts"
 
 function arraysAreEqual<T>(arr1?: T[], arr2?: T[]): boolean {
 	if (!arr1 || !arr2) {
@@ -126,6 +126,7 @@ export class RoomStateStore {
 	readUpToRow = -1
 	hasMoreHistory = true
 	hidden = false
+	roomListEntry: RoomListEntry | undefined | null
 
 	constructor(meta: DBRoom, private parent: StateStore) {
 		this.roomID = meta.room_id

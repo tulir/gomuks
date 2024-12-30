@@ -15,26 +15,79 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import { RoomListEntry, StateStore } from "@/api/statestore/main.ts"
 import { DBSpaceEdge, RoomID } from "@/api/types"
+import { NonNullCachedEventDispatcher } from "@/util/eventdispatcher.ts"
 
 export interface RoomListFilter {
 	id: string
 	include(room: RoomListEntry): boolean
 }
 
-export const DirectChatSpace: RoomListFilter = {
-	id: "fi.mau.gomuks.direct_chats",
-	include: room => !!room.dm_user_id,
+export interface SpaceUnreadCounts {
+	unread_messages: number
+	unread_notifications: number
+	unread_highlights: number
 }
 
-export const UnreadsSpace: RoomListFilter = {
-	id: "fi.mau.gomuks.unreads",
-	include: room => Boolean(room.unread_messages
-		|| room.unread_notifications
-		|| room.unread_highlights
-		|| room.marked_unread),
+const emptyUnreadCounts: SpaceUnreadCounts = {
+	unread_messages: 0,
+	unread_notifications: 0,
+	unread_highlights: 0,
 }
 
-export class SpaceEdgeStore implements RoomListFilter {
+export abstract class Space implements RoomListFilter {
+	counts = new NonNullCachedEventDispatcher(emptyUnreadCounts)
+
+	abstract id: string
+	abstract include(room: RoomListEntry): boolean
+
+	applyUnreads(newCounts?: SpaceUnreadCounts | null, oldCounts?: SpaceUnreadCounts | null) {
+		const mergedCounts: SpaceUnreadCounts = {
+			unread_messages: this.counts.current.unread_messages
+				+ (newCounts?.unread_messages ?? 0) - (oldCounts?.unread_messages ?? 0),
+			unread_notifications: this.counts.current.unread_notifications
+				+ (newCounts?.unread_notifications ?? 0) - (oldCounts?.unread_notifications ?? 0),
+			unread_highlights: this.counts.current.unread_highlights
+				+ (newCounts?.unread_highlights ?? 0) - (oldCounts?.unread_highlights ?? 0),
+		}
+		if (mergedCounts.unread_messages < 0) {
+			mergedCounts.unread_messages = 0
+		}
+		if (mergedCounts.unread_notifications < 0) {
+			mergedCounts.unread_notifications = 0
+		}
+		if (mergedCounts.unread_highlights < 0) {
+			mergedCounts.unread_highlights = 0
+		}
+		if (
+			mergedCounts.unread_messages !== this.counts.current.unread_messages
+			|| mergedCounts.unread_notifications !== this.counts.current.unread_notifications
+			|| mergedCounts.unread_highlights !== this.counts.current.unread_highlights
+		) {
+			this.counts.emit(mergedCounts)
+		}
+	}
+}
+
+export class DirectChatSpace extends Space {
+	id = "fi.mau.gomuks.direct_chats"
+
+	include(room: RoomListEntry): boolean {
+		return Boolean(room.dm_user_id)
+	}
+}
+
+export class UnreadsSpace extends Space {
+	id = "fi.mau.gomuks.unreads"
+
+	include(room: RoomListEntry): boolean {
+		return Boolean(room.unread_messages
+			|| room.unread_notifications
+			|| room.unread_highlights
+			|| room.marked_unread)
+	}
+}
+
+export class SpaceEdgeStore extends Space {
 	#children: DBSpaceEdge[] = []
 	#childRooms: Set<RoomID> = new Set()
 	#flattenedRooms: Set<RoomID> = new Set()
@@ -42,6 +95,7 @@ export class SpaceEdgeStore implements RoomListFilter {
 	readonly #parentSpaces: Set<SpaceEdgeStore> = new Set()
 
 	constructor(public id: RoomID, private parent: StateStore) {
+		super()
 	}
 
 	#addParent(parent: SpaceEdgeStore) {

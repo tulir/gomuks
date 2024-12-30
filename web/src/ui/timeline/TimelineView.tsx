@@ -16,7 +16,7 @@
 import { use, useCallback, useEffect, useLayoutEffect, useRef, useState } from "react"
 import { ScaleLoader } from "react-spinners"
 import { usePreference, useRoomTimeline } from "@/api/statestore"
-import { MemDBEvent } from "@/api/types"
+import { EventRowID, MemDBEvent } from "@/api/types"
 import useFocus from "@/util/focus.ts"
 import ClientContext from "../ClientContext.ts"
 import { useRoomContext } from "../roomview/roomcontext.ts"
@@ -29,6 +29,7 @@ const TimelineView = () => {
 	const timeline = useRoomTimeline(room)
 	const client = use(ClientContext)!
 	const [isLoadingHistory, setLoadingHistory] = useState(false)
+	const [focusedEventRowID, directSetFocusedEventRowID] = useState<EventRowID | null>(null)
 	const loadHistory = useCallback(() => {
 		setLoadingHistory(true)
 		client.loadMoreHistory(room.roomID)
@@ -68,6 +69,9 @@ const TimelineView = () => {
 		}
 		prevOldestTimelineRow.current = timeline[0]?.timeline_rowid ?? 0
 	}, [client.userID, roomCtx, timeline])
+	useEffect(() => {
+		roomCtx.directSetFocusedEventRowID = directSetFocusedEventRowID
+	}, [roomCtx])
 	useEffect(() => {
 		const newestEvent = timeline[timeline.length - 1]
 		if (
@@ -126,7 +130,11 @@ const TimelineView = () => {
 					return null
 				}
 				const thisEvt = <TimelineEvent
-					key={entry.rowid} evt={entry} prevEvt={prevEvt} smallReplies={smallReplies}
+					key={entry.rowid}
+					evt={entry}
+					prevEvt={prevEvt}
+					smallReplies={smallReplies}
+					isFocused={focusedEventRowID === entry.rowid}
 				/>
 				prevEvt = entry
 				return thisEvt
