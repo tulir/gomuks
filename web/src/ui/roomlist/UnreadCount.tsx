@@ -34,7 +34,8 @@ const UnreadCount = ({ counts, space }: UnreadCountProps) => {
 	if (!unreadCount && !counts.marked_unread) {
 		return null
 	}
-	const countIsBig = !space && Boolean(counts.unread_notifications || counts.unread_highlights || counts.marked_unread)
+	const countIsBig = !space
+		&& Boolean(counts.unread_notifications || counts.unread_highlights || counts.marked_unread)
 	let unreadCountDisplay = unreadCount.toString()
 	if (unreadCount > 999 && countIsBig) {
 		unreadCountDisplay = "99+"

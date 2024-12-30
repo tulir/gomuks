@@ -55,11 +55,15 @@ div.space-bar {
 		> div.room-entry-unreads {
 			z-index: 2;
 			height: 0;
+			width: 0;
+			margin-left: auto;
 			position: relative;
 
 			> div.unread-count {
 				position: absolute;
-				top: 0;
+				/* This positioning doesn't feel very precise, but it looks correct enough */
+				margin-top: .75rem;
+				margin-right: .25rem;
 			}
 		}
 	}
