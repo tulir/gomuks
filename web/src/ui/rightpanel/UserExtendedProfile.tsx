@@ -61,16 +61,19 @@ function SetTimezoneElement({ tz, client }: SetTimezoneProps) {
 			)
 		}
 	}
+	// TODO: You are unable to set a timezone if you do not already have one set in your profile.
+	//  The defaulting to the current timezone causes `newTz !== tz` to never be true when the user has
+	//  no timezone set.
 
 	return (
 		<>
 			<input
-				list={"timezones"}
-				className={"text-input"}
+				list="timezones"
+				className="text-input"
 				defaultValue={tz || getCurrentTimezone()}
 				onChange={(e) => setTz(e.currentTarget.value)}
 			/>
-			<datalist id={"timezones"}>
+			<datalist id="timezones">
 				{
 					zones.map((zone) => <option key={zone} value={zone} />)
 				}
@@ -90,42 +93,27 @@ export default function UserExtendedProfile({ profile, client, userID }: Extende
 	// otherwise there's an ugly and pointless <hr/> for no real reason.
 
 	const pronouns: PronounSet[] = ensureArray(profile["io.fsky.nyx.pronouns"]) as PronounSet[]
+	const userTimezone: string | undefined = profile["us.cloke.msc4175.tz"]
 	return (
 		<>
 			<hr/>
-			<div className={"extended-profile"}>
-				{
-					profile["us.cloke.msc4175.tz"] && (
-						<>
-							<div title={profile["us.cloke.msc4175.tz"]}>Time:</div>
-							<ClockElement tz={profile["us.cloke.msc4175.tz"]} />
-						</>
-					)
-				}
-				{
-					userID === client.userID && (
-						<>
-							<div>Set Timezone:</div>
-							<SetTimezoneElement tz={profile["us.cloke.msc4175.tz"]} client={client} />
-						</>
-					)
-				}
-				{
-					pronouns.length >= 1 && (
-						<>
-							<div>Pronouns:</div>
-							<div>
-								{
-									pronouns.map(
-										(pronounSet: PronounSet) => (
-											pronounSet.summary || `${pronounSet.subject}/${pronounSet.object}`
-										),
-									).join("/")
-								}
-							</div>
-						</>
-					)
-				}
+			<div className="extended-profile">
+				{userTimezone && <>
+					<div title={userTimezone}>Time:</div>
+					<ClockElement tz={userTimezone} />
+				</>}
+				{userID === client.userID && <>
+					<div>Set Timezone:</div>
+					<SetTimezoneElement tz={userTimezone} client={client} />
+				</>}
+				{pronouns.length >= 1 && <>
+					<div>Pronouns:</div>
+					<div>
+						{pronouns.map((pronounSet: PronounSet) => (
+							pronounSet.summary || `${pronounSet.subject}/${pronounSet.object}`
+						)).join("/")}
+					</div>
+				</>}
 			</div>
 		</>
 	)
