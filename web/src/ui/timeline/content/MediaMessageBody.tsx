@@ -13,7 +13,7 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import { CSSProperties, JSX, use, useReducer } from "react"
+import React, { CSSProperties, JSX, use, useReducer, useState } from "react"
 import { Blurhash } from "react-blurhash"
 import { GridLoader } from "react-spinners"
 import { usePreference } from "@/api/statestore"
@@ -49,7 +49,7 @@ const MediaMessageBody = ({ event, room, sender }: EventContentProps) => {
 	const supportsClickToShow = supportsLoadingPlaceholder || content.msgtype === "m.video"
 	const showPreviewsByDefault = usePreference(client.store, room, "show_media_previews")
 	const [loaded, onLoad] = useReducer(switchToTrue, !supportsLoadingPlaceholder)
-	const [clickedShow, onClickShow] = useReducer(switchToTrue, false)
+	const [clickedShow, setClickedShow] = useState(false)
 
 	let contentWarning = content["town.robin.msc3725.content_warning"]
 	if (content["page.codeberg.everypizza.msc4193.spoiler"]) {
@@ -72,8 +72,12 @@ const MediaMessageBody = ({ event, room, sender }: EventContentProps) => {
 		const blurhash = ensureString(
 			content.info?.["xyz.amorgan.blurhash"] ?? content.info?.thumbnail_info?.["xyz.amorgan.blurhash"],
 		)
+		const onClick = !clickedShow ? (evt: React.MouseEvent<HTMLDivElement>) => {
+			setClickedShow(true)
+			evt.stopPropagation()
+		} : undefined
 		placeholderElem = <div
-			onClick={onClickShow}
+			onClick={onClick}
 			className="placeholder"
 		>
 			{(blurhash && containerStyle.width) ? <Blurhash

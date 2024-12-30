@@ -24,7 +24,7 @@ div.timeline-event {
 		transition: background-color 1s;
 	}
 
-	&:hover {
+	&:hover:not(.no-hover), &.focused-event {
 		background-color: var(--timeline-hover-bg-color);
 
 		&.highlight {

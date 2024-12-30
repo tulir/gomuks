@@ -19,3 +19,15 @@ div.room-view {
 		align-items: center;
 	}
 }
+
+div#mobile-event-menu-container {
+	grid-area: header;
+
+	&:empty {
+		display: none;
+	}
+
+	&:not(:empty) + div.room-header {
+		display: none;
+	}
+}

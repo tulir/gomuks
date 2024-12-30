@@ -5,6 +5,7 @@ div.room-header {
 	padding-left: .5rem;
 	border-bottom: 1px solid var(--border-color);
 	overflow: hidden;
+	grid-area: header;
 
 	> div.room-name-and-topic {
 		flex: 1;
