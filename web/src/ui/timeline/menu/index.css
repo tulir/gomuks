@@ -26,6 +26,12 @@ div.event-fixed-menu {
 	overflow-x: auto;
 	overflow-y: hidden;
 
+	> div.vertical-line {
+		width: 1px;
+		flex-shrink: 0;
+		background-color: var(--border-color);
+	}
+
 	> button {
 		width: 3rem;
 		height: 3rem;

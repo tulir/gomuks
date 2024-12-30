@@ -19,6 +19,7 @@ import ClientContext from "../../ClientContext.ts"
 import { RoomContextData } from "../../roomview/roomcontext.ts"
 import { usePrimaryItems } from "./usePrimaryItems.tsx"
 import { useSecondaryItems } from "./useSecondaryItems.tsx"
+import CloseIcon from "@/icons/close.svg?react"
 
 interface BaseEventMenuProps {
 	evt: MemDBEvent
@@ -62,5 +63,7 @@ export const EventFixedMenu = ({ evt, roomCtx }: BaseEventMenuProps) => {
 		{primary}
 		<div className="vertical-line"/>
 		{secondary}
+		<div className="vertical-line"/>
+		<button className="close"><CloseIcon/></button>
 	</div>
 }
