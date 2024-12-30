@@ -95,9 +95,7 @@ export default function UserExtendedProfile({ profile, client, userID }: Extende
 				{pronouns.length >= 1 && <>
 					<div>Pronouns:</div>
 					<div>
-						{pronouns.map((pronounSet: PronounSet) => (
-							pronounSet.summary || `${pronounSet.subject}/${pronounSet.object}`
-						)).join("/")}
+						{pronouns.map((pronounSet: PronounSet) => (pronounSet.summary)).join("/")}
 					</div>
 				</>}
 			</div>
