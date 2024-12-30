@@ -53,8 +53,11 @@ export const ReplyIDBody = ({ room, eventID, isThread, small }: ReplyIDBodyProps
 	if (!event) {
 		// This caches whether the event is requested or not, so it doesn't need to be wrapped in an effect.
 		use(ClientContext)!.requestEvent(room, eventID)
-		return <blockquote className="reply-body">
-			Reply to unknown event<br/><code>{eventID}</code>
+		return <blockquote className={`reply-body sender-color-null ${small ? "small" : ""}`}>
+			{small && <div className="reply-spine"/>}
+			Reply to unknown event
+			{!small && <br/>}
+			<code>{eventID}</code>
 		</blockquote>
 	}
 	return <ReplyBody room={room} event={event} isThread={isThread} small={small}/>
