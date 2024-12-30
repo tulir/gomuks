@@ -69,13 +69,15 @@ const (
 	revalidateAllParentsOfRoomQuery          = revalidateAllParents + ` AND child_id=$1`
 	revalidateSpecificParentQuery            = revalidateAllParents + ` AND space_id=$1 AND child_id=$2`
 	clearSpaceChildrenQuery                  = `
-		UPDATE space_edge SET child_event_rowid=NULL, "order"=NULL, suggested=false
+		UPDATE space_edge SET child_event_rowid=NULL, "order"='', suggested=false
 		WHERE space_id=$1
 	`
 	clearSpaceParentsQuery = `
 		UPDATE space_edge SET parent_event_rowid=NULL, canonical=false, parent_validated=false
 		WHERE child_id=$1
 	`
+	removeSpaceChildQuery         = clearSpaceChildrenQuery + ` AND child_id=$2`
+	removeSpaceParentQuery        = clearSpaceParentsQuery + ` AND space_id=$2`
 	deleteEmptySpaceEdgeRowsQuery = `
 		DELETE FROM space_edge WHERE child_event_rowid IS NULL AND parent_event_rowid IS NULL
 	`
@@ -139,8 +141,13 @@ func (seq *SpaceEdgeQuery) SetChildren(ctx context.Context, spaceID id.RoomID, c
 		if err != nil {
 			return err
 		}
-	} else {
-
+	} else if len(removedChildren) > 0 {
+		for _, child := range removedChildren {
+			err := seq.Exec(ctx, removeSpaceChildQuery, spaceID, child)
+			if err != nil {
+				return err
+			}
+		}
 	}
 	if len(removedChildren) > 0 {
 		err := seq.Exec(ctx, deleteEmptySpaceEdgeRowsQuery, spaceID)
@@ -152,7 +159,7 @@ func (seq *SpaceEdgeQuery) SetChildren(ctx context.Context, spaceID id.RoomID, c
 		return nil
 	}
 	query, params := massInsertSpaceChildBuilder.Build([1]any{spaceID}, children)
-	return seq.Exec(ctx, query, params)
+	return seq.Exec(ctx, query, params...)
 }
 
 func (seq *SpaceEdgeQuery) SetParents(ctx context.Context, childID id.RoomID, parents []SpaceParentEntry, removedParents []id.RoomID, clear bool) error {
@@ -160,6 +167,13 @@ func (seq *SpaceEdgeQuery) SetParents(ctx context.Context, childID id.RoomID, pa
 		err := seq.Exec(ctx, clearSpaceParentsQuery, childID)
 		if err != nil {
 			return err
+		}
+	} else if len(removedParents) > 0 {
+		for _, parent := range removedParents {
+			err := seq.Exec(ctx, removeSpaceParentQuery, childID, parent)
+			if err != nil {
+				return err
+			}
 		}
 	}
 	if len(removedParents) > 0 {
@@ -172,7 +186,7 @@ func (seq *SpaceEdgeQuery) SetParents(ctx context.Context, childID id.RoomID, pa
 		return nil
 	}
 	query, params := massInsertSpaceParentBuilder.Build([1]any{childID}, parents)
-	return seq.Exec(ctx, query, params)
+	return seq.Exec(ctx, query, params...)
 }
 
 func (seq *SpaceEdgeQuery) RevalidateAllChildrenOfParentValidity(ctx context.Context, spaceID id.RoomID) error {
