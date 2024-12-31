@@ -13,7 +13,7 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import { RefObject, createContext, createRef, use } from "react"
+import { createContext, use } from "react"
 import { RoomStateStore } from "@/api/statestore"
 import { EventID, EventRowID, MemDBEvent } from "@/api/types"
 import { NonNullCachedEventDispatcher } from "@/util/eventdispatcher.ts"
@@ -24,7 +24,6 @@ const noop = (name: string) => () => {
 }
 
 export class RoomContextData {
-	public readonly timelineBottomRef: RefObject<HTMLDivElement | null> = createRef()
 	public setReplyTo: (eventID: EventID | null) => void = noop("setReplyTo")
 	public setEditing: (evt: MemDBEvent | null) => void = noop("setEditing")
 	public insertText: (text: string) => void = noop("insertText")
@@ -34,12 +33,6 @@ export class RoomContextData {
 	public scrolledToBottom = true
 
 	constructor(public store: RoomStateStore) {}
-
-	scrollToBottom = () => {
-		if (this.scrolledToBottom) {
-			this.timelineBottomRef.current?.scrollIntoView()
-		}
-	}
 
 	setFocusedEventRowID = (eventRowID: number | null) => {
 		this.directSetFocusedEventRowID(eventRowID)

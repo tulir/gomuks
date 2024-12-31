@@ -33,9 +33,7 @@ const RoomView = ({ room, rightPanelResizeHandle, rightPanel }: RoomViewProps) =
 	const [roomContextData] = useState(() => new RoomContextData(room))
 	useEffect(() => {
 		window.activeRoomContext = roomContextData
-		window.addEventListener("resize", roomContextData.scrollToBottom)
 		return () => {
-			window.removeEventListener("resize", roomContextData.scrollToBottom)
 			if (window.activeRoomContext === roomContextData) {
 				window.activeRoomContext = undefined
 			}

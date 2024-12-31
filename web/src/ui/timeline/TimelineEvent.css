@@ -11,6 +11,8 @@ div.timeline-event {
 		/ var(--timeline-avatar-size) var(--timeline-avatar-gap) 1fr      var(--timeline-status-size);
 	contain: layout;
 	margin-top: var(--timeline-message-gap);
+	content-visibility: auto;
+	contain-intrinsic-height: auto 3rem;
 
 	&.highlight {
 		background-color: var(--timeline-highlight-bg-color);
@@ -25,6 +27,7 @@ div.timeline-event {
 	}
 
 	&:hover:not(.no-hover), &.focused-event {
+		content-visibility: visible;
 		background-color: var(--timeline-hover-bg-color);
 
 		&.highlight {

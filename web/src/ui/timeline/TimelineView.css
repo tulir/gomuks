@@ -2,7 +2,7 @@ div.timeline-view {
 	overflow-y: scroll;
 
 	display: flex;
-	flex-direction: column;
+	flex-direction: column-reverse;
 	justify-content: space-between;
 
 	> div.timeline-beginning {
@@ -19,5 +19,7 @@ div.timeline-view {
 
 	> div.timeline-list {
 		padding-bottom: 2rem;
+		display: flex;
+		flex-direction: column-reverse;
 	}
 }

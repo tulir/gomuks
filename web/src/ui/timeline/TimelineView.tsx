@@ -13,10 +13,10 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import { use, useCallback, useEffect, useLayoutEffect, useRef, useState } from "react"
+import { use, useCallback, useEffect, useRef, useState } from "react"
 import { ScaleLoader } from "react-spinners"
 import { usePreference, useRoomTimeline } from "@/api/statestore"
-import { EventRowID, MemDBEvent } from "@/api/types"
+import { EventRowID, MemDBEvent, TimelineRowID } from "@/api/types"
 import useFocus from "@/util/focus.ts"
 import ClientContext from "../ClientContext.ts"
 import { useRoomContext } from "../roomview/roomcontext.ts"
@@ -36,11 +36,9 @@ const TimelineView = () => {
 			.catch(err => console.error("Failed to load history", err))
 			.finally(() => setLoadingHistory(false))
 	}, [client, room])
-	const bottomRef = roomCtx.timelineBottomRef
 	const topRef = useRef<HTMLDivElement>(null)
 	const timelineViewRef = useRef<HTMLDivElement>(null)
-	const prevOldestTimelineRow = useRef(0)
-	const oldestTimelineRow = timeline[0]?.timeline_rowid
+	const oldestTimelineRow = useRef<TimelineRowID>(timeline[0]?.timeline_rowid ?? 0)
 	const oldScrollHeight = useRef(0)
 	const focused = useFocus()
 	const smallReplies = usePreference(client.store, room, "small_replies")
@@ -58,21 +56,11 @@ const TimelineView = () => {
 	if (timelineViewRef.current) {
 		oldScrollHeight.current = timelineViewRef.current.scrollHeight
 	}
-	useLayoutEffect(() => {
-		const bottomRef = roomCtx.timelineBottomRef
-		if (bottomRef.current && roomCtx.scrolledToBottom) {
-			// For any timeline changes, if we were at the bottom, scroll to the new bottom
-			bottomRef.current.scrollIntoView()
-		} else if (timelineViewRef.current && prevOldestTimelineRow.current > (timeline[0]?.timeline_rowid ?? 0)) {
-			// When new entries are added to the top of the timeline, scroll down to keep the same position
-			timelineViewRef.current.scrollTop += timelineViewRef.current.scrollHeight - oldScrollHeight.current
-		}
-		prevOldestTimelineRow.current = timeline[0]?.timeline_rowid ?? 0
-	}, [client.userID, roomCtx, timeline])
 	useEffect(() => {
 		roomCtx.directSetFocusedEventRowID = directSetFocusedEventRowID
 	}, [roomCtx])
 	useEffect(() => {
+		oldestTimelineRow.current = timeline[0]?.timeline_rowid ?? 0
 		const newestEvent = timeline[timeline.length - 1]
 		if (
 			roomCtx.scrolledToBottom
@@ -101,8 +89,11 @@ const TimelineView = () => {
 			return
 		}
 		const observer = new IntersectionObserver(entries => {
-			if (entries[0]?.isIntersecting && room.paginationRequestedForRow !== prevOldestTimelineRow.current) {
-				room.paginationRequestedForRow = prevOldestTimelineRow.current
+			if (
+				entries[0]?.isIntersecting
+				&& room.paginationRequestedForRow !== oldestTimelineRow.current
+			) {
+				room.paginationRequestedForRow = oldestTimelineRow.current
 				loadHistory()
 			}
 		}, {
@@ -112,19 +103,12 @@ const TimelineView = () => {
 		})
 		observer.observe(topElem)
 		return () => observer.unobserve(topElem)
-	}, [room, room.hasMoreHistory, loadHistory, oldestTimelineRow])
+	}, [room, room.hasMoreHistory, loadHistory])
 
 	let prevEvt: MemDBEvent | null = null
 	return <div className="timeline-view" onScroll={handleScroll} ref={timelineViewRef}>
-		<div className="timeline-beginning">
-			{room.hasMoreHistory ? <button onClick={loadHistory} disabled={isLoadingHistory}>
-				{isLoadingHistory
-					? <><ScaleLoader color="var(--primary-color)"/> Loading history...</>
-					: "Load more history"}
-			</button> : "No more history available in this room"}
-		</div>
 		<div className="timeline-list">
-			<div className="timeline-top-ref" ref={topRef}/>
+			{/*<div className="timeline-bottom-ref" ref={bottomRef}/>*/}
 			{timeline.map(entry => {
 				if (!entry) {
 					return null
@@ -138,8 +122,15 @@ const TimelineView = () => {
 				/>
 				prevEvt = entry
 				return thisEvt
-			})}
-			<div className="timeline-bottom-ref" ref={bottomRef}/>
+			}).reverse()}
+			<div className="timeline-top-ref" ref={topRef}/>
+		</div>
+		<div className="timeline-beginning">
+			{room.hasMoreHistory ? <button onClick={loadHistory} disabled={isLoadingHistory}>
+				{isLoadingHistory
+					? <><ScaleLoader color="var(--primary-color)"/> Loading history...</>
+					: "Load more history"}
+			</button> : "No more history available in this room"}
 		</div>
 	</div>
 }
