@@ -15,6 +15,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import { use, useCallback, useEffect, useLayoutEffect, useRef, useState } from "react"
 import { ScaleLoader } from "react-spinners"
+import { VList } from "virtua"
 import { usePreference, useRoomTimeline } from "@/api/statestore"
 import { EventRowID, MemDBEvent } from "@/api/types"
 import useFocus from "@/util/focus.ts"
@@ -29,19 +30,19 @@ const TimelineView = () => {
 	const timeline = useRoomTimeline(room)
 	const client = use(ClientContext)!
 	const [isLoadingHistory, setLoadingHistory] = useState(false)
+	const prepending = useRef(false)
 	const [focusedEventRowID, directSetFocusedEventRowID] = useState<EventRowID | null>(null)
-	const loadHistory = useCallback(() => {
+	const loadHistory = () => {
 		setLoadingHistory(true)
 		client.loadMoreHistory(room.roomID)
+			.then(() => prepending.current = false)
 			.catch(err => console.error("Failed to load history", err))
 			.finally(() => setLoadingHistory(false))
-	}, [client, room])
-	const bottomRef = roomCtx.timelineBottomRef
-	const topRef = useRef<HTMLDivElement>(null)
+	}
 	const timelineViewRef = useRef<HTMLDivElement>(null)
-	const prevOldestTimelineRow = useRef(0)
-	const oldestTimelineRow = timeline[0]?.timeline_rowid
-	const oldScrollHeight = useRef(0)
+	// const prevOldestTimelineRow = useRef(0)
+	// const oldestTimelineRow = timeline[0]?.timeline_rowid
+	// const oldScrollHeight = useRef(0)
 	const focused = useFocus()
 	const smallReplies = usePreference(client.store, room, "small_replies")
 
@@ -54,24 +55,46 @@ const TimelineView = () => {
 		const timelineView = timelineViewRef.current
 		roomCtx.scrolledToBottom = timelineView.scrollTop + timelineView.clientHeight + 1 >= timelineView.scrollHeight
 	}
-	// Save the scroll height prior to updating the timeline, so that we can adjust the scroll position if needed.
-	if (timelineViewRef.current) {
-		oldScrollHeight.current = timelineViewRef.current.scrollHeight
-	}
-	useLayoutEffect(() => {
-		const bottomRef = roomCtx.timelineBottomRef
-		if (bottomRef.current && roomCtx.scrolledToBottom) {
-			// For any timeline changes, if we were at the bottom, scroll to the new bottom
-			bottomRef.current.scrollIntoView()
-		} else if (timelineViewRef.current && prevOldestTimelineRow.current > (timeline[0]?.timeline_rowid ?? 0)) {
-			// When new entries are added to the top of the timeline, scroll down to keep the same position
-			timelineViewRef.current.scrollTop += timelineViewRef.current.scrollHeight - oldScrollHeight.current
+	const onScroll = (offset: number) => {
+		const list = roomCtx.listRef.current
+		if (!list) {
+			return
 		}
-		prevOldestTimelineRow.current = timeline[0]?.timeline_rowid ?? 0
-	}, [client.userID, roomCtx, timeline])
+		// Magic incantation stolen from https://inokawa.github.io/virtua/?path=/story/advanced-chat--default
+		roomCtx.scrolledToBottom = offset - list.scrollSize + list.viewportSize >= -1.5
+		const oldestRowID = timeline[0]?.timeline_rowid
+		if (oldestRowID && offset < 100 && room.paginationRequestedForRow !== oldestRowID) {
+			room.paginationRequestedForRow = oldestRowID
+			loadHistory()
+		}
+	}
+
+	// Save the scroll height prior to updating the timeline, so that we can adjust the scroll position if needed.
+	// if (timelineViewRef.current) {
+	// 	oldScrollHeight.current = timelineViewRef.current.scrollHeight
+	// }
+	// useLayoutEffect(() => {
+	// 	const bottomRef = roomCtx.timelineBottomRef
+	// 	if (bottomRef.current && roomCtx.scrolledToBottom) {
+	// 		// For any timeline changes, if we were at the bottom, scroll to the new bottom
+	// 		bottomRef.current.scrollIntoView()
+	// 	} else if (timelineViewRef.current && prevOldestTimelineRow.current > (timeline[0]?.timeline_rowid ?? 0)) {
+	// 		// When new entries are added to the top of the timeline, scroll down to keep the same position
+	// 		timelineViewRef.current.scrollTop += timelineViewRef.current.scrollHeight - oldScrollHeight.current
+	// 	}
+	// 	prevOldestTimelineRow.current = timeline[0]?.timeline_rowid ?? 0
+	// }, [client.userID, roomCtx, timeline])
 	useEffect(() => {
 		roomCtx.directSetFocusedEventRowID = directSetFocusedEventRowID
 	}, [roomCtx])
+	useEffect(() => {
+		if (roomCtx.scrolledToBottom) {
+			roomCtx.listRef.current?.scrollToIndex(timeline.length - 1, { align: "end" })
+		}
+	}, [roomCtx, timeline])
+	useLayoutEffect(() => {
+		prepending.current = false
+	})
 	useEffect(() => {
 		const newestEvent = timeline[timeline.length - 1]
 		if (
@@ -95,36 +118,35 @@ const TimelineView = () => {
 			)
 		}
 	}, [focused, client, roomCtx, room, timeline])
-	useEffect(() => {
-		const topElem = topRef.current
-		if (!topElem || !room.hasMoreHistory) {
-			return
-		}
-		const observer = new IntersectionObserver(entries => {
-			if (entries[0]?.isIntersecting && room.paginationRequestedForRow !== prevOldestTimelineRow.current) {
-				room.paginationRequestedForRow = prevOldestTimelineRow.current
-				loadHistory()
-			}
-		}, {
-			root: topElem.parentElement!.parentElement,
-			rootMargin: "0px",
-			threshold: 1.0,
-		})
-		observer.observe(topElem)
-		return () => observer.unobserve(topElem)
-	}, [room, room.hasMoreHistory, loadHistory, oldestTimelineRow])
+	// useEffect(() => {
+	// 	const topElem = topRef.current
+	// 	if (!topElem || !room.hasMoreHistory) {
+	// 		return
+	// 	}
+	// 	const observer = new IntersectionObserver(entries => {
+	// 		if (entries[0]?.isIntersecting && room.paginationRequestedForRow !== prevOldestTimelineRow.current) {
+	// 			room.paginationRequestedForRow = prevOldestTimelineRow.current
+	// 			loadHistory()
+	// 		}
+	// 	}, {
+	// 		root: topElem.parentElement!.parentElement,
+	// 		rootMargin: "0px",
+	// 		threshold: 1.0,
+	// 	})
+	// 	observer.observe(topElem)
+	// 	return () => observer.unobserve(topElem)
+	// }, [room, room.hasMoreHistory, loadHistory, oldestTimelineRow])
 
 	let prevEvt: MemDBEvent | null = null
 	return <div className="timeline-view" onScroll={handleScroll} ref={timelineViewRef}>
-		<div className="timeline-beginning">
-			{room.hasMoreHistory ? <button onClick={loadHistory} disabled={isLoadingHistory}>
-				{isLoadingHistory
-					? <><ScaleLoader color="var(--primary-color)"/> Loading history...</>
-					: "Load more history"}
-			</button> : "No more history available in this room"}
-		</div>
-		<div className="timeline-list">
-			<div className="timeline-top-ref" ref={topRef}/>
+		<VList ref={roomCtx.listRef} reverse shift={prepending.current} className="timeline-list" onScroll={onScroll}>
+			<div className="timeline-beginning">
+				{room.hasMoreHistory ? <button onClick={loadHistory} disabled={isLoadingHistory}>
+					{isLoadingHistory
+						? <><ScaleLoader color="var(--primary-color)"/> Loading history...</>
+						: "Load more history"}
+				</button> : "No more history available in this room"}
+			</div>
 			{timeline.map(entry => {
 				if (!entry) {
 					return null
@@ -139,8 +161,7 @@ const TimelineView = () => {
 				prevEvt = entry
 				return thisEvt
 			})}
-			<div className="timeline-bottom-ref" ref={bottomRef}/>
-		</div>
+		</VList>
 	</div>
 }
 
