@@ -79,8 +79,13 @@ export class DirectChatSpace extends Space {
 export class UnreadsSpace extends Space {
 	id = "fi.mau.gomuks.unreads"
 
+	constructor(private parent: StateStore) {
+		super()
+	}
+
 	include(room: RoomListEntry): boolean {
-		return Boolean(room.unread_messages
+		return Boolean(room.room_id === this.parent.activeRoomID
+			|| room.unread_messages
 			|| room.unread_notifications
 			|| room.unread_highlights
 			|| room.marked_unread)

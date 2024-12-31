@@ -49,7 +49,13 @@ const RoomList = ({ activeRoomID }: RoomListProps) => {
 	const setSpace = useCallback((space: RoomListFilter | null) => {
 		directSetSpace(space)
 		client.store.currentRoomListFilter = space
-	}, [client])
+		if (client.store.activeRoomID && space) {
+			const entry = client.store.rooms.get(client.store.activeRoomID)?.roomListEntry
+			if (entry && !space.include(entry)) {
+				mainScreen.setActiveRoom(null)
+			}
+		}
+	}, [client, mainScreen])
 	const onClickSpace = useCallback((evt: React.MouseEvent<HTMLDivElement>) => {
 		const store = client.store.getSpaceStore(evt.currentTarget.getAttribute("data-target-space")!)
 		setSpace(store)

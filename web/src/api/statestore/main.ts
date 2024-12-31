@@ -77,7 +77,7 @@ export class StateStore {
 	readonly spaceEdges: Map<RoomID, SpaceEdgeStore> = new Map()
 	readonly spaceOrphans = new SpaceOrphansSpace(this)
 	readonly directChatsSpace = new DirectChatSpace()
-	readonly unreadsSpace = new UnreadsSpace()
+	readonly unreadsSpace = new UnreadsSpace(this)
 	readonly pseudoSpaces = [
 		this.spaceOrphans,
 		this.directChatsSpace,
