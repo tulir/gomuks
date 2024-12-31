@@ -50,7 +50,7 @@ const RoomList = ({ activeRoomID }: RoomListProps) => {
 		directSetSpace(space)
 		client.store.currentRoomListFilter = space
 		if (client.store.activeRoomID && space) {
-			const entry = client.store.rooms.get(client.store.activeRoomID)?.roomListEntry
+			const entry = client.store.roomListEntries.get(client.store.activeRoomID)
 			if (entry && !space.include(entry)) {
 				mainScreen.setActiveRoom(null)
 			}

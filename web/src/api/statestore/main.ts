@@ -73,6 +73,7 @@ export class StateStore {
 	readonly rooms: Map<RoomID, RoomStateStore> = new Map()
 	readonly inviteRooms: Map<RoomID, InvitedRoomStore> = new Map()
 	readonly roomList = new NonNullCachedEventDispatcher<RoomListEntry[]>([])
+	readonly roomListEntries = new Map<RoomID, RoomListEntry>()
 	readonly topLevelSpaces = new NonNullCachedEventDispatcher<RoomID[]>([])
 	readonly spaceEdges: Map<RoomID, SpaceEdgeStore> = new Map()
 	readonly spaceOrphans = new SpaceOrphansSpace(this)
@@ -212,11 +213,11 @@ export class StateStore {
 		const changedRoomListEntries = new Map<RoomID, RoomListEntry | null>()
 		for (const data of sync.invited_rooms ?? []) {
 			const room = new InvitedRoomStore(data, this)
-			const oldEntry = this.inviteRooms.get(room.room_id)
 			this.inviteRooms.set(room.room_id, room)
 			if (!resyncRoomList) {
 				changedRoomListEntries.set(room.room_id, room)
-				this.#applyUnreadModification(room, oldEntry)
+				this.#applyUnreadModification(room, this.roomListEntries.get(room.room_id))
+				this.roomListEntries.set(room.room_id, room)
 			}
 			if (this.activeRoomID === room.room_id) {
 				this.switchRoom?.(room.room_id)
@@ -239,8 +240,12 @@ export class StateStore {
 			if (roomListEntryChanged) {
 				const entry = this.#makeRoomListEntry(data, room)
 				changedRoomListEntries.set(roomID, entry)
-				this.#applyUnreadModification(entry, room.roomListEntry)
-				room.roomListEntry = entry
+				this.#applyUnreadModification(entry, this.roomListEntries.get(roomID))
+				if (entry) {
+					this.roomListEntries.set(roomID, entry)
+				} else {
+					this.roomListEntries.delete(roomID)
+				}
 			}
 			if (!resyncRoomList) {
 				// When we join a valid replacement room, hide the tombstoned room.
@@ -289,7 +294,7 @@ export class StateStore {
 			updatedRoomList.sort((r1, r2) => r1.sorting_timestamp - r2.sorting_timestamp)
 			for (const entry of updatedRoomList) {
 				this.#applyUnreadModification(entry, undefined)
-				this.rooms.get(entry.room_id)!.roomListEntry = entry
+				this.roomListEntries.set(entry.room_id, entry)
 			}
 		} else if (changedRoomListEntries.size > 0) {
 			updatedRoomList = this.roomList.current.filter(entry => !changedRoomListEntries.has(entry.room_id))
