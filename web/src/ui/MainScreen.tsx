@@ -139,7 +139,7 @@ class ContextFields implements MainScreenContextFields {
 				room_id: roomID,
 				source_via: meta?.via,
 				source_alias: meta?.alias,
-				space_id: history.state.space_id,
+				space_id: history.state?.space_id,
 			}, "")
 		}
 	}
@@ -168,7 +168,7 @@ class ContextFields implements MainScreenContextFields {
 			.querySelector(`div.room-entry[data-room-id="${CSS.escape(room.roomID)}"]`)
 			?.scrollIntoView({ block: "nearest" })
 		if (pushState) {
-			history.pushState({ room_id: room.roomID, space_id: history.state.space_id }, "")
+			history.pushState({ room_id: room.roomID, space_id: history.state?.space_id }, "")
 		}
 		let roomNameForTitle = room.meta.current.name
 		if (roomNameForTitle && roomNameForTitle.length > 48) {
@@ -186,7 +186,7 @@ class ContextFields implements MainScreenContextFields {
 		this.client.store.activeRoomIsPreview = false
 		this.keybindings.activeRoom = null
 		if (pushState) {
-			history.pushState({ space_id: history.state.space_id }, "")
+			history.pushState({ space_id: history.state?.space_id }, "")
 		}
 		document.title = this.#getWindowTitle()
 	}
