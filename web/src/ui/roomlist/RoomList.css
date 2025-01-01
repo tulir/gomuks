@@ -119,7 +119,7 @@ div.room-entry {
 		width: 3rem;
 
 		> img.room-avatar {
-			padding: 4px;
+			margin: .25rem;
 		}
 	}
 
