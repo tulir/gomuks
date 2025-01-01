@@ -111,6 +111,23 @@ export class StateStore {
 		return true
 	}
 
+	getSpaceByID(spaceID: string | undefined): RoomListFilter | null {
+		if (!spaceID) {
+			return null
+		}
+		const realSpace = this.spaceEdges.get(spaceID)
+		if (realSpace) {
+			return realSpace
+		}
+		for (const pseudoSpace of this.pseudoSpaces) {
+			if (pseudoSpace.id === spaceID) {
+				return pseudoSpace
+			}
+		}
+		console.warn("Failed to find space", spaceID)
+		return null
+	}
+
 	get roomListFilterFunc(): ((entry: RoomListEntry) => boolean) | null {
 		if (!this.currentRoomListFilter && !this.currentRoomListQuery) {
 			return null

@@ -16,7 +16,7 @@
 import { JSX, use, useEffect, useMemo, useReducer, useRef, useState } from "react"
 import { SyncLoader } from "react-spinners"
 import Client from "@/api/client.ts"
-import { RoomStateStore } from "@/api/statestore"
+import { RoomListFilter, RoomStateStore } from "@/api/statestore"
 import type { RoomID } from "@/api/types"
 import { useEventAsState } from "@/util/eventdispatcher.ts"
 import { ensureString, ensureStringArray, parseMatrixURI } from "@/util/validation.ts"
@@ -52,6 +52,7 @@ class ContextFields implements MainScreenContextFields {
 	constructor(
 		private directSetRightPanel: (props: RightPanelProps | null) => void,
 		private directSetActiveRoom: (room: RoomStateStore | RoomPreviewProps | null) => void,
+		private directSetSpace: (space: RoomListFilter | null) => void,
 		private client: Client,
 	) {
 		this.keybindings = new Keybindings(client.store, this)
@@ -109,6 +110,24 @@ class ContextFields implements MainScreenContextFields {
 		}
 	}
 
+	setSpace = (space: RoomListFilter | null, pushState = true) => {
+		if (space === this.client.store.currentRoomListFilter) {
+			return
+		}
+		console.log("Switching to space", space?.id)
+		this.directSetSpace(space)
+		this.client.store.currentRoomListFilter = space
+		if (pushState) {
+			if (this.client.store.activeRoomID && space) {
+				const entry = this.client.store.roomListEntries.get(this.client.store.activeRoomID)
+				if (entry && !space.include(entry)) {
+					this.setActiveRoom(null)
+				}
+			}
+			history.replaceState({ ...(history.state || {}), space_id: space?.id }, "")
+		}
+	}
+
 	#setPreviewRoom(roomID: RoomID, pushState: boolean, meta?: Partial<RoomPreviewProps>) {
 		const invite = this.client.store.inviteRooms.get(roomID)
 		this.#closeActiveRoom(false)
@@ -120,6 +139,7 @@ class ContextFields implements MainScreenContextFields {
 				room_id: roomID,
 				source_via: meta?.via,
 				source_alias: meta?.alias,
+				space_id: history.state.space_id,
 			}, "")
 		}
 	}
@@ -148,7 +168,7 @@ class ContextFields implements MainScreenContextFields {
 			.querySelector(`div.room-entry[data-room-id="${CSS.escape(room.roomID)}"]`)
 			?.scrollIntoView({ block: "nearest" })
 		if (pushState) {
-			history.pushState({ room_id: room.roomID }, "")
+			history.pushState({ room_id: room.roomID, space_id: history.state.space_id }, "")
 		}
 		let roomNameForTitle = room.meta.current.name
 		if (roomNameForTitle && roomNameForTitle.length > 48) {
@@ -166,7 +186,7 @@ class ContextFields implements MainScreenContextFields {
 		this.client.store.activeRoomIsPreview = false
 		this.keybindings.activeRoom = null
 		if (pushState) {
-			history.pushState({}, "")
+			history.pushState({ space_id: history.state.space_id }, "")
 		}
 		document.title = this.#getWindowTitle()
 	}
@@ -279,12 +299,13 @@ const activeRoomReducer = (
 
 const MainScreen = () => {
 	const [[prevActiveRoom, activeRoom], directSetActiveRoom] = useReducer(activeRoomReducer, [null, null])
+	const [space, directSetSpace] = useState<RoomListFilter | null>(null)
 	const skipNextTransitionRef = useRef(false)
 	const [rightPanel, directSetRightPanel] = useState<RightPanelProps | null>(null)
 	const client = use(ClientContext)!
 	const syncStatus = useEventAsState(client.syncStatus)
 	const context = useMemo(
-		() => new ContextFields(directSetRightPanel, directSetActiveRoom, client),
+		() => new ContextFields(directSetRightPanel, directSetActiveRoom, directSetSpace, client),
 		[client],
 	)
 	useEffect(() => {
@@ -292,6 +313,10 @@ const MainScreen = () => {
 		const listener = (evt: PopStateEvent) => {
 			skipNextTransitionRef.current = evt.hasUAVisualTransition
 			const roomID = evt.state?.room_id ?? null
+			const spaceID = evt.state?.space_id ?? undefined
+			if (spaceID !== client.store.currentRoomListFilter?.id) {
+				context.setSpace(client.store.getSpaceByID(spaceID), false)
+			}
 			if (roomID !== client.store.activeRoomID) {
 				context.setActiveRoom(roomID, {
 					alias: ensureString(evt.state?.source_alias) || undefined,
@@ -372,7 +397,7 @@ const MainScreen = () => {
 		<ModalWrapper>
 			<StylePreferences client={client} activeRoom={activeRealRoom}/>
 			<main className={classNames.join(" ")} style={extraStyle}>
-				<RoomList activeRoomID={activeRoom?.roomID ?? null}/>
+				<RoomList activeRoomID={activeRoom?.roomID ?? null} space={space}/>
 				{resizeHandle1}
 				{renderedRoom
 					? renderedRoom instanceof RoomStateStore

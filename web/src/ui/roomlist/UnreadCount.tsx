@@ -13,7 +13,7 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import { SpaceUnreadCounts } from "@/api/statestore/space.ts"
+import { SpaceUnreadCounts } from "@/api/statestore"
 
 interface UnreadCounts extends SpaceUnreadCounts {
 	marked_unread?: boolean

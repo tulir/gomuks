@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import React, { use, useCallback, useRef, useState } from "react"
-import { RoomListFilter, Space as SpaceStore, SpaceUnreadCounts } from "@/api/statestore/space.ts"
+import { RoomListFilter, Space as SpaceStore, SpaceUnreadCounts } from "@/api/statestore"
 import type { RoomID } from "@/api/types"
 import { useEventAsState } from "@/util/eventdispatcher.ts"
 import reverseMap from "@/util/reversemap.ts"
@@ -31,35 +31,25 @@ import "./RoomList.css"
 
 interface RoomListProps {
 	activeRoomID: RoomID | null
+	space: RoomListFilter | null
 }
 
-const RoomList = ({ activeRoomID }: RoomListProps) => {
+const RoomList = ({ activeRoomID, space }: RoomListProps) => {
 	const client = use(ClientContext)!
 	const mainScreen = use(MainScreenContext)
 	const roomList = useEventAsState(client.store.roomList)
 	const spaces = useEventAsState(client.store.topLevelSpaces)
 	const searchInputRef = useRef<HTMLInputElement>(null)
 	const [query, directSetQuery] = useState("")
-	const [space, directSetSpace] = useState<RoomListFilter | null>(null)
 
 	const setQuery = (evt: React.ChangeEvent<HTMLInputElement>) => {
 		client.store.currentRoomListQuery = toSearchableString(evt.target.value)
 		directSetQuery(evt.target.value)
 	}
-	const setSpace = useCallback((space: RoomListFilter | null) => {
-		directSetSpace(space)
-		client.store.currentRoomListFilter = space
-		if (client.store.activeRoomID && space) {
-			const entry = client.store.roomListEntries.get(client.store.activeRoomID)
-			if (entry && !space.include(entry)) {
-				mainScreen.setActiveRoom(null)
-			}
-		}
-	}, [client, mainScreen])
 	const onClickSpace = useCallback((evt: React.MouseEvent<HTMLDivElement>) => {
 		const store = client.store.getSpaceStore(evt.currentTarget.getAttribute("data-target-space")!)
-		setSpace(store)
-	}, [setSpace, client])
+		mainScreen.setSpace(store)
+	}, [mainScreen, client])
 	const onClickSpaceUnread = useCallback((
 		evt: React.MouseEvent<HTMLDivElement> | null, space?: SpaceStore | null,
 	) => {
@@ -130,11 +120,11 @@ const RoomList = ({ activeRoomID }: RoomListProps) => {
 			</button>
 		</div>
 		<div className="space-bar">
-			<FakeSpace space={null} setSpace={setSpace} isActive={space === null} />
+			<FakeSpace space={null} setSpace={mainScreen.setSpace} isActive={space === null} />
 			{client.store.pseudoSpaces.map(pseudoSpace => <FakeSpace
 				key={pseudoSpace.id}
 				space={pseudoSpace}
-				setSpace={setSpace}
+				setSpace={mainScreen.setSpace}
 				onClickUnread={onClickSpaceUnread}
 				isActive={space?.id === pseudoSpace.id}
 			/>)}
