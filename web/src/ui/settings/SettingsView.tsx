@@ -332,6 +332,16 @@ const SettingsView = ({ room }: SettingsViewProps) => {
 			)
 		}
 	}
+	const onClickOpenCSSApp = () => {
+		client.rpc.requestOpenIDToken().then(
+			resp => window.open(
+				`https://css.gomuks.app/login?token=${resp.access_token}&server_name=${resp.matrix_server_name}`,
+				"_blank",
+				"noreferrer noopener",
+			),
+			err => window.alert(`Failed to request OpenID token: ${err}`),
+		)
+	}
 	usePreferences(client.store, room)
 	const globalServer = client.store.serverPreferenceCache
 	const globalLocal = client.store.localPreferenceCache
@@ -381,6 +391,7 @@ const SettingsView = ({ room }: SettingsViewProps) => {
 		<CustomCSSInput setPref={setPref} room={room} />
 		<AppliedSettingsView room={room} />
 		<div className="misc-buttons">
+			<button onClick={onClickOpenCSSApp}>Sign into css.gomuks.app</button>
 			{window.Notification && <button onClick={client.requestNotificationPermission}>
 				Request notification permission
 			</button>}

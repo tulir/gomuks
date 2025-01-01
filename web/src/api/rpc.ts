@@ -32,6 +32,7 @@ import type {
 	ReceiptType,
 	RelatesTo,
 	ResolveAliasResponse,
+	RespOpenIDToken,
 	RespRoomJoin,
 	RoomAlias,
 	RoomID,
@@ -256,5 +257,9 @@ export default abstract class RPCClient {
 
 	verify(recovery_key: string): Promise<boolean> {
 		return this.request("verify", { recovery_key })
+	}
+
+	requestOpenIDToken(): Promise<RespOpenIDToken> {
+		return this.request("request_openid_token", {})
 	}
 }
