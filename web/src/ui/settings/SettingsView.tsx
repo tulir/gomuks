@@ -237,7 +237,9 @@ const CustomCSSInput = ({ setPref, room }: { setPref: SetPrefFunc, room: RoomSta
 				</span>}
 		</div>
 		{vscodeOpen ? <div className="vscode-wrapper">
-			<Suspense fallback={<div className="loader"><ScaleLoader width={40} height={80} color="var(--primary-color)"/></div>}>
+			<Suspense fallback={
+				<div className="loader"><ScaleLoader width={40} height={80} color="var(--primary-color)"/></div>
+			}>
 				<Monaco
 					initData={vscodeInitialContentRef.current}
 					onClose={closeVSCode}

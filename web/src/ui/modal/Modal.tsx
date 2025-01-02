@@ -60,7 +60,7 @@ const ModalWrapper = ({ children }: { children: React.ReactNode }) => {
 		}
 		window.addEventListener("popstate", listener)
 		return () => window.removeEventListener("popstate", listener)
-	}, [])
+	}, [onClickWrapper])
 	let modal: JSX.Element | null = null
 	if (state) {
 		let content = <ModalCloseContext value={onClickWrapper}>{state.content}</ModalCloseContext>
