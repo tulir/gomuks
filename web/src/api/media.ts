@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import { parseMXC } from "@/util/validation.ts"
-import { ContentURI, LazyLoadSummary, RoomID, UserID, UserProfile } from "./types"
+import { ContentURI, RoomID, UserID, UserProfile } from "./types"
 
 export const getMediaURL = (mxc?: string, encrypted: boolean = false): string | undefined => {
 	const [server, mediaID] = parseMXC(mxc)
@@ -93,20 +93,12 @@ interface RoomForAvatarURL {
 	room_id: RoomID
 	name?: string
 	dm_user_id?: UserID
-	lazy_load_summary?: LazyLoadSummary
 	avatar?: ContentURI
 	avatar_url?: ContentURI
 }
 
 export const getRoomAvatarURL = (room: RoomForAvatarURL, avatarOverride?: ContentURI): string | undefined => {
-	let dmUserID: UserID | undefined
-	if ("dm_user_id" in room) {
-		dmUserID = room.dm_user_id
-	} else if ("lazy_load_summary" in room) {
-		dmUserID = room.lazy_load_summary?.["m.heroes"]?.length === 1
-			? room.lazy_load_summary["m.heroes"][0] : undefined
-	}
-	return getAvatarURL(dmUserID ?? room.room_id, {
+	return getAvatarURL(room.dm_user_id ?? room.room_id, {
 		displayname: room.name,
 		avatar_url: avatarOverride ?? room.avatar ?? room.avatar_url,
 	})

@@ -40,8 +40,7 @@ const MutualRooms = ({ client, userID }: MutualRoomsProps) => {
 				}
 				return {
 					room_id: roomID,
-					dm_user_id: roomData.meta.current.lazy_load_summary?.["m.heroes"]?.length === 1
-						? roomData.meta.current.lazy_load_summary["m.heroes"][0] : undefined,
+					dm_user_id: roomData.meta.current.dm_user_id,
 					name: roomData.meta.current.name ?? "Unnamed room",
 					avatar: roomData.meta.current.avatar,
 					search_name: "",

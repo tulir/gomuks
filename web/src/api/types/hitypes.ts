@@ -54,6 +54,7 @@ export interface DBRoom {
 	name_quality: RoomNameQuality
 	avatar?: ContentURI
 	explicit_avatar: boolean
+	dm_user_id?: UserID
 	topic?: string
 	canonical_alias?: RoomAlias
 	lazy_load_summary?: LazyLoadSummary

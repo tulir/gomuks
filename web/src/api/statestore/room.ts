@@ -70,6 +70,7 @@ function visibleMetaIsEqual(meta1: DBRoom, meta2: DBRoom): boolean {
 		meta1.avatar === meta2.avatar &&
 		meta1.topic === meta2.topic &&
 		meta1.canonical_alias === meta2.canonical_alias &&
+		meta1.dm_user_id === meta2.dm_user_id &&
 		llSummaryIsEqual(meta1.lazy_load_summary, meta2.lazy_load_summary) &&
 		meta1.encryption_event?.algorithm === meta2.encryption_event?.algorithm &&
 		meta1.has_member_list === meta2.has_member_list
