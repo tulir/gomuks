@@ -68,6 +68,15 @@ export interface UserProfile {
 	[custom: string]: unknown
 }
 
+export type PresenceState = "online" | "offline" | "unavailable"
+
+export interface Presence {
+	currently_active?: boolean
+	last_active_ago?: number
+	presence: PresenceState
+	status_msg?: string | null
+}
+
 export type Membership = "join" | "leave" | "ban" | "invite" | "knock"
 
 export interface MemberEventContent extends UserProfile {
