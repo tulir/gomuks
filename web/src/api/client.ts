@@ -305,7 +305,7 @@ export default class Client {
 		}
 	}
 
-	async loadMoreHistory(roomID: RoomID): Promise<void> {
+	async loadMoreHistory(roomID: RoomID): Promise<number> {
 		const room = this.store.rooms.get(roomID)
 		if (!room) {
 			throw new Error("Room not found")
@@ -324,6 +324,7 @@ export default class Client {
 			}
 			room.hasMoreHistory = resp.has_more
 			room.applyPagination(resp.events, resp.related_events, resp.receipts)
+			return resp.events.length
 		} finally {
 			room.paginating = false
 		}

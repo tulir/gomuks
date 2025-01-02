@@ -1,9 +1,6 @@
 div.timeline-view {
 	overflow-y: scroll;
-
-	display: flex;
-	flex-direction: column;
-	justify-content: space-between;
+	contain: strict;
 
 	> div.timeline-beginning {
 		display: flex;
