@@ -77,7 +77,9 @@ const EventSendStatus = ({ evt }: { evt: MemDBEvent }) => {
 	}
 }
 
-const TimelineEvent = ({ evt, prevEvt, disableMenu, smallReplies, isFocused, virtualIndex, ref }: TimelineEventProps) => {
+const TimelineEvent = ({
+	evt, prevEvt, disableMenu, smallReplies, isFocused, virtualIndex, ref,
+}: TimelineEventProps) => {
 	const roomCtx = useRoomContext()
 	const client = use(ClientContext)!
 	const mainScreen = use(MainScreenContext)

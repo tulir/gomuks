@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import { Virtualizer, useVirtualizer } from "@tanstack/react-virtual"
-import { use, useEffect, useLayoutEffect, useRef, useState } from "react"
+import { use, useCallback, useEffect, useLayoutEffect, useRef, useState } from "react"
 import { ScaleLoader } from "react-spinners"
 import { usePreference, useRoomTimeline } from "@/api/statestore"
 import { EventRowID, MemDBEvent } from "@/api/types"
@@ -25,7 +25,11 @@ import TimelineEvent from "./TimelineEvent.tsx"
 import { getBodyType, isSmallEvent } from "./content/index.ts"
 import "./TimelineView.css"
 
-const measureElement = (element: Element, entry: ResizeObserverEntry | undefined, instance: Virtualizer<HTMLDivElement, Element>) => {
+// This is necessary to take into account margin, which the default measurement
+// (using getBoundingClientRect) doesn't by default
+const measureElement = (
+	element: Element, entry: ResizeObserverEntry | undefined, instance: Virtualizer<HTMLDivElement, Element>,
+) => {
 	const horizontal = instance.options.horizontal
 	const style = window.getComputedStyle(element)
 	if (entry == null ? void 0 : entry.borderBoxSize) {
@@ -34,15 +38,23 @@ const measureElement = (element: Element, entry: ResizeObserverEntry | undefined
 			const size = Math.round(
 				box[horizontal ? "inlineSize" : "blockSize"],
 			)
-			return size + parseFloat(style[horizontal ? "marginInlineStart" : "marginBlockStart"]) + parseFloat(style[horizontal ? "marginInlineEnd" : "marginBlockEnd"])
+			return size
+				+ parseFloat(style[horizontal ? "marginInlineStart" : "marginBlockStart"])
+				+ parseFloat(style[horizontal ? "marginInlineEnd" : "marginBlockEnd"])
 		}
 	}
 	return Math.round(
-		element.getBoundingClientRect()[instance.options.horizontal ? "width" : "height"] + parseFloat(style[horizontal ? "marginLeft" : "marginTop"]) + parseFloat(style[horizontal ? "marginRight" : "marginBottom"]),
+		element.getBoundingClientRect()[instance.options.horizontal ? "width" : "height"]
+		+ parseFloat(style[horizontal ? "marginLeft" : "marginTop"])
+		+ parseFloat(style[horizontal ? "marginRight" : "marginBottom"]),
 	)
 }
 
-const estimateEventHeight = (event: MemDBEvent) => isSmallEvent(getBodyType(event)) ? (event?.reactions ? 26 : 0) + (event?.content.body ? (event?.local_content?.big_emoji ? 92 : 44) : 0) + (event?.content.info?.h || 0) : 26
+const estimateEventHeight = (event: MemDBEvent) => isSmallEvent(getBodyType(event)) ?
+	(event.reactions ? 26 : 0)
+	+ (event.content.body ? (event.local_content?.big_emoji ? 92 : 44) : 0)
+	+ (event.content.info?.h || 0)
+	: 26
 
 const TimelineView = () => {
 	const roomCtx = useRoomContext()
@@ -51,32 +63,12 @@ const TimelineView = () => {
 	const client = use(ClientContext)!
 	const [isLoadingHistory, setLoadingHistory] = useState(false)
 	const [focusedEventRowID, directSetFocusedEventRowID] = useState<EventRowID | null>(null)
-	const loadHistory = () => {
-		setLoadingHistory(true)
-		client.loadMoreHistory(room.roomID)
-			.catch(err => console.error("Failed to load history", err))
-			.then((loadedEventCount) => {
-				// Prevent scroll getting stuck loading more history
-				if (loadedEventCount && timelineViewRef.current && timelineViewRef.current.scrollTop <= virtualListOffsetRef.current) {
-					virtualizer.scrollToIndex(loadedEventCount, { align: "end" })
-				}
-			})
-			.finally(() => {
-				setLoadingHistory(false)
-			})
-	}
 	const bottomRef = roomCtx.timelineBottomRef
 	const timelineViewRef = useRef<HTMLDivElement>(null)
 	const focused = useFocus()
 	const smallReplies = usePreference(client.store, room, "small_replies")
 
 	const virtualListRef = useRef<HTMLDivElement>(null)
-
-	const virtualListOffsetRef = useRef(0)
-
-	useLayoutEffect(() => {
-		virtualListOffsetRef.current = virtualListRef.current?.offsetTop ?? 0
-	}, [])
 
 	const virtualizer = useVirtualizer({
 		count: timeline.length,
@@ -89,12 +81,32 @@ const TimelineView = () => {
 
 	const items = virtualizer.getVirtualItems()
 
+	const loadHistory = useCallback(() => {
+		setLoadingHistory(true)
+		client.loadMoreHistory(room.roomID)
+			.catch(err => console.error("Failed to load history", err))
+			.then((loadedEventCount) => {
+				// Prevent scroll getting stuck loading more history
+				if (loadedEventCount &&
+					timelineViewRef.current &&
+					timelineViewRef.current.scrollTop <= (virtualListRef.current?.offsetTop ?? 0)) {
+					// FIXME: This seems to run before the events are measured,
+					// resulting in a jump in the timeline of the difference in
+					// height when scrolling very fast
+					virtualizer.scrollToIndex(loadedEventCount, { align: "end" })
+				}
+			})
+			.finally(() => {
+				setLoadingHistory(false)
+			})
+	}, [client, room, virtualizer])
+
 	useLayoutEffect(() => {
 		if (roomCtx.scrolledToBottom) {
 			// timelineViewRef.current && (timelineViewRef.current.scrollTop = timelineViewRef.current.scrollHeight)
 			bottomRef.current?.scrollIntoView()
 		}
-	}, [roomCtx, timeline, virtualizer.getTotalSize()])
+	}, [roomCtx, timeline, virtualizer.getTotalSize(), bottomRef])
 
 	// When the user scrolls the timeline manually, remember if they were at the bottom,
 	// so that we can keep them at the bottom when new events are added.
@@ -147,7 +159,7 @@ const TimelineView = () => {
 			return
 		}
 
-		// Load more history when the virtualiser loads the last item
+		// Load more history when the virtualizer loads the last item
 		if (firstItem.index == 0) {
 			console.log("Loading more history...")
 			loadHistory()
@@ -156,6 +168,8 @@ const TimelineView = () => {
 	}, [
 		room.hasMoreHistory, loadHistory,
 		virtualizer.getVirtualItems(),
+		room.paginating,
+		virtualizer,
 	])
 
 	return <div className="timeline-view" onScroll={handleScroll} ref={timelineViewRef}>
