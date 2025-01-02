@@ -537,6 +537,7 @@ export class StateStore {
 		this.rooms.clear()
 		this.inviteRooms.clear()
 		this.spaceEdges.clear()
+		this.pseudoSpaces.forEach(space => space.clearUnreads())
 		this.roomList.emit([])
 		this.topLevelSpaces.emit([])
 		this.accountData.clear()

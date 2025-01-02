@@ -40,6 +40,10 @@ export abstract class Space implements RoomListFilter {
 	abstract id: string
 	abstract include(room: RoomListEntry): boolean
 
+	clearUnreads() {
+		this.counts.emit(emptyUnreadCounts)
+	}
+
 	applyUnreads(newCounts?: SpaceUnreadCounts | null, oldCounts?: SpaceUnreadCounts | null) {
 		const mergedCounts: SpaceUnreadCounts = {
 			unread_messages: this.counts.current.unread_messages
