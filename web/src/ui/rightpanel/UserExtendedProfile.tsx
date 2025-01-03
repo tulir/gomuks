@@ -105,7 +105,7 @@ const UserExtendedProfile = ({ profile, refreshProfile, client, userID }: Extend
 				<SetTimeZoneElement tz={userTimeZone} client={client} refreshProfile={refreshProfile} />}
 			{pronouns.length > 0 && <>
 				<div>Pronouns:</div>
-				<div>{pronouns.map(pronounSet => ensureString(pronounSet.summary)).join(" / ")}</div>
+				<div>{pronouns.map(pronounSet => ensureString(pronounSet.summary)).join(", ")}</div>
 			</>}
 		</div>
 	</>
