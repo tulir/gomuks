@@ -146,12 +146,13 @@ const TimelineView = () => {
 		}
 	}, [focused, client, roomCtx, room, timeline])
 
+	const firstItem = items[0]
+
 	useEffect(() => {
 		if (!room.hasMoreHistory || room.paginating) {
 			return
 		}
 
-		const firstItem = virtualizer.getVirtualItems()[0]
 
 		// Load history if there is none
 		if (!firstItem) {
@@ -167,9 +168,8 @@ const TimelineView = () => {
 		}
 	}, [
 		room.hasMoreHistory, loadHistory,
-		virtualizer.getVirtualItems(),
 		room.paginating,
-		virtualizer,
+		firstItem,
 	])
 
 	return <div className="timeline-view" onScroll={handleScroll} ref={timelineViewRef}>
