@@ -13,14 +13,14 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import { createContext } from "react"
+import React, { createContext } from "react"
 import { RoomListFilter } from "@/api/statestore"
 import type { RoomID } from "@/api/types"
 import type { RightPanelProps } from "./rightpanel/RightPanel.tsx"
 import type { RoomPreviewProps } from "./roomview/RoomPreview.tsx"
 
 export interface MainScreenContextFields {
-	setActiveRoom: (roomID: RoomID | null, previewMeta?: Partial<RoomPreviewProps>) => void
+	setActiveRoom: (roomID: RoomID | null, previewMeta?: Partial<RoomPreviewProps>, toSpace?: RoomListFilter) => void
 	setSpace: (space: RoomListFilter | null, pushState?: boolean) => void
 	clickRoom: (evt: React.MouseEvent) => void
 	clearActiveRoom: () => void

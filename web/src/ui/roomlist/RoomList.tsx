@@ -77,8 +77,7 @@ const RoomList = ({ activeRoomID, space }: RoomListProps) => {
 		for (let i = client.store.roomList.current.length - 1; i >= 0; i--) {
 			const entry = client.store.roomList.current[i]
 			if (entry[wantedField] > 0 && space.include(entry)) {
-				mainScreen.setActiveRoom(entry.room_id)
-				mainScreen.setSpace(space)
+				mainScreen.setActiveRoom(entry.room_id, undefined, space)
 				evt.stopPropagation()
 				break
 			}
