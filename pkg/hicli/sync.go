@@ -894,10 +894,11 @@ func (h *HiClient) processStateAndTimeline(
 	}
 	// Calculate name from participants if participants changed and current name was generated from participants, or if the room name was unset
 	if (heroesChanged && updatedRoom.NameQuality <= database.NameQualityParticipants) || updatedRoom.NameQuality == database.NameQualityNil {
-		name, dmAvatarURL, err := h.calculateRoomParticipantName(ctx, room.ID, summary)
+		name, dmAvatarURL, dmUserID, err := h.calculateRoomParticipantName(ctx, room.ID, summary)
 		if err != nil {
 			return fmt.Errorf("failed to calculate room name: %w", err)
 		}
+		updatedRoom.DMUserID = &dmUserID
 		updatedRoom.Name = &name
 		updatedRoom.NameQuality = database.NameQualityParticipants
 		if !dmAvatarURL.IsEmpty() && !room.ExplicitAvatar {
@@ -966,15 +967,15 @@ func joinMemberNames(names []string, totalCount int) string {
 	}
 }
 
-func (h *HiClient) calculateRoomParticipantName(ctx context.Context, roomID id.RoomID, summary *mautrix.LazyLoadSummary) (string, id.ContentURI, error) {
+func (h *HiClient) calculateRoomParticipantName(ctx context.Context, roomID id.RoomID, summary *mautrix.LazyLoadSummary) (string, id.ContentURI, id.UserID, error) {
 	var primaryAvatarURL id.ContentURI
 	if summary == nil || len(summary.Heroes) == 0 {
-		return "Empty room", primaryAvatarURL, nil
+		return "Empty room", primaryAvatarURL, "", nil
 	}
 	var functionalMembers []id.UserID
 	functionalMembersEvt, err := h.DB.CurrentState.Get(ctx, roomID, event.StateElementFunctionalMembers, "")
 	if err != nil {
-		return "", primaryAvatarURL, fmt.Errorf("failed to get %s event: %w", event.StateElementFunctionalMembers.Type, err)
+		return "", primaryAvatarURL, "", fmt.Errorf("failed to get %s event: %w", event.StateElementFunctionalMembers.Type, err)
 	} else if functionalMembersEvt != nil {
 		mautrixEvt := functionalMembersEvt.AsRawMautrix()
 		_ = mautrixEvt.Content.ParseRaw(mautrixEvt.Type)
@@ -990,16 +991,21 @@ func (h *HiClient) calculateRoomParticipantName(ctx context.Context, roomID id.R
 	} else if summary.InvitedMemberCount != nil {
 		memberCount = *summary.InvitedMemberCount
 	}
+	var dmUserID id.UserID
 	for _, hero := range summary.Heroes {
 		if slices.Contains(functionalMembers, hero) {
+			// TODO save member count so push rule evaluation would use the subtracted one?
 			memberCount--
 			continue
 		} else if len(members) >= 5 {
 			break
 		}
+		if dmUserID == "" {
+			dmUserID = hero
+		}
 		heroEvt, err := h.DB.CurrentState.Get(ctx, roomID, event.StateMember, hero.String())
 		if err != nil {
-			return "", primaryAvatarURL, fmt.Errorf("failed to get %s's member event: %w", hero, err)
+			return "", primaryAvatarURL, "", fmt.Errorf("failed to get %s's member event: %w", hero, err)
 		} else if heroEvt == nil {
 			leftMembers = append(leftMembers, hero.String())
 			continue
@@ -1015,19 +1021,28 @@ func (h *HiClient) calculateRoomParticipantName(ctx context.Context, roomID id.R
 		}
 		if membership == "join" || membership == "invite" {
 			members = append(members, name)
+			dmUserID = hero
 		} else {
 			leftMembers = append(leftMembers, name)
 		}
 	}
-	if len(members)+len(leftMembers) > 1 || !primaryAvatarURL.IsValid() {
+	if !primaryAvatarURL.IsValid() {
 		primaryAvatarURL = id.ContentURI{}
 	}
 	if len(members) > 0 {
-		return joinMemberNames(members, memberCount), primaryAvatarURL, nil
+		if len(members) > 1 {
+			primaryAvatarURL = id.ContentURI{}
+			dmUserID = ""
+		}
+		return joinMemberNames(members, memberCount), primaryAvatarURL, dmUserID, nil
 	} else if len(leftMembers) > 0 {
-		return fmt.Sprintf("Empty room (was %s)", joinMemberNames(leftMembers, memberCount)), primaryAvatarURL, nil
+		if len(leftMembers) > 1 {
+			primaryAvatarURL = id.ContentURI{}
+			dmUserID = ""
+		}
+		return fmt.Sprintf("Empty room (was %s)", joinMemberNames(leftMembers, memberCount)), primaryAvatarURL, "", nil
 	} else {
-		return "Empty room", primaryAvatarURL, nil
+		return "Empty room", primaryAvatarURL, "", nil
 	}
 }
 

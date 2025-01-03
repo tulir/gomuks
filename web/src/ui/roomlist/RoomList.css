@@ -119,7 +119,7 @@ div.room-entry {
 		width: 3rem;
 
 		> img.room-avatar {
-			padding: 4px;
+			margin: .25rem;
 		}
 	}
 
@@ -172,6 +172,7 @@ div.room-entry-unreads {
 		justify-content: center;
 		border-radius: var(--unread-count-size);
 		color: var(--unread-counter-text-color);
+		user-select: none;
 
 		background-color: var(--unread-counter-message-bg);
 		height: var(--unread-count-size);

@@ -27,30 +27,33 @@ export interface FakeSpaceProps {
 	space: Space | null
 	setSpace: (space: RoomListFilter | null) => void
 	isActive: boolean
-	onClickUnread?: (evt: React.MouseEvent<HTMLDivElement> | null, space: Space | null) => void
+	onClickUnread?: (evt: React.MouseEvent<HTMLDivElement>, space: Space | null) => void
 }
 
-const getFakeSpaceIcon = (space: RoomListFilter | null): JSX.Element | null => {
+const getFakeSpaceMeta = (space: RoomListFilter | null): [string | undefined, JSX.Element | null] => {
 	switch (space?.id) {
 	case undefined:
-		return <HomeIcon />
+		return ["Home", <HomeIcon />]
 	case "fi.mau.gomuks.direct_chats":
-		return <PersonIcon />
+		return ["Direct chats", <PersonIcon />]
 	case "fi.mau.gomuks.unreads":
-		return <NotificationsIcon />
+		return ["Unread chats", <NotificationsIcon />]
 	case "fi.mau.gomuks.space_orphans":
-		return <TagIcon />
+		return ["Rooms outside spaces", <TagIcon />]
 	default:
-		return null
+		return [undefined, null]
 	}
 }
 
 const FakeSpace = ({ space, setSpace, isActive, onClickUnread }: FakeSpaceProps) => {
 	const unreads = useEventAsState(space?.counts)
-	const onClickUnreadWrapped = onClickUnread ? () => onClickUnread(null, space) : undefined
-	return <div className={`space-entry ${isActive ? "active" : ""}`} onClick={() => setSpace(space)}>
+	const onClickUnreadWrapped = onClickUnread
+		? (evt: React.MouseEvent<HTMLDivElement>) => onClickUnread(evt, space)
+		: undefined
+	const [title, icon] = getFakeSpaceMeta(space)
+	return <div className={`space-entry ${isActive ? "active" : ""}`} onClick={() => setSpace(space)} title={title}>
 		<UnreadCount counts={unreads} space={true} onClick={onClickUnreadWrapped} />
-		{getFakeSpaceIcon(space)}
+		{icon}
 	</div>
 }
 

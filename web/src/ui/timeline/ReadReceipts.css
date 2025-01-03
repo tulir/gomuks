@@ -20,6 +20,7 @@ div.timeline-event > div.read-receipts {
 		> img {
 			margin-left: -.35rem;
 			border: 1px solid var(--background-color);
+			background-color: var(--background-color);
 		}
 	}
 

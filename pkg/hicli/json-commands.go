@@ -157,6 +157,8 @@ func (h *HiClient) handleJSONCommand(ctx context.Context, req *JSONCommand) (any
 		return unmarshalAndCall(req.Data, func(params *resolveAliasParams) (*mautrix.RespAliasResolve, error) {
 			return h.Client.ResolveAlias(ctx, params.Alias)
 		})
+	case "request_openid_token":
+		return h.Client.RequestOpenIDToken(ctx)
 	case "logout":
 		if h.LogoutFunc == nil {
 			return nil, errors.New("logout not supported")

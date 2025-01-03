@@ -288,6 +288,13 @@ export interface RespRoomJoin {
 	room_id: RoomID
 }
 
+export interface RespOpenIDToken {
+	access_token: string
+	expires_in: number
+	matrix_server_name: string
+	token_type: "Bearer"
+}
+
 export interface PronounSet {
 	subject?: string
 	object?: string
