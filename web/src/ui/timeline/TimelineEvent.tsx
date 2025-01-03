@@ -237,7 +237,7 @@ const TimelineEvent = ({ evt, prevEvt, disableMenu, smallReplies, isFocused }: T
 		{!eventTimeOnly ? <div className="event-sender-and-time">
 			<span
 				className={`event-sender sender-color-${getUserColorIndex(perMessageSender?.id ?? evt.sender)}`}
-				data-target-user={perMessageSender ? undefined : evt.sender}
+				data-target-user={evt.sender}
 				onClick={perMessageSender ? undefined : roomCtx.appendMentionToComposer}
 				title={perMessageSender ? perMessageSender.id : evt.sender}
 			>
