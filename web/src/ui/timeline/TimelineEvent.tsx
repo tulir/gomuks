@@ -114,7 +114,6 @@ const TimelineEvent = ({ evt, prevEvt, disableMenu, smallReplies, isFocused }: T
 	}
 	const memberEvt = useRoomMember(client, roomCtx.store, evt.sender)
 	const memberEvtContent = memberEvt?.content as MemberEventContent | undefined
-	let renderMemberEvtContent = memberEvtContent
 	const BodyType = getBodyType(evt)
 	const eventTS = new Date(evt.timestamp)
 	const editEventTS = evt.last_edit ? new Date(evt.last_edit.timestamp) : null
@@ -173,6 +172,7 @@ const TimelineEvent = ({ evt, prevEvt, disableMenu, smallReplies, isFocused }: T
 	}
 	const perMessageSender = getPerMessageProfile(evt)
 	const prevPerMessageSender = getPerMessageProfile(prevEvt)
+	let renderMemberEvtContent = memberEvtContent
 	if (perMessageSender) {
 		renderMemberEvtContent = {
 			membership: "join",

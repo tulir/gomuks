@@ -103,6 +103,15 @@ export const ReplyBody = ({
 		classNames.push("small")
 	}
 	const perMessageSender = getPerMessageProfile(event)
+	let renderMemberEvtContent = memberEvtContent
+	if (perMessageSender) {
+		renderMemberEvtContent = {
+			membership: "join",
+			displayname: perMessageSender.displayname ?? memberEvtContent?.displayname,
+			avatar_url: perMessageSender.avatar_url ?? memberEvtContent?.avatar_url,
+			avatar_file: perMessageSender.avatar_file ?? memberEvtContent?.avatar_file,
+		}
+	}
 	const userColorIndex = getUserColorIndex(perMessageSender?.id ?? event.sender)
 	classNames.push(`sender-color-${userColorIndex}`)
 	return <blockquote data-reply-to={event.event_id} className={classNames.join(" ")} onClick={onClickReply}>
@@ -115,7 +124,7 @@ export const ReplyBody = ({
 				<img
 					className="small avatar"
 					loading="lazy"
-					src={getAvatarURL(perMessageSender?.id ?? event.sender, perMessageSender ?? memberEvtContent)}
+					src={getAvatarURL(perMessageSender?.id ?? event.sender, renderMemberEvtContent)}
 					alt=""
 				/>
 			</div>
@@ -123,7 +132,7 @@ export const ReplyBody = ({
 				className={`event-sender sender-color-${userColorIndex}`}
 				title={perMessageSender ? perMessageSender.id : event.sender}
 			>
-				{getDisplayname(event.sender, perMessageSender ?? memberEvtContent)}
+				{getDisplayname(event.sender, renderMemberEvtContent)}
 			</span>
 			{perMessageSender && <div className="per-message-event-sender">
 				<span className="via">via</span>
