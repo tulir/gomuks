@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react"
 import Client from "@/api/client.ts"
-import { ExtendedUserProfile, PronounSet } from "@/api/types"
+import { PronounSet, UserProfile } from "@/api/types"
 import { ensureArray, ensureString } from "@/util/validation.ts"
 
 interface ExtendedProfileProps {
-	profile: ExtendedUserProfile
+	profile: UserProfile
+	refreshProfile: () => void
 	client: Client
 	userID: string
 }
@@ -12,6 +13,7 @@ interface ExtendedProfileProps {
 interface SetTimezoneProps {
 	tz?: string
 	client: Client
+	refreshProfile: () => void
 }
 
 const getCurrentTimezone = () => new Intl.DateTimeFormat().resolvedOptions().timeZone
@@ -30,7 +32,7 @@ const currentTimeAdjusted = (tz: string) => {
 	}
 }
 
-function ClockElement({ tz }: { tz: string }) {
+const ClockElement = ({ tz }: { tz: string }) => {
 	const [time, setTime] = useState(currentTimeAdjusted(tz))
 	useEffect(() => {
 		let interval: number | undefined
@@ -41,29 +43,37 @@ function ClockElement({ tz }: { tz: string }) {
 		}, (1001 - Date.now() % 1000))
 		return () => interval ? clearInterval(interval) : clearTimeout(timeout)
 	}, [tz])
-	return <div>{time}</div>
-}
-
-function SetTimezoneElement({ tz, client }: SetTimezoneProps) {
-	const zones = Intl.supportedValuesOf("timeZone")
-	const setTz = (newTz: string) => {
-		if (zones.includes(newTz) && newTz !== tz) {
-			return client.rpc.setProfileField("us.cloke.msc4175.tz", newTz).then(
-				() => client.rpc.getProfile(client.userID),
-				(err) => console.error("Error setting timezone", err),
-			)
-		}
-	}
-	// TODO: You are unable to set a timezone if you do not already have one set in your profile.
-	//  The defaulting to the current timezone causes `newTz !== tz` to never be true when the user has
-	//  no timezone set.
 
 	return <>
+		<div title={tz}>Time:</div>
+		<div title={tz}>{time}</div>
+	</>
+}
+
+const SetTimeZoneElement = ({ tz, client, refreshProfile }: SetTimezoneProps) =>  {
+	const zones = Intl.supportedValuesOf("timeZone")
+	const saveTz = (newTz: string) => {
+		if (!zones.includes(newTz)) {
+			return
+		}
+		client.rpc.setProfileField("us.cloke.msc4175.tz", newTz).then(
+			() => refreshProfile(),
+			err => {
+				console.error("Failed to set time zone:", err)
+				window.alert(`Failed to set time zone: ${err}`)
+			},
+		)
+	}
+
+	return <>
+		<label htmlFor="userprofile-timezone-input">Set time zone:</label>
 		<input
 			list="timezones"
 			className="text-input"
+			id="userprofile-timezone-input"
 			defaultValue={tz || getCurrentTimezone()}
-			onChange={(e) => setTz(e.currentTarget.value)}
+			onKeyDown={evt => evt.key === "Enter" && saveTz(evt.currentTarget.value)}
+			onBlur={evt => evt.currentTarget.value !== tz && saveTz(evt.currentTarget.value)}
 		/>
 		<datalist id="timezones">
 			{zones.map((zone) => <option key={zone} value={zone} />)}
@@ -72,7 +82,7 @@ function SetTimezoneElement({ tz, client }: SetTimezoneProps) {
 }
 
 
-export default function UserExtendedProfile({ profile, client, userID }: ExtendedProfileProps) {
+const UserExtendedProfile = ({ profile, refreshProfile, client, userID }: ExtendedProfileProps)=>  {
 	if (!profile) {
 		return null
 	}
@@ -86,24 +96,19 @@ export default function UserExtendedProfile({ profile, client, userID }: Extende
 	// otherwise there's an ugly and pointless <hr/> for no real reason.
 
 	const pronouns = ensureArray(profile["io.fsky.nyx.pronouns"]) as PronounSet[]
-	const userTimezone = ensureString(profile["us.cloke.msc4175.tz"])
+	const userTimeZone = ensureString(profile["us.cloke.msc4175.tz"])
 	return <>
 		<hr/>
 		<div className="extended-profile">
-			{userTimezone && <>
-				<div title={userTimezone}>Time:</div>
-				<ClockElement tz={userTimezone} />
-			</>}
-			{userID === client.userID && <>
-				<div>Set Timezone:</div>
-				<SetTimezoneElement tz={userTimezone} client={client} />
-			</>}
-			{pronouns.length >= 1 && <>
+			{userTimeZone && <ClockElement tz={userTimeZone} />}
+			{userID === client.userID &&
+				<SetTimeZoneElement tz={userTimeZone} client={client} refreshProfile={refreshProfile} />}
+			{pronouns.length > 0 && <>
 				<div>Pronouns:</div>
-				<div>
-					{pronouns.map((pronounSet: PronounSet) => (pronounSet.summary)).join("/")}
-				</div>
+				<div>{pronouns.map(pronounSet => ensureString(pronounSet.summary)).join(" / ")}</div>
 			</>}
 		</div>
 	</>
 }
+
+export default UserExtendedProfile

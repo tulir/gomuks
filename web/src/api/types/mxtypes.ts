@@ -86,11 +86,6 @@ export interface PronounSet {
 	language: string
 }
 
-export interface ExtendedUserProfile extends UserProfile {
-	"us.cloke.msc4175.tz"?: string
-	"io.fsky.nyx.pronouns"?: PronounSet[]
-}
-
 export type Membership = "join" | "leave" | "ban" | "invite" | "knock"
 
 export interface MemberEventContent extends UserProfile {
