@@ -91,6 +91,20 @@ div.right-panel-content.user {
 		word-break: break-word;
 	}
 
+	div.extended-profile {
+		display: grid;
+		gap: 0.25rem;
+		grid-template-columns: 1fr 1fr;
+
+		> input {
+			border: 0;
+			padding: 0;  /* Necessary to prevent alignment issues with other cells */
+			width: 100%;
+			box-sizing: border-box;
+			border-bottom: 1px solid var(--blockquote-border-color);
+		}
+	}
+
 	hr {
 		width: 100%;
 		opacity: .2;

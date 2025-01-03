@@ -86,6 +86,10 @@ func (h *HiClient) handleJSONCommand(ctx context.Context, req *JSONCommand) (any
 		return unmarshalAndCall(req.Data, func(params *getProfileParams) (*mautrix.RespUserProfile, error) {
 			return h.Client.GetProfile(ctx, params.UserID)
 		})
+	case "set_profile_field":
+		return unmarshalAndCall(req.Data, func(params *setProfileFieldParams) (bool, error) {
+			return true, h.Client.UnstableSetProfileField(ctx, params.Field, params.Value)
+		})
 	case "get_mutual_rooms":
 		return unmarshalAndCall(req.Data, func(params *getProfileParams) ([]id.RoomID, error) {
 			return h.GetMutualRooms(ctx, params.UserID)
@@ -273,6 +277,11 @@ type setTypingParams struct {
 
 type getProfileParams struct {
 	UserID id.UserID `json:"user_id"`
+}
+
+type setProfileFieldParams struct {
+	Field string `json:"field"`
+	Value any    `json:"value"`
 }
 
 type getEventParams struct {

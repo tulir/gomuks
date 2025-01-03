@@ -25,6 +25,14 @@ export type RoomVersion = "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" | 
 export type RoomType = "" | "m.space"
 export type RelationType = "m.annotation" | "m.reference" | "m.replace" | "m.thread"
 
+export type JSONValue =
+	| string
+	| number
+	| boolean
+	| null
+	| JSONValue[]
+	| {[key: string]: JSONValue}
+
 export interface RoomPredecessor {
 	room_id: RoomID
 	event_id: EventID
@@ -66,6 +74,16 @@ export interface UserProfile {
 	displayname?: string
 	avatar_url?: ContentURI
 	[custom: string]: unknown
+}
+
+export interface PronounSet {
+	subject?: string
+	object?: string
+	possessive_determiner?: string
+	possessive_pronoun?: string
+	reflexive?: string
+	summary: string
+	language: string
 }
 
 export type Membership = "join" | "leave" | "ban" | "invite" | "knock"
