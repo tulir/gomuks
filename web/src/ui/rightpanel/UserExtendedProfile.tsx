@@ -17,12 +17,16 @@ interface SetTimezoneProps {
 const getCurrentTimezone = () => new Intl.DateTimeFormat().resolvedOptions().timeZone
 
 const currentTimeAdjusted = (tz: string) => {
-	const lang = navigator.language || "en-US"
-	const now = new Date()
 	try {
-		return new Intl.DateTimeFormat(lang, { timeStyle: "long", timeZone: tz }).format(now)
+		return new Intl.DateTimeFormat("en-GB", {
+			hour: "numeric",
+			minute: "numeric",
+			second: "numeric",
+			timeZoneName: "short",
+			timeZone: tz,
+		}).format(new Date())
 	} catch (e) {
-		return `Error: ${e}`
+		return `${e}`
 	}
 }
 
