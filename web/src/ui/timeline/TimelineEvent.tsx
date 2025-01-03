@@ -239,6 +239,7 @@ const TimelineEvent = ({ evt, prevEvt, disableMenu, smallReplies, isFocused }: T
 				className={`event-sender sender-color-${getUserColorIndex(perMessageSender?.id ?? evt.sender)}`}
 				data-target-user={perMessageSender ? undefined : evt.sender}
 				onClick={perMessageSender ? undefined : roomCtx.appendMentionToComposer}
+				title={perMessageSender ? perMessageSender.id : evt.sender}
 			>
 				{getDisplayname(evt.sender, renderMemberEvtContent)}
 			</span>
@@ -248,6 +249,7 @@ const TimelineEvent = ({ evt, prevEvt, disableMenu, smallReplies, isFocused }: T
 					className={`event-sender sender-color-${getUserColorIndex(evt.sender)}`}
 					data-target-user={evt.sender}
 					onClick={roomCtx.appendMentionToComposer}
+					title={evt.sender}
 				>
 					{getDisplayname(evt.sender, memberEvtContent)}
 				</span>
