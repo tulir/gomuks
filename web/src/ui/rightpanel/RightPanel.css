@@ -72,14 +72,6 @@ div.right-panel-content.user {
 		}
 	}
 
-	input.text-input {
-		border: 0;
-		padding: 0;  /* Necessary to prevent alignment issues with other cells */
-		width: 100%;
-		box-sizing: border-box;
-		border-bottom: 1px solid var(--blockquote-border-color);
-	}
-
 	div.displayname {
 		font-size: 1.5rem;
 		font-weight: bold;
@@ -103,6 +95,14 @@ div.right-panel-content.user {
 		display: grid;
 		gap: 0.25rem;
 		grid-template-columns: 1fr 1fr;
+
+		> input {
+			border: 0;
+			padding: 0;  /* Necessary to prevent alignment issues with other cells */
+			width: 100%;
+			box-sizing: border-box;
+			border-bottom: 1px solid var(--blockquote-border-color);
+		}
 	}
 
 	hr {

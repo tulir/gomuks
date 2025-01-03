@@ -65,15 +65,15 @@ const SetTimeZoneElement = ({ tz, client, refreshProfile }: SetTimezoneProps) =>
 		)
 	}
 
+	const defaultValue = tz || getCurrentTimezone()
 	return <>
 		<label htmlFor="userprofile-timezone-input">Set time zone:</label>
 		<input
 			list="timezones"
-			className="text-input"
 			id="userprofile-timezone-input"
-			defaultValue={tz || getCurrentTimezone()}
+			defaultValue={defaultValue}
 			onKeyDown={evt => evt.key === "Enter" && saveTz(evt.currentTarget.value)}
-			onBlur={evt => evt.currentTarget.value !== tz && saveTz(evt.currentTarget.value)}
+			onBlur={evt => evt.currentTarget.value !== defaultValue && saveTz(evt.currentTarget.value)}
 		/>
 		<datalist id="timezones">
 			{zones.map((zone) => <option key={zone} value={zone} />)}
