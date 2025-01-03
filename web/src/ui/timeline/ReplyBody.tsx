@@ -119,12 +119,18 @@ export const ReplyBody = ({
 					alt=""
 				/>
 			</div>
-			<span className={`event-sender sender-color-${userColorIndex}`}>
+			<span
+				className={`event-sender sender-color-${userColorIndex}`}
+				title={perMessageSender ? perMessageSender.id : event.sender}
+			>
 				{getDisplayname(event.sender, perMessageSender ?? memberEvtContent)}
 			</span>
 			{perMessageSender && <div className="per-message-event-sender">
 				<span className="via">via</span>
-				<span className={`event-sender sender-color-${getUserColorIndex(event.sender)}`}>
+				<span
+					className={`event-sender sender-color-${getUserColorIndex(event.sender)}`}
+					title={event.sender}
+				>
 					{getDisplayname(event.sender, memberEvtContent)}
 				</span>
 			</div>}
