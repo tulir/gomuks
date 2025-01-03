@@ -83,6 +83,7 @@ export const getAvatarURL = (userID: UserID, content?: UserProfile | null): stri
 	const backgroundColor = getUserColor(userID)
 	let server: string | undefined
 	let mediaID: string | undefined
+	const encrypted = !!content?.avatar_file
 	if (content?.avatar_file) {
 		[server, mediaID] = parseMXC(content.avatar_file.url)
 	} else {
@@ -92,7 +93,7 @@ export const getAvatarURL = (userID: UserID, content?: UserProfile | null): stri
 		return makeFallbackAvatar(backgroundColor, fallbackCharacter)
 	}
 	const fallback = `${backgroundColor}:${fallbackCharacter}`
-	return `_gomuks/media/${server}/${mediaID}?encrypted=false&fallback=${encodeURIComponent(fallback)}`
+	return `_gomuks/media/${server}/${mediaID}?encrypted=${encrypted}&fallback=${encodeURIComponent(fallback)}`
 }
 
 interface RoomForAvatarURL {
