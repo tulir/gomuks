@@ -270,7 +270,7 @@ const TimelineEvent = ({ evt, prevEvt, disableMenu, smallReplies, isFocused }: T
 			{evt.reactions ? <EventReactions reactions={evt.reactions}/> : null}
 		</div>
 		{!evt.event_id.startsWith("~") && roomCtx.store.preferences.display_read_receipts &&
-			<ReadReceipts room={roomCtx.store} eventID={evt.event_id}/>}
+			<ReadReceipts room={roomCtx.store} eventID={evt.event_id} />}
 		{evt.sender === client.userID && evt.transaction_id ? <EventSendStatus evt={evt}/> : null}
 	</div>
 	return <>
