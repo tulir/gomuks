@@ -106,6 +106,8 @@ export function isSmallEvent(bodyType: React.FunctionComponent<EventContentProps
 }
 
 export function getPerMessageProfile(evt: MemDBEvent | null): BeeperPerMessageProfile | undefined {
-	if (evt === null || evt.type !== "m.room.message" && evt.type !== "m.sticker") return undefined
+	if (evt === null || evt.type !== "m.room.message" && evt.type !== "m.sticker") {
+		return undefined
+	}
 	return (evt.content as MessageEventContent)["com.beeper.per_message_profile"]
 }
