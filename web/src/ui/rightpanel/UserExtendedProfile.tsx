@@ -29,10 +29,13 @@ const currentTimeAdjusted = (tz: string) => {
 function ClockElement({ tz }: { tz: string }) {
 	const [time, setTime] = useState(currentTimeAdjusted(tz))
 	useEffect(() => {
-		const interval = setInterval(() => {
-			setTime(currentTimeAdjusted(tz))
-		}, (1000 - Date.now() % 1000))
-		return () => clearInterval(interval)
+		let interval: number | undefined
+		const updateTime = () => setTime(currentTimeAdjusted(tz))
+		const timeout = setTimeout(() => {
+			interval = setInterval(updateTime, 1000)
+			updateTime()
+		}, (1001 - Date.now() % 1000))
+		return () => interval ? clearInterval(interval) : clearTimeout(timeout)
 	}, [tz])
 	return <div>{time}</div>
 }
