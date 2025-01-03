@@ -76,6 +76,21 @@ export interface UserProfile {
 	[custom: string]: unknown
 }
 
+export interface PronounSet {
+	subject?: string
+	object?: string
+	possessive_determiner?: string
+	possessive_pronoun?: string
+	reflexive?: string
+	summary: string
+	language: string
+}
+
+export interface ExtendedUserProfile extends UserProfile {
+	"us.cloke.msc4175.tz"?: string
+	"io.fsky.nyx.pronouns"?: PronounSet[]
+}
+
 export type Membership = "join" | "leave" | "ban" | "invite" | "knock"
 
 export interface MemberEventContent extends UserProfile {
@@ -293,19 +308,4 @@ export interface RespOpenIDToken {
 	expires_in: number
 	matrix_server_name: string
 	token_type: "Bearer"
-}
-
-export interface PronounSet {
-	subject?: string
-	object?: string
-	possessive_determiner?: string
-	possessive_pronoun?: string
-	reflexive?: string
-	summary: string
-	language: string
-}
-
-export interface ExtendedProfileAttributes {
-	"us.cloke.msc4175.tz"?: string
-	"io.fsky.nyx.pronouns"?: PronounSet[]
 }

@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react"
 import Client from "@/api/client.ts"
-import { ExtendedProfileAttributes, PronounSet, UserProfile } from "@/api/types"
-import { ensureArray } from "@/util/validation.ts"
+import { ExtendedUserProfile, PronounSet } from "@/api/types"
+import { ensureArray, ensureString } from "@/util/validation.ts"
 
 interface ExtendedProfileProps {
-	profile: UserProfile & ExtendedProfileAttributes
+	profile: ExtendedUserProfile
 	client: Client
 	userID: string
 }
@@ -51,54 +51,52 @@ function SetTimezoneElement({ tz, client }: SetTimezoneProps) {
 	//  The defaulting to the current timezone causes `newTz !== tz` to never be true when the user has
 	//  no timezone set.
 
-	return (
-		<>
-			<input
-				list="timezones"
-				className="text-input"
-				defaultValue={tz || getCurrentTimezone()}
-				onChange={(e) => setTz(e.currentTarget.value)}
-			/>
-			<datalist id="timezones">
-				{
-					zones.map((zone) => <option key={zone} value={zone} />)
-				}
-			</datalist>
-		</>
-	)
+	return <>
+		<input
+			list="timezones"
+			className="text-input"
+			defaultValue={tz || getCurrentTimezone()}
+			onChange={(e) => setTz(e.currentTarget.value)}
+		/>
+		<datalist id="timezones">
+			{zones.map((zone) => <option key={zone} value={zone} />)}
+		</datalist>
+	</>
 }
 
 
 export default function UserExtendedProfile({ profile, client, userID }: ExtendedProfileProps) {
-	if (!profile) return null
+	if (!profile) {
+		return null
+	}
 
 	const extendedProfileKeys = ["us.cloke.msc4175.tz", "io.fsky.nyx.pronouns"]
-	const hasExtendedProfile = extendedProfileKeys.some((key) => key in profile)
-	if (!hasExtendedProfile && client.userID !== userID) return null
+	const hasExtendedProfile = extendedProfileKeys.some((key) => profile[key])
+	if (!hasExtendedProfile && client.userID !== userID) {
+		return null
+	}
 	// Explicitly only return something if the profile has the keys we're looking for.
 	// otherwise there's an ugly and pointless <hr/> for no real reason.
 
-	const pronouns: PronounSet[] = ensureArray(profile["io.fsky.nyx.pronouns"]) as PronounSet[]
-	const userTimezone: string | undefined = profile["us.cloke.msc4175.tz"]
-	return (
-		<>
-			<hr/>
-			<div className="extended-profile">
-				{userTimezone && <>
-					<div title={userTimezone}>Time:</div>
-					<ClockElement tz={userTimezone} />
-				</>}
-				{userID === client.userID && <>
-					<div>Set Timezone:</div>
-					<SetTimezoneElement tz={userTimezone} client={client} />
-				</>}
-				{pronouns.length >= 1 && <>
-					<div>Pronouns:</div>
-					<div>
-						{pronouns.map((pronounSet: PronounSet) => (pronounSet.summary)).join("/")}
-					</div>
-				</>}
-			</div>
-		</>
-	)
+	const pronouns = ensureArray(profile["io.fsky.nyx.pronouns"]) as PronounSet[]
+	const userTimezone = ensureString(profile["us.cloke.msc4175.tz"])
+	return <>
+		<hr/>
+		<div className="extended-profile">
+			{userTimezone && <>
+				<div title={userTimezone}>Time:</div>
+				<ClockElement tz={userTimezone} />
+			</>}
+			{userID === client.userID && <>
+				<div>Set Timezone:</div>
+				<SetTimezoneElement tz={userTimezone} client={client} />
+			</>}
+			{pronouns.length >= 1 && <>
+				<div>Pronouns:</div>
+				<div>
+					{pronouns.map((pronounSet: PronounSet) => (pronounSet.summary)).join("/")}
+				</div>
+			</>}
+		</div>
+	</>
 }
