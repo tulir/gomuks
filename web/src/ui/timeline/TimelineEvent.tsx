@@ -27,7 +27,7 @@ import { useRoomContext } from "../roomview/roomcontext.ts"
 import ReadReceipts from "./ReadReceipts.tsx"
 import { ReplyIDBody } from "./ReplyBody.tsx"
 import URLPreviews from "./URLPreviews.tsx"
-import { ContentErrorBoundary, HiddenEvent, getBodyType, isSmallEvent } from "./content"
+import { ContentErrorBoundary, HiddenEvent, getBodyType, getPerMessageProfile, isSmallEvent } from "./content"
 import { EventFixedMenu, EventFullMenu, EventHoverMenu, getModalStyleFromMouse } from "./menu"
 import ErrorIcon from "@/icons/error.svg?react"
 import PendingIcon from "@/icons/pending.svg?react"
@@ -170,6 +170,18 @@ const TimelineEvent = ({ evt, prevEvt, disableMenu, smallReplies, isFocused }: T
 			replyInMessage = replyElem
 		}
 	}
+	const perMessageSender = getPerMessageProfile(evt)
+	const prevPerMessageSender = getPerMessageProfile(prevEvt)
+	let renderMemberEvtContent = memberEvtContent
+	if (perMessageSender) {
+		renderMemberEvtContent = {
+			membership: "join",
+			displayname: perMessageSender.displayname ?? memberEvtContent?.displayname,
+			avatar_url: perMessageSender.avatar_url ?? memberEvtContent?.avatar_url,
+			avatar_file: perMessageSender.avatar_file ?? memberEvtContent?.avatar_file,
+		}
+	}
+
 	let smallAvatar = false
 	let renderAvatar = true
 	let eventTimeOnly = false
@@ -183,6 +195,7 @@ const TimelineEvent = ({ evt, prevEvt, disableMenu, smallReplies, isFocused }: T
 		&& dateSeparator === null
 		&& !replyAboveMessage
 		&& !isSmallEvent(getBodyType(prevEvt))
+		&& prevPerMessageSender?.id === perMessageSender?.id
 	) {
 		wrapperClassNames.push("same-sender")
 		eventTimeOnly = true
@@ -209,7 +222,7 @@ const TimelineEvent = ({ evt, prevEvt, disableMenu, smallReplies, isFocused }: T
 		{replyAboveMessage}
 		{renderAvatar && <div
 			className="sender-avatar"
-			title={evt.sender}
+			title={perMessageSender ? `${perMessageSender.id} via ${evt.sender}` : evt.sender}
 			data-target-panel="user"
 			data-target-user={evt.sender}
 			onClick={mainScreen.clickRightPanelOpener}
@@ -217,18 +230,30 @@ const TimelineEvent = ({ evt, prevEvt, disableMenu, smallReplies, isFocused }: T
 			<img
 				className={`${smallAvatar ? "small" : ""} avatar`}
 				loading="lazy"
-				src={getAvatarURL(evt.sender, memberEvtContent)}
+				src={getAvatarURL(perMessageSender?.id ?? evt.sender, renderMemberEvtContent)}
 				alt=""
 			/>
 		</div>}
 		{!eventTimeOnly ? <div className="event-sender-and-time">
 			<span
-				className={`event-sender sender-color-${getUserColorIndex(evt.sender)}`}
+				className={`event-sender sender-color-${getUserColorIndex(perMessageSender?.id ?? evt.sender)}`}
 				data-target-user={evt.sender}
-				onClick={roomCtx.appendMentionToComposer}
+				onClick={perMessageSender ? undefined : roomCtx.appendMentionToComposer}
+				title={perMessageSender ? perMessageSender.id : evt.sender}
 			>
-				{getDisplayname(evt.sender, memberEvtContent)}
+				{getDisplayname(evt.sender, renderMemberEvtContent)}
 			</span>
+			{perMessageSender && <div className="per-message-event-sender">
+				<span className="via">via</span>
+				<span
+					className={`event-sender sender-color-${getUserColorIndex(evt.sender)}`}
+					data-target-user={evt.sender}
+					onClick={roomCtx.appendMentionToComposer}
+					title={evt.sender}
+				>
+					{getDisplayname(evt.sender, memberEvtContent)}
+				</span>
+			</div>}
 			<span className="event-time" title={fullTime}>{shortTime}</span>
 			{(editEventTS && editTime) ? <span className="event-edited" title={editTime}>
 				(edited at {formatShortTime(editEventTS)})

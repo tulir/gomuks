@@ -64,6 +64,21 @@ div.timeline-event {
 			cursor: var(--clickable-cursor);
 		}
 
+		> div.per-message-event-sender {
+			color: var(--secondary-text-color);
+			font-size: 0.85rem;
+
+			> span.via {
+				margin-right: 0.3rem;
+			}
+
+			> span.event-sender {
+				font-weight: bold;
+				user-select: none;
+				cursor: var(--clickable-cursor);
+			}
+		}
+
 		> span.event-time, > span.event-edited {
 			font-size: .7rem;
 			color: var(--secondary-text-color);
