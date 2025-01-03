@@ -60,7 +60,7 @@ export const ReplyIDBody = ({ room, eventID, isThread, small }: ReplyIDBodyProps
 			<code>{eventID}</code>
 		</blockquote>
 	}
-	return <ReplyBody room={room} event={event} isThread={isThread} small={small} />
+	return <ReplyBody room={room} event={event} isThread={isThread} small={small}/>
 }
 
 const onClickReply = (evt: React.MouseEvent) => {
