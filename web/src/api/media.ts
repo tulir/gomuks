@@ -81,12 +81,13 @@ function getFallbackCharacter(from: unknown, idx: number): string {
 export const getAvatarURL = (userID: UserID, content?: UserProfile | null): string | undefined => {
 	const fallbackCharacter = getFallbackCharacter(content?.displayname, 0) || getFallbackCharacter(userID, 1)
 	const backgroundColor = getUserColor(userID)
-	const [server, mediaID] = parseMXC(content?.avatar_url)
+	const [server, mediaID] = parseMXC(content?.avatar_file?.url ?? content?.avatar_url)
 	if (!mediaID) {
 		return makeFallbackAvatar(backgroundColor, fallbackCharacter)
 	}
+	const encrypted = !!content?.avatar_file
 	const fallback = `${backgroundColor}:${fallbackCharacter}`
-	return `_gomuks/media/${server}/${mediaID}?encrypted=false&fallback=${encodeURIComponent(fallback)}`
+	return `_gomuks/media/${server}/${mediaID}?encrypted=${encrypted}&fallback=${encodeURIComponent(fallback)}`
 }
 
 interface RoomForAvatarURL {

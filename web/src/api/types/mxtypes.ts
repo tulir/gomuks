@@ -73,6 +73,7 @@ export interface EncryptedEventContent {
 export interface UserProfile {
 	displayname?: string
 	avatar_url?: ContentURI
+	avatar_file?: EncryptedFile
 	[custom: string]: unknown
 }
 
@@ -177,6 +178,10 @@ export interface URLPreview {
 	"og:description"?: string
 }
 
+export interface BeeperPerMessageProfile extends UserProfile {
+	id: string
+}
+
 export interface BaseMessageEventContent {
 	msgtype: string
 	body: string
@@ -189,6 +194,7 @@ export interface BaseMessageEventContent {
 	"page.codeberg.everypizza.msc4193.spoiler.reason"?: string
 	"m.url_previews"?: URLPreview[]
 	"com.beeper.linkpreviews"?: URLPreview[]
+	"com.beeper.per_message_profile"?: BeeperPerMessageProfile
 }
 
 export interface TextMessageEventContent extends BaseMessageEventContent {

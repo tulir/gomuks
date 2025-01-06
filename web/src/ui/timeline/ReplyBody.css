@@ -103,6 +103,16 @@ blockquote.reply-body {
 			}
 		}
 
+		> div.per-message-event-sender {
+			color: var(--secondary-text-color);
+			font-size: .75rem;
+			margin: 0 .25rem;
+
+			> span.via {
+				margin-right: .25rem;
+			}
+		}
+
 		> div.buttons {
 			margin-left: auto;
 			display: flex;

@@ -20,7 +20,7 @@ import type { EventID, MemDBEvent, MemberEventContent } from "@/api/types"
 import { getDisplayname } from "@/util/validation.ts"
 import ClientContext from "../ClientContext.ts"
 import TooltipButton from "../util/TooltipButton.tsx"
-import { ContentErrorBoundary, getBodyType } from "./content"
+import { ContentErrorBoundary, getBodyType, getPerMessageProfile } from "./content"
 import CloseIcon from "@/icons/close.svg?react"
 import NotificationsOffIcon from "@/icons/notifications-off.svg?react"
 import NotificationsIcon from "@/icons/notifications.svg?react"
@@ -102,22 +102,47 @@ export const ReplyBody = ({
 	if (small) {
 		classNames.push("small")
 	}
-	const userColorIndex = getUserColorIndex(event.sender)
+	const perMessageSender = getPerMessageProfile(event)
+	let renderMemberEvtContent = memberEvtContent
+	if (perMessageSender) {
+		renderMemberEvtContent = {
+			membership: "join",
+			displayname: perMessageSender.displayname ?? memberEvtContent?.displayname,
+			avatar_url: perMessageSender.avatar_url ?? memberEvtContent?.avatar_url,
+			avatar_file: perMessageSender.avatar_file ?? memberEvtContent?.avatar_file,
+		}
+	}
+	const userColorIndex = getUserColorIndex(perMessageSender?.id ?? event.sender)
 	classNames.push(`sender-color-${userColorIndex}`)
 	return <blockquote data-reply-to={event.event_id} className={classNames.join(" ")} onClick={onClickReply}>
 		{small && <div className="reply-spine"/>}
 		<div className="reply-sender">
-			<div className="sender-avatar" title={event.sender}>
+			<div
+				className="sender-avatar"
+				title={perMessageSender ? `${perMessageSender.id} via ${event.sender}` : event.sender}
+			>
 				<img
 					className="small avatar"
 					loading="lazy"
-					src={getAvatarURL(event.sender, memberEvtContent)}
+					src={getAvatarURL(perMessageSender?.id ?? event.sender, renderMemberEvtContent)}
 					alt=""
 				/>
 			</div>
-			<span className={`event-sender sender-color-${userColorIndex}`}>
-				{getDisplayname(event.sender, memberEvtContent)}
+			<span
+				className={`event-sender sender-color-${userColorIndex}`}
+				title={perMessageSender ? perMessageSender.id : event.sender}
+			>
+				{getDisplayname(event.sender, renderMemberEvtContent)}
 			</span>
+			{perMessageSender && <div className="per-message-event-sender">
+				<span className="via">via</span>
+				<span
+					className={`event-sender sender-color-${getUserColorIndex(event.sender)}`}
+					title={event.sender}
+				>
+					{getDisplayname(event.sender, memberEvtContent)}
+				</span>
+			</div>}
 			{onClose && <div className="buttons">
 				{onSetSilent && (isExplicitInThread || !isThread) && <TooltipButton
 					tooltipText={isSilent

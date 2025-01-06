@@ -1,5 +1,5 @@
 import React from "react"
-import { MemDBEvent } from "@/api/types"
+import { BeeperPerMessageProfile, MemDBEvent, MessageEventContent } from "@/api/types"
 import ACLBody from "./ACLBody.tsx"
 import EncryptedBody from "./EncryptedBody.tsx"
 import HiddenEvent from "./HiddenEvent.tsx"
@@ -112,4 +112,11 @@ export function isSmallEvent(bodyType: React.FunctionComponent<EventContentProps
 	default:
 		return false
 	}
+}
+
+export function getPerMessageProfile(evt: MemDBEvent | null): BeeperPerMessageProfile | undefined {
+	if (evt === null || evt.type !== "m.room.message" && evt.type !== "m.sticker") {
+		return undefined
+	}
+	return (evt.content as MessageEventContent)["com.beeper.per_message_profile"]
 }
