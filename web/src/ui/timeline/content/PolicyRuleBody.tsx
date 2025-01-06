@@ -13,46 +13,49 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import { use } from "react"
+import { JSX, use } from "react"
 import { PolicyRuleContent } from "@/api/types"
-import MainScreenContext from "@/ui/MainScreenContext.ts"
+import { getDisplayname } from "@/util/validation.ts"
+import MainScreenContext from "../../MainScreenContext.ts"
 import EventContentProps from "./props.ts"
 
-const BanPolicyBody = ({ event, sender }: EventContentProps) => {
+const PolicyRuleBody = ({ event, sender }: EventContentProps) => {
 	const content = event.content as PolicyRuleContent
 	const prevContent = event.unsigned.prev_content as PolicyRuleContent | undefined
 	const mainScreen = use(MainScreenContext)
 
-	let entity = <span>{content.entity || prevContent?.entity}</span>
-	if(event.type === "m.policy.rule.user" && !content.entity?.includes("*") && !content.entity?.includes("?")) {
-		// Is user policy, and does not include the glob chars * and ?
-		entity = (
+	const entity = content.entity ?? prevContent?.entity
+	const recommendation = content.recommendation ?? prevContent?.recommendation
+	if (!entity || !recommendation) {
+		return <div className="policy-body">
+			{getDisplayname(event.sender, sender?.content)} sent an invalid policy rule
+		</div>
+	}
+	let entityElement = <>{entity}</>
+	if(event.type === "m.policy.rule.user" && !entity?.includes("*") && !entity?.includes("?")) {
+		entityElement = (
 			<a
 				className="hicli-matrix-uri hicli-matrix-uri-user"
-				href={`matrix:u/${content.entity.slice(1)}`}
+				href={`matrix:u/${entity.slice(1)}`}
 				onClick={mainScreen.clickRightPanelOpener}
 				data-target-panel="user"
-				data-target-user={content.entity}
+				data-target-user={entity}
 			>
-				{content.entity}
+				{entity}
 			</a>
 		)
 	}
-
-	let action = "added"
-	if (prevContent) {
-		if (!content) {
-			// If the content is empty, the ban is revoked.
-			action = "removed"
-		} else {
-			// There is still content, so the policy was updated
-			action = "updated"
-		}
+	let recommendationElement: JSX.Element | string = <code>{recommendation}</code>
+	if (recommendation === "m.ban") {
+		recommendationElement = "ban"
 	}
+	const action = prevContent ? ((content.entity && content.recommendation) ? "updated" : "removed") : "added"
+	const target = event.type.replace(/^m\.policy\.rule\./, "")
 	return <div className="policy-body">
-		{sender?.content.displayname ?? event.sender} {action} a policy
-		rule {action === "removed" ? "un" : null}banning {entity} for: {content.reason}
+		{getDisplayname(event.sender, sender?.content)} {action} a {recommendationElement} rule
+		for {target}s matching <code>{entityElement}</code>
+		{content.reason ? <> for <code>{content.reason}</code></> : null}
 	</div>
 }
 
-export default BanPolicyBody
+export default PolicyRuleBody
