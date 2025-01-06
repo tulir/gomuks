@@ -105,11 +105,11 @@ blockquote.reply-body {
 
 		> div.per-message-event-sender {
 			color: var(--secondary-text-color);
-			font-size: 0.85rem;
-			margin: 0.3rem;
+			font-size: .75rem;
+			margin: 0 .25rem;
 
 			> span.via {
-				margin-right: 0.3rem;
+				margin-right: .25rem;
 			}
 		}
 
