@@ -50,8 +50,8 @@ const BanPolicyBody = ({ event, sender }: EventContentProps) => {
 		}
 	}
 	return <div className="policy-body">
-		{sender?.content.displayname ?? event.sender} {action} a policy rule {action === "removed" ? "un" : null}banning
-		{entity} for: {content.reason}
+		{sender?.content.displayname ?? event.sender} {action} a policy rule {action === "removed" ? "un" : null}&nbsp;
+		banning {entity} for: {content.reason}
 	</div>
 }
 
