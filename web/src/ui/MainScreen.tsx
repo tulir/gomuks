@@ -217,6 +217,7 @@ class ContextFields implements MainScreenContextFields {
 	}
 
 	clickRightPanelOpener = (evt: React.MouseEvent) => {
+		evt.preventDefault()
 		const type = evt.currentTarget.getAttribute("data-target-panel")
 		if (type === "pinned-messages" || type === "members") {
 			this.setRightPanel({ type })
