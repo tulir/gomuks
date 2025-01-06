@@ -87,16 +87,6 @@ blockquote.reply-body {
 		color: var(--secondary-text-color);
 	}
 
-	> div.reply-sender > div.per-message-event-sender {
-		color: var(--secondary-text-color);
-		font-size: 0.85rem;
-		margin: 0.3rem;
-
-		> span.via {
-			margin-right: 0.3rem;
-		}
-	}
-
 	> div.reply-sender {
 		display: flex;
 		align-items: center;
@@ -110,6 +100,16 @@ blockquote.reply-body {
 			> img {
 				width: 100%;
 				height: 100%;
+			}
+		}
+
+		> div.per-message-event-sender {
+			color: var(--secondary-text-color);
+			font-size: 0.85rem;
+			margin: 0.3rem;
+
+			> span.via {
+				margin-right: 0.3rem;
 			}
 		}
 
