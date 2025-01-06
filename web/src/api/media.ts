@@ -81,13 +81,7 @@ function getFallbackCharacter(from: unknown, idx: number): string {
 export const getAvatarURL = (userID: UserID, content?: UserProfile | null): string | undefined => {
 	const fallbackCharacter = getFallbackCharacter(content?.displayname, 0) || getFallbackCharacter(userID, 1)
 	const backgroundColor = getUserColor(userID)
-	let server: string | undefined
-	let mediaID: string | undefined
-	if (content?.avatar_file) {
-		[server, mediaID] = parseMXC(content.avatar_file.url)
-	} else {
-		[server, mediaID] = parseMXC(content?.avatar_url)
-	}
+	const [server, mediaID] = parseMXC(content?.avatar_file?.url ?? content?.avatar_url)
 	if (!mediaID) {
 		return makeFallbackAvatar(backgroundColor, fallbackCharacter)
 	}
