@@ -23,7 +23,7 @@ const BanPolicyBody = ({ event, sender }: EventContentProps) => {
 	const prevContent = event.unsigned.prev_content as PolicyRuleContent | undefined
 	const mainScreen = use(MainScreenContext)
 
-	let entity = <span>content.entity || prevContent?.entity</span>
+	let entity = <span>{content.entity || prevContent?.entity}</span>
 	if(event.type === "m.policy.rule.user" && !content.entity?.includes("*") && !content.entity?.includes("?")) {
 		// Is user policy, and does not include the glob chars * and ?
 		entity = (
@@ -50,8 +50,8 @@ const BanPolicyBody = ({ event, sender }: EventContentProps) => {
 		}
 	}
 	return <div className="policy-body">
-		{sender?.content.displayname ?? event.sender} {action} a policy rule
-		{action === "removed" ? "un" : null}banning {entity} for {content.reason}
+		{sender?.content.displayname ?? event.sender} {action} a policy rule {action === "removed" ? "un" : null}banning
+		{entity} for: {content.reason}
 	</div>
 }
 
