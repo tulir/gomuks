@@ -315,6 +315,7 @@ export class StateStore {
 			}
 			this.rooms.delete(roomID)
 			changedRoomListEntries.set(roomID, null)
+			this.#applyUnreadModification(null, this.roomListEntries.get(roomID))
 		}
 
 		let updatedRoomList: RoomListEntry[] | undefined

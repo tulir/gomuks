@@ -112,6 +112,12 @@ export interface ACLEventContent {
 	deny?: string[]
 }
 
+export interface PolicyRuleContent {
+	entity: string
+	reason: string
+	recommendation: string
+}
+
 export interface PowerLevelEventContent {
 	users?: Record<UserID, number>
 	users_default?: number
