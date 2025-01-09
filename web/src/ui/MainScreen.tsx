@@ -234,8 +234,11 @@ class ContextFields implements MainScreenContextFields {
 
 const SYNC_ERROR_HIDE_DELAY = 30 * 1000
 
-const handleURLHash = (client: Client, context: MainScreenContextFields) => {
+const handleURLHash = (client: Client, context: MainScreenContextFields, hashOnly = false) => {
 	if (!location.hash.startsWith("#/uri/")) {
+		if (hashOnly) {
+			return null
+		}
 		if (location.search) {
 			const currentETag = (
 				document.querySelector("meta[name=gomuks-frontend-etag]") as HTMLMetaElement
@@ -261,7 +264,7 @@ const handleURLHash = (client: Client, context: MainScreenContextFields) => {
 	const uri = parseMatrixURI(decodedURI)
 	if (!uri) {
 		console.error("Invalid matrix URI", decodedURI)
-		return history.state
+		return hashOnly ? null : history.state
 	}
 	console.log("Handling URI", uri)
 	const newURL = new URL(location.href)
@@ -295,8 +298,9 @@ const handleURLHash = (client: Client, context: MainScreenContextFields) => {
 		return null
 	} else {
 		console.error("Invalid matrix URI", uri)
+		history.replaceState(history.state, "", newURL.toString())
 	}
-	return history.state
+	return hashOnly ? null : history.state
 }
 
 type ActiveRoomType = [RoomStateStore | RoomPreviewProps | null, RoomStateStore | RoomPreviewProps | null]
@@ -327,7 +331,7 @@ const MainScreen = () => {
 	)
 	useEffect(() => {
 		window.mainScreenContext = context
-		const listener = (evt: PopStateEvent) => {
+		const listener = (evt: Pick<PopStateEvent, "state" | "hasUAVisualTransition">) => {
 			skipNextTransitionRef.current = evt.hasUAVisualTransition
 			const roomID = evt.state?.room_id ?? null
 			const spaceID = evt.state?.space_id ?? undefined
@@ -342,6 +346,13 @@ const MainScreen = () => {
 			}
 			context.setRightPanel(evt.state?.right_panel ?? null, false)
 		}
+		const hashListener = () => {
+			const state = handleURLHash(client, context, true)
+			if (state !== null) {
+				listener({ state, hasUAVisualTransition: false })
+			}
+		}
+		window.addEventListener("hashchange", hashListener)
 		window.addEventListener("popstate", listener)
 		const initHandle = () => {
 			const state = handleURLHash(client, context)
@@ -355,6 +366,7 @@ const MainScreen = () => {
 		}
 		return () => {
 			window.removeEventListener("popstate", listener)
+			window.removeEventListener("hashchange", hashListener)
 			cancel()
 		}
 	}, [context, client])
