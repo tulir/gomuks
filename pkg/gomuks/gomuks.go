@@ -34,6 +34,7 @@ import (
 	"go.mau.fi/util/dbutil"
 	"go.mau.fi/util/exerrors"
 	"go.mau.fi/util/exzerolog"
+	"go.mau.fi/util/ptr"
 	"golang.org/x/net/http2"
 
 	"go.mau.fi/gomuks/pkg/hicli"
@@ -171,7 +172,7 @@ func (gmx *Gomuks) StartClient() {
 		nil,
 		gmx.Log.With().Str("component", "hicli").Logger(),
 		[]byte("meow"),
-		gmx.EventBuffer.HicliEventHandler,
+		gmx.HandleEvent,
 	)
 	gmx.Client.LogoutFunc = gmx.Logout
 	httpClient := gmx.Client.Client.Client
@@ -195,6 +196,14 @@ func (gmx *Gomuks) StartClient() {
 		os.Exit(12)
 	}
 	gmx.Log.Info().Stringer("user_id", userID).Msg("Client started")
+}
+
+func (gmx *Gomuks) HandleEvent(evt any) {
+	gmx.EventBuffer.Push(evt)
+	syncComplete, ok := evt.(*hicli.SyncComplete)
+	if ok && ptr.Val(syncComplete.Since) != "" {
+		go gmx.SendPushNotifications(syncComplete)
+	}
 }
 
 func (gmx *Gomuks) Stop() {

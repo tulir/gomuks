@@ -190,10 +190,10 @@ func (gmx *Gomuks) generateToken() (string, time.Time) {
 	}), expiry
 }
 
-func (gmx *Gomuks) generateImageToken() string {
+func (gmx *Gomuks) generateImageToken(expiry time.Duration) string {
 	return gmx.signToken(tokenData{
 		Username:  gmx.Config.Web.Username,
-		Expiry:    jsontime.U(time.Now().Add(1 * time.Hour)),
+		Expiry:    jsontime.U(time.Now().Add(expiry)),
 		ImageOnly: true,
 	})
 }
@@ -206,16 +206,26 @@ func (gmx *Gomuks) signToken(td any) string {
 	return base64.RawURLEncoding.EncodeToString(data) + "." + base64.RawURLEncoding.EncodeToString(checksum)
 }
 
-func (gmx *Gomuks) writeTokenCookie(w http.ResponseWriter) {
+func (gmx *Gomuks) writeTokenCookie(w http.ResponseWriter, created, jsonOutput bool) {
 	token, expiry := gmx.generateToken()
-	http.SetCookie(w, &http.Cookie{
-		Name:     "gomuks_auth",
-		Value:    token,
-		Expires:  expiry,
-		HttpOnly: true,
-		Secure:   true,
-		SameSite: http.SameSiteLaxMode,
-	})
+	if !jsonOutput {
+		http.SetCookie(w, &http.Cookie{
+			Name:     "gomuks_auth",
+			Value:    token,
+			Expires:  expiry,
+			HttpOnly: true,
+			Secure:   true,
+			SameSite: http.SameSiteLaxMode,
+		})
+	}
+	if created {
+		w.WriteHeader(http.StatusCreated)
+	} else {
+		w.WriteHeader(http.StatusOK)
+	}
+	if jsonOutput {
+		_ = json.NewEncoder(w).Encode(map[string]string{"token": token})
+	}
 }
 
 func (gmx *Gomuks) Authenticate(w http.ResponseWriter, r *http.Request) {
@@ -223,14 +233,17 @@ func (gmx *Gomuks) Authenticate(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		return
 	}
+	jsonOutput := r.URL.Query().Get("output") == "json"
+	allowPrompt := r.URL.Query().Get("no_prompt") != "true"
 	authCookie, err := r.Cookie("gomuks_auth")
 	if err == nil && gmx.validateAuth(authCookie.Value, false) {
 		hlog.FromRequest(r).Debug().Msg("Authentication successful with existing cookie")
-		gmx.writeTokenCookie(w)
-		w.WriteHeader(http.StatusOK)
+		gmx.writeTokenCookie(w, false, jsonOutput)
 	} else if username, password, ok := r.BasicAuth(); !ok {
 		hlog.FromRequest(r).Debug().Msg("Requesting credentials for auth request")
-		w.Header().Set("WWW-Authenticate", `Basic realm="gomuks web" charset="UTF-8"`)
+		if allowPrompt {
+			w.Header().Set("WWW-Authenticate", `Basic realm="gomuks web" charset="UTF-8"`)
+		}
 		w.WriteHeader(http.StatusUnauthorized)
 	} else {
 		usernameHash := sha256.Sum256([]byte(username))
@@ -239,11 +252,12 @@ func (gmx *Gomuks) Authenticate(w http.ResponseWriter, r *http.Request) {
 		passwordCorrect := bcrypt.CompareHashAndPassword([]byte(gmx.Config.Web.PasswordHash), []byte(password)) == nil
 		if usernameCorrect && passwordCorrect {
 			hlog.FromRequest(r).Debug().Msg("Authentication successful with username and password")
-			gmx.writeTokenCookie(w)
-			w.WriteHeader(http.StatusCreated)
+			gmx.writeTokenCookie(w, true, jsonOutput)
 		} else {
 			hlog.FromRequest(r).Debug().Msg("Authentication failed with username and password, re-requesting credentials")
-			w.Header().Set("WWW-Authenticate", `Basic realm="gomuks web" charset="UTF-8"`)
+			if allowPrompt {
+				w.Header().Set("WWW-Authenticate", `Basic realm="gomuks web" charset="UTF-8"`)
+			}
 			w.WriteHeader(http.StatusUnauthorized)
 		}
 	}

@@ -1,4 +1,4 @@
--- v0 -> v11 (compatible with v10+): Latest revision
+-- v0 -> v12 (compatible with v10+): Latest revision
 CREATE TABLE account (
 	user_id        TEXT NOT NULL PRIMARY KEY,
 	device_id      TEXT NOT NULL,
@@ -301,3 +301,13 @@ CREATE TABLE space_edge (
 	CONSTRAINT space_edge_parent_event_unique UNIQUE (parent_event_rowid)
 ) STRICT;
 CREATE INDEX space_edge_child_idx ON space_edge (child_id);
+
+CREATE TABLE push_registration (
+	device_id  TEXT    NOT NULL,
+	type       TEXT    NOT NULL,
+	data       TEXT    NOT NULL,
+	encryption TEXT    NOT NULL,
+	expiration INTEGER NOT NULL,
+
+	PRIMARY KEY (device_id)
+) STRICT;

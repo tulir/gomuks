@@ -22,6 +22,7 @@ import type {
 	ElementRecentEmoji,
 	EventID,
 	EventType,
+	GomuksAndroidMessageToWeb,
 	ImagePackRooms,
 	RPCEvent,
 	RawDBEvent,
@@ -71,6 +72,74 @@ export default class Client {
 		this.requestNotificationPermission()
 	}
 
+	async #reallyStartAndroid(signal: AbortSignal) {
+		const androidListener = async (evt: CustomEventInit<string>) => {
+			const evtData = JSON.parse(evt.detail ?? "{}") as GomuksAndroidMessageToWeb
+			switch (evtData.type) {
+			case "register_push":
+				await this.rpc.registerPush({
+					type: "fcm",
+					device_id: evtData.device_id,
+					data: evtData.token,
+					encryption: evtData.encryption,
+					expiration: evtData.expiration,
+				})
+				return
+			case "auth":
+				try {
+					const resp = await fetch("_gomuks/auth?no_prompt=true", {
+						method: "POST",
+						headers: {
+							Authorization: evtData.authorization,
+						},
+						signal,
+					})
+					if (!resp.ok && !signal.aborted) {
+						console.error("Failed to authenticate:", resp.status, resp.statusText)
+						window.dispatchEvent(new CustomEvent("GomuksWebMessageToAndroid", {
+							detail: {
+								event: "auth_fail",
+								error: `${resp.statusText || resp.status}`,
+							},
+						}))
+						return
+					}
+				} catch (err) {
+					console.error("Failed to authenticate:", err)
+					window.dispatchEvent(new CustomEvent("GomuksWebMessageToAndroid", {
+						detail: {
+							event: "auth_fail",
+							error: `${err}`.replace(/^Error: /, ""),
+						},
+					}))
+					return
+				}
+				if (signal.aborted) {
+					return
+				}
+				console.log("Successfully authenticated, connecting to websocket")
+				this.rpc.start()
+				return
+			}
+		}
+		const unsubscribeConnect = this.rpc.connect.listen(evt => {
+			if (!evt.connected) {
+				return
+			}
+			window.dispatchEvent(new CustomEvent("GomuksWebMessageToAndroid", {
+				detail: { event: "connected" },
+			}))
+		})
+		window.addEventListener("GomuksAndroidMessageToWeb", androidListener)
+		signal.addEventListener("abort", () => {
+			unsubscribeConnect()
+			window.removeEventListener("GomuksAndroidMessageToWeb", androidListener)
+		})
+		window.dispatchEvent(new CustomEvent("GomuksWebMessageToAndroid", {
+			detail: { event: "ready" },
+		}))
+	}
+
 	requestNotificationPermission = (evt?: MouseEvent) => {
 		window.Notification?.requestPermission().then(permission => {
 			console.log("Notification permission:", permission)
@@ -86,7 +155,11 @@ export default class Client {
 
 	start(): () => void {
 		const abort = new AbortController()
-		this.#reallyStart(abort.signal)
+		if (window.gomuksAndroid) {
+			this.#reallyStartAndroid(abort.signal)
+		} else {
+			this.#reallyStart(abort.signal)
+		}
 		this.#gcInterval = setInterval(() => {
 			console.log("Garbage collection completed:", this.store.doGarbageCollection())
 		}, window.gcSettings.interval)

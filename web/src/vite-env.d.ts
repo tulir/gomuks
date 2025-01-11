@@ -16,5 +16,6 @@ declare global {
 		gcSettings: GCSettings
 		hackyOpenEventContextMenu?: string
 		closeModal: () => void
+		gomuksAndroid?: true
 	}
 }

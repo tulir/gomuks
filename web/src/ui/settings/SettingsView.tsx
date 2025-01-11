@@ -394,10 +394,12 @@ const SettingsView = ({ room }: SettingsViewProps) => {
 		<AppliedSettingsView room={room} />
 		<div className="misc-buttons">
 			<button onClick={onClickOpenCSSApp}>Sign into css.gomuks.app</button>
-			{window.Notification && <button onClick={client.requestNotificationPermission}>
+			{window.Notification && !window.gomuksAndroid && <button onClick={client.requestNotificationPermission}>
 				Request notification permission
 			</button>}
-			<button onClick={client.registerURIHandler}>Register <code>matrix:</code> URI handler</button>
+			{!window.gomuksAndroid &&
+				<button onClick={client.registerURIHandler}>Register <code>matrix:</code> URI handler</button>
+			}
 			<button className="logout" onClick={onClickLogout}>Logout</button>
 		</div>
 	</>

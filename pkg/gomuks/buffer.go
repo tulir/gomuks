@@ -54,7 +54,7 @@ func NewEventBuffer(maxSize int) *EventBuffer {
 	}
 }
 
-func (eb *EventBuffer) HicliEventHandler(evt any) {
+func (eb *EventBuffer) Push(evt any) {
 	data, err := json.Marshal(evt)
 	if err != nil {
 		panic(fmt.Errorf("failed to marshal event %T: %w", evt, err))
