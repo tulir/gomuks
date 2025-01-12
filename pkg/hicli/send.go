@@ -103,6 +103,7 @@ func (h *HiClient) SendMessage(
 		_, err := h.SetState(ctx, roomID, event.Type{Type: parts[1], Class: event.StateEventType}, parts[2], content)
 		return nil, err
 	}
+	// This is hacked in and to be removed later.
 	for _, state := range []string{"/invite ", "/ban ", "/kick "} {
 		if strings.HasPrefix(text, state) {
 			text = strings.TrimPrefix(text, state)
