@@ -13,7 +13,7 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import { use, useState } from "react"
+import { use } from "react"
 import Client from "@/api/client.ts"
 import { RoomStateStore } from "@/api/statestore"
 import { MemDBEvent, MemberEventContent, Membership } from "@/api/types"
@@ -32,7 +32,6 @@ interface UserModerationProps {
 }
 
 const UserModeration = ({ userID, client, member }: UserModerationProps) => {
-	const [actionInProgress, setActionInProgress] = useState(false)
 	const roomCtx = use(RoomContext)
 	const openModal = use(ModalContext)
 
@@ -48,16 +47,13 @@ const UserModeration = ({ userID, client, member }: UserModerationProps) => {
 			if (reason) {
 				payload["reason"] = reason
 			}
-			setActionInProgress(true)
 			client.rpc
 				.setState(roomCtx?.store.roomID, "m.room.member", userID, payload)
 				.then(() => {
 					console.debug("Actioned", userID)
-					setActionInProgress(false)
 				})
 				.catch((e) => {
 					console.error("Failed to action", e)
-					setActionInProgress(false)
 				})
 		}
 		return () => {
@@ -86,51 +82,31 @@ const UserModeration = ({ userID, client, member }: UserModerationProps) => {
 			<h4>Moderation</h4>
 			<div className="moderation-actions">
 				{(["knock", "leave"].includes(membership) || !member) && (
-					<button
-						className="moderation-action invite"
-						onClick={runAction("invite")}
-						disabled={actionInProgress}
-					>
+					<button className="moderation-action invite" onClick={runAction("invite")}>
 						<PersonAdd />
 						<span>{membership === "knock" ? "Accept request to join" : "Invite"}</span>
 					</button>
 				)}
 				{["knock", "invite"].includes(membership) && (
-					<button
-						className="moderation-action dangerous"
-						onClick={runAction("leave")}
-						disabled={actionInProgress}
-					>
+					<button className="moderation-action dangerous" onClick={runAction("leave")}>
 						<PersonRemove />
 						<span>{membership === "invite" ? "Revoke invitation" : "Reject join request"}</span>
 					</button>
 				)}
 				{membership === "join" && (
-					<button
-						className="moderation-action dangerous"
-						onClick={runAction("leave")}
-						disabled={actionInProgress}
-					>
+					<button className="moderation-action dangerous" onClick={runAction("leave")}>
 						<PersonRemove />
 						<span>Kick</span>
 					</button>
 				)}
 				{membership !== "ban" && (
-					<button
-						className="moderation-action dangerous"
-						onClick={runAction("ban")}
-						disabled={actionInProgress}
-					>
+					<button className="moderation-action dangerous" onClick={runAction("ban")}>
 						<Gavel />
 						<span>Ban</span>
 					</button>
 				)}
 				{membership === "ban" && (
-					<button
-						className="moderation-action invite"
-						onClick={runAction("leave")}
-						disabled={actionInProgress}
-					>
+					<button className="moderation-action invite" onClick={runAction("leave")}>
 						<Gavel />
 						<span>Unban</span>
 					</button>
