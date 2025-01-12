@@ -13,7 +13,7 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import { use, useCallback, useEffect, useState } from "react"
+import { use, useEffect, useState } from "react"
 import { ScaleLoader } from "react-spinners"
 import { getAvatarURL, getRoomAvatarURL } from "@/api/media.ts"
 import { InvitedRoomStore } from "@/api/statestore/invitedroom.ts"
@@ -21,7 +21,7 @@ import { RoomID, RoomSummary } from "@/api/types"
 import { getDisplayname, getServerName } from "@/util/validation.ts"
 import ClientContext from "../ClientContext.ts"
 import MainScreenContext from "../MainScreenContext.ts"
-import { LightboxContext } from "../modal/Lightbox.tsx"
+import { LightboxContext } from "../modal"
 import MutualRooms from "../rightpanel/UserInfoMutualRooms.tsx"
 import ErrorIcon from "@/icons/error.svg?react"
 import GroupIcon from "@/icons/group.svg?react"
@@ -41,7 +41,7 @@ const RoomPreview = ({ roomID, via, alias, invite }: RoomPreviewProps) => {
 	const [loading, setLoading] = useState(false)
 	const [buttonClicked, setButtonClicked] = useState(false)
 	const [error, setError] = useState<string | null>(null)
-	const doJoinRoom = useCallback(() => {
+	const doJoinRoom = () => {
 		let realVia = via
 		if (!via?.length && invite?.invited_by) {
 			realVia = [getServerName(invite.invited_by)]
@@ -54,8 +54,8 @@ const RoomPreview = ({ roomID, via, alias, invite }: RoomPreviewProps) => {
 				setButtonClicked(false)
 			},
 		)
-	}, [client, roomID, via, alias, invite])
-	const doRejectInvite = useCallback(() => {
+	}
+	const doRejectInvite = () => {
 		setButtonClicked(true)
 		client.rpc.leaveRoom(roomID).then(
 			() => {
@@ -67,7 +67,7 @@ const RoomPreview = ({ roomID, via, alias, invite }: RoomPreviewProps) => {
 				setButtonClicked(false)
 			},
 		)
-	}, [client, mainScreen, roomID])
+	}
 	useEffect(() => {
 		setSummary(null)
 		setError(null)

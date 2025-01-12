@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import { parseMXC } from "@/util/validation.ts"
-import { ContentURI, LazyLoadSummary, RoomID, UserID, UserProfile } from "./types"
+import { ContentURI, RoomID, UserID, UserProfile } from "./types"
 
 export const getMediaURL = (mxc?: string, encrypted: boolean = false): string | undefined => {
 	const [server, mediaID] = parseMXC(mxc)
@@ -54,7 +54,7 @@ export const getUserColor = (userID: UserID) => {
 // note: this should stay in sync with fallbackAvatarTemplate in cmd/gomuks.media.go
 function makeFallbackAvatar(backgroundColor: string, fallbackCharacter: string): string {
 	return "data:image/svg+xml," + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000">
-  <circle cx="500" cy="500" r="500" fill="${backgroundColor}"/>
+  <rect x="0" y="0" width="1000" height="1000" fill="${backgroundColor}"/>
   <text x="500" y="750" text-anchor="middle" fill="#fff" font-weight="bold" font-size="666"
     font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif"
   >${escapeHTMLChar(fallbackCharacter)}</text>
@@ -81,32 +81,25 @@ function getFallbackCharacter(from: unknown, idx: number): string {
 export const getAvatarURL = (userID: UserID, content?: UserProfile | null): string | undefined => {
 	const fallbackCharacter = getFallbackCharacter(content?.displayname, 0) || getFallbackCharacter(userID, 1)
 	const backgroundColor = getUserColor(userID)
-	const [server, mediaID] = parseMXC(content?.avatar_url)
+	const [server, mediaID] = parseMXC(content?.avatar_file?.url ?? content?.avatar_url)
 	if (!mediaID) {
 		return makeFallbackAvatar(backgroundColor, fallbackCharacter)
 	}
+	const encrypted = !!content?.avatar_file
 	const fallback = `${backgroundColor}:${fallbackCharacter}`
-	return `_gomuks/media/${server}/${mediaID}?encrypted=false&fallback=${encodeURIComponent(fallback)}`
+	return `_gomuks/media/${server}/${mediaID}?encrypted=${encrypted}&fallback=${encodeURIComponent(fallback)}`
 }
 
 interface RoomForAvatarURL {
 	room_id: RoomID
 	name?: string
 	dm_user_id?: UserID
-	lazy_load_summary?: LazyLoadSummary
 	avatar?: ContentURI
 	avatar_url?: ContentURI
 }
 
 export const getRoomAvatarURL = (room: RoomForAvatarURL, avatarOverride?: ContentURI): string | undefined => {
-	let dmUserID: UserID | undefined
-	if ("dm_user_id" in room) {
-		dmUserID = room.dm_user_id
-	} else if ("lazy_load_summary" in room) {
-		dmUserID = room.lazy_load_summary?.heroes?.length === 1
-			? room.lazy_load_summary.heroes[0] : undefined
-	}
-	return getAvatarURL(dmUserID ?? room.room_id, {
+	return getAvatarURL(room.dm_user_id ?? room.room_id, {
 		displayname: room.name,
 		avatar_url: avatarOverride ?? room.avatar ?? room.avatar_url,
 	})

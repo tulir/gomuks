@@ -25,6 +25,14 @@ export type RoomVersion = "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" | 
 export type RoomType = "" | "m.space"
 export type RelationType = "m.annotation" | "m.reference" | "m.replace" | "m.thread"
 
+export type JSONValue =
+	| string
+	| number
+	| boolean
+	| null
+	| JSONValue[]
+	| {[key: string]: JSONValue}
+
 export interface RoomPredecessor {
 	room_id: RoomID
 	event_id: EventID
@@ -43,7 +51,7 @@ export interface TombstoneEventContent {
 }
 
 export interface LazyLoadSummary {
-	heroes?: UserID[]
+	"m.heroes"?: UserID[]
 	"m.joined_member_count"?: number
 	"m.invited_member_count"?: number
 }
@@ -65,7 +73,18 @@ export interface EncryptedEventContent {
 export interface UserProfile {
 	displayname?: string
 	avatar_url?: ContentURI
+	avatar_file?: EncryptedFile
 	[custom: string]: unknown
+}
+
+export interface PronounSet {
+	subject?: string
+	object?: string
+	possessive_determiner?: string
+	possessive_pronoun?: string
+	reflexive?: string
+	summary: string
+	language: string
 }
 
 export type PresenceState = "online" | "offline" | "unavailable"
@@ -100,6 +119,12 @@ export interface ACLEventContent {
 	allow?: string[]
 	allow_ip_literals?: boolean
 	deny?: string[]
+}
+
+export interface PolicyRuleContent {
+	entity: string
+	reason: string
+	recommendation: string
 }
 
 export interface PowerLevelEventContent {
@@ -149,6 +174,23 @@ export interface ContentWarning {
 	description?: string
 }
 
+export interface URLPreview {
+	matched_url: string
+	"beeper:image:encryption"?: EncryptedFile
+	"matrix:image:size": number
+	"og:image"?: ContentURI
+	"og:url": string
+	"og:image:width"?: number
+	"og:image:height"?: number
+	"og:image:type"?: string
+	"og:title"?: string
+	"og:description"?: string
+}
+
+export interface BeeperPerMessageProfile extends UserProfile {
+	id: string
+}
+
 export interface BaseMessageEventContent {
 	msgtype: string
 	body: string
@@ -159,6 +201,9 @@ export interface BaseMessageEventContent {
 	"town.robin.msc3725.content_warning"?: ContentWarning
 	"page.codeberg.everypizza.msc4193.spoiler"?: boolean
 	"page.codeberg.everypizza.msc4193.spoiler.reason"?: string
+	"m.url_previews"?: URLPreview[]
+	"com.beeper.linkpreviews"?: URLPreview[]
+	"com.beeper.per_message_profile"?: BeeperPerMessageProfile
 }
 
 export interface TextMessageEventContent extends BaseMessageEventContent {
@@ -272,4 +317,11 @@ export interface RoomSummary {
 
 export interface RespRoomJoin {
 	room_id: RoomID
+}
+
+export interface RespOpenIDToken {
+	access_token: string
+	expires_in: number
+	matrix_server_name: string
+	token_type: "Bearer"
 }

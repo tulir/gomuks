@@ -54,6 +54,7 @@ export interface DBRoom {
 	name_quality: RoomNameQuality
 	avatar?: ContentURI
 	explicit_avatar: boolean
+	dm_user_id?: UserID
 	topic?: string
 	canonical_alias?: RoomAlias
 	lazy_load_summary?: LazyLoadSummary
@@ -69,6 +70,18 @@ export interface DBRoom {
 	marked_unread: boolean
 
 	prev_batch: string
+}
+
+export interface DBSpaceEdge {
+	// space_id: RoomID
+	child_id: RoomID
+
+	child_event_rowid?: EventRowID
+	order?: string
+	suggested?: true
+
+	parent_event_rowid?: EventRowID
+	canonical?: true
 }
 
 //eslint-disable-next-line @typescript-eslint/no-explicit-any

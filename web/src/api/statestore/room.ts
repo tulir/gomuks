@@ -62,7 +62,7 @@ function arraysAreEqual<T>(arr1?: T[], arr2?: T[]): boolean {
 function llSummaryIsEqual(ll1?: LazyLoadSummary, ll2?: LazyLoadSummary): boolean {
 	return ll1?.["m.joined_member_count"] === ll2?.["m.joined_member_count"] &&
 		ll1?.["m.invited_member_count"] === ll2?.["m.invited_member_count"] &&
-		arraysAreEqual(ll1?.heroes, ll2?.heroes)
+		arraysAreEqual(ll1?.["m.heroes"], ll2?.["m.heroes"])
 }
 
 function visibleMetaIsEqual(meta1: DBRoom, meta2: DBRoom): boolean {
@@ -70,6 +70,7 @@ function visibleMetaIsEqual(meta1: DBRoom, meta2: DBRoom): boolean {
 		meta1.avatar === meta2.avatar &&
 		meta1.topic === meta2.topic &&
 		meta1.canonical_alias === meta2.canonical_alias &&
+		meta1.dm_user_id === meta2.dm_user_id &&
 		llSummaryIsEqual(meta1.lazy_load_summary, meta2.lazy_load_summary) &&
 		meta1.encryption_event?.algorithm === meta2.encryption_event?.algorithm &&
 		meta1.has_member_list === meta2.has_member_list
@@ -92,6 +93,7 @@ export class RoomStateStore {
 	readonly meta: NonNullCachedEventDispatcher<DBRoom>
 	timeline: TimelineRowTuple[] = []
 	timelineCache: (MemDBEvent | null)[] = []
+	editTargets: EventRowID[] = []
 	state: Map<EventType, Map<string, EventRowID>> = new Map()
 	stateLoaded = false
 	typing: UserID[] = []
@@ -111,7 +113,7 @@ export class RoomStateStore {
 	readonly accountDataSubs = new MultiSubscribable()
 	readonly openNotifications: Map<EventRowID, Notification> = new Map()
 	readonly #emojiPacksCache: Map<string, CustomEmojiPack | null> = new Map()
-	readonly preferences: Preferences
+	readonly preferences: Required<Preferences>
 	readonly localPreferenceCache: Preferences
 	readonly preferenceSub = new NoDataSubscribable()
 	serverPreferenceCache: Preferences = {}
@@ -134,16 +136,25 @@ export class RoomStateStore {
 	}
 
 	#updateTimelineCache() {
+		const ownMessages: EventRowID[] = []
 		this.timelineCache = this.timeline.map(rt => {
 			const evt = this.eventsByRowID.get(rt.event_rowid)
 			if (!evt) {
 				return null
 			}
 			evt.timeline_rowid = rt.timeline_rowid
+			if (
+				evt.sender === this.parent.userID
+				&& evt.type === "m.room.message"
+				&& evt.relation_type !== "m.replace"
+			) {
+				ownMessages.push(evt.rowid)
+			}
 			return evt
 		}).concat(this.pendingEvents
 			.map(rowID => this.eventsByRowID.get(rowID))
 			.filter(evt => !!evt))
+		this.editTargets = ownMessages
 	}
 
 	notifyTimelineSubscribers() {
@@ -380,7 +391,7 @@ export class RoomStateStore {
 		} else {
 			this.meta.emit(sync.meta)
 		}
-		for (const ad of Object.values(sync.account_data)) {
+		for (const ad of Object.values(sync.account_data ?? {})) {
 			if (ad.type === "fi.mau.gomuks.preferences") {
 				this.serverPreferenceCache = ad.content
 				this.preferenceSub.notify()
@@ -388,10 +399,10 @@ export class RoomStateStore {
 			this.accountData.set(ad.type, ad.content)
 			this.accountDataSubs.notify(ad.type)
 		}
-		for (const evt of sync.events) {
+		for (const evt of sync.events ?? []) {
 			this.applyEvent(evt)
 		}
-		for (const [evtType, changedEvts] of Object.entries(sync.state)) {
+		for (const [evtType, changedEvts] of Object.entries(sync.state ?? {})) {
 			let stateMap = this.state.get(evtType)
 			if (!stateMap) {
 				stateMap = new Map()
@@ -404,9 +415,9 @@ export class RoomStateStore {
 			this.stateSubs.notify(evtType)
 		}
 		if (sync.reset) {
-			this.timeline = sync.timeline
+			this.timeline = sync.timeline ?? []
 			this.pendingEvents.splice(0, this.pendingEvents.length)
-		} else {
+		} else if (sync.timeline) {
 			this.timeline.push(...sync.timeline)
 		}
 		if (sync.meta.unread_notifications === 0 && sync.meta.unread_highlights === 0) {
@@ -416,7 +427,7 @@ export class RoomStateStore {
 			this.openNotifications.clear()
 		}
 		this.notifyTimelineSubscribers()
-		for (const [evtID, receipts] of Object.entries(sync.receipts)) {
+		for (const [evtID, receipts] of Object.entries(sync.receipts ?? {})) {
 			this.applyReceipts(receipts, evtID, false)
 		}
 	}

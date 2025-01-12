@@ -41,8 +41,15 @@ const RoomView = ({ room, rightPanelResizeHandle, rightPanel }: RoomViewProps) =
 			}
 		}
 	}, [roomContextData])
+	const onClick = (evt: React.MouseEvent<HTMLDivElement>) => {
+		if (roomContextData.focusedEventRowID) {
+			roomContextData.setFocusedEventRowID(null)
+			evt.stopPropagation()
+		}
+	}
 	return <RoomContext value={roomContextData}>
-		<div className="room-view">
+		<div className="room-view" onClick={onClick}>
+			<div id="mobile-event-menu-container"/>
 			<RoomViewHeader room={room}/>
 			<TimelineView/>
 			<MessageComposer/>

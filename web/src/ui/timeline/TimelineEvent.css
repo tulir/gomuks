@@ -5,7 +5,7 @@ div.timeline-event {
 	padding: 0 var(--timeline-horizontal-padding);
 	display: grid;
 	grid-template:
-		"cmc                          cmc                        cmc      empty"    0
+		"cmc                          cmc                        cmc      empty"  0
 		"avatar                       gap                        sender   sender" auto
 		"avatar                       gap                        content  status" auto
 		/ var(--timeline-avatar-size) var(--timeline-avatar-gap) 1fr      var(--timeline-status-size);
@@ -24,7 +24,7 @@ div.timeline-event {
 		transition: background-color 1s;
 	}
 
-	&:hover {
+	&:hover:not(.no-hover), &.focused-event {
 		background-color: var(--timeline-hover-bg-color);
 
 		&.highlight {
@@ -62,6 +62,21 @@ div.timeline-event {
 			font-weight: bold;
 			user-select: none;
 			cursor: var(--clickable-cursor);
+		}
+
+		> div.per-message-event-sender {
+			color: var(--secondary-text-color);
+			font-size: .75rem;
+
+			> span.via {
+				margin-right: .25rem;
+			}
+
+			> span.event-sender {
+				font-weight: bold;
+				user-select: none;
+				cursor: var(--clickable-cursor);
+			}
 		}
 
 		> span.event-time, > span.event-edited {
@@ -156,6 +171,15 @@ div.timeline-event {
 		+ div.timeline-event.small-event {
 			margin-top: var(--timeline-message-gap-small-event);
 		}
+	}
+
+	&.reply-above {
+		grid-template:
+			"cmc                          cmc                        cmc      empty"  0
+			"reply                        reply                      reply    empty"  auto
+			"avatar                       gap                        sender   sender" auto
+			"avatar                       gap                        content  status" auto
+			/ var(--timeline-avatar-size) var(--timeline-avatar-gap) 1fr      var(--timeline-status-size);
 	}
 }
 

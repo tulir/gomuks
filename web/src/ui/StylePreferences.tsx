@@ -13,7 +13,7 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import React, { useInsertionEffect } from "react"
+import React, { useEffect, useInsertionEffect } from "react"
 import type Client from "@/api/client.ts"
 import { RoomStateStore, usePreferences } from "@/api/statestore"
 
@@ -128,7 +128,12 @@ const StylePreferences = ({ client, activeRoom }: StylePreferencesProps) => {
 		@import url("_gomuks/codeblock/${preferences.code_block_theme}.css");
 	`, [preferences.code_block_theme], "gomuks-pref-code-block-theme")
 	useAsyncStyle(() => preferences.custom_css, [preferences.custom_css], "gomuks-pref-custom-css")
+	useEffect(() => {
+		favicon.href = preferences.favicon
+	}, [preferences.favicon])
 	return null
 }
+
+const favicon = document.getElementById("favicon") as HTMLLinkElement
 
 export default React.memo(StylePreferences)

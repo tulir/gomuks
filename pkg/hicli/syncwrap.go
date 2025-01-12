@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/mattn/go-sqlite3"
+	"github.com/rs/zerolog"
 	"maunium.net/go/mautrix"
 	"maunium.net/go/mautrix/id"
 
@@ -46,7 +47,9 @@ func (h *hiSyncer) ProcessResponse(ctx context.Context, resp *mautrix.RespSync, 
 		err = c.DB.DoTxn(ctx, nil, func(ctx context.Context) error {
 			return c.processSyncResponse(ctx, resp, since)
 		})
-		if errors.Is(err, sqlite3.ErrLocked) && i < 24 {
+		var sqliteErr sqlite3.Error
+		if errors.As(err, &sqliteErr) && sqliteErr.Code == sqlite3.ErrBusy && i < 24 {
+			zerolog.Ctx(ctx).Warn().Err(err).Msg("Database is busy, retrying")
 			c.markSyncErrored(err, false)
 			continue
 		} else if err != nil {

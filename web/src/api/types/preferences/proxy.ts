@@ -19,7 +19,7 @@ import { PreferenceContext, PreferenceValueType } from "./types.ts"
 
 const prefKeys = Object.keys(preferences)
 
-export function getPreferenceProxy(store: StateStore, room?: RoomStateStore): Preferences {
+export function getPreferenceProxy(store: StateStore, room?: RoomStateStore): Required<Preferences> {
 	return new Proxy({}, {
 		set(): boolean {
 			throw new Error("The preference proxy is read-only")
@@ -61,5 +61,5 @@ export function getPreferenceProxy(store: StateStore, room?: RoomStateStore): Pr
 				writable: false,
 			} : undefined
 		},
-	})
+	}) as Required<Preferences>
 }

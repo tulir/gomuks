@@ -1,19 +1,23 @@
 main.matrix-login {
-	max-width: 30rem;
+	max-width: 42rem;
 	width: 100%;
 	padding: 3rem 6rem;
+	box-sizing: border-box;
 
 	box-shadow: 0 0 1rem var(--modal-box-shadow-color);
-	margin: 2rem;
+	margin: 2rem auto;
 
 	@media (width < 800px) {
+		max-width: 38rem;
 		padding: 2rem 4rem;
+		width: calc(100% - 4rem);
 	}
 
 	@media (width < 500px) {
 		padding: 1rem;
 		box-shadow: none;
 		margin: 0 !important;
+		width: 100%;
 	}
 
 	h1 {

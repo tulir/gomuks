@@ -13,15 +13,16 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import { use, useEffect, useState } from "react"
+import { use, useCallback, useEffect, useState } from "react"
 import { PuffLoader } from "react-spinners"
 import { getAvatarURL } from "@/api/media.ts"
 import { useRoomMember } from "@/api/statestore"
 import { MemberEventContent, UserID, UserProfile, Presence } from "@/api/types"
 import { getLocalpart } from "@/util/validation.ts"
 import ClientContext from "../ClientContext.ts"
-import { LightboxContext } from "../modal/Lightbox.tsx"
+import { LightboxContext } from "../modal"
 import { RoomContext } from "../roomview/roomcontext.ts"
+import UserExtendedProfile from "./UserExtendedProfile.tsx"
 import DeviceList from "./UserInfoDeviceList.tsx"
 import UserInfoError from "./UserInfoError.tsx"
 import MutualRooms from "./UserInfoMutualRooms.tsx"
@@ -40,14 +41,17 @@ const UserInfo = ({ userID }: UserInfoProps) => {
 	const member = (memberEvt?.content ?? null) as MemberEventContent | null
 	const [globalProfile, setGlobalProfile] = useState<UserProfile | null>(null)
 	const [errors, setErrors] = useState<string[] | null>(null)
-	useEffect(() => {
-		setErrors(null)
-		setGlobalProfile(null)
+	const refreshProfile = useCallback((clearState = false) => {
+		if (clearState) {
+			setErrors(null)
+			setGlobalProfile(null)
+		}
 		client.rpc.getProfile(userID).then(
 			setGlobalProfile,
 			err => setErrors([`${err}`]),
 		)
-	}, [roomCtx, userID, client])
+	}, [userID, client])
+	useEffect(() => refreshProfile(true), [refreshProfile])
 
 	const displayname = member?.displayname || globalProfile?.displayname || getLocalpart(userID)
 	return <>
@@ -66,6 +70,9 @@ const UserInfo = ({ userID }: UserInfoProps) => {
 		<div className="displayname" title={displayname}>{displayname}</div>
 		<div className="userid" title={userID}>{userID}</div>
 		<UserPresence client={client} userID={userID}/>
+		{globalProfile && <UserExtendedProfile
+			profile={globalProfile} refreshProfile={refreshProfile} client={client} userID={userID}
+		/>}
 		<hr/>
 		{userID !== client.userID && <>
 			<MutualRooms client={client} userID={userID}/>

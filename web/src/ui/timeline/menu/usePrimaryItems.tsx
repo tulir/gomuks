@@ -13,13 +13,13 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import React, { CSSProperties, use, useCallback } from "react"
+import React, { CSSProperties, use } from "react"
 import Client from "@/api/client.ts"
 import { MemDBEvent } from "@/api/types"
 import { emojiToReactionContent } from "@/util/emoji"
 import { useEventAsState } from "@/util/eventdispatcher.ts"
 import EmojiPicker from "../../emojipicker/EmojiPicker.tsx"
-import { ModalCloseContext, ModalContext } from "../../modal/Modal.tsx"
+import { ModalCloseContext, ModalContext } from "../../modal"
 import { RoomContextData } from "../../roomview/roomcontext.ts"
 import { EventExtraMenu } from "./EventMenu.tsx"
 import { getEncryption, getModalStyleFromButton, getPending, getPowerLevels } from "./util.ts"
@@ -37,17 +37,19 @@ export const usePrimaryItems = (
 	roomCtx: RoomContextData,
 	evt: MemDBEvent,
 	isHover: boolean,
+	isFixed: boolean,
 	style?: CSSProperties,
 	setForceOpen?: (forceOpen: boolean) => void,
 ) => {
+	const names = !isHover && !isFixed
 	const closeModal = !isHover ? use(ModalCloseContext) : noop
 	const openModal = use(ModalContext)
 
-	const onClickReply = useCallback(() => {
+	const onClickReply = () => {
 		roomCtx.setReplyTo(evt.event_id)
 		closeModal()
-	}, [roomCtx, evt.event_id, closeModal])
-	const onClickReact = useCallback((mevt: React.MouseEvent<HTMLButtonElement>) => {
+	}
+	const onClickReact = (mevt: React.MouseEvent<HTMLButtonElement>) => {
 		const emojiPickerHeight = 34 * 16
 		setForceOpen?.(true)
 		openModal({
@@ -63,20 +65,20 @@ export const usePrimaryItems = (
 			/>,
 			onClose: () => setForceOpen?.(false),
 		})
-	}, [client, roomCtx, evt, style, setForceOpen, openModal])
-	const onClickEdit = useCallback(() => {
+	}
+	const onClickEdit = () => {
 		closeModal()
 		roomCtx.setEditing(evt)
-	}, [roomCtx, evt, closeModal])
-	const onClickResend = useCallback(() => {
+	}
+	const onClickResend = () => {
 		if (!evt.transaction_id) {
 			return
 		}
 		closeModal()
 		client.resendEvent(evt.transaction_id)
 			.catch(err => window.alert(`Failed to resend message: ${err}`))
-	}, [client, evt.transaction_id, closeModal])
-	const onClickMore = useCallback((mevt: React.MouseEvent<HTMLButtonElement>) => {
+	}
+	const onClickMore = (mevt: React.MouseEvent<HTMLButtonElement>) => {
 		const moreMenuHeight = 4 * 40
 		setForceOpen!(true)
 		openModal({
@@ -87,7 +89,7 @@ export const usePrimaryItems = (
 			/>,
 			onClose: () => setForceOpen!(false),
 		})
-	}, [evt, roomCtx, setForceOpen, openModal])
+	}
 	const isEditing = useEventAsState(roomCtx.isEditing)
 	const [isPending, pendingTitle] = getPending(evt)
 	const isEncrypted = getEncryption(roomCtx.store)
@@ -108,11 +110,11 @@ export const usePrimaryItems = (
 	return <>
 		{didFail && <button onClick={onClickResend} title="Resend message">
 			<RefreshIcon/>
-			{!isHover && "Resend"}
+			{names && "Resend"}
 		</button>}
 		{canReact && <button disabled={isPending} title={pendingTitle} onClick={onClickReact}>
 			<ReactIcon/>
-			{!isHover && "React"}
+			{names && "React"}
 		</button>}
 		{canSend && <button
 			disabled={isEditing || isPending}
@@ -120,11 +122,11 @@ export const usePrimaryItems = (
 			onClick={onClickReply}
 		>
 			<ReplyIcon/>
-			{!isHover && "Reply"}
+			{names && "Reply"}
 		</button>}
 		{canEdit && <button onClick={onClickEdit} disabled={isPending} title={pendingTitle}>
 			<EditIcon/>
-			{!isHover && "Edit"}
+			{names && "Edit"}
 		</button>}
 		{isHover && <button onClick={onClickMore}><MoreIcon/></button>}
 	</>

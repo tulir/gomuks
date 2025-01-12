@@ -20,6 +20,7 @@ import type {
 	EventID,
 	EventRowID,
 	EventType,
+	JSONValue,
 	LoginFlowsResponse,
 	LoginRequest,
 	Mentions,
@@ -33,6 +34,7 @@ import type {
 	ReceiptType,
 	RelatesTo,
 	ResolveAliasResponse,
+	RespOpenIDToken,
 	RespRoomJoin,
 	RoomAlias,
 	RoomID,
@@ -139,7 +141,7 @@ export default abstract class RPCClient {
 		return this.request("logout", {})
 	}
 
-	sendMessage(params: SendMessageParams): Promise<RawDBEvent> {
+	sendMessage(params: SendMessageParams): Promise<RawDBEvent | null> {
 		return this.request("send_message", params)
 	}
 
@@ -179,6 +181,10 @@ export default abstract class RPCClient {
 
 	getProfile(user_id: UserID): Promise<UserProfile> {
 		return this.request("get_profile", { user_id })
+	}
+
+	setProfileField(field: string, value: JSONValue): Promise<boolean> {
+		return this.request("set_profile_field", { field, value })
 	}
 
 	getPresence(user_id: UserID): Promise<Presence> {
@@ -265,5 +271,9 @@ export default abstract class RPCClient {
 
 	verify(recovery_key: string): Promise<boolean> {
 		return this.request("verify", { recovery_key })
+	}
+
+	requestOpenIDToken(): Promise<RespOpenIDToken> {
+		return this.request("request_openid_token", {})
 	}
 }

@@ -13,7 +13,7 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import React, { useCallback, useState } from "react"
+import React, { useState } from "react"
 import { LoginScreenProps } from "./LoginScreen.tsx"
 import "./LoginScreen.css"
 
@@ -24,13 +24,13 @@ export const VerificationScreen = ({ client, clientState }: LoginScreenProps) =>
 	const [recoveryKey, setRecoveryKey] = useState("")
 	const [error, setError] = useState("")
 
-	const verify = useCallback((evt: React.FormEvent) => {
+	const verify = (evt: React.FormEvent) => {
 		evt.preventDefault()
 		client.rpc.verify(recoveryKey).then(
 			() => {},
 			err => setError(err.toString()),
 		)
-	}, [recoveryKey, client])
+	}
 
 	return <main className="matrix-login">
 		<h1>gomuks web</h1>

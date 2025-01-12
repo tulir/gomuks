@@ -21,12 +21,14 @@ import (
 
 const (
 	getRoomBaseQuery = `
-		SELECT room_id, creation_content, tombstone_content, name, name_quality, avatar, explicit_avatar, topic, canonical_alias,
+		SELECT room_id, creation_content, tombstone_content, name, name_quality,
+		       avatar, explicit_avatar, dm_user_id, topic, canonical_alias,
 		       lazy_load_summary, encryption_event, has_member_list, preview_event_rowid, sorting_timestamp,
 		       unread_highlights, unread_notifications, unread_messages, marked_unread, prev_batch
 		FROM room
 	`
 	getRoomsBySortingTimestampQuery = getRoomBaseQuery + `WHERE sorting_timestamp < $1 AND sorting_timestamp > 0 ORDER BY sorting_timestamp DESC LIMIT $2`
+	getRoomsByTypeQuery             = getRoomBaseQuery + `WHERE room_type = $1`
 	getRoomByIDQuery                = getRoomBaseQuery + `WHERE room_id = $1`
 	ensureRoomExistsQuery           = `
 		INSERT INTO room (room_id) VALUES ($1)
@@ -34,24 +36,26 @@ const (
 	`
 	upsertRoomFromSyncQuery = `
 		UPDATE room
-		SET creation_content = COALESCE(room.creation_content, $2),
+		SET room_type = COALESCE(room.room_type, json($2)->>'$.type'),
+		    creation_content = COALESCE(room.creation_content, $2),
 		    tombstone_content = COALESCE(room.tombstone_content, $3),
 			name = COALESCE($4, room.name),
 			name_quality = CASE WHEN $4 IS NOT NULL THEN $5 ELSE room.name_quality END,
 			avatar = COALESCE($6, room.avatar),
 			explicit_avatar = CASE WHEN $6 IS NOT NULL THEN $7 ELSE room.explicit_avatar END,
-			topic = COALESCE($8, room.topic),
-			canonical_alias = COALESCE($9, room.canonical_alias),
-			lazy_load_summary = COALESCE($10, room.lazy_load_summary),
-			encryption_event = COALESCE($11, room.encryption_event),
-			has_member_list = room.has_member_list OR $12,
-			preview_event_rowid = COALESCE($13, room.preview_event_rowid),
-			sorting_timestamp = COALESCE($14, room.sorting_timestamp),
-			unread_highlights = COALESCE($15, room.unread_highlights),
-			unread_notifications = COALESCE($16, room.unread_notifications),
-			unread_messages = COALESCE($17, room.unread_messages),
-			marked_unread = COALESCE($18, room.marked_unread),
-			prev_batch = COALESCE($19, room.prev_batch)
+			dm_user_id = COALESCE($8, room.dm_user_id),
+			topic = COALESCE($9, room.topic),
+			canonical_alias = COALESCE($10, room.canonical_alias),
+			lazy_load_summary = COALESCE($11, room.lazy_load_summary),
+			encryption_event = COALESCE($12, room.encryption_event),
+			has_member_list = room.has_member_list OR $13,
+			preview_event_rowid = COALESCE($14, room.preview_event_rowid),
+			sorting_timestamp = COALESCE($15, room.sorting_timestamp),
+			unread_highlights = COALESCE($16, room.unread_highlights),
+			unread_notifications = COALESCE($17, room.unread_notifications),
+			unread_messages = COALESCE($18, room.unread_messages),
+			marked_unread = COALESCE($19, room.marked_unread),
+			prev_batch = COALESCE($20, room.prev_batch)
 		WHERE room_id = $1
 	`
 	setRoomPrevBatchQuery = `
@@ -93,6 +97,10 @@ func (rq *RoomQuery) Get(ctx context.Context, roomID id.RoomID) (*Room, error) {
 
 func (rq *RoomQuery) GetBySortTS(ctx context.Context, maxTS time.Time, limit int) ([]*Room, error) {
 	return rq.QueryMany(ctx, getRoomsBySortingTimestampQuery, maxTS.UnixMilli(), limit)
+}
+
+func (rq *RoomQuery) GetAllSpaces(ctx context.Context) ([]*Room, error) {
+	return rq.QueryMany(ctx, getRoomsByTypeQuery, event.RoomTypeSpace)
 }
 
 func (rq *RoomQuery) Upsert(ctx context.Context, room *Room) error {
@@ -147,6 +155,7 @@ type Room struct {
 	NameQuality    NameQuality    `json:"name_quality"`
 	Avatar         *id.ContentURI `json:"avatar,omitempty"`
 	ExplicitAvatar bool           `json:"explicit_avatar"`
+	DMUserID       *id.UserID     `json:"dm_user_id,omitempty"`
 	Topic          *string        `json:"topic,omitempty"`
 	CanonicalAlias *id.RoomAlias  `json:"canonical_alias,omitempty"`
 
@@ -180,6 +189,10 @@ func (r *Room) CheckChangesAndCopyInto(other *Room) (hasChanges bool) {
 	if r.Avatar != nil {
 		other.Avatar = r.Avatar
 		other.ExplicitAvatar = r.ExplicitAvatar
+		hasChanges = true
+	}
+	if r.DMUserID != nil {
+		other.DMUserID = r.DMUserID
 		hasChanges = true
 	}
 	if r.Topic != nil {
@@ -244,6 +257,7 @@ func (r *Room) Scan(row dbutil.Scannable) (*Room, error) {
 		&r.NameQuality,
 		&r.Avatar,
 		&r.ExplicitAvatar,
+		&r.DMUserID,
 		&r.Topic,
 		&r.CanonicalAlias,
 		dbutil.JSON{Data: &r.LazyLoadSummary},
@@ -275,6 +289,7 @@ func (r *Room) sqlVariables() []any {
 		r.NameQuality,
 		r.Avatar,
 		r.ExplicitAvatar,
+		r.DMUserID,
 		r.Topic,
 		r.CanonicalAlias,
 		dbutil.JSONPtr(r.LazyLoadSummary),

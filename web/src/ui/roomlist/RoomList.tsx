@@ -14,6 +14,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import React, { use, useCallback, useRef, useState } from "react"
+import { RoomListFilter, Space as SpaceStore, SpaceUnreadCounts } from "@/api/statestore"
 import type { RoomID } from "@/api/types"
 import { useEventAsState } from "@/util/eventdispatcher.ts"
 import reverseMap from "@/util/reversemap.ts"
@@ -22,34 +23,72 @@ import ClientContext from "../ClientContext.ts"
 import MainScreenContext from "../MainScreenContext.ts"
 import { keyToString } from "../keybindings.ts"
 import Entry from "./Entry.tsx"
+import FakeSpace from "./FakeSpace.tsx"
+import Space from "./Space.tsx"
 import CloseIcon from "@/icons/close.svg?react"
 import SearchIcon from "@/icons/search.svg?react"
 import "./RoomList.css"
 
 interface RoomListProps {
 	activeRoomID: RoomID | null
+	space: RoomListFilter | null
 }
 
-const RoomList = ({ activeRoomID }: RoomListProps) => {
+const RoomList = ({ activeRoomID, space }: RoomListProps) => {
 	const client = use(ClientContext)!
 	const mainScreen = use(MainScreenContext)
 	const roomList = useEventAsState(client.store.roomList)
-	const roomFilterRef = useRef<HTMLInputElement>(null)
-	const [roomFilter, setRoomFilter] = useState("")
-	const [realRoomFilter, setRealRoomFilter] = useState("")
+	const spaces = useEventAsState(client.store.topLevelSpaces)
+	const searchInputRef = useRef<HTMLInputElement>(null)
+	const [query, directSetQuery] = useState("")
 
-	const updateRoomFilter = useCallback((evt: React.ChangeEvent<HTMLInputElement>) => {
-		setRoomFilter(evt.target.value)
-		client.store.currentRoomListFilter = toSearchableString(evt.target.value)
-		setRealRoomFilter(client.store.currentRoomListFilter)
-	}, [client])
-	const clearQuery = useCallback(() => {
-		setRoomFilter("")
-		client.store.currentRoomListFilter = ""
-		setRealRoomFilter("")
-		roomFilterRef.current?.focus()
-	}, [client])
-	const onKeyDown = useCallback((evt: React.KeyboardEvent<HTMLInputElement>) => {
+	const setQuery = (evt: React.ChangeEvent<HTMLInputElement>) => {
+		client.store.currentRoomListQuery = toSearchableString(evt.target.value)
+		directSetQuery(evt.target.value)
+	}
+	const onClickSpace = useCallback((evt: React.MouseEvent<HTMLDivElement>) => {
+		const store = client.store.getSpaceStore(evt.currentTarget.getAttribute("data-target-space")!)
+		mainScreen.setSpace(store)
+	}, [mainScreen, client])
+	const onClickSpaceUnread = useCallback((
+		evt: React.MouseEvent<HTMLDivElement>, space?: SpaceStore | null,
+	) => {
+		if (!space) {
+			const targetSpace = evt.currentTarget.closest("div.space-entry")?.getAttribute("data-target-space")
+			if (!targetSpace) {
+				return
+			}
+			space = client.store.getSpaceStore(targetSpace)
+			if (!space) {
+				return
+			}
+		}
+		const counts = space.counts.current
+		let wantedField: keyof SpaceUnreadCounts
+		if (counts.unread_highlights > 0) {
+			wantedField = "unread_highlights"
+		} else if (counts.unread_notifications > 0) {
+			wantedField = "unread_notifications"
+		} else if (counts.unread_messages > 0) {
+			wantedField = "unread_messages"
+		} else {
+			return
+		}
+		for (let i = client.store.roomList.current.length - 1; i >= 0; i--) {
+			const entry = client.store.roomList.current[i]
+			if (entry[wantedField] > 0 && space.include(entry)) {
+				mainScreen.setActiveRoom(entry.room_id, undefined, space)
+				evt.stopPropagation()
+				break
+			}
+		}
+	}, [mainScreen, client])
+	const clearQuery = () => {
+		client.store.currentRoomListQuery = ""
+		directSetQuery("")
+		searchInputRef.current?.focus()
+	}
+	const onKeyDown = (evt: React.KeyboardEvent<HTMLInputElement>) => {
 		const key = keyToString(evt)
 		if (key === "Escape") {
 			clearQuery()
@@ -62,30 +101,49 @@ const RoomList = ({ activeRoomID }: RoomListProps) => {
 			evt.stopPropagation()
 			evt.preventDefault()
 		}
-	}, [mainScreen, client.store, clearQuery])
+	}
 
+	const roomListFilter = client.store.roomListFilterFunc
 	return <div className="room-list-wrapper">
 		<div className="room-search-wrapper">
 			<input
-				value={roomFilter}
-				onChange={updateRoomFilter}
+				value={query}
+				onChange={setQuery}
 				onKeyDown={onKeyDown}
 				className="room-search"
 				type="text"
 				placeholder="Search rooms"
-				ref={roomFilterRef}
+				ref={searchInputRef}
 				id="room-search"
 			/>
-			<button onClick={clearQuery} disabled={roomFilter === ""}>
-				{roomFilter !== "" ? <CloseIcon/> : <SearchIcon/>}
+			<button onClick={clearQuery} disabled={query === ""}>
+				{query !== "" ? <CloseIcon/> : <SearchIcon/>}
 			</button>
+		</div>
+		<div className="space-bar">
+			<FakeSpace space={null} setSpace={mainScreen.setSpace} isActive={space === null} />
+			{client.store.pseudoSpaces.map(pseudoSpace => <FakeSpace
+				key={pseudoSpace.id}
+				space={pseudoSpace}
+				setSpace={mainScreen.setSpace}
+				onClickUnread={onClickSpaceUnread}
+				isActive={space?.id === pseudoSpace.id}
+			/>)}
+			{spaces.map(roomID => <Space
+				key={roomID}
+				roomID={roomID}
+				client={client}
+				onClick={onClickSpace}
+				isActive={space?.id === roomID}
+				onClickUnread={onClickSpaceUnread}
+			/>)}
 		</div>
 		<div className="room-list">
 			{reverseMap(roomList, room =>
 				<Entry
 					key={room.room_id}
 					isActive={room.room_id === activeRoomID}
-					hidden={roomFilter ? !room.search_name.includes(realRoomFilter) : false}
+					hidden={roomListFilter ? !roomListFilter(room) : false}
 					room={room}
 				/>,
 			)}

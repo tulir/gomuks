@@ -16,7 +16,7 @@
 import React, { use } from "react"
 import { getAvatarURL } from "@/api/media.ts"
 import { MemberEventContent, UserID } from "@/api/types"
-import { LightboxContext } from "../../modal/Lightbox.tsx"
+import { LightboxContext } from "../../modal"
 import EventContentProps from "./props.ts"
 
 function useChangeDescription(

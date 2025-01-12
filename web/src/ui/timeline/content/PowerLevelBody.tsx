@@ -34,7 +34,7 @@ function renderPowerLevels(content: PowerLevelEventContent, prevContent?: PowerL
 		intDiff`the ban power level from ${prevContent?.ban ?? 50} to ${content.ban ?? 50}`,
 		intDiff`the kick power level from ${prevContent?.kick ?? 50} to ${content.kick ?? 50}`,
 		intDiff`the redact power level from ${prevContent?.redact ?? 50} to ${content.redact ?? 50}`,
-		intDiff`the invite power level from ${prevContent?.redact ?? 0} to ${content.redact ?? 0}`,
+		intDiff`the invite power level from ${prevContent?.invite ?? 0} to ${content.invite ?? 0}`,
 		intDiff`the @room notification power level from ${prevContent?.notifications?.room ?? 50} to ${content.notifications?.room ?? 50}`,
 	]
 	/* eslint-enable max-len */

@@ -211,7 +211,9 @@ export default class Client {
 			throw new Error("Room not found")
 		}
 		const dbEvent = await this.rpc.sendMessage(params)
-		this.#handleOutgoingEvent(dbEvent, room)
+		if (dbEvent) {
+			this.#handleOutgoingEvent(dbEvent, room)
+		}
 	}
 
 	async subscribeToEmojiPack(pack: RoomStateGUID, subscribe: boolean = true) {

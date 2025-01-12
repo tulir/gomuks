@@ -13,7 +13,7 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import { useEffect, useLayoutEffect, useMemo } from "react"
+import { useEffect, useMemo } from "react"
 import { ScaleLoader } from "react-spinners"
 import Client from "./api/client.ts"
 import RPCClient from "./api/rpc.ts"
@@ -22,7 +22,7 @@ import WSClient from "./api/wsclient.ts"
 import ClientContext from "./ui/ClientContext.ts"
 import MainScreen from "./ui/MainScreen.tsx"
 import { LoginScreen, VerificationScreen } from "./ui/login"
-import { LightboxWrapper } from "./ui/modal/Lightbox.tsx"
+import { LightboxWrapper } from "./ui/modal"
 import { useEventAsState } from "./util/eventdispatcher.ts"
 
 function makeRPCClient(): RPCClient {
@@ -36,10 +36,10 @@ function App() {
 	const client = useMemo(() => new Client(makeRPCClient()), [])
 	const connState = useEventAsState(client.rpc.connect)
 	const clientState = useEventAsState(client.state)
-	useLayoutEffect(() => {
+	useEffect(() => {
 		window.client = client
+		return client.start()
 	}, [client])
-	useEffect(() => client.start(), [client])
 
 	const afterConnectError = Boolean(connState?.error && connState.reconnecting && clientState?.is_verified)
 	useEffect(() => {
@@ -70,18 +70,18 @@ function App() {
 	</div> : null
 
 	if (connState?.error && !afterConnectError) {
-		return errorOverlay
+		return <div className="pre-main">{errorOverlay}</div>
 	} else if ((!connState?.connected && !afterConnectError) || !clientState) {
 		const msg = connState?.connected ?
 			"Waiting for client state..." : "Connecting to backend..."
-		return <div className="pre-connect">
+		return <div className="pre-main waiting-to-connect">
 			<ScaleLoader width="2rem" height="2rem" color="var(--primary-color)"/>
 			{msg}
 		</div>
 	} else if (!clientState.is_logged_in) {
-		return <LoginScreen client={client} clientState={clientState}/>
+		return <div className="pre-main"><LoginScreen client={client} clientState={clientState}/></div>
 	} else if (!clientState.is_verified) {
-		return <VerificationScreen client={client} clientState={clientState}/>
+		return <div className="pre-main"><VerificationScreen client={client} clientState={clientState}/></div>
 	} else {
 		return <ClientContext value={client}>
 			<LightboxWrapper>

@@ -1,5 +1,5 @@
 main.matrix-main {
-	--room-list-width: 300px;
+	--room-list-width: 350px;
 	--right-panel-width: 300px;
 
 	position: fixed;
@@ -40,10 +40,12 @@ main.matrix-main {
 
 	> div.room-list-resizer {
 		grid-area: rh1;
+		z-index: 1;
 	}
 
 	> div.right-panel-resizer {
 		grid-area: rh2;
+		z-index: 1;
 	}
 }
 

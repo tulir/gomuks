@@ -215,6 +215,10 @@ div.media-container {
 			border-radius: .25rem;
 		}
 
+		&:has(> div.empty-placeholder) + img {
+			filter: blur(16px);
+		}
+
 		& + img {
 			/* In order loading=lazy to work, the image has to be visible,
 			   so put it behind the placeholder instead of below */

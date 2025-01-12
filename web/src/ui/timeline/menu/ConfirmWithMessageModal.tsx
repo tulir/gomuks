@@ -13,10 +13,10 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import React, { use, useCallback, useState } from "react"
+import React, { use, useState } from "react"
 import { MemDBEvent } from "@/api/types"
-import useEvent from "@/util/useEvent.ts"
-import { ModalCloseContext } from "../../modal/Modal.tsx"
+import { isMobileDevice } from "@/util/ismobile.ts"
+import { ModalCloseContext } from "../../modal"
 import TimelineEvent from "../TimelineEvent.tsx"
 
 interface ConfirmWithMessageProps {
@@ -33,14 +33,11 @@ const ConfirmWithMessageModal = ({
 }: ConfirmWithMessageProps) => {
 	const [reason, setReason] = useState("")
 	const closeModal = use(ModalCloseContext)
-	const onConfirmWrapped = useEvent((evt: React.FormEvent) => {
+	const onConfirmWrapped = (evt: React.FormEvent) => {
 		evt.preventDefault()
 		closeModal()
 		onConfirm(reason)
-	})
-	const onChangeReason = useCallback((evt: React.ChangeEvent<HTMLInputElement>) => {
-		setReason(evt.target.value)
-	}, [])
+	}
 	return <form onSubmit={onConfirmWrapped}>
 		<h3>{title}</h3>
 		<div className="timeline-event-container">
@@ -49,7 +46,13 @@ const ConfirmWithMessageModal = ({
 		<div className="confirm-description">
 			{description}
 		</div>
-		<input autoFocus value={reason} type="text" placeholder={placeholder} onChange={onChangeReason} />
+		<input
+			autoFocus={!isMobileDevice}
+			value={reason}
+			type="text"
+			placeholder={placeholder}
+			onChange={evt => setReason(evt.target.value)}
+		/>
 		<div className="confirm-buttons">
 			<button type="button" onClick={closeModal}>Cancel</button>
 			<button type="submit">{confirmButton}</button>

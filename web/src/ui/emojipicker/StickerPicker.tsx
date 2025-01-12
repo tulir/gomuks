@@ -20,7 +20,7 @@ import { roomStateGUIDToString } from "@/api/types"
 import { Emoji, useFilteredEmojis } from "@/util/emoji"
 import { isMobileDevice } from "@/util/ismobile.ts"
 import ClientContext from "../ClientContext.ts"
-import { ModalCloseContext } from "../modal/Modal.tsx"
+import { ModalCloseContext } from "../modal"
 import { EmojiGroup } from "./EmojiGroup.tsx"
 import { MediaPickerProps } from "./GIFPicker.tsx"
 import useCategoryUnderline from "./useCategoryUnderline.ts"
@@ -39,7 +39,6 @@ const StickerPicker = ({ style, onSelect, room }: MediaPickerProps) => {
 		customEmojiPacks,
 		stickers: true,
 	})
-	const clearQuery = useCallback(() => setQuery(""), [])
 	const close = use(ModalCloseContext)
 	const onSelectWrapped = useCallback((emoji?: Emoji) => {
 		if (!emoji) {
@@ -48,16 +47,15 @@ const StickerPicker = ({ style, onSelect, room }: MediaPickerProps) => {
 		onSelect({
 			msgtype: "m.sticker",
 			body: emoji.t,
-			info: emoji.i,
+			info: emoji.i ?? {},
 			url: emoji.u,
 		})
 		close()
 	}, [onSelect, close])
-	const onChangeQuery = useCallback((evt: React.ChangeEvent<HTMLInputElement>) => setQuery(evt.target.value), [])
-	const onClickCategoryButton = useCallback((evt: React.MouseEvent) => {
+	const onClickCategoryButton = (evt: React.MouseEvent) => {
 		const categoryID = evt.currentTarget.getAttribute("data-category-id")!
 		document.getElementById(`emoji-category-${categoryID}`)?.scrollIntoView()
-	}, [])
+	}
 
 	return <div className="sticker-picker" style={style}>
 		<div className="emoji-category-bar" ref={emojiCategoryBarRef}>
@@ -76,12 +74,12 @@ const StickerPicker = ({ style, onSelect, room }: MediaPickerProps) => {
 		<div className="emoji-search">
 			<input
 				autoFocus={!isMobileDevice}
-				onChange={onChangeQuery}
+				onChange={evt => setQuery(evt.target.value)}
 				value={query}
 				type="search"
 				placeholder="Search stickers"
 			/>
-			<button onClick={clearQuery} disabled={query === ""}>
+			<button onClick={() => setQuery("")} disabled={query === ""}>
 				{query !== "" ? <CloseIcon/> : <SearchIcon/>}
 			</button>
 		</div>

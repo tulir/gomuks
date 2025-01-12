@@ -13,7 +13,7 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import { useCallback, useEffect, useState, useTransition } from "react"
+import { useEffect, useState, useTransition } from "react"
 import { ScaleLoader } from "react-spinners"
 import Client from "@/api/client.ts"
 import { RoomStateStore } from "@/api/statestore"
@@ -34,17 +34,19 @@ const DeviceList = ({ client, room, userID }: DeviceListProps) => {
 	const [view, setEncryptionInfo] = useState<ProfileEncryptionInfo | null>(null)
 	const [errors, setErrors] = useState<string[] | null>(null)
 	const [trackChangePending, startTransition] = useTransition()
-	const doTrackDeviceList = useCallback(() => {
+	const doTrackDeviceList = () => {
 		startTransition(async () => {
 			try {
 				const resp = await client.rpc.trackUserDevices(userID)
-				setEncryptionInfo(resp)
-				setErrors(resp.errors)
+				startTransition(() => {
+					setEncryptionInfo(resp)
+					setErrors(resp.errors)
+				})
 			} catch (err) {
-				setErrors([`${err}`])
+				startTransition(() => setErrors([`${err}`]))
 			}
 		})
-	}, [client, userID])
+	}
 	useEffect(() => {
 		setEncryptionInfo(null)
 		setErrors(null)

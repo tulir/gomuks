@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import type { ContentURI } from "../../types"
-import { Preference, anyContext } from "./types.ts"
+import { Preference, anyContext, anyGlobalContext } from "./types.ts"
 
 export const codeBlockStyles = [
 	"auto", "abap", "algol_nu", "algol", "arduino", "autumn", "average", "base16-snazzy", "borland", "bw",
@@ -102,6 +102,18 @@ export const preferences = {
 		allowedContexts: anyContext,
 		defaultValue: true,
 	}),
+	render_url_previews: new Preference<boolean>({
+		displayName: "Render URL previews",
+		description: "Whether to render MSC4095 URL previews in the room timeline.",
+		allowedContexts: anyContext,
+		defaultValue: true,
+	}),
+	small_replies: new Preference<boolean>({
+		displayName: "Compact reply style",
+		description: "Whether to use a Discord-like compact style for replies instead of the traditional style.",
+		allowedContexts: anyContext,
+		defaultValue: false,
+	}),
 	show_date_separators: new Preference<boolean>({
 		displayName: "Show date separators",
 		description: "Whether messages in different days should have a date separator between them in the room timeline.",
@@ -158,6 +170,24 @@ export const preferences = {
 		description: "The mxc:// URI to a custom notification sound.",
 		allowedContexts: anyContext,
 		defaultValue: "",
+	}),
+	room_window_title: new Preference<string>({
+		displayName: "In-room window title",
+		description: "The title to use for the window when viewing a room. $room will be replaced with the room name",
+		allowedContexts: anyContext,
+		defaultValue: "$room - gomuks web",
+	}),
+	window_title: new Preference<string>({
+		displayName: "Default window title",
+		description: "The title to use for the window when not in a room.",
+		allowedContexts: anyGlobalContext,
+		defaultValue: "gomuks web",
+	}),
+	favicon: new Preference<string>({
+		displayName: "Favicon",
+		description: "The URL to use for the favicon.",
+		allowedContexts: anyContext,
+		defaultValue: "gomuks.png",
 	}),
 } as const
 

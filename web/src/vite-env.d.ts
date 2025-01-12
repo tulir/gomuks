@@ -14,5 +14,7 @@ declare global {
 		mainScreenContext: MainScreenContextFields
 		openLightbox: (params: { src: string, alt: string }) => void
 		gcSettings: GCSettings
+		hackyOpenEventContextMenu?: string
+		closeModal: () => void
 	}
 }

@@ -15,8 +15,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import React, { CSSProperties, use, useCallback, useEffect, useLayoutEffect, useReducer, useRef, useState } from "react"
 import { ScaleLoader } from "react-spinners"
-import Client from "@/api/client.ts"
-import { RoomStateStore, usePreference, useRoomEvent } from "@/api/statestore"
+import { useRoomEvent } from "@/api/statestore"
 import type {
 	EventID,
 	MediaMessageEventContent,
@@ -29,21 +28,18 @@ import type {
 import { PartialEmoji, emojiToMarkdown } from "@/util/emoji"
 import { isMobileDevice } from "@/util/ismobile.ts"
 import { escapeMarkdown } from "@/util/markdown.ts"
-import useEvent from "@/util/useEvent.ts"
 import ClientContext from "../ClientContext.ts"
 import EmojiPicker from "../emojipicker/EmojiPicker.tsx"
 import GIFPicker from "../emojipicker/GIFPicker.tsx"
 import StickerPicker from "../emojipicker/StickerPicker.tsx"
 import { keyToString } from "../keybindings.ts"
-import { LeafletPicker } from "../maps/async.tsx"
-import { ModalContext } from "../modal/Modal.tsx"
+import { ModalContext } from "../modal"
 import { useRoomContext } from "../roomview/roomcontext.ts"
 import { ReplyBody } from "../timeline/ReplyBody.tsx"
-import { useMediaContent } from "../timeline/content/useMediaContent.tsx"
 import type { AutocompleteQuery } from "./Autocompleter.tsx"
+import { ComposerLocation, ComposerLocationValue, ComposerMedia } from "./ComposerMedia.tsx"
 import { charToAutocompleteType, emojiQueryRegex, getAutocompleter } from "./getAutocompleter.ts"
 import AttachIcon from "@/icons/attach.svg?react"
-import CloseIcon from "@/icons/close.svg?react"
 import EmojiIcon from "@/icons/emoji-categories/smileys-emotion.svg?react"
 import GIFIcon from "@/icons/gif.svg?react"
 import LocationIcon from "@/icons/location.svg?react"
@@ -51,12 +47,6 @@ import MoreIcon from "@/icons/more.svg?react"
 import SendIcon from "@/icons/send.svg?react"
 import StickerIcon from "@/icons/sticker.svg?react"
 import "./MessageComposer.css"
-
-export interface ComposerLocationValue {
-	lat: number
-	long: number
-	prec?: number
-}
 
 export interface ComposerState {
 	text: string
@@ -174,13 +164,13 @@ const MessageComposer = () => {
 		textInput.current?.focus()
 	}, [room.roomID])
 	const canSend = Boolean(state.text || state.media || state.location)
-	const sendMessage = useEvent((evt: React.FormEvent) => {
+	const onClickSend = (evt: React.FormEvent) => {
 		evt.preventDefault()
 		if (!canSend) {
 			return
 		}
 		doSendMessage(state)
-	})
+	}
 	const doSendMessage = (state: ComposerState) => {
 		if (editing) {
 			setState(draftStore.get(room.roomID) ?? emptyComposer)
@@ -245,7 +235,7 @@ const MessageComposer = () => {
 			mentions,
 		}).catch(err => window.alert("Failed to send message: " + err))
 	}
-	const onComposerCaretChange = useEvent((evt: CaretEvent<HTMLTextAreaElement>, newText?: string) => {
+	const onComposerCaretChange = (evt: CaretEvent<HTMLTextAreaElement>, newText?: string) => {
 		const area = evt.currentTarget
 		if (area.selectionStart <= (autocomplete?.startPos ?? 0)) {
 			if (autocomplete) {
@@ -281,8 +271,8 @@ const MessageComposer = () => {
 				})
 			}
 		}
-	})
-	const onComposerKeyDown = useEvent((evt: React.KeyboardEvent<HTMLTextAreaElement>) => {
+	}
+	const onComposerKeyDown = (evt: React.KeyboardEvent<HTMLTextAreaElement>) => {
 		const inp = evt.currentTarget
 		const fullKey = keyToString(evt)
 		const sendKey = fullKey === "Enter" || fullKey === "Ctrl+Enter"
@@ -295,7 +285,7 @@ const MessageComposer = () => {
 			|| autocomplete.selected !== undefined
 			|| !document.getElementById("composer-autocompletions")?.classList.contains("has-items")
 		)) {
-			sendMessage(evt)
+			onClickSend(evt)
 		} else if (autocomplete) {
 			let autocompleteUpdate: Partial<AutocompleteQuery> | null | undefined
 			if (fullKey === "Tab" || fullKey === "ArrowDown") {
@@ -320,18 +310,18 @@ const MessageComposer = () => {
 			}
 		} else if (fullKey === "ArrowUp" && inp.selectionStart === 0 && inp.selectionEnd === 0) {
 			const currentlyEditing = editing
-				? roomCtx.ownMessages.indexOf(editing.rowid)
-				: roomCtx.ownMessages.length
-			const prevEventToEditID = roomCtx.ownMessages[currentlyEditing - 1]
+				? room.editTargets.indexOf(editing.rowid)
+				: room.editTargets.length
+			const prevEventToEditID = room.editTargets[currentlyEditing - 1]
 			const prevEventToEdit = prevEventToEditID ? room.eventsByRowID.get(prevEventToEditID) : undefined
 			if (prevEventToEdit) {
 				roomCtx.setEditing(prevEventToEdit)
 				evt.preventDefault()
 			}
 		} else if (editing && fullKey === "ArrowDown" && inp.selectionStart === state.text.length) {
-			const currentlyEditingIdx = roomCtx.ownMessages.indexOf(editing.rowid)
+			const currentlyEditingIdx = room.editTargets.indexOf(editing.rowid)
 			const nextEventToEdit = currentlyEditingIdx
-				? room.eventsByRowID.get(roomCtx.ownMessages[currentlyEditingIdx + 1]) : undefined
+				? room.eventsByRowID.get(room.editTargets[currentlyEditingIdx + 1]) : undefined
 			roomCtx.setEditing(nextEventToEdit ?? null)
 			// This timeout is very hacky and probably doesn't work in every case
 			setTimeout(() => inp.setSelectionRange(0, 0), 0)
@@ -340,8 +330,8 @@ const MessageComposer = () => {
 			evt.stopPropagation()
 			roomCtx.setEditing(null)
 		}
-	})
-	const onChange = useEvent((evt: React.ChangeEvent<HTMLTextAreaElement>) => {
+	}
+	const onChange = (evt: React.ChangeEvent<HTMLTextAreaElement>) => {
 		setState({ text: evt.target.value })
 		const now = Date.now()
 		if (evt.target.value !== "" && typingSentAt.current + 5_000 < now) {
@@ -358,7 +348,7 @@ const MessageComposer = () => {
 			}
 		}
 		onComposerCaretChange(evt, evt.target.value)
-	})
+	}
 	const doUploadFile = useCallback((file: File | null | undefined) => {
 		if (!file) {
 			return
@@ -380,10 +370,7 @@ const MessageComposer = () => {
 			.catch(err => window.alert("Failed to upload file: " + err))
 			.finally(() => setLoadingMedia(false))
 	}, [room])
-	const onAttachFile = useEvent(
-		(evt: React.ChangeEvent<HTMLInputElement>) => doUploadFile(evt.target.files?.[0]),
-	)
-	const onPaste = useEvent((evt: React.ClipboardEvent<HTMLTextAreaElement>) => {
+	const onPaste = (evt: React.ClipboardEvent<HTMLTextAreaElement>) => {
 		const file = evt.clipboardData?.files?.[0]
 		const text = evt.clipboardData.getData("text/plain")
 		const input = evt.currentTarget
@@ -400,7 +387,7 @@ const MessageComposer = () => {
 			return
 		}
 		evt.preventDefault()
-	})
+	}
 	// To ensure the cursor jumps to the end, do this in an effect rather than as the initial value of useState
 	// To try to avoid the input bar flashing, use useLayoutEffect instead of useEffect
 	useLayoutEffect(() => {
@@ -450,7 +437,6 @@ const MessageComposer = () => {
 			draftStore.set(room.roomID, state)
 		}
 	}, [roomCtx, room, state, editing])
-	const openFilePicker = useCallback(() => fileInput.current!.click(), [])
 	const clearMedia = useCallback(() => setState({ media: null, location: null }), [])
 	const onChangeLocation = useCallback((location: ComposerLocationValue) => setState({ location }), [])
 	const closeReply = useCallback((evt: React.MouseEvent) => {
@@ -461,56 +447,6 @@ const MessageComposer = () => {
 		evt.stopPropagation()
 		roomCtx.setEditing(null)
 	}, [roomCtx])
-	const getEmojiPickerStyle = () => ({
-		bottom: (composerRef.current?.clientHeight ?? 32) + 4 + 24,
-		right: "var(--timeline-horizontal-padding)",
-	})
-	const openEmojiPicker = useEvent(() => {
-		openModal({
-			content: <EmojiPicker
-				style={getEmojiPickerStyle()}
-				room={roomCtx.store}
-				onSelect={(emoji: PartialEmoji) => {
-					const mdEmoji = emojiToMarkdown(emoji)
-					setState({
-						text: state.text.slice(0, textInput.current?.selectionStart ?? 0)
-							+ mdEmoji
-							+ state.text.slice(textInput.current?.selectionEnd ?? 0),
-					})
-					if (textInput.current) {
-						textInput.current.setSelectionRange(textInput.current.selectionStart + mdEmoji.length, 0)
-					}
-				}}
-				// TODO allow keeping open on select on non-mobile devices
-				//      (requires onSelect to be able to keep track of the state after updating it)
-				closeOnSelect={true}
-			/>,
-			onClose: () => !isMobileDevice && textInput.current?.focus(),
-		})
-	})
-	const openGIFPicker = useEvent(() => {
-		openModal({
-			content: <GIFPicker
-				style={getEmojiPickerStyle()}
-				room={roomCtx.store}
-				onSelect={media => setState({ media })}
-			/>,
-			onClose: () => !isMobileDevice && textInput.current?.focus(),
-		})
-	})
-	const openStickerPicker = useEvent(() => {
-		openModal({
-			content: <StickerPicker
-				style={getEmojiPickerStyle()}
-				room={roomCtx.store}
-				onSelect={media => doSendMessage({ ...state, media, text: "" })}
-			/>,
-			onClose: () => !isMobileDevice && textInput.current?.focus(),
-		})
-	})
-	const openLocationPicker = useEvent(() => {
-		setState({ location: { lat: 0, long: 0, prec: 1 }, media: null })
-	})
 	const Autocompleter = getAutocompleter(autocomplete, client, room)
 	let mediaDisabledTitle: string | undefined
 	let stickerDisabledTitle: string | undefined
@@ -533,7 +469,57 @@ const MessageComposer = () => {
 	} else if (state.text && !editing) {
 		stickerDisabledTitle = "You can't attach a sticker to a message with text"
 	}
+	const getEmojiPickerStyle = () => ({
+		bottom: (composerRef.current?.clientHeight ?? 32) + 4 + 24,
+		right: "var(--timeline-horizontal-padding)",
+	})
 	const makeAttachmentButtons = (includeText = false) => {
+		const openEmojiPicker = () => {
+			openModal({
+				content: <EmojiPicker
+					style={getEmojiPickerStyle()}
+					room={roomCtx.store}
+					onSelect={(emoji: PartialEmoji) => {
+						const mdEmoji = emojiToMarkdown(emoji)
+						setState({
+							text: state.text.slice(0, textInput.current?.selectionStart ?? 0)
+								+ mdEmoji
+								+ state.text.slice(textInput.current?.selectionEnd ?? 0),
+						})
+						if (textInput.current) {
+							textInput.current.setSelectionRange(textInput.current.selectionStart + mdEmoji.length, 0)
+						}
+					}}
+					// TODO allow keeping open on select on non-mobile devices
+					//      (requires onSelect to be able to keep track of the state after updating it)
+					closeOnSelect={true}
+				/>,
+				onClose: () => !isMobileDevice && textInput.current?.focus(),
+			})
+		}
+		const openGIFPicker = () => {
+			openModal({
+				content: <GIFPicker
+					style={getEmojiPickerStyle()}
+					room={roomCtx.store}
+					onSelect={media => setState({ media })}
+				/>,
+				onClose: () => !isMobileDevice && textInput.current?.focus(),
+			})
+		}
+		const openStickerPicker = () => {
+			openModal({
+				content: <StickerPicker
+					style={getEmojiPickerStyle()}
+					room={roomCtx.store}
+					onSelect={media => doSendMessage({ ...state, media, text: "" })}
+				/>,
+				onClose: () => !isMobileDevice && textInput.current?.focus(),
+			})
+		}
+		const openLocationPicker = () => {
+			setState({ location: { lat: 0, long: 0, prec: 1 }, media: null })
+		}
 		return <>
 			<button onClick={openEmojiPicker} title="Add emoji"><EmojiIcon/>{includeText && "Emoji"}</button>
 			<button
@@ -556,13 +542,13 @@ const MessageComposer = () => {
 				title={locationDisabledTitle ?? "Add location"}
 			><LocationIcon/>{includeText && "Location"}</button>
 			<button
-				onClick={openFilePicker}
+				onClick={() => fileInput.current!.click()}
 				disabled={!!mediaDisabledTitle}
 				title={mediaDisabledTitle ?? "Add file attachment"}
 			><AttachIcon/>{includeText && "File"}</button>
 		</>
 	}
-	const openButtonsModal = useEvent(() => {
+	const openButtonsModal = () => {
 		const style: CSSProperties = getEmojiPickerStyle()
 		style.left = style.right
 		delete style.right
@@ -571,7 +557,7 @@ const MessageComposer = () => {
 				{makeAttachmentButtons(true)}
 			</div>,
 		})
-	})
+	}
 	const inlineButtons = state.text === "" || window.innerWidth > 720
 	const showSendButton = canSend || window.innerWidth > 720
 	const disableClearMedia = editing && state.media?.msgtype === "m.sticker"
@@ -602,7 +588,7 @@ const MessageComposer = () => {
 				isThread={false}
 				onClose={stopEditing}
 			/>}
-			{loadingMedia && <div className="composer-media"><ScaleLoader/></div>}
+			{loadingMedia && <div className="composer-media"><ScaleLoader color="var(--primary-color)"/></div>}
 			{state.media && <ComposerMedia content={state.media} clearMedia={!disableClearMedia && clearMedia}/>}
 			{state.location && <ComposerLocation
 				room={room} client={client}
@@ -625,49 +611,19 @@ const MessageComposer = () => {
 				/>
 				{inlineButtons && makeAttachmentButtons()}
 				{showSendButton && <button
-					onClick={sendMessage}
+					onClick={onClickSend}
 					disabled={!canSend || loadingMedia}
 					title="Send message"
 				><SendIcon/></button>}
-				<input ref={fileInput} onChange={onAttachFile} type="file" value=""/>
+				<input
+					ref={fileInput}
+					onChange={evt => doUploadFile(evt.target.files?.[0])}
+					type="file"
+					value=""
+				/>
 			</div>
 		</div>
 	</>
-}
-
-interface ComposerMediaProps {
-	content: MediaMessageEventContent
-	clearMedia: false | (() => void)
-}
-
-const ComposerMedia = ({ content, clearMedia }: ComposerMediaProps) => {
-	const [mediaContent, containerClass, containerStyle] = useMediaContent(
-		content, "m.room.message", { height: 120, width: 360 },
-	)
-	return <div className="composer-media">
-		<div className={`media-container ${containerClass}`} style={containerStyle}>
-			{mediaContent}
-		</div>
-		{clearMedia && <button onClick={clearMedia}><CloseIcon/></button>}
-	</div>
-}
-
-interface ComposerLocationProps {
-	room: RoomStateStore
-	client: Client
-	location: ComposerLocationValue
-	onChange: (location: ComposerLocationValue) => void
-	clearLocation: () => void
-}
-
-const ComposerLocation = ({ client, room, location, onChange, clearLocation }: ComposerLocationProps) => {
-	const tileTemplate = usePreference(client.store, room, "leaflet_tile_template")
-	return <div className="composer-location">
-		<div className="location-container">
-			<LeafletPicker tileTemplate={tileTemplate} onChange={onChange} initialLocation={location}/>
-		</div>
-		<button onClick={clearLocation}><CloseIcon/></button>
-	</div>
 }
 
 export default MessageComposer

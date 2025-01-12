@@ -16,23 +16,26 @@
 import { CSSProperties, use } from "react"
 import { MemDBEvent } from "@/api/types"
 import ClientContext from "../../ClientContext.ts"
-import { RoomContextData, useRoomContext } from "../../roomview/roomcontext.ts"
+import { RoomContextData } from "../../roomview/roomcontext.ts"
 import { usePrimaryItems } from "./usePrimaryItems.tsx"
 import { useSecondaryItems } from "./useSecondaryItems.tsx"
+import CloseIcon from "@/icons/close.svg?react"
 
-interface EventHoverMenuProps {
+interface BaseEventMenuProps {
 	evt: MemDBEvent
+	roomCtx: RoomContextData
+}
+
+interface EventHoverMenuProps extends BaseEventMenuProps {
 	setForceOpen: (forceOpen: boolean) => void
 }
 
-export const EventHoverMenu = ({ evt, setForceOpen }: EventHoverMenuProps) => {
-	const elements = usePrimaryItems(use(ClientContext)!, useRoomContext(), evt, true, undefined, setForceOpen)
+export const EventHoverMenu = ({ evt, roomCtx, setForceOpen }: EventHoverMenuProps) => {
+	const elements = usePrimaryItems(use(ClientContext)!, roomCtx, evt, true, false, undefined, setForceOpen)
 	return <div className="event-hover-menu">{elements}</div>
 }
 
-interface EventContextMenuProps {
-	evt: MemDBEvent
-	roomCtx: RoomContextData
+interface EventContextMenuProps extends BaseEventMenuProps {
 	style: CSSProperties
 }
 
@@ -43,11 +46,24 @@ export const EventExtraMenu = ({ evt, roomCtx, style }: EventContextMenuProps) =
 
 export const EventFullMenu = ({ evt, roomCtx, style }: EventContextMenuProps) => {
 	const client = use(ClientContext)!
-	const primary = usePrimaryItems(client, roomCtx, evt, false, style, undefined)
+	const primary = usePrimaryItems(client, roomCtx, evt, false, false, style, undefined)
 	const secondary = useSecondaryItems(client, roomCtx, evt)
 	return <div style={style} className="event-context-menu full">
 		{primary}
 		<hr/>
 		{secondary}
+	</div>
+}
+
+export const EventFixedMenu = ({ evt, roomCtx }: BaseEventMenuProps) => {
+	const client = use(ClientContext)!
+	const primary = usePrimaryItems(client, roomCtx, evt, false, true, undefined, undefined)
+	const secondary = useSecondaryItems(client, roomCtx, evt, false)
+	return <div className="event-fixed-menu">
+		{primary}
+		<div className="vertical-line"/>
+		{secondary}
+		<div className="vertical-line"/>
+		<button className="close"><CloseIcon/></button>
 	</div>
 }

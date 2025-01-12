@@ -2,9 +2,9 @@
 <html lang="en">
 <head>
 	<meta charset="UTF-8"/>
-	<link rel="icon" type="image/png" href="gomuks.png"/>
+	<link id="favicon" rel="icon" type="image/png" href="gomuks.png"/>
 	<link rel="manifest" href="manifest.json"/>
-	<meta name="viewport" content="width=device-width, initial-scale=1.0, interactive-widget=resizes-content"/>
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, interactive-widget=resizes-content"/>
 	<title>gomuks web</title>
 	<!-- etag placeholder -->
 </head>
@@ -12,5 +12,16 @@
 	<div id="root"></div>
 	<script type="module" src="src/main.tsx"></script>
 	<audio id="default-notification-sound" preload="auto" src="sounds/bright.flac"></audio>
+	<svg style="position: absolute; width: 0; height: 0;" viewBox="0 0 1 1" xmlns="http://www.w3.org/2000/svg">
+		<defs>
+			<clipPath id="squircle" clipPathUnits="objectBoundingBox">
+				<path d="M 0,0.5
+						C 0,0  0,0  0.5,0
+						1,0  1,0  1,0.5
+						1,1  1,1  0.5,1
+						0,1  0,1  0,0.5"></path>
+			</clipPath>
+		</defs>
+	</svg>
 </body>
 </html>
