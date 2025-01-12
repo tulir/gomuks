@@ -103,32 +103,6 @@ func (h *HiClient) SendMessage(
 		_, err := h.SetState(ctx, roomID, event.Type{Type: parts[1], Class: event.StateEventType}, parts[2], content)
 		return nil, err
 	}
-	// This is hacked in and to be removed later.
-	for _, state := range []string{"/invite ", "/ban ", "/kick "} {
-		if strings.HasPrefix(text, state) {
-			text = strings.TrimPrefix(text, state)
-			parts := strings.SplitN(text, " ", 1)
-			mxid := parts[0]
-			content := event.MemberEventContent{}
-			memberships := map[string]event.Membership{
-				"/invite ": event.MembershipInvite,
-				"/ban ":    event.MembershipBan,
-				"/kick ":   event.MembershipLeave,
-			}
-			content.Membership = memberships[state]
-			if len(parts) == 2 {
-				content.Reason = parts[1]
-			}
-			_, err := h.SetState(
-				ctx,
-				roomID,
-				event.Type{Type: "m.room.member", Class: event.StateEventType},
-				mxid,
-				content,
-			)
-			return nil, err
-		}
-	}
 	var content event.MessageEventContent
 	msgType := event.MsgText
 	origText := text
