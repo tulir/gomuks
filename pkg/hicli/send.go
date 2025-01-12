@@ -103,70 +103,30 @@ func (h *HiClient) SendMessage(
 		_, err := h.SetState(ctx, roomID, event.Type{Type: parts[1], Class: event.StateEventType}, parts[2], content)
 		return nil, err
 	}
-	if strings.HasPrefix(text, "/ban ") {
-		text = strings.TrimPrefix(text, "/ban ")
-		parts := strings.SplitN(text, " ", 1) // mxid, reason
-		// reason is optional
-		if len(parts) < 1 {
-			return nil, fmt.Errorf("invalid /ban command")
+	for _, state := range []string{"/invite ", "/ban ", "/kick "} {
+		if strings.HasPrefix(text, state) {
+			text = strings.TrimPrefix(text, state)
+			parts := strings.SplitN(text, " ", 1)
+			mxid := parts[0]
+			content := event.MemberEventContent{}
+			memberships := map[string]event.Membership{
+				"/invite ": event.MembershipInvite,
+				"/ban ":    event.MembershipBan,
+				"/kick ":   event.MembershipLeave,
+			}
+			content.Membership = memberships[state]
+			if len(parts) == 2 {
+				content.Reason = parts[1]
+			}
+			_, err := h.SetState(
+				ctx,
+				roomID,
+				event.Type{Type: "m.room.member", Class: event.StateEventType},
+				mxid,
+				content,
+			)
+			return nil, err
 		}
-		mxid := parts[0]
-		var content event.MemberEventContent
-		if len(parts) == 2 {
-			content = event.MemberEventContent{
-				Membership: event.MembershipBan,
-				Reason:     parts[1],
-			}
-		} else {
-			content = event.MemberEventContent{
-				Membership: event.MembershipBan,
-			}
-		}
-		_, err := h.SetState(
-			ctx,
-			roomID,
-			event.Type{Type: "m.room.member", Class: event.StateEventType},
-			mxid,
-			content,
-		)
-		return nil, err
-	}
-	if strings.HasPrefix(text, "/kick ") {
-		text = strings.TrimPrefix(text, "/kick ")
-		parts := strings.SplitN(text, " ", 2) // mxid, reason
-		mxid := parts[0]
-		var content event.MemberEventContent
-		if len(parts) == 2 {
-			content = event.MemberEventContent{
-				Membership: event.MembershipLeave,
-				Reason:     parts[1],
-			}
-		} else {
-			content = event.MemberEventContent{
-				Membership: event.MembershipLeave,
-			}
-		}
-		_, err := h.SetState(
-			ctx,
-			roomID,
-			event.Type{Type: "m.room.member", Class: event.StateEventType},
-			mxid,
-			content,
-		)
-		return nil, err
-	}
-	if strings.HasPrefix(text, "/invite ") {
-		text = strings.TrimPrefix(text, "/invite ")
-		_, err := h.SetState(
-			ctx,
-			roomID,
-			event.Type{Type: "m.room.member", Class: event.StateEventType},
-			text,
-			event.MemberEventContent{
-				Membership: event.MembershipInvite,
-			},
-		)
-		return nil, err
 	}
 	var content event.MessageEventContent
 	msgType := event.MsgText
