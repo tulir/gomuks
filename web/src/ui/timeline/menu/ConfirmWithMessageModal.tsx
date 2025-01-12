@@ -20,7 +20,7 @@ import { ModalCloseContext } from "../../modal"
 import TimelineEvent from "../TimelineEvent.tsx"
 
 interface ConfirmWithMessageProps {
-	evt: MemDBEvent
+	evt?: MemDBEvent
 	title: string
 	description: string
 	placeholder: string
@@ -40,9 +40,9 @@ const ConfirmWithMessageModal = ({
 	}
 	return <form onSubmit={onConfirmWrapped}>
 		<h3>{title}</h3>
-		<div className="timeline-event-container">
+		{evt && <div className="timeline-event-container">
 			<TimelineEvent evt={evt} prevEvt={null} disableMenu={true} />
-		</div>
+		</div>}
 		<div className="confirm-description">
 			{description}
 		</div>
