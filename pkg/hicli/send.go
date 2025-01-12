@@ -106,18 +106,27 @@ func (h *HiClient) SendMessage(
 	if strings.HasPrefix(text, "/ban ") {
 		text = strings.TrimPrefix(text, "/ban ")
 		parts := strings.SplitN(text, " ", 1) // mxid, reason
-		if len(parts) < 1 || len(parts[0]) == 0 {
+		// reason is optional
+		if len(parts) < 1 {
 			return nil, fmt.Errorf("invalid /ban command")
 		}
-		content := event.MemberEventContent{
-			Membership: event.MembershipBan,
-			Reason:     parts[1],
+		mxid := parts[0]
+		var content event.MemberEventContent
+		if len(parts) == 2 {
+			content = event.MemberEventContent{
+				Membership: event.MembershipBan,
+				Reason:     parts[1],
+			}
+		} else {
+			content = event.MemberEventContent{
+				Membership: event.MembershipBan,
+			}
 		}
 		_, err := h.SetState(
 			ctx,
 			roomID,
 			event.Type{Type: "m.room.member", Class: event.StateEventType},
-			parts[0],
+			mxid,
 			content,
 		)
 		return nil, err
@@ -125,18 +134,23 @@ func (h *HiClient) SendMessage(
 	if strings.HasPrefix(text, "/kick ") {
 		text = strings.TrimPrefix(text, "/kick ")
 		parts := strings.SplitN(text, " ", 2) // mxid, reason
-		if len(parts) < 1 || len(parts[0]) == 0 {
-			return nil, fmt.Errorf("invalid /kick command")
-		}
-		content := event.MemberEventContent{
-			Membership: event.MembershipLeave,
-			Reason:     parts[1],
+		mxid := parts[0]
+		var content event.MemberEventContent
+		if len(parts) == 2 {
+			content = event.MemberEventContent{
+				Membership: event.MembershipLeave,
+				Reason:     parts[1],
+			}
+		} else {
+			content = event.MemberEventContent{
+				Membership: event.MembershipLeave,
+			}
 		}
 		_, err := h.SetState(
 			ctx,
 			roomID,
 			event.Type{Type: "m.room.member", Class: event.StateEventType},
-			parts[0],
+			mxid,
 			content,
 		)
 		return nil, err
