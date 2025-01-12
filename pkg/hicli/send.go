@@ -155,6 +155,19 @@ func (h *HiClient) SendMessage(
 		)
 		return nil, err
 	}
+	if strings.HasPrefix(text, "/invite ") {
+		text = strings.TrimPrefix(text, "/invite ")
+		_, err := h.SetState(
+			ctx,
+			roomID,
+			event.Type{Type: "m.room.member", Class: event.StateEventType},
+			text,
+			event.MemberEventContent{
+				Membership: event.MembershipInvite,
+			},
+		)
+		return nil, err
+	}
 	var content event.MessageEventContent
 	msgType := event.MsgText
 	origText := text
