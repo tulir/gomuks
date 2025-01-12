@@ -1,5 +1,5 @@
 // gomuks - A Matrix client written in Go.
-// Copyright (C) 2024 Tulir Asokan
+// Copyright (C) 2025 Nexus Nicholson
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Affero General Public License as published by
@@ -92,7 +92,7 @@ const UserModeration = ({ userID, client, member }: UserModerationProps) => {
 						disabled={actionInProgress}
 					>
 						<PersonAdd />
-						<span>Invite</span>
+						<span>{membership === "knock" ? "Accept request to join" : "Invite"}</span>
 					</button>
 				)}
 				{["knock", "invite"].includes(membership) && (
