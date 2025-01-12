@@ -103,6 +103,44 @@ func (h *HiClient) SendMessage(
 		_, err := h.SetState(ctx, roomID, event.Type{Type: parts[1], Class: event.StateEventType}, parts[2], content)
 		return nil, err
 	}
+	if strings.HasPrefix(text, "/ban ") {
+		text = strings.TrimPrefix(text, "/ban ")
+		parts := strings.SplitN(text, " ", 1) // mxid, reason
+		if len(parts) < 1 || len(parts[0]) == 0 {
+			return nil, fmt.Errorf("invalid /ban command")
+		}
+		content := event.MemberEventContent{
+			Membership: event.MembershipBan,
+			Reason:     parts[1],
+		}
+		_, err := h.SetState(
+			ctx,
+			roomID,
+			event.Type{Type: "m.room.member", Class: event.StateEventType},
+			parts[0],
+			content,
+		)
+		return nil, err
+	}
+	if strings.HasPrefix(text, "/kick ") {
+		text = strings.TrimPrefix(text, "/kick ")
+		parts := strings.SplitN(text, " ", 2) // mxid, reason
+		if len(parts) < 1 || len(parts[0]) == 0 {
+			return nil, fmt.Errorf("invalid /kick command")
+		}
+		content := event.MemberEventContent{
+			Membership: event.MembershipLeave,
+			Reason:     parts[1],
+		}
+		_, err := h.SetState(
+			ctx,
+			roomID,
+			event.Type{Type: "m.room.member", Class: event.StateEventType},
+			parts[0],
+			content,
+		)
+		return nil, err
+	}
 	var content event.MessageEventContent
 	msgType := event.MsgText
 	origText := text
