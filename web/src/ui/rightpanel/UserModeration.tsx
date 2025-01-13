@@ -23,6 +23,7 @@ import ConfirmWithMessageModal from "@/ui/timeline/menu/ConfirmWithMessageModal.
 import Gavel from "@/icons/gavel.svg?react"
 import PersonAdd from "@/icons/person-add.svg?react"
 import PersonRemove from "@/icons/person-remove.svg?react"
+import { getPowerLevels } from "@/ui/timeline/menu/util.ts";
 
 interface UserModerationProps {
 	userID: string;
@@ -33,7 +34,19 @@ interface UserModerationProps {
 
 const UserModeration = ({ userID, client, member }: UserModerationProps) => {
 	const roomCtx = use(RoomContext)
+	if(!roomCtx) {
+		return null  // There is no room context, moderation is not an applicable context.
+	}
 	const openModal = use(ModalContext)
+	const hasPl = (action: "invite" | "kick" | "ban") => {
+		const [pls, ownPL] = getPowerLevels(roomCtx.store, client)
+		const actionPL = pls[action] ?? pls.state_default ?? 50
+		const otherUserPl = pls.users?.[userID] ?? pls.users_default ?? 0
+		if(action === "invite") {
+			return ownPL >= actionPL  // no need to check otherUserPl
+		}
+		return ownPL >= actionPL && ownPL > otherUserPl
+	}
 
 	const runAction = (mode: Membership) => {
 		const callback = (reason: string) => {
@@ -81,31 +94,31 @@ const UserModeration = ({ userID, client, member }: UserModerationProps) => {
 		<div className="user-moderation">
 			<h4>Moderation</h4>
 			<div className="moderation-actions">
-				{(["knock", "leave"].includes(membership) || !member) && (
+				{(["knock", "leave"].includes(membership) || !member) && hasPl("invite") && (
 					<button className="moderation-action invite" onClick={runAction("invite")}>
 						<PersonAdd />
 						<span>{membership === "knock" ? "Accept request to join" : "Invite"}</span>
 					</button>
 				)}
-				{["knock", "invite"].includes(membership) && (
+				{["knock", "invite"].includes(membership) && hasPl("kick") && (
 					<button className="moderation-action dangerous" onClick={runAction("leave")}>
 						<PersonRemove />
 						<span>{membership === "invite" ? "Revoke invitation" : "Reject join request"}</span>
 					</button>
 				)}
-				{membership === "join" && (
+				{membership === "join" && hasPl("kick") && (
 					<button className="moderation-action dangerous" onClick={runAction("leave")}>
 						<PersonRemove />
 						<span>Kick</span>
 					</button>
 				)}
-				{membership !== "ban" && (
+				{membership !== "ban" && hasPl("ban") && (
 					<button className="moderation-action dangerous" onClick={runAction("ban")}>
 						<Gavel />
 						<span>Ban</span>
 					</button>
 				)}
-				{membership === "ban" && (
+				{membership === "ban" && hasPl("ban") && (
 					<button className="moderation-action invite" onClick={runAction("leave")}>
 						<Gavel />
 						<span>Unban</span>
