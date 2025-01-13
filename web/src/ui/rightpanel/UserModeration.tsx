@@ -20,10 +20,10 @@ import { MemDBEvent, MemberEventContent, Membership } from "@/api/types"
 import { ModalContext } from "@/ui/modal"
 import { RoomContext } from "@/ui/roomview/roomcontext.ts"
 import ConfirmWithMessageModal from "@/ui/timeline/menu/ConfirmWithMessageModal.tsx"
+import { getPowerLevels } from "@/ui/timeline/menu/util.ts"
 import Gavel from "@/icons/gavel.svg?react"
 import PersonAdd from "@/icons/person-add.svg?react"
 import PersonRemove from "@/icons/person-remove.svg?react"
-import { getPowerLevels } from "@/ui/timeline/menu/util.ts";
 
 interface UserModerationProps {
 	userID: string;
