@@ -14,11 +14,9 @@ import (
 
 func (h *HiClient) getInitialSyncRoom(ctx context.Context, room *database.Room) *SyncRoom {
 	syncRoom := &SyncRoom{
-		Meta:          room,
-		Events:        make([]*database.Event, 0, 2),
-		Timeline:      make([]database.TimelineRowTuple, 0),
-		State:         map[event.Type]map[string]database.EventRowID{},
-		Notifications: make([]SyncNotification, 0),
+		Meta:   room,
+		Events: make([]*database.Event, 0, 2),
+		State:  map[event.Type]map[string]database.EventRowID{},
 	}
 	ad, err := h.DB.AccountData.GetAllRoom(ctx, h.Account.UserID, room.ID)
 	if err != nil {
@@ -26,7 +24,6 @@ func (h *HiClient) getInitialSyncRoom(ctx context.Context, room *database.Room) 
 		if ctx.Err() != nil {
 			return nil
 		}
-		syncRoom.AccountData = make(map[event.Type]*database.AccountData)
 	} else {
 		syncRoom.AccountData = make(map[event.Type]*database.AccountData, len(ad))
 		for _, data := range ad {
@@ -69,6 +66,49 @@ func (h *HiClient) getInitialSyncRoom(ctx context.Context, room *database.Room) 
 func (h *HiClient) GetInitialSync(ctx context.Context, batchSize int) iter.Seq[*SyncComplete] {
 	return func(yield func(*SyncComplete) bool) {
 		maxTS := time.Now().Add(1 * time.Hour)
+		{
+			spaces, err := h.DB.Room.GetAllSpaces(ctx)
+			if err != nil {
+				if ctx.Err() == nil {
+					zerolog.Ctx(ctx).Err(err).Msg("Failed to get initial spaces to send to client")
+				}
+				return
+			}
+			payload := SyncComplete{
+				Rooms: make(map[id.RoomID]*SyncRoom, len(spaces)),
+			}
+			for _, room := range spaces {
+				payload.Rooms[room.ID] = h.getInitialSyncRoom(ctx, room)
+				if ctx.Err() != nil {
+					return
+				}
+			}
+			payload.TopLevelSpaces, err = h.DB.SpaceEdge.GetTopLevelIDs(ctx, h.Account.UserID)
+			if err != nil {
+				if ctx.Err() == nil {
+					zerolog.Ctx(ctx).Err(err).Msg("Failed to get top-level space IDs to send to client")
+				}
+				return
+			}
+			payload.SpaceEdges, err = h.DB.SpaceEdge.GetAll(ctx, "")
+			if err != nil {
+				if ctx.Err() == nil {
+					zerolog.Ctx(ctx).Err(err).Msg("Failed to get space edges to send to client")
+				}
+				return
+			}
+			payload.InvitedRooms, err = h.DB.InvitedRoom.GetAll(ctx)
+			if err != nil {
+				if ctx.Err() == nil {
+					zerolog.Ctx(ctx).Err(err).Msg("Failed to get invited rooms to send to client")
+				}
+				return
+			}
+			payload.ClearState = true
+			if !yield(&payload) {
+				return
+			}
+		}
 		for i := 0; ; i++ {
 			rooms, err := h.DB.Room.GetBySortTS(ctx, maxTS, batchSize)
 			if err != nil {
@@ -78,12 +118,7 @@ func (h *HiClient) GetInitialSync(ctx context.Context, batchSize int) iter.Seq[*
 				return
 			}
 			payload := SyncComplete{
-				Rooms:       make(map[id.RoomID]*SyncRoom, len(rooms)-1),
-				LeftRooms:   make([]id.RoomID, 0),
-				AccountData: make(map[event.Type]*database.AccountData),
-			}
-			if i == 0 {
-				payload.ClearState = true
+				Rooms: make(map[id.RoomID]*SyncRoom, len(rooms)),
 			}
 			for _, room := range rooms {
 				if room.SortingTimestamp == rooms[len(rooms)-1].SortingTimestamp {
@@ -95,7 +130,9 @@ func (h *HiClient) GetInitialSync(ctx context.Context, batchSize int) iter.Seq[*
 					return
 				}
 			}
-			if !yield(&payload) || len(rooms) < batchSize {
+			if !yield(&payload) {
+				return
+			} else if len(rooms) < batchSize {
 				break
 			}
 		}
@@ -106,8 +143,6 @@ func (h *HiClient) GetInitialSync(ctx context.Context, batchSize int) iter.Seq[*
 			return
 		}
 		payload := SyncComplete{
-			Rooms:       make(map[id.RoomID]*SyncRoom, 0),
-			LeftRooms:   make([]id.RoomID, 0),
 			AccountData: make(map[event.Type]*database.AccountData, len(ad)),
 		}
 		for _, data := range ad {

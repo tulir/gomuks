@@ -109,7 +109,7 @@ func cacheEntryToHeaders(w http.ResponseWriter, entry *database.Media) {
 	w.Header().Set("Content-Type", entry.MimeType)
 	w.Header().Set("Content-Length", strconv.FormatInt(entry.Size, 10))
 	w.Header().Set("Content-Disposition", mime.FormatMediaType(entry.ContentDisposition(), map[string]string{"filename": entry.FileName}))
-	w.Header().Set("Content-Security-Policy", "sandbox; default-src 'none'; script-src 'none';")
+	w.Header().Set("Content-Security-Policy", "sandbox; default-src 'none'; script-src 'none'; media-src 'self';")
 	w.Header().Set("Cache-Control", "max-age=2592000, immutable")
 	w.Header().Set("ETag", entry.ETag())
 }
@@ -125,7 +125,7 @@ func (new *noErrorWriter) Write(p []byte) (n int, err error) {
 
 // note: this should stay in sync with makeAvatarFallback in web/src/api/media.ts
 const fallbackAvatarTemplate = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000">
-  <circle cx="500" cy="500" r="500" fill="%s"/>
+  <rect x="0" y="0" width="1000" height="1000" fill="%s"/>
   <text x="500" y="750" text-anchor="middle" fill="#fff" font-weight="bold" font-size="666"
     font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif"
   >%s</text>

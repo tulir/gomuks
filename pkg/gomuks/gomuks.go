@@ -35,6 +35,7 @@ import (
 	"go.mau.fi/util/dbutil"
 	"go.mau.fi/util/exerrors"
 	"go.mau.fi/util/exzerolog"
+	"go.mau.fi/util/ptr"
 	"go.mau.fi/zeroconfig"
 	"golang.org/x/net/http2"
 
@@ -184,7 +185,7 @@ func (gmx *Gomuks) StartClient() {
 		nil,
 		gmx.Log.With().Str("component", "hicli").Logger(),
 		[]byte("meow"),
-		gmx.EventBuffer.HicliEventHandler,
+		gmx.HandleEvent,
 	)
 	gmx.Client.LogoutFunc = gmx.Logout
 	httpClient := gmx.Client.Client.Client
@@ -210,6 +211,14 @@ func (gmx *Gomuks) StartClient() {
 	gmx.Log.Info().Stringer("user_id", userID).Msg("Client started")
 }
 
+func (gmx *Gomuks) HandleEvent(evt any) {
+	gmx.EventBuffer.Push(evt)
+	syncComplete, ok := evt.(*hicli.SyncComplete)
+	if ok && ptr.Val(syncComplete.Since) != "" {
+		go gmx.SendPushNotifications(syncComplete)
+	}
+}
+
 func (gmx *Gomuks) Stop() {
 	gmx.stopOnce.Do(func() {
 		close(gmx.stopChan)
@@ -230,9 +239,11 @@ func (gmx *Gomuks) DirectStop() {
 		closer(websocket.StatusServiceRestart, "Server shutting down")
 	}
 	gmx.Client.Stop()
-	err := gmx.Server.Close()
-	if err != nil {
-		gmx.Log.Error().Err(err).Msg("Failed to close server")
+	if gmx.Server != nil {
+		err := gmx.Server.Close()
+		if err != nil {
+			gmx.Log.Error().Err(err).Msg("Failed to close server")
+		}
 	}
 }
 

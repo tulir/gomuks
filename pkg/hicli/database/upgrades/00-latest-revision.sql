@@ -1,4 +1,4 @@
--- v0 -> v7 (compatible with v5+): Latest revision
+-- v0 -> v12 (compatible with v10+): Latest revision
 CREATE TABLE account (
 	user_id        TEXT NOT NULL PRIMARY KEY,
 	device_id      TEXT NOT NULL,
@@ -10,6 +10,7 @@ CREATE TABLE account (
 
 CREATE TABLE room (
 	room_id              TEXT    NOT NULL PRIMARY KEY,
+	room_type            TEXT,
 	creation_content     TEXT,
 	tombstone_content    TEXT,
 
@@ -17,6 +18,7 @@ CREATE TABLE room (
 	name_quality         INTEGER NOT NULL DEFAULT 0,
 	avatar               TEXT,
 	explicit_avatar      INTEGER NOT NULL DEFAULT 0,
+	dm_user_id   	     TEXT,
 	topic                TEXT,
 	canonical_alias      TEXT,
 	lazy_load_summary    TEXT,
@@ -35,10 +37,24 @@ CREATE TABLE room (
 
 	CONSTRAINT room_preview_event_fkey FOREIGN KEY (preview_event_rowid) REFERENCES event (rowid) ON DELETE SET NULL
 ) STRICT;
-CREATE INDEX room_type_idx ON room (creation_content ->> 'type');
+CREATE INDEX room_type_idx ON room (room_type);
 CREATE INDEX room_sorting_timestamp_idx ON room (sorting_timestamp DESC);
+CREATE INDEX room_preview_idx ON room (preview_event_rowid);
 -- CREATE INDEX room_sorting_timestamp_idx ON room (unread_notifications > 0);
 -- CREATE INDEX room_sorting_timestamp_idx ON room (unread_messages > 0);
+
+CREATE TABLE invited_room (
+	room_id      TEXT    NOT NULL PRIMARY KEY,
+	received_at  INTEGER NOT NULL,
+	invite_state TEXT    NOT NULL
+) STRICT;
+
+CREATE TRIGGER invited_room_delete_on_room_insert
+	AFTER INSERT
+	ON room
+BEGIN
+	DELETE FROM invited_room WHERE room_id = NEW.room_id;
+END;
 
 CREATE TABLE account_data (
 	user_id TEXT NOT NULL,
@@ -248,7 +264,8 @@ CREATE TABLE current_state (
 
 	PRIMARY KEY (room_id, event_type, state_key),
 	CONSTRAINT current_state_room_fkey FOREIGN KEY (room_id) REFERENCES room (room_id) ON DELETE CASCADE,
-	CONSTRAINT current_state_event_fkey FOREIGN KEY (event_rowid) REFERENCES event (rowid)
+	CONSTRAINT current_state_event_fkey FOREIGN KEY (event_rowid) REFERENCES event (rowid),
+	CONSTRAINT current_state_rowid_unique UNIQUE (event_rowid)
 ) STRICT, WITHOUT ROWID;
 
 CREATE TABLE receipt (
@@ -262,4 +279,35 @@ CREATE TABLE receipt (
 	PRIMARY KEY (room_id, user_id, receipt_type, thread_id),
 	CONSTRAINT receipt_room_fkey FOREIGN KEY (room_id) REFERENCES room (room_id) ON DELETE CASCADE
 	-- note: there's no foreign key on event ID because receipts could point at events that are too far in history.
+) STRICT;
+
+CREATE TABLE space_edge (
+	space_id           TEXT    NOT NULL,
+	child_id           TEXT    NOT NULL,
+
+	-- m.space.child fields
+	child_event_rowid  INTEGER,
+	"order"            TEXT    NOT NULL DEFAULT '',
+	suggested          INTEGER NOT NULL DEFAULT false CHECK ( suggested IN (false, true) ),
+	-- m.space.parent fields
+	parent_event_rowid INTEGER,
+	canonical          INTEGER NOT NULL DEFAULT false CHECK ( canonical IN (false, true) ),
+	parent_validated   INTEGER NOT NULL DEFAULT false CHECK ( parent_validated IN (false, true) ),
+
+	PRIMARY KEY (space_id, child_id),
+	CONSTRAINT space_edge_child_event_fkey FOREIGN KEY (child_event_rowid) REFERENCES event (rowid) ON DELETE CASCADE,
+	CONSTRAINT space_edge_parent_event_fkey FOREIGN KEY (parent_event_rowid) REFERENCES event (rowid) ON DELETE CASCADE,
+	CONSTRAINT space_edge_child_event_unique UNIQUE (child_event_rowid),
+	CONSTRAINT space_edge_parent_event_unique UNIQUE (parent_event_rowid)
+) STRICT;
+CREATE INDEX space_edge_child_idx ON space_edge (child_id);
+
+CREATE TABLE push_registration (
+	device_id  TEXT    NOT NULL,
+	type       TEXT    NOT NULL,
+	data       TEXT    NOT NULL,
+	encryption TEXT    NOT NULL,
+	expiration INTEGER NOT NULL,
+
+	PRIMARY KEY (device_id)
 ) STRICT;

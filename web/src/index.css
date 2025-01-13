@@ -11,6 +11,7 @@
 	--semisecondary-text-color: #555;
 	--link-text-color: #0467dd;
 	--visited-link-text-color: var(--link-text-color);
+	--small-font-size: .875rem;
 
 	--code-background-color: rgba(0, 0, 0, 0.15);
 	--media-placeholder-default-background: rgba(0, 0, 0, .1);
@@ -22,10 +23,13 @@
 
 	--border-color: #ccc;
 	--pill-background-color: #ccc;
+	--url-preview-background-color: rgba(0, 0, 0, .05);
 	--highlight-pill-background-color: #c00;
 	--highlight-pill-text-color: #fff;
 	--button-hover-color: rgba(0, 0, 0, .2);
 	--light-hover-color: rgba(0, 0, 0, .1);
+
+	--composer-background-color: #f0f0f0;
 
 	--timeline-hover-bg-color: #eee;
 	--timeline-highlight-bg-color: rgba(255, 255, 0, .1);
@@ -42,7 +46,7 @@
 	--room-list-entry-selected-color: rgba(0, 0, 0, 0.125);
 
 	--dimmed-overlay-background-color: rgba(0, 0, 0, .75);
-	--modal-box-shadow-color: rgba(0, 0, 0, 0.15);
+	--modal-box-shadow-color: rgba(0, 0, 0, 0.1);
 
 	--emoji-selected-border-color: #cec;
 
@@ -51,6 +55,9 @@
 	--unread-counter-notification-bg: rgba(50, 150, 0, 0.7);
 	--unread-counter-marked-unread-bg: var(--unread-counter-notification-bg);
 	--unread-counter-highlight-bg: rgba(200, 0, 0, 0.7);
+	--space-unread-counter-message-bg: rgb(100, 100, 100, 0.9);
+	--space-unread-counter-notification-bg: rgb(50, 150, 0);
+	--space-unread-counter-highlight-bg: rgb(200, 0, 0);
 
 	--sender-color-0: #a4041d;
 	--sender-color-1: #9b2200;
@@ -79,6 +86,13 @@
 	--timeline-message-gap-small-event: 0;
 	--timeline-sender-name-timestamp-gap: .25rem;
 	--timeline-sender-name-content-gap: 0;
+	--timeline-horizontal-padding: 1.5rem;
+	--timeline-status-size: 4rem;
+
+	@media screen and (max-width: 45rem) {
+		--timeline-horizontal-padding: .5rem;
+		--timeline-status-size: 2.25rem;
+	}
 
 	@media (prefers-color-scheme: dark) {
 		color-scheme: dark;
@@ -100,8 +114,11 @@
 
 		--border-color: #222;
 		--pill-background-color: #222;
+		--url-preview-background-color: #222;
 		--button-hover-color: rgba(255, 255, 255, .2);
 		--light-hover-color: rgba(255, 255, 255, .1);
+
+		--composer-background-color: #0a0a0a;
 
 		--timeline-hover-bg-color: #111;
 		--timeline-highlight-bg-color: rgba(255, 255, 0, .1);
@@ -115,13 +132,16 @@
 		--room-list-entry-hover-color: rgba(255, 255, 255, 0.075);
 		--room-list-entry-selected-color: rgba(255, 255, 255, 0.125);
 
-		--modal-box-shadow-color: rgba(255, 255, 255, 0.1);
+		--modal-box-shadow-color: rgba(255, 255, 255, 0.04);
 
 		--emoji-selected-border-color: #131;
 
 		--unread-counter-message-bg: rgba(255, 255, 255, 0.5);
 		--unread-counter-notification-bg: rgba(150, 255, 0, 0.7);
 		--unread-counter-highlight-bg: rgba(255, 50, 50, 0.7);
+		--space-unread-counter-message-bg: rgb(200, 200, 200, 0.8);
+		--space-unread-counter-notification-bg: rgb(150, 255, 0);
+		--space-unread-counter-highlight-bg: rgb(255, 50, 50);
 
 		--sender-color-0: #ff877c;
 		--sender-color-1: #f6913d;
@@ -144,15 +164,17 @@ body {
 	font-family: var(--font-stack);
 	margin: 0;
 	padding: 0;
-	background-color: var(--login-background-color);
+	background-color: var(--background-color);
 	line-height: 1.5;
 	font-size: 16px;
 	touch-action: none;
 	color: var(--text-color);
+	min-height: 100vh;
 }
 
 html {
 	touch-action: none;
+	background-color: var(--background-color);
 }
 
 #root {
@@ -232,9 +254,15 @@ div.connection-error-wrapper {
 	}
 }
 
-div.pre-connect {
-	margin-top: 2rem;
-	text-align: center;
+div.pre-main {
+	position: fixed;
+	inset: 0;
+	background-color: var(--login-background-color);
+
+	&.waiting-to-connect {
+		padding-top: 2rem;
+		text-align: center;
+	}
 }
 
 a {

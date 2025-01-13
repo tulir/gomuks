@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import { useMemo, useRef } from "react"
-import { ContentURI, EventID, ImagePack, ImagePackUsage, ReactionEventContent } from "@/api/types"
+import { ContentURI, EventID, ImagePack, MediaInfo, ReactionEventContent } from "@/api/types"
 import data from "./data.json"
 
 export interface EmojiMetadata {
@@ -22,6 +22,7 @@ export interface EmojiMetadata {
 	t: string // Emoji title
 	n: string // Primary shortcode
 	s: string[] // Shortcodes without underscores
+	i?: MediaInfo // Media info for stickers only
 }
 
 export interface EmojiText {
@@ -71,6 +72,7 @@ function filterAndSort(
 	query: string,
 	frequentlyUsed?: Map<string, number>,
 	customEmojis?: CustomEmojiPack[],
+	stickers?: true,
 ): Emoji[] {
 	const filteredStandardEmojis = emojis
 		.map(emoji => {
@@ -82,7 +84,7 @@ function filterAndSort(
 		})
 		.filter(({ matchIndex }) => matchIndex !== -1)
 	const filteredCustomEmojis = customEmojis
-		?.flatMap(pack => pack.emojis
+		?.flatMap(pack => (stickers ? pack.stickers : pack.emojis)
 			.map(emoji => {
 				const matchIndex = emoji.s.reduce((minIndex, shortcode) => {
 					const index = shortcode.indexOf(query)
@@ -91,9 +93,12 @@ function filterAndSort(
 				return { emoji, matchIndex }
 			})
 			.filter(({ matchIndex }) => matchIndex !== -1)) ?? []
-	const allEmojis = filteredCustomEmojis.length
-		? filteredStandardEmojis.concat(filteredCustomEmojis)
-		: filteredStandardEmojis
+	const allEmojis =
+		filteredStandardEmojis.length
+			? filteredCustomEmojis.length
+				? filteredStandardEmojis.concat(filteredCustomEmojis)
+				: filteredStandardEmojis
+			: filteredCustomEmojis
 	return allEmojis
 		.sort((e1, e2) =>
 			e1.matchIndex === e2.matchIndex
@@ -131,6 +136,7 @@ export interface CustomEmojiPack {
 	name: string
 	icon?: ContentURI
 	emojis: Emoji[]
+	stickers: Emoji[]
 	emojiMap: Map<string, Emoji>
 }
 
@@ -138,16 +144,16 @@ export function parseCustomEmojiPack(
 	pack: ImagePack,
 	id: string,
 	fallbackName?: string,
-	usage: ImagePackUsage = "emoticon",
 ): CustomEmojiPack | null {
 	try {
-		if (pack.pack.usage && !pack.pack.usage.includes(usage)) {
-			return null
-		}
 		const name = pack.pack.display_name || fallbackName || "Unnamed pack"
 		const emojiMap = new Map<string, Emoji>()
+		const stickers: Emoji[] = []
+		const emojis: Emoji[] = []
+		const defaultIsEmoji = !pack.pack.usage || pack.pack.usage.includes("emoticon")
+		const defaultIsSticker = !pack.pack.usage || pack.pack.usage.includes("sticker")
 		for (const [shortcode, image] of Object.entries(pack.images)) {
-			if (!image.url || (image.usage && !image.usage.includes(usage))) {
+			if (!image.url) {
 				continue
 			}
 			let converted = emojiMap.get(image.url)
@@ -160,17 +166,26 @@ export function parseCustomEmojiPack(
 					n: shortcode,
 					s: [shortcode.toLowerCase().replaceAll("_", "").replaceAll(" ", "")],
 					t: image.body || shortcode,
+					i: image.info,
 				}
 				emojiMap.set(image.url, converted)
+				const isSticker = image.usage ? image.usage.includes("sticker") : defaultIsSticker
+				const isEmoji = image.usage ? image.usage.includes("emoticon") : defaultIsEmoji
+				if (isEmoji) {
+					emojis.push(converted)
+				}
+				if (isSticker) {
+					stickers.push(converted)
+				}
 			}
 		}
-		const emojis = Array.from(emojiMap.values())
-		const icon = pack.pack.avatar_url || emojis[0]?.u
+		const icon = pack.pack.avatar_url || (emojis[0] ?? stickers[0])?.u
 		return {
 			id,
 			name,
 			icon,
 			emojis,
+			stickers,
 			emojiMap,
 		}
 	} catch (err) {
@@ -192,6 +207,7 @@ interface filteredAndSortedEmojiCache {
 interface useEmojisParams {
 	frequentlyUsed?: Map<string, number>
 	customEmojiPacks?: CustomEmojiPack[]
+	stickers?: true
 }
 
 export function useFilteredEmojis(query: string, params: useEmojisParams = {}): Emoji[][] {
@@ -225,14 +241,15 @@ export function useFilteredEmojis(query: string, params: useEmojisParams = {}): 
 		query: "",
 		result: [],
 	})
+	const baseEmojis = params.stickers ? [] : emojisByCategory
 	const categoriesChanged = prev.current.result.length !==
-		(1 + emojisByCategory.length + (params.customEmojiPacks?.length ?? 0))
+		(1 + baseEmojis.length + (params.customEmojiPacks?.length ?? 0))
 	if (prev.current.query !== query || categoriesChanged) {
 		if (!query.startsWith(prev.current.query) || categoriesChanged) {
 			prev.current.result = [
 				frequentlyUsedCategory,
-				...emojisByCategory,
-				...(params.customEmojiPacks?.map(pack => pack.emojis) ?? []),
+				...baseEmojis,
+				...(params.customEmojiPacks?.map(pack => params.stickers ? pack.stickers : pack.emojis) ?? []),
 			]
 		}
 		if (query !== "") {

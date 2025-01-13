@@ -13,20 +13,21 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import { JSX, use, useEffect, useInsertionEffect, useLayoutEffect, useMemo, useState } from "react"
+import { JSX, use, useEffect, useMemo, useReducer, useRef, useState } from "react"
 import { SyncLoader } from "react-spinners"
 import Client from "@/api/client.ts"
-import { RoomStateStore } from "@/api/statestore"
+import { RoomListFilter, RoomStateStore } from "@/api/statestore"
 import type { RoomID } from "@/api/types"
 import { useEventAsState } from "@/util/eventdispatcher.ts"
-import { parseMatrixURI } from "@/util/validation.ts"
+import { ensureString, ensureStringArray, parseMatrixURI } from "@/util/validation.ts"
 import ClientContext from "./ClientContext.ts"
 import MainScreenContext, { MainScreenContextFields } from "./MainScreenContext.ts"
 import StylePreferences from "./StylePreferences.tsx"
 import Keybindings from "./keybindings.ts"
-import { ModalWrapper } from "./modal/Modal.tsx"
+import { ModalWrapper } from "./modal"
 import RightPanel, { RightPanelProps } from "./rightpanel/RightPanel.tsx"
 import RoomList from "./roomlist/RoomList.tsx"
+import RoomPreview, { RoomPreviewProps } from "./roomview/RoomPreview.tsx"
 import RoomView from "./roomview/RoomView.tsx"
 import { useResizeHandle } from "./util/useResizeHandle.tsx"
 import "./MainScreen.css"
@@ -50,7 +51,8 @@ class ContextFields implements MainScreenContextFields {
 
 	constructor(
 		private directSetRightPanel: (props: RightPanelProps | null) => void,
-		private directSetActiveRoom: (room: RoomStateStore | null) => void,
+		private directSetActiveRoom: (room: RoomStateStore | RoomPreviewProps | null) => void,
+		private directSetSpace: (space: RoomListFilter | null) => void,
 		private client: Client,
 	) {
 		this.keybindings = new Keybindings(client.store, this)
@@ -94,33 +96,115 @@ class ContextFields implements MainScreenContextFields {
 		}
 	}
 
-	setActiveRoom = (roomID: RoomID | null, pushState = true) => {
+	setActiveRoom = (
+		roomID: RoomID | null,
+		previewMeta?: Partial<RoomPreviewProps>,
+		toSpace?: RoomListFilter,
+		pushState = true,
+	) => {
 		console.log("Switching to room", roomID)
-		const room = (roomID && this.client.store.rooms.get(roomID)) || null
+		if (roomID) {
+			const room = this.client.store.rooms.get(roomID)
+			if (room) {
+				this.#setActiveRoom(room, toSpace, pushState)
+			} else {
+				this.#setPreviewRoom(roomID, pushState, previewMeta)
+			}
+		} else {
+			this.#closeActiveRoom(pushState)
+		}
+	}
+
+	setSpace = (space: RoomListFilter | null, pushState = true) => {
+		if (space === this.client.store.currentRoomListFilter) {
+			return
+		}
+		console.log("Switching to space", space?.id)
+		this.directSetSpace(space)
+		this.client.store.currentRoomListFilter = space
+		if (pushState) {
+			if (this.client.store.activeRoomID && space) {
+				const entry = this.client.store.roomListEntries.get(this.client.store.activeRoomID)
+				if (entry && !space.include(entry)) {
+					this.setActiveRoom(null)
+				}
+			}
+			history.replaceState({ ...(history.state || {}), space_id: space?.id }, "")
+		}
+	}
+
+	#setPreviewRoom(roomID: RoomID, pushState: boolean, meta?: Partial<RoomPreviewProps>) {
+		const invite = this.client.store.inviteRooms.get(roomID)
+		this.#closeActiveRoom(false)
+		this.directSetActiveRoom({ roomID, ...(meta ?? {}), invite })
+		this.client.store.activeRoomID = roomID
+		this.client.store.activeRoomIsPreview = true
+		if (pushState) {
+			history.pushState({
+				room_id: roomID,
+				source_via: meta?.via,
+				source_alias: meta?.alias,
+				space_id: history.state?.space_id,
+			}, "")
+		}
+	}
+
+	#getWindowTitle(room?: RoomStateStore, name?: string) {
+		if (!room) {
+			return this.client.store.preferences.window_title
+		}
+		return room.preferences.room_window_title.replace("$room", name!)
+	}
+
+	#setActiveRoom(room: RoomStateStore, space: RoomListFilter | undefined | null, pushState: boolean) {
 		window.activeRoom = room
 		this.directSetActiveRoom(room)
 		this.directSetRightPanel(null)
-		this.rightPanelStack = []
-		this.client.store.activeRoomID = room?.roomID ?? null
-		this.keybindings.activeRoom = room
-		if (room) {
-			room.lastOpened = Date.now()
-			if (!room.stateLoaded) {
-				this.client.loadRoomState(room.roomID)
-					.catch(err => console.error("Failed to load room state", err))
+		if (!space && this.client.store.currentRoomListFilter) {
+			const roomListEntry = this.client.store.roomListEntries.get(room.roomID)
+			if (roomListEntry && !this.client.store.currentRoomListFilter.include(roomListEntry)) {
+				space = this.client.store.findMatchingSpace(roomListEntry)
 			}
-			document
-				.querySelector(`div.room-entry[data-room-id="${CSS.escape(room.roomID)}"]`)
-				?.scrollIntoView({ block: "nearest" })
 		}
+		if (space && space !== this.client.store.currentRoomListFilter) {
+			console.log("Switching to space", space?.id)
+			this.directSetSpace(space)
+			this.client.store.currentRoomListFilter = space
+		}
+		this.rightPanelStack = []
+		this.client.store.activeRoomID = room.roomID
+		this.client.store.activeRoomIsPreview = false
+		this.keybindings.activeRoom = room
+		room.lastOpened = Date.now()
+		if (!room.stateLoaded) {
+			this.client.loadRoomState(room.roomID)
+				.catch(err => console.error("Failed to load room state", err))
+		}
+		document
+			.querySelector(`div.room-entry[data-room-id="${CSS.escape(room.roomID)}"]`)
+			?.scrollIntoView({ block: "nearest" })
 		if (pushState) {
-			history.pushState({ room_id: roomID }, "")
+			history.pushState({ room_id: room.roomID, space_id: space?.id ?? history.state?.space_id }, "")
 		}
-		let roomNameForTitle = room?.meta.current.name
+		let roomNameForTitle = room.meta.current.name
 		if (roomNameForTitle && roomNameForTitle.length > 48) {
 			roomNameForTitle = roomNameForTitle.slice(0, 45) + "…"
 		}
-		document.title = roomNameForTitle ? `${roomNameForTitle} - gomuks web` : "gomuks web"
+		document.title = this.#getWindowTitle(room, roomNameForTitle)
+	}
+
+	#closeActiveRoom(pushState: boolean) {
+		window.activeRoom = null
+		this.directSetActiveRoom(null)
+		this.directSetRightPanel(null)
+		this.rightPanelStack = []
+		this.client.store.activeRoomID = null
+		this.client.store.activeRoomIsPreview = false
+		this.keybindings.activeRoom = null
+		if (pushState) {
+			history.pushState({ space_id: history.state?.space_id }, "")
+		}
+		document.title = this.#getWindowTitle()
 	}
 
 	clickRoom = (evt: React.MouseEvent) => {
@@ -133,6 +217,7 @@ class ContextFields implements MainScreenContextFields {
 	}
 
 	clickRightPanelOpener = (evt: React.MouseEvent) => {
+		evt.preventDefault()
 		const type = evt.currentTarget.getAttribute("data-target-panel")
 		if (type === "pinned-messages" || type === "members") {
 			this.setRightPanel({ type })
@@ -149,8 +234,11 @@ class ContextFields implements MainScreenContextFields {
 
 const SYNC_ERROR_HIDE_DELAY = 30 * 1000
 
-const handleURLHash = (client: Client) => {
+const handleURLHash = (client: Client, context: MainScreenContextFields, hashOnly = false) => {
 	if (!location.hash.startsWith("#/uri/")) {
+		if (hashOnly) {
+			return null
+		}
 		if (location.search) {
 			const currentETag = (
 				document.querySelector("meta[name=gomuks-frontend-etag]") as HTMLMetaElement
@@ -164,7 +252,9 @@ const handleURLHash = (client: Client) => {
 			}
 			const state = JSON.parse(newURL.searchParams.get("state") || "{}")
 			newURL.search = ""
-			history.replaceState(state, "", newURL.toString())
+			// Set an extra empty state to ensure back button goes to room list instead of reloading the page.
+			history.replaceState({}, "", newURL.toString())
+			history.pushState(state, "")
 			return state
 		}
 		return history.state
@@ -174,7 +264,7 @@ const handleURLHash = (client: Client) => {
 	const uri = parseMatrixURI(decodedURI)
 	if (!uri) {
 		console.error("Invalid matrix URI", decodedURI)
-		return history.state
+		return hashOnly ? null : history.state
 	}
 	console.log("Handling URI", uri)
 	const newURL = new URL(location.href)
@@ -190,47 +280,82 @@ const handleURLHash = (client: Client) => {
 		history.replaceState(newState, "", newURL.toString())
 		return newState
 	} else if (uri.identifier.startsWith("!")) {
-		const newState = { room_id: uri.identifier }
+		const newState = { room_id: uri.identifier, source_via: uri.params.getAll("via") }
 		history.replaceState(newState, "", newURL.toString())
 		return newState
 	} else if (uri.identifier.startsWith("#")) {
+		history.replaceState(history.state, "", newURL.toString())
 		// TODO loading indicator or something for this?
 		client.rpc.resolveAlias(uri.identifier).then(
 			res => {
-				history.pushState({ room_id: res.room_id }, "", newURL.toString())
+				context.setActiveRoom(res.room_id, {
+					alias: uri.identifier,
+					via: res.servers.slice(0, 3),
+				})
 			},
 			err => window.alert(`Failed to resolve room alias ${uri.identifier}: ${err}`),
 		)
 		return null
 	} else {
 		console.error("Invalid matrix URI", uri)
+		history.replaceState(history.state, "", newURL.toString())
 	}
-	return history.state
+	return hashOnly ? null : history.state
+}
+
+type ActiveRoomType = [RoomStateStore | RoomPreviewProps | null, RoomStateStore | RoomPreviewProps | null]
+
+const activeRoomReducer = (
+	prev: ActiveRoomType,
+	active: RoomStateStore | RoomPreviewProps | "clear-animation" | null,
+): ActiveRoomType => {
+	if (active === "clear-animation") {
+		return prev[1] === null ? [null, null] : prev
+	} else if (window.innerWidth > 720 || window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+		return [null, active]
+	} else {
+		return [prev[1], active]
+	}
 }
 
 const MainScreen = () => {
-	const [activeRoom, directSetActiveRoom] = useState<RoomStateStore | null>(null)
+	const [[prevActiveRoom, activeRoom], directSetActiveRoom] = useReducer(activeRoomReducer, [null, null])
+	const [space, directSetSpace] = useState<RoomListFilter | null>(null)
+	const skipNextTransitionRef = useRef(false)
 	const [rightPanel, directSetRightPanel] = useState<RightPanelProps | null>(null)
 	const client = use(ClientContext)!
 	const syncStatus = useEventAsState(client.syncStatus)
 	const context = useMemo(
-		() => new ContextFields(directSetRightPanel, directSetActiveRoom, client),
+		() => new ContextFields(directSetRightPanel, directSetActiveRoom, directSetSpace, client),
 		[client],
 	)
-	useLayoutEffect(() => {
-		window.mainScreenContext = context
-	}, [context])
 	useEffect(() => {
-		const listener = (evt: PopStateEvent) => {
+		window.mainScreenContext = context
+		const listener = (evt: Pick<PopStateEvent, "state" | "hasUAVisualTransition">) => {
+			skipNextTransitionRef.current = evt.hasUAVisualTransition
 			const roomID = evt.state?.room_id ?? null
+			const spaceID = evt.state?.space_id ?? undefined
+			if (spaceID !== client.store.currentRoomListFilter?.id) {
+				context.setSpace(client.store.getSpaceByID(spaceID), false)
+			}
 			if (roomID !== client.store.activeRoomID) {
-				context.setActiveRoom(roomID, false)
+				context.setActiveRoom(roomID, {
+					alias: ensureString(evt.state?.source_alias) || undefined,
+					via: ensureStringArray(evt.state?.source_via),
+				}, undefined, false)
 			}
 			context.setRightPanel(evt.state?.right_panel ?? null, false)
 		}
+		const hashListener = () => {
+			const state = handleURLHash(client, context, true)
+			if (state !== null) {
+				listener({ state, hasUAVisualTransition: false })
+			}
+		}
+		window.addEventListener("hashchange", hashListener)
 		window.addEventListener("popstate", listener)
 		const initHandle = () => {
-			const state = handleURLHash(client)
+			const state = handleURLHash(client, context)
 			listener({ state } as PopStateEvent)
 		}
 		let cancel = () => {}
@@ -241,32 +366,26 @@ const MainScreen = () => {
 		}
 		return () => {
 			window.removeEventListener("popstate", listener)
+			window.removeEventListener("hashchange", hashListener)
 			cancel()
 		}
 	}, [context, client])
 	useEffect(() => context.keybindings.listen(), [context])
-	useInsertionEffect(() => {
-		const styleTags = document.createElement("style")
-		styleTags.textContent = `
-			div.html-body > a.hicli-matrix-uri-user[href="matrix:u/${client.userID.slice(1).replaceAll(`"`, `\\"`)}"] {
-				background-color: var(--highlight-pill-background-color);
-				color: var(--highlight-pill-text-color);
-			}
-		`
-		document.head.appendChild(styleTags)
-		return () => {
-			document.head.removeChild(styleTags)
-		}
-	}, [client.userID])
 	const [roomListWidth, resizeHandle1] = useResizeHandle(
-		300, 48, 900, "roomListWidth", { className: "room-list-resizer" },
+		350, 96, Math.min(900, window.innerWidth * 0.4),
+		"roomListWidth", { className: "room-list-resizer" },
 	)
 	const [rightPanelWidth, resizeHandle2] = useResizeHandle(
-		300, 100, 900, "rightPanelWidth", { className: "right-panel-resizer", inverted: true },
+		300, 100, Math.min(900, window.innerWidth * 0.4),
+		"rightPanelWidth", { className: "right-panel-resizer", inverted: true },
 	)
 	const extraStyle = {
 		["--room-list-width" as string]: `${roomListWidth}px`,
 		["--right-panel-width" as string]: `${rightPanelWidth}px`,
+	}
+	if (skipNextTransitionRef.current) {
+		extraStyle["transition"] = "none"
+		skipNextTransitionRef.current = false
 	}
 	const classNames = ["matrix-main"]
 	if (activeRoom) {
@@ -282,27 +401,42 @@ const MainScreen = () => {
 			Waiting for first sync...
 		</div>
 	} else if (
-		syncStatus.type === "errored"
+		syncStatus.type === "erroring"
 		&& (syncStatus.error_count > 2 || (syncStatus.last_sync ?? 0) + SYNC_ERROR_HIDE_DELAY < Date.now())
 	) {
 		syncLoader = <div className="sync-status errored" title={syncStatus.error}>
 			<SyncLoader color="var(--error-color)"/>
 			Sync is failing
 		</div>
+	} else if (syncStatus.type === "permanently-failed") {
+		syncLoader = <div className="sync-status errored" title={syncStatus.error}>
+			Sync failed permanently
+		</div>
 	}
+	const activeRealRoom = activeRoom instanceof RoomStateStore ? activeRoom : null
+	const renderedRoom = activeRoom ?? prevActiveRoom
+	useEffect(() => {
+		if (prevActiveRoom !== null && activeRoom === null) {
+			// Note: this timeout must match the one in MainScreen.css
+			const timeout = setTimeout(() => directSetActiveRoom("clear-animation"), 300)
+			return () => clearTimeout(timeout)
+		}
+	}, [activeRoom, prevActiveRoom])
 	return <MainScreenContext value={context}>
 		<ModalWrapper>
-			<StylePreferences client={client} activeRoom={activeRoom}/>
+			<StylePreferences client={client} activeRoom={activeRealRoom}/>
 			<main className={classNames.join(" ")} style={extraStyle}>
-				<RoomList activeRoomID={activeRoom?.roomID ?? null}/>
+				<RoomList activeRoomID={activeRoom?.roomID ?? null} space={space}/>
 				{resizeHandle1}
-				{activeRoom
-					? <RoomView
-						key={activeRoom.roomID}
-						room={activeRoom}
-						rightPanel={rightPanel}
-						rightPanelResizeHandle={resizeHandle2}
-					/>
+				{renderedRoom
+					? renderedRoom instanceof RoomStateStore
+						? <RoomView
+							key={renderedRoom.roomID}
+							room={renderedRoom}
+							rightPanel={rightPanel}
+							rightPanelResizeHandle={resizeHandle2}
+						/>
+						: <RoomPreview {...renderedRoom} />
 					: rightPanel && <>
 						<div className="room-view placeholder"/>
 						{resizeHandle2}

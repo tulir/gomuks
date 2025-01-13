@@ -1,0 +1,27 @@
+div.typing-notifications {
+	grid-area: typing;
+	height: 1.5rem;
+	margin: 0 var(--timeline-horizontal-padding);
+	display: flex;
+	gap: 0.5rem;
+	align-items: center;
+	font-size: 0.9rem;
+	overflow: hidden;
+
+	> div.avatars {
+		display: flex;
+		align-items: center;
+		margin-left: 0.35rem;
+
+		> img {
+			margin-left: -0.35rem;
+		}
+	}
+
+	> div.description {
+		text-wrap: nowrap;
+		/* TODO detect overflow and show "x users are typing" instead? */
+		overflow: hidden;
+		text-overflow: ellipsis;
+	}
+}

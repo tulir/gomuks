@@ -73,8 +73,9 @@ export default tseslint.config(
 			"one-var-declaration-per-line": ["error", "initializations"],
 			"quotes": ["error", "double", {allowTemplateLiterals: true}],
 			"semi": ["error", "never"],
+			"curly": ["error", "all"],
 			"comma-dangle": ["error", "always-multiline"],
-			"max-len": ["warn", 120],
+			"max-len": ["error", 120],
 			"space-before-function-paren": ["error", {
 				"anonymous": "never",
 				"named": "never",

@@ -86,7 +86,7 @@ func (gmx *Gomuks) HandleWebsocket(w http.ResponseWriter, r *http.Request) {
 	defer recoverPanic("read loop")
 
 	conn, acceptErr := websocket.Accept(w, r, &websocket.AcceptOptions{
-		OriginPatterns: []string{"localhost:*"},
+		OriginPatterns: gmx.Config.Web.OriginPatterns,
 	})
 	if acceptErr != nil {
 		log.Warn().Err(acceptErr).Msg("Failed to accept websocket connection")
@@ -148,7 +148,7 @@ func (gmx *Gomuks) HandleWebsocket(w http.ResponseWriter, r *http.Request) {
 	sendImageAuthToken := func() {
 		err := writeCmd(ctx, conn, &hicli.JSONCommand{
 			Command: "image_auth_token",
-			Data:    exerrors.Must(json.Marshal(gmx.generateImageToken())),
+			Data:    exerrors.Must(json.Marshal(gmx.generateImageToken(1 * time.Hour))),
 		})
 		if err != nil {
 			log.Err(err).Msg("Failed to write image auth token message")

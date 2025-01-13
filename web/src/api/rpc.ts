@@ -17,9 +17,11 @@ import { CachedEventDispatcher, EventDispatcher } from "../util/eventdispatcher.
 import { CancellablePromise } from "../util/promise.ts"
 import type {
 	ClientWellKnown,
+	DBPushRegistration,
 	EventID,
 	EventRowID,
 	EventType,
+	JSONValue,
 	LoginFlowsResponse,
 	LoginRequest,
 	Mentions,
@@ -32,9 +34,12 @@ import type {
 	ReceiptType,
 	RelatesTo,
 	ResolveAliasResponse,
+	RespOpenIDToken,
+	RespRoomJoin,
 	RoomAlias,
 	RoomID,
 	RoomStateGUID,
+	RoomSummary,
 	TimelineRowID,
 	UserID,
 	UserProfile,
@@ -136,7 +141,7 @@ export default abstract class RPCClient {
 		return this.request("logout", {})
 	}
 
-	sendMessage(params: SendMessageParams): Promise<RawDBEvent> {
+	sendMessage(params: SendMessageParams): Promise<RawDBEvent | null> {
 		return this.request("send_message", params)
 	}
 
@@ -178,12 +183,20 @@ export default abstract class RPCClient {
 		return this.request("get_profile", { user_id })
 	}
 
+	setProfileField(field: string, value: JSONValue): Promise<boolean> {
+		return this.request("set_profile_field", { field, value })
+	}
+
 	getMutualRooms(user_id: UserID): Promise<RoomID[]> {
 		return this.request("get_mutual_rooms", { user_id })
 	}
 
 	getProfileEncryptionInfo(user_id: UserID): Promise<ProfileEncryptionInfo> {
 		return this.request("get_profile_encryption_info", { user_id })
+	}
+
+	trackUserDevices(user_id: UserID): Promise<ProfileEncryptionInfo> {
+		return this.request("track_user_devices", { user_id })
 	}
 
 	ensureGroupSessionShared(room_id: RoomID): Promise<boolean> {
@@ -216,6 +229,18 @@ export default abstract class RPCClient {
 		return this.request("paginate_server", { room_id, limit })
 	}
 
+	getRoomSummary(room_id_or_alias: RoomID | RoomAlias, via?: string[]): Promise<RoomSummary> {
+		return this.request("get_room_summary", { room_id_or_alias, via })
+	}
+
+	joinRoom(room_id_or_alias: RoomID | RoomAlias, via?: string[], reason?: string): Promise<RespRoomJoin> {
+		return this.request("join_room", { room_id_or_alias, via, reason })
+	}
+
+	leaveRoom(room_id: RoomID, reason?: string): Promise<Record<string, never>> {
+		return this.request("leave_room", { room_id, reason })
+	}
+
 	resolveAlias(alias: RoomAlias): Promise<ResolveAliasResponse> {
 		return this.request("resolve_alias", { alias })
 	}
@@ -238,5 +263,13 @@ export default abstract class RPCClient {
 
 	verify(recovery_key: string): Promise<boolean> {
 		return this.request("verify", { recovery_key })
+	}
+
+	requestOpenIDToken(): Promise<RespOpenIDToken> {
+		return this.request("request_openid_token", {})
+	}
+
+	registerPush(reg: DBPushRegistration): Promise<boolean> {
+		return this.request("register_push", reg)
 	}
 }

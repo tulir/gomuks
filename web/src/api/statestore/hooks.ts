@@ -13,9 +13,18 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import { useEffect, useMemo, useState, useSyncExternalStore } from "react"
+import { useEffect, useMemo, useReducer, useState, useSyncExternalStore } from "react"
+import Client from "@/api/client.ts"
 import type { CustomEmojiPack } from "@/util/emoji"
-import type { EventID, EventType, MemDBEvent, UnknownEventContent } from "../types"
+import type {
+	EventID,
+	EventType,
+	MemDBEvent,
+	MemReceipt,
+	MemberEventContent,
+	UnknownEventContent,
+	UserID,
+} from "../types"
 import { Preferences, preferences } from "../types/preferences"
 import type { StateStore } from "./main.ts"
 import type { AutocompleteMemberEntry, RoomStateStore } from "./room.ts"
@@ -24,6 +33,17 @@ export function useRoomTimeline(room: RoomStateStore): (MemDBEvent | null)[] {
 	return useSyncExternalStore(
 		room.timelineSub.subscribe,
 		() => room.timelineCache,
+	)
+}
+
+export function useRoomTyping(room: RoomStateStore): string[] {
+	return useSyncExternalStore(room.typingSub.subscribe, () => room.typing)
+}
+
+export function useReadReceipts(room: RoomStateStore, evtID: EventID): MemReceipt[] {
+	return useSyncExternalStore(
+		room.receiptSubs.getSubscriber(evtID),
+		() => room.receiptsByEventID.get(evtID) ?? emptyArray,
 	)
 }
 
@@ -37,6 +57,34 @@ export function useRoomState(
 	)
 }
 
+export function useRoomMember(
+	client: Client | undefined | null, room: RoomStateStore | undefined, userID: UserID,
+): MemDBEvent | null {
+	const evt = useRoomState(room, "m.room.member", userID)
+	if (!evt && client && room) {
+		client.requestMemberEvent(room, userID)
+	}
+	return evt
+}
+
+export function useMultipleRoomMembers(
+	client: Client, room: RoomStateStore, userIDs: UserID[],
+): [UserID, MemberEventContent | null][] {
+	const [, forceUpdate] = useReducer(x => x + 1, 0)
+	let promiseAwaited = false
+	return userIDs.map(userID => {
+		const evt = room.getStateEvent("m.room.member", userID)
+		if (!evt) {
+			const promise = client.requestMemberEvent(room, userID)
+			if (promise && !promiseAwaited) {
+				promiseAwaited = true
+				promise.then(forceUpdate)
+			}
+		}
+		const member = (evt?.content ?? null) as MemberEventContent | null
+		return [userID, member]
+	})
+}
 
 export function useRoomMembers(room?: RoomStateStore): AutocompleteMemberEntry[] {
 	return useSyncExternalStore(
@@ -97,7 +145,7 @@ export function usePreference<T extends keyof Preferences>(
 }
 
 export function useCustomEmojis(
-	ss: StateStore, room: RoomStateStore,
+	ss: StateStore, room: RoomStateStore, usage: "stickers" | "emojis" = "emojis",
 ): CustomEmojiPack[] {
 	const personalPack = useSyncExternalStore(
 		ss.accountDataSubs.getSubscriber("im.ponies.user_emotes"),
@@ -116,6 +164,6 @@ export function useCustomEmojis(
 		if (personalPack) {
 			allPacksObject.personal = personalPack
 		}
-		return Object.values(allPacksObject)
-	}, [personalPack, watchedRoomPacks, specialRoomPacks])
+		return Object.values(allPacksObject).filter(pack => pack[usage].length > 0)
+	}, [personalPack, watchedRoomPacks, specialRoomPacks, usage])
 }

@@ -1,0 +1,32 @@
+{
+	"name": "gomuks web",
+	"description": "A Matrix client written in Go",
+	"categories": ["social", "productivity"],
+	"icons": [
+		{
+			"src": "gomuks-transparent.png",
+			"sizes": "880x880",
+			"type": "image/png",
+			"purpose": "monochrome"
+		},
+		{
+			"src": "gomuks-maskable.png",
+			"sizes": "1200x1200",
+			"type": "image/png",
+			"purpose": "maskable"
+		},
+		{
+			"src": "gomuks.png",
+			"sizes": "880x880",
+			"type": "image/png",
+			"purpose": "any"
+		}
+	],
+	"protocol_handlers": [{
+		"protocol": "matrix",
+		"url": "#/uri/%s"
+	}],
+	"start_url": ".",
+	"display": "standalone",
+	"theme_color": "#00c853"
+}

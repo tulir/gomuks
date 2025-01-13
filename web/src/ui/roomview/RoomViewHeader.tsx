@@ -13,13 +13,13 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import { use, useCallback } from "react"
+import { use } from "react"
 import { getRoomAvatarURL } from "@/api/media.ts"
 import { RoomStateStore } from "@/api/statestore"
 import { useEventAsState } from "@/util/eventdispatcher.ts"
 import MainScreenContext from "../MainScreenContext.ts"
-import { LightboxContext } from "../modal/Lightbox.tsx"
-import { ModalContext } from "../modal/Modal.tsx"
+import { LightboxContext } from "../modal"
+import { ModalContext } from "../modal"
 import SettingsView from "../settings/SettingsView.tsx"
 import BackIcon from "@/icons/back.svg?react"
 import PeopleIcon from "@/icons/group.svg?react"
@@ -35,14 +35,14 @@ const RoomViewHeader = ({ room }: RoomViewHeaderProps) => {
 	const roomMeta = useEventAsState(room.meta)
 	const mainScreen = use(MainScreenContext)
 	const openModal = use(ModalContext)
-	const openSettings = useCallback(() => {
+	const openSettings = () => {
 		openModal({
 			dimmed: true,
 			boxed: true,
 			innerBoxClass: "settings-view",
 			content: <SettingsView room={room} />,
 		})
-	}, [room, openModal])
+	}
 	return <div className="room-header">
 		<button className="back" onClick={mainScreen.clearActiveRoom}><BackIcon/></button>
 		<img

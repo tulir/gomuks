@@ -21,6 +21,7 @@ import Subscribable, { MultiSubscribable, NoDataSubscribable } from "@/util/subs
 import { getDisplayname } from "@/util/validation.ts"
 import {
 	ContentURI,
+	DBReceipt,
 	DBRoom,
 	EncryptedEventContent,
 	EventID,
@@ -30,6 +31,7 @@ import {
 	ImagePack,
 	LazyLoadSummary,
 	MemDBEvent,
+	MemReceipt,
 	MemberEventContent,
 	PowerLevelEventContent,
 	RawDBEvent,
@@ -60,7 +62,7 @@ function arraysAreEqual<T>(arr1?: T[], arr2?: T[]): boolean {
 function llSummaryIsEqual(ll1?: LazyLoadSummary, ll2?: LazyLoadSummary): boolean {
 	return ll1?.["m.joined_member_count"] === ll2?.["m.joined_member_count"] &&
 		ll1?.["m.invited_member_count"] === ll2?.["m.invited_member_count"] &&
-		arraysAreEqual(ll1?.heroes, ll2?.heroes)
+		arraysAreEqual(ll1?.["m.heroes"], ll2?.["m.heroes"])
 }
 
 function visibleMetaIsEqual(meta1: DBRoom, meta2: DBRoom): boolean {
@@ -68,6 +70,7 @@ function visibleMetaIsEqual(meta1: DBRoom, meta2: DBRoom): boolean {
 		meta1.avatar === meta2.avatar &&
 		meta1.topic === meta2.topic &&
 		meta1.canonical_alias === meta2.canonical_alias &&
+		meta1.dm_user_id === meta2.dm_user_id &&
 		llSummaryIsEqual(meta1.lazy_load_summary, meta2.lazy_load_summary) &&
 		meta1.encryption_event?.algorithm === meta2.encryption_event?.algorithm &&
 		meta1.has_member_list === meta2.has_member_list
@@ -83,26 +86,34 @@ export interface AutocompleteMemberEntry {
 
 const collator = new Intl.Collator()
 
+const UNSENT_TIMELINE_ROWID_BASE = 1000000000000000
+
 export class RoomStateStore {
 	readonly roomID: RoomID
 	readonly meta: NonNullCachedEventDispatcher<DBRoom>
 	timeline: TimelineRowTuple[] = []
 	timelineCache: (MemDBEvent | null)[] = []
+	editTargets: EventRowID[] = []
 	state: Map<EventType, Map<string, EventRowID>> = new Map()
 	stateLoaded = false
+	typing: UserID[] = []
 	fullMembersLoaded = false
 	readonly eventsByRowID: Map<EventRowID, MemDBEvent> = new Map()
 	readonly eventsByID: Map<EventID, MemDBEvent> = new Map()
 	readonly timelineSub = new Subscribable()
+	readonly typingSub = new Subscribable()
 	readonly stateSubs = new MultiSubscribable()
 	readonly eventSubs = new MultiSubscribable()
+	readonly receiptsByEventID: Map<EventID, MemReceipt[]> = new Map()
+	readonly receiptsByUserID: Map<UserID, MemReceipt> = new Map()
+	readonly receiptSubs = new MultiSubscribable()
 	readonly requestedEvents: Set<EventID> = new Set()
 	readonly requestedMembers: Set<UserID> = new Set()
 	readonly accountData: Map<string, UnknownEventContent> = new Map()
 	readonly accountDataSubs = new MultiSubscribable()
 	readonly openNotifications: Map<EventRowID, Notification> = new Map()
 	readonly #emojiPacksCache: Map<string, CustomEmojiPack | null> = new Map()
-	readonly preferences: Preferences
+	readonly preferences: Required<Preferences>
 	readonly localPreferenceCache: Preferences
 	readonly preferenceSub = new NoDataSubscribable()
 	serverPreferenceCache: Preferences = {}
@@ -124,17 +135,30 @@ export class RoomStateStore {
 		this.preferences = getPreferenceProxy(parent, this)
 	}
 
-	notifyTimelineSubscribers() {
+	#updateTimelineCache() {
+		const ownMessages: EventRowID[] = []
 		this.timelineCache = this.timeline.map(rt => {
 			const evt = this.eventsByRowID.get(rt.event_rowid)
 			if (!evt) {
 				return null
 			}
 			evt.timeline_rowid = rt.timeline_rowid
+			if (
+				evt.sender === this.parent.userID
+				&& evt.type === "m.room.message"
+				&& evt.relation_type !== "m.replace"
+			) {
+				ownMessages.push(evt.rowid)
+			}
 			return evt
 		}).concat(this.pendingEvents
 			.map(rowID => this.eventsByRowID.get(rowID))
 			.filter(evt => !!evt))
+		this.editTargets = ownMessages
+	}
+
+	notifyTimelineSubscribers() {
+		this.#updateTimelineCache()
 		this.timelineSub.notify()
 	}
 
@@ -230,15 +254,65 @@ export class RoomStateStore {
 		return []
 	}
 
-	applyPagination(history: RawDBEvent[]) {
+	applyPagination(history: RawDBEvent[], related: RawDBEvent[], allReceipts: Record<EventID, DBReceipt[]>) {
 		// Pagination comes in newest to oldest, timeline is in the opposite order
 		history.reverse()
 		const newTimeline = history.map(evt => {
 			this.applyEvent(evt)
 			return { timeline_rowid: evt.timeline_rowid, event_rowid: evt.rowid }
 		})
+		for (const evt of related) {
+			if (!this.eventsByRowID.has(evt.rowid)) {
+				this.applyEvent(evt)
+			}
+		}
 		this.timeline.splice(0, 0, ...newTimeline)
 		this.notifyTimelineSubscribers()
+		for (const [evtID, receipts] of Object.entries(allReceipts)) {
+			this.applyReceipts(receipts, evtID, true)
+		}
+	}
+
+	applyReceipts(receipts: DBReceipt[], evtID: EventID, override: boolean) {
+		const evt = this.eventsByID.get(evtID)
+		if (!evt?.timeline_rowid) {
+			return
+		}
+		const filtered = receipts.filter(receipt => this.applyReceipt(receipt, evt))
+		filtered.sort((a, b) => a.timestamp - b.timestamp)
+		if (override) {
+			this.receiptsByEventID.set(evtID, filtered)
+		} else {
+			const existing = this.receiptsByEventID.get(evtID) ?? []
+			this.receiptsByEventID.set(evtID, existing.concat(filtered))
+		}
+		this.receiptSubs.notify(evtID)
+	}
+
+	applyReceipt(receipt: DBReceipt, evt: MemDBEvent): receipt is MemReceipt {
+		const existingReceipt = this.receiptsByUserID.get(receipt.user_id)
+		if (existingReceipt) {
+			if (existingReceipt.timeline_rowid >= evt.timeline_rowid) {
+				return false
+			}
+			const oldArr = this.receiptsByEventID.get(existingReceipt.event_id)
+			if (oldArr) {
+				const updated = oldArr.filter(r => r !== existingReceipt)
+				if (updated.length !== oldArr.length) {
+					if (updated.length === 0) {
+						this.receiptsByEventID.delete(existingReceipt.event_id)
+					} else {
+						this.receiptsByEventID.set(existingReceipt.event_id, updated)
+					}
+					this.receiptSubs.notify(existingReceipt.event_id)
+				}
+			}
+		}
+		const memReceipt = receipt as MemReceipt
+		memReceipt.timeline_rowid = evt.timeline_rowid > UNSENT_TIMELINE_ROWID_BASE ? 1 : evt.timeline_rowid
+		memReceipt.event_rowid = evt.rowid
+		this.receiptsByUserID.set(receipt.user_id, memReceipt)
+		return true
 	}
 
 	applyEvent(evt: RawDBEvent, pending: boolean = false) {
@@ -246,7 +320,7 @@ export class RoomStateStore {
 		memEvt.mem = true
 		memEvt.pending = pending
 		if (pending) {
-			memEvt.timeline_rowid = 1000000000000000 + memEvt.timestamp
+			memEvt.timeline_rowid = UNSENT_TIMELINE_ROWID_BASE + memEvt.timestamp
 		}
 		if (evt.type === "m.room.encrypted" && evt.decrypted && evt.decrypted_type) {
 			memEvt.type = evt.decrypted_type
@@ -285,6 +359,7 @@ export class RoomStateStore {
 			}
 		}
 		this.eventSubs.notify(memEvt.event_id)
+		return memEvt
 	}
 
 	applySendComplete(evt: RawDBEvent) {
@@ -316,7 +391,7 @@ export class RoomStateStore {
 		} else {
 			this.meta.emit(sync.meta)
 		}
-		for (const ad of Object.values(sync.account_data)) {
+		for (const ad of Object.values(sync.account_data ?? {})) {
 			if (ad.type === "fi.mau.gomuks.preferences") {
 				this.serverPreferenceCache = ad.content
 				this.preferenceSub.notify()
@@ -324,10 +399,10 @@ export class RoomStateStore {
 			this.accountData.set(ad.type, ad.content)
 			this.accountDataSubs.notify(ad.type)
 		}
-		for (const evt of sync.events) {
+		for (const evt of sync.events ?? []) {
 			this.applyEvent(evt)
 		}
-		for (const [evtType, changedEvts] of Object.entries(sync.state)) {
+		for (const [evtType, changedEvts] of Object.entries(sync.state ?? {})) {
 			let stateMap = this.state.get(evtType)
 			if (!stateMap) {
 				stateMap = new Map()
@@ -340,9 +415,9 @@ export class RoomStateStore {
 			this.stateSubs.notify(evtType)
 		}
 		if (sync.reset) {
-			this.timeline = sync.timeline
+			this.timeline = sync.timeline ?? []
 			this.pendingEvents.splice(0, this.pendingEvents.length)
-		} else {
+		} else if (sync.timeline) {
 			this.timeline.push(...sync.timeline)
 		}
 		if (sync.meta.unread_notifications === 0 && sync.meta.unread_highlights === 0) {
@@ -352,6 +427,9 @@ export class RoomStateStore {
 			this.openNotifications.clear()
 		}
 		this.notifyTimelineSubscribers()
+		for (const [evtID, receipts] of Object.entries(sync.receipts ?? {})) {
+			this.applyReceipts(receipts, evtID, false)
+		}
 	}
 
 	applyState(evt: RawDBEvent) {
@@ -418,6 +496,11 @@ export class RoomStateStore {
 		}
 	}
 
+	applyTyping(users: string[]) {
+		this.typing = users
+		this.typingSub.notify()
+	}
+
 	doGarbageCollection() {
 		const memberEventsToKeep = new Set<UserID>()
 		const eventsToKeep = new Set<EventRowID>()
@@ -466,6 +549,8 @@ export class RoomStateStore {
 		const deletedEvents = this.eventsByRowID.size - eventsToKeep.size
 		this.eventsByRowID.clear()
 		this.eventsByID.clear()
+		this.receiptsByEventID.clear()
+		this.receiptsByUserID.clear()
 		for (const evt of eventsToKeepList) {
 			this.eventsByRowID.set(evt.rowid, evt)
 			this.eventsByID.set(evt.event_id, evt)

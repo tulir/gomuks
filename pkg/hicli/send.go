@@ -71,6 +71,11 @@ func (h *HiClient) SendMessage(
 	relatesTo *event.RelatesTo,
 	mentions *event.Mentions,
 ) (*database.Event, error) {
+	var unencrypted bool
+	if strings.HasPrefix(text, "/unencrypted ") {
+		text = strings.TrimPrefix(text, "/unencrypted ")
+		unencrypted = true
+	}
 	if strings.HasPrefix(text, "/raw ") {
 		parts := strings.SplitN(text, " ", 3)
 		if len(parts) < 2 || len(parts[1]) == 0 {
@@ -85,7 +90,18 @@ func (h *HiClient) SendMessage(
 		if !json.Valid(content) {
 			return nil, fmt.Errorf("invalid JSON in /raw command")
 		}
-		return h.send(ctx, roomID, event.Type{Type: parts[1]}, content, "")
+		return h.send(ctx, roomID, event.Type{Type: parts[1]}, content, "", unencrypted)
+	} else if strings.HasPrefix(text, "/rawstate ") {
+		parts := strings.SplitN(text, " ", 4)
+		if len(parts) < 4 || len(parts[1]) == 0 {
+			return nil, fmt.Errorf("invalid /rawstate command")
+		}
+		content := json.RawMessage(parts[3])
+		if !json.Valid(content) {
+			return nil, fmt.Errorf("invalid JSON in /rawstate command")
+		}
+		_, err := h.SetState(ctx, roomID, event.Type{Type: parts[1], Class: event.StateEventType}, parts[2], content)
+		return nil, err
 	}
 	var content event.MessageEventContent
 	msgType := event.MsgText
@@ -148,7 +164,12 @@ func (h *HiClient) SendMessage(
 			content.RelatesTo = relatesTo
 		}
 	}
-	return h.send(ctx, roomID, event.EventMessage, &event.Content{Parsed: content, Raw: extra}, origText)
+	evtType := event.EventMessage
+	if content.MsgType == "m.sticker" {
+		content.MsgType = ""
+		evtType = event.EventSticker
+	}
+	return h.send(ctx, roomID, evtType, &event.Content{Parsed: content, Raw: extra}, origText, unencrypted)
 }
 
 func (h *HiClient) MarkRead(ctx context.Context, roomID id.RoomID, eventID id.EventID, receiptType event.ReceiptType) error {
@@ -212,7 +233,7 @@ func (h *HiClient) Send(
 	evtType event.Type,
 	content any,
 ) (*database.Event, error) {
-	return h.send(ctx, roomID, evtType, content, "")
+	return h.send(ctx, roomID, evtType, content, "", false)
 }
 
 func (h *HiClient) Resend(ctx context.Context, txnID string) (*database.Event, error) {
@@ -241,6 +262,7 @@ func (h *HiClient) send(
 	evtType event.Type,
 	content any,
 	overrideEditSource string,
+	disableEncryption bool,
 ) (*database.Event, error) {
 	room, err := h.DB.Room.Get(ctx, roomID)
 	if err != nil {
@@ -261,7 +283,7 @@ func (h *HiClient) send(
 		Reactions:       map[string]int{},
 		LastEditRowID:   ptr.Ptr(database.EventRowID(0)),
 	}
-	if room.EncryptionEvent != nil && evtType != event.EventReaction {
+	if room.EncryptionEvent != nil && evtType != event.EventReaction && !disableEncryption {
 		dbEvt.Type = event.EventEncrypted.Type
 		dbEvt.DecryptedType = evtType.Type
 		dbEvt.Decrypted, err = json.Marshal(content)
@@ -281,7 +303,7 @@ func (h *HiClient) send(
 	var inlineImages []id.ContentURI
 	mautrixEvt := dbEvt.AsRawMautrix()
 	dbEvt.LocalContent, inlineImages = h.calculateLocalContent(ctx, dbEvt, mautrixEvt)
-	if overrideEditSource != "" {
+	if overrideEditSource != "" && dbEvt.LocalContent != nil {
 		dbEvt.LocalContent.EditSource = overrideEditSource
 	}
 	_, err = h.DB.Event.Insert(ctx, dbEvt)

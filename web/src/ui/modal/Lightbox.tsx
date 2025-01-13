@@ -13,8 +13,9 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import React, { Component, createContext, createRef, useCallback, useLayoutEffect, useState } from "react"
+import React, { Component, createRef, useCallback, useLayoutEffect, useState } from "react"
 import { keyToString } from "../keybindings.ts"
+import { LightboxContext, LightboxParams } from "./contexts.ts"
 import CloseIcon from "@/icons/close.svg?react"
 import DownloadIcon from "@/icons/download.svg?react"
 import RotateLeftIcon from "@/icons/rotate-left.svg?react"
@@ -25,17 +26,7 @@ import "./Lightbox.css"
 
 const isTouchDevice = window.ontouchstart !== undefined
 
-export interface LightboxParams {
-	src: string
-	alt: string
-}
-
-export type OpenLightboxType = (params: LightboxParams | React.MouseEvent<HTMLImageElement>) => void
-
-export const LightboxContext = createContext<OpenLightboxType>(() =>
-	console.error("Tried to open lightbox without being inside context"))
-
-export const LightboxWrapper = ({ children }: { children: React.ReactNode }) => {
+const LightboxWrapper = ({ children }: { children: React.ReactNode }) => {
 	const [params, setParams] = useState<LightboxParams | null>(null)
 	const onOpen = useCallback((params: LightboxParams | React.MouseEvent<HTMLImageElement>) => {
 		if ((params as React.MouseEvent).target) {
@@ -224,3 +215,5 @@ export class Lightbox extends Component<LightboxProps> {
 		</div>
 	}
 }
+
+export default LightboxWrapper

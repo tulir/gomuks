@@ -15,14 +15,18 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import {
 	DBAccountData,
+	DBInvitedRoom,
+	DBReceipt,
 	DBRoom,
 	DBRoomAccountData,
+	DBSpaceEdge,
 	EventRowID,
 	RawDBEvent,
 	TimelineRowTuple,
 } from "./hitypes.ts"
 import {
 	DeviceID,
+	EventID,
 	EventType,
 	RoomID,
 	UserID,
@@ -68,12 +72,13 @@ export interface ImageAuthTokenEvent extends BaseRPCCommand<string> {
 
 export interface SyncRoom {
 	meta: DBRoom
-	timeline: TimelineRowTuple[]
-	events: RawDBEvent[]
-	state: Record<EventType, Record<string, EventRowID>>
+	timeline: TimelineRowTuple[] | null
+	events: RawDBEvent[] | null
+	state: Record<EventType, Record<string, EventRowID>> | null
 	reset: boolean
-	notifications: SyncNotification[]
-	account_data: Record<EventType, DBRoomAccountData>
+	notifications: SyncNotification[] | null
+	account_data: Record<EventType, DBRoomAccountData> | null
+	receipts: Record<EventID, DBReceipt[]> | null
 }
 
 export interface SyncNotification {
@@ -82,9 +87,12 @@ export interface SyncNotification {
 }
 
 export interface SyncCompleteData {
-	rooms: Record<RoomID, SyncRoom>
-	left_rooms: RoomID[]
-	account_data: Record<EventType, DBAccountData>
+	rooms: Record<RoomID, SyncRoom> | null
+	invited_rooms: DBInvitedRoom[] | null
+	left_rooms: RoomID[] | null
+	account_data: Record<EventType, DBAccountData> | null
+	space_edges: Record<RoomID, DBSpaceEdge[]> | null
+	top_level_spaces: RoomID[] | null
 	since?: string
 	clear_state?: boolean
 }
@@ -110,7 +118,7 @@ export interface ClientStateEvent extends BaseRPCCommand<ClientState> {
 }
 
 export interface SyncStatus {
-	type: "ok" | "waiting" | "errored"
+	type: "ok" | "waiting" | "erroring" | "permanently-failed"
 	error?: string
 	error_count: number
 	last_sync?: number

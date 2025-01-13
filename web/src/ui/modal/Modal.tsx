@@ -13,25 +13,10 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import React, { JSX, createContext, useCallback, useLayoutEffect, useReducer, useRef } from "react"
+import React, { JSX, useCallback, useEffect, useLayoutEffect, useReducer, useRef } from "react"
+import { ModalCloseContext, ModalContext, ModalState } from "./contexts.ts"
 
-export interface ModalState {
-	content: JSX.Element
-	dimmed?: boolean
-	boxed?: boolean
-	boxClass?: string
-	innerBoxClass?: string
-	onClose?: () => void
-}
-
-type openModal = (state: ModalState) => void
-
-export const ModalContext = createContext<openModal>(() =>
-	console.error("Tried to open modal without being inside context"))
-
-export const ModalCloseContext = createContext<() => void>(() => {})
-
-export const ModalWrapper = ({ children }: { children: React.ReactNode }) => {
+const ModalWrapper = ({ children }: { children: React.ReactNode }) => {
 	const [state, setState] = useReducer((prevState: ModalState | null, newState: ModalState | null) => {
 		prevState?.onClose?.()
 		return newState
@@ -45,7 +30,7 @@ export const ModalWrapper = ({ children }: { children: React.ReactNode }) => {
 			history.back()
 		}
 	}, [])
-	const onKeyWrapper = useCallback((evt: React.KeyboardEvent<HTMLDivElement>) => {
+	const onKeyWrapper = (evt: React.KeyboardEvent<HTMLDivElement>) => {
 		if (evt.key === "Escape") {
 			setState(null)
 			if (history.state?.modal) {
@@ -53,9 +38,9 @@ export const ModalWrapper = ({ children }: { children: React.ReactNode }) => {
 			}
 		}
 		evt.stopPropagation()
-	}, [])
+	}
 	const openModal = useCallback((newState: ModalState) => {
-		if (!history.state?.modal) {
+		if (!history.state?.modal && newState.captureInput !== false) {
 			history.pushState({ ...(history.state ?? {}), modal: true }, "")
 		}
 		setState(newState)
@@ -65,6 +50,9 @@ export const ModalWrapper = ({ children }: { children: React.ReactNode }) => {
 		if (wrapperRef.current && (!document.activeElement || !wrapperRef.current.contains(document.activeElement))) {
 			wrapperRef.current.focus()
 		}
+	}, [state])
+	useEffect(() => {
+		window.closeModal = onClickWrapper
 		const listener = (evt: PopStateEvent) => {
 			if (!evt.state?.modal) {
 				setState(null)
@@ -72,7 +60,7 @@ export const ModalWrapper = ({ children }: { children: React.ReactNode }) => {
 		}
 		window.addEventListener("popstate", listener)
 		return () => window.removeEventListener("popstate", listener)
-	}, [state])
+	}, [onClickWrapper])
 	let modal: JSX.Element | null = null
 	if (state) {
 		let content = <ModalCloseContext value={onClickWrapper}>{state.content}</ModalCloseContext>
@@ -83,18 +71,24 @@ export const ModalWrapper = ({ children }: { children: React.ReactNode }) => {
 				</div>
 			</div>
 		}
-		modal = <div
-			className={`overlay modal ${state.dimmed ? "dimmed" : ""}`}
-			onClick={onClickWrapper}
-			onKeyDown={onKeyWrapper}
-			tabIndex={-1}
-			ref={wrapperRef}
-		>
-			{content}
-		</div>
+		if (state.captureInput !== false) {
+			modal = <div
+				className={`overlay modal ${state.dimmed ? "dimmed" : ""}`}
+				onClick={onClickWrapper}
+				onKeyDown={onKeyWrapper}
+				tabIndex={-1}
+				ref={wrapperRef}
+			>
+				{content}
+			</div>
+		} else {
+			modal = content
+		}
 	}
 	return <ModalContext value={openModal}>
 		{children}
 		{modal}
 	</ModalContext>
 }
+
+export default ModalWrapper

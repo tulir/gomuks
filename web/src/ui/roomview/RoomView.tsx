@@ -13,9 +13,10 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import { JSX, useRef } from "react"
+import { JSX, useEffect, useState } from "react"
 import { RoomStateStore } from "@/api/statestore"
 import MessageComposer from "../composer/MessageComposer.tsx"
+import TypingNotifications from "../composer/TypingNotifications.tsx"
 import RightPanel, { RightPanelProps } from "../rightpanel/RightPanel.tsx"
 import TimelineView from "../timeline/TimelineView.tsx"
 import RoomViewHeader from "./RoomViewHeader.tsx"
@@ -29,15 +30,30 @@ interface RoomViewProps {
 }
 
 const RoomView = ({ room, rightPanelResizeHandle, rightPanel }: RoomViewProps) => {
-	const roomContextDataRef = useRef<RoomContextData | undefined>(undefined)
-	if (roomContextDataRef.current === undefined) {
-		roomContextDataRef.current = new RoomContextData(room)
+	const [roomContextData] = useState(() => new RoomContextData(room))
+	useEffect(() => {
+		window.activeRoomContext = roomContextData
+		window.addEventListener("resize", roomContextData.scrollToBottom)
+		return () => {
+			window.removeEventListener("resize", roomContextData.scrollToBottom)
+			if (window.activeRoomContext === roomContextData) {
+				window.activeRoomContext = undefined
+			}
+		}
+	}, [roomContextData])
+	const onClick = (evt: React.MouseEvent<HTMLDivElement>) => {
+		if (roomContextData.focusedEventRowID) {
+			roomContextData.setFocusedEventRowID(null)
+			evt.stopPropagation()
+		}
 	}
-	return <RoomContext value={roomContextDataRef.current}>
-		<div className="room-view">
+	return <RoomContext value={roomContextData}>
+		<div className="room-view" onClick={onClick}>
+			<div id="mobile-event-menu-container"/>
 			<RoomViewHeader room={room}/>
 			<TimelineView/>
 			<MessageComposer/>
+			<TypingNotifications/>
 		</div>
 		{rightPanelResizeHandle}
 		{rightPanel && <RightPanel {...rightPanel}/>}

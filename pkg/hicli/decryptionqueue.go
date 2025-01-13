@@ -59,7 +59,7 @@ func (h *HiClient) handleReceivedMegolmSession(ctx context.Context, roomID id.Ro
 		}
 
 		var mautrixEvt *event.Event
-		mautrixEvt, evt.Decrypted, evt.DecryptedType, err = h.decryptEvent(ctx, evt.AsRawMautrix())
+		mautrixEvt, err = h.decryptEventInto(ctx, evt.AsRawMautrix(), evt)
 		if err != nil {
 			log.Warn().Err(err).Stringer("event_id", evt.ID).Msg("Failed to decrypt event even after receiving megolm session")
 		} else {

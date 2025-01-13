@@ -1,14 +1,16 @@
 div.timeline-event {
 	width: 100%;
 	max-width: 100%;
+	box-sizing: border-box;
+	padding: 0 var(--timeline-horizontal-padding);
 	display: grid;
-	margin-top: var(--timeline-message-gap);
 	grid-template:
-		"cmc                          cmc                        cmc      cmc"    0
+		"cmc                          cmc                        cmc      empty"  0
 		"avatar                       gap                        sender   sender" auto
 		"avatar                       gap                        content  status" auto
-		/ var(--timeline-avatar-size) var(--timeline-avatar-gap) 1fr      2rem;
+		/ var(--timeline-avatar-size) var(--timeline-avatar-gap) 1fr      var(--timeline-status-size);
 	contain: layout;
+	margin-top: var(--timeline-message-gap);
 
 	&.highlight {
 		background-color: var(--timeline-highlight-bg-color);
@@ -22,7 +24,7 @@ div.timeline-event {
 		transition: background-color 1s;
 	}
 
-	&:hover {
+	&:hover:not(.no-hover), &.focused-event {
 		background-color: var(--timeline-hover-bg-color);
 
 		&.highlight {
@@ -62,6 +64,21 @@ div.timeline-event {
 			cursor: var(--clickable-cursor);
 		}
 
+		> div.per-message-event-sender {
+			color: var(--secondary-text-color);
+			font-size: .75rem;
+
+			> span.via {
+				margin-right: .25rem;
+			}
+
+			> span.event-sender {
+				font-weight: bold;
+				user-select: none;
+				cursor: var(--clickable-cursor);
+			}
+		}
+
 		> span.event-time, > span.event-edited {
 			font-size: .7rem;
 			color: var(--secondary-text-color);
@@ -94,6 +111,7 @@ div.timeline-event {
 
 		> svg {
 			height: 1rem;
+			width: 1rem;
 		}
 
 		&.error {
@@ -117,9 +135,9 @@ div.timeline-event {
 
 	&.same-sender {
 		grid-template:
-			"cmc                                cmc     cmc"    0
+			"cmc                                cmc     empty"    0
 			"timestamp                          content status" auto
-			/ var(--timeline-avatar-total-size) 1fr     2rem;
+			/ var(--timeline-avatar-total-size) 1fr     var(--timeline-status-size);
 		margin-top: var(--timeline-message-gap-same-sender);
 
 		> div.sender-avatar, > div.event-sender-and-time {
@@ -133,9 +151,9 @@ div.timeline-event {
 
 	&.small-event {
 		grid-template:
-			"cmc                                cmc    cmc     cmc"    0
+			"cmc                                cmc    cmc     empty"    0
 			"timestamp                          avatar content status" auto
-			/ var(--timeline-avatar-total-size) 1.5rem 1fr     2rem;
+			/ var(--timeline-avatar-total-size) 1.5rem 1fr     var(--timeline-status-size);
 
 		> div.sender-avatar {
 			width: 1.5rem;
@@ -153,6 +171,28 @@ div.timeline-event {
 		+ div.timeline-event.small-event {
 			margin-top: var(--timeline-message-gap-small-event);
 		}
+	}
+
+	&.reply-above {
+		grid-template:
+			"cmc                          cmc                        cmc      empty"  0
+			"reply                        reply                      reply    empty"  auto
+			"avatar                       gap                        sender   sender" auto
+			"avatar                       gap                        content  status" auto
+			/ var(--timeline-avatar-size) var(--timeline-avatar-gap) 1fr      var(--timeline-status-size);
+	}
+}
+
+div.pinned-event > div.timeline-event {
+	--timeline-status-size: 0;
+	--timeline-horizontal-padding: 0;
+
+	> div.event-send-status {
+		display: none;
+	}
+
+	> div.read-receipts {
+		display: none;
 	}
 }
 
@@ -209,6 +249,7 @@ div.date-separator {
 	display: flex;
 	align-items: center;
 	gap: .5rem;
+	padding: calc(var(--timeline-message-gap)/2) 0;
 
 	> hr {
 		flex: 1;

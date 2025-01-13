@@ -91,3 +91,8 @@ func (h *HiClient) GetProfileEncryptionInfo(ctx context.Context, userID id.UserI
 	}
 	return &resp, nil
 }
+
+func (h *HiClient) TrackUserDevices(ctx context.Context, userID id.UserID) error {
+	_, err := h.Crypto.FetchKeys(ctx, []id.UserID{userID}, true)
+	return err
+}

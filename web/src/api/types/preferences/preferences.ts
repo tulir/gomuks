@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import type { ContentURI } from "../../types"
-import { Preference, anyContext } from "./types.ts"
+import { Preference, anyContext, anyGlobalContext } from "./types.ts"
 
 export const codeBlockStyles = [
 	"auto", "abap", "algol_nu", "algol", "arduino", "autumn", "average", "base16-snazzy", "borland", "bw",
@@ -44,6 +44,12 @@ export const preferences = {
 	send_typing_notifications: new Preference<boolean>({
 		displayName: "Send typing notifications",
 		description: "Should typing notifications be sent to other users?",
+		allowedContexts: anyContext,
+		defaultValue: true,
+	}),
+	display_read_receipts: new Preference<boolean>({
+		displayName: "Display read receipts",
+		description: "Should read receipts be rendered in the timeline?",
 		allowedContexts: anyContext,
 		defaultValue: true,
 	}),
@@ -96,6 +102,18 @@ export const preferences = {
 		allowedContexts: anyContext,
 		defaultValue: true,
 	}),
+	render_url_previews: new Preference<boolean>({
+		displayName: "Render URL previews",
+		description: "Whether to render MSC4095 URL previews in the room timeline.",
+		allowedContexts: anyContext,
+		defaultValue: true,
+	}),
+	small_replies: new Preference<boolean>({
+		displayName: "Compact reply style",
+		description: "Whether to use a Discord-like compact style for replies instead of the traditional style.",
+		allowedContexts: anyContext,
+		defaultValue: false,
+	}),
 	show_date_separators: new Preference<boolean>({
 		displayName: "Show date separators",
 		description: "Whether messages in different days should have a date separator between them in the room timeline.",
@@ -135,11 +153,41 @@ export const preferences = {
 	// 	allowedContexts: anyContext,
 	// 	defaultValue: false,
 	// }),
+	message_context_menu: new Preference<boolean>({
+		displayName: "Right-click menu on messages",
+		description: "Show a context menu when right-clicking on messages.",
+		allowedContexts: anyContext,
+		defaultValue: true,
+	}),
+	ctrl_enter_send: new Preference<boolean>({
+		displayName: "Use Ctrl+Enter to send",
+		description: "Disable sending on enter and use Ctrl+Enter for sending instead",
+		allowedContexts: anyContext,
+		defaultValue: false,
+	}),
 	custom_notification_sound: new Preference<ContentURI>({
 		displayName: "Custom notification sound",
 		description: "The mxc:// URI to a custom notification sound.",
 		allowedContexts: anyContext,
 		defaultValue: "",
+	}),
+	room_window_title: new Preference<string>({
+		displayName: "In-room window title",
+		description: "The title to use for the window when viewing a room. $room will be replaced with the room name",
+		allowedContexts: anyContext,
+		defaultValue: "$room - gomuks web",
+	}),
+	window_title: new Preference<string>({
+		displayName: "Default window title",
+		description: "The title to use for the window when not in a room.",
+		allowedContexts: anyGlobalContext,
+		defaultValue: "gomuks web",
+	}),
+	favicon: new Preference<string>({
+		displayName: "Favicon",
+		description: "The URL to use for the favicon.",
+		allowedContexts: anyContext,
+		defaultValue: "gomuks.png",
 	}),
 } as const
 

@@ -13,7 +13,7 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import React, { use, useCallback, useState } from "react"
+import React, { use, useState } from "react"
 import { getAvatarURL } from "@/api/media.ts"
 import { MemDBEvent, MemberEventContent } from "@/api/types"
 import { getDisplayname } from "@/util/validation.ts"
@@ -45,8 +45,6 @@ const MemberRow = ({ evt, onClick }: MemberRowProps) => {
 const MemberList = () => {
 	const [filter, setFilter] = useState("")
 	const [limit, setLimit] = useState(30)
-	const increaseLimit = useCallback(() => setLimit(limit => limit + 50), [])
-	const onChangeFilter = useCallback((e: React.ChangeEvent<HTMLInputElement>) => setFilter(e.target.value), [])
 	const roomCtx = use(RoomContext)
 	if (roomCtx?.store && !roomCtx?.store.membersRequested && !roomCtx?.store.fullMembersLoaded) {
 		roomCtx.store.membersRequested = true
@@ -69,10 +67,15 @@ const MemberList = () => {
 		}
 	}
 	return <>
-		<input className="member-filter" value={filter} onChange={onChangeFilter} placeholder="Filter members" />
+		<input
+			className="member-filter"
+			value={filter}
+			onChange={evt => setFilter(evt.target.value)}
+			placeholder="Filter members"
+		/>
 		<div className="member-list">
 			{members}
-			{memberEvents.length > limit ? <button onClick={increaseLimit}>
+			{memberEvents.length > limit ? <button onClick={() => setLimit(limit => limit + 50)}>
 				and {memberEvents.length - limit} others…
 			</button> : null}
 		</div>

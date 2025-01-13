@@ -13,7 +13,7 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import { memo, use } from "react"
+import { JSX, memo, use } from "react"
 import { getRoomAvatarURL } from "@/api/media.ts"
 import type { RoomListEntry } from "@/api/statestore"
 import type { MemDBEvent, MemberEventContent } from "@/api/types"
@@ -21,6 +21,7 @@ import useContentVisibility from "@/util/contentvisibility.ts"
 import { getDisplayname } from "@/util/validation.ts"
 import ClientContext from "../ClientContext.ts"
 import MainScreenContext from "../MainScreenContext.ts"
+import UnreadCount from "./UnreadCount.tsx"
 
 export interface RoomListEntryProps {
 	room: RoomListEntry
@@ -28,11 +29,12 @@ export interface RoomListEntryProps {
 	hidden: boolean
 }
 
-function usePreviewText(evt?: MemDBEvent, senderMemberEvt?: MemDBEvent | null): [string, string] {
+function getPreviewText(evt?: MemDBEvent, senderMemberEvt?: MemDBEvent | null): [string, JSX.Element | null] {
 	if (!evt) {
-		return ["", ""]
+		return ["", null]
 	}
 	if ((evt.type === "m.room.message" || evt.type === "m.sticker") && typeof evt.content.body === "string") {
+		// eslint-disable-next-line react-hooks/rules-of-hooks
 		const client = use(ClientContext)!
 		const displayname = evt.sender === client.userID
 			? "You"
@@ -43,26 +45,18 @@ function usePreviewText(evt?: MemDBEvent, senderMemberEvt?: MemDBEvent | null): 
 		}
 		return [
 			`${displayname}: ${evt.content.body}`,
-			`${displayname.length > 16 ? displayname.slice(0, 12) + "…" : displayname}: ${previewText}`,
+			<>
+				<span style={{ unicodeBidi: "isolate" }}>
+					{displayname.length > 16 ? displayname.slice(0, 12) + "…" : displayname}
+				</span>: {previewText}
+			</>,
 		]
 	}
-	return ["", ""]
+	return ["", null]
 }
 
-interface InnerProps {
-	room: RoomListEntry
-}
-
-const EntryInner = ({ room }: InnerProps) => {
-	const [previewText, croppedPreviewText] = usePreviewText(room.preview_event, room.preview_sender)
-	const unreadCount = room.unread_messages || room.unread_notifications || room.unread_highlights
-	const countIsBig = Boolean(room.unread_notifications || room.unread_highlights)
-	let unreadCountDisplay = unreadCount.toString()
-	if (unreadCount > 999 && countIsBig) {
-		unreadCountDisplay = "99+"
-	} else if (unreadCount > 9999 && countIsBig) {
-		unreadCountDisplay = "999+"
-	}
+function renderEntry(room: RoomListEntry) {
+	const [previewText, croppedPreviewText] = getPreviewText(room.preview_event, room.preview_sender)
 
 	return <>
 		<div className="room-entry-left">
@@ -77,15 +71,7 @@ const EntryInner = ({ room }: InnerProps) => {
 			<div className="room-name">{room.name}</div>
 			{previewText && <div className="message-preview" title={previewText}>{croppedPreviewText}</div>}
 		</div>
-		{(room.unread_messages || room.marked_unread) ? <div className="room-entry-unreads">
-			<div title={unreadCount.toString()} className={`unread-count ${
-				room.marked_unread ? "marked-unread" : ""} ${
-				room.unread_notifications ? "notified" : ""} ${
-				room.unread_highlights ? "highlighted" : ""}`}
-			>
-				{unreadCountDisplay}
-			</div>
-		</div> : null}
+		<UnreadCount counts={room} />
 	</>
 }
 
@@ -97,7 +83,7 @@ const Entry = ({ room, isActive, hidden }: RoomListEntryProps) => {
 		onClick={use(MainScreenContext).clickRoom}
 		data-room-id={room.room_id}
 	>
-		{isVisible ? <EntryInner room={room}/> : null}
+		{isVisible ? renderEntry(room) : null}
 	</div>
 }
 

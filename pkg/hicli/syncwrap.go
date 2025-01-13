@@ -8,11 +8,16 @@ package hicli
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
+	"github.com/mattn/go-sqlite3"
+	"github.com/rs/zerolog"
 	"maunium.net/go/mautrix"
 	"maunium.net/go/mautrix/id"
+
+	"go.mau.fi/gomuks/pkg/hicli/database"
 )
 
 type hiSyncer HiClient
@@ -29,19 +34,29 @@ func (h *hiSyncer) ProcessResponse(ctx context.Context, resp *mautrix.RespSync, 
 	c := (*HiClient)(h)
 	c.lastSync = time.Now()
 	ctx = context.WithValue(ctx, syncContextKey, &syncContext{evt: &SyncComplete{
-		Since:     &since,
-		Rooms:     make(map[id.RoomID]*SyncRoom, len(resp.Rooms.Join)),
-		LeftRooms: make([]id.RoomID, 0, len(resp.Rooms.Leave)),
+		Since:        &since,
+		Rooms:        make(map[id.RoomID]*SyncRoom, len(resp.Rooms.Join)),
+		InvitedRooms: make([]*database.InvitedRoom, 0, len(resp.Rooms.Invite)),
+		LeftRooms:    make([]id.RoomID, 0, len(resp.Rooms.Leave)),
 	}})
 	err := c.preProcessSyncResponse(ctx, resp, since)
 	if err != nil {
 		return err
 	}
-	err = c.DB.DoTxn(ctx, nil, func(ctx context.Context) error {
-		return c.processSyncResponse(ctx, resp, since)
-	})
-	if err != nil {
-		return err
+	for i := 0; ; i++ {
+		err = c.DB.DoTxn(ctx, nil, func(ctx context.Context) error {
+			return c.processSyncResponse(ctx, resp, since)
+		})
+		var sqliteErr sqlite3.Error
+		if errors.As(err, &sqliteErr) && sqliteErr.Code == sqlite3.ErrBusy && i < 24 {
+			zerolog.Ctx(ctx).Warn().Err(err).Msg("Database is busy, retrying")
+			c.markSyncErrored(err, false)
+			continue
+		} else if err != nil {
+			return err
+		} else {
+			break
+		}
 	}
 	c.postProcessSyncResponse(ctx, resp, since)
 	c.syncErrors = 0
@@ -56,7 +71,7 @@ func (h *hiSyncer) OnFailedSync(_ *mautrix.RespSync, err error) (time.Duration, 
 	if c.syncErrors > 5 {
 		delay = max(time.Duration(c.syncErrors)*time.Second, 30*time.Second)
 	}
-	c.markSyncErrored(err)
+	c.markSyncErrored(err, false)
 	c.Log.Err(err).Dur("retry_in", delay).Msg("Sync failed")
 	return delay, nil
 }
@@ -64,23 +79,23 @@ func (h *hiSyncer) OnFailedSync(_ *mautrix.RespSync, err error) (time.Duration, 
 func (h *hiSyncer) GetFilterJSON(_ id.UserID) *mautrix.Filter {
 	if !h.Verified {
 		return &mautrix.Filter{
-			Presence: mautrix.FilterPart{
+			Presence: &mautrix.FilterPart{
 				NotRooms: []id.RoomID{"*"},
 			},
-			Room: mautrix.RoomFilter{
+			Room: &mautrix.RoomFilter{
 				NotRooms: []id.RoomID{"*"},
 			},
 		}
 	}
 	return &mautrix.Filter{
-		Presence: mautrix.FilterPart{
+		Presence: &mautrix.FilterPart{
 			NotRooms: []id.RoomID{"*"},
 		},
-		Room: mautrix.RoomFilter{
-			State: mautrix.FilterPart{
+		Room: &mautrix.RoomFilter{
+			State: &mautrix.FilterPart{
 				LazyLoadMembers: true,
 			},
-			Timeline: mautrix.FilterPart{
+			Timeline: &mautrix.FilterPart{
 				Limit:           100,
 				LazyLoadMembers: true,
 			},

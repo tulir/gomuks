@@ -1,9 +1,14 @@
 div.message-composer {
-	border-top: 1px solid var(--border-color);
+	margin: -1rem var(--timeline-horizontal-padding) 0;
+	background-color: var(--composer-background-color);
+	border: 1px solid var(--border-color);
+	border-radius: 0.5rem;
 	overflow: hidden;
 	grid-area: input;
 	/* WebKit/Safari requires this hack for some reason, works fine without in other browsers */
 	min-height: 2.25rem;
+	z-index: 1;
+	box-shadow: 0 0 1rem var(--modal-box-shadow-color);
 
 	blockquote.reply-body > pre {
 		text-wrap: auto !important;
@@ -29,16 +34,29 @@ div.message-composer {
 			height: 2rem;
 			width: 2rem;
 			padding: .25rem;
+
+			> svg {
+				width: 1.5rem;
+				height: 1.5rem;
+			}
 		}
 
 		> input[type="file"] {
 			display: none;
 		}
+
+		@media screen and (max-width: 45rem) {
+			margin-right: 0;
+
+			> textarea:not(:empty) {
+				padding: .5rem 0;
+			}
+		}
 	}
 
 	> div.composer-media, > div.composer-location {
 		display: flex;
-		padding: .5rem;
+		padding: .5rem .5rem 0;
 		justify-content: space-between;
 
 		> button {

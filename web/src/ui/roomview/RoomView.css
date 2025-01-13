@@ -9,6 +9,27 @@ div.room-view {
 		"messageview" 1fr
 		"autocomplete" 0
 		"input" auto
+		"typing" auto
 		/ 1fr;
 	contain: strict;
+
+	&.preview {
+		display: flex;
+		justify-content: center;
+		align-items: center;
+	}
+}
+
+div#mobile-event-menu-container {
+	grid-area: header;
+	overflow: hidden;
+	border-bottom: 1px solid var(--border-color);
+
+	&:empty {
+		display: none;
+	}
+
+	&:not(:empty) + div.room-header {
+		display: none;
+	}
 }

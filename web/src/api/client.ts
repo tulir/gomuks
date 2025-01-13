@@ -22,6 +22,7 @@ import type {
 	ElementRecentEmoji,
 	EventID,
 	EventType,
+	GomuksAndroidMessageToWeb,
 	ImagePackRooms,
 	RPCEvent,
 	RawDBEvent,
@@ -37,7 +38,7 @@ export default class Client {
 	readonly initComplete = new NonNullCachedEventDispatcher<boolean>(false)
 	readonly store = new StateStore()
 	#stateRequests: RoomStateGUID[] = []
-	#stateRequestQueued = false
+	#stateRequestPromise: Promise<void> | null = null
 	#gcInterval: number | undefined
 
 	constructor(readonly rpc: RPCClient) {
@@ -71,6 +72,74 @@ export default class Client {
 		this.requestNotificationPermission()
 	}
 
+	async #reallyStartAndroid(signal: AbortSignal) {
+		const androidListener = async (evt: CustomEventInit<string>) => {
+			const evtData = JSON.parse(evt.detail ?? "{}") as GomuksAndroidMessageToWeb
+			switch (evtData.type) {
+			case "register_push":
+				await this.rpc.registerPush({
+					type: "fcm",
+					device_id: evtData.device_id,
+					data: evtData.token,
+					encryption: evtData.encryption,
+					expiration: evtData.expiration,
+				})
+				return
+			case "auth":
+				try {
+					const resp = await fetch("_gomuks/auth?no_prompt=true", {
+						method: "POST",
+						headers: {
+							Authorization: evtData.authorization,
+						},
+						signal,
+					})
+					if (!resp.ok && !signal.aborted) {
+						console.error("Failed to authenticate:", resp.status, resp.statusText)
+						window.dispatchEvent(new CustomEvent("GomuksWebMessageToAndroid", {
+							detail: {
+								event: "auth_fail",
+								error: `${resp.statusText || resp.status}`,
+							},
+						}))
+						return
+					}
+				} catch (err) {
+					console.error("Failed to authenticate:", err)
+					window.dispatchEvent(new CustomEvent("GomuksWebMessageToAndroid", {
+						detail: {
+							event: "auth_fail",
+							error: `${err}`.replace(/^Error: /, ""),
+						},
+					}))
+					return
+				}
+				if (signal.aborted) {
+					return
+				}
+				console.log("Successfully authenticated, connecting to websocket")
+				this.rpc.start()
+				return
+			}
+		}
+		const unsubscribeConnect = this.rpc.connect.listen(evt => {
+			if (!evt.connected) {
+				return
+			}
+			window.dispatchEvent(new CustomEvent("GomuksWebMessageToAndroid", {
+				detail: { event: "connected" },
+			}))
+		})
+		window.addEventListener("GomuksAndroidMessageToWeb", androidListener)
+		signal.addEventListener("abort", () => {
+			unsubscribeConnect()
+			window.removeEventListener("GomuksAndroidMessageToWeb", androidListener)
+		})
+		window.dispatchEvent(new CustomEvent("GomuksWebMessageToAndroid", {
+			detail: { event: "ready" },
+		}))
+	}
+
 	requestNotificationPermission = (evt?: MouseEvent) => {
 		window.Notification?.requestPermission().then(permission => {
 			console.log("Notification permission:", permission)
@@ -86,7 +155,11 @@ export default class Client {
 
 	start(): () => void {
 		const abort = new AbortController()
-		this.#reallyStart(abort.signal)
+		if (window.gomuksAndroid) {
+			this.#reallyStartAndroid(abort.signal)
+		} else {
+			this.#reallyStart(abort.signal)
+		}
 		this.#gcInterval = setInterval(() => {
 			console.log("Garbage collection completed:", this.store.doGarbageCollection())
 		}, window.gcSettings.interval)
@@ -104,6 +177,7 @@ export default class Client {
 	#handleEvent = (ev: RPCEvent) => {
 		if (ev.command === "client_state") {
 			this.state.emit(ev.data)
+			this.store.userID = ev.data.is_logged_in ? ev.data.user_id : ""
 		} else if (ev.command === "sync_status") {
 			this.syncStatus.emit(ev.data)
 		} else if (ev.command === "init_complete") {
@@ -116,6 +190,8 @@ export default class Client {
 			this.store.applySendComplete(ev.data)
 		} else if (ev.command === "image_auth_token") {
 			this.store.imageAuthToken = ev.data
+		} else if (ev.command === "typing") {
+			this.store.applyTyping(ev.data)
 		}
 	}
 
@@ -124,21 +200,25 @@ export default class Client {
 			room = this.store.rooms.get(room)
 		}
 		if (!room || room.state.get("m.room.member")?.has(userID) || room.requestedMembers.has(userID)) {
-			return
+			return null
 		}
 		room.requestedMembers.add(userID)
 		this.#stateRequests.push({ room_id: room.roomID, type: "m.room.member", state_key: userID })
-		if (!this.#stateRequestQueued) {
-			this.#stateRequestQueued = true
-			window.queueMicrotask(this.doStateRequests)
+		if (this.#stateRequestPromise === null) {
+			this.#stateRequestPromise = new Promise(this.#doStateRequestsPromise)
 		}
+		return this.#stateRequestPromise
 	}
 
-	doStateRequests = () => {
-		const reqs = this.#stateRequests
-		this.#stateRequestQueued = false
-		this.#stateRequests = []
-		this.loadSpecificRoomState(reqs).catch(err => console.error("Failed to load room state", reqs, err))
+	#doStateRequestsPromise = (resolve: () => void) => {
+		window.queueMicrotask(() => {
+			const reqs = this.#stateRequests
+			this.#stateRequestPromise = null
+			this.#stateRequests = []
+			this.loadSpecificRoomState(reqs)
+				.catch(err => console.error("Failed to load room state", reqs, err))
+				.finally(resolve)
+		})
 	}
 
 	requestEvent(room: RoomStateStore | RoomID | undefined, eventID: EventID) {
@@ -204,7 +284,9 @@ export default class Client {
 			throw new Error("Room not found")
 		}
 		const dbEvent = await this.rpc.sendMessage(params)
-		this.#handleOutgoingEvent(dbEvent, room)
+		if (dbEvent) {
+			this.#handleOutgoingEvent(dbEvent, room)
+		}
 	}
 
 	async subscribeToEmojiPack(pack: RoomStateGUID, subscribe: boolean = true) {
@@ -314,7 +396,7 @@ export default class Client {
 				throw new Error("Timeline changed while loading history")
 			}
 			room.hasMoreHistory = resp.has_more
-			room.applyPagination(resp.events)
+			room.applyPagination(resp.events, resp.related_events, resp.receipts)
 		} finally {
 			room.paginating = false
 		}

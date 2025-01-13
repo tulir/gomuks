@@ -327,12 +327,17 @@ func (m EventRowID) GetMassInsertValues() [1]any {
 }
 
 type LocalContent struct {
-	SanitizedHTML string `json:"sanitized_html,omitempty"`
-	HTMLVersion   int    `json:"html_version,omitempty"`
-	WasPlaintext  bool   `json:"was_plaintext,omitempty"`
-	BigEmoji      bool   `json:"big_emoji,omitempty"`
-	HasMath       bool   `json:"has_math,omitempty"`
-	EditSource    string `json:"edit_source,omitempty"`
+	SanitizedHTML        string `json:"sanitized_html,omitempty"`
+	HTMLVersion          int    `json:"html_version,omitempty"`
+	WasPlaintext         bool   `json:"was_plaintext,omitempty"`
+	BigEmoji             bool   `json:"big_emoji,omitempty"`
+	HasMath              bool   `json:"has_math,omitempty"`
+	EditSource           string `json:"edit_source,omitempty"`
+	ReplyFallbackRemoved bool   `json:"reply_fallback_removed,omitempty"`
+}
+
+func (c *LocalContent) GetReplyFallbackRemoved() bool {
+	return c != nil && c.ReplyFallbackRemoved
 }
 
 type Event struct {
@@ -461,6 +466,7 @@ func (e *Event) Scan(row dbutil.Scannable) (*Event, error) {
 
 var relatesToPath = exgjson.Path("m.relates_to", "event_id")
 var relationTypePath = exgjson.Path("m.relates_to", "rel_type")
+var replyToPath = exgjson.Path("m.relates_to", "m.in_reply_to", "event_id")
 
 func getRelatesToFromEvent(evt *event.Event) (id.EventID, event.RelationType) {
 	if evt.StateKey != nil {
@@ -484,6 +490,18 @@ func getMegolmSessionID(evt *event.Event) id.SessionID {
 	res := gjson.GetBytes(evt.Content.VeryRaw, "session_id")
 	if res.Exists() && res.Type == gjson.String {
 		return id.SessionID(res.Str)
+	}
+	return ""
+}
+
+func (e *Event) GetReplyTo() id.EventID {
+	content := e.Content
+	if e.Decrypted != nil {
+		content = e.Decrypted
+	}
+	result := gjson.GetBytes(content, replyToPath)
+	if result.Type == gjson.String {
+		return id.EventID(result.Str)
 	}
 	return ""
 }
@@ -544,4 +562,11 @@ func (e *Event) CanUseForPreview() bool {
 func (e *Event) BumpsSortingTimestamp() bool {
 	return (e.Type == event.EventMessage.Type || e.Type == event.EventSticker.Type || e.Type == event.EventEncrypted.Type) &&
 		e.RelationType != event.RelReplace
+}
+
+func (e *Event) MarkReplyFallbackRemoved() {
+	if e.LocalContent == nil {
+		e.LocalContent = &LocalContent{}
+	}
+	e.LocalContent.ReplyFallbackRemoved = true
 }

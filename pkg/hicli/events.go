@@ -15,38 +15,58 @@ import (
 )
 
 type SyncRoom struct {
-	Meta          *database.Room                                `json:"meta"`
-	Timeline      []database.TimelineRowTuple                   `json:"timeline"`
-	State         map[event.Type]map[string]database.EventRowID `json:"state"`
-	AccountData   map[event.Type]*database.AccountData          `json:"account_data"`
-	Events        []*database.Event                             `json:"events"`
-	Reset         bool                                          `json:"reset"`
-	Notifications []SyncNotification                            `json:"notifications"`
+	Meta        *database.Room                                `json:"meta"`
+	Timeline    []database.TimelineRowTuple                   `json:"timeline"`
+	State       map[event.Type]map[string]database.EventRowID `json:"state"`
+	AccountData map[event.Type]*database.AccountData          `json:"account_data"`
+	Events      []*database.Event                             `json:"events"`
+	Reset       bool                                          `json:"reset"`
+	Receipts    map[id.EventID][]*database.Receipt            `json:"receipts"`
+
+	DismissNotifications bool               `json:"dismiss_notifications"`
+	Notifications        []SyncNotification `json:"notifications"`
 }
 
 type SyncNotification struct {
-	RowID database.EventRowID `json:"event_rowid"`
-	Sound bool                `json:"sound"`
+	RowID     database.EventRowID `json:"event_rowid"`
+	Sound     bool                `json:"sound"`
+	Highlight bool                `json:"highlight"`
+	Event     *database.Event     `json:"-"`
+	Room      *database.Room      `json:"-"`
 }
 
 type SyncComplete struct {
-	Since       *string                              `json:"since,omitempty"`
-	ClearState  bool                                 `json:"clear_state,omitempty"`
-	Rooms       map[id.RoomID]*SyncRoom              `json:"rooms"`
-	AccountData map[event.Type]*database.AccountData `json:"account_data"`
-	LeftRooms   []id.RoomID                          `json:"left_rooms"`
+	Since          *string                              `json:"since,omitempty"`
+	ClearState     bool                                 `json:"clear_state,omitempty"`
+	AccountData    map[event.Type]*database.AccountData `json:"account_data"`
+	Rooms          map[id.RoomID]*SyncRoom              `json:"rooms"`
+	LeftRooms      []id.RoomID                          `json:"left_rooms"`
+	InvitedRooms   []*database.InvitedRoom              `json:"invited_rooms"`
+	SpaceEdges     map[id.RoomID][]*database.SpaceEdge  `json:"space_edges"`
+	TopLevelSpaces []id.RoomID                          `json:"top_level_spaces"`
+}
+
+func (c *SyncComplete) Notifications(yield func(SyncNotification) bool) {
+	for _, room := range c.Rooms {
+		for _, notif := range room.Notifications {
+			if !yield(notif) {
+				return
+			}
+		}
+	}
 }
 
 func (c *SyncComplete) IsEmpty() bool {
-	return len(c.Rooms) == 0 && len(c.LeftRooms) == 0 && len(c.AccountData) == 0
+	return len(c.Rooms) == 0 && len(c.LeftRooms) == 0 && len(c.InvitedRooms) == 0 && len(c.AccountData) == 0
 }
 
 type SyncStatusType string
 
 const (
-	SyncStatusOK      SyncStatusType = "ok"
-	SyncStatusWaiting SyncStatusType = "waiting"
-	SyncStatusErrored SyncStatusType = "errored"
+	SyncStatusOK       SyncStatusType = "ok"
+	SyncStatusWaiting  SyncStatusType = "waiting"
+	SyncStatusErroring SyncStatusType = "erroring"
+	SyncStatusFailed   SyncStatusType = "permanently-failed"
 )
 
 type SyncStatus struct {

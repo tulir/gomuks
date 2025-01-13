@@ -24,20 +24,26 @@ const noop = (name: string) => () => {
 }
 
 export class RoomContextData {
-	public timelineBottomRef: RefObject<HTMLDivElement | null> = createRef()
+	public readonly timelineBottomRef: RefObject<HTMLDivElement | null> = createRef()
 	public setReplyTo: (eventID: EventID | null) => void = noop("setReplyTo")
 	public setEditing: (evt: MemDBEvent | null) => void = noop("setEditing")
 	public insertText: (text: string) => void = noop("insertText")
-	public isEditing = new NonNullCachedEventDispatcher<boolean>(false)
-	public ownMessages: EventRowID[] = []
+	public directSetFocusedEventRowID: (eventRowID: EventRowID | null) => void = noop("setFocusedEventRowID")
+	public focusedEventRowID: EventRowID | null = null
+	public readonly isEditing = new NonNullCachedEventDispatcher<boolean>(false)
 	public scrolledToBottom = true
 
 	constructor(public store: RoomStateStore) {}
 
-	scrollToBottom() {
+	scrollToBottom = () => {
 		if (this.scrolledToBottom) {
 			this.timelineBottomRef.current?.scrollIntoView()
 		}
+	}
+
+	setFocusedEventRowID = (eventRowID: number | null) => {
+		this.directSetFocusedEventRowID(eventRowID)
+		this.focusedEventRowID = eventRowID
 	}
 
 	appendMentionToComposer = (evt: React.MouseEvent<HTMLSpanElement>) => {

@@ -17,7 +17,7 @@ import React, { CSSProperties, JSX, use } from "react"
 import { getEncryptedMediaURL, getMediaURL } from "@/api/media.ts"
 import type { EventType, MediaMessageEventContent } from "@/api/types"
 import { ImageContainerSize, calculateMediaSize, defaultVideoContainerSize } from "@/util/mediasize.ts"
-import { LightboxContext } from "../../modal/Lightbox.tsx"
+import { LightboxContext } from "../../modal"
 import DownloadIcon from "@/icons/download.svg?react"
 
 export const useMediaContent = (
@@ -29,7 +29,7 @@ export const useMediaContent = (
 	const mediaURL = content.file?.url ? getEncryptedMediaURL(content.file.url) : getMediaURL(content.url)
 	const thumbnailURL = content.info?.thumbnail_file?.url
 		? getEncryptedMediaURL(content.info.thumbnail_file.url) : getMediaURL(content.info?.thumbnail_url)
-	if (content.msgtype === "m.image" || evtType === "m.sticker") {
+	if (content.msgtype === "m.image" || content.msgtype === "m.sticker" || evtType === "m.sticker") {
 		const style = calculateMediaSize(content.info?.w, content.info?.h, containerSize)
 		return [<img
 			onLoad={onLoad}

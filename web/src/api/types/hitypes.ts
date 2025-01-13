@@ -22,6 +22,7 @@ import {
 	EventID,
 	EventType,
 	LazyLoadSummary,
+	ReceiptType,
 	RelationType,
 	RoomAlias,
 	RoomID,
@@ -53,6 +54,7 @@ export interface DBRoom {
 	name_quality: RoomNameQuality
 	avatar?: ContentURI
 	explicit_avatar: boolean
+	dm_user_id?: UserID
 	topic?: string
 	canonical_alias?: RoomAlias
 	lazy_load_summary?: LazyLoadSummary
@@ -70,8 +72,33 @@ export interface DBRoom {
 	prev_batch: string
 }
 
+export interface DBSpaceEdge {
+	// space_id: RoomID
+	child_id: RoomID
+
+	child_event_rowid?: EventRowID
+	order?: string
+	suggested?: true
+
+	parent_event_rowid?: EventRowID
+	canonical?: true
+}
+
 //eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type UnknownEventContent = Record<string, any>
+
+export interface StrippedStateEvent {
+	type: EventType
+	sender: UserID
+	state_key: string
+	content: UnknownEventContent
+}
+
+export interface DBInvitedRoom {
+	room_id: RoomID
+	created_at: number
+	invite_state: StrippedStateEvent[]
+}
 
 export enum UnreadType {
 	None = 0b0000,
@@ -145,8 +172,23 @@ export interface DBRoomAccountData {
 	content: UnknownEventContent
 }
 
+export interface DBReceipt {
+	user_id: UserID
+	receipt_type: ReceiptType
+	thread_id?: EventID | "main"
+	event_id: EventID
+	timestamp: number
+}
+
+export interface MemReceipt extends DBReceipt {
+	event_rowid: EventRowID
+	timeline_rowid: TimelineRowID
+}
+
 export interface PaginationResponse {
 	events: RawDBEvent[]
+	receipts: Record<EventID, DBReceipt[]>
+	related_events: RawDBEvent[]
 	has_more: boolean
 }
 
@@ -241,4 +283,12 @@ export interface ProfileEncryptionInfo {
 	first_master_key: string
 	user_trusted: boolean
 	errors: string[]
+}
+
+export interface DBPushRegistration {
+	device_id: string
+	type: "fcm"
+	data: unknown
+	encryption: { key: string }
+	expiration?: number
 }

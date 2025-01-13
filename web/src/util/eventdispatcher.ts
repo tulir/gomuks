@@ -15,12 +15,15 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import { useSyncExternalStore } from "react"
 
+const noop = () => {}
+const noopListen = () => noop
+
 export function useEventAsState<T>(dispatcher: NonNullCachedEventDispatcher<T>): T
-export function useEventAsState<T>(dispatcher: CachedEventDispatcher<T>): T | null
-export function useEventAsState<T>(dispatcher: CachedEventDispatcher<T>): T | null {
+export function useEventAsState<T>(dispatcher?: CachedEventDispatcher<T>): T | null
+export function useEventAsState<T>(dispatcher?: CachedEventDispatcher<T>): T | null {
 	return useSyncExternalStore(
-		dispatcher.listenChange,
-		() => dispatcher.current,
+		dispatcher ? dispatcher.listenChange : noopListen,
+		() => dispatcher ? dispatcher.current : null,
 	)
 }
 

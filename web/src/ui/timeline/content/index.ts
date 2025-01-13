@@ -1,5 +1,5 @@
 import React from "react"
-import { MemDBEvent } from "@/api/types"
+import { BeeperPerMessageProfile, MemDBEvent, MessageEventContent } from "@/api/types"
 import ACLBody from "./ACLBody.tsx"
 import EncryptedBody from "./EncryptedBody.tsx"
 import HiddenEvent from "./HiddenEvent.tsx"
@@ -7,6 +7,7 @@ import LocationMessageBody from "./LocationMessageBody.tsx"
 import MediaMessageBody from "./MediaMessageBody.tsx"
 import MemberBody from "./MemberBody.tsx"
 import PinnedEventsBody from "./PinnedEventsBody.tsx"
+import PolicyRuleBody from "./PolicyRuleBody.tsx"
 import PowerLevelBody from "./PowerLevelBody.tsx"
 import RedactedBody from "./RedactedBody.tsx"
 import RoomAvatarBody from "./RoomAvatarBody.tsx"
@@ -24,6 +25,7 @@ export { default as MediaMessageBody } from "./MediaMessageBody.tsx"
 export { default as LocationMessageBody } from "./LocationMessageBody.tsx"
 export { default as MemberBody } from "./MemberBody.tsx"
 export { default as PinnedEventsBody } from "./PinnedEventsBody.tsx"
+export { default as PolicyRuleBody } from "./PolicyRuleBody.tsx"
 export { default as PowerLevelBody } from "./PowerLevelBody.tsx"
 export { default as RedactedBody } from "./RedactedBody.tsx"
 export { default as RoomAvatarBody } from "./RoomAvatarBody.tsx"
@@ -55,6 +57,9 @@ export function getBodyType(evt: MemDBEvent, forReply = false): React.FunctionCo
 			}
 			return MediaMessageBody
 		case "m.location":
+			if (forReply) {
+				return TextMessageBody
+			}
 			return LocationMessageBody
 		default:
 			return UnknownMessageBody
@@ -79,6 +84,12 @@ export function getBodyType(evt: MemDBEvent, forReply = false): React.FunctionCo
 		return RoomAvatarBody
 	case "m.room.server_acl":
 		return ACLBody
+	case "m.policy.rule.user":
+		return PolicyRuleBody
+	case "m.policy.rule.room":
+		return PolicyRuleBody
+	case "m.policy.rule.server":
+		return PolicyRuleBody
 	case "m.room.pinned_events":
 		return PinnedEventsBody
 	case "m.room.power_levels":
@@ -94,10 +105,18 @@ export function isSmallEvent(bodyType: React.FunctionComponent<EventContentProps
 	case RoomNameBody:
 	case RoomAvatarBody:
 	case ACLBody:
+	case PolicyRuleBody:
 	case PinnedEventsBody:
 	case PowerLevelBody:
 		return true
 	default:
 		return false
 	}
+}
+
+export function getPerMessageProfile(evt: MemDBEvent | null): BeeperPerMessageProfile | undefined {
+	if (evt === null || evt.type !== "m.room.message" && evt.type !== "m.sticker") {
+		return undefined
+	}
+	return (evt.content as MessageEventContent)["com.beeper.per_message_profile"]
 }

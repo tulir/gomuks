@@ -13,17 +13,17 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import React, { CSSProperties, use, useCallback, useEffect, useState } from "react"
+import React, { CSSProperties, use, useEffect, useState } from "react"
 import { RoomStateStore, usePreference } from "@/api/statestore"
 import { MediaMessageEventContent } from "@/api/types"
 import { isMobileDevice } from "@/util/ismobile.ts"
 import ClientContext from "../ClientContext.ts"
-import { ModalCloseContext } from "../modal/Modal.tsx"
+import { ModalCloseContext } from "../modal"
 import { GIF, getTrendingGIFs, searchGIF } from "./gifsource.ts"
 import CloseIcon from "@/icons/close.svg?react"
 import SearchIcon from "@/icons/search.svg?react"
 
-interface GIFPickerProps {
+export interface MediaPickerProps {
 	style: CSSProperties
 	onSelect: (media: MediaMessageEventContent) => void
 	room: RoomStateStore
@@ -31,18 +31,16 @@ interface GIFPickerProps {
 
 const trendingCache = new Map<string, GIF[]>()
 
-const GIFPicker = ({ style, onSelect, room }: GIFPickerProps) => {
+const GIFPicker = ({ style, onSelect, room }: MediaPickerProps) => {
 	const [query, setQuery] = useState("")
 	const [results, setResults] = useState<GIF[]>([])
 	const [error, setError] = useState<unknown>()
 	const close = use(ModalCloseContext)
-	const clearQuery = useCallback(() => setQuery(""), [])
-	const onChangeQuery = useCallback((evt: React.ChangeEvent<HTMLInputElement>) => setQuery(evt.target.value), [])
 	const client = use(ClientContext)!
 	const provider = usePreference(client.store, room, "gif_provider")
 	const providerName = provider.slice(0, 1).toUpperCase() + provider.slice(1)
 	// const reuploadGIFs = room.preferences.reupload_gifs
-	const onSelectGIF = useCallback((evt: React.MouseEvent<HTMLDivElement>) => {
+	const onSelectGIF = (evt: React.MouseEvent<HTMLDivElement>) => {
 		const idx = evt.currentTarget.getAttribute("data-gif-index")
 		if (!idx) {
 			return
@@ -64,7 +62,7 @@ const GIFPicker = ({ style, onSelect, room }: GIFPickerProps) => {
 			url: gif.proxied_mxc,
 		})
 		close()
-	}, [onSelect, close, results])
+	}
 	useEffect(() => {
 		if (!query) {
 			if (trendingCache.has(provider)) {
@@ -106,12 +104,12 @@ const GIFPicker = ({ style, onSelect, room }: GIFPickerProps) => {
 		<div className="gif-search">
 			<input
 				autoFocus={!isMobileDevice}
-				onChange={onChangeQuery}
+				onChange={evt => setQuery(evt.target.value)}
 				value={query}
 				type="search"
 				placeholder={`Search ${providerName}`}
 			/>
-			<button onClick={clearQuery} disabled={query === ""}>
+			<button onClick={() => setQuery("")} disabled={query === ""}>
 				{query !== "" ? <CloseIcon/> : <SearchIcon/>}
 			</button>
 		</div>
