@@ -118,5 +118,13 @@ export function getPerMessageProfile(evt: MemDBEvent | null): BeeperPerMessagePr
 	if (evt === null || evt.type !== "m.room.message" && evt.type !== "m.sticker") {
 		return undefined
 	}
-	return (evt.content as MessageEventContent)["com.beeper.per_message_profile"]
+	const profile = (evt.content as MessageEventContent)["com.beeper.per_message_profile"]
+	if (profile?.displayname && typeof profile.displayname !== "string") {
+		return undefined
+	} else if (profile?.avatar_url && typeof profile.avatar_url !== "string") {
+		return undefined
+	} else if (profile?.id && typeof profile.id !== "string") {
+		return undefined
+	}
+	return profile
 }

@@ -201,6 +201,10 @@ func (h *HiClient) handleJSONCommand(ctx context.Context, req *JSONCommand) (any
 			}
 			return cli.GetLoginFlows(ctx)
 		})
+	case "register_push":
+		return unmarshalAndCall(req.Data, func(params *database.PushRegistration) (bool, error) {
+			return true, h.DB.PushRegistration.Put(ctx, params)
+		})
 	default:
 		return nil, fmt.Errorf("unknown command %q", req.Command)
 	}

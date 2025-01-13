@@ -724,8 +724,11 @@ func (h *HiClient) processStateAndTimeline(
 		if isUnread {
 			if dbEvt.UnreadType.Is(database.UnreadTypeNotify) && h.firstSyncReceived {
 				newNotifications = append(newNotifications, SyncNotification{
-					RowID: dbEvt.RowID,
-					Sound: dbEvt.UnreadType.Is(database.UnreadTypeSound),
+					RowID:     dbEvt.RowID,
+					Sound:     dbEvt.UnreadType.Is(database.UnreadTypeSound),
+					Highlight: dbEvt.UnreadType.Is(database.UnreadTypeHighlight),
+					Event:     dbEvt,
+					Room:      room,
 				})
 			}
 			newUnreadCounts.AddOne(dbEvt.UnreadType)
@@ -924,6 +927,7 @@ func (h *HiClient) processStateAndTimeline(
 	} else {
 		updatedRoom.UnreadCounts.Add(newUnreadCounts)
 	}
+	dismissNotifications := room.UnreadNotifications > 0 && updatedRoom.UnreadNotifications == 0 && len(newNotifications) == 0
 	if timeline.PrevBatch != "" && (room.PrevBatch == "" || timeline.Limited) {
 		updatedRoom.PrevBatch = timeline.PrevBatch
 	}
@@ -944,14 +948,16 @@ func (h *HiClient) processStateAndTimeline(
 			receipt.RoomID = ""
 		}
 		ctx.Value(syncContextKey).(*syncContext).evt.Rooms[room.ID] = &SyncRoom{
-			Meta:          room,
-			Timeline:      timelineRowTuples,
-			AccountData:   accountData,
-			State:         changedState,
-			Reset:         timeline.Limited,
-			Events:        allNewEvents,
-			Notifications: newNotifications,
-			Receipts:      receiptMap,
+			Meta:        room,
+			Timeline:    timelineRowTuples,
+			AccountData: accountData,
+			State:       changedState,
+			Reset:       timeline.Limited,
+			Events:      allNewEvents,
+			Receipts:    receiptMap,
+
+			Notifications:        newNotifications,
+			DismissNotifications: dismissNotifications,
 		}
 	}
 	return nil

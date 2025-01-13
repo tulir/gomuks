@@ -34,11 +34,16 @@ import (
 type Config struct {
 	Web     WebConfig         `yaml:"web"`
 	Matrix  MatrixConfig      `yaml:"matrix"`
+	Push    PushConfig        `yaml:"push"`
 	Logging zeroconfig.Config `yaml:"logging"`
 }
 
 type MatrixConfig struct {
 	DisableHTTP2 bool `yaml:"disable_http2"`
+}
+
+type PushConfig struct {
+	FCMGateway string `yaml:"fcm_gateway"`
 }
 
 type WebConfig struct {
@@ -119,6 +124,10 @@ func (gmx *Gomuks) LoadConfig() error {
 	}
 	if gmx.Config.Web.EventBufferSize <= 0 {
 		gmx.Config.Web.EventBufferSize = 512
+		changed = true
+	}
+	if gmx.Config.Push.FCMGateway == "" {
+		gmx.Config.Push.FCMGateway = "https://push.gomuks.app"
 		changed = true
 	}
 	if len(gmx.Config.Web.OriginPatterns) == 0 {

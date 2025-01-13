@@ -15,19 +15,24 @@ import (
 )
 
 type SyncRoom struct {
-	Meta          *database.Room                                `json:"meta"`
-	Timeline      []database.TimelineRowTuple                   `json:"timeline"`
-	State         map[event.Type]map[string]database.EventRowID `json:"state"`
-	AccountData   map[event.Type]*database.AccountData          `json:"account_data"`
-	Events        []*database.Event                             `json:"events"`
-	Reset         bool                                          `json:"reset"`
-	Notifications []SyncNotification                            `json:"notifications"`
-	Receipts      map[id.EventID][]*database.Receipt            `json:"receipts"`
+	Meta        *database.Room                                `json:"meta"`
+	Timeline    []database.TimelineRowTuple                   `json:"timeline"`
+	State       map[event.Type]map[string]database.EventRowID `json:"state"`
+	AccountData map[event.Type]*database.AccountData          `json:"account_data"`
+	Events      []*database.Event                             `json:"events"`
+	Reset       bool                                          `json:"reset"`
+	Receipts    map[id.EventID][]*database.Receipt            `json:"receipts"`
+
+	DismissNotifications bool               `json:"dismiss_notifications"`
+	Notifications        []SyncNotification `json:"notifications"`
 }
 
 type SyncNotification struct {
-	RowID database.EventRowID `json:"event_rowid"`
-	Sound bool                `json:"sound"`
+	RowID     database.EventRowID `json:"event_rowid"`
+	Sound     bool                `json:"sound"`
+	Highlight bool                `json:"highlight"`
+	Event     *database.Event     `json:"-"`
+	Room      *database.Room      `json:"-"`
 }
 
 type SyncComplete struct {
@@ -39,6 +44,16 @@ type SyncComplete struct {
 	InvitedRooms   []*database.InvitedRoom              `json:"invited_rooms"`
 	SpaceEdges     map[id.RoomID][]*database.SpaceEdge  `json:"space_edges"`
 	TopLevelSpaces []id.RoomID                          `json:"top_level_spaces"`
+}
+
+func (c *SyncComplete) Notifications(yield func(SyncNotification) bool) {
+	for _, room := range c.Rooms {
+		for _, notif := range room.Notifications {
+			if !yield(notif) {
+				return
+			}
+		}
+	}
 }
 
 func (c *SyncComplete) IsEmpty() bool {

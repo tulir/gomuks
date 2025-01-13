@@ -17,17 +17,18 @@ import (
 type Database struct {
 	*dbutil.Database
 
-	Account        *AccountQuery
-	AccountData    *AccountDataQuery
-	Room           *RoomQuery
-	InvitedRoom    *InvitedRoomQuery
-	Event          *EventQuery
-	CurrentState   *CurrentStateQuery
-	Timeline       *TimelineQuery
-	SessionRequest *SessionRequestQuery
-	Receipt        *ReceiptQuery
-	Media          *MediaQuery
-	SpaceEdge      *SpaceEdgeQuery
+	Account          *AccountQuery
+	AccountData      *AccountDataQuery
+	Room             *RoomQuery
+	InvitedRoom      *InvitedRoomQuery
+	Event            *EventQuery
+	CurrentState     *CurrentStateQuery
+	Timeline         *TimelineQuery
+	SessionRequest   *SessionRequestQuery
+	Receipt          *ReceiptQuery
+	Media            *MediaQuery
+	SpaceEdge        *SpaceEdgeQuery
+	PushRegistration *PushRegistrationQuery
 }
 
 func New(rawDB *dbutil.Database) *Database {
@@ -36,17 +37,18 @@ func New(rawDB *dbutil.Database) *Database {
 	return &Database{
 		Database: rawDB,
 
-		Account:        &AccountQuery{QueryHelper: dbutil.MakeQueryHelper(rawDB, newAccount)},
-		AccountData:    &AccountDataQuery{QueryHelper: dbutil.MakeQueryHelper(rawDB, newAccountData)},
-		Room:           &RoomQuery{QueryHelper: dbutil.MakeQueryHelper(rawDB, newRoom)},
-		InvitedRoom:    &InvitedRoomQuery{QueryHelper: dbutil.MakeQueryHelper(rawDB, newInvitedRoom)},
-		Event:          &EventQuery{QueryHelper: eventQH},
-		CurrentState:   &CurrentStateQuery{QueryHelper: eventQH},
-		Timeline:       &TimelineQuery{QueryHelper: eventQH},
-		SessionRequest: &SessionRequestQuery{QueryHelper: dbutil.MakeQueryHelper(rawDB, newSessionRequest)},
-		Receipt:        &ReceiptQuery{QueryHelper: dbutil.MakeQueryHelper(rawDB, newReceipt)},
-		Media:          &MediaQuery{QueryHelper: dbutil.MakeQueryHelper(rawDB, newMedia)},
-		SpaceEdge:      &SpaceEdgeQuery{QueryHelper: dbutil.MakeQueryHelper(rawDB, newSpaceEdge)},
+		Account:          &AccountQuery{QueryHelper: dbutil.MakeQueryHelper(rawDB, newAccount)},
+		AccountData:      &AccountDataQuery{QueryHelper: dbutil.MakeQueryHelper(rawDB, newAccountData)},
+		Room:             &RoomQuery{QueryHelper: dbutil.MakeQueryHelper(rawDB, newRoom)},
+		InvitedRoom:      &InvitedRoomQuery{QueryHelper: dbutil.MakeQueryHelper(rawDB, newInvitedRoom)},
+		Event:            &EventQuery{QueryHelper: eventQH},
+		CurrentState:     &CurrentStateQuery{QueryHelper: eventQH},
+		Timeline:         &TimelineQuery{QueryHelper: eventQH},
+		SessionRequest:   &SessionRequestQuery{QueryHelper: dbutil.MakeQueryHelper(rawDB, newSessionRequest)},
+		Receipt:          &ReceiptQuery{QueryHelper: dbutil.MakeQueryHelper(rawDB, newReceipt)},
+		Media:            &MediaQuery{QueryHelper: dbutil.MakeQueryHelper(rawDB, newMedia)},
+		SpaceEdge:        &SpaceEdgeQuery{QueryHelper: dbutil.MakeQueryHelper(rawDB, newSpaceEdge)},
+		PushRegistration: &PushRegistrationQuery{QueryHelper: dbutil.MakeQueryHelper(rawDB, newPushRegistration)},
 	}
 }
 
@@ -84,4 +86,8 @@ func newAccount(_ *dbutil.QueryHelper[*Account]) *Account {
 
 func newSpaceEdge(_ *dbutil.QueryHelper[*SpaceEdge]) *SpaceEdge {
 	return &SpaceEdge{}
+}
+
+func newPushRegistration(_ *dbutil.QueryHelper[*PushRegistration]) *PushRegistration {
+	return &PushRegistration{}
 }

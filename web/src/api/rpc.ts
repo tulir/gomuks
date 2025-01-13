@@ -17,6 +17,7 @@ import { CachedEventDispatcher, EventDispatcher } from "../util/eventdispatcher.
 import { CancellablePromise } from "../util/promise.ts"
 import type {
 	ClientWellKnown,
+	DBPushRegistration,
 	EventID,
 	EventRowID,
 	EventType,
@@ -266,5 +267,9 @@ export default abstract class RPCClient {
 
 	requestOpenIDToken(): Promise<RespOpenIDToken> {
 		return this.request("request_openid_token", {})
+	}
+
+	registerPush(reg: DBPushRegistration): Promise<boolean> {
+		return this.request("register_push", reg)
 	}
 }

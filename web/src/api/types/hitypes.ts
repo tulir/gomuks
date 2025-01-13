@@ -284,3 +284,11 @@ export interface ProfileEncryptionInfo {
 	user_trusted: boolean
 	errors: string[]
 }
+
+export interface DBPushRegistration {
+	device_id: string
+	type: "fcm"
+	data: unknown
+	encryption: { key: string }
+	expiration?: number
+}
