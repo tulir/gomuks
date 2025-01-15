@@ -20,12 +20,13 @@ import { MemDBEvent } from "@/api/types"
 import { ModalCloseContext, ModalContext } from "../../modal"
 import { RoomContext, RoomContextData } from "../../roomview/roomcontext.ts"
 import JSONView from "../../util/JSONView.tsx"
-import ConfirmWithMessageModal from "./ConfirmWithMessageModal.tsx"
+import { ConfirmWithMessageModal, ConfirmWithoutMessageModal } from "./ConfirmWithMessageModal.tsx"
 import { getPending, getPowerLevels } from "./util.ts"
 import ViewSourceIcon from "@/icons/code.svg?react"
 import DeleteIcon from "@/icons/delete.svg?react"
 import PinIcon from "@/icons/pin.svg?react"
 import ReportIcon from "@/icons/report.svg?react"
+import ShareIcon from "@/icons/share.svg?react"
 import UnpinIcon from "@/icons/unpin.svg?react"
 
 export const useSecondaryItems = (
@@ -89,6 +90,26 @@ export const useSecondaryItems = (
 			.catch(err => window.alert(`Failed to ${pin ? "pin" : "unpin"} message: ${err}`))
 	}
 
+	const onClickShareEvent = () => {
+		openModal({
+			dimmed: true,
+			boxed: true,
+			innerBoxClass: "confirm-message-modal",
+			content: <RoomContext value={roomCtx}>
+				<ConfirmWithoutMessageModal
+					evt={evt}
+					title="Share Message"
+					description="Copy a share link to the clipboard?"
+					confirmButton="Share"
+					onConfirm={() => {navigator.clipboard.writeText(
+						`matrix:roomid/${evt.room_id.slice(1)}/e/${evt.event_id.slice(1)}`)
+						.catch(err => window.alert(`Failed to copy link: ${err}`))
+					}}
+				/>
+			</RoomContext>,
+		})
+	}
+
 	const [isPending, pendingTitle] = getPending(evt)
 	useRoomState(roomCtx.store, "m.room.power_levels", "")
 	// We get pins from getPinnedEvents, but use the hook anyway to subscribe to changes
@@ -104,6 +125,7 @@ export const useSecondaryItems = (
 
 	return <>
 		<button onClick={onClickViewSource}><ViewSourceIcon/>{names && "View source"}</button>
+		<button onClick={onClickShareEvent}><ShareIcon/>{names && "Share"}</button>
 		{ownPL >= pinPL && (pins.includes(evt.event_id)
 			? <button onClick={onClickPin(false)}>
 				<UnpinIcon/>{names && "Unpin message"}
