@@ -17,10 +17,11 @@ import { use } from "react"
 import Client from "@/api/client.ts"
 import { useRoomState } from "@/api/statestore"
 import { MemDBEvent } from "@/api/types"
+import ShareModal from "@/ui/timeline/menu/ShareModal.tsx"
 import { ModalCloseContext, ModalContext } from "../../modal"
 import { RoomContext, RoomContextData } from "../../roomview/roomcontext.ts"
 import JSONView from "../../util/JSONView.tsx"
-import { ConfirmWithMessageModal, ConfirmWithoutMessageModal } from "./ConfirmWithMessageModal.tsx"
+import ConfirmWithMessageModal from "./ConfirmWithMessageModal.tsx"
 import { getPending, getPowerLevels } from "./util.ts"
 import ViewSourceIcon from "@/icons/code.svg?react"
 import DeleteIcon from "@/icons/delete.svg?react"
@@ -91,20 +92,38 @@ export const useSecondaryItems = (
 	}
 
 	const onClickShareEvent = () => {
+		const generateLink = (useMatrixTo: boolean, includeEvent: boolean) => {
+			let generatedUrl = useMatrixTo ? "https://matrix.to/#/" : "matrix:roomid/"
+			if(useMatrixTo) {
+				generatedUrl += evt.room_id
+			} else {
+				generatedUrl += `!${evt.room_id.slice(1)}`
+			}
+			if(includeEvent) {
+				if(useMatrixTo) {
+					generatedUrl += `/${evt.event_id}`
+				}
+				else {
+					generatedUrl += `/e/${evt.event_id.slice(1)}`
+				}
+			}
+			return generatedUrl
+		}
 		openModal({
 			dimmed: true,
 			boxed: true,
 			innerBoxClass: "confirm-message-modal",
 			content: <RoomContext value={roomCtx}>
-				<ConfirmWithoutMessageModal
+				<ShareModal
 					evt={evt}
 					title="Share Message"
-					description="Copy a share link to the clipboard?"
-					confirmButton="Share"
-					onConfirm={() => {navigator.clipboard.writeText(
-						`matrix:roomid/${evt.room_id.slice(1)}/e/${evt.event_id.slice(1)}`)
-						.catch(err => window.alert(`Failed to copy link: ${err}`))
+					confirmButton="Copy to clipboard"
+					onConfirm={(useMatrixTo: boolean, includeEvent: boolean) => {
+						navigator.clipboard.writeText(generateLink(useMatrixTo, includeEvent)).catch(
+							err => window.alert(`Failed to copy link: ${err}`),
+						)
 					}}
+					generateLink={generateLink}
 				/>
 			</RoomContext>,
 		})

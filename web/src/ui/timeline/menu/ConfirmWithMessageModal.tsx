@@ -28,7 +28,7 @@ interface ConfirmWithMessageProps {
 	onConfirm: (reason: string) => void
 }
 
-export const ConfirmWithMessageModal = ({
+const ConfirmWithMessageModal = ({
 	evt, title, description, placeholder, confirmButton, onConfirm,
 }: ConfirmWithMessageProps) => {
 	const [reason, setReason] = useState("")
@@ -53,30 +53,6 @@ export const ConfirmWithMessageModal = ({
 			placeholder={placeholder}
 			onChange={evt => setReason(evt.target.value)}
 		/>
-		<div className="confirm-buttons">
-			<button type="button" onClick={closeModal}>Cancel</button>
-			<button type="submit">{confirmButton}</button>
-		</div>
-	</form>
-}
-
-export const ConfirmWithoutMessageModal = ({
-	evt, title, description, confirmButton, onConfirm,
-}: Omit<ConfirmWithMessageProps, "placeholder">) => {
-	const closeModal = use(ModalCloseContext)
-	const onConfirmWrapped = (evt: React.FormEvent) => {
-		evt.preventDefault()
-		closeModal()
-		onConfirm("")
-	}
-	return <form onSubmit={onConfirmWrapped}>
-		<h3>{title}</h3>
-		<div className="timeline-event-container">
-			<TimelineEvent evt={evt} prevEvt={null} disableMenu={true}/>
-		</div>
-		<div className="confirm-description">
-			{description}
-		</div>
 		<div className="confirm-buttons">
 			<button type="button" onClick={closeModal}>Cancel</button>
 			<button type="submit">{confirmButton}</button>
