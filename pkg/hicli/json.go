@@ -42,6 +42,8 @@ func EventTypeName(evt any) string {
 		return "send_complete"
 	case *ClientState:
 		return "client_state"
+	case UpdatePresence:
+		return "update_presence"
 	default:
 		panic(fmt.Errorf("unknown event type %T", evt))
 	}

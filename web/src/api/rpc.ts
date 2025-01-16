@@ -27,6 +27,7 @@ import type {
 	Mentions,
 	MessageEventContent,
 	PaginationResponse,
+	Presence,
 	ProfileEncryptionInfo,
 	RPCCommand,
 	RPCEvent,
@@ -185,6 +186,14 @@ export default abstract class RPCClient {
 
 	setProfileField(field: string, value: JSONValue): Promise<boolean> {
 		return this.request("set_profile_field", { field, value })
+	}
+
+	getPresence(user_id: UserID): Promise<Presence> {
+		return this.request("get_presence", { user_id })
+	}
+
+	setPresence(presence: Presence): Promise<boolean> {
+		return this.request("set_presence", presence)
 	}
 
 	getMutualRooms(user_id: UserID): Promise<RoomID[]> {

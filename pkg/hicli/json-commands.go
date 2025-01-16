@@ -21,6 +21,11 @@ import (
 	"go.mau.fi/gomuks/pkg/hicli/database"
 )
 
+type SetPresenceParams struct {
+	Presence  event.Presence `json:"presence"`
+	StatusMsg string         `json:"status_msg,omitempty"`
+}
+
 func (h *HiClient) handleJSONCommand(ctx context.Context, req *JSONCommand) (any, error) {
 	switch req.Command {
 	case "get_state":
@@ -89,6 +94,14 @@ func (h *HiClient) handleJSONCommand(ctx context.Context, req *JSONCommand) (any
 	case "set_profile_field":
 		return unmarshalAndCall(req.Data, func(params *setProfileFieldParams) (bool, error) {
 			return true, h.Client.UnstableSetProfileField(ctx, params.Field, params.Value)
+		})
+	case "get_presence":
+		return unmarshalAndCall(req.Data, func(params *getProfileParams) (*mautrix.RespPresence, error) {
+			return h.Client.GetPresence(ctx, params.UserID)
+		})
+	case "set_presence":
+		return unmarshalAndCall(req.Data, func(params *mautrix.ReqPresence) (bool, error) {
+			return true, h.Client.SetPresence(ctx, *params)
 		})
 	case "get_mutual_rooms":
 		return unmarshalAndCall(req.Data, func(params *getProfileParams) ([]id.RoomID, error) {

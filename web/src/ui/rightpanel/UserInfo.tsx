@@ -26,6 +26,7 @@ import UserExtendedProfile from "./UserExtendedProfile.tsx"
 import DeviceList from "./UserInfoDeviceList.tsx"
 import UserInfoError from "./UserInfoError.tsx"
 import MutualRooms from "./UserInfoMutualRooms.tsx"
+import { UserPresence } from "./UserPresence.tsx"
 
 interface UserInfoProps {
 	userID: UserID
@@ -67,6 +68,7 @@ const UserInfo = ({ userID }: UserInfoProps) => {
 		</div>
 		<div className="displayname" title={displayname}>{displayname}</div>
 		<div className="userid" title={userID}>{userID}</div>
+		<UserPresence client={client} userID={userID}/>
 		{globalProfile && <UserExtendedProfile
 			profile={globalProfile} refreshProfile={refreshProfile} client={client} userID={userID}
 		/>}
