@@ -166,7 +166,7 @@ const MessageComposer = () => {
 	const canSend = Boolean(state.text || state.media || state.location)
 	const onClickSend = (evt: React.FormEvent) => {
 		evt.preventDefault()
-		if (!canSend) {
+		if (!canSend || loadingMedia) {
 			return
 		}
 		doSendMessage(state)
