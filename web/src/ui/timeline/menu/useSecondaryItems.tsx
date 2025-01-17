@@ -97,7 +97,7 @@ export const useSecondaryItems = (
 			if(useMatrixTo) {
 				generatedUrl += evt.room_id
 			} else {
-				generatedUrl += `!${evt.room_id.slice(1)}`
+				generatedUrl += `${evt.room_id.slice(1)}`
 			}
 			if(includeEvent) {
 				if(useMatrixTo) {
