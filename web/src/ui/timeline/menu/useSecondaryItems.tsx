@@ -17,6 +17,7 @@ import { use } from "react"
 import Client from "@/api/client.ts"
 import { useRoomState } from "@/api/statestore"
 import { MemDBEvent } from "@/api/types"
+import ShareModal from "@/ui/timeline/menu/ShareModal.tsx"
 import { ModalCloseContext, ModalContext } from "../../modal"
 import { RoomContext, RoomContextData } from "../../roomview/roomcontext.ts"
 import JSONView from "../../util/JSONView.tsx"
@@ -26,6 +27,7 @@ import ViewSourceIcon from "@/icons/code.svg?react"
 import DeleteIcon from "@/icons/delete.svg?react"
 import PinIcon from "@/icons/pin.svg?react"
 import ReportIcon from "@/icons/report.svg?react"
+import ShareIcon from "@/icons/share.svg?react"
 import UnpinIcon from "@/icons/unpin.svg?react"
 
 export const useSecondaryItems = (
@@ -89,6 +91,44 @@ export const useSecondaryItems = (
 			.catch(err => window.alert(`Failed to ${pin ? "pin" : "unpin"} message: ${err}`))
 	}
 
+	const onClickShareEvent = () => {
+		const generateLink = (useMatrixTo: boolean, includeEvent: boolean) => {
+			let generatedUrl = useMatrixTo ? "https://matrix.to/#/" : "matrix:roomid/"
+			if(useMatrixTo) {
+				generatedUrl += evt.room_id
+			} else {
+				generatedUrl += `${evt.room_id.slice(1)}`
+			}
+			if(includeEvent) {
+				if(useMatrixTo) {
+					generatedUrl += `/${evt.event_id}`
+				}
+				else {
+					generatedUrl += `/e/${evt.event_id.slice(1)}`
+				}
+			}
+			return generatedUrl
+		}
+		openModal({
+			dimmed: true,
+			boxed: true,
+			innerBoxClass: "confirm-message-modal",
+			content: <RoomContext value={roomCtx}>
+				<ShareModal
+					evt={evt}
+					title="Share Message"
+					confirmButton="Copy to clipboard"
+					onConfirm={(useMatrixTo: boolean, includeEvent: boolean) => {
+						navigator.clipboard.writeText(generateLink(useMatrixTo, includeEvent)).catch(
+							err => window.alert(`Failed to copy link: ${err}`),
+						)
+					}}
+					generateLink={generateLink}
+				/>
+			</RoomContext>,
+		})
+	}
+
 	const [isPending, pendingTitle] = getPending(evt)
 	useRoomState(roomCtx.store, "m.room.power_levels", "")
 	// We get pins from getPinnedEvents, but use the hook anyway to subscribe to changes
@@ -104,6 +144,7 @@ export const useSecondaryItems = (
 
 	return <>
 		<button onClick={onClickViewSource}><ViewSourceIcon/>{names && "View source"}</button>
+		<button onClick={onClickShareEvent}><ShareIcon/>{names && "Share"}</button>
 		{ownPL >= pinPL && (pins.includes(evt.event_id)
 			? <button onClick={onClickPin(false)}>
 				<UnpinIcon/>{names && "Unpin message"}
