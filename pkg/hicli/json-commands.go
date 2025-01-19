@@ -66,15 +66,6 @@ func (h *HiClient) handleJSONCommand(ctx context.Context, req *JSONCommand) (any
 		return unmarshalAndCall(req.Data, func(params *sendStateEventParams) (id.EventID, error) {
 			return h.SetState(ctx, params.RoomID, params.EventType, params.StateKey, params.Content)
 		})
-	case "get_account_data":
-		return unmarshalAndCall(req.Data, func(params *getAccountDataParams) (*map[string]any, error) {
-			var result map[string]any
-			if params.RoomID != "" {
-				return &result, h.Client.GetRoomAccountData(ctx, params.RoomID, params.Type, &result)
-			} else {
-				return &result, h.Client.GetAccountData(ctx, params.Type, &result)
-			}
-		})
 	case "set_account_data":
 		return unmarshalAndCall(req.Data, func(params *setAccountDataParams) (bool, error) {
 			if params.RoomID != "" {
@@ -269,11 +260,6 @@ type sendStateEventParams struct {
 	EventType event.Type      `json:"type"`
 	StateKey  string          `json:"state_key"`
 	Content   json.RawMessage `json:"content"`
-}
-
-type getAccountDataParams struct {
-	RoomID id.RoomID `json:"room_id,omitempty"`
-	Type   string    `json:"type"`
 }
 
 type setAccountDataParams struct {

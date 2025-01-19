@@ -40,17 +40,11 @@ interface IgnoredUsersType {
 const UserIgnoreButton = ({ userID, client }: { userID: string; client: Client }) => {
 	const [ignoredUsers, setIgnoredUsers] = useState<IgnoredUsersType | null>(null)
 	useEffect(() => {
-		// Get blocked user list
-		client.rpc.getAccountData("m.ignored_user_list").then((data) => {
-			const parsedData = data as IgnoredUsersType
-			if (data !== ignoredUsers || !("ignored_users" in parsedData)) {
-				return
-			}
-			setIgnoredUsers(parsedData)
-		}).catch((e) => {
-			console.error("Failed to get ignored users", e)
-		})
-	})
+		const data = client.store.accountData.get("m.ignored_user_list")
+		if (data) {
+			setIgnoredUsers(data as IgnoredUsersType)
+		}
+	}, [client.store.accountData])
 
 	const isIgnored = ignoredUsers?.ignored_users[userID]
 	const ignoreUser = () => {
