@@ -192,6 +192,34 @@ div.right-panel-content.user {
 		}
 	}
 
+	div.user-moderation {
+		display: flex;
+		flex-direction: column;
+		gap: .5rem;
+
+		div.moderation-actions {
+			.dangerous {
+				color: var(--error-color);
+
+				svg {
+					fill: var(--error-color)
+				}
+			}
+			.positive {
+				color: var(--primary-color);
+				svg {
+					fill: var(--primary-color)
+				}
+			}
+		}
+		button {
+			padding: .25rem 0;
+			width: 100%;
+			gap: .25rem;
+			justify-content: left;
+		}
+	}
+
 	div.errors {
 		display: flex;
 		flex-direction: column;
