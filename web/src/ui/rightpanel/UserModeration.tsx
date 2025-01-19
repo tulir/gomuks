@@ -13,7 +13,7 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import { use } from "react"
+import { use, useEffect, useState } from "react"
 import Client from "@/api/client.ts"
 import { RoomStateStore } from "@/api/statestore"
 import { MemDBEvent, MemberEventContent, Membership } from "@/api/types"
@@ -21,6 +21,7 @@ import { ModalContext } from "@/ui/modal"
 import { RoomContext } from "@/ui/roomview/roomcontext.ts"
 import ConfirmWithMessageModal from "@/ui/timeline/menu/ConfirmWithMessageModal.tsx"
 import { getPowerLevels } from "@/ui/timeline/menu/util.ts"
+import Block from "@/icons/block.svg?react"
 import Gavel from "@/icons/gavel.svg?react"
 import PersonAdd from "@/icons/person-add.svg?react"
 import PersonRemove from "@/icons/person-remove.svg?react"
@@ -32,13 +33,62 @@ interface UserModerationProps {
 	member: MemDBEvent | null;
 }
 
+interface IgnoredUsersType {
+	ignored_users: Record<string, object>;
+}
+
+const UserIgnoreButton = ({ userID, client }: { userID: string; client: Client }) => {
+	const [ignoredUsers, setIgnoredUsers] = useState<IgnoredUsersType | null>(null)
+	useEffect(() => {
+		// Get blocked user list
+		client.rpc.getAccountData("m.ignored_user_list").then((data) => {
+			const parsedData = data as IgnoredUsersType
+			if (data !== ignoredUsers || !("ignored_users" in parsedData)) {
+				return
+			}
+			setIgnoredUsers(parsedData)
+		}).catch((e) => {
+			console.error("Failed to get ignored users", e)
+		})
+	})
+
+	const isIgnored = ignoredUsers?.ignored_users[userID]
+	const ignoreUser = () => {
+		const newIgnoredUsers = { ...(ignoredUsers || { ignored_users: {}}) }
+		newIgnoredUsers.ignored_users[userID] = {}
+		client.rpc.setAccountData("m.ignored_user_list", newIgnoredUsers).then(() => {
+			setIgnoredUsers(newIgnoredUsers)
+		}).catch((e) => {
+			console.error("Failed to ignore user", e)
+		})
+	}
+	const unignoreUser = () => {
+		const newIgnoredUsers = { ...(ignoredUsers || { ignored_users: {}}) }
+		delete newIgnoredUsers.ignored_users[userID]
+		client.rpc.setAccountData("m.ignored_user_list", newIgnoredUsers).then(() => {
+			setIgnoredUsers(newIgnoredUsers)
+		}).catch((e) => {
+			console.error("Failed to unignore user", e)
+		})
+	}
+
+	return (
+		<button
+			className={"moderation-actions " + (isIgnored ? "positive" : "dangerous")}
+			onClick={isIgnored ? unignoreUser : ignoreUser}>
+			<Block/>
+			<span>{isIgnored ? "Unignore" : "Ignore"}</span>
+		</button>
+	)
+}
+
 const UserModeration = ({ userID, client, member }: UserModerationProps) => {
 	const roomCtx = use(RoomContext)
-	if(!roomCtx) {
-		return null  // There is no room context, moderation is not an applicable context.
-	}
 	const openModal = use(ModalContext)
 	const hasPl = (action: "invite" | "kick" | "ban") => {
+		if(!roomCtx) {
+			return false  // no room context
+		}
 		const [pls, ownPL] = getPowerLevels(roomCtx.store, client)
 		const actionPL = pls[action] ?? pls.state_default ?? 50
 		const otherUserPl = pls.users?.[userID] ?? pls.users_default ?? 0
@@ -88,42 +138,43 @@ const UserModeration = ({ userID, client, member }: UserModerationProps) => {
 			})
 		}
 	}
-
 	const membership = member?.content.membership || "leave"
+
 	return (
 		<div className="user-moderation">
 			<h4>Moderation</h4>
 			<div className="moderation-actions">
-				{(["knock", "leave"].includes(membership) || !member) && hasPl("invite") && (
-					<button className="moderation-action invite" onClick={runAction("invite")}>
+				{roomCtx && (["knock", "leave"].includes(membership) || !member) && hasPl("invite") && (
+					<button className="moderation-action positive" onClick={runAction("invite")}>
 						<PersonAdd />
 						<span>{membership === "knock" ? "Accept request to join" : "Invite"}</span>
 					</button>
 				)}
-				{["knock", "invite"].includes(membership) && hasPl("kick") && (
+				{roomCtx && ["knock", "invite"].includes(membership) && hasPl("kick") && (
 					<button className="moderation-action dangerous" onClick={runAction("leave")}>
 						<PersonRemove />
 						<span>{membership === "invite" ? "Revoke invitation" : "Reject join request"}</span>
 					</button>
 				)}
-				{membership === "join" && hasPl("kick") && (
+				{roomCtx && membership === "join" && hasPl("kick") && (
 					<button className="moderation-action dangerous" onClick={runAction("leave")}>
 						<PersonRemove />
 						<span>Kick</span>
 					</button>
 				)}
-				{membership !== "ban" && hasPl("ban") && (
+				{roomCtx && membership !== "ban" && hasPl("ban") && (
 					<button className="moderation-action dangerous" onClick={runAction("ban")}>
 						<Gavel />
 						<span>Ban</span>
 					</button>
 				)}
-				{membership === "ban" && hasPl("ban") && (
-					<button className="moderation-action invite" onClick={runAction("leave")}>
+				{roomCtx && membership === "ban" && hasPl("ban") && (
+					<button className="moderation-action positive" onClick={runAction("leave")}>
 						<Gavel />
 						<span>Unban</span>
 					</button>
 				)}
+				<UserIgnoreButton userID={userID} client={client} />
 			</div>
 		</div>
 	)

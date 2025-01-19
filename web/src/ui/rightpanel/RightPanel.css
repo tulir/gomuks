@@ -205,7 +205,7 @@ div.right-panel-content.user {
 					fill: var(--error-color)
 				}
 			}
-			.invite {
+			.positive {
 				color: var(--primary-color);
 				svg {
 					fill: var(--primary-color)

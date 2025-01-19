@@ -167,6 +167,10 @@ export default abstract class RPCClient {
 		return this.request("set_state", { room_id, type, state_key, content })
 	}
 
+	getAccountData(type: EventType, roomID?: RoomID): Promise<unknown> {
+		return this.request("get_account_data", { type, roomID })
+	}
+
 	setAccountData(type: EventType, content: unknown, room_id?: RoomID): Promise<boolean> {
 		return this.request("set_account_data", { type, content, room_id })
 	}
