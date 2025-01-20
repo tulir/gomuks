@@ -25,13 +25,21 @@ import (
 	"go.mau.fi/gomuks/pkg/gomuks"
 )
 
+type View string
+
+// Allowed views in GomuksTUI
 type GomuksTUI struct {
 	*gomuks.Gomuks
 	App *mauview.Application
+
+	loginView *LoginView
 }
 
 func New(gmx *gomuks.Gomuks) *GomuksTUI {
-	return &GomuksTUI{Gomuks: gmx}
+	return &GomuksTUI{
+		Gomuks: gmx,
+		App:    mauview.NewApplication(),
+	}
 }
 
 func init() {
@@ -44,22 +52,12 @@ func init() {
 			os.Setenv("TCELLDB", "/usr/share/tcell/database")
 		}
 	}
+
 }
 
 func (gt *GomuksTUI) Run() {
 	gt.App = mauview.NewApplication()
-	view := mauview.NewBox(mauview.NewTextView().SetText("Mui.")).SetBorder(true)
-	view.SetKeyCaptureFunc(func(event mauview.KeyEvent) mauview.KeyEvent {
-		if event.Key() == tcell.KeyEsc || event.Rune() == 'q' {
-			gt.App.ForceStop()
-		}
-		return event
-	})
-	gt.App.SetRoot(view)
-	go func() {
-		gt.Gomuks.WaitForInterrupt()
-		gt.App.ForceStop()
-	}()
+	gt.App.SetRoot(gt.NewLoginView())
 	err := gt.App.Start()
 	if err != nil {
 		panic(err)
