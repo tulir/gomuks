@@ -402,10 +402,6 @@ const MessageComposer = () => {
 		const previews: Record<string, URLPreviewType | "cleared" | "loading"> = {}
 		let changed = urls.length !== Object.keys(existingPreviews).length
 		urls.forEach(url => {
-			if (url.startsWith("https://matrix.to")) {
-				return
-			}
-
 			if (existingPreviews[url] === undefined) {
 				changed = true
 				previews[url] = "loading"
@@ -498,10 +494,12 @@ const MessageComposer = () => {
 			setState({ previews: {}})
 			return
 		}
+
 		const currentUrls = Object.keys(state.previews)
+			.filter(u => !u.startsWith("https://matrix.to"))
 		if (currentUrls.length !== urls.length || !currentUrls.every((p, i) => urls[i] == p)) {
 			setLoadingPreviews(true)
-			const timeout = setTimeout(() => resolvePreviews(urls, state.previews), 500)
+			const timeout = setTimeout(() => resolvePreviews(currentUrls, state.previews), 500)
 			return () => {
 				setLoadingPreviews(false)
 				clearTimeout(timeout)
