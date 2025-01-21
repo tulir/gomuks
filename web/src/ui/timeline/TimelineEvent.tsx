@@ -16,17 +16,17 @@
 import React, { JSX, use, useState } from "react"
 import { createPortal } from "react-dom"
 import { getAvatarURL, getMediaURL, getUserColorIndex } from "@/api/media.ts"
-import { useRoomMember } from "@/api/statestore"
-import { MemDBEvent, MemberEventContent, UnreadType } from "@/api/types"
+import { RoomStateStore, usePreference, useRoomMember } from "@/api/statestore"
+import { MemDBEvent, MemberEventContent, URLPreview as URLPreviewType, UnreadType } from "@/api/types"
 import { isMobileDevice } from "@/util/ismobile.ts"
 import { getDisplayname, isEventID } from "@/util/validation.ts"
 import ClientContext from "../ClientContext.ts"
 import MainScreenContext from "../MainScreenContext.ts"
 import { ModalContext } from "../modal"
 import { useRoomContext } from "../roomview/roomcontext.ts"
+import URLPreview from "../urlpreview/URLPreview.tsx"
 import ReadReceipts from "./ReadReceipts.tsx"
 import { ReplyIDBody } from "./ReplyBody.tsx"
-import URLPreviews from "./URLPreviews.tsx"
 import { ContentErrorBoundary, HiddenEvent, getBodyType, getPerMessageProfile, isSmallEvent } from "./content"
 import { EventFixedMenu, EventFullMenu, EventHoverMenu, getModalStyleFromMouse } from "./menu"
 import ErrorIcon from "@/icons/error.svg?react"
@@ -73,6 +73,25 @@ const EventSendStatus = ({ evt }: { evt: MemDBEvent }) => {
 	} else {
 		return <div title="Event sent and remote echo received" className="event-send-status sent"><SentIcon/></div>
 	}
+}
+
+const EventURLPreviews = ({ event, room }: {
+	room: RoomStateStore
+	event: MemDBEvent
+}) => {
+	const client = use(ClientContext)!
+	const renderPreviews = usePreference(client.store, room, "render_url_previews")
+	if (event.redacted_by || !renderPreviews) {
+		return null
+	}
+
+	const previews = (event.content["com.beeper.linkpreviews"] ?? event.content["m.url_previews"]) as URLPreviewType[]
+	if (!previews) {
+		return null
+	}
+	return <div className="url-previews">
+		{previews.map((p, i) => <URLPreview key={i} url={p.matched_url} preview={p}/>)}
+	</div>
 }
 
 const TimelineEvent = ({ evt, prevEvt, disableMenu, smallReplies, isFocused }: TimelineEventProps) => {
@@ -265,12 +284,12 @@ const TimelineEvent = ({ evt, prevEvt, disableMenu, smallReplies, isFocused }: T
 			{replyInMessage}
 			<ContentErrorBoundary>
 				<BodyType room={roomCtx.store} sender={memberEvt} event={evt}/>
-				{!isSmallBodyType && <URLPreviews room={roomCtx.store} event={evt}/>}
+				{!isSmallBodyType && <EventURLPreviews room={roomCtx.store} event={evt}/>}
 			</ContentErrorBoundary>
 			{evt.reactions ? <EventReactions reactions={evt.reactions}/> : null}
 		</div>
 		{!evt.event_id.startsWith("~") && roomCtx.store.preferences.display_read_receipts &&
-			<ReadReceipts room={roomCtx.store} eventID={evt.event_id} />}
+			<ReadReceipts room={roomCtx.store} eventID={evt.event_id}/>}
 		{evt.sender === client.userID && evt.transaction_id ? <EventSendStatus evt={evt}/> : null}
 	</div>
 	return <>
