@@ -103,6 +103,18 @@ func (view *LoginView) Error(err string) {
 
 	view.parent.App.Redraw()
 }
+func (view *LoginView) actuallyLogin(ctx context.Context, hs, mxid, password string) {
+	view.loading = true
+	view.loginButton.SetText("Logging in...")
+	err := view.parent.Client.LoginPassword(ctx, hs, mxid, password)
+	if err == nil {
+		view.loginButton.SetText("it woked")
+	} else {
+		view.Error(err.Error())
+	}
+	view.loading = false
+	view.loginButton.SetText("Login")
+}
 
 func (view *LoginView) Login() {
 	if view.loading {
@@ -112,13 +124,5 @@ func (view *LoginView) Login() {
 	mxid := view.id.GetText()
 	password := view.password.GetText()
 	ctx := context.TODO()
-
-	view.loading = true
-	view.loginButton.SetText("Logging in...")
-	err := view.parent.Client.LoginPassword(ctx, hs, mxid, password)
-	if err == nil {
-		view.loginButton.SetText("it woked")
-	} else {
-		view.Error(err.Error())
-	}
+	go view.actuallyLogin(ctx, hs, mxid, password)
 }
