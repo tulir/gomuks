@@ -1,9 +1,13 @@
 package tui
 
 import (
+	"math"
+
+	"github.com/mattn/go-runewidth"
+
+	"context"
 	"github.com/gdamore/tcell/v2"
 	"go.mau.fi/mauview"
-	"maunium.net/go/gomuks/config"
 )
 
 type LoginView struct {
@@ -12,11 +16,11 @@ type LoginView struct {
 	container *mauview.Centerer
 
 	homeserverLabel *mauview.TextField
-	idLabel   *mauview.TextField
+	idLabel         *mauview.TextField
 	passwordLabel   *mauview.TextField
 
 	homeserver *mauview.InputField
-	id   *mauview.InputField
+	id         *mauview.InputField
 	password   *mauview.InputField
 	error      *mauview.TextView
 
@@ -25,7 +29,6 @@ type LoginView struct {
 
 	loading bool
 
-	config *config.Config
 	parent *GomuksTUI
 }
 
@@ -33,11 +36,11 @@ func (gt *GomuksTUI) NewLoginView() mauview.Component {
 	view := &LoginView{
 		Form: mauview.NewForm(),
 
-		idLabel:   mauview.NewTextField().SetText("User ID"),
+		idLabel:         mauview.NewTextField().SetText("User ID"),
 		passwordLabel:   mauview.NewTextField().SetText("Password"),
 		homeserverLabel: mauview.NewTextField().SetText("Homeserver"),
 
-		id:   mauview.NewInputField(),
+		id:         mauview.NewInputField(),
 		password:   mauview.NewInputField(),
 		homeserver: mauview.NewInputField(),
 
@@ -57,6 +60,7 @@ func (gt *GomuksTUI) NewLoginView() mauview.Component {
 		SetForegroundColor(tcell.ColorWhite).
 		SetFocusedForegroundColor(tcell.ColorWhite)
 	view.loginButton.
+		SetOnClick(view.Login).
 		SetBackgroundColor(tcell.ColorDarkCyan).
 		SetForegroundColor(tcell.ColorWhite).
 		SetFocusedForegroundColor(tcell.ColorWhite)
@@ -79,5 +83,42 @@ func (gt *GomuksTUI) NewLoginView() mauview.Component {
 	view.container = mauview.Center(mauview.NewBox(view).SetTitle("Log in to Matrix"), 45, 13)
 	view.container.SetAlwaysFocusChild(true)
 	return view.container
+}
+func (view *LoginView) Error(err string) {
+	if len(err) == 0 && view.error != nil {
+		view.RemoveComponent(view.error)
+		view.container.SetHeight(13)
+		view.SetRows([]int{1, 1, 1, 1, 1, 1, 1, 1, 1})
+		view.error = nil
+	} else if len(err) > 0 {
+		if view.error == nil {
+			view.error = mauview.NewTextView().SetTextColor(tcell.ColorRed)
+			view.AddComponent(view.error, 1, 11, 3, 1)
+		}
+		view.error.SetText(err)
+		errorHeight := int(math.Ceil(float64(runewidth.StringWidth(err)) / 41))
+		view.container.SetHeight(14 + errorHeight)
+		view.SetRow(11, errorHeight)
+	}
 
+	view.parent.App.Redraw()
+}
+
+func (view *LoginView) Login() {
+	if view.loading {
+		return
+	}
+	hs := view.homeserver.GetText()
+	mxid := view.id.GetText()
+	password := view.password.GetText()
+	ctx := context.TODO()
+
+	view.loading = true
+	view.loginButton.SetText("Logging in...")
+	err := view.parent.Client.LoginPassword(ctx, hs, mxid, password)
+	if err == nil {
+		view.loginButton.SetText("it woked")
+	} else {
+		view.Error(err.Error())
+	}
 }
