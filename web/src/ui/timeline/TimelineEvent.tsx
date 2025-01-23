@@ -87,6 +87,7 @@ const TimelineEvent = ({ evt, prevEvt, disableMenu, smallReplies, isFocused }: T
 			!roomCtx.store.preferences.message_context_menu
 			|| targetElem.tagName === "A"
 			|| targetElem.tagName === "IMG"
+			|| targetElem.tagName === "VIDEO"
 			|| window.getSelection()?.type === "Range"
 		) {
 			return
