@@ -106,6 +106,8 @@ const TimelineEvent = ({ evt, prevEvt, disableMenu, smallReplies, isFocused }: T
 		if (
 			targetElem.tagName === "A"
 			|| targetElem.tagName === "IMG"
+			|| targetElem.tagName === "VIDEO"
+			|| targetElem.tagName === "SUMMARY"
 		) {
 			return
 		}
