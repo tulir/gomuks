@@ -16,7 +16,7 @@
 import { use } from "react"
 import Client from "@/api/client.ts"
 import { RoomStateStore, useAccountData } from "@/api/statestore"
-import { MemDBEvent, MembershipAction } from "@/api/types"
+import { IgnoredUsersEventContent, MemDBEvent, MembershipAction } from "@/api/types"
 import { ModalContext } from "../modal"
 import ConfirmWithMessageModal from "../timeline/menu/ConfirmWithMessageModal.tsx"
 import { getPowerLevels } from "../timeline/menu/util.ts"
@@ -33,7 +33,7 @@ interface UserModerationProps {
 }
 
 const UserIgnoreButton = ({ userID, client }: { userID: string; client: Client }) => {
-	const ignoredUsers = useAccountData(client.store, "m.ignored_user_list")
+	const ignoredUsers = useAccountData(client.store, "m.ignored_user_list") as IgnoredUsersEventContent | null
 
 	const isIgnored = Boolean(ignoredUsers?.ignored_users?.[userID])
 	const ignoreUser = () => {
