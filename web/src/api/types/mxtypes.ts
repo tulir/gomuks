@@ -218,6 +218,10 @@ export interface ReactionEventContent {
 	"com.beeper.reaction.shortcode"?: string
 }
 
+export interface IgnoredUsersEventContent {
+	ignored_users: Record<string, unknown>
+}
+
 export interface EncryptedFile {
 	url: ContentURI
 	k: string

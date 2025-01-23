@@ -66,6 +66,21 @@ func (h *HiClient) handleJSONCommand(ctx context.Context, req *JSONCommand) (any
 		return unmarshalAndCall(req.Data, func(params *sendStateEventParams) (id.EventID, error) {
 			return h.SetState(ctx, params.RoomID, params.EventType, params.StateKey, params.Content)
 		})
+	case "set_membership":
+		return unmarshalAndCall(req.Data, func(params *setMembershipParams) (any, error) {
+			switch params.Action {
+			case "invite":
+				return h.Client.InviteUser(ctx, params.RoomID, &mautrix.ReqInviteUser{UserID: params.UserID, Reason: params.Reason})
+			case "kick":
+				return h.Client.KickUser(ctx, params.RoomID, &mautrix.ReqKickUser{UserID: params.UserID, Reason: params.Reason})
+			case "ban":
+				return h.Client.BanUser(ctx, params.RoomID, &mautrix.ReqBanUser{UserID: params.UserID, Reason: params.Reason})
+			case "unban":
+				return h.Client.UnbanUser(ctx, params.RoomID, &mautrix.ReqUnbanUser{UserID: params.UserID, Reason: params.Reason})
+			default:
+				return nil, fmt.Errorf("unknown action %q", params.Action)
+			}
+		})
 	case "set_account_data":
 		return unmarshalAndCall(req.Data, func(params *setAccountDataParams) (bool, error) {
 			if params.RoomID != "" {
@@ -260,6 +275,13 @@ type sendStateEventParams struct {
 	EventType event.Type      `json:"type"`
 	StateKey  string          `json:"state_key"`
 	Content   json.RawMessage `json:"content"`
+}
+
+type setMembershipParams struct {
+	Action string    `json:"action"`
+	RoomID id.RoomID `json:"room_id"`
+	UserID id.UserID `json:"user_id"`
+	Reason string    `json:"reason"`
 }
 
 type setAccountDataParams struct {

@@ -13,7 +13,7 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import React, { use, useState } from "react"
+import React, { JSX, use, useState } from "react"
 import { MemDBEvent } from "@/api/types"
 import { isMobileDevice } from "@/util/ismobile.ts"
 import { ModalCloseContext } from "../../modal"
@@ -22,7 +22,7 @@ import TimelineEvent from "../TimelineEvent.tsx"
 interface ConfirmWithMessageProps {
 	evt?: MemDBEvent
 	title: string
-	description: string
+	description: string | JSX.Element
 	placeholder: string
 	confirmButton: string
 	onConfirm: (reason: string) => void
