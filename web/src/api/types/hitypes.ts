@@ -292,3 +292,5 @@ export interface DBPushRegistration {
 	encryption: { key: string }
 	expiration?: number
 }
+
+export type MembershipAction = "invite" | "kick" | "ban" | "unban"

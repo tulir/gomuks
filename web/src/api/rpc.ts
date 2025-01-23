@@ -24,6 +24,7 @@ import type {
 	JSONValue,
 	LoginFlowsResponse,
 	LoginRequest,
+	MembershipAction,
 	Mentions,
 	MessageEventContent,
 	PaginationResponse,
@@ -165,6 +166,10 @@ export default abstract class RPCClient {
 		room_id: RoomID, type: EventType, state_key: string, content: Record<string, unknown>,
 	): Promise<EventID> {
 		return this.request("set_state", { room_id, type, state_key, content })
+	}
+
+	setMembership(room_id: RoomID, user_id: UserID, action: MembershipAction, reason?: string): Promise<void> {
+		return this.request("set_membership", { room_id, user_id, action, reason })
 	}
 
 	setAccountData(type: EventType, content: unknown, room_id?: RoomID): Promise<boolean> {
