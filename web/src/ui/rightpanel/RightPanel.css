@@ -192,6 +192,25 @@ div.right-panel-content.user {
 		}
 	}
 
+	div.user-moderation {
+		display: flex;
+		flex-direction: column;
+
+		button.moderation-action {
+			padding: .5rem;
+			width: 100%;
+			gap: .5rem;
+			justify-content: left;
+
+			&.dangerous {
+				color: var(--error-color);
+			}
+			&.positive {
+				color: var(--primary-color);
+			}
+		}
+	}
+
 	div.errors {
 		display: flex;
 		flex-direction: column;

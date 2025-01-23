@@ -27,14 +27,19 @@ const currentTimeAdjusted = (tz: string) => {
 			timeZoneName: "short",
 			timeZone: tz,
 		}).format(new Date())
-	} catch (e) {
-		return `${e}`
+	} catch {
+		return null
 	}
 }
 
 const ClockElement = ({ tz }: { tz: string }) => {
-	const [time, setTime] = useState(currentTimeAdjusted(tz))
+	const cta = currentTimeAdjusted(tz)
+	const isValidTZ = cta !== null
+	const [time, setTime] = useState(cta)
 	useEffect(() => {
+		if (!isValidTZ) {
+			return
+		}
 		let interval: number | undefined
 		const updateTime = () => setTime(currentTimeAdjusted(tz))
 		const timeout = setTimeout(() => {
@@ -42,8 +47,11 @@ const ClockElement = ({ tz }: { tz: string }) => {
 			updateTime()
 		}, (1001 - Date.now() % 1000))
 		return () => interval ? clearInterval(interval) : clearTimeout(timeout)
-	}, [tz])
+	}, [tz, isValidTZ])
 
+	if (!isValidTZ) {
+		return null
+	}
 	return <>
 		<div title={tz}>Time:</div>
 		<div title={tz}>{time}</div>

@@ -26,6 +26,7 @@ import UserExtendedProfile from "./UserExtendedProfile.tsx"
 import DeviceList from "./UserInfoDeviceList.tsx"
 import UserInfoError from "./UserInfoError.tsx"
 import MutualRooms from "./UserInfoMutualRooms.tsx"
+import UserModeration from "./UserModeration.tsx"
 
 interface UserInfoProps {
 	userID: UserID
@@ -71,12 +72,14 @@ const UserInfo = ({ userID }: UserInfoProps) => {
 			profile={globalProfile} refreshProfile={refreshProfile} client={client} userID={userID}
 		/>}
 		<hr/>
+		<DeviceList client={client} room={roomCtx?.store} userID={userID}/>
+		<hr/>
 		{userID !== client.userID && <>
 			<MutualRooms client={client} userID={userID}/>
 			<hr/>
+			<UserModeration client={client} room={roomCtx?.store} member={memberEvt} userID={userID}/>
+			<hr/>
 		</>}
-		<DeviceList client={client} room={roomCtx?.store} userID={userID}/>
-		<hr/>
 		{errors?.length ? <>
 			<UserInfoError errors={errors}/>
 			<hr/>
