@@ -22,8 +22,8 @@ import ConfirmWithMessageModal from "../timeline/menu/ConfirmWithMessageModal.ts
 import { getPowerLevels } from "../timeline/menu/util.ts"
 import IgnoreIcon from "@/icons/block.svg?react"
 import BanIcon from "@/icons/gavel.svg?react"
-import PersonAdd from "@/icons/person-add.svg?react"
-import PersonRemove from "@/icons/person-remove.svg?react"
+import InviteIcon from "@/icons/person-add.svg?react"
+import KickIcon from "@/icons/person-remove.svg?react"
 
 interface UserModerationProps {
 	userID: string;
@@ -112,13 +112,13 @@ const UserModeration = ({ userID, client, member, room }: UserModerationProps) =
 		<h4>Moderation</h4>
 		{room && (["knock", "leave"].includes(membership) || !member) && hasPL("invite") && (
 			<button className="moderation-action positive" onClick={runAction("invite")}>
-				<PersonAdd />
+				<InviteIcon />
 				<span>{membership === "knock" ? "Accept join request" : "Invite"}</span>
 			</button>
 		)}
 		{room && ["knock", "invite", "join"].includes(membership) && hasPL("kick") && (
 			<button className="moderation-action dangerous" onClick={runAction("kick")}>
-				<PersonRemove />
+				<KickIcon />
 				<span>{
 					membership === "join"
 						? "Kick"
