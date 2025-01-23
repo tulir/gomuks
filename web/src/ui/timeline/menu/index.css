@@ -101,6 +101,7 @@ div.confirm-message-modal > form {
 
 		> div.timeline-event {
 			margin: 0;
+			padding: 0;
 		}
 	}
 
@@ -116,6 +117,16 @@ div.confirm-message-modal > form {
 		justify-content: right;
 		> button {
 			padding: .5rem 1rem;
+		}
+	}
+
+	> div.output-preview {
+		> span.no-select {
+			user-select: none;
+		}
+
+		> code {
+			word-break: break-word;
 		}
 	}
 }

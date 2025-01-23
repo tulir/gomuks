@@ -18,7 +18,7 @@ import { CustomEmojiPack, parseCustomEmojiPack } from "@/util/emoji"
 import { NonNullCachedEventDispatcher } from "@/util/eventdispatcher.ts"
 import toSearchableString from "@/util/searchablestring.ts"
 import Subscribable, { MultiSubscribable, NoDataSubscribable } from "@/util/subscribable.ts"
-import { getDisplayname } from "@/util/validation.ts"
+import { getDisplayname, getServerName } from "@/util/validation.ts"
 import {
 	ContentURI,
 	DBReceipt,
@@ -244,6 +244,35 @@ export class RoomStateStore {
 			this.#fillMembersCache()
 		}
 		return this.#membersCache ?? []
+	}
+
+	getViaServers(): string[] {
+		const ownServerName = getServerName(this.parent.userID)
+		const vias = [ownServerName]
+		const members = this.getMembers()
+		const memberCount = new Map<string, number>()
+		const powerLevels: PowerLevelEventContent = this.getStateEvent("m.room.power_levels", "")?.content ?? {}
+		const usersDefault = powerLevels.users_default ?? 0
+		let powerServer: string | undefined = undefined
+		for (const member of members) {
+			const serverName = getServerName(member.userID)
+			if (serverName !== ownServerName) {
+				if (!powerServer && (powerLevels?.users?.[member.userID] ?? usersDefault) > usersDefault) {
+					powerServer = serverName
+					vias.push(powerServer)
+				}
+				memberCount.set(serverName, (memberCount.get(serverName) ?? 0) + 1)
+			}
+		}
+		const servers = Array.from(memberCount.entries())
+		servers.sort(([, a], [, b]) => b - a)
+		for (const [serverName] of servers) {
+			if (serverName !== ownServerName && serverName !== powerServer) {
+				vias.push(serverName)
+				break
+			}
+		}
+		return vias
 	}
 
 	getPinnedEvents(): EventID[] {
