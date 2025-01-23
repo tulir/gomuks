@@ -17,11 +17,11 @@ import { use } from "react"
 import Client from "@/api/client.ts"
 import { useRoomState } from "@/api/statestore"
 import { MemDBEvent } from "@/api/types"
-import ShareModal from "@/ui/timeline/menu/ShareModal.tsx"
 import { ModalCloseContext, ModalContext } from "../../modal"
 import { RoomContext, RoomContextData } from "../../roomview/roomcontext.ts"
 import JSONView from "../../util/JSONView.tsx"
 import ConfirmWithMessageModal from "./ConfirmWithMessageModal.tsx"
+import ShareModal from "./ShareModal.tsx"
 import { getPending, getPowerLevels } from "./util.ts"
 import ViewSourceIcon from "@/icons/code.svg?react"
 import DeleteIcon from "@/icons/delete.svg?react"
@@ -42,7 +42,7 @@ export const useSecondaryItems = (
 		openModal({
 			dimmed: true,
 			boxed: true,
-			content: <JSONView data={evt} />,
+			content: <JSONView data={evt}/>,
 		})
 	}
 	const onClickReport = () => {
@@ -93,21 +93,26 @@ export const useSecondaryItems = (
 
 	const onClickShareEvent = () => {
 		const generateLink = (useMatrixTo: boolean, includeEvent: boolean) => {
-			let generatedUrl = useMatrixTo ? "https://matrix.to/#/" : "matrix:roomid/"
-			if(useMatrixTo) {
-				generatedUrl += evt.room_id
+			const isRoomIDLink = true
+			let generatedURL = useMatrixTo ? "https://matrix.to/#/" : "matrix:roomid/"
+			if (useMatrixTo) {
+				generatedURL += evt.room_id
 			} else {
-				generatedUrl += `${evt.room_id.slice(1)}`
+				generatedURL += `${evt.room_id.slice(1)}`
 			}
-			if(includeEvent) {
-				if(useMatrixTo) {
-					generatedUrl += `/${evt.event_id}`
-				}
-				else {
-					generatedUrl += `/e/${evt.event_id.slice(1)}`
+			if (includeEvent) {
+				if (useMatrixTo) {
+					generatedURL += `/${evt.event_id}`
+				} else {
+					generatedURL += `/e/${evt.event_id.slice(1)}`
 				}
 			}
-			return generatedUrl
+			if (isRoomIDLink) {
+				generatedURL += "?" + new URLSearchParams(
+					roomCtx.store.getViaServers().map(server => ["via", server]),
+				).toString()
+			}
+			return generatedURL
 		}
 		openModal({
 			dimmed: true,

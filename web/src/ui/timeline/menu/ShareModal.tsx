@@ -52,8 +52,8 @@ const ShareModal = ({ evt, title, confirmButton, onConfirm, generateLink }: Conf
 				</tr>
 			</tbody>
 		</table>
-		<div className="description">
-			Share: <a href={link} target="_blank" rel="noreferrer">{link}</a>
+		<div className="output-preview">
+			<span className="no-select">Preview: </span><code>{link}</code>
 		</div>
 		<div className="confirm-buttons">
 			<button type="button" onClick={closeModal}>Cancel</button>
