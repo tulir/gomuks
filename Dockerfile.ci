@@ -1,6 +1,6 @@
 FROM alpine:3.21
 
-RUN apk add --no-cache ca-certificates jq curl
+RUN apk add --no-cache ca-certificates jq curl ffmpeg
 
 ARG EXECUTABLE=./gomuks
 COPY $EXECUTABLE /usr/bin/gomuks
