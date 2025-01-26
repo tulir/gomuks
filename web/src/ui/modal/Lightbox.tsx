@@ -91,6 +91,14 @@ export class Lightbox extends Component<LightboxProps> {
 		}
 	}
 
+	get orientation(): number {
+		let rot = (this.rotate / 90) % 4
+		if (rot < 0) {
+			rot += 4
+		}
+		return rot
+	}
+
 	close = () => {
 		this.translate = { x: 0, y: 0 }
 		this.rotate = 0
@@ -120,8 +128,14 @@ export class Lightbox extends Component<LightboxProps> {
 		const newDelta = this.zoom + delta * this.zoom
 		this.zoom = Math.min(Math.max(newDelta, 0.01), 10)
 		const zoomDelta = this.zoom - oldZoom
-		this.translate.x += zoomDelta * (this.ref.current.clientWidth / 2 - evt.nativeEvent.offsetX)
-		this.translate.y += zoomDelta * (this.ref.current.clientHeight / 2 - evt.nativeEvent.offsetY)
+		const orientation = this.orientation
+		const negateX = (orientation === 2 || orientation == 3) ? -1 : 1
+		const negateY = (orientation === 2 || orientation == 1) ? -1 : 1
+		const deltaX = zoomDelta * (this.ref.current.clientWidth / 2 - evt.nativeEvent.offsetX) * negateX
+		const deltaY = zoomDelta * (this.ref.current.clientHeight / 2 - evt.nativeEvent.offsetY) * negateY
+		const flipXY = orientation === 1 || orientation === 3
+		this.translate.x += flipXY ? deltaY : deltaX
+		this.translate.y += flipXY ? deltaX : deltaY
 		const style = this.style
 		this.ref.current.style.translate = style.translate
 		this.ref.current.style.scale = style.scale
