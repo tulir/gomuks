@@ -39,6 +39,7 @@ export default defineConfig({
 		},
 	},
 	server: {
+		allowedHosts: true,
 		proxy: {
 			"/_gomuks/websocket": {
 				target: "http://localhost:29325",
