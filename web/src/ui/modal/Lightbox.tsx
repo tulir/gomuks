@@ -75,6 +75,11 @@ export interface LightboxProps extends LightboxParams {
 	onClose: () => void
 }
 
+interface Point {
+	x: number
+	y: number
+}
+
 export class Lightbox extends Component<LightboxProps> {
 	translate = { x: 0, y: 0 }
 	zoom = 1
@@ -82,6 +87,9 @@ export class Lightbox extends Component<LightboxProps> {
 	maybePanning = false
 	readonly ref = createRef<HTMLImageElement>()
 	readonly wrapperRef = createRef<HTMLDivElement>()
+	prevTouch1: Point | null = null
+	prevTouch2: Point | null = null
+	prevTouchDist: number | null = null
 
 	get style() {
 		return {
@@ -123,22 +131,53 @@ export class Lightbox extends Component<LightboxProps> {
 			return
 		}
 		evt.preventDefault()
-		const oldZoom = this.zoom
-		const delta = -evt.deltaY / 1000
-		const newDelta = this.zoom + delta * this.zoom
-		this.zoom = Math.min(Math.max(newDelta, 0.01), 10)
-		const zoomDelta = this.zoom - oldZoom
-		const orientation = this.orientation
-		const negateX = (orientation === 2 || orientation == 3) ? -1 : 1
-		const negateY = (orientation === 2 || orientation == 1) ? -1 : 1
-		const deltaX = zoomDelta * (this.ref.current.clientWidth / 2 - evt.nativeEvent.offsetX) * negateX
-		const deltaY = zoomDelta * (this.ref.current.clientHeight / 2 - evt.nativeEvent.offsetY) * negateY
-		const flipXY = orientation === 1 || orientation === 3
-		this.translate.x += flipXY ? deltaY : deltaX
-		this.translate.y += flipXY ? deltaX : deltaY
+		this.#doZoom(-evt.deltaY / 1000, evt.nativeEvent.offsetX, evt.nativeEvent.offsetY, false)
 		const style = this.style
 		this.ref.current.style.translate = style.translate
 		this.ref.current.style.scale = style.scale
+	}
+
+	#getTouchDistance(p1: Point, p2: Point): number {
+		return Math.hypot(p1.x - p2.x, p1.y - p2.y)
+	}
+
+	#getTouchMidpoint(p1: Point, p2: Point): Point {
+		const contentRect = this.ref.current!.getBoundingClientRect()
+		const p1X = p1.x - contentRect.left
+		const p1Y = p1.y - contentRect.top
+		const p2X = p2.x - contentRect.left
+		const p2Y = p2.y - contentRect.top
+		const point = {
+			x: (p1X + p2X) / 2 / this.zoom,
+			y: (p1Y + p2Y) / 2 / this.zoom,
+		}
+		const orientation = this.orientation
+		if (orientation === 1 || orientation === 3) {
+			// This is slightly weird because doZoom will flip the x and y values again,
+			// but maybe the flipped subtraction from clientWidth/Height is important.
+			return { x: point.y, y: point.x }
+		}
+		return point
+	}
+
+	#doZoom(delta: number, offsetX: number, offsetY: number, touch: boolean) {
+		if (!this.ref.current) {
+			return
+		}
+		const oldZoom = this.zoom
+		const newDelta = oldZoom + delta * this.zoom
+		this.zoom = Math.min(Math.max(newDelta, 0.01), 10)
+		const zoomDelta = this.zoom - oldZoom
+
+		const orientation = this.orientation
+		const negateX = !touch && (orientation === 2 || orientation == 3) ? -1 : 1
+		const negateY = !touch && (orientation === 2 || orientation == 1) ? -1 : 1
+		const flipXY = orientation === 1 || orientation === 3
+
+		const deltaX = zoomDelta * (this.ref.current.clientWidth / 2 - offsetX) * negateX
+		const deltaY = zoomDelta * (this.ref.current.clientHeight / 2 - offsetY) * negateY
+		this.translate.x += flipXY ? deltaY : deltaX
+		this.translate.y += flipXY ? deltaX : deltaY
 	}
 
 	onMouseDown = (evt: React.MouseEvent) => {
@@ -162,6 +201,57 @@ export class Lightbox extends Component<LightboxProps> {
 		this.translate.y += evt.movementY
 		this.ref.current.style.translate = this.style.translate
 		this.ref.current.style.cursor = "grabbing"
+	}
+
+	onTouchStart = (evt: React.TouchEvent) => {
+		if (evt.touches.length === 1) {
+			this.maybePanning = true
+			this.prevTouch1 = { x: evt.touches[0].pageX, y: evt.touches[0].pageY }
+			this.prevTouch2 = null
+		} else if (evt.touches.length === 2) {
+			this.prevTouch1 = { x: evt.touches[0].pageX, y: evt.touches[0].pageY }
+			this.prevTouch2 = { x: evt.touches[1].pageX, y: evt.touches[1].pageY }
+			this.prevTouchDist = this.#getTouchDistance(this.prevTouch1, this.prevTouch2)
+		} else {
+			return
+		}
+		evt.preventDefault()
+		evt.stopPropagation()
+	}
+
+	onTouchEnd = () => {
+		this.prevTouch1 = null
+		this.prevTouch2 = null
+		this.prevTouchDist = null
+	}
+
+	onTouchMove = (evt: React.TouchEvent) => {
+		if (!this.ref.current) {
+			return
+		}
+		if (evt.touches.length > 0 && this.prevTouch1) {
+			this.translate.x += evt.touches[0].pageX - this.prevTouch1.x
+			this.translate.y += evt.touches[0].pageY - this.prevTouch1.y
+			this.prevTouch1 = { x: evt.touches[0].pageX, y: evt.touches[0].pageY }
+			if (evt.touches.length === 1) {
+				this.ref.current.style.translate = this.style.translate
+				this.ref.current.style.cursor = "grabbing"
+			}
+		}
+		if (evt.touches.length > 1 && this.prevTouch1 && this.prevTouch2 && this.prevTouchDist) {
+			this.prevTouch2 = { x: evt.touches[1].pageX, y: evt.touches[1].pageY }
+			const newDist = this.#getTouchDistance(this.prevTouch1, this.prevTouch2)
+			const midpoint = this.#getTouchMidpoint(
+				{ x: evt.touches[0].clientX, y: evt.touches[0].clientY },
+				{ x: evt.touches[1].clientX, y: evt.touches[1].clientY },
+			)
+			this.#doZoom((newDist - this.prevTouchDist) / 100, midpoint.x, midpoint.y, true)
+			this.prevTouchDist = newDist
+			const style = this.style
+			this.ref.current.style.translate = style.translate
+			this.ref.current.style.scale = style.scale
+		}
+		evt.preventDefault()
 	}
 
 	onKeyDown = (evt: React.KeyboardEvent<HTMLDivElement>) => {
@@ -203,6 +293,10 @@ export class Lightbox extends Component<LightboxProps> {
 			className="overlay dimmed lightbox"
 			onClick={this.onClick}
 			onMouseMove={isTouchDevice ? undefined : this.onMouseMove}
+			onTouchStart={isTouchDevice ? this.onTouchStart : undefined}
+			onTouchMove={isTouchDevice ? this.onTouchMove : undefined}
+			onTouchEnd={isTouchDevice ? this.onTouchEnd : undefined}
+			onTouchCancel={isTouchDevice ? this.onTouchEnd : undefined}
 			tabIndex={-1}
 			onKeyDown={this.onKeyDown}
 			ref={this.wrapperRef}
