@@ -120,8 +120,11 @@ func (h *HiClient) GetInitialSync(ctx context.Context, batchSize int) iter.Seq[*
 			payload := SyncComplete{
 				Rooms: make(map[id.RoomID]*SyncRoom, len(rooms)),
 			}
-			for _, room := range rooms {
+			for roomIdx, room := range rooms {
 				if room.SortingTimestamp == rooms[len(rooms)-1].SortingTimestamp {
+					if roomIdx == 0 {
+						batchSize *= 2
+					}
 					break
 				}
 				maxTS = room.SortingTimestamp.Time
