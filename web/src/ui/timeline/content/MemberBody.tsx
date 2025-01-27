@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import React, { use } from "react"
-import { getAvatarURL } from "@/api/media.ts"
+import { getAvatarThumbnailURL, getAvatarURL } from "@/api/media.ts"
 import { MemberEventContent, UserID } from "@/api/types"
 import { LightboxContext } from "../../modal"
 import EventContentProps from "./props.ts"
@@ -25,7 +25,8 @@ function useChangeDescription(
 	const targetAvatar = <img
 		className="small avatar"
 		loading="lazy"
-		src={getAvatarURL(target, content)}
+		src={getAvatarThumbnailURL(target, content)}
+		data-full-src={getAvatarURL(target, content)}
 		onClick={use(LightboxContext)!}
 		alt=""
 	/>
@@ -59,7 +60,8 @@ function useChangeDescription(
 					className="small avatar"
 					loading="lazy"
 					height={16}
-					src={getAvatarURL(target, prevContent)}
+					src={getAvatarThumbnailURL(target, prevContent)}
+					data-full-src={getAvatarURL(target, prevContent)}
 					onClick={use(LightboxContext)!}
 					alt=""
 				/> to {targetAvatar}

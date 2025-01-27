@@ -15,7 +15,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import { JSX, use } from "react"
 import { PulseLoader } from "react-spinners"
-import { getAvatarURL } from "@/api/media.ts"
+import { getAvatarThumbnailURL } from "@/api/media.ts"
 import { useMultipleRoomMembers, useRoomTyping } from "@/api/statestore"
 import { humanJoin } from "@/util/join.ts"
 import { getDisplayname } from "@/util/validation.ts"
@@ -40,7 +40,7 @@ const TypingNotifications = () => {
 			key={sender}
 			className="small avatar"
 			loading="lazy"
-			src={getAvatarURL(sender, member)}
+			src={getAvatarThumbnailURL(sender, member)}
 			alt=""
 		/>)
 		memberNames.push(getDisplayname(sender, member))

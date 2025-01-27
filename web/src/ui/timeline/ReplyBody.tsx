@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import { use } from "react"
-import { getAvatarURL, getUserColorIndex } from "@/api/media.ts"
+import { getAvatarThumbnailURL, getUserColorIndex } from "@/api/media.ts"
 import { RoomStateStore, useRoomEvent, useRoomMember } from "@/api/statestore"
 import type { EventID, MemDBEvent, MemberEventContent } from "@/api/types"
 import { getDisplayname } from "@/util/validation.ts"
@@ -124,7 +124,7 @@ export const ReplyBody = ({
 				<img
 					className="small avatar"
 					loading="lazy"
-					src={getAvatarURL(perMessageSender?.id ?? event.sender, renderMemberEvtContent)}
+					src={getAvatarThumbnailURL(perMessageSender?.id ?? event.sender, renderMemberEvtContent)}
 					alt=""
 				/>
 			</div>

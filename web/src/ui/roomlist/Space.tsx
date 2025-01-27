@@ -15,7 +15,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import React from "react"
 import Client from "@/api/client.ts"
-import { getRoomAvatarURL } from "@/api/media.ts"
+import { getRoomAvatarThumbnailURL } from "@/api/media.ts"
 import type { RoomID } from "@/api/types"
 import { useEventAsState } from "@/util/eventdispatcher.ts"
 import UnreadCount from "./UnreadCount.tsx"
@@ -37,7 +37,7 @@ const Space = ({ roomID, client, onClick, isActive, onClickUnread }: SpaceProps)
 	}
 	return <div className={`space-entry ${isActive ? "active" : ""}`} onClick={onClick} data-target-space={roomID}>
 		<UnreadCount counts={unreads} space={true} onClick={onClickUnread} />
-		<img src={getRoomAvatarURL(room)} alt={room.name} title={room.name} className="avatar" />
+		<img src={getRoomAvatarThumbnailURL(room)} alt={room.name} title={room.name} className="avatar" />
 	</div>
 }
 

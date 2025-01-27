@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import { JSX, memo, use } from "react"
-import { getRoomAvatarURL } from "@/api/media.ts"
+import { getRoomAvatarThumbnailURL } from "@/api/media.ts"
 import type { RoomListEntry } from "@/api/statestore"
 import type { MemDBEvent, MemberEventContent } from "@/api/types"
 import useContentVisibility from "@/util/contentvisibility.ts"
@@ -63,7 +63,7 @@ function renderEntry(room: RoomListEntry) {
 			<img
 				loading="lazy"
 				className="avatar room-avatar"
-				src={getRoomAvatarURL(room)}
+				src={getRoomAvatarThumbnailURL(room)}
 				alt=""
 			/>
 		</div>

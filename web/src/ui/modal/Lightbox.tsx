@@ -36,7 +36,7 @@ const LightboxWrapper = ({ children }: { children: React.ReactNode }) => {
 				return
 			}
 			params = {
-				src: target.src,
+				src: target.getAttribute("data-full-src") ?? target.src,
 				alt: target.alt,
 			}
 			setParams(params)

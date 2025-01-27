@@ -61,6 +61,7 @@ const UserInfo = ({ userID }: UserInfoProps) => {
 				className="avatar-loader"
 			/> : <img
 				className="avatar"
+				// this is a big avatar (236px by default), use full resolution
 				src={getAvatarURL(userID, member ?? globalProfile)}
 				onClick={openLightbox}
 				alt=""

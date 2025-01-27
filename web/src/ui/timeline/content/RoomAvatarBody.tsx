@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import { JSX, use } from "react"
-import { getRoomAvatarURL } from "@/api/media.ts"
+import { getRoomAvatarThumbnailURL, getRoomAvatarURL } from "@/api/media.ts"
 import { ContentURI, RoomAvatarEventContent } from "@/api/types"
 import { ensureString } from "@/util/validation.ts"
 import { LightboxContext } from "../../modal"
@@ -31,7 +31,8 @@ const RoomAvatarBody = ({ event, sender, room }: EventContentProps) => {
 		className="small avatar"
 		loading="lazy"
 		height={16}
-		src={getRoomAvatarURL(room.meta.current, url)}
+		src={getRoomAvatarThumbnailURL(room.meta.current, url)}
+		data-full-src={getRoomAvatarURL(room.meta.current, url)}
 		onClick={openLightbox}
 		alt=""
 	/>

@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import { use } from "react"
-import { getAvatarURL } from "@/api/media.ts"
+import { getAvatarThumbnailURL } from "@/api/media.ts"
 import { RoomStateStore, useMultipleRoomMembers, useReadReceipts } from "@/api/statestore"
 import { EventID } from "@/api/types"
 import { humanJoin } from "@/util/join.ts"
@@ -37,7 +37,7 @@ const ReadReceipts = ({ room, eventID }: { room: RoomStateStore, eventID: EventI
 			key={userID}
 			className="small avatar"
 			loading="lazy"
-			src={getAvatarURL(userID, member)}
+			src={getAvatarThumbnailURL(userID, member)}
 			alt=""
 		/>
 	})

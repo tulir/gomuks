@@ -16,7 +16,7 @@
 import { Suspense, lazy, use, useCallback, useRef, useState } from "react"
 import { ScaleLoader } from "react-spinners"
 import Client from "@/api/client.ts"
-import { getRoomAvatarURL } from "@/api/media.ts"
+import { getRoomAvatarThumbnailURL, getRoomAvatarURL } from "@/api/media.ts"
 import { RoomStateStore, usePreferences } from "@/api/statestore"
 import {
 	Preference,
@@ -355,7 +355,8 @@ const SettingsView = ({ room }: SettingsViewProps) => {
 			<img
 				className="avatar large"
 				loading="lazy"
-				src={getRoomAvatarURL(roomMeta)}
+				src={getRoomAvatarThumbnailURL(roomMeta)}
+				data-full-src={getRoomAvatarURL(roomMeta)}
 				onClick={use(LightboxContext)}
 				alt=""
 			/>

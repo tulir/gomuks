@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import { use } from "react"
-import { getRoomAvatarURL } from "@/api/media.ts"
+import { getRoomAvatarThumbnailURL, getRoomAvatarURL } from "@/api/media.ts"
 import { RoomStateStore } from "@/api/statestore"
 import { useEventAsState } from "@/util/eventdispatcher.ts"
 import MainScreenContext from "../MainScreenContext.ts"
@@ -48,7 +48,8 @@ const RoomViewHeader = ({ room }: RoomViewHeaderProps) => {
 		<img
 			className="avatar"
 			loading="lazy"
-			src={getRoomAvatarURL(roomMeta)}
+			src={getRoomAvatarThumbnailURL(roomMeta)}
+			data-full-src={getRoomAvatarURL(roomMeta)}
 			onClick={use(LightboxContext)}
 			alt=""
 		/>

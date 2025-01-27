@@ -13,7 +13,7 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import { getAvatarURL } from "@/api/media.ts"
+import { getAvatarThumbnailURL } from "@/api/media.ts"
 import { Preferences, getLocalStoragePreferences, getPreferenceProxy } from "@/api/types/preferences"
 import { CustomEmojiPack, parseCustomEmojiPack } from "@/util/emoji"
 import { NonNullCachedEventDispatcher } from "@/util/eventdispatcher.ts"
@@ -469,7 +469,7 @@ export class StateStore {
 			body = body.slice(0, 350) + " […]"
 		}
 		const memberEvt = room.getStateEvent("m.room.member", evt.sender)
-		const icon = `${getAvatarURL(evt.sender, memberEvt?.content)}&image_auth=${this.imageAuthToken}`
+		const icon = `${getAvatarThumbnailURL(evt.sender, memberEvt?.content)}&image_auth=${this.imageAuthToken}`
 		const roomName = room.meta.current.name ?? "Unnamed room"
 		const senderName = memberEvt?.content.displayname ?? evt.sender
 		const title = senderName === roomName ? senderName : `${senderName} (${roomName})`

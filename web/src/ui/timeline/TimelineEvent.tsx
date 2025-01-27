@@ -15,7 +15,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import React, { JSX, use, useState } from "react"
 import { createPortal } from "react-dom"
-import { getAvatarURL, getMediaURL, getUserColorIndex } from "@/api/media.ts"
+import { getAvatarThumbnailURL, getMediaURL, getUserColorIndex } from "@/api/media.ts"
 import { useRoomMember } from "@/api/statestore"
 import { MemDBEvent, MemberEventContent, UnreadType } from "@/api/types"
 import { isMobileDevice } from "@/util/ismobile.ts"
@@ -233,7 +233,7 @@ const TimelineEvent = ({ evt, prevEvt, disableMenu, smallReplies, isFocused }: T
 			<img
 				className={`${smallAvatar ? "small" : ""} avatar`}
 				loading="lazy"
-				src={getAvatarURL(perMessageSender?.id ?? evt.sender, renderMemberEvtContent)}
+				src={getAvatarThumbnailURL(perMessageSender?.id ?? evt.sender, renderMemberEvtContent)}
 				alt=""
 			/>
 		</div>}
