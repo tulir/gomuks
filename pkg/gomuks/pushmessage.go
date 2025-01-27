@@ -77,6 +77,8 @@ func (gmx *Gomuks) getNotificationUser(ctx context.Context, roomID id.RoomID, us
 	if err != nil {
 		zerolog.Ctx(ctx).Err(err).Stringer("of_user_id", userID).Msg("Failed to get member event")
 		return
+	} else if memberEvt == nil {
+		return
 	}
 	var memberContent event.MemberEventContent
 	_ = json.Unmarshal(memberEvt.Content, &memberContent)
