@@ -9,6 +9,7 @@ require (
 	github.com/buckket/go-blurhash v1.1.0
 	github.com/chzyer/readline v1.5.1
 	github.com/coder/websocket v1.8.12
+	github.com/disintegration/imaging v1.6.2
 	github.com/gabriel-vasile/mimetype v1.4.8
 	github.com/lucasb-eyer/go-colorful v1.2.0
 	github.com/mattn/go-sqlite3 v1.14.24
@@ -18,6 +19,7 @@ require (
 	github.com/tidwall/sjson v1.2.5
 	github.com/yuin/goldmark v1.7.8
 	go.mau.fi/util v0.8.4
+	go.mau.fi/webp v0.2.0
 	go.mau.fi/zeroconfig v0.1.3
 	golang.org/x/crypto v0.32.0
 	golang.org/x/image v0.23.0
