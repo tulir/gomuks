@@ -90,10 +90,15 @@ func (gmx *Gomuks) downloadMediaFromCache(ctx context.Context, w http.ResponseWr
 		}
 		if entry.ThumbnailHash == nil {
 			err := gmx.generateAvatarThumbnail(entry, gmx.Config.Media.ThumbnailSize)
-			if err != nil {
+			if errors.Is(err, os.ErrNotExist) && !force {
+				return false
+			} else if err != nil {
 				log.Err(err).Msg("Failed to generate avatar thumbnail")
+				gmx.saveMediaCacheEntryWithThumbnail(ctx, entry, err)
 				w.WriteHeader(http.StatusInternalServerError)
 				return true
+			} else {
+				gmx.saveMediaCacheEntryWithThumbnail(ctx, entry, nil)
 			}
 		}
 		hash = entry.ThumbnailHash
@@ -101,13 +106,15 @@ func (gmx *Gomuks) downloadMediaFromCache(ctx context.Context, w http.ResponseWr
 	cacheFile, err := os.Open(gmx.cacheEntryToPath(hash[:]))
 	if useThumbnail && errors.Is(err, os.ErrNotExist) {
 		err = gmx.generateAvatarThumbnail(entry, gmx.Config.Media.ThumbnailSize)
-		if errors.Is(err, os.ErrNotExist) {
-			// Fall through to next error handler
+		if errors.Is(err, os.ErrNotExist) && !force {
+			return false
 		} else if err != nil {
 			log.Err(err).Msg("Failed to generate avatar thumbnail")
+			gmx.saveMediaCacheEntryWithThumbnail(ctx, entry, err)
 			w.WriteHeader(http.StatusInternalServerError)
 			return true
 		} else {
+			gmx.saveMediaCacheEntryWithThumbnail(ctx, entry, nil)
 			cacheFile, err = os.Open(gmx.cacheEntryToPath(hash[:]))
 		}
 	}
@@ -149,6 +156,19 @@ func cacheEntryToHeaders(w http.ResponseWriter, entry *database.Media, thumbnail
 	w.Header().Set("Content-Security-Policy", "sandbox; default-src 'none'; script-src 'none'; media-src 'self';")
 	w.Header().Set("Cache-Control", "max-age=2592000, immutable")
 	w.Header().Set("ETag", entry.ETag(thumbnail))
+}
+
+func (gmx *Gomuks) saveMediaCacheEntryWithThumbnail(ctx context.Context, entry *database.Media, err error) {
+	if errors.Is(err, os.ErrNotExist) {
+		return
+	}
+	if err != nil {
+		entry.ThumbnailError = err.Error()
+	}
+	err = gmx.Client.DB.Media.Put(ctx, entry)
+	if err != nil {
+		zerolog.Ctx(ctx).Err(err).Msg("Failed to save cache entry after generating thumbnail")
+	}
 }
 
 func (gmx *Gomuks) generateAvatarThumbnail(entry *database.Media, size int) error {
