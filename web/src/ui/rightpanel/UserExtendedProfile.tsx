@@ -16,6 +16,13 @@ interface SetTimezoneProps {
 	refreshProfile: () => void
 }
 
+interface PronounsElementProps {
+	userID: string
+	pronouns: PronounSet[]
+	client: Client
+	refreshProfile: () => void
+}
+
 const getCurrentTimezone = () => new Intl.DateTimeFormat().resolvedOptions().timeZone
 
 const currentTimeAdjusted = (tz: string) => {
@@ -89,6 +96,37 @@ const SetTimeZoneElement = ({ tz, client, refreshProfile }: SetTimezoneProps) =>
 	</>
 }
 
+const PronounsElement = ({ userID, pronouns, client, refreshProfile }: PronounsElementProps) => {
+	const display = pronouns.map(pronounSet => ensureString(pronounSet.summary)).join(", ")
+	if (userID !== client.userID) {
+		return <>
+			<div>Pronouns:</div>
+			<div>{display}</div>
+		</>
+	}
+	const savePronouns = (newPronouns: string) => {
+		// convert to pronouns object
+		const newPronounsArray = newPronouns.split(",").map(pronoun => ({ summary: pronoun.trim(), language: "en" }))
+		console.debug("Rendered new pronouns:", newPronounsArray)
+		client.rpc.setProfileField("io.fsky.nyx.pronouns", newPronounsArray).then(
+			() => {console.debug("Set new pronouns."); refreshProfile()},
+			err => {
+				console.error("Failed to set pronouns:", err)
+				window.alert(`Failed to set pronouns: ${err}`)
+			},
+		)
+	}
+	return <>
+		<label htmlFor="userprofile-pronouns-input">Pronouns:</label>
+		<input
+			id="userprofile-pronouns-input"
+			defaultValue={display}
+			onKeyDown={evt => evt.key === "Enter" && savePronouns(evt.currentTarget.value)}
+			onBlur={evt => evt.currentTarget.value !== display && savePronouns(evt.currentTarget.value)}
+		/>
+	</>
+}
+
 
 const UserExtendedProfile = ({ profile, refreshProfile, client, userID }: ExtendedProfileProps)=>  {
 	if (!profile) {
@@ -105,16 +143,15 @@ const UserExtendedProfile = ({ profile, refreshProfile, client, userID }: Extend
 
 	const pronouns = ensureArray(profile["io.fsky.nyx.pronouns"]) as PronounSet[]
 	const userTimeZone = ensureString(profile["us.cloke.msc4175.tz"])
+	const displayPronouns = pronouns.length > 0 || client.userID === userID
 	return <>
 		<hr/>
 		<div className="extended-profile">
 			{userTimeZone && <ClockElement tz={userTimeZone} />}
 			{userID === client.userID &&
 				<SetTimeZoneElement tz={userTimeZone} client={client} refreshProfile={refreshProfile} />}
-			{pronouns.length > 0 && <>
-				<div>Pronouns:</div>
-				<div>{pronouns.map(pronounSet => ensureString(pronounSet.summary)).join(", ")}</div>
-			</>}
+			{displayPronouns &&
+				<PronounsElement userID={userID} pronouns={pronouns} client={client} refreshProfile={refreshProfile} />}
 		</div>
 	</>
 }
