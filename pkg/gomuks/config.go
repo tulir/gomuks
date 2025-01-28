@@ -35,6 +35,7 @@ type Config struct {
 	Web     WebConfig         `yaml:"web"`
 	Matrix  MatrixConfig      `yaml:"matrix"`
 	Push    PushConfig        `yaml:"push"`
+	Media   MediaConfig       `yaml:"media"`
 	Logging zeroconfig.Config `yaml:"logging"`
 }
 
@@ -44,6 +45,10 @@ type MatrixConfig struct {
 
 type PushConfig struct {
 	FCMGateway string `yaml:"fcm_gateway"`
+}
+
+type MediaConfig struct {
+	ThumbnailSize int `yaml:"thumbnail_size"`
 }
 
 type WebConfig struct {
@@ -73,6 +78,9 @@ func makeDefaultConfig() Config {
 		},
 		Matrix: MatrixConfig{
 			DisableHTTP2: false,
+		},
+		Media: MediaConfig{
+			ThumbnailSize: 120,
 		},
 		Logging: zeroconfig.Config{
 			MinLevel: ptr.Ptr(zerolog.DebugLevel),
@@ -128,6 +136,10 @@ func (gmx *Gomuks) LoadConfig() error {
 	}
 	if gmx.Config.Push.FCMGateway == "" {
 		gmx.Config.Push.FCMGateway = "https://push.gomuks.app"
+		changed = true
+	}
+	if gmx.Config.Media.ThumbnailSize == 0 {
+		gmx.Config.Media.ThumbnailSize = 120
 		changed = true
 	}
 	if len(gmx.Config.Web.OriginPatterns) == 0 {

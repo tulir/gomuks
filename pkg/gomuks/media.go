@@ -89,7 +89,7 @@ func (gmx *Gomuks) downloadMediaFromCache(ctx context.Context, w http.ResponseWr
 			return true
 		}
 		if entry.ThumbnailHash == nil {
-			err := gmx.generateAvatarThumbnail(entry, thumbnailMaxSize)
+			err := gmx.generateAvatarThumbnail(entry, gmx.Config.Media.ThumbnailSize)
 			if err != nil {
 				log.Err(err).Msg("Failed to generate avatar thumbnail")
 				w.WriteHeader(http.StatusInternalServerError)
@@ -100,7 +100,7 @@ func (gmx *Gomuks) downloadMediaFromCache(ctx context.Context, w http.ResponseWr
 	}
 	cacheFile, err := os.Open(gmx.cacheEntryToPath(hash[:]))
 	if useThumbnail && errors.Is(err, os.ErrNotExist) {
-		err = gmx.generateAvatarThumbnail(entry, thumbnailMaxSize)
+		err = gmx.generateAvatarThumbnail(entry, gmx.Config.Media.ThumbnailSize)
 		if errors.Is(err, os.ErrNotExist) {
 			// Fall through to next error handler
 		} else if err != nil {
@@ -151,8 +151,6 @@ func cacheEntryToHeaders(w http.ResponseWriter, entry *database.Media, thumbnail
 	w.Header().Set("ETag", entry.ETag(thumbnail))
 }
 
-const thumbnailMaxSize = 80
-
 func (gmx *Gomuks) generateAvatarThumbnail(entry *database.Media, size int) error {
 	cacheFile, err := os.Open(gmx.cacheEntryToPath(entry.Hash[:]))
 	if err != nil {
@@ -162,20 +160,6 @@ func (gmx *Gomuks) generateAvatarThumbnail(entry *database.Media, size int) erro
 	if err != nil {
 		return fmt.Errorf("failed to decode image: %w", err)
 	}
-	//bounds := img.Bounds()
-	//origWidth := bounds.Dx()
-	//origHeight := bounds.Dy()
-	//var width, height int
-	//if origWidth == origHeight {
-	//	width = size
-	//	height = size
-	//} else if origWidth > origHeight {
-	//	width = size
-	//	height = origHeight * size / origWidth
-	//} else {
-	//	width = origWidth * size / origHeight
-	//	height = size
-	//}
 
 	tempFile, err := os.CreateTemp(gmx.TempDir, "thumbnail-*")
 	if err != nil {
