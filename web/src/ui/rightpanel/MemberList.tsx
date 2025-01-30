@@ -50,7 +50,7 @@ const MemberList = () => {
 		roomCtx.store.membersRequested = true
 		use(ClientContext)?.loadRoomState(roomCtx.store.roomID, { omitMembers: false, refetch: false })
 	}
-	const memberEvents = useFilteredMembers(roomCtx?.store, filter)
+	const memberEvents = useFilteredMembers(roomCtx?.store, filter, false, false)
 	if (!roomCtx) {
 		return null
 	}
