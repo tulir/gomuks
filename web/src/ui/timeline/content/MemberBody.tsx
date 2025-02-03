@@ -16,28 +16,42 @@
 import React, { use } from "react"
 import { getAvatarThumbnailURL, getAvatarURL } from "@/api/media.ts"
 import { MemberEventContent, UserID } from "@/api/types"
+import MainScreenContext from "../../MainScreenContext.ts"
 import { LightboxContext } from "../../modal"
 import EventContentProps from "./props.ts"
 
 function useChangeDescription(
 	sender: UserID, target: UserID, content: MemberEventContent, prevContent?: MemberEventContent,
 ): string | React.ReactElement {
-	const targetAvatar = <img
+	const openLightbox = use(LightboxContext)!
+	const mainScreen = use(MainScreenContext)
+	const makeTargetAvatar = () => <img
 		className="small avatar"
 		loading="lazy"
 		src={getAvatarThumbnailURL(target, content)}
 		data-full-src={getAvatarURL(target, content)}
-		onClick={use(LightboxContext)!}
+		onClick={openLightbox}
 		alt=""
 	/>
-	const targetElem = <>
-		{content.avatar_url && targetAvatar} <span className="name">
-			{content.displayname ?? target}
-		</span>
-	</>
+	const makeTargetElem = () => {
+		return <>
+			<img
+				className="small avatar"
+				loading="lazy"
+				src={getAvatarThumbnailURL(target, content)}
+				data-full-src={getAvatarURL(target, content)}
+				data-target-panel="user"
+				data-target-user={target}
+				onClick={mainScreen.clickRightPanelOpener}
+				alt=""
+			/> <span className="name">
+				{content.displayname ?? target}
+			</span>
+		</>
+	}
 	if (content.membership === prevContent?.membership) {
 		if (sender !== target) {
-			return <>made no change to {targetElem}</>
+			return <>made no change to {makeTargetElem()}</>
 		} else if (content.displayname !== prevContent.displayname) {
 			if (content.avatar_url !== prevContent.avatar_url) {
 				return <>changed their displayname and avatar</>
@@ -55,7 +69,7 @@ function useChangeDescription(
 			if (!content.avatar_url) {
 				return "removed their avatar"
 			} else if (!prevContent.avatar_url) {
-				return <>set their avatar to {targetAvatar}</>
+				return <>set their avatar to {makeTargetAvatar()}</>
 			}
 			return <>
 				changed their avatar from <img
@@ -66,16 +80,16 @@ function useChangeDescription(
 					data-full-src={getAvatarURL(target, prevContent)}
 					onClick={use(LightboxContext)!}
 					alt=""
-				/> to {targetAvatar}
+				/> to {makeTargetAvatar()}
 			</>
 		}
 		return "made no change"
 	} else if (content.membership === "join") {
 		return "joined the room"
 	} else if (content.membership === "invite") {
-		return <>invited {targetElem}</>
+		return <>invited {makeTargetElem()}</>
 	} else if (content.membership === "ban") {
-		return <>banned {targetElem}</>
+		return <>banned {makeTargetElem()}</>
 	} else if (content.membership === "knock") {
 		return "knocked on the room"
 	} else if (content.membership === "leave") {
@@ -86,11 +100,11 @@ function useChangeDescription(
 			return "left the room"
 		}
 		if (prevContent?.membership === "ban") {
-			return <>unbanned {targetElem}</>
+			return <>unbanned {makeTargetElem()}</>
 		} else if (prevContent?.membership === "invite") {
-			return <>disinvited {targetElem}</>
+			return <>disinvited {makeTargetElem()}</>
 		}
-		return <>kicked {targetElem}</>
+		return <>kicked {makeTargetElem()}</>
 	}
 	return "made an unknown membership change"
 }
