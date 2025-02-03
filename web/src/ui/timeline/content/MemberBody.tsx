@@ -36,7 +36,9 @@ function useChangeDescription(
 		</span>
 	</>
 	if (content.membership === prevContent?.membership) {
-		if (content.displayname !== prevContent.displayname) {
+		if (sender !== target) {
+			return <>made no change to {targetElem}</>
+		} else if (content.displayname !== prevContent.displayname) {
 			if (content.avatar_url !== prevContent.avatar_url) {
 				return <>changed their displayname and avatar</>
 			} else if (!content.displayname) {
