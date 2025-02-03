@@ -284,6 +284,49 @@ const AppliedSettingsView = ({ room }: SettingsViewProps) => {
 	</div>
 }
 
+const KeyExportView = ({ room }: SettingsViewProps) => {
+	const [passphrase, setPassphrase] = useState("")
+	const [hasFile, setHasFile] = useState(false)
+	return <div className="key-export">
+		<h3>Key export/import</h3>
+		<input
+			className="passphrase"
+			type="password"
+			value={passphrase}
+			onChange={evt => setPassphrase(evt.target.value)}
+			placeholder="Passphrase"
+		/>
+		<form
+			className="import-buttons"
+			action="_gomuks/keys/import"
+			encType="multipart/form-data"
+			method="post"
+			target="_blank"
+		>
+			<input type="password" name="passphrase" hidden value={passphrase} />
+			<input
+				className="import-file"
+				type="file"
+				accept="text/plain"
+				name="export"
+				defaultValue=""
+				onChange={evt => setHasFile(!!evt.target.files?.length)}
+			/>
+			<button type="submit" disabled={passphrase == "" || !hasFile}>Import keys</button>
+		</form>
+		<div className="export-buttons">
+			<form action="_gomuks/keys/export" method="post" target="_blank">
+				<input type="password" name="passphrase" hidden value={passphrase} />
+				<button type="submit" disabled={passphrase == ""}>Export all keys</button>
+			</form>
+			<form action={`_gomuks/keys/export/${encodeURIComponent(room.roomID)}`} method="post" target="_blank">
+				<input type="password" name="passphrase" hidden value={passphrase} />
+				<button type="submit" disabled={passphrase == ""}>Export room keys</button>
+			</form>
+		</div>
+	</div>
+}
+
 const SettingsView = ({ room }: SettingsViewProps) => {
 	const roomMeta = useEventAsState(room.meta)
 	const client = use(ClientContext)!
@@ -393,6 +436,9 @@ const SettingsView = ({ room }: SettingsViewProps) => {
 		</table>
 		<CustomCSSInput setPref={setPref} room={room} />
 		<AppliedSettingsView room={room} />
+		<hr/>
+		<KeyExportView room={room} />
+		<hr/>
 		<div className="misc-buttons">
 			<button onClick={onClickOpenCSSApp}>Sign into css.gomuks.app</button>
 			{window.Notification && !window.gomuksAndroid && <button onClick={client.requestNotificationPermission}>
