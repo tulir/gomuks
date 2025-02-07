@@ -71,6 +71,13 @@ func (h *HiClient) SendMessage(
 	relatesTo *event.RelatesTo,
 	mentions *event.Mentions,
 ) (*database.Event, error) {
+	if text == "/discardsession" {
+		err := h.CryptoStore.RemoveOutboundGroupSession(ctx, roomID)
+		if err != nil {
+			return nil, err
+		}
+		return nil, fmt.Errorf("outbound megolm session successfully discarded")
+	}
 	var unencrypted bool
 	if strings.HasPrefix(text, "/unencrypted ") {
 		text = strings.TrimPrefix(text, "/unencrypted ")
