@@ -111,6 +111,7 @@ func (h *HiClient) maybeDiscardOutboundSession(ctx context.Context, newMembershi
 	}
 	if prevMembership == newMembership ||
 		(prevMembership == event.MembershipInvite && newMembership == event.MembershipJoin) ||
+		(prevMembership == event.MembershipJoin && newMembership == event.MembershipInvite) ||
 		(prevMembership == event.MembershipBan && newMembership == event.MembershipLeave) ||
 		(prevMembership == event.MembershipLeave && newMembership == event.MembershipBan) {
 		return false
