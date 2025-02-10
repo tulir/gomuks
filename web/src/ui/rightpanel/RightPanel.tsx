@@ -16,6 +16,7 @@
 import { JSX, use } from "react"
 import type { UserID } from "@/api/types"
 import MainScreenContext from "../MainScreenContext.ts"
+import ErrorBoundary from "../util/ErrorBoundary.tsx"
 import MemberList from "./MemberList.tsx"
 import PinnedMessages from "./PinnedMessages.tsx"
 import UserInfo from "./UserInfo.tsx"
@@ -76,7 +77,9 @@ const RightPanel = (props: RightPanelProps) => {
 			<button onClick={mainScreen.closeRightPanel}><CloseIcon/></button>
 		</div>
 		<div className={`right-panel-content ${props.type}`}>
-			{renderRightPanelContent(props)}
+			<ErrorBoundary thing="right panel content">
+				{renderRightPanelContent(props)}
+			</ErrorBoundary>
 		</div>
 	</div>
 }

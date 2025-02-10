@@ -18,6 +18,13 @@ div.room-view {
 		justify-content: center;
 		align-items: center;
 	}
+
+	> div.room-view-error {
+		display: flex;
+		justify-content: center;
+		align-items: center;
+		height: 100%;
+	}
 }
 
 div#mobile-event-menu-container {

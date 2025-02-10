@@ -19,6 +19,7 @@ import MessageComposer from "../composer/MessageComposer.tsx"
 import TypingNotifications from "../composer/TypingNotifications.tsx"
 import RightPanel, { RightPanelProps } from "../rightpanel/RightPanel.tsx"
 import TimelineView from "../timeline/TimelineView.tsx"
+import ErrorBoundary from "../util/ErrorBoundary.tsx"
 import RoomViewHeader from "./RoomViewHeader.tsx"
 import { RoomContext, RoomContextData } from "./roomcontext.ts"
 import "./RoomView.css"
@@ -49,11 +50,13 @@ const RoomView = ({ room, rightPanelResizeHandle, rightPanel }: RoomViewProps) =
 	}
 	return <RoomContext value={roomContextData}>
 		<div className="room-view" onClick={onClick}>
-			<div id="mobile-event-menu-container"/>
-			<RoomViewHeader room={room}/>
-			<TimelineView/>
-			<MessageComposer/>
-			<TypingNotifications/>
+			<ErrorBoundary thing="room view" wrapperClassName="room-view-error">
+				<div id="mobile-event-menu-container"/>
+				<RoomViewHeader room={room}/>
+				<TimelineView/>
+				<MessageComposer/>
+				<TypingNotifications/>
+			</ErrorBoundary>
 		</div>
 		{rightPanelResizeHandle}
 		{rightPanel && <RightPanel {...rightPanel}/>}

@@ -14,27 +14,12 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import React from "react"
+import ErrorBoundary from "@/ui/util/ErrorBoundary.tsx"
 
-export default class ContentErrorBoundary extends React.Component<{ children: React.ReactNode }, { error?: Error }> {
-	constructor(props: { children: React.ReactNode }) {
-		super(props)
-		this.state = { error: undefined }
-	}
-
-	static getDerivedStateFromError(error: unknown) {
-		if (error instanceof Error) {
-			error = new Error(`${error}`)
-		}
-		return { error }
-	}
-
-	render() {
-		if (this.state.error) {
-			return <div className="render-error-body">
-				Failed to render event: {this.state.error.message.replace(/^Error: /, "")}
-			</div>
-		}
-
-		return this.props.children
+export default class ContentErrorBoundary extends ErrorBoundary {
+	renderError(message: string): React.JSX.Element {
+		return <div className="render-error-body">
+			Failed to render event: {message}
+		</div>
 	}
 }
