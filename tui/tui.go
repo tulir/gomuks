@@ -1,5 +1,5 @@
 // gomuks - A Matrix client written in Go.
-// Copyright (C) 2024 Tulir Asokan
+// Copyright (C) 2025 Tulir Asokan
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Affero General Public License as published by
@@ -30,8 +30,8 @@ type View string
 // Allowed views in GomuksTUI
 type GomuksTUI struct {
 	*gomuks.Gomuks
-	App *mauview.Application
-
+	App       *mauview.Application
+	mainView  *MainView
 	loginView *LoginView
 }
 
@@ -57,7 +57,11 @@ func init() {
 
 func (gt *GomuksTUI) Run() {
 	gt.App = mauview.NewApplication()
-	gt.App.SetRoot(gt.NewLoginView())
+	if !gt.Client.IsLoggedIn() {
+		gt.App.SetRoot(gt.NewLoginView())
+	} else {
+		gt.App.SetRoot(gt.NewMainView())
+	}
 	err := gt.App.Start()
 	if err != nil {
 		panic(err)
