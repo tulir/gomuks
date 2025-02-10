@@ -18,7 +18,7 @@ import { PuffLoader } from "react-spinners"
 import { getAvatarURL } from "@/api/media.ts"
 import { useRoomMember } from "@/api/statestore"
 import { MemberEventContent, UserID, UserProfile } from "@/api/types"
-import { getLocalpart } from "@/util/validation.ts"
+import { ensureString, getLocalpart } from "@/util/validation.ts"
 import ClientContext from "../ClientContext.ts"
 import { LightboxContext } from "../modal"
 import { RoomContext } from "../roomview/roomcontext.ts"
@@ -51,8 +51,9 @@ const UserInfo = ({ userID }: UserInfoProps) => {
 		)
 	}, [userID, client])
 	useEffect(() => refreshProfile(true), [refreshProfile])
-
-	const displayname = member?.displayname || globalProfile?.displayname || getLocalpart(userID)
+	const displayname = ensureString(member?.displayname)
+		|| ensureString(globalProfile?.displayname)
+		|| getLocalpart(userID)
 	return <>
 		<div className="avatar-container">
 			{member === null && globalProfile === null && errors == null ? <PuffLoader
