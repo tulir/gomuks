@@ -1,9 +1,6 @@
 div.timeline-view {
 	overflow-y: scroll;
-
-	display: flex;
-	flex-direction: column;
-	justify-content: space-between;
+	contain: strict;
 
 	> div.timeline-beginning {
 		display: flex;
@@ -19,5 +16,15 @@ div.timeline-view {
 
 	> div.timeline-list {
 		padding-bottom: 2rem;
+
+		width: 100%;
+		position: relative;
+
+		> div.timeline-virtual-items {
+			position: absolute;
+			top: 0;
+			left: 0;
+			width: 100%
+		}
 	}
 }
