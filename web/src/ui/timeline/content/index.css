@@ -23,6 +23,14 @@ div.redacted-body, div.decryption-pending-body {
 	}
 }
 
+div.member-body,
+div.room-name-body,
+div.power-level-body,
+div.room-avatar-body {
+	font-size: 0.9rem;
+	color: var(--secondary-text-color);
+}
+
 div.member-body {
 	span.name, span.reason {
 		unicode-bidi: isolate;
