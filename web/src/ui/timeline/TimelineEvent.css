@@ -2,7 +2,7 @@ div.timeline-event {
 	width: 100%;
 	max-width: 100%;
 	box-sizing: border-box;
-	padding: 0 var(--timeline-horizontal-padding);
+	padding: var(--timeline-vertical-padding) var(--timeline-horizontal-padding);
 	display: grid;
 	grid-template:
 		"cmc                          cmc                        cmc      empty"  0
