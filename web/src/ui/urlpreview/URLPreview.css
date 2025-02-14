@@ -50,6 +50,11 @@ div.url-preview {
 		}
 	}
 
+	div.loading-preview-indicator {
+		grid-area: description;
+		margin: 0.5rem auto;
+	}
+
 	div.description {
 		grid-area: description;
 		margin: 0 0.5rem 0.5rem;

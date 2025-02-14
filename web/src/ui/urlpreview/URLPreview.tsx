@@ -29,22 +29,22 @@ const URLPreview = ({ url, preview, startLoadingPreview, clearPreview }: {
 	startLoadingPreview?: () => void,
 	clearPreview?: () => void,
 }) => {
-	if (preview === "awaiting_user") {
-		return <div key={url} className="url-preview inline" title={`Load preview for ${url}?`}>
+	if (preview === "awaiting_user" || preview === "loading") {
+		return <div key={url} className="url-preview inline"
+			title={preview ==="awaiting_user"
+				? `Load preview for ${url}?`
+				: `Loading preview for ${url}`}
+		>
 			<div className="title">
 				<a href={url} target="_blank" rel="noreferrer noopener">{url}</a>
 			</div>
-			<div className="actions">
-				<button onClick={clearPreview}><DeleteIcon/></button>
-			</div>
-			<div className="load-preview-button">
-				<button onClick={startLoadingPreview}><RefreshIcon/> Load Preview</button>
-			</div>
-		</div>
-	}
-	if (preview === "loading") {
-		return <div key={url} className="url-preview loading" title={`Loading preview for ${url}`}>
-			<ScaleLoader color="var(--primary-color)"/>
+			{preview === "awaiting_user"
+				? <div className="load-preview-button">
+					<button onClick={startLoadingPreview}><RefreshIcon/> Load Preview</button>
+				</div>
+				: <div className="loading-preview-indicator">
+					<ScaleLoader color="var(--primary-color)"/>
+				</div>}
 		</div>
 	}
 
