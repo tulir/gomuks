@@ -155,6 +155,9 @@ func (h *HiClient) SendMessage(
 			}
 		}
 	}
+	if urlPreviews != nil {
+		content.BeeperLinkPreviews = *urlPreviews
+	}
 	if relatesTo != nil {
 		if relatesTo.Type == event.RelReplace {
 			contentCopy := content
@@ -176,9 +179,6 @@ func (h *HiClient) SendMessage(
 	if content.MsgType == "m.sticker" {
 		content.MsgType = ""
 		evtType = event.EventSticker
-	}
-	if urlPreviews != nil {
-		content.BeeperLinkPreviews = *urlPreviews
 	}
 	return h.send(ctx, roomID, evtType, &event.Content{Parsed: content, Raw: extra}, origText, unencrypted)
 }
