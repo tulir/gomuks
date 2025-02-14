@@ -168,6 +168,10 @@ const MessageComposer = () => {
 			replyTo: null,
 			silentReply: false,
 			explicitReplyInThread: false,
+			previews:
+				evt.content["m.url_previews"] ??
+				evt.content["com.beeper.linkpreviews"] ??
+				[],
 		})
 		textInput.current?.focus()
 	}, [room.roomID])
