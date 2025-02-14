@@ -13,7 +13,7 @@ div.url-preview {
 	}
 
 	grid-template:
-		"title       actions"       auto
+		"title       actions"     auto
 		"description description" auto
 		"media       media"       auto
 		/ 1fr;
@@ -73,7 +73,7 @@ div.url-preview {
 
 	&.inline {
 		grid-template:
-			"media        title       actions"       auto
+			"media        title       actions"     auto
 			"media        description description" auto
 			/ min-content auto        2rem;
 		width: 100%;
