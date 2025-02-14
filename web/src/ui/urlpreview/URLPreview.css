@@ -13,23 +13,41 @@ div.url-preview {
 	}
 
 	grid-template:
-		"title       clear"       auto
+		"title       actions"       auto
 		"description description" auto
 		"media       media"       auto
 		/ 1fr;
 
 	div.title {
 		grid-area: title;
-		margin: 0.5rem 0.5rem 0;
+		margin: 0.5rem;
 		overflow: hidden;
 		white-space: nowrap;
 		text-overflow: ellipsis;
 		font-weight: bold;
+
+		&.with-description {
+			margin-bottom: 0;
+		}
 	}
 
-	div.clear {
-		grid-area: clear;
+	div.actions {
+		grid-area: actions;
 		margin: 0.5rem 0.5rem 0 0;
+	}
+
+	div.load-preview-button {
+		grid-area: description;
+		margin: 0.5rem;
+
+		> button {
+			svg {
+				margin-right: 0.5rem;
+			}
+
+			width: 100%;
+			height: 2.5rem;
+		}
 	}
 
 	div.description {
@@ -50,7 +68,7 @@ div.url-preview {
 
 	&.inline {
 		grid-template:
-			"media        title       clear"       auto
+			"media        title       actions"       auto
 			"media        description description" auto
 			/ min-content auto        2rem;
 		width: 100%;

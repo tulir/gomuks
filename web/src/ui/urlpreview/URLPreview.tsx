@@ -19,14 +19,29 @@ import { getEncryptedMediaURL, getMediaURL } from "@/api/media"
 import { URLPreview as URLPreviewType } from "@/api/types"
 import { ImageContainerSize, calculateMediaSize } from "@/util/mediasize"
 import { LightboxContext } from "../modal"
-import CloseIcon from "@/icons/close.svg?react"
+import DeleteIcon from "@/icons/delete.svg?react"
+import RefreshIcon from "@/icons/refresh.svg?react"
 import "./URLPreview.css"
 
-const URLPreview = ({ url, preview, clearPreview }: {
+const URLPreview = ({ url, preview, startLoadingPreview, clearPreview }: {
 	url: string,
-	preview: URLPreviewType | "loading",
+	preview: URLPreviewType | "awaiting_user" | "loading",
+	startLoadingPreview?: () => void,
 	clearPreview?: () => void,
 }) => {
+	if (preview === "awaiting_user") {
+		return <div key={url} className="url-preview inline" title={`Load preview for ${url}?`}>
+			<div className="title">
+				<a href={url} target="_blank" rel="noreferrer noopener">{url}</a>
+			</div>
+			<div className="actions">
+				<button onClick={clearPreview}><DeleteIcon/></button>
+			</div>
+			<div className="load-preview-button">
+				<button onClick={startLoadingPreview}><RefreshIcon/> Load Preview</button>
+			</div>
+		</div>
+	}
 	if (preview === "loading") {
 		return <div key={url} className="url-preview loading" title={`Loading preview for ${url}`}>
 			<ScaleLoader color="var(--primary-color)"/>
@@ -68,8 +83,8 @@ const URLPreview = ({ url, preview, clearPreview }: {
 		<div className="title">
 			<a href={previewingUrl} title={title} target="_blank" rel="noreferrer noopener">{title}</a>
 		</div>
-		{clearPreview && <div className="clear">
-			<button onClick={clearPreview}><CloseIcon/></button>
+		{clearPreview && <div className="actions">
+			<button onClick={clearPreview}><DeleteIcon/></button>
 		</div>}
 		<div className="description">{preview["og:description"]}</div>
 		{mediaURL && (inline
