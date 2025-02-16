@@ -279,6 +279,7 @@ func (h *HiClient) GetReceipts(ctx context.Context, roomID id.RoomID, eventIDs [
 
 func (h *HiClient) PaginateServer(ctx context.Context, roomID id.RoomID, limit int) (*PaginationResponse, error) {
 	ctx, cancel := context.WithCancelCause(ctx)
+	defer cancel(context.Canceled)
 	h.paginationInterrupterLock.Lock()
 	if _, alreadyPaginating := h.paginationInterrupter[roomID]; alreadyPaginating {
 		h.paginationInterrupterLock.Unlock()
