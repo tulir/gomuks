@@ -13,6 +13,9 @@ cache:
   paths:
   - .cache
 
+variables:
+  GOTOOLCHAIN: local
+
 frontend:
   image: node:22-alpine
   stage: frontend
