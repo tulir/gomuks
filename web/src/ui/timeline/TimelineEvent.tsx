@@ -39,7 +39,9 @@ export interface TimelineEventProps {
 	prevEvt: MemDBEvent | null
 	disableMenu?: boolean
 	smallReplies?: boolean
-	isFocused?: boolean
+	isFocused?: boolean,
+	virtualIndex?: number,
+	ref?: React.Ref<HTMLDivElement>
 }
 
 const fullTimeFormatter = new Intl.DateTimeFormat("en-GB", { dateStyle: "full", timeStyle: "medium" })
@@ -75,7 +77,9 @@ const EventSendStatus = ({ evt }: { evt: MemDBEvent }) => {
 	}
 }
 
-const TimelineEvent = ({ evt, prevEvt, disableMenu, smallReplies, isFocused }: TimelineEventProps) => {
+const TimelineEvent = ({
+	evt, prevEvt, disableMenu, smallReplies, isFocused, virtualIndex, ref,
+}: TimelineEventProps) => {
 	const roomCtx = useRoomContext()
 	const client = use(ClientContext)!
 	const mainScreen = use(MainScreenContext)
@@ -148,9 +152,10 @@ const TimelineEvent = ({ evt, prevEvt, disableMenu, smallReplies, isFocused }: T
 		eventTS.getDate() !== prevEvtDate.getDate() ||
 		eventTS.getMonth() !== prevEvtDate.getMonth() ||
 		eventTS.getFullYear() !== prevEvtDate.getFullYear())) {
-		dateSeparator = <div className="date-separator">
+		const dateLabel = dateFormatter.format(eventTS)
+		dateSeparator = <div className="date-separator" role="separator" aria-label={dateLabel}>
 			<hr role="none"/>
-			{dateFormatter.format(eventTS)}
+			{dateLabel}
 			<hr role="none"/>
 		</div>
 	}
@@ -212,6 +217,8 @@ const TimelineEvent = ({ evt, prevEvt, disableMenu, smallReplies, isFocused }: T
 		className={wrapperClassNames.join(" ")}
 		onContextMenu={onContextMenu}
 		onClick={!disableMenu && isMobileDevice ? onClick : undefined}
+		data-index={virtualIndex}
+		ref={ref}
 	>
 		{!disableMenu && !isMobileDevice && <div
 			className={`context-menu-container ${forceContextMenuOpen ? "force-open" : ""}`}
@@ -276,10 +283,7 @@ const TimelineEvent = ({ evt, prevEvt, disableMenu, smallReplies, isFocused }: T
 			<ReadReceipts room={roomCtx.store} eventID={evt.event_id} />}
 		{evt.sender === client.userID && evt.transaction_id ? <EventSendStatus evt={evt}/> : null}
 	</div>
-	return <>
-		{dateSeparator}
-		{mainEvent}
-	</>
+	return mainEvent
 }
 
 export default React.memo(TimelineEvent)
