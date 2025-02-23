@@ -45,6 +45,8 @@ export function getBodyType(evt: MemDBEvent, forReply = false): React.FunctionCo
 			return RoomNameBody
 		case "m.room.avatar":
 			return RoomAvatarBody
+		case "m.room.server_acl":
+			return ACLBody
 		case "m.room.pinned_events":
 			return PinnedEventsBody
 		case "m.room.power_levels":
@@ -55,8 +57,6 @@ export function getBodyType(evt: MemDBEvent, forReply = false): React.FunctionCo
 		switch (evt.type) {
 		case "m.room.member":
 			return MemberBody
-		case "m.room.server_acl":
-			return ACLBody
 		case "m.policy.rule.user":
 			return PolicyRuleBody
 		case "m.policy.rule.room":
