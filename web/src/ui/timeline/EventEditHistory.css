@@ -6,7 +6,13 @@ div.event-edit-history-modal {
 	--timeline-status-size: 0;
 	--timeline-horizontal-padding: 0;
 	min-width: 20rem;
+	box-sizing: border-box;
 	padding: 1rem;
+
+	@media screen and (max-width: 30rem) {
+		min-width: 100%;
+		padding: .5rem;
+	}
 
 	> p {
 		margin: 0;

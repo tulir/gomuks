@@ -125,7 +125,7 @@ const TimelineEvent = ({
 			content: <EventEditHistory evt={evt} roomCtx={roomCtx}/>,
 			dimmed: true,
 			boxed: true,
-			boxClass: "event-edit-history-wrapper",
+			boxClass: "full-screen-mobile event-edit-history-wrapper",
 			innerBoxClass: "event-edit-history-modal",
 		})
 	}
