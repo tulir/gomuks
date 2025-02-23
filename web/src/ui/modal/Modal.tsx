@@ -32,7 +32,6 @@ const ModalWrapper = ({ children, ContextType, historyStateKey }: ModalWrapperPr
 		if (evt && evt.target !== evt.currentTarget) {
 			return
 		}
-		console.log("MEOW", evt)
 		evt?.stopPropagation()
 		setState(null)
 		if (history.state?.[historyStateKey]) {
