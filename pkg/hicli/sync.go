@@ -621,7 +621,7 @@ func (h *HiClient) processEvent(
 	}
 	var decryptionErr error
 	var decryptedMautrixEvt *event.Event
-	if evt.Type == event.EventEncrypted && dbEvt.RedactedBy == "" {
+	if evt.Type == event.EventEncrypted && (dbEvt.RedactedBy == "" || len(dbEvt.Content) > 2) {
 		decryptedMautrixEvt, decryptionErr = h.decryptEventInto(ctx, evt, dbEvt)
 	} else if evt.Type == event.EventRedaction {
 		if evt.Redacts != "" && gjson.GetBytes(evt.Content.VeryRaw, "redacts").Str != evt.Redacts.String() {
