@@ -613,6 +613,14 @@ func (h *HiClient) processEvent(
 			return dbEvt, nil
 		}
 	}
+	if evt.StateKey != nil && evt.Unsigned.PrevContent == nil && evt.Unsigned.ReplacesState != "" {
+		replacesState, err := h.DB.Event.GetByID(ctx, evt.Unsigned.ReplacesState)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get prev content for %s from %s: %w", evt.ID, evt.Unsigned.ReplacesState, err)
+		} else if replacesState != nil {
+			evt.Unsigned.PrevContent = &event.Content{VeryRaw: replacesState.Content}
+		}
+	}
 	dbEvt := database.MautrixToEvent(evt)
 	contentWithoutFallback := removeReplyFallback(evt)
 	if contentWithoutFallback != nil {
