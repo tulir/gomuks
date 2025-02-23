@@ -21,7 +21,7 @@ require (
 	go.mau.fi/util v0.8.5
 	go.mau.fi/webp v0.2.0
 	go.mau.fi/zeroconfig v0.1.3
-	golang.org/x/crypto v0.33.0
+	golang.org/x/crypto v0.34.0
 	golang.org/x/image v0.24.0
 	golang.org/x/net v0.35.0
 	golang.org/x/text v0.22.0

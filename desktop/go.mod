@@ -66,7 +66,7 @@ require (
 	github.com/yuin/goldmark v1.7.8 // indirect
 	go.mau.fi/webp v0.2.0 // indirect
 	go.mau.fi/zeroconfig v0.1.3 // indirect
-	golang.org/x/crypto v0.33.0 // indirect
+	golang.org/x/crypto v0.34.0 // indirect
 	golang.org/x/exp v0.0.0-20250215185904-eff6e970281f // indirect
 	golang.org/x/image v0.24.0 // indirect
 	golang.org/x/mod v0.23.0 // indirect
