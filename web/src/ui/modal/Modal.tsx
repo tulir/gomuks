@@ -14,6 +14,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import React, { Context, JSX, useCallback, useEffect, useLayoutEffect, useReducer, useRef } from "react"
+import ErrorBoundary from "../util/ErrorBoundary.tsx"
 import { ModalCloseContext, ModalState, openModal } from "./contexts.ts"
 
 interface ModalWrapperProps {
@@ -71,7 +72,11 @@ const ModalWrapper = ({ children, ContextType, historyStateKey }: ModalWrapperPr
 	}, [historyStateKey, onClickWrapper])
 	let modal: JSX.Element | null = null
 	if (state) {
-		let content = <ModalCloseContext value={onClickWrapper}>{state.content}</ModalCloseContext>
+		let content = <ModalCloseContext value={onClickWrapper}>
+			<ErrorBoundary thing="modal">
+				{state.content}
+			</ErrorBoundary>
+		</ModalCloseContext>
 		if (state.boxed) {
 			content = <div className={`modal-box ${state.boxClass ?? ""}`}>
 				<div className={`modal-box-inner ${state.innerBoxClass ?? ""}`}>
