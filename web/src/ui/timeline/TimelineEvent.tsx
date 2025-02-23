@@ -233,7 +233,6 @@ const TimelineEvent = ({
 	}
 	const fullTime = fullTimeFormatter.format(eventTS)
 	const shortTime = formatShortTime(eventTS)
-	const editTime = editEventTS ? `Edited at ${fullTimeFormatter.format(editEventTS)}` : null
 	const mainEvent = <div
 		data-event-id={evt.event_id}
 		className={wrapperClassNames.join(" ")}
@@ -294,9 +293,9 @@ const TimelineEvent = ({
 				<BodyType room={roomCtx.store} sender={memberEvt} event={evt}/>
 				{!isSmallBodyType && <URLPreviews room={roomCtx.store} event={evt}/>}
 			</ContentErrorBoundary>
-			{(!editHistoryView && editEventTS && editTime) ? <div
+			{(!editHistoryView && editEventTS) ? <div
 				className="event-edited"
-				title={editTime}
+				title={`Edited at ${fullTimeFormatter.format(editEventTS)}`}
 				onClick={openEditHistory}
 			>
 				(edited at {formatShortTime(editEventTS)})
