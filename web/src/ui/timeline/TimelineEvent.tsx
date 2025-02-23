@@ -17,7 +17,7 @@ import React, { JSX, use, useState } from "react"
 import { createPortal } from "react-dom"
 import { getAvatarThumbnailURL, getMediaURL, getUserColorIndex } from "@/api/media.ts"
 import { useRoomMember } from "@/api/statestore"
-import { MemDBEvent, MemberEventContent, UnreadType } from "@/api/types"
+import { MemDBEvent, UnreadType, UserProfile } from "@/api/types"
 import { isMobileDevice } from "@/util/ismobile.ts"
 import { getDisplayname, isEventID } from "@/util/validation.ts"
 import ClientContext from "../ClientContext.ts"
@@ -129,8 +129,6 @@ const TimelineEvent = ({
 			innerBoxClass: "event-edit-history-modal",
 		})
 	}
-	const memberEvt = useRoomMember(client, roomCtx.store, evt.sender)
-	const memberEvtContent = memberEvt?.content as MemberEventContent | undefined
 	const BodyType = getBodyType(evt)
 	const eventTS = new Date(evt.timestamp)
 	const editEventTS = evt.last_edit ? new Date(evt.last_edit.timestamp) : null
@@ -190,10 +188,21 @@ const TimelineEvent = ({
 	}
 	const perMessageSender = getPerMessageProfile(evt)
 	const prevPerMessageSender = getPerMessageProfile(prevEvt)
+	const memberEvt = useRoomMember(client, roomCtx.store, evt.sender)
+	let memberEvtContent = memberEvt?.content as UserProfile | undefined
+	if (memberEvt?.redacted_by && !memberEvt?.viewing_redacted) {
+		memberEvtContent = {}
+	} else if (
+		memberEvtContent?.displayname === undefined
+		&& memberEvtContent?.avatar_url === undefined
+		&& memberEvt?.content.membership === "leave"
+		&& memberEvt.unsigned.prev_content
+	) {
+		memberEvtContent = memberEvt.unsigned.prev_content as UserProfile | undefined
+	}
 	let renderMemberEvtContent = memberEvtContent
 	if (perMessageSender) {
 		renderMemberEvtContent = {
-			membership: "join",
 			displayname: perMessageSender.displayname ?? memberEvtContent?.displayname,
 			avatar_url: perMessageSender.avatar_url ?? memberEvtContent?.avatar_url,
 			avatar_file: perMessageSender.avatar_file ?? memberEvtContent?.avatar_file,
