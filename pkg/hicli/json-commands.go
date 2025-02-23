@@ -125,10 +125,10 @@ func (h *HiClient) handleJSONCommand(ctx context.Context, req *JSONCommand) (any
 		return unmarshalAndCall(req.Data, func(params *getEventParams) (*database.Event, error) {
 			return h.GetEvent(ctx, params.RoomID, params.EventID)
 		})
-	//case "get_events_by_rowids":
-	//	return unmarshalAndCall(req.Data, func(params *getEventsByRowIDsParams) ([]*database.Event, error) {
-	//		return h.GetEventsByRowIDs(ctx, params.RowIDs)
-	//	})
+	case "get_related_events":
+		return unmarshalAndCall(req.Data, func(params *getRelatedEventsParams) ([]*database.Event, error) {
+			return h.DB.Event.GetRelatedEvents(ctx, params.RoomID, params.EventID, params.RelationType)
+		})
 	case "get_room_state":
 		return unmarshalAndCall(req.Data, func(params *getRoomStateParams) ([]*database.Event, error) {
 			return h.GetRoomState(ctx, params.RoomID, params.IncludeMembers, params.FetchMembers, params.Refetch)
@@ -315,9 +315,12 @@ type getEventParams struct {
 	EventID id.EventID `json:"event_id"`
 }
 
-//type getEventsByRowIDsParams struct {
-//	RowIDs []database.EventRowID `json:"row_ids"`
-//}
+type getRelatedEventsParams struct {
+	RoomID  id.RoomID  `json:"room_id"`
+	EventID id.EventID `json:"event_id"`
+
+	RelationType event.RelationType `json:"relation_type"`
+}
 
 type getRoomStateParams struct {
 	RoomID         id.RoomID `json:"room_id"`

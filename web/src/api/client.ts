@@ -26,6 +26,7 @@ import type {
 	ImagePackRooms,
 	RPCEvent,
 	RawDBEvent,
+	RelationType,
 	RoomID,
 	RoomStateGUID,
 	SyncStatus,
@@ -233,6 +234,17 @@ export default class Client {
 			evt => room.applyEvent(evt),
 			err => console.error(`Failed to fetch event ${eventID}`, err),
 		)
+	}
+
+	async getRelatedEvents(room: RoomStateStore | RoomID | undefined, eventID: EventID, relationType?: RelationType) {
+		if (typeof room === "string") {
+			room = this.store.rooms.get(room)
+		}
+		if (!room) {
+			return []
+		}
+		const events = await this.rpc.getRelatedEvents(room.roomID, eventID, relationType)
+		return events.map(evt => room.getOrApplyEvent(evt))
 	}
 
 	async pinMessage(room: RoomStateStore, evtID: EventID, wantPinned: boolean) {

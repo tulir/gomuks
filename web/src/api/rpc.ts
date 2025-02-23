@@ -19,7 +19,6 @@ import type {
 	ClientWellKnown,
 	DBPushRegistration,
 	EventID,
-	EventRowID,
 	EventType,
 	JSONValue,
 	LoginFlowsResponse,
@@ -34,6 +33,7 @@ import type {
 	RawDBEvent,
 	ReceiptType,
 	RelatesTo,
+	RelationType,
 	ResolveAliasResponse,
 	RespOpenIDToken,
 	RespRoomJoin,
@@ -222,8 +222,8 @@ export default abstract class RPCClient {
 		return this.request("get_event", { room_id, event_id })
 	}
 
-	getEventsByRowIDs(row_ids: EventRowID[]): Promise<RawDBEvent[]> {
-		return this.request("get_events_by_row_ids", { row_ids })
+	getRelatedEvents(room_id: RoomID, event_id: EventID, relation_type?: RelationType): Promise<RawDBEvent[]> {
+		return this.request("get_related_events", { room_id, event_id, relation_type })
 	}
 
 	paginate(room_id: RoomID, max_timeline_id: TimelineRowID, limit: number): Promise<PaginationResponse> {

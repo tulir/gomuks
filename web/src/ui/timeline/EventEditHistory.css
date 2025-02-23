@@ -1,0 +1,14 @@
+div.event-edit-history-wrapper {
+	padding: 0 !important;
+}
+
+div.event-edit-history-modal {
+	--timeline-status-size: 0;
+	--timeline-horizontal-padding: 0;
+	min-width: 20rem;
+	padding: 1rem;
+
+	> p {
+		margin: 0;
+	}
+}

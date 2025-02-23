@@ -344,6 +344,14 @@ export class RoomStateStore {
 		return true
 	}
 
+	getOrApplyEvent(evt: RawDBEvent) {
+		const existing = this.eventsByRowID.get(evt.rowid)
+		if (existing) {
+			return existing
+		}
+		return this.applyEvent(evt)
+	}
+
 	applyEvent(evt: RawDBEvent, pending: boolean = false) {
 		const memEvt = evt as MemDBEvent
 		memEvt.mem = true
@@ -362,6 +370,7 @@ export class RoomStateStore {
 			memEvt.last_edit = this.eventsByRowID.get(memEvt.last_edit_rowid)
 			if (memEvt.last_edit) {
 				memEvt.orig_content = memEvt.content
+				memEvt.orig_local_content = memEvt.local_content
 				memEvt.content = memEvt.last_edit.content["m.new_content"]
 				memEvt.local_content = memEvt.last_edit.local_content
 			}
@@ -371,6 +380,7 @@ export class RoomStateStore {
 				this.eventsByRowID.set(editTarget.rowid, {
 					...editTarget,
 					last_edit: memEvt,
+					orig_local_content: editTarget.local_content,
 					orig_content: editTarget.content,
 					content: memEvt.content["m.new_content"],
 					local_content: memEvt.local_content,
