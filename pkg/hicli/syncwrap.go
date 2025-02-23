@@ -69,7 +69,7 @@ func (h *hiSyncer) OnFailedSync(_ *mautrix.RespSync, err error) (time.Duration, 
 	c.syncErrors++
 	delay := 1 * time.Second
 	if c.syncErrors > 5 {
-		delay = max(time.Duration(c.syncErrors)*time.Second, 30*time.Second)
+		delay = min(time.Duration(c.syncErrors)*time.Second, 30*time.Second)
 	}
 	c.markSyncErrored(err, false)
 	c.Log.Err(err).Dur("retry_in", delay).Msg("Sync failed")
