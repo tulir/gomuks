@@ -218,8 +218,8 @@ export default abstract class RPCClient {
 		return this.request("get_room_state", { room_id, include_members, fetch_members, refetch })
 	}
 
-	getEvent(room_id: RoomID, event_id: EventID): Promise<RawDBEvent> {
-		return this.request("get_event", { room_id, event_id })
+	getEvent(room_id: RoomID, event_id: EventID, unredact?: boolean): Promise<RawDBEvent> {
+		return this.request("get_event", { room_id, event_id, unredact })
 	}
 
 	getRelatedEvents(room_id: RoomID, event_id: EventID, relation_type?: RelationType): Promise<RawDBEvent[]> {

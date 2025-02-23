@@ -65,10 +65,11 @@ export function getBodyType(evt: MemDBEvent, forReply = false): React.FunctionCo
 			return PolicyRuleBody
 		}
 	} else {
+		const isRedacted = evt.redacted_by && !evt.viewing_redacted
 		// Non-state events
 		switch (evt.type) {
 		case "m.room.message":
-			if (evt.redacted_by) {
+			if (isRedacted) {
 				return RedactedBody
 			}
 			switch (evt.content?.msgtype) {
@@ -93,14 +94,14 @@ export function getBodyType(evt: MemDBEvent, forReply = false): React.FunctionCo
 				return UnknownMessageBody
 			}
 		case "m.sticker":
-			if (evt.redacted_by) {
+			if (isRedacted) {
 				return RedactedBody
 			} else if (forReply) {
 				return TextMessageBody
 			}
 			return MediaMessageBody
 		case "m.room.encrypted":
-			if (evt.redacted_by) {
+			if (isRedacted) {
 				return RedactedBody
 			}
 			return EncryptedBody

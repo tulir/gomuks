@@ -158,6 +158,7 @@ export interface MemDBEvent extends BaseDBEvent {
 	orig_content?: UnknownEventContent
 	orig_local_content?: LocalContent
 	last_edit?: MemDBEvent
+	viewing_redacted?: boolean
 }
 
 export interface DBAccountData {

@@ -123,6 +123,9 @@ func (h *HiClient) handleJSONCommand(ctx context.Context, req *JSONCommand) (any
 		})
 	case "get_event":
 		return unmarshalAndCall(req.Data, func(params *getEventParams) (*database.Event, error) {
+			if params.Unredact {
+				return h.GetUnredactedEvent(ctx, params.RoomID, params.EventID)
+			}
 			return h.GetEvent(ctx, params.RoomID, params.EventID)
 		})
 	case "get_related_events":
@@ -311,8 +314,9 @@ type setProfileFieldParams struct {
 }
 
 type getEventParams struct {
-	RoomID  id.RoomID  `json:"room_id"`
-	EventID id.EventID `json:"event_id"`
+	RoomID   id.RoomID  `json:"room_id"`
+	EventID  id.EventID `json:"event_id"`
+	Unredact bool       `json:"unredact"`
 }
 
 type getRelatedEventsParams struct {

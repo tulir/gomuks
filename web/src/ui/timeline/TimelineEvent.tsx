@@ -138,7 +138,8 @@ const TimelineEvent = ({
 	if (evt.unread_type & UnreadType.Highlight) {
 		wrapperClassNames.push("highlight")
 	}
-	if (evt.redacted_by) {
+	const isRedacted = evt.redacted_by && !evt.viewing_redacted
+	if (isRedacted) {
 		wrapperClassNames.push("redacted-event")
 	}
 	if (evt.type === "m.room.member") {
@@ -173,7 +174,7 @@ const TimelineEvent = ({
 	const replyTo = relatesTo?.["m.in_reply_to"]?.event_id
 	let replyAboveMessage: JSX.Element | null = null
 	let replyInMessage: JSX.Element | null = null
-	if (isEventID(replyTo) && BodyType !== HiddenEvent && !evt.redacted_by && !editHistoryView) {
+	if (isEventID(replyTo) && BodyType !== HiddenEvent && !isRedacted && !editHistoryView) {
 		const replyElem = <ReplyIDBody
 			room={roomCtx.store}
 			eventID={replyTo}

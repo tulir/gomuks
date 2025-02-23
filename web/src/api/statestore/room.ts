@@ -352,12 +352,21 @@ export class RoomStateStore {
 		return this.applyEvent(evt)
 	}
 
-	applyEvent(evt: RawDBEvent, pending: boolean = false) {
+	setViewingRedacted(evt: MemDBEvent, view: boolean) {
+		evt.viewing_redacted = view
+		this.eventSubs.notify(evt.event_id)
+		this.notifyTimelineSubscribers()
+	}
+
+	applyEvent(evt: RawDBEvent, pending: boolean = false, viewRedacted: boolean = false) {
 		const memEvt = evt as MemDBEvent
 		memEvt.mem = true
 		memEvt.pending = pending
 		if (pending) {
 			memEvt.timeline_rowid = UNSENT_TIMELINE_ROWID_BASE + memEvt.timestamp
+		}
+		if (viewRedacted) {
+			memEvt.viewing_redacted = true
 		}
 		if (evt.type === "m.room.encrypted" && evt.decrypted && evt.decrypted_type) {
 			memEvt.type = evt.decrypted_type

@@ -27,6 +27,7 @@ import ViewSourceIcon from "@/icons/code.svg?react"
 import DeleteIcon from "@/icons/delete.svg?react"
 import PinIcon from "@/icons/pin.svg?react"
 import ReportIcon from "@/icons/report.svg?react"
+import RestoreTrashIcon from "@/icons/restore-trash.svg?react"
 import ShareIcon from "@/icons/share.svg?react"
 import UnpinIcon from "@/icons/unpin.svg?react"
 
@@ -84,6 +85,18 @@ export const useSecondaryItems = (
 				/>
 			</RoomContext>,
 		})
+	}
+	const onClickHideUnredacted = () => {
+		closeModal()
+		roomCtx.store.setViewingRedacted(evt, false)
+	}
+	const onClickUnredact = () => {
+		closeModal()
+		if (Object.entries(evt.content).length > 0) {
+			roomCtx.store.setViewingRedacted(evt, true)
+		} else {
+			client.requestEvent(roomCtx.store, evt.event_id, true)
+		}
 	}
 	const onClickPin = (pin: boolean) => () => {
 		closeModal()
@@ -146,6 +159,8 @@ export const useSecondaryItems = (
 	const canRedact = !evt.redacted_by
 		&& ownPL >= redactEvtPL
 		&& (evt.sender === client.userID || ownPL >= redactOtherPL)
+	// TODO check server admin status and room PLs
+	const canUnredact = Boolean(evt.redacted_by)
 
 	return <>
 		<button onClick={onClickViewSource}><ViewSourceIcon/>{names && "View source"}</button>
@@ -166,5 +181,10 @@ export const useSecondaryItems = (
 			title={pendingTitle}
 			className="redact-button"
 		><DeleteIcon/>{names && "Remove"}</button>}
+		{canUnredact && (evt.viewing_redacted ? <button onClick={onClickHideUnredacted}>
+			<DeleteIcon/>{names && "Hide content"}
+		</button> : <button onClick={onClickUnredact}>
+			<RestoreTrashIcon/>{names && "View content"}
+		</button>)}
 	</>
 }

@@ -222,17 +222,27 @@ export default class Client {
 		})
 	}
 
-	requestEvent(room: RoomStateStore | RoomID | undefined, eventID: EventID) {
+	requestEvent(room: RoomStateStore | RoomID | undefined, eventID: EventID, unredact?: boolean) {
 		if (typeof room === "string") {
 			room = this.store.rooms.get(room)
 		}
-		if (!room || room.eventsByID.has(eventID) || room.requestedEvents.has(eventID)) {
+		if (!room || (!unredact && room.eventsByID.has(eventID)) ||room.requestedEvents.has(eventID)) {
 			return
 		}
 		room.requestedEvents.add(eventID)
-		this.rpc.getEvent(room.roomID, eventID).then(
-			evt => room.applyEvent(evt),
-			err => console.error(`Failed to fetch event ${eventID}`, err),
+		this.rpc.getEvent(room.roomID, eventID, unredact).then(
+			evt => {
+				room.applyEvent(evt, false, unredact)
+				if (unredact) {
+					room.notifyTimelineSubscribers()
+				}
+			},
+			err => {
+				console.error(`Failed to fetch event ${eventID}`, err)
+				if (unredact) {
+					window.alert(`Failed to get unredacted content: ${err}`)
+				}
+			},
 		)
 	}
 

@@ -79,7 +79,7 @@ export const usePrimaryItems = (
 			.catch(err => window.alert(`Failed to resend message: ${err}`))
 	}
 	const onClickMore = (mevt: React.MouseEvent<HTMLButtonElement>) => {
-		const moreMenuHeight = 4 * 40
+		const moreMenuHeight = 5 * 40
 		setForceOpen!(true)
 		openModal({
 			content: <EventExtraMenu
