@@ -240,6 +240,7 @@ export default class Client {
 			err => {
 				console.error(`Failed to fetch event ${eventID}`, err)
 				if (unredact) {
+					room.requestedEvents.delete(eventID)
 					window.alert(`Failed to get unredacted content: ${err}`)
 				}
 			},
