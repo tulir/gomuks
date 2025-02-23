@@ -24,7 +24,7 @@ import ClientContext from "./ClientContext.ts"
 import MainScreenContext, { MainScreenContextFields } from "./MainScreenContext.ts"
 import StylePreferences from "./StylePreferences.tsx"
 import Keybindings from "./keybindings.ts"
-import { ModalWrapper } from "./modal"
+import { ModalContext, ModalWrapper, NestableModalContext } from "./modal"
 import RightPanel, { RightPanelProps } from "./rightpanel/RightPanel.tsx"
 import RoomList from "./roomlist/RoomList.tsx"
 import RoomPreview, { RoomPreviewProps } from "./roomview/RoomPreview.tsx"
@@ -422,28 +422,31 @@ const MainScreen = () => {
 			return () => clearTimeout(timeout)
 		}
 	}, [activeRoom, prevActiveRoom])
+	const mainContent = <main className={classNames.join(" ")} style={extraStyle}>
+		<RoomList activeRoomID={activeRoom?.roomID ?? null} space={space}/>
+		{resizeHandle1}
+		{renderedRoom
+			? renderedRoom instanceof RoomStateStore
+				? <RoomView
+					key={renderedRoom.roomID}
+					room={renderedRoom}
+					rightPanel={rightPanel}
+					rightPanelResizeHandle={resizeHandle2}
+				/>
+				: <RoomPreview {...renderedRoom} />
+			: rightPanel && <>
+				<div className="room-view placeholder"/>
+				{resizeHandle2}
+				{rightPanel && <RightPanel {...rightPanel}/>}
+			</>}
+	</main>
 	return <MainScreenContext value={context}>
-		<ModalWrapper>
-			<StylePreferences client={client} activeRoom={activeRealRoom}/>
-			<main className={classNames.join(" ")} style={extraStyle}>
-				<RoomList activeRoomID={activeRoom?.roomID ?? null} space={space}/>
-				{resizeHandle1}
-				{renderedRoom
-					? renderedRoom instanceof RoomStateStore
-						? <RoomView
-							key={renderedRoom.roomID}
-							room={renderedRoom}
-							rightPanel={rightPanel}
-							rightPanelResizeHandle={resizeHandle2}
-						/>
-						: <RoomPreview {...renderedRoom} />
-					: rightPanel && <>
-						<div className="room-view placeholder"/>
-						{resizeHandle2}
-						{rightPanel && <RightPanel {...rightPanel}/>}
-					</>}
-			</main>
-			{syncLoader}
+		<ModalWrapper ContextType={ModalContext} historyStateKey="modal">
+			<ModalWrapper ContextType={NestableModalContext} historyStateKey="nestable_modal">
+				<StylePreferences client={client} activeRoom={activeRealRoom}/>
+				{mainContent}
+				{syncLoader}
+			</ModalWrapper>
 		</ModalWrapper>
 	</MainScreenContext>
 }
