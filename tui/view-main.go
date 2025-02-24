@@ -18,25 +18,29 @@ package tui
 
 import (
 	"bufio"
+	"context"
 	"fmt"
 	"os"
 	"sync/atomic"
 	"time"
-
-	sync "github.com/sasha-s/go-deadlock"
-
+	/*
+		sync "github.com/sasha-s/go-deadlock"
+	*/
+	"github.com/gdamore/tcell/v2"
 	"go.mau.fi/mauview"
-	"go.mau.fi/tcell"
 
 	"maunium.net/go/mautrix/id"
 	"maunium.net/go/mautrix/pushrules"
 
 	"maunium.net/go/gomuks/config"
 	"maunium.net/go/gomuks/debug"
-	"maunium.net/go/gomuks/lib/notification"
-	"maunium.net/go/gomuks/matrix/rooms"
+
+	//find what to use
 	"maunium.net/go/gomuks/gt/messages"
 	"maunium.net/go/gomuks/gt/widget"
+	"maunium.net/go/gomuks/lib/notification"
+
+	"maunium.net/go/gomuks/matrix/rooms"
 )
 
 type MainView struct {
@@ -54,20 +58,19 @@ type MainView struct {
 
 	lastFocusTime time.Time
 
-	matrix ifc.MatrixContainer
-	gmx    ifc.Gomuks
 	parent *GomuksTUI
 }
 
 func (gt *GomuksTUI) NewMainView() mauview.Component {
-
+	mainView := &MainView{
 		flex:     mauview.NewFlex().SetDirection(mauview.FlexColumn),
 		roomView: mauview.NewBox(nil).SetBorder(false),
 		rooms:    make(map[id.RoomID]*RoomView),
-
-		matrix: gt.gmx.Matrix(),
-		gmx:    gt.gmx,
-		config: gt.gmx.Config(),
+		/*crying face*
+		matrix: gt.Gomuks.Matrix(),
+		gmx:    gt.Gomuks,
+		config: gt.Gomuks.Config(),
+		*/
 		parent: gt,
 	}
 	mainView.roomList = NewRoomList(mainView)
@@ -101,6 +104,7 @@ func (view *MainView) HideModal() {
 }
 
 func (view *MainView) Draw(screen mauview.Screen) {
+	//config does not exist
 	if view.config.Preferences.HideRoomList {
 		view.roomView.Draw(screen)
 	} else {
@@ -125,7 +129,8 @@ func (view *MainView) MarkRead(roomView *RoomView) {
 		if len(msgList) > 0 {
 			msg := msgList[len(msgList)-1]
 			if roomView.Room.MarkRead(msg.ID()) {
-				view.matrix.MarkRead(roomView.Room.ID, msg.ID())
+				//? receipt type
+				view.parent.Client.MarkRead(context.TODO(), roomView.Room.ID, msg.ID())
 			}
 		}
 	}
@@ -133,7 +138,8 @@ func (view *MainView) MarkRead(roomView *RoomView) {
 
 func (view *MainView) InputChanged(roomView *RoomView, text string) {
 	if !roomView.config.Preferences.DisableTypingNotifs {
-		view.matrix.SendTyping(roomView.Room.ID, len(text) > 0 && text[0] != '/')
+		//fix args in this too
+		view.parent.Client.SetTyping(context.TODO(), roomView.Room.ID, len(text) > 0 && text[0] != '/')
 	}
 }
 
@@ -141,8 +147,8 @@ func (view *MainView) ShowBare(roomView *RoomView) {
 	if roomView == nil {
 		return
 	}
-	_, height := view.parent.app.Screen().Size()
-	view.parent.app.Suspend(func() {
+	_, height := view.parent.App.Screen().Size()
+	view.parent.App.Suspend(func() {
 		print("\033[2J\033[0;0H")
 		// We don't know how much space there exactly is. Too few messages looks weird,
 		// and too many messages shouldn't cause any problems, so we just show too many.
@@ -155,75 +161,84 @@ func (view *MainView) ShowBare(roomView *RoomView) {
 	})
 }
 
+/*//???? idk what it does
 func (view *MainView) OpenSyncingModal() ifc.SyncingModal {
 	component, modal := NewSyncingModal(view)
 	view.ShowModal(component)
 	return modal
 }
+*/
 
-func (view *MainView) OnKeyEvent(event mauview.KeyEvent) bool {
-	view.BumpFocus(view.currentRoom)
+/*
+	//umm this is some keyboard magic which idk how to implement
 
-	if view.modal != nil {
-		return view.modal.OnKeyEvent(event)
-	}
+	func (view *MainView) OnKeyEvent(event mauview.KeyEvent) bool {
+		view.BumpFocus(view.currentRoom)
+		if view.modal != nil {
+			return view.modal.OnKeyEvent(event)
+		}
 
-	kb := config.Keybind{
-		Key: event.Key(),
-		Ch:  event.Rune(),
-		Mod: event.Modifiers(),
-	}
-	switch view.config.Keybindings.Main[kb] {
-	case "next_room":
-		view.SwitchRoom(view.roomList.Next())
-	case "prev_room":
-		view.SwitchRoom(view.roomList.Previous())
-	case "search_rooms":
-		view.ShowModal(NewFuzzySearchModal(view, 42, 12))
-	case "scroll_up":
-		msgView := view.currentRoom.MessageView()
-		msgView.AddScrollOffset(msgView.TotalHeight())
-	case "scroll_down":
-		msgView := view.currentRoom.MessageView()
-		msgView.AddScrollOffset(-msgView.TotalHeight())
-	case "add_newline":
-		return view.flex.OnKeyEvent(tcell.NewEventKey(tcell.KeyEnter, '\n', event.Modifiers()|tcell.ModShift))
-	case "next_active_room":
-		view.SwitchRoom(view.roomList.NextWithActivity())
-	case "show_bare":
-		view.ShowBare(view.currentRoom)
-	default:
-		goto defaultHandler
-	}
-	return true
+		kb := config.Keybind{
+			Key: event.Key(),
+			Ch:  event.Rune(),
+			Mod: event.Modifiers(),
+		}
+		switch view.config.Keybindings.Main[kb] {
+		case "next_room":
+			view.SwitchRoom(view.roomList.Next())
+		case "prev_room":
+			view.SwitchRoom(view.roomList.Previous())
+		case "search_rooms":
+			view.ShowModal(NewFuzzySearchModal(view, 42, 12))
+		case "scroll_up":
+			msgView := view.currentRoom.MessageView()
+			msgView.AddScrollOffset(msgView.TotalHeight())
+		case "scroll_down":
+			msgView := view.currentRoom.MessageView()
+			msgView.AddScrollOffset(-msgView.TotalHeight())
+		case "add_newline":
+			return view.flex.OnKeyEvent(tcell.NewEventKey(tcell.KeyEnter, '\n', event.Modifiers()|tcell.ModShift))
+		case "next_active_room":
+			view.SwitchRoom(view.roomList.NextWithActivity())
+		case "show_bare":
+			view.ShowBare(view.currentRoom)
+		default:
+			goto defaultHandler
+		}
+		return true
+
 defaultHandler:
-	if view.config.Preferences.HideRoomList {
-		return view.roomView.OnKeyEvent(event)
-	}
-	return view.flex.OnKeyEvent(event)
-}
 
+		if view.config.Preferences.HideRoomList {
+			return view.roomView.OnKeyEvent(event)
+		}
+		return view.flex.OnKeyEvent(event)
+	}
+*/
 const WheelScrollOffsetDiff = 3
 
-func (view *MainView) OnMouseEvent(event mauview.MouseEvent) bool {
-	if view.modal != nil {
-		return view.modal.OnMouseEvent(event)
-	}
-	if view.config.Preferences.HideRoomList {
-		return view.roomView.OnMouseEvent(event)
-	}
-	return view.flex.OnMouseEvent(event)
-}
+/*
+//more :( key things
 
-func (view *MainView) OnPasteEvent(event mauview.PasteEvent) bool {
-	if view.modal != nil {
-		return view.modal.OnPasteEvent(event)
-	} else if view.config.Preferences.HideRoomList {
-		return view.roomView.OnPasteEvent(event)
+	func (view *MainView) OnMouseEvent(event mauview.MouseEvent) bool {
+		if view.modal != nil {
+			return view.modal.OnMouseEvent(event)
+		}
+		if view.config.Preferences.HideRoomList {
+			return view.roomView.OnMouseEvent(event)
+		}
+		return view.flex.OnMouseEvent(event)
 	}
-	return view.flex.OnPasteEvent(event)
-}
 
+	func (view *MainView) OnPasteEvent(event mauview.PasteEvent) bool {
+		if view.modal != nil {
+			return view.modal.OnPasteEvent(event)
+		} else if view.config.Preferences.HideRoomList {
+			return view.roomView.OnPasteEvent(event)
+		}
+		return view.flex.OnPasteEvent(event)
+	}
+*/
 func (view *MainView) Focus() {
 	if view.focused != nil {
 		view.focused.Focus()
@@ -260,7 +275,7 @@ func (view *MainView) switchRoom(tag string, room *rooms.Room, lock bool) {
 	view.flex.SetFocused(view.roomView)
 	view.focused = view.roomView
 	view.roomView.Focus()
-	view.parent.Render()
+	view.parent.App.Redraw()
 
 	if msgView := roomView.MessageView(); len(msgView.messages) < 20 && !msgView.initialHistoryLoaded {
 		msgView.initialHistoryLoaded = true
@@ -268,13 +283,14 @@ func (view *MainView) switchRoom(tag string, room *rooms.Room, lock bool) {
 	}
 	if !room.MembersFetched {
 		go func() {
-			err := view.matrix.FetchMembers(room)
+			//another args thing
+			err := view.parent.Client.GetRoomState(context.TODO())
 			if err != nil {
 				debug.Print("Error fetching members:", err)
 				return
 			}
 			roomView.UpdateUserList()
-			view.parent.Render()
+			view.parent.App.Redraw()
 		}()
 	}
 }
@@ -289,6 +305,7 @@ func (view *MainView) addRoomPage(room *rooms.Room) *RoomView {
 	return nil
 }
 
+// ifc + what do i get?
 func (view *MainView) GetRoom(roomID id.RoomID) ifc.RoomView {
 	room, ok := view.getRoomView(roomID, true)
 	if !ok {
@@ -328,7 +345,7 @@ func (view *MainView) RemoveRoom(room *rooms.Room) {
 	delete(view.rooms, room.ID)
 	view.roomsLock.Unlock()
 
-	view.parent.Render()
+	view.parent.App.Redraw()
 }
 
 func (view *MainView) addRoom(room *rooms.Room) *RoomView {
@@ -374,14 +391,14 @@ func (view *MainView) UpdateTags(room *rooms.Room) {
 	if reselect {
 		view.roomList.SetSelected(room.Tags()[0].Tag, room)
 	}
-	view.parent.Render()
+	view.parent.App.Redraw()
 }
 
 func (view *MainView) SetTyping(roomID id.RoomID, users []id.UserID) {
 	roomView, ok := view.getRoomView(roomID, true)
 	if ok {
 		roomView.SetTyping(users)
-		view.parent.Render()
+		view.parent.App.Redraw()
 	}
 }
 
@@ -397,10 +414,11 @@ func (view *MainView) Bump(room *rooms.Room) {
 	view.roomList.Bump(room)
 }
 
+// another arg mess. Did not find what is userID
 func (view *MainView) NotifyMessage(room *rooms.Room, message ifc.Message, should pushrules.PushActionArrayShould) {
 	view.Bump(room)
 	gtMsg, ok := message.(*messages.UIMessage)
-	if ok && gtMsg.SenderID == view.config.UserID {
+	if ok && gtMsg.SenderID == view.UserID {
 		return
 	}
 	// Whether or not the room where the message came is the currently shown room.
@@ -413,9 +431,10 @@ func (view *MainView) NotifyMessage(room *rooms.Room, message ifc.Message, shoul
 		// The message is not in the current room, show new message status in room list.
 		room.AddUnread(message.ID(), should.Notify, should.Highlight)
 	} else {
-		view.matrix.MarkRead(room.ID, message.ID())
+		//args & also why not use the func in here
+		view.parent.Client.MarkRead(room.ID, message.ID())
 	}
-
+	//config
 	if should.Notify && !recentlyFocused && !view.config.Preferences.DisableNotifications {
 		// Push rules say notify and the terminal is not focused, send desktop notification.
 		shouldPlaySound := should.PlaySound &&
@@ -443,13 +462,13 @@ func (view *MainView) LoadHistory(roomID id.RoomID) {
 	}
 	defer atomic.StoreInt32(&msgView.loadingMessages, 0)
 	// Update the "Loading more messages..." text
-	view.parent.Render()
-
+	view.parent.App.Redraw()
+	//history?????
 	history, newLoadPtr, err := view.matrix.GetHistory(roomView.Room, 50, msgView.historyLoadPtr)
 	if err != nil {
 		roomView.AddServiceMessage("Failed to fetch history")
 		debug.Print("Failed to fetch history for", roomView.Room.ID, err)
-		view.parent.Render()
+		view.parent.App.Redraw()
 		return
 	}
 	//debug.Printf("Load pointer %d -> %d", msgView.historyLoadPtr, newLoadPtr)
@@ -457,5 +476,5 @@ func (view *MainView) LoadHistory(roomID id.RoomID) {
 	for _, evt := range history {
 		roomView.AddHistoryEvent(evt)
 	}
-	view.parent.Render()
+	view.parent.App.Redraw()
 }

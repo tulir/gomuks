@@ -51,15 +51,15 @@ func (sm *SyncingModal) SetMessage(text string) {
 
 func (sm *SyncingModal) SetIndeterminate() {
 	sm.progress.SetIndeterminate(true)
-	sm.parent.parent.app.SetRedrawTicker(100 * time.Millisecond)
-	sm.parent.parent.app.Redraw()
+	sm.parent.parent.App.SetRedrawTicker(100 * time.Millisecond)
+	sm.parent.parent.App.Redraw()
 }
 
 func (sm *SyncingModal) SetSteps(max int) {
 	sm.progress.SetMax(max)
 	sm.progress.SetIndeterminate(false)
-	sm.parent.parent.app.SetRedrawTicker(1 * time.Minute)
-	sm.parent.parent.Render()
+	sm.parent.parent.App.SetRedrawTicker(1 * time.Minute)
+	sm.parent.parent.App.Redraw()
 }
 
 func (sm *SyncingModal) Step() {

@@ -23,29 +23,21 @@ import (
 	"time"
 	"unicode"
 
-	"github.com/kyokomi/emoji/v2"
 	"github.com/mattn/go-runewidth"
 	"github.com/zyedidia/clipboard"
 
+	"github.com/gdamore/tcell/v2"
 	"go.mau.fi/mauview"
-	"go.mau.fi/tcell"
 
 	"maunium.net/go/mautrix"
 	"maunium.net/go/mautrix/crypto/attachment"
 	"maunium.net/go/mautrix/event"
 	"maunium.net/go/mautrix/format"
 	"maunium.net/go/mautrix/id"
-	"maunium.net/go/mautrix/util/variationselector"
 
-	"maunium.net/go/gomuks/config"
 	"maunium.net/go/gomuks/debug"
-	ifc "maunium.net/go/gomuks/interface"
-	"maunium.net/go/gomuks/lib/open"
-	"maunium.net/go/gomuks/lib/util"
-	"maunium.net/go/gomuks/matrix/muksevt"
-	"maunium.net/go/gomuks/matrix/rooms"
-	"maunium.net/go/gomuks/ui/messages"
-	"maunium.net/go/gomuks/ui/widget"
+	"maunium.net/go/gomuks/tui/messages"
+	"maunium.net/go/gomuks/tui/widget"
 )
 
 type RoomView struct {
@@ -106,7 +98,6 @@ func NewRoomView(parent *MainView, room *rooms.Room) *RoomView {
 		ulScreen:       &mauview.ProxyScreen{OffsetY: StatusBarHeight, Width: UserListWidth},
 
 		parent: parent,
-		config: parent.config,
 	}
 	view.content = NewMessageView(view)
 	view.Room.SetPreUnload(func() bool {
@@ -338,6 +329,7 @@ func (view *RoomView) ClearAllContext() {
 
 func (view *RoomView) OnKeyEvent(event mauview.KeyEvent) bool {
 	msgView := view.MessageView()
+	//helpp
 	kb := config.Keybind{
 		Key: event.Key(),
 		Ch:  event.Rune(),
@@ -711,11 +703,11 @@ func (view *RoomView) CopyToClipboard(text string, register string) {
 		err := clipboard.WriteAll(text, register)
 		if err != nil {
 			view.AddServiceMessage(fmt.Sprintf("Clipboard unsupported: %v", err))
-			view.parent.parent.Render()
+			view.parent.parent.App.Redraw()
 		}
 	} else {
 		view.AddServiceMessage(fmt.Sprintf("Clipboard register %v unsupported", register))
-		view.parent.parent.Render()
+		view.parent.parent.App.Redraw()
 	}
 }
 
@@ -723,11 +715,11 @@ func (view *RoomView) Download(url id.ContentURI, file *attachment.EncryptedFile
 	path, err := view.parent.matrix.DownloadToDisk(url, file, filename)
 	if err != nil {
 		view.AddServiceMessage(fmt.Sprintf("Failed to download media: %v", err))
-		view.parent.parent.Render()
+		view.parent.parent.App.Redraw()
 		return
 	}
 	view.AddServiceMessage(fmt.Sprintf("File downloaded to %s", path))
-	view.parent.parent.Render()
+	view.parent.parent.App.Redraw()
 	if openFile {
 		debug.Print("Opening file", path)
 		open.Open(path)
@@ -745,7 +737,7 @@ func (view *RoomView) Redact(eventID id.EventID, reason string) {
 			}
 		}
 		view.AddServiceMessage(fmt.Sprintf("Failed to redact message: %v", err))
-		view.parent.parent.Render()
+		view.parent.parent.App.Redraw()
 	}
 }
 
@@ -775,7 +767,7 @@ func (view *RoomView) SendReaction(eventID id.EventID, reaction string) {
 			}
 		}
 		view.AddServiceMessage(fmt.Sprintf("Failed to send reaction: %v", err))
-		view.parent.parent.Render()
+		view.parent.parent.App.Redraw()
 	}
 }
 
@@ -816,7 +808,7 @@ func (view *RoomView) SendMessageMedia(path string) {
 	evt, err := view.parent.matrix.PrepareMediaMessage(view.Room, path, rel)
 	if err != nil {
 		view.AddServiceMessage(fmt.Sprintf("Failed to upload media: %v", err))
-		view.parent.parent.Render()
+		view.parent.parent.App.Redraw()
 		return
 	}
 	view.addLocalEcho(evt)
@@ -838,13 +830,13 @@ func (view *RoomView) addLocalEcho(evt *muksevt.Event) {
 			}
 		}
 		view.AddServiceMessage(fmt.Sprintf("Failed to send message: %v", err))
-		view.parent.parent.Render()
+		view.parent.parent.App.Redraw()
 	} else {
 		debug.Print("Event ID received:", eventID)
 		msg.EventID = eventID
 		msg.State = muksevt.StateDefault
 		view.MessageView().setMessageID(msg)
-		view.parent.parent.Render()
+		view.parent.parent.App.Redraw()
 	}
 }
 

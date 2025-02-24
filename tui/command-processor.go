@@ -22,17 +22,11 @@ import (
 
 	"github.com/mattn/go-runewidth"
 
-	"maunium.net/go/gomuks/config"
-	"maunium.net/go/gomuks/debug"
-	ifc "maunium.net/go/gomuks/interface"
 )
 
 type gomuksPointerContainer struct {
 	MainView *MainView
-	UI       *GomuksUI
-	Matrix   ifc.MatrixContainer
-	Config   *config.Config
-	Gomuks   ifc.Gomuks
+	TUI       *GomuksTUI
 }
 
 type Command struct {
@@ -54,7 +48,7 @@ func (cmd *Command) Reply(message string, args ...interface{}) {
 		message = fmt.Sprintf(message, args...)
 	}
 	cmd.Room.AddServiceMessage(message)
-	cmd.UI.Render()
+	cmd.TUI.App.Redraw()
 }
 
 type Alias struct {
@@ -82,10 +76,7 @@ func NewCommandProcessor(parent *MainView) *CommandProcessor {
 	return &CommandProcessor{
 		gomuksPointerContainer: gomuksPointerContainer{
 			MainView: parent,
-			UI:       parent.parent,
-			Matrix:   parent.matrix,
-			Config:   parent.config,
-			Gomuks:   parent.gmx,
+			TUI:       parent.parent,
 		},
 		aliases: map[string]*Alias{
 			"part":       {"leave"},

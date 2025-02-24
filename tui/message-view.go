@@ -23,20 +23,14 @@ import (
 	"sync/atomic"
 
 	"github.com/mattn/go-runewidth"
-	sync "github.com/sasha-s/go-deadlock"
 
 	"go.mau.fi/mauview"
-	"go.mau.fi/tcell"
+	"github.com/gdamore/tcell/v2"
 
 	"maunium.net/go/mautrix/event"
 	"maunium.net/go/mautrix/id"
 
-	"maunium.net/go/gomuks/config"
 	"maunium.net/go/gomuks/debug"
-	ifc "maunium.net/go/gomuks/interface"
-	"maunium.net/go/gomuks/lib/open"
-	"maunium.net/go/gomuks/ui/messages"
-	"maunium.net/go/gomuks/ui/widget"
 )
 
 type MessageView struct {
@@ -652,7 +646,6 @@ func (view *MessageView) Draw(screen mauview.Screen) {
 		if msg == prevMsg {
 			debug.Print("Unexpected re-encounter of", msg, msg.Height(), "at", line, index)
 			line++
-			continue
 		}
 
 		if len(msg.FormatTime()) > 0 && !view.config.Preferences.HideTimestamp {
