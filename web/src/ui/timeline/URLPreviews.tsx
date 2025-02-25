@@ -33,7 +33,7 @@ const URLPreviews = ({ event, room }: {
 	}
 
 	const previews = (event.content["com.beeper.linkpreviews"] ?? event.content["m.url_previews"]) as URLPreview[]
-	if (!previews) {
+	if (!previews || !previews.length) {
 		return null
 	}
 	return <div className="url-previews">
