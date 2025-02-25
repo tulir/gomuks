@@ -21,8 +21,8 @@ import useContentVisibility from "@/util/contentvisibility.ts"
 import { getDisplayname } from "@/util/validation.ts"
 import ClientContext from "../ClientContext.ts"
 import MainScreenContext from "../MainScreenContext.ts"
+import { RoomMenu, getModalStyleFromMouse } from "../menu"
 import { ModalContext } from "../modal"
-import { RoomMenu, getModalStyleFromMouse } from "../timeline/menu"
 import UnreadCount from "./UnreadCount.tsx"
 
 export interface RoomListEntryProps {
