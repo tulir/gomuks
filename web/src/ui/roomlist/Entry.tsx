@@ -85,6 +85,7 @@ const Entry = ({ room, isActive, hidden }: RoomListEntryProps) => {
 	const onContextMenu = (evt: React.MouseEvent<HTMLDivElement>) => {
 		const realRoom = client.store.rooms.get(room.room_id)
 		if (!realRoom) {
+			// TODO implement separate menu for invite rooms
 			console.error("Room state store not found for", room.room_id)
 			return
 		}
