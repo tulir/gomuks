@@ -70,22 +70,13 @@ const UserInfo = ({ userID }: UserInfoProps) => {
 		</div>
 		<div className="displayname" title={displayname}>{displayname}</div>
 		<div className="userid" title={userID}>{userID}</div>
-		{globalProfile && <UserExtendedProfile
-			profile={globalProfile} refreshProfile={refreshProfile} client={client} userID={userID}
-		/>}
-		<hr/>
+		<UserExtendedProfile profile={globalProfile} refreshProfile={refreshProfile} client={client} userID={userID}/>
 		<DeviceList client={client} room={roomCtx?.store} userID={userID}/>
-		<hr/>
 		{userID !== client.userID && <>
 			<MutualRooms client={client} userID={userID}/>
-			<hr/>
 			<UserModeration client={client} room={roomCtx?.store} member={memberEvt} userID={userID}/>
-			<hr/>
 		</>}
-		{errors?.length ? <>
-			<UserInfoError errors={errors}/>
-			<hr/>
-		</> : null}
+		<UserInfoError errors={errors}/>
 	</>
 }
 

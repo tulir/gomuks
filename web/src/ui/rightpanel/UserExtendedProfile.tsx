@@ -4,7 +4,7 @@ import { PronounSet, UserProfile } from "@/api/types"
 import { ensureArray, ensureString } from "@/util/validation.ts"
 
 interface ExtendedProfileProps {
-	profile: UserProfile
+	profile: UserProfile | null
 	refreshProfile: () => void
 	client: Client
 	userID: string
@@ -105,18 +105,15 @@ const UserExtendedProfile = ({ profile, refreshProfile, client, userID }: Extend
 
 	const pronouns = ensureArray(profile["io.fsky.nyx.pronouns"]) as PronounSet[]
 	const userTimeZone = ensureString(profile["us.cloke.msc4175.tz"])
-	return <>
-		<hr/>
-		<div className="extended-profile">
-			{userTimeZone && <ClockElement tz={userTimeZone} />}
-			{userID === client.userID &&
-				<SetTimeZoneElement tz={userTimeZone} client={client} refreshProfile={refreshProfile} />}
-			{pronouns.length > 0 && <>
-				<div>Pronouns:</div>
-				<div>{pronouns.map(pronounSet => ensureString(pronounSet.summary)).join(", ")}</div>
-			</>}
-		</div>
-	</>
+	return <div className="extended-profile">
+		{userTimeZone && <ClockElement tz={userTimeZone} />}
+		{userID === client.userID &&
+			<SetTimeZoneElement tz={userTimeZone} client={client} refreshProfile={refreshProfile} />}
+		{pronouns.length > 0 && <>
+			<div>Pronouns:</div>
+			<div>{pronouns.map(pronounSet => ensureString(pronounSet.summary)).join(", ")}</div>
+		</>}
+	</div>
 }
 
 export default UserExtendedProfile

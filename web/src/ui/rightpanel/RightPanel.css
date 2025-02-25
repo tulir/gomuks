@@ -91,6 +91,12 @@ div.right-panel-content.user {
 		word-break: break-word;
 	}
 
+	div.userid, div.extended-profile, div.devices, div.user-moderation, div.mutual-rooms, div.errors {
+		border-bottom: 1px solid var(--border-color);
+		padding-bottom: .5rem;
+		margin-bottom: .5rem;
+	}
+
 	div.extended-profile {
 		display: grid;
 		gap: 0.25rem;
