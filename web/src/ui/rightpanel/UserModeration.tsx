@@ -15,12 +15,13 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import { use } from "react"
 import Client from "@/api/client.ts"
-import { RoomStateStore, useAccountData } from "@/api/statestore"
-import { IgnoredUsersEventContent, MemDBEvent, MembershipAction } from "@/api/types"
+import { RoomStateStore } from "@/api/statestore"
+import { MemDBEvent, MembershipAction } from "@/api/types"
 import { ModalContext } from "../modal"
 import ConfirmWithMessageModal from "../timeline/menu/ConfirmWithMessageModal.tsx"
 import { getPowerLevels } from "../timeline/menu/util.ts"
-import IgnoreIcon from "@/icons/block.svg?react"
+import StartDMButton from "./StartDMButton.tsx"
+import UserIgnoreButton from "./UserIgnoreButton.tsx"
 import BanIcon from "@/icons/gavel.svg?react"
 import InviteIcon from "@/icons/person-add.svg?react"
 import KickIcon from "@/icons/person-remove.svg?react"
@@ -30,37 +31,6 @@ interface UserModerationProps {
 	client: Client;
 	room: RoomStateStore | undefined;
 	member: MemDBEvent | null;
-}
-
-const UserIgnoreButton = ({ userID, client }: { userID: string; client: Client }) => {
-	const ignoredUsers = useAccountData(client.store, "m.ignored_user_list") as IgnoredUsersEventContent | null
-
-	const isIgnored = Boolean(ignoredUsers?.ignored_users?.[userID])
-	const ignoreUser = () => {
-		const newIgnoredUsers = { ...(ignoredUsers || { ignored_users: {}}) }
-		newIgnoredUsers.ignored_users[userID] = {}
-		client.rpc.setAccountData("m.ignored_user_list", newIgnoredUsers).catch(err => {
-			console.error("Failed to ignore user", err)
-			window.alert(`Failed to ignore ${userID}: ${err}`)
-		})
-	}
-	const unignoreUser = () => {
-		const newIgnoredUsers = { ...(ignoredUsers || { ignored_users: {}}) }
-		delete newIgnoredUsers.ignored_users[userID]
-		client.rpc.setAccountData("m.ignored_user_list", newIgnoredUsers).catch(err => {
-			console.error("Failed to unignore user", err)
-			window.alert(`Failed to unignore ${userID}: ${err}`)
-		})
-	}
-
-	return (
-		<button
-			className={"moderation-action " + (isIgnored ? "positive" : "dangerous")}
-			onClick={isIgnored ? unignoreUser : ignoreUser}>
-			<IgnoreIcon/>
-			<span>{isIgnored ? "Unignore" : "Ignore"}</span>
-		</button>
-	)
 }
 
 const UserModeration = ({ userID, client, member, room }: UserModerationProps) => {
@@ -109,7 +79,8 @@ const UserModeration = ({ userID, client, member, room }: UserModerationProps) =
 	const membership = member?.content.membership || "leave"
 
 	return <div className="user-moderation">
-		<h4>Moderation</h4>
+		<h4>Actions</h4>
+		{!room || room.meta.current.dm_user_id !== userID ? <StartDMButton userID={userID} client={client} /> : null}
 		{room && (["knock", "leave"].includes(membership) || !member) && hasPL("invite") && (
 			<button className="moderation-action positive" onClick={runAction("invite")}>
 				<InviteIcon />

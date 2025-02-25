@@ -34,7 +34,9 @@ import type {
 	ReceiptType,
 	RelatesTo,
 	RelationType,
+	ReqCreateRoom,
 	ResolveAliasResponse,
+	RespCreateRoom,
 	RespOpenIDToken,
 	RespRoomJoin,
 	RoomAlias,
@@ -276,5 +278,9 @@ export default abstract class RPCClient {
 
 	registerPush(reg: DBPushRegistration): Promise<boolean> {
 		return this.request("register_push", reg)
+	}
+
+	createRoom(request: ReqCreateRoom): Promise<RespCreateRoom> {
+		return this.request("create_room", request)
 	}
 }
