@@ -103,6 +103,9 @@ export const RoomMenu = ({ room, style }: RoomMenuProps) => {
 		})
 	}
 	const leaveRoom = () => {
+		if (!window.confirm(`Really leave ${room.meta.current.name}?`)) {
+			return
+		}
 		client.rpc.leaveRoom(room.roomID).catch(err => {
 			console.error("Failed to leave room", err)
 			window.alert(`Failed to leave room: ${err}`)
