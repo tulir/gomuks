@@ -568,7 +568,7 @@ const MessageComposer = () => {
 		style.left = style.right
 		delete style.right
 		openModal({
-			content: <div className="event-context-menu" style={style}>
+			content: <div className="context-menu event-context-menu" style={style}>
 				{makeAttachmentButtons(true)}
 			</div>,
 		})

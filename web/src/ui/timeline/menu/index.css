@@ -43,7 +43,7 @@ div.event-fixed-menu {
 	}
 }
 
-div.event-context-menu {
+div.context-menu {
 	position: fixed;
 	background-color: var(--background-color);
 	border-radius: .5rem;
@@ -79,6 +79,10 @@ div.event-context-menu {
 		&.redact-button {
 			color: var(--error-color);
 		}
+	}
+
+	&.event-context-menu, &.room-list-menu {
+		width: 10rem;
 	}
 }
 

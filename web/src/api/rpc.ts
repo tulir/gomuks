@@ -248,6 +248,14 @@ export default abstract class RPCClient {
 		return this.request("leave_room", { room_id, reason })
 	}
 
+	createRoom(request: ReqCreateRoom): Promise<RespCreateRoom> {
+		return this.request("create_room", request)
+	}
+
+	muteRoom(room_id: RoomID, muted: boolean): Promise<boolean> {
+		return this.request("mute_room", { room_id, muted })
+	}
+
 	resolveAlias(alias: RoomAlias): Promise<ResolveAliasResponse> {
 		return this.request("resolve_alias", { alias })
 	}
@@ -278,9 +286,5 @@ export default abstract class RPCClient {
 
 	registerPush(reg: DBPushRegistration): Promise<boolean> {
 		return this.request("register_push", reg)
-	}
-
-	createRoom(request: ReqCreateRoom): Promise<RespCreateRoom> {
-		return this.request("create_room", request)
 	}
 }

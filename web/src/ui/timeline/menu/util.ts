@@ -39,10 +39,10 @@ export const getEncryption = (room: RoomStateStore): boolean =>{
 export function getModalStyleFromMouse(
 	evt: React.MouseEvent, modalHeight: number, modalWidth = 10 * 16,
 ): CSSProperties {
-	const style: CSSProperties = { right: window.innerWidth - evt.clientX }
-	if (evt.clientX - modalWidth < 4) {
-		delete style.right
-		style.left = "4px"
+	const style: CSSProperties = { left: evt.clientX }
+	if (evt.clientX + modalWidth > window.innerWidth) {
+		delete style.left
+		style.right = "4px"
 	}
 	if (evt.clientY + modalHeight > window.innerHeight) {
 		style.bottom = window.innerHeight - evt.clientY

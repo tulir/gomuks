@@ -13,7 +13,7 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import { JSX, memo, use } from "react"
+import React, { JSX, memo, use } from "react"
 import { getRoomAvatarThumbnailURL } from "@/api/media.ts"
 import type { RoomListEntry } from "@/api/statestore"
 import type { MemDBEvent, MemberEventContent } from "@/api/types"
@@ -21,6 +21,8 @@ import useContentVisibility from "@/util/contentvisibility.ts"
 import { getDisplayname } from "@/util/validation.ts"
 import ClientContext from "../ClientContext.ts"
 import MainScreenContext from "../MainScreenContext.ts"
+import { ModalContext } from "../modal"
+import { RoomMenu, getModalStyleFromMouse } from "../timeline/menu"
 import UnreadCount from "./UnreadCount.tsx"
 
 export interface RoomListEntryProps {
@@ -77,10 +79,29 @@ function renderEntry(room: RoomListEntry) {
 
 const Entry = ({ room, isActive, hidden }: RoomListEntryProps) => {
 	const [isVisible, divRef] = useContentVisibility<HTMLDivElement>()
+	const openModal = use(ModalContext)
+	const mainScreen = use(MainScreenContext)
+	const client = use(ClientContext)!
+	const onContextMenu = (evt: React.MouseEvent<HTMLDivElement>) => {
+		const realRoom = client.store.rooms.get(room.room_id)
+		if (!realRoom) {
+			console.error("Room state store not found for", room.room_id)
+			return
+		}
+		openModal({
+			content: <RoomMenu
+				room={realRoom}
+				entry={room}
+				style={getModalStyleFromMouse(evt, 6 * 40)}
+			/>,
+		})
+		evt.preventDefault()
+	}
 	return <div
 		ref={divRef}
 		className={`room-entry ${isActive ? "active" : ""} ${hidden ? "hidden" : ""}`}
-		onClick={use(MainScreenContext).clickRoom}
+		onClick={mainScreen.clickRoom}
+		onContextMenu={onContextMenu}
 		data-room-id={room.room_id}
 	>
 		{isVisible ? renderEntry(room) : null}
