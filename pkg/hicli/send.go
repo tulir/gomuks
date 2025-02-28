@@ -167,6 +167,11 @@ func (h *HiClient) SendMessage(
 			if contentCopy.File != nil {
 				content.URL = contentCopy.File.URL
 			}
+			if extra != nil {
+				extra = map[string]any{
+					"m.new_content": extra,
+				}
+			}
 		} else {
 			content.RelatesTo = relatesTo
 		}
