@@ -161,6 +161,7 @@ func (h *HiClient) SendMessage(
 				Body:       "",
 				MsgType:    contentCopy.MsgType,
 				URL:        contentCopy.URL,
+				GeoURI:     contentCopy.GeoURI,
 				NewContent: &contentCopy,
 				RelatesTo:  relatesTo,
 			}
