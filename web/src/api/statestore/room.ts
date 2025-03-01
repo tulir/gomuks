@@ -353,7 +353,12 @@ export class RoomStateStore {
 	}
 
 	setViewingRedacted(evt: MemDBEvent, view: boolean) {
-		evt.viewing_redacted = view
+		const modified = {
+			...evt,
+			viewing_redacted: view,
+		}
+		this.eventsByRowID.set(evt.rowid, modified)
+		this.eventsByID.set(evt.event_id, modified)
 		this.eventSubs.notify(evt.event_id)
 		this.notifyTimelineSubscribers()
 	}
