@@ -383,22 +383,24 @@ export class RoomStateStore {
 		if (memEvt.last_edit_rowid) {
 			memEvt.last_edit = this.eventsByRowID.get(memEvt.last_edit_rowid)
 			if (memEvt.last_edit) {
-				memEvt.orig_content = memEvt.content
-				memEvt.orig_local_content = memEvt.local_content
-				memEvt.content = memEvt.last_edit.content["m.new_content"]
+				memEvt.orig_content = memEvt.orig_content ?? memEvt.content
+				memEvt.orig_local_content = memEvt.orig_local_content ?? memEvt.local_content
+				memEvt.content = memEvt.last_edit.content["m.new_content"] ?? memEvt.last_edit.content
 				memEvt.local_content = memEvt.last_edit.local_content
 			}
 		} else if (memEvt.relation_type === "m.replace" && memEvt.relates_to) {
 			const editTarget = this.eventsByID.get(memEvt.relates_to)
-			if (editTarget?.last_edit_rowid === memEvt.rowid && !editTarget.last_edit) {
-				this.eventsByRowID.set(editTarget.rowid, {
+			if (editTarget?.last_edit_rowid === memEvt.rowid) {
+				const modified: MemDBEvent = {
 					...editTarget,
 					last_edit: memEvt,
-					orig_local_content: editTarget.local_content,
-					orig_content: editTarget.content,
-					content: memEvt.content["m.new_content"],
+					orig_local_content: editTarget.orig_local_content ?? editTarget.local_content,
+					orig_content: editTarget.orig_content ?? editTarget.content,
+					content: memEvt.content["m.new_content"] ?? memEvt.content,
 					local_content: memEvt.local_content,
-				})
+				}
+				this.eventsByRowID.set(editTarget.rowid, modified)
+				this.eventsByID.set(editTarget.event_id, modified)
 				this.eventSubs.notify(editTarget.event_id)
 			}
 		}
