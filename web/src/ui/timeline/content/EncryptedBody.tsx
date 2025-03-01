@@ -17,9 +17,12 @@ import EventContentProps from "./props.ts"
 import LockIcon from "../../../icons/lock.svg?react"
 import LockClockIcon from "../../../icons/lock.svg?react"
 
+const unknownSessionErrorPrefix = "failed to decrypt megolm event: no session with given ID found"
+
 const EncryptedBody = ({ event }: EventContentProps) => {
-	if (event.decryption_error) {
-		return <div className="decryption-error-body"><LockIcon/> Failed to decrypt: {event.decryption_error}</div>
+	const decryptionError = event.last_edit?.decryption_error ?? event.decryption_error
+	if (decryptionError && !decryptionError.startsWith(unknownSessionErrorPrefix)) {
+		return <div className="decryption-error-body"><LockIcon/> Failed to decrypt: {decryptionError}</div>
 	}
 	return <div className="decryption-pending-body"><LockClockIcon/> Waiting for message</div>
 }
