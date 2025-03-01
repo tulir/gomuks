@@ -82,7 +82,12 @@ func (h *HiClient) preProcessSyncResponse(ctx context.Context, resp *mautrix.Res
 		case *event.EncryptedEventContent:
 			h.Crypto.HandleEncryptedEvent(ctx, evt)
 		case *event.RoomKeyWithheldEventContent:
-			h.Crypto.HandleRoomKeyWithheld(ctx, content)
+			// TODO move this check to mautrix-go?
+			if evt.Sender == h.Account.UserID && content.Code == event.RoomKeyWithheldUnavailable {
+				log.Debug().Any("withheld_content", content).Msg("Ignoring m.unavailable megolm session withheld event")
+			} else {
+				h.Crypto.HandleRoomKeyWithheld(ctx, content)
+			}
 		default:
 			postponedToDevices = append(postponedToDevices, evt)
 		}
