@@ -303,7 +303,7 @@ const KeyExportView = ({ room }: SettingsViewProps) => {
 			method="post"
 			target="_blank"
 		>
-			<input type="password" name="passphrase" hidden value={passphrase} />
+			<input type="password" name="passphrase" hidden readOnly value={passphrase} />
 			<input
 				className="import-file"
 				type="file"
@@ -316,11 +316,11 @@ const KeyExportView = ({ room }: SettingsViewProps) => {
 		</form>
 		<div className="export-buttons">
 			<form action="_gomuks/keys/export" method="post" target="_blank">
-				<input type="password" name="passphrase" hidden value={passphrase} />
+				<input type="password" name="passphrase" hidden readOnly value={passphrase} />
 				<button type="submit" disabled={passphrase == ""}>Export all keys</button>
 			</form>
 			<form action={`_gomuks/keys/export/${encodeURIComponent(room.roomID)}`} method="post" target="_blank">
-				<input type="password" name="passphrase" hidden value={passphrase} />
+				<input type="password" name="passphrase" hidden readOnly value={passphrase} />
 				<button type="submit" disabled={passphrase == ""}>Export room keys</button>
 			</form>
 		</div>
