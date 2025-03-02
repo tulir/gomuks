@@ -115,9 +115,11 @@ const StateEventView = ({ room, type, stateKey, onBack, onDone }: StateEventView
 			<div className="nav-buttons">
 				{editingContent !== null ? <>
 					<button onClick={isNewEvent ? onBack : stopEdit}>Back</button>
+					<div className="spacer"/>
 					<button onClick={sendEdit}>Send</button>
 				</> : <>
 					<button onClick={onBack}>Back</button>
+					<div className="spacer"/>
 					<button onClick={startEdit}>Edit</button>
 				</>}
 			</div>
