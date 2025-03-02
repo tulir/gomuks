@@ -47,7 +47,7 @@ func (h *HiClient) handleJSONCommand(ctx context.Context, req *JSONCommand) (any
 		})
 	case "send_event":
 		return unmarshalAndCall(req.Data, func(params *sendEventParams) (*database.Event, error) {
-			return h.Send(ctx, params.RoomID, params.EventType, params.Content)
+			return h.Send(ctx, params.RoomID, params.EventType, params.Content, params.DisableEncryption)
 		})
 	case "resend_event":
 		return unmarshalAndCall(req.Data, func(params *resendEventParams) (*database.Event, error) {
@@ -267,9 +267,10 @@ type sendMessageParams struct {
 }
 
 type sendEventParams struct {
-	RoomID    id.RoomID       `json:"room_id"`
-	EventType event.Type      `json:"type"`
-	Content   json.RawMessage `json:"content"`
+	RoomID            id.RoomID       `json:"room_id"`
+	EventType         event.Type      `json:"type"`
+	Content           json.RawMessage `json:"content"`
+	DisableEncryption bool            `json:"disable_encryption"`
 }
 
 type resendEventParams struct {

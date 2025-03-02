@@ -8,6 +8,10 @@ div.state-explorer {
 	display: flex;
 	flex-direction: column;
 
+	h3 {
+		margin: 0 0 1rem 0;
+	}
+
 	div.state-button-list {
 		display: flex;
 		flex-wrap: wrap;
@@ -26,7 +30,15 @@ div.state-explorer {
 		flex-wrap: wrap;
 		gap: .5rem;
 		margin-top: .5rem;
-		justify-content: space-between;
+
+		> div.spacer {
+			flex: 1;
+		}
+
+		> label {
+			display: flex;
+			align-items: center;
+		}
 
 		> button {
 			padding: .5rem 1rem;

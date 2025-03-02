@@ -31,6 +31,11 @@ interface StateEventViewProps {
 	onDone?: (type: string, stateKey: string) => void
 }
 
+interface NewMessageEventViewProps {
+	room: RoomStateStore
+	onBack: () => void
+}
+
 interface StateKeyListProps {
 	room: RoomStateStore
 	type: string
@@ -84,6 +89,7 @@ const StateEventView = ({ room, type, stateKey, onBack, onDone }: StateEventView
 						<h3>New state event</h3>
 						<div className="new-event-type">
 							<input
+								autoFocus
 								type="text"
 								value={newType}
 								onChange={evt => setNewType(evt.target.value)}
@@ -100,7 +106,7 @@ const StateEventView = ({ room, type, stateKey, onBack, onDone }: StateEventView
 					: <h3><code>{type}</code> ({stateKey ? <code>{stateKey}</code> : "no state key"})</h3>
 				}
 			</div>
-			<div className={`state-event-content`}>
+			<div className="state-event-content">
 				{editingContent !== null
 					? <textarea rows={10} value={editingContent} onChange={evt => setEditingContent(evt.target.value)}/>
 					: <JSONView data={event}/>
@@ -114,6 +120,65 @@ const StateEventView = ({ room, type, stateKey, onBack, onDone }: StateEventView
 					<button onClick={onBack}>Back</button>
 					<button onClick={startEdit}>Edit</button>
 				</>}
+			</div>
+		</div>
+	)
+}
+
+const NewMessageEventView = ({ room, onBack }: NewMessageEventViewProps) => {
+	const [content, setContent] = useState<string>("{\n\n}")
+	const [type, setType] = useState<string>("")
+	const [disableEncryption, setDisableEncryption] = useState<boolean>(false)
+	const client = use(ClientContext)!
+
+	const sendEvent = () => {
+		let parsedContent
+		try {
+			parsedContent = JSON.parse(content || "{}")
+		} catch (err) {
+			window.alert(`Failed to parse JSON: ${err}`)
+			return
+		}
+		client.sendEvent(room.roomID, type, parsedContent, disableEncryption).then(
+			() => {
+				console.log("Successfully sent message event", room.roomID, type)
+				onBack()
+			},
+			err => {
+				console.error("Failed to send message event", err)
+				window.alert(`Failed to send message event: ${err}`)
+			},
+		)
+	}
+
+	return (
+		<div className="state-explorer state-event-view">
+			<div className="state-header">
+				<h3>New message event</h3>
+				<div className="new-event-type">
+					<input
+						autoFocus
+						type="text"
+						value={type}
+						onChange={evt => setType(evt.target.value)}
+						placeholder="Event type"
+					/>
+				</div>
+			</div>
+			<div className="state-event-content">
+				<textarea rows={10} value={content} onChange={evt => setContent(evt.target.value)}/>
+			</div>
+			<div className="nav-buttons">
+				<button onClick={onBack}>Back</button>
+				<button onClick={sendEvent}>Send</button>
+				{room.meta.current.encryption_event ? <label>
+					<input
+						type="checkbox"
+						checked={disableEncryption}
+						onChange={evt => setDisableEncryption(evt.target.checked)}
+					/>
+					Disable encryption
+				</label> : null}
 			</div>
 		</div>
 	)
@@ -141,7 +206,7 @@ const StateKeyList = ({ room, type, onSelectStateKey, onBack }: StateKeyListProp
 }
 
 export const StateExplorer = ({ room }: StateExplorerProps) => {
-	const [creatingNew, setCreatingNew] = useState(false)
+	const [creatingNew, setCreatingNew] = useState<"message" | "state" | null>(null)
 	const [selectedType, setSelectedType] = useState<string | null>(null)
 	const [selectedStateKey, setSelectedStateKey] = useState<string | null>(null)
 	const [loadingState, setLoadingState] = useState(false)
@@ -167,7 +232,7 @@ export const StateExplorer = ({ room }: StateExplorerProps) => {
 
 	const handleBack = useCallback(() => {
 		if (creatingNew) {
-			setCreatingNew(false)
+			setCreatingNew(null)
 		} else if (selectedStateKey !== null && selectedType !== null) {
 			setSelectedStateKey(null)
 			const stateKeysMap = room.state.get(selectedType)
@@ -178,17 +243,24 @@ export const StateExplorer = ({ room }: StateExplorerProps) => {
 			setSelectedType(null)
 		}
 	}, [selectedType, selectedStateKey, creatingNew, room])
-	const handleNewEventDone = useCallback((type: string, stateKey: string) => {
-		setCreatingNew(false)
-		setSelectedType(type)
-		setSelectedStateKey(stateKey)
+	const handleNewEventDone = useCallback((type: string, stateKey?: string) => {
+		setCreatingNew(null)
+		if (stateKey !== undefined) {
+			setSelectedType(type)
+			setSelectedStateKey(stateKey)
+		}
 	}, [])
 
-	if (creatingNew) {
+	if (creatingNew === "state") {
 		return <StateEventView
 			room={room}
 			onBack={handleBack}
 			onDone={handleNewEventDone}
+		/>
+	} else if (creatingNew === "message") {
+		return <NewMessageEventView
+			room={room}
+			onBack={handleBack}
 		/>
 	} else if (selectedType !== null && selectedStateKey !== null) {
 		return <StateEventView
@@ -237,7 +309,9 @@ export const StateExplorer = ({ room }: StateExplorerProps) => {
 							: "Load room members"
 						: "Load room state and members"}
 				</button>
-				<button onClick={() => setCreatingNew(true)}>Send new state event</button>
+				<div className="spacer"/>
+				<button onClick={() => setCreatingNew("message")}>Send new message event</button>
+				<button onClick={() => setCreatingNew("state")}>Send new state event</button>
 			</div>
 		</div>
 	}

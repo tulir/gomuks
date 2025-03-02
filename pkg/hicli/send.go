@@ -245,8 +245,9 @@ func (h *HiClient) Send(
 	roomID id.RoomID,
 	evtType event.Type,
 	content any,
+	disableEncryption bool,
 ) (*database.Event, error) {
-	return h.send(ctx, roomID, evtType, content, "", false)
+	return h.send(ctx, roomID, evtType, content, "", disableEncryption)
 }
 
 func (h *HiClient) Resend(ctx context.Context, txnID string) (*database.Event, error) {
