@@ -29,10 +29,10 @@ import {
 import { useEventAsState } from "@/util/eventdispatcher.ts"
 import useEvent from "@/util/useEvent.ts"
 import ClientContext from "../ClientContext.ts"
-import { LightboxContext } from "../modal"
-import { ModalCloseContext } from "../modal"
+import { LightboxContext, ModalCloseContext, ModalContext } from "../modal"
 import JSONView from "../util/JSONView.tsx"
 import Toggle from "../util/Toggle.tsx"
+import RoomStateExplorer from "./RoomStateExplorer.tsx"
 import CloseIcon from "@/icons/close.svg?react"
 import "./SettingsView.css"
 
@@ -331,6 +331,7 @@ const SettingsView = ({ room }: SettingsViewProps) => {
 	const roomMeta = useEventAsState(room.meta)
 	const client = use(ClientContext)!
 	const closeModal = use(ModalCloseContext)
+	const openModal = use(ModalContext)
 	const setPref = useCallback((
 		context: PreferenceContext, key: keyof Preferences, value: PreferenceValueType | undefined,
 	) => {
@@ -377,6 +378,14 @@ const SettingsView = ({ room }: SettingsViewProps) => {
 			)
 		}
 	}
+	const openDevtools = () => {
+		openModal({
+			dimmed: true,
+			boxed: true,
+			innerBoxClass: "state-explorer-box",
+			content: <RoomStateExplorer room={room} />,
+		})
+	}
 	const onClickOpenCSSApp = () => {
 		client.rpc.requestOpenIDToken().then(
 			resp => window.open(
@@ -407,7 +416,10 @@ const SettingsView = ({ room }: SettingsViewProps) => {
 				{roomMeta.name && <div className="room-name">{roomMeta.name}</div>}
 				<code>{room.roomID}</code>
 				<div>{roomMeta.topic}</div>
-				<button className="leave-room" onClick={onClickLeave}>Leave room</button>
+				<div className="room-buttons">
+					<button className="leave-room" onClick={onClickLeave}>Leave room</button>
+					<button className="devtools" onClick={openDevtools}>Explore room state</button>
+				</div>
 			</div>
 		</div>
 		<table>

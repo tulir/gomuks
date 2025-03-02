@@ -97,6 +97,9 @@ const ModalWrapper = ({ children, ContextType, historyStateKey }: ModalWrapperPr
 			modal = content
 		}
 	}
+	if (historyStateKey === "nestable_modal") {
+		window.openNestableModal = openModal
+	}
 	return <ContextType value={openModal}>
 		{children}
 		{modal}

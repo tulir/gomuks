@@ -4,6 +4,7 @@
 import type Client from "@/api/client.ts"
 import type { GCSettings, RoomStateStore } from "@/api/statestore"
 import type { MainScreenContextFields } from "@/ui/MainScreenContext.ts"
+import type { openModal } from "@/ui/modal/contexts.ts"
 import type { RoomContextData } from "@/ui/roomview/roomcontext.ts"
 
 declare global {
@@ -16,6 +17,7 @@ declare global {
 		gcSettings: GCSettings
 		hackyOpenEventContextMenu?: string
 		closeModal: () => void
+		openNestableModal: openModal
 		gomuksAndroid?: true
 	}
 }

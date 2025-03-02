@@ -14,12 +14,19 @@ div.settings-view {
 			text-wrap: nowrap;
 		}
 
-		button.leave-room {
-			padding: .5rem 1rem;
+		div.room-buttons {
+			display: flex;
+			gap: .5rem;
 
-			&:hover, &:focus {
-				background-color: var(--error-color);
-				color: var(--inverted-text-color);
+			button {
+				padding: .5rem 1rem;
+
+				&.leave-room {
+					&:hover, &:focus {
+						background-color: var(--error-color);
+						color: var(--inverted-text-color);
+					}
+				}
 			}
 		}
 	}

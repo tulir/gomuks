@@ -18,7 +18,7 @@ import { RoomListEntry, RoomStateStore, useAccountData } from "@/api/statestore"
 import { RoomID } from "@/api/types"
 import { useEventAsState } from "@/util/eventdispatcher.ts"
 import ClientContext from "../ClientContext.ts"
-import { ModalCloseContext, ModalContext } from "../modal"
+import { ModalCloseContext } from "../modal"
 import SettingsView from "../settings/SettingsView.tsx"
 import DoorOpenIcon from "@/icons/door-open.svg?react"
 import MarkReadIcon from "@/icons/mark-read.svg?react"
@@ -91,11 +91,11 @@ const MarkReadButton = ({ room }: { room: RoomStateStore }) => {
 }
 
 export const RoomMenu = ({ room, style }: RoomMenuProps) => {
-	const openModal = use(ModalContext)
 	const closeModal = use(ModalCloseContext)
 	const client = use(ClientContext)!
 	const openSettings = () => {
-		openModal({
+		closeModal()
+		window.openNestableModal({
 			dimmed: true,
 			boxed: true,
 			innerBoxClass: "settings-view",

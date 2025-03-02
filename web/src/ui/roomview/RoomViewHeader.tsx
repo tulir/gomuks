@@ -18,8 +18,7 @@ import { getRoomAvatarThumbnailURL, getRoomAvatarURL } from "@/api/media.ts"
 import { RoomStateStore } from "@/api/statestore"
 import { useEventAsState } from "@/util/eventdispatcher.ts"
 import MainScreenContext from "../MainScreenContext.ts"
-import { LightboxContext } from "../modal"
-import { ModalContext } from "../modal"
+import { LightboxContext, NestableModalContext } from "../modal"
 import SettingsView from "../settings/SettingsView.tsx"
 import BackIcon from "@/icons/back.svg?react"
 import PeopleIcon from "@/icons/group.svg?react"
@@ -34,7 +33,7 @@ interface RoomViewHeaderProps {
 const RoomViewHeader = ({ room }: RoomViewHeaderProps) => {
 	const roomMeta = useEventAsState(room.meta)
 	const mainScreen = use(MainScreenContext)
-	const openModal = use(ModalContext)
+	const openModal = use(NestableModalContext)
 	const openSettings = () => {
 		openModal({
 			dimmed: true,

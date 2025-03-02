@@ -1,0 +1,78 @@
+div.state-explorer-box {
+	overflow: hidden !important;
+}
+
+div.state-explorer {
+	width: min(50rem, 80vw);
+	max-height: 100%;
+	display: flex;
+	flex-direction: column;
+
+	div.state-button-list {
+		display: flex;
+		flex-wrap: wrap;
+		gap: .5rem;
+		overflow: auto;
+
+		> button {
+			padding: .5rem;
+			border: 1px solid var(--border-color);
+			border-radius: 0.5rem;
+		}
+	}
+
+	> div.nav-buttons {
+		display: flex;
+		flex-wrap: wrap;
+		gap: .5rem;
+		margin-top: .5rem;
+		justify-content: space-between;
+
+		> button {
+			padding: .5rem 1rem;
+			border: 1px solid var(--border-color);
+			border-radius: .5rem;
+		}
+	}
+
+	&.state-event-view {
+		> div.state-event-content {
+			flex: 1;
+			overflow: auto;
+
+			> textarea {
+				width: 100%;
+				padding: .5rem;
+				box-sizing: border-box;
+				resize: vertical;
+				border: 1px solid var(--border-color);
+				outline: none;
+				border-radius: .5rem;
+
+				&:focus {
+					border: 1px solid var(--primary-color);
+				}
+			}
+		}
+
+		> div.state-header > div.new-event-type {
+			display: flex;
+			gap: .25rem;
+			margin-bottom: .25rem;
+
+			> input {
+				flex: 1;
+				padding: .5rem;
+				border: 1px solid var(--border-color);
+				box-sizing: border-box;
+				border-radius: .5rem;
+				outline: none;
+				font-family: var(--monospace-font-stack);
+
+				&:focus {
+					border: 1px solid var(--primary-color);
+				}
+			}
+		}
+	}
+}
