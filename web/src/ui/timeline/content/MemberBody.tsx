@@ -87,15 +87,18 @@ function useChangeDescription(
 	} else if (content.membership === "join") {
 		return "joined the room"
 	} else if (content.membership === "invite") {
+		if (prevContent?.membership === "knock") {
+			return <>accepted {makeTargetElem()}'s join request</>
+		}
 		return <>invited {makeTargetElem()}</>
 	} else if (content.membership === "ban") {
 		return <>banned {makeTargetElem()}</>
 	} else if (content.membership === "knock") {
-		return "knocked on the room"
+		return "requested to join the room"
 	} else if (content.membership === "leave") {
 		if (sender === target) {
 			if (prevContent?.membership === "knock") {
-				return "cancelled their knock"
+				return "cancelled their join request"
 			}
 			return "left the room"
 		}
@@ -103,6 +106,8 @@ function useChangeDescription(
 			return <>unbanned {makeTargetElem()}</>
 		} else if (prevContent?.membership === "invite") {
 			return <>disinvited {makeTargetElem()}</>
+		} else if (prevContent?.membership === "knock") {
+			return <>rejected {makeTargetElem()}'s join request</>
 		}
 		return <>kicked {makeTargetElem()}</>
 	}
