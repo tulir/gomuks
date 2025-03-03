@@ -208,6 +208,8 @@ button, a.button, span.button {
 	justify-content: center;
 	align-items: center;
 	color: inherit;
+	/* Buttons sometimes have their own fonts? */
+	font-family: var(--font-stack);
 
 	&:hover, &:focus {
 		background-color: var(--button-hover-color);
