@@ -45,10 +45,7 @@ const ElementCall = () => {
 		data: {
 			perParticipantE2EE: !!room?.meta.current.encryption_event,
 			// Note: this won't actually work because matrix-js-sdk drops the path prefix for media requests.
-			homeserverBaseURL: new URL(
-				`_gomuks/matrixcompat/${client.store.imageAuthToken}`,
-				window.location.href,
-			).toString(),
+			homeserverBaseURL: client.state.current?.is_logged_in ? client.state.current.homeserver_url : "",
 		},
 	}), [room, client, baseURL])
 	if (!room || !client) {
