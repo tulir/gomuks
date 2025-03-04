@@ -37,8 +37,10 @@ import type {
 	ReqCreateRoom,
 	ResolveAliasResponse,
 	RespCreateRoom,
+	RespMediaConfig,
 	RespOpenIDToken,
 	RespRoomJoin,
+	RespTurnServer,
 	RoomAlias,
 	RoomID,
 	RoomStateGUID,
@@ -212,6 +214,14 @@ export default abstract class RPCClient {
 		return this.request("ensure_group_session_shared", { room_id })
 	}
 
+	sendToDevice(
+		event_type: EventType,
+		messages: { [userId: string]: { [deviceId: string]: object } },
+		encrypted: boolean = false,
+	): Promise<void> {
+		return this.request("send_to_device", { event_type, messages, encrypted })
+	}
+
 	getSpecificRoomState(keys: RoomStateGUID[]): Promise<RawDBEvent[]> {
 		return this.request("get_specific_room_state", { keys })
 	}
@@ -288,5 +298,17 @@ export default abstract class RPCClient {
 
 	registerPush(reg: DBPushRegistration): Promise<boolean> {
 		return this.request("register_push", reg)
+	}
+
+	getTurnServers(): Promise<RespTurnServer> {
+		return this.request("get_turn_servers", {})
+	}
+
+	getMediaConfig(): Promise<RespMediaConfig> {
+		return this.request("get_media_config", {})
+	}
+
+	setListenToDevice(listen: boolean): Promise<void> {
+		return this.request("listen_to_device", listen)
 	}
 }

@@ -13,21 +13,30 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
+import type { IWidget } from "matrix-widget-api"
 import { JSX, use } from "react"
 import type { UserID } from "@/api/types"
 import MainScreenContext from "../MainScreenContext.ts"
 import ErrorBoundary from "../util/ErrorBoundary.tsx"
+import ElementCall from "../widget/ElementCall.tsx"
+import LazyWidget from "../widget/LazyWidget.tsx"
 import MemberList from "./MemberList.tsx"
 import PinnedMessages from "./PinnedMessages.tsx"
 import UserInfo from "./UserInfo.tsx"
+import WidgetList from "./WidgetList.tsx"
 import BackIcon from "@/icons/back.svg?react"
 import CloseIcon from "@/icons/close.svg?react"
 import "./RightPanel.css"
 
-export type RightPanelType = "pinned-messages" | "members" | "user"
+export type RightPanelType = "pinned-messages" | "members" | "widgets" | "widget" | "user" | "element-call"
 
 interface RightPanelSimpleProps {
-	type: "pinned-messages" | "members"
+	type: "pinned-messages" | "members" | "widgets" | "element-call"
+}
+
+interface RightPanelWidgetProps {
+	type: "widget"
+	info: IWidget
 }
 
 interface RightPanelUserProps {
@@ -35,14 +44,20 @@ interface RightPanelUserProps {
 	userID: UserID
 }
 
-export type RightPanelProps = RightPanelUserProps | RightPanelSimpleProps
+export type RightPanelProps = RightPanelUserProps | RightPanelWidgetProps | RightPanelSimpleProps
 
-function getTitle(type: RightPanelType): string {
-	switch (type) {
+function getTitle(props: RightPanelProps): string {
+	switch (props.type) {
 	case "pinned-messages":
 		return "Pinned Messages"
 	case "members":
 		return "Room Members"
+	case "widgets":
+		return "Widgets in room"
+	case "widget":
+		return props.info.name || "Widget"
+	case "element-call":
+		return "Element Call"
 	case "user":
 		return "User Info"
 	}
@@ -54,6 +69,12 @@ function renderRightPanelContent(props: RightPanelProps): JSX.Element | null {
 		return <PinnedMessages />
 	case "members":
 		return <MemberList />
+	case "widgets":
+		return <WidgetList />
+	case "element-call":
+		return <ElementCall />
+	case "widget":
+		return <LazyWidget info={props.info} />
 	case "user":
 		return <UserInfo userID={props.userID} />
 	}
@@ -67,12 +88,17 @@ const RightPanel = (props: RightPanelProps) => {
 			data-target-panel="members"
 			onClick={mainScreen.clickRightPanelOpener}
 		><BackIcon/></button>
+	} else if (props.type === "element-call" || props.type === "widget") {
+		backButton = <button
+			data-target-panel="widgets"
+			onClick={mainScreen.clickRightPanelOpener}
+		><BackIcon/></button>
 	}
 	return <div className="right-panel">
 		<div className="right-panel-header">
 			<div className="left-side">
 				{backButton}
-				<div className="panel-name">{getTitle(props.type)}</div>
+				<div className="panel-name">{getTitle(props)}</div>
 			</div>
 			<button onClick={mainScreen.closeRightPanel}><CloseIcon/></button>
 		</div>

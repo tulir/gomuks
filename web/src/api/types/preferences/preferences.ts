@@ -139,6 +139,12 @@ export const preferences = {
 		allowedContexts: anyContext,
 		defaultValue: "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
 	}),
+	element_call_base_url: new Preference<string>({
+		displayName: "Element call base URL",
+		description: "The widget base URL for Element calls.",
+		allowedContexts: anyContext,
+		defaultValue: "https://call.element.io",
+	}),
 	gif_provider: new Preference<GIFProvider>({
 		displayName: "GIF provider",
 		description: "The service to use to search for GIFs",

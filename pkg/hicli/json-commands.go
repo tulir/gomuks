@@ -186,6 +186,11 @@ func (h *HiClient) handleJSONCommand(ctx context.Context, req *JSONCommand) (any
 		return unmarshalAndCall(req.Data, func(params *ensureGroupSessionSharedParams) (bool, error) {
 			return true, h.EnsureGroupSessionShared(ctx, params.RoomID)
 		})
+	case "send_to_device":
+		return unmarshalAndCall(req.Data, func(params *sendToDeviceParams) (*mautrix.RespSendToDevice, error) {
+			params.EventType.Class = event.ToDeviceEventType
+			return h.SendToDevice(ctx, params.EventType, params.ReqSendToDevice, params.Encrypted)
+		})
 	case "resolve_alias":
 		return unmarshalAndCall(req.Data, func(params *resolveAliasParams) (*mautrix.RespAliasResolve, error) {
 			return h.Client.ResolveAlias(ctx, params.Alias)
@@ -238,6 +243,14 @@ func (h *HiClient) handleJSONCommand(ctx context.Context, req *JSONCommand) (any
 		return unmarshalAndCall(req.Data, func(params *database.PushRegistration) (bool, error) {
 			return true, h.DB.PushRegistration.Put(ctx, params)
 		})
+	case "listen_to_device":
+		return unmarshalAndCall(req.Data, func(listen *bool) (bool, error) {
+			return h.ToDeviceInSync.Swap(*listen), nil
+		})
+	case "get_turn_servers":
+		return h.Client.TurnServer(ctx)
+	case "get_media_config":
+		return h.Client.GetMediaConfig(ctx)
 	default:
 		return nil, fmt.Errorf("unknown command %q", req.Command)
 	}
@@ -355,6 +368,12 @@ type getSpecificRoomStateParams struct {
 
 type ensureGroupSessionSharedParams struct {
 	RoomID id.RoomID `json:"room_id"`
+}
+
+type sendToDeviceParams struct {
+	*mautrix.ReqSendToDevice
+	EventType event.Type `json:"event_type"`
+	Encrypted bool       `json:"encrypted"`
 }
 
 type resolveAliasParams struct {

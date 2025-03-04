@@ -346,3 +346,15 @@ export interface ReqCreateRoom {
 export interface RespCreateRoom {
 	room_id: RoomID
 }
+
+export interface RespTurnServer {
+	username: string
+	password: string
+	ttl: number
+	uris: string[]
+}
+
+export interface RespMediaConfig {
+	"m.upload.size": number
+	[key: string]: unknown
+}

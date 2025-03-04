@@ -457,6 +457,8 @@ export class RoomStateStore {
 		for (const evt of sync.events ?? []) {
 			this.applyEvent(evt)
 		}
+		const hasWidgets = this.parent.widgetListeners.size > 0
+		const newState: MemDBEvent[] = []
 		for (const [evtType, changedEvts] of Object.entries(sync.state ?? {})) {
 			let stateMap = this.state.get(evtType)
 			if (!stateMap) {
@@ -466,6 +468,12 @@ export class RoomStateStore {
 			for (const [key, rowID] of Object.entries(changedEvts)) {
 				stateMap.set(key, rowID)
 				this.invalidateStateCaches(evtType, key)
+				if (hasWidgets) {
+					const evt = this.eventsByRowID.get(rowID)
+					if (evt) {
+						newState.push(evt)
+					}
+				}
 			}
 			this.stateSubs.notify(evtType)
 		}
@@ -484,6 +492,13 @@ export class RoomStateStore {
 		this.notifyTimelineSubscribers()
 		for (const [evtID, receipts] of Object.entries(sync.receipts ?? {})) {
 			this.applyReceipts(receipts, evtID, false)
+		}
+		if (hasWidgets && ((sync.timeline && sync.timeline.length > 0) || newState.length > 0)) {
+			const evts = sync.timeline?.map(evt => this.eventsByRowID.get(evt.event_rowid)).filter(evt => !!evt)
+			this.parent.widgetListeners.forEach(listener => {
+				evts?.forEach(listener.onTimelineEvent)
+				newState.forEach(listener.onStateEvent)
+			})
 		}
 	}
 

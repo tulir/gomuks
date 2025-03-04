@@ -247,6 +247,10 @@ func (h *HiClient) Send(
 	content any,
 	disableEncryption bool,
 ) (*database.Event, error) {
+	if evtType == event.EventRedaction {
+		// TODO implement
+		return nil, fmt.Errorf("redaction is not supported")
+	}
 	return h.send(ctx, roomID, evtType, content, "", disableEncryption)
 }
 
@@ -423,6 +427,18 @@ func (h *HiClient) EnsureGroupSessionShared(ctx context.Context, roomID id.RoomI
 	} else {
 		return h.shareGroupSession(ctx, roomMeta)
 	}
+}
+
+func (h *HiClient) SendToDevice(ctx context.Context, evtType event.Type, content *mautrix.ReqSendToDevice, encrypt bool) (*mautrix.RespSendToDevice, error) {
+	if encrypt {
+		var err error
+		content, err = h.Crypto.EncryptToDevices(ctx, evtType, content)
+		if err != nil {
+			return nil, fmt.Errorf("failed to encrypt: %w", err)
+		}
+		evtType = event.ToDeviceEncrypted
+	}
+	return h.Client.SendToDevice(ctx, evtType, content)
 }
 
 func (h *HiClient) loadMembers(ctx context.Context, room *database.Room) error {

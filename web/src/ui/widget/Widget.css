@@ -1,0 +1,9 @@
+div.right-panel-content.widget, div.right-panel-content.element-call {
+	overflow: hidden !important;
+
+	> iframe.widget-iframe {
+		width: 100%;
+		height: 100%;
+		border: none;
+	}
+}

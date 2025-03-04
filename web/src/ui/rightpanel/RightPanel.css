@@ -51,6 +51,22 @@ div.right-panel-content.pinned-messages {
 	}
 }
 
+div.right-panel-content.widgets {
+	display: flex;
+	flex-direction: column;
+	gap: .5rem;
+	padding: .5rem;
+
+	> button {
+		padding: .5rem;
+		width: 100%;
+	}
+
+	> div.separator {
+		flex: 1;
+	}
+}
+
 div.right-panel-content.user {
 	display: flex;
 	flex-direction: column;

@@ -66,6 +66,9 @@ func (h *HiClient) markSyncOK() {
 
 func (h *HiClient) preProcessSyncResponse(ctx context.Context, resp *mautrix.RespSync, since string) error {
 	log := zerolog.Ctx(ctx)
+	listenToDevice := h.ToDeviceInSync.Load()
+	var syncTD []*SyncToDevice
+
 	postponedToDevices := resp.ToDevice.Events[:0]
 	for _, evt := range resp.ToDevice.Events {
 		evt.Type.Class = event.ToDeviceEventType
@@ -80,7 +83,15 @@ func (h *HiClient) preProcessSyncResponse(ctx context.Context, resp *mautrix.Res
 
 		switch content := evt.Content.Parsed.(type) {
 		case *event.EncryptedEventContent:
-			h.Crypto.HandleEncryptedEvent(ctx, evt)
+			unhandledDecrypted := h.Crypto.HandleEncryptedEvent(ctx, evt)
+			if unhandledDecrypted != nil && listenToDevice {
+				syncTD = append(syncTD, &SyncToDevice{
+					Sender:    evt.Sender,
+					Type:      unhandledDecrypted.Type,
+					Content:   unhandledDecrypted.Content.VeryRaw,
+					Encrypted: true,
+				})
+			}
 		case *event.RoomKeyWithheldEventContent:
 			// TODO move this check to mautrix-go?
 			if evt.Sender == h.Account.UserID && content.Code == event.RoomKeyWithheldUnavailable {
@@ -88,11 +99,22 @@ func (h *HiClient) preProcessSyncResponse(ctx context.Context, resp *mautrix.Res
 			} else {
 				h.Crypto.HandleRoomKeyWithheld(ctx, content)
 			}
-		default:
+		case *event.SecretRequestEventContent, *event.RoomKeyRequestEventContent:
 			postponedToDevices = append(postponedToDevices, evt)
+		default:
+			if listenToDevice {
+				syncTD = append(syncTD, &SyncToDevice{
+					Sender:  evt.Sender,
+					Type:    evt.Type,
+					Content: evt.Content.VeryRaw,
+				})
+			}
 		}
 	}
 	resp.ToDevice.Events = postponedToDevices
+	if len(syncTD) > 0 {
+		ctx.Value(syncContextKey).(*syncContext).evt.ToDevice = syncTD
+	}
 	h.Crypto.MarkOlmHashSavePoint(ctx)
 
 	return nil

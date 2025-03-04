@@ -26,6 +26,7 @@ import CodeIcon from "@/icons/code.svg?react"
 import PeopleIcon from "@/icons/group.svg?react"
 import PinIcon from "@/icons/pin.svg?react"
 import SettingsIcon from "@/icons/settings.svg?react"
+import WidgetIcon from "@/icons/widgets.svg?react"
 import "./RoomViewHeader.css"
 
 interface RoomViewHeaderProps {
@@ -81,6 +82,11 @@ const RoomViewHeader = ({ room }: RoomViewHeaderProps) => {
 				onClick={mainScreen.clickRightPanelOpener}
 				title="Room Members"
 			><PeopleIcon/></button>
+			<button
+				data-target-panel="widgets"
+				onClick={mainScreen.clickRightPanelOpener}
+				title="Widgets in room"
+			><WidgetIcon/></button>
 			<button title="Explore room state" onClick={openRoomStateExplorer}><CodeIcon/></button>
 			<button title="Room Settings" onClick={openSettings}><SettingsIcon/></button>
 		</div>

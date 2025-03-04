@@ -50,6 +50,8 @@ type HiClient struct {
 	syncErrors int
 	lastSync   time.Time
 
+	ToDeviceInSync atomic.Bool
+
 	EventHandler func(evt any)
 	LogoutFunc   func(context.Context) error
 

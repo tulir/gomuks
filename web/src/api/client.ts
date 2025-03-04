@@ -16,7 +16,7 @@
 import type { MouseEvent } from "react"
 import { CachedEventDispatcher, NonNullCachedEventDispatcher } from "../util/eventdispatcher.ts"
 import RPCClient, { SendMessageParams } from "./rpc.ts"
-import { RoomStateStore, StateStore } from "./statestore"
+import { RoomStateStore, StateStore, WidgetListener } from "./statestore"
 import type {
 	ClientState,
 	ElementRecentEmoji,
@@ -41,6 +41,7 @@ export default class Client {
 	#stateRequests: RoomStateGUID[] = []
 	#stateRequestPromise: Promise<void> | null = null
 	#gcInterval: number | undefined
+	#toDeviceRequested = false
 
 	constructor(readonly rpc: RPCClient) {
 		this.rpc.event.listen(this.#handleEvent)
@@ -152,6 +153,22 @@ export default class Client {
 
 	registerURIHandler = () => {
 		navigator.registerProtocolHandler("matrix", "#/uri/%s")
+	}
+
+	addWidgetListener(listener: WidgetListener): () => void {
+		this.store.widgetListeners.add(listener)
+		// TODO only request to-device events if there are widgets that need them?
+		if (!this.#toDeviceRequested) {
+			this.#toDeviceRequested = true
+			this.rpc.setListenToDevice(true)
+		}
+		return () => {
+			this.store.widgetListeners.delete(listener)
+			if (this.store.widgetListeners.size === 0 && this.#toDeviceRequested) {
+				this.#toDeviceRequested = false
+				this.rpc.setListenToDevice(false)
+			}
+		}
 	}
 
 	start(): () => void {

@@ -32,6 +32,7 @@ import {
 	SendCompleteData,
 	SyncCompleteData,
 	SyncRoom,
+	SyncToDevice,
 	TypingEventData,
 	UnknownEventContent,
 	UserID,
@@ -59,6 +60,13 @@ export interface RoomListEntry {
 export interface GCSettings {
 	interval: number,
 	lastOpenedCutoff: number,
+}
+
+export interface WidgetListener {
+	onTimelineEvent(evt: MemDBEvent): void
+	onStateEvent(evt: MemDBEvent): void
+	onToDeviceEvent(evt: SyncToDevice): void
+	onRoomChange(roomID: RoomID | null): void
 }
 
 window.gcSettings ??= {
@@ -98,9 +106,19 @@ export class StateStore {
 	readonly localPreferenceCache: Preferences = getLocalStoragePreferences("global_prefs", this.preferenceSub.notify)
 	serverPreferenceCache: Preferences = {}
 	switchRoom?: (roomID: RoomID | null) => void
-	activeRoomID: RoomID | null = null
+	#activeRoomID: RoomID | null = null
 	activeRoomIsPreview: boolean = false
 	imageAuthToken?: string
+	readonly widgetListeners: Set<WidgetListener> = new Set()
+
+	get activeRoomID(): RoomID | null {
+		return this.#activeRoomID
+	}
+
+	set activeRoomID(roomID: RoomID | null) {
+		this.#activeRoomID = roomID
+		this.widgetListeners.forEach(listener => listener.onRoomChange(roomID))
+	}
 
 	#roomListFilterFunc = (entry: RoomListEntry) => {
 		if (this.currentRoomListQuery && !entry.search_name.includes(this.currentRoomListQuery)) {
@@ -243,6 +261,11 @@ export class StateStore {
 		}
 		const resyncRoomList = this.roomList.current.length === 0
 		const changedRoomListEntries = new Map<RoomID, RoomListEntry | null>()
+		if (sync.to_device?.length && this.widgetListeners.size > 0) {
+			for (const listener of this.widgetListeners) {
+				sync.to_device.forEach(listener.onToDeviceEvent)
+			}
+		}
 		for (const data of sync.invited_rooms ?? []) {
 			const room = new InvitedRoomStore(data, this)
 			this.inviteRooms.set(room.room_id, room)

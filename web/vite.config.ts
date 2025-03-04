@@ -2,7 +2,7 @@ import react from "@vitejs/plugin-react-swc"
 import { defineConfig } from "vite"
 import svgr from "vite-plugin-svgr"
 
-const splitDeps = ["katex", "leaflet", "monaco-editor"]
+const splitDeps = ["katex", "leaflet", "monaco-editor", "matrix-widget-api"]
 
 export default defineConfig({
 	base: "./",
