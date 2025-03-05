@@ -157,12 +157,18 @@ func (pn *PushNotification) Split(yield func(*PushNotification) bool) {
 }
 
 func (gmx *Gomuks) SendPushNotification(ctx context.Context, pushRegs []*database.PushRegistration, notif *PushNotification) {
+	log := zerolog.Ctx(ctx).With().
+		Bool("important", notif.HasImportant).
+		Int("message_count", len(notif.RawMessages)).
+		Int("dismiss_count", len(notif.Dismiss)).
+		Logger()
+	ctx = log.WithContext(ctx)
 	rawPayload, err := json.Marshal(notif)
 	if err != nil {
-		zerolog.Ctx(ctx).Err(err).Msg("Failed to marshal push notification")
+		log.Err(err).Msg("Failed to marshal push notification")
 		return
 	} else if base64.StdEncoding.EncodedLen(len(rawPayload)) >= 4000 {
-		zerolog.Ctx(ctx).Error().Msg("Generated push payload too long")
+		log.Error().Msg("Generated push payload too long")
 		return
 	}
 	for _, reg := range pushRegs {
@@ -172,7 +178,7 @@ func (gmx *Gomuks) SendPushNotification(ctx context.Context, pushRegs []*databas
 			var err error
 			devicePayload, err = encryptPush(rawPayload, reg.Encryption.Key)
 			if err != nil {
-				zerolog.Ctx(ctx).Err(err).Str("device_id", reg.DeviceID).Msg("Failed to encrypt push payload")
+				log.Err(err).Str("device_id", reg.DeviceID).Msg("Failed to encrypt push payload")
 				continue
 			}
 			encrypted = true
@@ -180,7 +186,7 @@ func (gmx *Gomuks) SendPushNotification(ctx context.Context, pushRegs []*databas
 		switch reg.Type {
 		case database.PushTypeFCM:
 			if !encrypted {
-				zerolog.Ctx(ctx).Warn().
+				log.Warn().
 					Str("device_id", reg.DeviceID).
 					Msg("FCM push registration doesn't have encryption key")
 				continue
@@ -188,7 +194,7 @@ func (gmx *Gomuks) SendPushNotification(ctx context.Context, pushRegs []*databas
 			var token string
 			err = json.Unmarshal(reg.Data, &token)
 			if err != nil {
-				zerolog.Ctx(ctx).Err(err).Str("device_id", reg.DeviceID).Msg("Failed to unmarshal FCM token")
+				log.Err(err).Str("device_id", reg.DeviceID).Msg("Failed to unmarshal FCM token")
 				continue
 			}
 			gmx.SendFCMPush(ctx, token, devicePayload, notif.HasImportant)
