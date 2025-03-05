@@ -168,17 +168,12 @@ github.com/yuin/goldmark v1.4.13/go.mod h1:6yULJ656Px+3vBD8DxQVa3kxgyrAnzto9xy5t
 github.com/yuin/goldmark v1.7.8 h1:iERMLn0/QJeHFhxSt3p6PeN9mGnvIKSpG9YYorDMnic=
 github.com/yuin/goldmark v1.7.8/go.mod h1:uzxRWxtg69N339t3louHJ7+O03ezfj6PlliRlaOzY1E=
 <<<<<<< HEAD
-<<<<<<< HEAD
 go.mau.fi/util v0.8.4-0.20250106152331-30b8c95e7d7a h1:D9RCHBFjxah9F/YB7amvRJjT2IEOFWcz8jpcEY8dBV0=
 go.mau.fi/util v0.8.4-0.20250106152331-30b8c95e7d7a/go.mod h1:MOfGTs1CBuK6ERTcSL4lb5YU7/ujz09eOPVEDckuazY=
 =======
 go.mau.fi/util v0.8.3-0.20241212004537-24c1a9b1d8f6 h1:s4aQJQBBMkjkHTdThRRNp2E35wqmMJVGkOAXG4b0X8c=
 go.mau.fi/util v0.8.3-0.20241212004537-24c1a9b1d8f6/go.mod h1:sWpI/kFgk/QP4BDJJwSjjBsuAT7oUsj9VlFhvUo+34I=
 >>>>>>> a1ca3e2 (dependencies: update)
-=======
-go.mau.fi/util v0.8.3 h1:sulhXtfquMrQjsOP67x9CzWVBYUwhYeoo8hNQIpCWZ4=
-go.mau.fi/util v0.8.3/go.mod h1:c00Db8xog70JeIsEvhdHooylTkTkakgnAOsZ04hplQY=
->>>>>>> 49a277f (dependencies: update)
 go.mau.fi/zeroconfig v0.1.3 h1:As9wYDKmktjmNZW5i1vn8zvJlmGKHeVxHVIBMXsm4kM=
 go.mau.fi/zeroconfig v0.1.3/go.mod h1:NcSJkf180JT+1IId76PcMuLTNa1CzsFFZ0nBygIQM70=
 golang.org/x/crypto v0.0.0-20190308221718-c2843e01d9a2/go.mod h1:djNgcEr1/C05ACkg1iLfiJU5Ep61QUkGW8qpdssI0+w=
@@ -194,14 +189,9 @@ golang.org/x/exp v0.0.0-20250103183323-7d7fa50e5329/go.mod h1:qj5a5QZpwLU2NLQudw
 =======
 golang.org/x/crypto v0.31.0 h1:ihbySMvVjLAeSH1IbfcRTkD/iNscyz8rGzjF/E5hV6U=
 golang.org/x/crypto v0.31.0/go.mod h1:kDsLvtWBEx7MV9tJOj9bnXsPbxwJQ6csT/x4KIN4Ssk=
-<<<<<<< HEAD
 golang.org/x/exp v0.0.0-20241210194714-1829a127f884 h1:Y/Mj/94zIQQGHVSv1tTtQBDaQaJe62U9bkDZKKyhPCU=
 golang.org/x/exp v0.0.0-20241210194714-1829a127f884/go.mod h1:qj5a5QZpwLU2NLQudwIN5koi3beDhSAlJwa67PuM98c=
 >>>>>>> a1ca3e2 (dependencies: update)
-=======
-golang.org/x/exp v0.0.0-20241215155358-4a5509556b9e h1:4qufH0hlUYs6AO6XmZC3GqfDPGSXHVXUFR6OND+iJX4=
-golang.org/x/exp v0.0.0-20241215155358-4a5509556b9e/go.mod h1:qj5a5QZpwLU2NLQudwIN5koi3beDhSAlJwa67PuM98c=
->>>>>>> 49a277f (dependencies: update)
 golang.org/x/image v0.23.0 h1:HseQ7c2OpPKTPVzNjG5fwJsOTCiiwS4QdsYi5XU6H68=
 golang.org/x/image v0.23.0/go.mod h1:wJJBTdLfCCf3tiHa1fNxpZmUI4mmoZvwMCPP0ddoNKY=
 golang.org/x/mod v0.6.0-dev.0.20220419223038-86c51ed26bb4/go.mod h1:jJ57K6gSWd91VN4djpZkiMVwK6gcyfeH4XE8wZrZaV4=
@@ -295,7 +285,6 @@ gopkg.in/yaml.v2 v2.4.0/go.mod h1:RDklbk79AGWmwhnvt/jBztapEOGDOx6ZbXqjP6csGnQ=
 gopkg.in/yaml.v3 v3.0.1 h1:fxVm/GzAzEWqLHuvctI91KS9hhNmmWOoWu0XTYJS7CA=
 gopkg.in/yaml.v3 v3.0.1/go.mod h1:K4uyk7z7BCEPqu6E+C64Yfv1cQ7kz7rIZviUmN+EgEM=
 <<<<<<< HEAD
-<<<<<<< HEAD
 maunium.net/go/mautrix v0.22.2-0.20250106152426-68eaa9d1df1f h1:+nAznNCSCm+P4am9CmguSfNfcbpA7qtTzJQrwCP8aHM=
 maunium.net/go/mautrix v0.22.2-0.20250106152426-68eaa9d1df1f/go.mod h1:FmwzK7RSzrd1OfGDgJzFWXl7nYmYm8/P0Y77sy/A1Uw=
 mvdan.cc/xurls/v2 v2.6.0 h1:3NTZpeTxYVWNSokW3MKeyVkz/j7uYXYiMtXRUfmjbgI=
@@ -303,10 +292,6 @@ mvdan.cc/xurls/v2 v2.6.0/go.mod h1:bCvEZ1XvdA6wDnxY7jPPjEmigDtvtvPXAD/Exa9IMSk=
 =======
 maunium.net/go/mautrix v0.22.1-0.20241212004632-bfdd0efd0e2e h1:VXanNlkDKmyvampIdqJq4ShjDmaiEtebmWD1IYkts/Y=
 maunium.net/go/mautrix v0.22.1-0.20241212004632-bfdd0efd0e2e/go.mod h1:bjPXzRi5r1eY4n3fvm9k1UrppoSDoqq7McoRPpBR8YM=
-=======
-maunium.net/go/mautrix v0.22.1 h1:2lCM37vmVzZGE0tWD7UOySMtAuC5hq6Pw33KlY2VU/c=
-maunium.net/go/mautrix v0.22.1/go.mod h1:1rhqwH34Rz54ZqzdQYkmNW6rQUymNeTdaLA4l9LK6AI=
->>>>>>> 49a277f (dependencies: update)
 mvdan.cc/xurls/v2 v2.5.0 h1:lyBNOm8Wo71UknhUs4QTFUNNMyxy2JEIaKKo0RWOh+8=
 mvdan.cc/xurls/v2 v2.5.0/go.mod h1:yQgaGQ1rFtJUzkmKiHYSSfuQxqfYmd//X6PxvholpeE=
 >>>>>>> a1ca3e2 (dependencies: update)
