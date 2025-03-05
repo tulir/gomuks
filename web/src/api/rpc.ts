@@ -151,9 +151,13 @@ export default abstract class RPCClient {
 	}
 
 	sendEvent(
-		room_id: RoomID, type: EventType, content: unknown, disable_encryption: boolean = false,
+		room_id: RoomID,
+		type: EventType,
+		content: unknown,
+		disable_encryption: boolean = false,
+		synchronous: boolean = false,
 	): Promise<RawDBEvent> {
-		return this.request("send_event", { room_id, type, content, disable_encryption })
+		return this.request("send_event", { room_id, type, content, disable_encryption, synchronous })
 	}
 
 	resendEvent(transaction_id: string): Promise<RawDBEvent> {

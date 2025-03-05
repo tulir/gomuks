@@ -57,7 +57,7 @@ class GomuksWidgetDriver extends WidgetDriver {
 			const eventID = await this.client.rpc.setState(roomID, eventType, stateKey, content)
 			return { eventId: eventID, roomId: roomID }
 		} else {
-			const rawDBEvt = await this.client.rpc.sendEvent(roomID, eventType, content)
+			const rawDBEvt = await this.client.rpc.sendEvent(roomID, eventType, content, false, true)
 			return { eventId: rawDBEvt.event_id, roomId: rawDBEvt.room_id }
 		}
 	}
