@@ -226,6 +226,7 @@ func (h *HiClient) SetState(
 	evtType event.Type,
 	stateKey string,
 	content any,
+	extra ...mautrix.ReqSendEvent,
 ) (id.EventID, error) {
 	room, err := h.DB.Room.Get(ctx, roomID)
 	if err != nil {
@@ -233,9 +234,13 @@ func (h *HiClient) SetState(
 	} else if room == nil {
 		return "", fmt.Errorf("unknown room")
 	}
-	resp, err := h.Client.SendStateEvent(ctx, room.ID, evtType, stateKey, content)
+	resp, err := h.Client.SendStateEvent(ctx, room.ID, evtType, stateKey, content, extra...)
 	if err != nil {
 		return "", err
+	}
+	if resp.UnstableDelayID != "" {
+		// Mildly hacky, but it's fine'
+		return id.EventID(resp.UnstableDelayID), nil
 	}
 	return resp.EventID, nil
 }

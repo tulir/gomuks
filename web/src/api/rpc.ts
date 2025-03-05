@@ -174,8 +174,13 @@ export default abstract class RPCClient {
 
 	setState(
 		room_id: RoomID, type: EventType, state_key: string, content: Record<string, unknown>,
+		extra: { delay_ms?: number } = {},
 	): Promise<EventID> {
-		return this.request("set_state", { room_id, type, state_key, content })
+		return this.request("set_state", { room_id, type, state_key, content, ...extra })
+	}
+
+	updateDelayedEvent(delay_id: string, action: string): Promise<void> {
+		return this.request("update_delayed_event", { delay_id, action })
 	}
 
 	setMembership(room_id: RoomID, user_id: UserID, action: MembershipAction, reason?: string): Promise<void> {

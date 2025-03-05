@@ -65,7 +65,16 @@ func (h *HiClient) handleJSONCommand(ctx context.Context, req *JSONCommand) (any
 		})
 	case "set_state":
 		return unmarshalAndCall(req.Data, func(params *sendStateEventParams) (id.EventID, error) {
-			return h.SetState(ctx, params.RoomID, params.EventType, params.StateKey, params.Content)
+			return h.SetState(ctx, params.RoomID, params.EventType, params.StateKey, params.Content, mautrix.ReqSendEvent{
+				UnstableDelay: time.Duration(params.DelayMS) * time.Millisecond,
+			})
+		})
+	case "update_delayed_event":
+		return unmarshalAndCall(req.Data, func(params *updateDelayedEventParams) (*mautrix.RespUpdateDelayedEvent, error) {
+			return h.Client.UpdateDelayedEvent(ctx, &mautrix.ReqUpdateDelayedEvent{
+				DelayID: params.DelayID,
+				Action:  params.Action,
+			})
 		})
 	case "set_membership":
 		return unmarshalAndCall(req.Data, func(params *setMembershipParams) (any, error) {
@@ -308,6 +317,12 @@ type sendStateEventParams struct {
 	EventType event.Type      `json:"type"`
 	StateKey  string          `json:"state_key"`
 	Content   json.RawMessage `json:"content"`
+	DelayMS   int             `json:"delay_ms"`
+}
+
+type updateDelayedEventParams struct {
+	DelayID string `json:"delay_id"`
+	Action  string `json:"action"`
 }
 
 type setMembershipParams struct {
