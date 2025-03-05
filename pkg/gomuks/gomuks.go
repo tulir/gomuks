@@ -37,7 +37,6 @@ import (
 	"go.mau.fi/util/exzerolog"
 	"go.mau.fi/util/ptr"
 	"go.mau.fi/zeroconfig"
-	"go.mau.fi/util/ptr"
 	"golang.org/x/net/http2"
 
 	"go.mau.fi/gomuks/pkg/hicli"
