@@ -22,37 +22,6 @@ import (
 
 var ErrPaginationAlreadyInProgress = errors.New("pagination is already in progress")
 
-/*func (h *HiClient) GetEventsByRowIDs(ctx context.Context, rowIDs []database.EventRowID) ([]*database.Event, error) {
-	events, err := h.DB.Event.GetByRowIDs(ctx, rowIDs...)
-	if err != nil {
-		return nil, err
-	} else if len(events) == 0 {
-		return events, nil
-	}
-	firstRoomID := events[0].RoomID
-	allInSameRoom := true
-	for _, evt := range events {
-		h.ReprocessExistingEvent(ctx, evt)
-		if evt.RoomID != firstRoomID {
-			allInSameRoom = false
-			break
-		}
-	}
-	if allInSameRoom {
-		err = h.DB.Event.FillLastEditRowIDs(ctx, firstRoomID, events)
-		if err != nil {
-			return events, fmt.Errorf("failed to fill last edit row IDs: %w", err)
-		}
-		err = h.DB.Event.FillReactionCounts(ctx, firstRoomID, events)
-		if err != nil {
-			return events, fmt.Errorf("failed to fill reaction counts: %w", err)
-		}
-	} else {
-		// TODO slow path where events are collected and filling is done one room at a time?
-	}
-	return events, nil
-}*/
-
 func (h *HiClient) GetEvent(ctx context.Context, roomID id.RoomID, eventID id.EventID) (*database.Event, error) {
 	if evt, err := h.DB.Event.GetByID(ctx, eventID); err != nil {
 		return nil, fmt.Errorf("failed to get event from database: %w", err)
@@ -62,6 +31,26 @@ func (h *HiClient) GetEvent(ctx context.Context, roomID id.RoomID, eventID id.Ev
 	} else if serverEvt, err := h.Client.GetEvent(ctx, roomID, eventID); err != nil {
 		return nil, fmt.Errorf("failed to get event from server: %w", err)
 	} else {
+		return h.processEvent(ctx, serverEvt, nil, nil, false)
+	}
+}
+
+func (h *HiClient) GetUnredactedEvent(ctx context.Context, roomID id.RoomID, eventID id.EventID) (*database.Event, error) {
+	if evt, err := h.DB.Event.GetByID(ctx, eventID); err != nil {
+		return nil, fmt.Errorf("failed to get event from database: %w", err)
+		// TODO this check doesn't handle events which keep some fields on redaction
+	} else if evt != nil && len(evt.Content) > 2 {
+		h.ReprocessExistingEvent(ctx, evt)
+		return evt, nil
+	} else if serverEvt, err := h.Client.GetUnredactedEventContent(ctx, roomID, eventID); err != nil {
+		return nil, fmt.Errorf("failed to get event from server: %w", err)
+	} else if redactedServerEvt, err := h.Client.GetEvent(ctx, roomID, eventID); err != nil {
+		return nil, fmt.Errorf("failed to get redacted event from server: %w", err)
+		// TODO this check will have false positives on actually empty events
+	} else if len(serverEvt.Content.VeryRaw) == 2 {
+		return nil, fmt.Errorf("server didn't return content")
+	} else {
+		serverEvt.Unsigned.RedactedBecause = redactedServerEvt.Unsigned.RedactedBecause
 		return h.processEvent(ctx, serverEvt, nil, nil, false)
 	}
 }
@@ -279,6 +268,7 @@ func (h *HiClient) GetReceipts(ctx context.Context, roomID id.RoomID, eventIDs [
 
 func (h *HiClient) PaginateServer(ctx context.Context, roomID id.RoomID, limit int) (*PaginationResponse, error) {
 	ctx, cancel := context.WithCancelCause(ctx)
+	defer cancel(context.Canceled)
 	h.paginationInterrupterLock.Lock()
 	if _, alreadyPaginating := h.paginationInterrupter[roomID]; alreadyPaginating {
 		h.paginationInterrupterLock.Unlock()

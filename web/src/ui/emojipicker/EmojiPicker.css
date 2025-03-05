@@ -226,7 +226,7 @@ div.emoji-picker, div.sticker-picker {
 }
 
 @media screen and (max-width: 37.5rem) {
-	div.emoji-picker, div.gif-picker {
+	div.emoji-picker, div.gif-picker, div.sticker-picker {
 		inset: 0 0 3rem 0 !important;
 		width: 100%;
 		height: calc(100% - 3rem);

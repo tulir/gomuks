@@ -66,6 +66,9 @@ func (h *HiClient) markSyncOK() {
 
 func (h *HiClient) preProcessSyncResponse(ctx context.Context, resp *mautrix.RespSync, since string) error {
 	log := zerolog.Ctx(ctx)
+	listenToDevice := h.ToDeviceInSync.Load()
+	var syncTD []*SyncToDevice
+
 	postponedToDevices := resp.ToDevice.Events[:0]
 	for _, evt := range resp.ToDevice.Events {
 		evt.Type.Class = event.ToDeviceEventType
@@ -80,17 +83,78 @@ func (h *HiClient) preProcessSyncResponse(ctx context.Context, resp *mautrix.Res
 
 		switch content := evt.Content.Parsed.(type) {
 		case *event.EncryptedEventContent:
-			h.Crypto.HandleEncryptedEvent(ctx, evt)
+			unhandledDecrypted := h.Crypto.HandleEncryptedEvent(ctx, evt)
+			if unhandledDecrypted != nil && listenToDevice {
+				syncTD = append(syncTD, &SyncToDevice{
+					Sender:    evt.Sender,
+					Type:      unhandledDecrypted.Type,
+					Content:   unhandledDecrypted.Content.VeryRaw,
+					Encrypted: true,
+				})
+			}
 		case *event.RoomKeyWithheldEventContent:
-			h.Crypto.HandleRoomKeyWithheld(ctx, content)
-		default:
+			// TODO move this check to mautrix-go?
+			if evt.Sender == h.Account.UserID && content.Code == event.RoomKeyWithheldUnavailable {
+				log.Debug().Any("withheld_content", content).Msg("Ignoring m.unavailable megolm session withheld event")
+			} else {
+				h.Crypto.HandleRoomKeyWithheld(ctx, content)
+			}
+		case *event.SecretRequestEventContent, *event.RoomKeyRequestEventContent:
 			postponedToDevices = append(postponedToDevices, evt)
+		default:
+			if listenToDevice {
+				syncTD = append(syncTD, &SyncToDevice{
+					Sender:  evt.Sender,
+					Type:    evt.Type,
+					Content: evt.Content.VeryRaw,
+				})
+			}
 		}
 	}
 	resp.ToDevice.Events = postponedToDevices
+	if len(syncTD) > 0 {
+		ctx.Value(syncContextKey).(*syncContext).evt.ToDevice = syncTD
+	}
 	h.Crypto.MarkOlmHashSavePoint(ctx)
 
 	return nil
+}
+
+func (h *HiClient) maybeDiscardOutboundSession(ctx context.Context, newMembership event.Membership, evt *event.Event) bool {
+	var prevMembership event.Membership = "unknown"
+	if evt.Unsigned.PrevContent != nil {
+		prevMembership = event.Membership(gjson.GetBytes(evt.Unsigned.PrevContent.VeryRaw, "membership").Str)
+	}
+	if prevMembership == "unknown" || prevMembership == "" {
+		cs, err := h.DB.CurrentState.Get(ctx, evt.RoomID, event.StateMember, h.Account.UserID.String())
+		if err != nil {
+			zerolog.Ctx(ctx).Warn().Err(err).
+				Stringer("room_id", evt.RoomID).
+				Str("user_id", evt.GetStateKey()).
+				Msg("Failed to get previous membership")
+			return false
+		}
+		prevMembership = event.Membership(gjson.GetBytes(cs.Content, "membership").Str)
+	}
+	if prevMembership == newMembership ||
+		(prevMembership == event.MembershipInvite && newMembership == event.MembershipJoin) ||
+		(prevMembership == event.MembershipJoin && newMembership == event.MembershipInvite) ||
+		(prevMembership == event.MembershipBan && newMembership == event.MembershipLeave) ||
+		(prevMembership == event.MembershipLeave && newMembership == event.MembershipBan) {
+		return false
+	}
+	zerolog.Ctx(ctx).Debug().
+		Stringer("room_id", evt.RoomID).
+		Str("user_id", evt.GetStateKey()).
+		Str("prev_membership", string(prevMembership)).
+		Str("new_membership", string(newMembership)).
+		Msg("Got membership state change, invalidating group session in room")
+	err := h.CryptoStore.RemoveOutboundGroupSession(ctx, evt.RoomID)
+	if err != nil {
+		zerolog.Ctx(ctx).Warn().Stringer("room_id", evt.RoomID).Msg("Failed to invalidate outbound group session")
+		return false
+	}
+	return true
 }
 
 func (h *HiClient) postProcessSyncResponse(ctx context.Context, resp *mautrix.RespSync, since string) {
@@ -296,6 +360,10 @@ func (h *HiClient) processSyncLeftRoom(ctx context.Context, roomID id.RoomID, ro
 	err = h.DB.InvitedRoom.Delete(ctx, roomID)
 	if err != nil {
 		return fmt.Errorf("failed to delete invited room: %w", err)
+	}
+	err = h.CryptoStore.RemoveOutboundGroupSession(ctx, roomID)
+	if err != nil {
+		return fmt.Errorf("failed to remove outbound group session: %w", err)
 	}
 	payload := ctx.Value(syncContextKey).(*syncContext).evt
 	payload.LeftRooms = append(payload.LeftRooms, roomID)
@@ -572,6 +640,14 @@ func (h *HiClient) processEvent(
 			return dbEvt, nil
 		}
 	}
+	if evt.StateKey != nil && evt.Unsigned.PrevContent == nil && evt.Unsigned.ReplacesState != "" {
+		replacesState, err := h.DB.Event.GetByID(ctx, evt.Unsigned.ReplacesState)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get prev content for %s from %s: %w", evt.ID, evt.Unsigned.ReplacesState, err)
+		} else if replacesState != nil {
+			evt.Unsigned.PrevContent = &event.Content{VeryRaw: replacesState.Content}
+		}
+	}
 	dbEvt := database.MautrixToEvent(evt)
 	contentWithoutFallback := removeReplyFallback(evt)
 	if contentWithoutFallback != nil {
@@ -580,7 +656,7 @@ func (h *HiClient) processEvent(
 	}
 	var decryptionErr error
 	var decryptedMautrixEvt *event.Event
-	if evt.Type == event.EventEncrypted && dbEvt.RedactedBy == "" {
+	if evt.Type == event.EventEncrypted && (dbEvt.RedactedBy == "" || len(dbEvt.Content) > 2) {
 		decryptedMautrixEvt, decryptionErr = h.decryptEventInto(ctx, evt, dbEvt)
 	} else if evt.Type == event.EventRedaction {
 		if evt.Redacts != "" && gjson.GetBytes(evt.Content.VeryRaw, "redacts").Str != evt.Redacts.String() {
@@ -715,6 +791,7 @@ func (h *HiClient) processStateAndTimeline(
 		}
 		return nil
 	}
+	megolmSessionDiscarded := false
 	processNewEvent := func(evt *event.Event, isTimeline, isUnread bool) (database.EventRowID, error) {
 		evt.RoomID = room.ID
 		dbEvt, err := h.processEvent(ctx, evt, summary, decryptionQueue, evt.Unsigned.TransactionID != "")
@@ -746,6 +823,9 @@ func (h *HiClient) processStateAndTimeline(
 				membership = event.Membership(gjson.GetBytes(evt.Content.VeryRaw, "membership").Str)
 				if summary != nil && slices.Contains(summary.Heroes, id.UserID(*evt.StateKey)) {
 					heroesChanged = true
+				}
+				if !megolmSessionDiscarded && room.EncryptionEvent != nil {
+					megolmSessionDiscarded = h.maybeDiscardOutboundSession(ctx, membership, evt)
 				}
 			} else if evt.Type == event.StateElementFunctionalMembers {
 				heroesChanged = true

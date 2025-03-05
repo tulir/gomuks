@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import React, { use, useState } from "react"
-import { getAvatarURL } from "@/api/media.ts"
+import { getAvatarThumbnailURL } from "@/api/media.ts"
 import { MemDBEvent, MemberEventContent } from "@/api/types"
 import { getDisplayname } from "@/util/validation.ts"
 import ClientContext from "../ClientContext.ts"
@@ -33,7 +33,7 @@ const MemberRow = ({ evt, onClick }: MemberRowProps) => {
 	return <div className="member" data-target-panel="user" data-target-user={userID} onClick={onClick}>
 		<img
 			className="avatar"
-			src={getAvatarURL(userID, content)}
+			src={getAvatarThumbnailURL(userID, content)}
 			alt=""
 			loading="lazy"
 		/>
@@ -50,7 +50,7 @@ const MemberList = () => {
 		roomCtx.store.membersRequested = true
 		use(ClientContext)?.loadRoomState(roomCtx.store.roomID, { omitMembers: false, refetch: false })
 	}
-	const memberEvents = useFilteredMembers(roomCtx?.store, filter)
+	const memberEvents = useFilteredMembers(roomCtx?.store, filter, false, false)
 	if (!roomCtx) {
 		return null
 	}

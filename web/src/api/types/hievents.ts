@@ -86,6 +86,13 @@ export interface SyncNotification {
 	sound: boolean
 }
 
+export interface SyncToDevice {
+	sender: UserID
+	type: EventType
+	content: Record<string, unknown>
+	encrypted: boolean
+}
+
 export interface SyncCompleteData {
 	rooms: Record<RoomID, SyncRoom> | null
 	invited_rooms: DBInvitedRoom[] | null
@@ -95,6 +102,7 @@ export interface SyncCompleteData {
 	top_level_spaces: RoomID[] | null
 	since?: string
 	clear_state?: boolean
+	to_device?: SyncToDevice[] | null
 }
 
 export interface SyncCompleteEvent extends BaseRPCCommand<SyncCompleteData> {

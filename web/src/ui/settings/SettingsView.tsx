@@ -16,7 +16,7 @@
 import { Suspense, lazy, use, useCallback, useRef, useState } from "react"
 import { ScaleLoader } from "react-spinners"
 import Client from "@/api/client.ts"
-import { getRoomAvatarURL } from "@/api/media.ts"
+import { getRoomAvatarThumbnailURL, getRoomAvatarURL } from "@/api/media.ts"
 import { RoomStateStore, usePreferences } from "@/api/statestore"
 import {
 	Preference,
@@ -29,10 +29,10 @@ import {
 import { useEventAsState } from "@/util/eventdispatcher.ts"
 import useEvent from "@/util/useEvent.ts"
 import ClientContext from "../ClientContext.ts"
-import { LightboxContext } from "../modal"
-import { ModalCloseContext } from "../modal"
+import { LightboxContext, ModalCloseContext, ModalContext } from "../modal"
 import JSONView from "../util/JSONView.tsx"
 import Toggle from "../util/Toggle.tsx"
+import RoomStateExplorer from "./RoomStateExplorer.tsx"
 import CloseIcon from "@/icons/close.svg?react"
 import "./SettingsView.css"
 
@@ -284,10 +284,54 @@ const AppliedSettingsView = ({ room }: SettingsViewProps) => {
 	</div>
 }
 
+const KeyExportView = ({ room }: SettingsViewProps) => {
+	const [passphrase, setPassphrase] = useState("")
+	const [hasFile, setHasFile] = useState(false)
+	return <div className="key-export">
+		<h3>Key export/import</h3>
+		<input
+			className="passphrase"
+			type="password"
+			value={passphrase}
+			onChange={evt => setPassphrase(evt.target.value)}
+			placeholder="Passphrase"
+		/>
+		<form
+			className="import-buttons"
+			action="_gomuks/keys/import"
+			encType="multipart/form-data"
+			method="post"
+			target="_blank"
+		>
+			<input type="password" name="passphrase" hidden readOnly value={passphrase} />
+			<input
+				className="import-file"
+				type="file"
+				accept="text/plain"
+				name="export"
+				defaultValue=""
+				onChange={evt => setHasFile(!!evt.target.files?.length)}
+			/>
+			<button type="submit" disabled={passphrase == "" || !hasFile}>Import keys</button>
+		</form>
+		<div className="export-buttons">
+			<form action="_gomuks/keys/export" method="post" target="_blank">
+				<input type="password" name="passphrase" hidden readOnly value={passphrase} />
+				<button type="submit" disabled={passphrase == ""}>Export all keys</button>
+			</form>
+			<form action={`_gomuks/keys/export/${encodeURIComponent(room.roomID)}`} method="post" target="_blank">
+				<input type="password" name="passphrase" hidden readOnly value={passphrase} />
+				<button type="submit" disabled={passphrase == ""}>Export room keys</button>
+			</form>
+		</div>
+	</div>
+}
+
 const SettingsView = ({ room }: SettingsViewProps) => {
 	const roomMeta = useEventAsState(room.meta)
 	const client = use(ClientContext)!
 	const closeModal = use(ModalCloseContext)
+	const openModal = use(ModalContext)
 	const setPref = useCallback((
 		context: PreferenceContext, key: keyof Preferences, value: PreferenceValueType | undefined,
 	) => {
@@ -334,6 +378,14 @@ const SettingsView = ({ room }: SettingsViewProps) => {
 			)
 		}
 	}
+	const openDevtools = () => {
+		openModal({
+			dimmed: true,
+			boxed: true,
+			innerBoxClass: "state-explorer-box",
+			content: <RoomStateExplorer room={room} />,
+		})
+	}
 	const onClickOpenCSSApp = () => {
 		client.rpc.requestOpenIDToken().then(
 			resp => window.open(
@@ -355,7 +407,8 @@ const SettingsView = ({ room }: SettingsViewProps) => {
 			<img
 				className="avatar large"
 				loading="lazy"
-				src={getRoomAvatarURL(roomMeta)}
+				src={getRoomAvatarThumbnailURL(roomMeta)}
+				data-full-src={getRoomAvatarURL(roomMeta)}
 				onClick={use(LightboxContext)}
 				alt=""
 			/>
@@ -363,7 +416,10 @@ const SettingsView = ({ room }: SettingsViewProps) => {
 				{roomMeta.name && <div className="room-name">{roomMeta.name}</div>}
 				<code>{room.roomID}</code>
 				<div>{roomMeta.topic}</div>
-				<button className="leave-room" onClick={onClickLeave}>Leave room</button>
+				<div className="room-buttons">
+					<button className="leave-room" onClick={onClickLeave}>Leave room</button>
+					<button className="devtools" onClick={openDevtools}>Explore room state</button>
+				</div>
 			</div>
 		</div>
 		<table>
@@ -392,6 +448,9 @@ const SettingsView = ({ room }: SettingsViewProps) => {
 		</table>
 		<CustomCSSInput setPref={setPref} room={room} />
 		<AppliedSettingsView room={room} />
+		<hr/>
+		<KeyExportView room={room} />
+		<hr/>
 		<div className="misc-buttons">
 			<button onClick={onClickOpenCSSApp}>Sign into css.gomuks.app</button>
 			{window.Notification && !window.gomuksAndroid && <button onClick={client.requestNotificationPermission}>

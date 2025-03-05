@@ -4,7 +4,7 @@ import { PronounSet, UserProfile } from "@/api/types"
 import { ensureArray, ensureString } from "@/util/validation.ts"
 
 interface ExtendedProfileProps {
-	profile: UserProfile
+	profile: UserProfile | null
 	refreshProfile: () => void
 	client: Client
 	userID: string
@@ -27,14 +27,19 @@ const currentTimeAdjusted = (tz: string) => {
 			timeZoneName: "short",
 			timeZone: tz,
 		}).format(new Date())
-	} catch (e) {
-		return `${e}`
+	} catch {
+		return null
 	}
 }
 
 const ClockElement = ({ tz }: { tz: string }) => {
-	const [time, setTime] = useState(currentTimeAdjusted(tz))
+	const cta = currentTimeAdjusted(tz)
+	const isValidTZ = cta !== null
+	const [time, setTime] = useState(cta)
 	useEffect(() => {
+		if (!isValidTZ) {
+			return
+		}
 		let interval: number | undefined
 		const updateTime = () => setTime(currentTimeAdjusted(tz))
 		const timeout = setTimeout(() => {
@@ -42,8 +47,11 @@ const ClockElement = ({ tz }: { tz: string }) => {
 			updateTime()
 		}, (1001 - Date.now() % 1000))
 		return () => interval ? clearInterval(interval) : clearTimeout(timeout)
-	}, [tz])
+	}, [tz, isValidTZ])
 
+	if (!isValidTZ) {
+		return null
+	}
 	return <>
 		<div title={tz}>Time:</div>
 		<div title={tz}>{time}</div>
@@ -97,18 +105,15 @@ const UserExtendedProfile = ({ profile, refreshProfile, client, userID }: Extend
 
 	const pronouns = ensureArray(profile["io.fsky.nyx.pronouns"]) as PronounSet[]
 	const userTimeZone = ensureString(profile["us.cloke.msc4175.tz"])
-	return <>
-		<hr/>
-		<div className="extended-profile">
-			{userTimeZone && <ClockElement tz={userTimeZone} />}
-			{userID === client.userID &&
-				<SetTimeZoneElement tz={userTimeZone} client={client} refreshProfile={refreshProfile} />}
-			{pronouns.length > 0 && <>
-				<div>Pronouns:</div>
-				<div>{pronouns.map(pronounSet => ensureString(pronounSet.summary)).join(", ")}</div>
-			</>}
-		</div>
-	</>
+	return <div className="extended-profile">
+		{userTimeZone && <ClockElement tz={userTimeZone} />}
+		{userID === client.userID &&
+			<SetTimeZoneElement tz={userTimeZone} client={client} refreshProfile={refreshProfile} />}
+		{pronouns.length > 0 && <>
+			<div>Pronouns:</div>
+			<div>{pronouns.map(pronounSet => ensureString(pronounSet.summary)).join(", ")}</div>
+		</>}
+	</div>
 }
 
 export default UserExtendedProfile

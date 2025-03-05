@@ -39,6 +39,7 @@ const (
 	`
 	getCurrentRoomStateQuery               = getCurrentRoomStateBaseQuery + `WHERE cs.room_id = $1`
 	getCurrentRoomStateWithoutMembersQuery = getCurrentRoomStateBaseQuery + `WHERE cs.room_id = $1 AND type<>'m.room.member'`
+	getCurrentRoomStateMembersQuery        = getCurrentRoomStateBaseQuery + `WHERE cs.room_id = $1 AND type='m.room.member'`
 	getManyCurrentRoomStateQuery           = getCurrentRoomStateBaseQuery + `WHERE (cs.room_id, cs.event_type, cs.state_key) IN (%s)`
 	getCurrentStateEventQuery              = getCurrentRoomStateBaseQuery + `WHERE cs.room_id = $1 AND cs.event_type = $2 AND cs.state_key = $3`
 )
@@ -117,4 +118,8 @@ func (csq *CurrentStateQuery) GetAll(ctx context.Context, roomID id.RoomID) ([]*
 
 func (csq *CurrentStateQuery) GetAllExceptMembers(ctx context.Context, roomID id.RoomID) ([]*Event, error) {
 	return csq.QueryMany(ctx, getCurrentRoomStateWithoutMembersQuery, roomID)
+}
+
+func (csq *CurrentStateQuery) GetMembers(ctx context.Context, roomID id.RoomID) ([]*Event, error) {
+	return csq.QueryMany(ctx, getCurrentRoomStateMembersQuery, roomID)
 }

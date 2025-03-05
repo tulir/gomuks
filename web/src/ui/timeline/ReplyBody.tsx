@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import { use } from "react"
-import { getAvatarURL, getUserColorIndex } from "@/api/media.ts"
+import { getAvatarThumbnailURL, getUserColorIndex } from "@/api/media.ts"
 import { RoomStateStore, useRoomEvent, useRoomMember } from "@/api/statestore"
 import type { EventID, MemDBEvent, MemberEventContent } from "@/api/types"
 import { getDisplayname } from "@/util/validation.ts"
@@ -39,6 +39,8 @@ interface ReplyBodyProps {
 	onSetSilent?: (evt: React.MouseEvent) => void
 	isExplicitInThread?: boolean
 	onSetExplicitInThread?: (evt: React.MouseEvent) => void
+	startNewThread?: boolean
+	onSetStartNewThread?: (evt: React.MouseEvent) => void
 }
 
 interface ReplyIDBodyProps {
@@ -83,7 +85,10 @@ const onClickReply = (evt: React.MouseEvent) => {
 }
 
 export const ReplyBody = ({
-	room, event, onClose, isThread, isEditing, isSilent, onSetSilent, isExplicitInThread, onSetExplicitInThread, small,
+	room, event, onClose, isThread, isEditing, small,
+	isSilent, onSetSilent,
+	isExplicitInThread, onSetExplicitInThread,
+	startNewThread, onSetStartNewThread,
 }: ReplyBodyProps) => {
 	const client = use(ClientContext)
 	const memberEvt = useRoomMember(client, room, event.sender)
@@ -124,7 +129,7 @@ export const ReplyBody = ({
 				<img
 					className="small avatar"
 					loading="lazy"
-					src={getAvatarURL(perMessageSender?.id ?? event.sender, renderMemberEvtContent)}
+					src={getAvatarThumbnailURL(perMessageSender?.id ?? event.sender, renderMemberEvtContent)}
 					alt=""
 				/>
 			</div>
@@ -163,6 +168,16 @@ export const ReplyBody = ({
 					onClick={onSetExplicitInThread}
 				>
 					{isExplicitInThread ? <ReplyIcon /> : <ThreadIcon />}
+				</TooltipButton>}
+				{!isThread && onSetStartNewThread && <TooltipButton
+					tooltipText={startNewThread
+						? "Click to reply in main timeline instead of starting a new thread"
+						: "Click to start a new thread instead of replying"}
+					tooltipDirection="left"
+					className="thread-explicit-reply"
+					onClick={onSetStartNewThread}
+				>
+					{startNewThread ? <ThreadIcon /> : <ReplyIcon />}
 				</TooltipButton>}
 				{onClose && <button className="close-reply" onClick={onClose}><CloseIcon/></button>}
 			</div>}

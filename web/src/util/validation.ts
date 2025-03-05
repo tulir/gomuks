@@ -88,7 +88,7 @@ export function getServerName(userID: UserID): string {
 }
 
 export function getDisplayname(userID: UserID, profile?: UserProfile | null): string {
-	return profile?.displayname || getLocalpart(userID)
+	return ensureString(profile?.displayname) || getLocalpart(userID)
 }
 
 export function parseMXC(mxc: unknown): [string, string] | [] {

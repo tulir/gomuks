@@ -2,7 +2,7 @@ div.timeline-event {
 	width: 100%;
 	max-width: 100%;
 	box-sizing: border-box;
-	padding: 0 var(--timeline-horizontal-padding);
+	padding: var(--timeline-vertical-padding) var(--timeline-horizontal-padding);
 	display: grid;
 	grid-template:
 		"cmc                          cmc                        cmc      empty"  0
@@ -79,7 +79,7 @@ div.timeline-event {
 			}
 		}
 
-		> span.event-time, > span.event-edited {
+		> span.event-time {
 			font-size: .7rem;
 			color: var(--secondary-text-color);
 		}
@@ -100,6 +100,13 @@ div.timeline-event {
 		overflow: hidden;
 		overflow-wrap: anywhere;
 		contain: content;
+
+		> div.event-edited {
+			font-size: .7rem;
+			color: var(--secondary-text-color);
+			user-select: none;
+			cursor: var(--clickable-cursor);
+		}
 	}
 
 	> div.event-send-status {

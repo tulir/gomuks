@@ -23,24 +23,27 @@ import (
 
 const (
 	insertMediaQuery = `
-		INSERT INTO media (mxc, enc_file, file_name, mime_type, size, hash, error)
-		VALUES ($1, $2, $3, $4, $5, $6, $7)
+		INSERT INTO media (mxc, enc_file, file_name, mime_type, size, hash, error, thumbnail_size, thumbnail_hash, thumbnail_error)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
 		ON CONFLICT (mxc) DO NOTHING
 	`
 	upsertMediaQuery = `
-		INSERT INTO media (mxc, enc_file, file_name, mime_type, size, hash, error)
-		VALUES ($1, $2, $3, $4, $5, $6, $7)
+		INSERT INTO media (mxc, enc_file, file_name, mime_type, size, hash, error, thumbnail_size, thumbnail_hash, thumbnail_error)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
 		ON CONFLICT (mxc) DO UPDATE
 			SET enc_file = COALESCE(excluded.enc_file, media.enc_file),
-			    file_name = COALESCE(excluded.file_name, media.file_name),
-			    mime_type = COALESCE(excluded.mime_type, media.mime_type),
-			    size = COALESCE(excluded.size, media.size),
-			    hash = COALESCE(excluded.hash, media.hash),
-			    error = excluded.error
+				file_name = COALESCE(excluded.file_name, media.file_name),
+				mime_type = COALESCE(excluded.mime_type, media.mime_type),
+				size = COALESCE(excluded.size, media.size),
+				hash = COALESCE(excluded.hash, media.hash),
+				error = excluded.error,
+				thumbnail_size = COALESCE(excluded.thumbnail_size, media.thumbnail_size),
+				thumbnail_hash = COALESCE(excluded.thumbnail_hash, media.thumbnail_hash),
+				thumbnail_error = excluded.thumbnail_error
 			WHERE excluded.error IS NULL OR media.hash IS NULL
 	`
 	getMediaQuery = `
-		SELECT mxc, enc_file, file_name, mime_type, size, hash, error
+		SELECT mxc, enc_file, file_name, mime_type, size, hash, error, thumbnail_size, thumbnail_hash, thumbnail_error
 		FROM media
 		WHERE mxc = $1
 	`
@@ -137,9 +140,22 @@ type Media struct {
 	Size     int64
 	Hash     *[32]byte
 	Error    *MediaError
+
+	ThumbnailError string
+	ThumbnailSize  int64
+	ThumbnailHash  *[32]byte
 }
 
-func (m *Media) ETag() string {
+func (m *Media) ETag(thumbnail bool) string {
+	if m == nil {
+		return ""
+	}
+	if thumbnail {
+		if m.ThumbnailHash == nil {
+			return ""
+		}
+		return fmt.Sprintf(`"%x"`, m.ThumbnailHash)
+	}
 	if m.Hash == nil {
 		return ""
 	}
@@ -151,14 +167,18 @@ func (m *Media) UseCache() bool {
 }
 
 func (m *Media) sqlVariables() []any {
-	var hash []byte
+	var hash, thumbnailHash []byte
 	if m.Hash != nil {
 		hash = m.Hash[:]
+	}
+	if m.ThumbnailHash != nil {
+		thumbnailHash = m.ThumbnailHash[:]
 	}
 	return []any{
 		&m.MXC, dbutil.JSONPtr(m.EncFile),
 		dbutil.StrPtr(m.FileName), dbutil.StrPtr(m.MimeType), dbutil.NumPtr(m.Size),
 		hash, dbutil.JSONPtr(m.Error),
+		dbutil.NumPtr(m.ThumbnailSize), thumbnailHash, dbutil.StrPtr(m.ThumbnailError),
 	}
 }
 
@@ -172,18 +192,26 @@ var safeMimes = []string{
 }
 
 func (m *Media) Scan(row dbutil.Scannable) (*Media, error) {
-	var mimeType, fileName sql.NullString
-	var size sql.NullInt64
-	var hash []byte
-	err := row.Scan(&m.MXC, dbutil.JSON{Data: &m.EncFile}, &fileName, &mimeType, &size, &hash, dbutil.JSON{Data: &m.Error})
+	var mimeType, fileName, thumbnailError sql.NullString
+	var size, thumbnailSize sql.NullInt64
+	var hash, thumbnailHash []byte
+	err := row.Scan(
+		&m.MXC, dbutil.JSON{Data: &m.EncFile}, &fileName, &mimeType, &size,
+		&hash, dbutil.JSON{Data: &m.Error}, &thumbnailSize, &thumbnailHash, &thumbnailError,
+	)
 	if err != nil {
 		return nil, err
 	}
 	m.MimeType = mimeType.String
 	m.FileName = fileName.String
 	m.Size = size.Int64
+	m.ThumbnailSize = thumbnailSize.Int64
+	m.ThumbnailError = thumbnailError.String
 	if len(hash) == 32 {
 		m.Hash = (*[32]byte)(hash)
+	}
+	if len(thumbnailHash) == 32 {
+		m.ThumbnailHash = (*[32]byte)(thumbnailHash)
 	}
 	return m, nil
 }

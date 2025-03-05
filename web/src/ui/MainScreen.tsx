@@ -13,6 +13,7 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
+import equal from "fast-deep-equal"
 import { JSX, use, useEffect, useMemo, useReducer, useRef, useState } from "react"
 import { SyncLoader } from "react-spinners"
 import Client from "@/api/client.ts"
@@ -24,26 +25,13 @@ import ClientContext from "./ClientContext.ts"
 import MainScreenContext, { MainScreenContextFields } from "./MainScreenContext.ts"
 import StylePreferences from "./StylePreferences.tsx"
 import Keybindings from "./keybindings.ts"
-import { ModalWrapper } from "./modal"
+import { ModalContext, ModalWrapper, NestableModalContext } from "./modal"
 import RightPanel, { RightPanelProps } from "./rightpanel/RightPanel.tsx"
 import RoomList from "./roomlist/RoomList.tsx"
 import RoomPreview, { RoomPreviewProps } from "./roomview/RoomPreview.tsx"
 import RoomView from "./roomview/RoomView.tsx"
 import { useResizeHandle } from "./util/useResizeHandle.tsx"
 import "./MainScreen.css"
-
-function objectIsEqual(a: RightPanelProps | null, b: RightPanelProps | null): boolean {
-	if (a === null || b === null) {
-		return a === null && b === null
-	}
-	for (const key of Object.keys(a)) {
-		// @ts-expect-error 3:<
-		if (a[key] !== b[key]) {
-			return false
-		}
-	}
-	return true
-}
 
 class ContextFields implements MainScreenContextFields {
 	public keybindings: Keybindings
@@ -64,10 +52,10 @@ class ContextFields implements MainScreenContextFields {
 	}
 
 	setRightPanel = (props: RightPanelProps | null, pushState = true) => {
-		if ((props?.type === "members" || props?.type === "pinned-messages") && !this.client.store.activeRoomID) {
+		if ((props?.type !== "user") && !this.client.store.activeRoomID) {
 			props = null
 		}
-		const isEqual = objectIsEqual(this.currentRightPanel, props)
+		const isEqual = equal(this.currentRightPanel, props)
 		if (isEqual && !pushState) {
 			return
 		}
@@ -81,7 +69,7 @@ class ContextFields implements MainScreenContextFields {
 		} else {
 			this.directSetRightPanel(props)
 			for (let i = this.rightPanelStack.length - 1; i >= 0; i--) {
-				if (objectIsEqual(this.rightPanelStack[i], props)) {
+				if (equal(this.rightPanelStack[i], props)) {
 					this.rightPanelStack = this.rightPanelStack.slice(0, i + 1)
 					if (pushState) {
 						history.go(i - this.rightPanelStack.length)
@@ -219,7 +207,7 @@ class ContextFields implements MainScreenContextFields {
 	clickRightPanelOpener = (evt: React.MouseEvent) => {
 		evt.preventDefault()
 		const type = evt.currentTarget.getAttribute("data-target-panel")
-		if (type === "pinned-messages" || type === "members") {
+		if (type === "pinned-messages" || type === "members" || type === "widgets") {
 			this.setRightPanel({ type })
 		} else if (type === "user") {
 			this.setRightPanel({ type, userID: evt.currentTarget.getAttribute("data-target-user")! })
@@ -422,28 +410,31 @@ const MainScreen = () => {
 			return () => clearTimeout(timeout)
 		}
 	}, [activeRoom, prevActiveRoom])
+	const mainContent = <main className={classNames.join(" ")} style={extraStyle}>
+		<RoomList activeRoomID={activeRoom?.roomID ?? null} space={space}/>
+		{resizeHandle1}
+		{renderedRoom
+			? renderedRoom instanceof RoomStateStore
+				? <RoomView
+					key={renderedRoom.roomID}
+					room={renderedRoom}
+					rightPanel={rightPanel}
+					rightPanelResizeHandle={resizeHandle2}
+				/>
+				: <RoomPreview {...renderedRoom} />
+			: rightPanel && <>
+				<div className="room-view placeholder"/>
+				{resizeHandle2}
+				{rightPanel && <RightPanel {...rightPanel}/>}
+			</>}
+	</main>
 	return <MainScreenContext value={context}>
-		<ModalWrapper>
-			<StylePreferences client={client} activeRoom={activeRealRoom}/>
-			<main className={classNames.join(" ")} style={extraStyle}>
-				<RoomList activeRoomID={activeRoom?.roomID ?? null} space={space}/>
-				{resizeHandle1}
-				{renderedRoom
-					? renderedRoom instanceof RoomStateStore
-						? <RoomView
-							key={renderedRoom.roomID}
-							room={renderedRoom}
-							rightPanel={rightPanel}
-							rightPanelResizeHandle={resizeHandle2}
-						/>
-						: <RoomPreview {...renderedRoom} />
-					: rightPanel && <>
-						<div className="room-view placeholder"/>
-						{resizeHandle2}
-						{rightPanel && <RightPanel {...rightPanel}/>}
-					</>}
-			</main>
-			{syncLoader}
+		<ModalWrapper ContextType={ModalContext} historyStateKey="modal">
+			<ModalWrapper ContextType={NestableModalContext} historyStateKey="nestable_modal">
+				<StylePreferences client={client} activeRoom={activeRealRoom}/>
+				{mainContent}
+				{syncLoader}
+			</ModalWrapper>
 		</ModalWrapper>
 	</MainScreenContext>
 }

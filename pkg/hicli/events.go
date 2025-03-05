@@ -7,6 +7,8 @@
 package hicli
 
 import (
+	"encoding/json"
+
 	"go.mau.fi/util/jsontime"
 	"maunium.net/go/mautrix/event"
 	"maunium.net/go/mautrix/id"
@@ -35,6 +37,13 @@ type SyncNotification struct {
 	Room      *database.Room      `json:"-"`
 }
 
+type SyncToDevice struct {
+	Sender    id.UserID       `json:"sender"`
+	Type      event.Type      `json:"type"`
+	Content   json.RawMessage `json:"content"`
+	Encrypted bool            `json:"encrypted"`
+}
+
 type SyncComplete struct {
 	Since          *string                              `json:"since,omitempty"`
 	ClearState     bool                                 `json:"clear_state,omitempty"`
@@ -44,6 +53,8 @@ type SyncComplete struct {
 	InvitedRooms   []*database.InvitedRoom              `json:"invited_rooms"`
 	SpaceEdges     map[id.RoomID][]*database.SpaceEdge  `json:"space_edges"`
 	TopLevelSpaces []id.RoomID                          `json:"top_level_spaces"`
+
+	ToDevice []*SyncToDevice `json:"to_device,omitempty"`
 }
 
 func (c *SyncComplete) Notifications(yield func(SyncNotification) bool) {

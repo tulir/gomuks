@@ -15,8 +15,8 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import { CSSProperties, use } from "react"
 import { MemDBEvent } from "@/api/types"
-import ClientContext from "../../ClientContext.ts"
-import { RoomContextData } from "../../roomview/roomcontext.ts"
+import ClientContext from "../ClientContext.ts"
+import { RoomContextData } from "../roomview/roomcontext.ts"
 import { usePrimaryItems } from "./usePrimaryItems.tsx"
 import { useSecondaryItems } from "./useSecondaryItems.tsx"
 import CloseIcon from "@/icons/close.svg?react"
@@ -41,14 +41,14 @@ interface EventContextMenuProps extends BaseEventMenuProps {
 
 export const EventExtraMenu = ({ evt, roomCtx, style }: EventContextMenuProps) => {
 	const elements = useSecondaryItems(use(ClientContext)!, roomCtx, evt)
-	return <div style={style} className="event-context-menu extra">{elements}</div>
+	return <div style={style} className="context-menu event-context-menu extra">{elements}</div>
 }
 
 export const EventFullMenu = ({ evt, roomCtx, style }: EventContextMenuProps) => {
 	const client = use(ClientContext)!
 	const primary = usePrimaryItems(client, roomCtx, evt, false, false, style, undefined)
 	const secondary = useSecondaryItems(client, roomCtx, evt)
-	return <div style={style} className="event-context-menu full">
+	return <div style={style} className="context-menu event-context-menu full">
 		{primary}
 		<hr/>
 		{secondary}

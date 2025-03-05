@@ -35,9 +35,12 @@ export interface ModalState {
 	captureInput?: boolean
 }
 
-type openModal = (state: ModalState) => void
+export type openModal = (state: ModalState) => void
 
 export const ModalContext = createContext<openModal>(() =>
 	console.error("Tried to open modal without being inside context"))
+
+export const NestableModalContext = createContext<openModal>(() =>
+	console.error("Tried to open nestable modal without being inside context"))
 
 export const ModalCloseContext = createContext<() => void>(() => {})

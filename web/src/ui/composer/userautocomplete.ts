@@ -34,6 +34,7 @@ export function filter(users: AutocompleteMemberEntry[], query: string): Autocom
 interface filteredUserCache {
 	query: string
 	result: AutocompleteMemberEntry[]
+	slicedResult?: AutocompleteMemberEntry[]
 }
 
 export function useFilteredMembers(
@@ -44,15 +45,16 @@ export function useFilteredMembers(
 	if (!query) {
 		prev.current.query = ""
 		prev.current.result = allMembers
+		prev.current.slicedResult = slice && allMembers.length > 100 ? allMembers.slice(0, 100) : undefined
 	} else if (prev.current.query !== query) {
 		prev.current.result = (sort ? filterAndSort : filter)(
 			query.startsWith(prev.current.query) ? prev.current.result : allMembers,
 			query,
 		)
-		if (prev.current.result.length > 100 && slice) {
-			prev.current.result = prev.current.result.slice(0, 100)
-		}
+		prev.current.slicedResult = prev.current.result.length > 100 && slice
+			? prev.current.result.slice(0, 100)
+			: undefined
 		prev.current.query = query
 	}
-	return prev.current.result
+	return prev.current.slicedResult ?? prev.current.result
 }

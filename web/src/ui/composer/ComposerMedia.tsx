@@ -13,6 +13,7 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
+import { RefCallback, useState } from "react"
 import Client from "@/api/client.ts"
 import { RoomStateStore, usePreference } from "@/api/statestore"
 import type { MediaMessageEventContent } from "@/api/types"
@@ -27,10 +28,19 @@ export interface ComposerMediaProps {
 }
 
 export const ComposerMedia = ({ content, clearMedia }: ComposerMediaProps) => {
+	const defaultMaxWidth = 360
+	const paddingAndButtonWidth = 16 + 40
+	const [maxWidth, setMaxWidth] = useState(defaultMaxWidth)
 	const [mediaContent, containerClass, containerStyle] = useMediaContent(
-		content, "m.room.message", { height: 120, width: 360 },
+		content, "m.room.message", { height: 120, width: maxWidth },
 	)
-	return <div className="composer-media">
+	const containerRef: RefCallback<HTMLDivElement> = elem => {
+		setMaxWidth(Math.min(
+			(elem?.getBoundingClientRect().width ?? defaultMaxWidth) - paddingAndButtonWidth,
+			defaultMaxWidth,
+		))
+	}
+	return <div className="composer-media" ref={containerRef}>
 		<div className={`media-container ${containerClass}`} style={containerStyle}>
 			{mediaContent}
 		</div>

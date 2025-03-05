@@ -17,6 +17,7 @@ import (
 	"maunium.net/go/mautrix"
 	"maunium.net/go/mautrix/event"
 	"maunium.net/go/mautrix/id"
+	"maunium.net/go/mautrix/pushrules"
 
 	"go.mau.fi/gomuks/pkg/hicli/database"
 )
@@ -46,7 +47,7 @@ func (h *HiClient) handleJSONCommand(ctx context.Context, req *JSONCommand) (any
 		})
 	case "send_event":
 		return unmarshalAndCall(req.Data, func(params *sendEventParams) (*database.Event, error) {
-			return h.Send(ctx, params.RoomID, params.EventType, params.Content)
+			return h.Send(ctx, params.RoomID, params.EventType, params.Content, params.DisableEncryption, params.Synchronous)
 		})
 	case "resend_event":
 		return unmarshalAndCall(req.Data, func(params *resendEventParams) (*database.Event, error) {
@@ -65,6 +66,21 @@ func (h *HiClient) handleJSONCommand(ctx context.Context, req *JSONCommand) (any
 	case "set_state":
 		return unmarshalAndCall(req.Data, func(params *sendStateEventParams) (id.EventID, error) {
 			return h.SetState(ctx, params.RoomID, params.EventType, params.StateKey, params.Content)
+		})
+	case "set_membership":
+		return unmarshalAndCall(req.Data, func(params *setMembershipParams) (any, error) {
+			switch params.Action {
+			case "invite":
+				return h.Client.InviteUser(ctx, params.RoomID, &mautrix.ReqInviteUser{UserID: params.UserID, Reason: params.Reason})
+			case "kick":
+				return h.Client.KickUser(ctx, params.RoomID, &mautrix.ReqKickUser{UserID: params.UserID, Reason: params.Reason})
+			case "ban":
+				return h.Client.BanUser(ctx, params.RoomID, &mautrix.ReqBanUser{UserID: params.UserID, Reason: params.Reason})
+			case "unban":
+				return h.Client.UnbanUser(ctx, params.RoomID, &mautrix.ReqUnbanUser{UserID: params.UserID, Reason: params.Reason})
+			default:
+				return nil, fmt.Errorf("unknown action %q", params.Action)
+			}
 		})
 	case "set_account_data":
 		return unmarshalAndCall(req.Data, func(params *setAccountDataParams) (bool, error) {
@@ -108,12 +124,15 @@ func (h *HiClient) handleJSONCommand(ctx context.Context, req *JSONCommand) (any
 		})
 	case "get_event":
 		return unmarshalAndCall(req.Data, func(params *getEventParams) (*database.Event, error) {
+			if params.Unredact {
+				return h.GetUnredactedEvent(ctx, params.RoomID, params.EventID)
+			}
 			return h.GetEvent(ctx, params.RoomID, params.EventID)
 		})
-	//case "get_events_by_rowids":
-	//	return unmarshalAndCall(req.Data, func(params *getEventsByRowIDsParams) ([]*database.Event, error) {
-	//		return h.GetEventsByRowIDs(ctx, params.RowIDs)
-	//	})
+	case "get_related_events":
+		return unmarshalAndCall(req.Data, func(params *getRelatedEventsParams) ([]*database.Event, error) {
+			return h.DB.Event.GetRelatedEvents(ctx, params.RoomID, params.EventID, params.RelationType)
+		})
 	case "get_room_state":
 		return unmarshalAndCall(req.Data, func(params *getRoomStateParams) ([]*database.Event, error) {
 			return h.GetRoomState(ctx, params.RoomID, params.IncludeMembers, params.FetchMembers, params.Refetch)
@@ -149,9 +168,28 @@ func (h *HiClient) handleJSONCommand(ctx context.Context, req *JSONCommand) (any
 		return unmarshalAndCall(req.Data, func(params *leaveRoomParams) (*mautrix.RespLeaveRoom, error) {
 			return h.Client.LeaveRoom(ctx, params.RoomID, &mautrix.ReqLeave{Reason: params.Reason})
 		})
+	case "create_room":
+		return unmarshalAndCall(req.Data, func(params *mautrix.ReqCreateRoom) (*mautrix.RespCreateRoom, error) {
+			return h.Client.CreateRoom(ctx, params)
+		})
+	case "mute_room":
+		return unmarshalAndCall(req.Data, func(params *muteRoomParams) (bool, error) {
+			if params.Muted {
+				return true, h.Client.PutPushRule(ctx, "global", pushrules.RoomRule, string(params.RoomID), &mautrix.ReqPutPushRule{
+					Actions: []pushrules.PushActionType{},
+				})
+			} else {
+				return false, h.Client.DeletePushRule(ctx, "global", pushrules.RoomRule, string(params.RoomID))
+			}
+		})
 	case "ensure_group_session_shared":
 		return unmarshalAndCall(req.Data, func(params *ensureGroupSessionSharedParams) (bool, error) {
 			return true, h.EnsureGroupSessionShared(ctx, params.RoomID)
+		})
+	case "send_to_device":
+		return unmarshalAndCall(req.Data, func(params *sendToDeviceParams) (*mautrix.RespSendToDevice, error) {
+			params.EventType.Class = event.ToDeviceEventType
+			return h.SendToDevice(ctx, params.EventType, params.ReqSendToDevice, params.Encrypted)
 		})
 	case "resolve_alias":
 		return unmarshalAndCall(req.Data, func(params *resolveAliasParams) (*mautrix.RespAliasResolve, error) {
@@ -205,6 +243,14 @@ func (h *HiClient) handleJSONCommand(ctx context.Context, req *JSONCommand) (any
 		return unmarshalAndCall(req.Data, func(params *database.PushRegistration) (bool, error) {
 			return true, h.DB.PushRegistration.Put(ctx, params)
 		})
+	case "listen_to_device":
+		return unmarshalAndCall(req.Data, func(listen *bool) (bool, error) {
+			return h.ToDeviceInSync.Swap(*listen), nil
+		})
+	case "get_turn_servers":
+		return h.Client.TurnServer(ctx)
+	case "get_media_config":
+		return h.Client.GetMediaConfig(ctx)
 	default:
 		return nil, fmt.Errorf("unknown command %q", req.Command)
 	}
@@ -234,9 +280,11 @@ type sendMessageParams struct {
 }
 
 type sendEventParams struct {
-	RoomID    id.RoomID       `json:"room_id"`
-	EventType event.Type      `json:"type"`
-	Content   json.RawMessage `json:"content"`
+	RoomID            id.RoomID       `json:"room_id"`
+	EventType         event.Type      `json:"type"`
+	Content           json.RawMessage `json:"content"`
+	DisableEncryption bool            `json:"disable_encryption"`
+	Synchronous       bool            `json:"synchronous"`
 }
 
 type resendEventParams struct {
@@ -260,6 +308,13 @@ type sendStateEventParams struct {
 	EventType event.Type      `json:"type"`
 	StateKey  string          `json:"state_key"`
 	Content   json.RawMessage `json:"content"`
+}
+
+type setMembershipParams struct {
+	Action string    `json:"action"`
+	RoomID id.RoomID `json:"room_id"`
+	UserID id.UserID `json:"user_id"`
+	Reason string    `json:"reason"`
 }
 
 type setAccountDataParams struct {
@@ -289,13 +344,17 @@ type setProfileFieldParams struct {
 }
 
 type getEventParams struct {
-	RoomID  id.RoomID  `json:"room_id"`
-	EventID id.EventID `json:"event_id"`
+	RoomID   id.RoomID  `json:"room_id"`
+	EventID  id.EventID `json:"event_id"`
+	Unredact bool       `json:"unredact"`
 }
 
-//type getEventsByRowIDsParams struct {
-//	RowIDs []database.EventRowID `json:"row_ids"`
-//}
+type getRelatedEventsParams struct {
+	RoomID  id.RoomID  `json:"room_id"`
+	EventID id.EventID `json:"event_id"`
+
+	RelationType event.RelationType `json:"relation_type"`
+}
 
 type getRoomStateParams struct {
 	RoomID         id.RoomID `json:"room_id"`
@@ -310,6 +369,12 @@ type getSpecificRoomStateParams struct {
 
 type ensureGroupSessionSharedParams struct {
 	RoomID id.RoomID `json:"room_id"`
+}
+
+type sendToDeviceParams struct {
+	*mautrix.ReqSendToDevice
+	EventType event.Type `json:"event_type"`
+	Encrypted bool       `json:"encrypted"`
 }
 
 type resolveAliasParams struct {
@@ -359,4 +424,9 @@ type leaveRoomParams struct {
 type getReceiptsParams struct {
 	RoomID   id.RoomID    `json:"room_id"`
 	EventIDs []id.EventID `json:"event_ids"`
+}
+
+type muteRoomParams struct {
+	RoomID id.RoomID `json:"room_id"`
+	Muted  bool      `json:"muted"`
 }

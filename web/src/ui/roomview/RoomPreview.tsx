@@ -15,7 +15,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import { use, useEffect, useState } from "react"
 import { ScaleLoader } from "react-spinners"
-import { getAvatarURL, getRoomAvatarURL } from "@/api/media.ts"
+import { getAvatarThumbnailURL, getAvatarURL, getRoomAvatarURL } from "@/api/media.ts"
 import { InvitedRoomStore } from "@/api/statestore/invitedroom.ts"
 import { RoomID, RoomSummary } from "@/api/types"
 import { getDisplayname, getServerName } from "@/util/validation.ts"
@@ -90,7 +90,8 @@ const RoomPreview = ({ roomID, via, alias, invite }: RoomPreviewProps) => {
 				<img
 					className="small avatar"
 					onClick={use(LightboxContext)}
-					src={getAvatarURL(invite.invited_by, invite.inviter_profile)}
+					src={getAvatarThumbnailURL(invite.invited_by, invite.inviter_profile)}
+					data-full-src={getAvatarURL(invite.invited_by, invite.inviter_profile)}
 					alt=""
 				/>
 				<span className="inviter-name" title={invite.invited_by}>
@@ -100,6 +101,7 @@ const RoomPreview = ({ roomID, via, alias, invite }: RoomPreviewProps) => {
 			</div> : null}
 			<h2 className="room-name">{name}</h2>
 			<img
+				// this is a big avatar (120px), use full resolution
 				src={getRoomAvatarURL(invite ?? summary ?? { room_id: roomID })}
 				className="large avatar"
 				onClick={use(LightboxContext)}

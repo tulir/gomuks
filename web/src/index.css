@@ -86,6 +86,7 @@
 	--timeline-message-gap-small-event: 0;
 	--timeline-sender-name-timestamp-gap: .25rem;
 	--timeline-sender-name-content-gap: 0;
+	--timeline-vertical-padding: 0;
 	--timeline-horizontal-padding: 1.5rem;
 	--timeline-status-size: 4rem;
 
@@ -207,6 +208,8 @@ button, a.button, span.button {
 	justify-content: center;
 	align-items: center;
 	color: inherit;
+	/* Buttons sometimes have their own fonts? */
+	font-family: var(--font-stack);
 
 	&:hover, &:focus {
 		background-color: var(--button-hover-color);

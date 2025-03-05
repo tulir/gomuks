@@ -14,12 +14,19 @@ div.settings-view {
 			text-wrap: nowrap;
 		}
 
-		button.leave-room {
-			padding: .5rem 1rem;
+		div.room-buttons {
+			display: flex;
+			gap: .5rem;
 
-			&:hover, &:focus {
-				background-color: var(--error-color);
-				color: var(--inverted-text-color);
+			button {
+				padding: .5rem 1rem;
+
+				&.leave-room {
+					&:hover, &:focus {
+						background-color: var(--error-color);
+						color: var(--inverted-text-color);
+					}
+				}
 			}
 		}
 	}
@@ -113,6 +120,39 @@ div.settings-view {
 		}
 	}
 
+	> div.key-export {
+		display: flex;
+		flex-direction: column;
+		gap: .5rem;
+		margin: 0 .5rem;
+		max-width: 25rem;
+
+		button {
+			padding: .5rem;
+			box-sizing: border-box;
+			width: 100%;
+		}
+
+		input {
+			border: 1px solid var(--border-color);
+			padding: .5rem;
+			border-radius: .5rem;
+
+			&[type="file"] {
+				padding: .25rem;
+			}
+		}
+
+		> div.export-buttons, > form.import-buttons {
+			display: flex;
+			gap: .5rem;
+
+			> form {
+				width: 100%;
+			}
+		}
+	}
+
 	> div.misc-buttons > button {
 		padding: .5rem 1rem;
 		display: block;
@@ -125,5 +165,10 @@ div.settings-view {
 				color: var(--inverted-text-color);
 			}
 		}
+	}
+
+	> hr {
+		width: 100%;
+		opacity: .2;
 	}
 }

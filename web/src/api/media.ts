@@ -78,7 +78,7 @@ function getFallbackCharacter(from: unknown, idx: number): string {
 	return Array.from(from.slice(0, (idx + 1) * 2))[idx]?.toUpperCase().toWellFormed() ?? ""
 }
 
-export const getAvatarURL = (userID: UserID, content?: UserProfile | null): string | undefined => {
+export const getAvatarURL = (userID: UserID, content?: UserProfile | null, thumbnail = false): string | undefined => {
 	const fallbackCharacter = getFallbackCharacter(content?.displayname, 0) || getFallbackCharacter(userID, 1)
 	const backgroundColor = getUserColor(userID)
 	const [server, mediaID] = parseMXC(content?.avatar_file?.url ?? content?.avatar_url)
@@ -87,7 +87,12 @@ export const getAvatarURL = (userID: UserID, content?: UserProfile | null): stri
 	}
 	const encrypted = !!content?.avatar_file
 	const fallback = `${backgroundColor}:${fallbackCharacter}`
-	return `_gomuks/media/${server}/${mediaID}?encrypted=${encrypted}&fallback=${encodeURIComponent(fallback)}`
+	const url = `_gomuks/media/${server}/${mediaID}?encrypted=${encrypted}&fallback=${encodeURIComponent(fallback)}`
+	return thumbnail ? `${url}&thumbnail=avatar` : url
+}
+
+export const getAvatarThumbnailURL = (userID: UserID, content?: UserProfile | null): string | undefined => {
+	return getAvatarURL(userID, content, true)
 }
 
 interface RoomForAvatarURL {
@@ -98,9 +103,15 @@ interface RoomForAvatarURL {
 	avatar_url?: ContentURI
 }
 
-export const getRoomAvatarURL = (room: RoomForAvatarURL, avatarOverride?: ContentURI): string | undefined => {
+export const getRoomAvatarURL = (
+	room: RoomForAvatarURL, avatarOverride?: ContentURI, thumbnail = false,
+): string | undefined => {
 	return getAvatarURL(room.dm_user_id ?? room.room_id, {
 		displayname: room.name,
 		avatar_url: avatarOverride ?? room.avatar ?? room.avatar_url,
-	})
+	}, thumbnail)
+}
+
+export const getRoomAvatarThumbnailURL = (room: RoomForAvatarURL, avatarOverride?: ContentURI): string | undefined => {
+	return getRoomAvatarURL(room, avatarOverride, true)
 }

@@ -38,62 +38,74 @@ export function getBodyType(evt: MemDBEvent, forReply = false): React.FunctionCo
 	if (evt.relation_type === "m.replace") {
 		return HiddenEvent
 	}
-	switch (evt.type) {
-	case "m.room.message":
-		if (evt.redacted_by) {
-			return RedactedBody
+	if (evt.state_key === "") {
+		// State events which must have an empty state key
+		switch (evt.type) {
+		case "m.room.name":
+			return RoomNameBody
+		case "m.room.avatar":
+			return RoomAvatarBody
+		case "m.room.server_acl":
+			return ACLBody
+		case "m.room.pinned_events":
+			return PinnedEventsBody
+		case "m.room.power_levels":
+			return PowerLevelBody
 		}
-		switch (evt.content?.msgtype) {
-		case "m.text":
-		case "m.notice":
-		case "m.emote":
-			return TextMessageBody
-		case "m.image":
-		case "m.video":
-		case "m.audio":
-		case "m.file":
-			if (forReply) {
+	} else if (evt.state_key !== undefined) {
+		// State events which must have a non-empty state key
+		switch (evt.type) {
+		case "m.room.member":
+			return MemberBody
+		case "m.policy.rule.user":
+			return PolicyRuleBody
+		case "m.policy.rule.room":
+			return PolicyRuleBody
+		case "m.policy.rule.server":
+			return PolicyRuleBody
+		}
+	} else {
+		const isRedacted = evt.redacted_by && !evt.viewing_redacted
+		// Non-state events
+		switch (evt.type) {
+		case "m.room.message":
+			if (isRedacted) {
+				return RedactedBody
+			}
+			switch (evt.content?.msgtype) {
+			case "m.text":
+			case "m.notice":
+			case "m.emote":
+				return TextMessageBody
+			case "m.image":
+			case "m.video":
+			case "m.audio":
+			case "m.file":
+				if (forReply) {
+					return TextMessageBody
+				}
+				return MediaMessageBody
+			case "m.location":
+				if (forReply) {
+					return TextMessageBody
+				}
+				return LocationMessageBody
+			default:
+				return UnknownMessageBody
+			}
+		case "m.sticker":
+			if (isRedacted) {
+				return RedactedBody
+			} else if (forReply) {
 				return TextMessageBody
 			}
 			return MediaMessageBody
-		case "m.location":
-			if (forReply) {
-				return TextMessageBody
+		case "m.room.encrypted":
+			if (isRedacted) {
+				return RedactedBody
 			}
-			return LocationMessageBody
-		default:
-			return UnknownMessageBody
+			return EncryptedBody
 		}
-	case "m.sticker":
-		if (evt.redacted_by) {
-			return RedactedBody
-		} else if (forReply) {
-			return TextMessageBody
-		}
-		return MediaMessageBody
-	case "m.room.encrypted":
-		if (evt.redacted_by) {
-			return RedactedBody
-		}
-		return EncryptedBody
-	case "m.room.member":
-		return MemberBody
-	case "m.room.name":
-		return RoomNameBody
-	case "m.room.avatar":
-		return RoomAvatarBody
-	case "m.room.server_acl":
-		return ACLBody
-	case "m.policy.rule.user":
-		return PolicyRuleBody
-	case "m.policy.rule.room":
-		return PolicyRuleBody
-	case "m.policy.rule.server":
-		return PolicyRuleBody
-	case "m.room.pinned_events":
-		return PinnedEventsBody
-	case "m.room.power_levels":
-		return PowerLevelBody
 	}
 	return HiddenEvent
 }
@@ -118,5 +130,13 @@ export function getPerMessageProfile(evt: MemDBEvent | null): BeeperPerMessagePr
 	if (evt === null || evt.type !== "m.room.message" && evt.type !== "m.sticker") {
 		return undefined
 	}
-	return (evt.content as MessageEventContent)["com.beeper.per_message_profile"]
+	const profile = (evt.content as MessageEventContent)["com.beeper.per_message_profile"]
+	if (profile?.displayname && typeof profile.displayname !== "string") {
+		return undefined
+	} else if (profile?.avatar_url && typeof profile.avatar_url !== "string") {
+		return undefined
+	} else if (profile?.id && typeof profile.id !== "string") {
+		return undefined
+	}
+	return profile
 }

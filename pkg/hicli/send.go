@@ -71,6 +71,13 @@ func (h *HiClient) SendMessage(
 	relatesTo *event.RelatesTo,
 	mentions *event.Mentions,
 ) (*database.Event, error) {
+	if text == "/discardsession" {
+		err := h.CryptoStore.RemoveOutboundGroupSession(ctx, roomID)
+		if err != nil {
+			return nil, err
+		}
+		return nil, fmt.Errorf("outbound megolm session successfully discarded")
+	}
 	var unencrypted bool
 	if strings.HasPrefix(text, "/unencrypted ") {
 		text = strings.TrimPrefix(text, "/unencrypted ")
@@ -90,7 +97,7 @@ func (h *HiClient) SendMessage(
 		if !json.Valid(content) {
 			return nil, fmt.Errorf("invalid JSON in /raw command")
 		}
-		return h.send(ctx, roomID, event.Type{Type: parts[1]}, content, "", unencrypted)
+		return h.send(ctx, roomID, event.Type{Type: parts[1]}, content, "", unencrypted, false)
 	} else if strings.HasPrefix(text, "/rawstate ") {
 		parts := strings.SplitN(text, " ", 4)
 		if len(parts) < 4 || len(parts[1]) == 0 {
@@ -154,11 +161,17 @@ func (h *HiClient) SendMessage(
 				Body:       "",
 				MsgType:    contentCopy.MsgType,
 				URL:        contentCopy.URL,
+				GeoURI:     contentCopy.GeoURI,
 				NewContent: &contentCopy,
 				RelatesTo:  relatesTo,
 			}
 			if contentCopy.File != nil {
 				content.URL = contentCopy.File.URL
+			}
+			if extra != nil {
+				extra = map[string]any{
+					"m.new_content": extra,
+				}
 			}
 		} else {
 			content.RelatesTo = relatesTo
@@ -169,7 +182,7 @@ func (h *HiClient) SendMessage(
 		content.MsgType = ""
 		evtType = event.EventSticker
 	}
-	return h.send(ctx, roomID, evtType, &event.Content{Parsed: content, Raw: extra}, origText, unencrypted)
+	return h.send(ctx, roomID, evtType, &event.Content{Parsed: content, Raw: extra}, origText, unencrypted, false)
 }
 
 func (h *HiClient) MarkRead(ctx context.Context, roomID id.RoomID, eventID id.EventID, receiptType event.ReceiptType) error {
@@ -232,8 +245,14 @@ func (h *HiClient) Send(
 	roomID id.RoomID,
 	evtType event.Type,
 	content any,
+	disableEncryption bool,
+	synchronous bool,
 ) (*database.Event, error) {
-	return h.send(ctx, roomID, evtType, content, "", false)
+	if evtType == event.EventRedaction {
+		// TODO implement
+		return nil, fmt.Errorf("redaction is not supported")
+	}
+	return h.send(ctx, roomID, evtType, content, "", disableEncryption, synchronous)
 }
 
 func (h *HiClient) Resend(ctx context.Context, txnID string) (*database.Event, error) {
@@ -252,7 +271,7 @@ func (h *HiClient) Resend(ctx context.Context, txnID string) (*database.Event, e
 		return nil, fmt.Errorf("unknown room")
 	}
 	dbEvt.SendError = ""
-	go h.actuallySend(context.WithoutCancel(ctx), room, dbEvt, event.Type{Type: dbEvt.Type, Class: event.MessageEventType})
+	go h.actuallySend(context.WithoutCancel(ctx), room, dbEvt, event.Type{Type: dbEvt.Type, Class: event.MessageEventType}, false)
 	return dbEvt, nil
 }
 
@@ -263,6 +282,7 @@ func (h *HiClient) send(
 	content any,
 	overrideEditSource string,
 	disableEncryption bool,
+	synchronous bool,
 ) (*database.Event, error) {
 	room, err := h.DB.Room.Get(ctx, roomID)
 	if err != nil {
@@ -321,11 +341,15 @@ func (h *HiClient) send(
 			zerolog.Ctx(ctx).Err(err).Msg("Failed to stop typing while sending message")
 		}
 	}()
-	go h.actuallySend(ctx, room, dbEvt, evtType)
+	if synchronous {
+		h.actuallySend(ctx, room, dbEvt, evtType, true)
+	} else {
+		go h.actuallySend(ctx, room, dbEvt, evtType, false)
+	}
 	return dbEvt, nil
 }
 
-func (h *HiClient) actuallySend(ctx context.Context, room *database.Room, dbEvt *database.Event, evtType event.Type) {
+func (h *HiClient) actuallySend(ctx context.Context, room *database.Room, dbEvt *database.Event, evtType event.Type, synchronous bool) {
 	var err error
 	defer func() {
 		if dbEvt.SendError != "" {
@@ -335,10 +359,12 @@ func (h *HiClient) actuallySend(ctx context.Context, room *database.Room, dbEvt 
 					Msg("Failed to update send error in database after sending failed")
 			}
 		}
-		h.EventHandler(&SendComplete{
-			Event: dbEvt,
-			Error: err,
-		})
+		if !synchronous {
+			h.EventHandler(&SendComplete{
+				Event: dbEvt,
+				Error: err,
+			})
+		}
 	}()
 	if dbEvt.Decrypted != nil && len(dbEvt.Content) <= 2 {
 		var encryptedContent *event.EncryptedEventContent
@@ -409,6 +435,18 @@ func (h *HiClient) EnsureGroupSessionShared(ctx context.Context, roomID id.RoomI
 	} else {
 		return h.shareGroupSession(ctx, roomMeta)
 	}
+}
+
+func (h *HiClient) SendToDevice(ctx context.Context, evtType event.Type, content *mautrix.ReqSendToDevice, encrypt bool) (*mautrix.RespSendToDevice, error) {
+	if encrypt {
+		var err error
+		content, err = h.Crypto.EncryptToDevices(ctx, evtType, content)
+		if err != nil {
+			return nil, fmt.Errorf("failed to encrypt: %w", err)
+		}
+		evtType = event.ToDeviceEncrypted
+	}
+	return h.Client.SendToDevice(ctx, evtType, content)
 }
 
 func (h *HiClient) loadMembers(ctx context.Context, room *database.Room) error {

@@ -16,7 +16,7 @@
 import type { MouseEvent } from "react"
 import { CachedEventDispatcher, NonNullCachedEventDispatcher } from "../util/eventdispatcher.ts"
 import RPCClient, { SendMessageParams } from "./rpc.ts"
-import { RoomStateStore, StateStore } from "./statestore"
+import { RoomStateStore, StateStore, WidgetListener } from "./statestore"
 import type {
 	ClientState,
 	ElementRecentEmoji,
@@ -26,6 +26,7 @@ import type {
 	ImagePackRooms,
 	RPCEvent,
 	RawDBEvent,
+	RelationType,
 	RoomID,
 	RoomStateGUID,
 	SyncStatus,
@@ -40,6 +41,7 @@ export default class Client {
 	#stateRequests: RoomStateGUID[] = []
 	#stateRequestPromise: Promise<void> | null = null
 	#gcInterval: number | undefined
+	#toDeviceRequested = false
 
 	constructor(readonly rpc: RPCClient) {
 		this.rpc.event.listen(this.#handleEvent)
@@ -153,6 +155,22 @@ export default class Client {
 		navigator.registerProtocolHandler("matrix", "#/uri/%s")
 	}
 
+	addWidgetListener(listener: WidgetListener): () => void {
+		this.store.widgetListeners.add(listener)
+		// TODO only request to-device events if there are widgets that need them?
+		if (!this.#toDeviceRequested) {
+			this.#toDeviceRequested = true
+			this.rpc.setListenToDevice(true)
+		}
+		return () => {
+			this.store.widgetListeners.delete(listener)
+			if (this.store.widgetListeners.size === 0 && this.#toDeviceRequested) {
+				this.#toDeviceRequested = false
+				this.rpc.setListenToDevice(false)
+			}
+		}
+	}
+
 	start(): () => void {
 		const abort = new AbortController()
 		if (window.gomuksAndroid) {
@@ -221,18 +239,40 @@ export default class Client {
 		})
 	}
 
-	requestEvent(room: RoomStateStore | RoomID | undefined, eventID: EventID) {
+	requestEvent(room: RoomStateStore | RoomID | undefined, eventID: EventID, unredact?: boolean) {
 		if (typeof room === "string") {
 			room = this.store.rooms.get(room)
 		}
-		if (!room || room.eventsByID.has(eventID) || room.requestedEvents.has(eventID)) {
+		if (!room || (!unredact && room.eventsByID.has(eventID)) ||room.requestedEvents.has(eventID)) {
 			return
 		}
 		room.requestedEvents.add(eventID)
-		this.rpc.getEvent(room.roomID, eventID).then(
-			evt => room.applyEvent(evt),
-			err => console.error(`Failed to fetch event ${eventID}`, err),
+		this.rpc.getEvent(room.roomID, eventID, unredact).then(
+			evt => {
+				room.applyEvent(evt, false, unredact)
+				if (unredact) {
+					room.notifyTimelineSubscribers()
+				}
+			},
+			err => {
+				console.error(`Failed to fetch event ${eventID}`, err)
+				if (unredact) {
+					room.requestedEvents.delete(eventID)
+					window.alert(`Failed to get unredacted content: ${err}`)
+				}
+			},
 		)
+	}
+
+	async getRelatedEvents(room: RoomStateStore | RoomID | undefined, eventID: EventID, relationType?: RelationType) {
+		if (typeof room === "string") {
+			room = this.store.rooms.get(room)
+		}
+		if (!room) {
+			return []
+		}
+		const events = await this.rpc.getRelatedEvents(room.roomID, eventID, relationType)
+		return events.map(evt => room.getOrApplyEvent(evt))
 	}
 
 	async pinMessage(room: RoomStateStore, evtID: EventID, wantPinned: boolean) {
@@ -269,12 +309,14 @@ export default class Client {
 		}
 	}
 
-	async sendEvent(roomID: RoomID, type: EventType, content: unknown): Promise<void> {
+	async sendEvent(
+		roomID: RoomID, type: EventType, content: unknown, disableEncryption: boolean = false,
+	): Promise<void> {
 		const room = this.store.rooms.get(roomID)
 		if (!room) {
 			throw new Error("Room not found")
 		}
-		const dbEvent = await this.rpc.sendEvent(roomID, type, content)
+		const dbEvent = await this.rpc.sendEvent(roomID, type, content, disableEncryption)
 		this.#handleOutgoingEvent(dbEvent, room)
 	}
 

@@ -55,6 +55,7 @@ export interface ComposerState {
 	replyTo: EventID | null
 	silentReply: boolean
 	explicitReplyInThread: boolean
+	startNewThread: boolean
 	uninited?: boolean
 }
 
@@ -67,6 +68,7 @@ const emptyComposer: ComposerState = {
 	location: null,
 	silentReply: false,
 	explicitReplyInThread: false,
+	startNewThread: false,
 }
 const uninitedComposer: ComposerState = { ...emptyComposer, uninited: true }
 const composerReducer = (
@@ -116,7 +118,7 @@ const MessageComposer = () => {
 		document.execCommand("insertText", false, text)
 	}, [])
 	roomCtx.setReplyTo = useCallback((evt: EventID | null) => {
-		setState({ replyTo: evt, silentReply: false, explicitReplyInThread: false })
+		setState({ replyTo: evt, silentReply: false, explicitReplyInThread: false, startNewThread: false })
 		textInput.current?.focus()
 	}, [])
 	const setSilentReply = useCallback((newVal: boolean | React.MouseEvent) => {
@@ -133,6 +135,14 @@ const MessageComposer = () => {
 		} else {
 			newVal.stopPropagation()
 			setState(state => ({ explicitReplyInThread: !state.explicitReplyInThread }))
+		}
+	}, [])
+	const setStartNewThread = useCallback((newVal: boolean | React.MouseEvent) => {
+		if (typeof newVal === "boolean") {
+			setState({ startNewThread: newVal })
+		} else {
+			newVal.stopPropagation()
+			setState(state => ({ startNewThread: !state.startNewThread }))
 		}
 	}, [])
 	roomCtx.setEditing = useCallback((evt: MemDBEvent | null) => {
@@ -160,13 +170,14 @@ const MessageComposer = () => {
 			replyTo: null,
 			silentReply: false,
 			explicitReplyInThread: false,
+			startNewThread: false,
 		})
 		textInput.current?.focus()
 	}, [room.roomID])
 	const canSend = Boolean(state.text || state.media || state.location)
 	const onClickSend = (evt: React.FormEvent) => {
 		evt.preventDefault()
-		if (!canSend) {
+		if (!canSend || loadingMedia) {
 			return
 		}
 		doSendMessage(state)
@@ -204,6 +215,10 @@ const MessageComposer = () => {
 				relates_to.rel_type = "m.thread"
 				relates_to.event_id = replyToEvt.content?.["m.relates_to"].event_id
 				relates_to.is_falling_back = !state.explicitReplyInThread
+			} else if (state.startNewThread) {
+				relates_to.rel_type = "m.thread"
+				relates_to.event_id = replyToEvt.event_id
+				relates_to.is_falling_back = true
 			}
 		}
 		let base_content: MessageEventContent | undefined
@@ -553,7 +568,7 @@ const MessageComposer = () => {
 		style.left = style.right
 		delete style.right
 		openModal({
-			content: <div className="event-context-menu" style={style}>
+			content: <div className="context-menu event-context-menu" style={style}>
 				{makeAttachmentButtons(true)}
 			</div>,
 		})
@@ -580,6 +595,8 @@ const MessageComposer = () => {
 				onSetSilent={setSilentReply}
 				isExplicitInThread={state.explicitReplyInThread}
 				onSetExplicitInThread={setExplicitReplyInThread}
+				startNewThread={state.startNewThread}
+				onSetStartNewThread={setStartNewThread}
 			/>}
 			{editing && <ReplyBody
 				room={room}

@@ -17,15 +17,18 @@ import { use } from "react"
 import Client from "@/api/client.ts"
 import { useRoomState } from "@/api/statestore"
 import { MemDBEvent } from "@/api/types"
-import { ModalCloseContext, ModalContext } from "../../modal"
-import { RoomContext, RoomContextData } from "../../roomview/roomcontext.ts"
-import JSONView from "../../util/JSONView.tsx"
+import { ModalCloseContext, ModalContext } from "../modal"
+import { RoomContext, RoomContextData } from "../roomview/roomcontext.ts"
+import JSONView from "../util/JSONView.tsx"
 import ConfirmWithMessageModal from "./ConfirmWithMessageModal.tsx"
+import ShareModal from "./ShareModal.tsx"
 import { getPending, getPowerLevels } from "./util.ts"
 import ViewSourceIcon from "@/icons/code.svg?react"
 import DeleteIcon from "@/icons/delete.svg?react"
 import PinIcon from "@/icons/pin.svg?react"
 import ReportIcon from "@/icons/report.svg?react"
+import RestoreTrashIcon from "@/icons/restore-trash.svg?react"
+import ShareIcon from "@/icons/share.svg?react"
 import UnpinIcon from "@/icons/unpin.svg?react"
 
 export const useSecondaryItems = (
@@ -40,7 +43,7 @@ export const useSecondaryItems = (
 		openModal({
 			dimmed: true,
 			boxed: true,
-			content: <JSONView data={evt} />,
+			content: <JSONView data={evt}/>,
 		})
 	}
 	const onClickReport = () => {
@@ -83,10 +86,65 @@ export const useSecondaryItems = (
 			</RoomContext>,
 		})
 	}
+	const onClickHideUnredacted = () => {
+		closeModal()
+		roomCtx.store.setViewingRedacted(evt, false)
+	}
+	const onClickUnredact = () => {
+		closeModal()
+		if (Object.entries(evt.content).length > 0) {
+			roomCtx.store.setViewingRedacted(evt, true)
+		} else {
+			client.requestEvent(roomCtx.store, evt.event_id, true)
+		}
+	}
 	const onClickPin = (pin: boolean) => () => {
 		closeModal()
 		client.pinMessage(roomCtx.store, evt.event_id, pin)
 			.catch(err => window.alert(`Failed to ${pin ? "pin" : "unpin"} message: ${err}`))
+	}
+
+	const onClickShareEvent = () => {
+		const generateLink = (useMatrixTo: boolean, includeEvent: boolean) => {
+			const isRoomIDLink = true
+			let generatedURL = useMatrixTo ? "https://matrix.to/#/" : "matrix:roomid/"
+			if (useMatrixTo) {
+				generatedURL += evt.room_id
+			} else {
+				generatedURL += `${evt.room_id.slice(1)}`
+			}
+			if (includeEvent) {
+				if (useMatrixTo) {
+					generatedURL += `/${evt.event_id}`
+				} else {
+					generatedURL += `/e/${evt.event_id.slice(1)}`
+				}
+			}
+			if (isRoomIDLink) {
+				generatedURL += "?" + new URLSearchParams(
+					roomCtx.store.getViaServers().map(server => ["via", server]),
+				).toString()
+			}
+			return generatedURL
+		}
+		openModal({
+			dimmed: true,
+			boxed: true,
+			innerBoxClass: "confirm-message-modal",
+			content: <RoomContext value={roomCtx}>
+				<ShareModal
+					evt={evt}
+					title="Share Message"
+					confirmButton="Copy to clipboard"
+					onConfirm={(useMatrixTo: boolean, includeEvent: boolean) => {
+						navigator.clipboard.writeText(generateLink(useMatrixTo, includeEvent)).catch(
+							err => window.alert(`Failed to copy link: ${err}`),
+						)
+					}}
+					generateLink={generateLink}
+				/>
+			</RoomContext>,
+		})
 	}
 
 	const [isPending, pendingTitle] = getPending(evt)
@@ -101,9 +159,12 @@ export const useSecondaryItems = (
 	const canRedact = !evt.redacted_by
 		&& ownPL >= redactEvtPL
 		&& (evt.sender === client.userID || ownPL >= redactOtherPL)
+	// TODO check server admin status and room PLs
+	const canUnredact = Boolean(evt.redacted_by)
 
 	return <>
 		<button onClick={onClickViewSource}><ViewSourceIcon/>{names && "View source"}</button>
+		<button onClick={onClickShareEvent}><ShareIcon/>{names && "Share"}</button>
 		{ownPL >= pinPL && (pins.includes(evt.event_id)
 			? <button onClick={onClickPin(false)}>
 				<UnpinIcon/>{names && "Unpin message"}
@@ -120,5 +181,10 @@ export const useSecondaryItems = (
 			title={pendingTitle}
 			className="redact-button"
 		><DeleteIcon/>{names && "Remove"}</button>}
+		{canUnredact && (evt.viewing_redacted ? <button onClick={onClickHideUnredacted}>
+			<DeleteIcon/>{names && "Hide content"}
+		</button> : <button onClick={onClickUnredact}>
+			<RestoreTrashIcon/>{names && "View content"}
+		</button>)}
 	</>
 }

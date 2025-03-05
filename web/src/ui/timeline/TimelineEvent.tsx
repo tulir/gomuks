@@ -15,20 +15,21 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import React, { JSX, use, useState } from "react"
 import { createPortal } from "react-dom"
-import { getAvatarURL, getMediaURL, getUserColorIndex } from "@/api/media.ts"
+import { getAvatarThumbnailURL, getMediaURL, getUserColorIndex } from "@/api/media.ts"
 import { useRoomMember } from "@/api/statestore"
-import { MemDBEvent, MemberEventContent, UnreadType } from "@/api/types"
+import { MemDBEvent, UnreadType, UserProfile } from "@/api/types"
 import { isMobileDevice } from "@/util/ismobile.ts"
 import { getDisplayname, isEventID } from "@/util/validation.ts"
 import ClientContext from "../ClientContext.ts"
 import MainScreenContext from "../MainScreenContext.ts"
-import { ModalContext } from "../modal"
+import { EventFixedMenu, EventFullMenu, EventHoverMenu, getModalStyleFromMouse } from "../menu"
+import { ModalContext, NestableModalContext } from "../modal"
 import { useRoomContext } from "../roomview/roomcontext.ts"
+import EventEditHistory from "./EventEditHistory.tsx"
 import ReadReceipts from "./ReadReceipts.tsx"
 import { ReplyIDBody } from "./ReplyBody.tsx"
 import URLPreviews from "./URLPreviews.tsx"
 import { ContentErrorBoundary, HiddenEvent, getBodyType, getPerMessageProfile, isSmallEvent } from "./content"
-import { EventFixedMenu, EventFullMenu, EventHoverMenu, getModalStyleFromMouse } from "./menu"
 import ErrorIcon from "@/icons/error.svg?react"
 import PendingIcon from "@/icons/pending.svg?react"
 import SentIcon from "@/icons/sent.svg?react"
@@ -40,6 +41,7 @@ export interface TimelineEventProps {
 	disableMenu?: boolean
 	smallReplies?: boolean
 	isFocused?: boolean
+	editHistoryView?: boolean
 }
 
 const fullTimeFormatter = new Intl.DateTimeFormat("en-GB", { dateStyle: "full", timeStyle: "medium" })
@@ -75,11 +77,14 @@ const EventSendStatus = ({ evt }: { evt: MemDBEvent }) => {
 	}
 }
 
-const TimelineEvent = ({ evt, prevEvt, disableMenu, smallReplies, isFocused }: TimelineEventProps) => {
+const TimelineEvent = ({
+	evt, prevEvt, disableMenu, smallReplies, isFocused, editHistoryView,
+}: TimelineEventProps) => {
 	const roomCtx = useRoomContext()
 	const client = use(ClientContext)!
 	const mainScreen = use(MainScreenContext)
 	const openModal = use(ModalContext)
+	const openNestableModal = use(NestableModalContext)
 	const [forceContextMenuOpen, setForceContextMenuOpen] = useState(false)
 	const onContextMenu = (mouseEvt: React.MouseEvent) => {
 		const targetElem = mouseEvt.target as HTMLElement
@@ -87,6 +92,7 @@ const TimelineEvent = ({ evt, prevEvt, disableMenu, smallReplies, isFocused }: T
 			!roomCtx.store.preferences.message_context_menu
 			|| targetElem.tagName === "A"
 			|| targetElem.tagName === "IMG"
+			|| targetElem.tagName === "VIDEO"
 			|| window.getSelection()?.type === "Range"
 		) {
 			return
@@ -105,6 +111,8 @@ const TimelineEvent = ({ evt, prevEvt, disableMenu, smallReplies, isFocused }: T
 		if (
 			targetElem.tagName === "A"
 			|| targetElem.tagName === "IMG"
+			|| targetElem.tagName === "VIDEO"
+			|| targetElem.tagName === "SUMMARY"
 		) {
 			return
 		}
@@ -112,8 +120,15 @@ const TimelineEvent = ({ evt, prevEvt, disableMenu, smallReplies, isFocused }: T
 		mouseEvt.stopPropagation()
 		roomCtx.setFocusedEventRowID(roomCtx.focusedEventRowID === evt.rowid ? null : evt.rowid)
 	}
-	const memberEvt = useRoomMember(client, roomCtx.store, evt.sender)
-	const memberEvtContent = memberEvt?.content as MemberEventContent | undefined
+	const openEditHistory = () => {
+		openNestableModal({
+			content: <EventEditHistory evt={evt} roomCtx={roomCtx}/>,
+			dimmed: true,
+			boxed: true,
+			boxClass: "full-screen-mobile event-edit-history-wrapper",
+			innerBoxClass: "event-edit-history-modal",
+		})
+	}
 	const BodyType = getBodyType(evt)
 	const eventTS = new Date(evt.timestamp)
 	const editEventTS = evt.last_edit ? new Date(evt.last_edit.timestamp) : null
@@ -121,7 +136,8 @@ const TimelineEvent = ({ evt, prevEvt, disableMenu, smallReplies, isFocused }: T
 	if (evt.unread_type & UnreadType.Highlight) {
 		wrapperClassNames.push("highlight")
 	}
-	if (evt.redacted_by) {
+	const isRedacted = evt.redacted_by && !evt.viewing_redacted
+	if (isRedacted) {
 		wrapperClassNames.push("redacted-event")
 	}
 	if (evt.type === "m.room.member") {
@@ -133,7 +149,7 @@ const TimelineEvent = ({ evt, prevEvt, disableMenu, smallReplies, isFocused }: T
 	if (evt.sender === client.userID) {
 		wrapperClassNames.push("own-event")
 	}
-	if (isMobileDevice || disableMenu) {
+	if ((isMobileDevice && !editHistoryView) || disableMenu) {
 		wrapperClassNames.push("no-hover")
 	}
 	if (isFocused) {
@@ -156,7 +172,7 @@ const TimelineEvent = ({ evt, prevEvt, disableMenu, smallReplies, isFocused }: T
 	const replyTo = relatesTo?.["m.in_reply_to"]?.event_id
 	let replyAboveMessage: JSX.Element | null = null
 	let replyInMessage: JSX.Element | null = null
-	if (isEventID(replyTo) && BodyType !== HiddenEvent && !evt.redacted_by) {
+	if (isEventID(replyTo) && BodyType !== HiddenEvent && !isRedacted && !editHistoryView) {
 		const replyElem = <ReplyIDBody
 			room={roomCtx.store}
 			eventID={replyTo}
@@ -172,10 +188,21 @@ const TimelineEvent = ({ evt, prevEvt, disableMenu, smallReplies, isFocused }: T
 	}
 	const perMessageSender = getPerMessageProfile(evt)
 	const prevPerMessageSender = getPerMessageProfile(prevEvt)
+	const memberEvt = useRoomMember(client, roomCtx.store, evt.sender)
+	let memberEvtContent = memberEvt?.content as UserProfile | undefined
+	if (memberEvt?.redacted_by && !memberEvt?.viewing_redacted) {
+		memberEvtContent = {}
+	} else if (
+		memberEvtContent?.displayname === undefined
+		&& memberEvtContent?.avatar_url === undefined
+		&& memberEvt?.content.membership === "leave"
+		&& memberEvt.unsigned.prev_content
+	) {
+		memberEvtContent = memberEvt.unsigned.prev_content as UserProfile | undefined
+	}
 	let renderMemberEvtContent = memberEvtContent
 	if (perMessageSender) {
 		renderMemberEvtContent = {
-			membership: "join",
 			displayname: perMessageSender.displayname ?? memberEvtContent?.displayname,
 			avatar_url: perMessageSender.avatar_url ?? memberEvtContent?.avatar_url,
 			avatar_file: perMessageSender.avatar_file ?? memberEvtContent?.avatar_file,
@@ -201,16 +228,18 @@ const TimelineEvent = ({ evt, prevEvt, disableMenu, smallReplies, isFocused }: T
 		eventTimeOnly = true
 		renderAvatar = false
 	}
+	if (editHistoryView) {
+		wrapperClassNames.push("edit-history-event")
+	}
 	const fullTime = fullTimeFormatter.format(eventTS)
 	const shortTime = formatShortTime(eventTS)
-	const editTime = editEventTS ? `Edited at ${fullTimeFormatter.format(editEventTS)}` : null
 	const mainEvent = <div
 		data-event-id={evt.event_id}
 		className={wrapperClassNames.join(" ")}
 		onContextMenu={onContextMenu}
-		onClick={!disableMenu && isMobileDevice ? onClick : undefined}
+		onClick={!disableMenu && !editHistoryView && isMobileDevice ? onClick : undefined}
 	>
-		{!disableMenu && !isMobileDevice && <div
+		{!disableMenu && (!isMobileDevice || editHistoryView) && <div
 			className={`context-menu-container ${forceContextMenuOpen ? "force-open" : ""}`}
 		>
 			<EventHoverMenu evt={evt} roomCtx={roomCtx} setForceOpen={setForceContextMenuOpen}/>
@@ -230,7 +259,7 @@ const TimelineEvent = ({ evt, prevEvt, disableMenu, smallReplies, isFocused }: T
 			<img
 				className={`${smallAvatar ? "small" : ""} avatar`}
 				loading="lazy"
-				src={getAvatarURL(perMessageSender?.id ?? evt.sender, renderMemberEvtContent)}
+				src={getAvatarThumbnailURL(perMessageSender?.id ?? evt.sender, renderMemberEvtContent)}
 				alt=""
 			/>
 		</div>}
@@ -255,11 +284,8 @@ const TimelineEvent = ({ evt, prevEvt, disableMenu, smallReplies, isFocused }: T
 				</span>
 			</div>}
 			<span className="event-time" title={fullTime}>{shortTime}</span>
-			{(editEventTS && editTime) ? <span className="event-edited" title={editTime}>
-				(edited at {formatShortTime(editEventTS)})
-			</span> : null}
 		</div> : <div className="event-time-only">
-			<span className="event-time" title={editTime ? `${fullTime} - ${editTime}` : fullTime}>{shortTime}</span>
+			<span className="event-time" title={fullTime}>{shortTime}</span>
 		</div>}
 		<div className="event-content">
 			{replyInMessage}
@@ -267,11 +293,18 @@ const TimelineEvent = ({ evt, prevEvt, disableMenu, smallReplies, isFocused }: T
 				<BodyType room={roomCtx.store} sender={memberEvt} event={evt}/>
 				{!isSmallBodyType && <URLPreviews room={roomCtx.store} event={evt}/>}
 			</ContentErrorBoundary>
+			{(!editHistoryView && editEventTS) ? <div
+				className="event-edited"
+				title={`Edited at ${fullTimeFormatter.format(editEventTS)}`}
+				onClick={openEditHistory}
+			>
+				(edited at {formatShortTime(editEventTS)})
+			</div> : null}
 			{evt.reactions ? <EventReactions reactions={evt.reactions}/> : null}
 		</div>
-		{!evt.event_id.startsWith("~") && roomCtx.store.preferences.display_read_receipts &&
+		{!evt.event_id.startsWith("~") && roomCtx.store.preferences.display_read_receipts && !editHistoryView &&
 			<ReadReceipts room={roomCtx.store} eventID={evt.event_id} />}
-		{evt.sender === client.userID && evt.transaction_id ? <EventSendStatus evt={evt}/> : null}
+		{evt.sender === client.userID && evt.transaction_id && !editHistoryView ? <EventSendStatus evt={evt}/> : null}
 	</div>
 	return <>
 		{dateSeparator}

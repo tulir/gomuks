@@ -18,9 +18,9 @@ import Client from "@/api/client.ts"
 import { MemDBEvent } from "@/api/types"
 import { emojiToReactionContent } from "@/util/emoji"
 import { useEventAsState } from "@/util/eventdispatcher.ts"
-import EmojiPicker from "../../emojipicker/EmojiPicker.tsx"
-import { ModalCloseContext, ModalContext } from "../../modal"
-import { RoomContextData } from "../../roomview/roomcontext.ts"
+import EmojiPicker from "../emojipicker/EmojiPicker.tsx"
+import { ModalCloseContext, ModalContext } from "../modal"
+import { RoomContextData } from "../roomview/roomcontext.ts"
 import { EventExtraMenu } from "./EventMenu.tsx"
 import { getEncryption, getModalStyleFromButton, getPending, getPowerLevels } from "./util.ts"
 import EditIcon from "@/icons/edit.svg?react"
@@ -79,7 +79,7 @@ export const usePrimaryItems = (
 			.catch(err => window.alert(`Failed to resend message: ${err}`))
 	}
 	const onClickMore = (mevt: React.MouseEvent<HTMLButtonElement>) => {
-		const moreMenuHeight = 4 * 40
+		const moreMenuHeight = 5 * 40
 		setForceOpen!(true)
 		openModal({
 			content: <EventExtraMenu

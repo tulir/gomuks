@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import { JSX, RefObject, use, useEffect } from "react"
-import { getAvatarURL, getMediaURL } from "@/api/media.ts"
+import { getAvatarThumbnailURL, getMediaURL } from "@/api/media.ts"
 import { AutocompleteMemberEntry, RoomStateStore, useCustomEmojis } from "@/api/statestore"
 import { Emoji, emojiToMarkdown, useSortedAndFilteredEmojis } from "@/util/emoji"
 import { escapeMarkdown } from "@/util/markdown.ts"
@@ -138,7 +138,7 @@ const userFuncs = {
 		<img
 			className="small avatar"
 			loading="lazy"
-			src={getAvatarURL(user.userID, { displayname: user.displayName, avatar_url: user.avatarURL })}
+			src={getAvatarThumbnailURL(user.userID, { displayname: user.displayName, avatar_url: user.avatarURL })}
 			alt=""
 		/>
 		{user.displayName}

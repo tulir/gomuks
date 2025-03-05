@@ -36,16 +36,17 @@ import (
 	"strings"
 
 	"github.com/buckket/go-blurhash"
+	"github.com/disintegration/imaging"
 	"github.com/gabriel-vasile/mimetype"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/hlog"
-	_ "golang.org/x/image/webp"
-
 	"go.mau.fi/util/exhttp"
 	"go.mau.fi/util/ffmpeg"
 	"go.mau.fi/util/jsontime"
 	"go.mau.fi/util/ptr"
 	"go.mau.fi/util/random"
+	cwebp "go.mau.fi/webp"
+	_ "golang.org/x/image/webp"
 	"maunium.net/go/mautrix"
 	"maunium.net/go/mautrix/crypto/attachment"
 	"maunium.net/go/mautrix/event"
@@ -59,7 +60,7 @@ var ErrBadGateway = mautrix.RespError{
 	StatusCode: http.StatusBadGateway,
 }
 
-func (gmx *Gomuks) downloadMediaFromCache(ctx context.Context, w http.ResponseWriter, r *http.Request, entry *database.Media, force bool) bool {
+func (gmx *Gomuks) downloadMediaFromCache(ctx context.Context, w http.ResponseWriter, r *http.Request, entry *database.Media, force, useThumbnail bool) bool {
 	if !entry.UseCache() {
 		if force {
 			mautrix.MNotFound.WithMessage("Media not found in cache").Write(w)
@@ -67,11 +68,12 @@ func (gmx *Gomuks) downloadMediaFromCache(ctx context.Context, w http.ResponseWr
 		}
 		return false
 	}
+	etag := entry.ETag(useThumbnail)
 	if entry.Error != nil {
 		w.Header().Set("Mau-Cached-Error", "true")
 		entry.Error.Write(w)
 		return true
-	} else if r.Header.Get("If-None-Match") == entry.ETag() {
+	} else if etag != "" && r.Header.Get("If-None-Match") == etag {
 		w.WriteHeader(http.StatusNotModified)
 		return true
 	} else if entry.MimeType != "" && r.URL.Query().Has("fallback") && !isAllowedAvatarMime(entry.MimeType) {
@@ -79,7 +81,43 @@ func (gmx *Gomuks) downloadMediaFromCache(ctx context.Context, w http.ResponseWr
 		return true
 	}
 	log := zerolog.Ctx(ctx)
-	cacheFile, err := os.Open(gmx.cacheEntryToPath(entry.Hash[:]))
+	hash := entry.Hash
+	if useThumbnail {
+		if entry.ThumbnailError != "" {
+			log.Debug().Str(zerolog.ErrorFieldName, entry.ThumbnailError).Msg("Returning cached thumbnail error")
+			w.WriteHeader(http.StatusInternalServerError)
+			return true
+		}
+		if entry.ThumbnailHash == nil {
+			err := gmx.generateAvatarThumbnail(entry, gmx.Config.Media.ThumbnailSize)
+			if errors.Is(err, os.ErrNotExist) && !force {
+				return false
+			} else if err != nil {
+				log.Err(err).Msg("Failed to generate avatar thumbnail")
+				gmx.saveMediaCacheEntryWithThumbnail(ctx, entry, err)
+				w.WriteHeader(http.StatusInternalServerError)
+				return true
+			} else {
+				gmx.saveMediaCacheEntryWithThumbnail(ctx, entry, nil)
+			}
+		}
+		hash = entry.ThumbnailHash
+	}
+	cacheFile, err := os.Open(gmx.cacheEntryToPath(hash[:]))
+	if useThumbnail && errors.Is(err, os.ErrNotExist) {
+		err = gmx.generateAvatarThumbnail(entry, gmx.Config.Media.ThumbnailSize)
+		if errors.Is(err, os.ErrNotExist) && !force {
+			return false
+		} else if err != nil {
+			log.Err(err).Msg("Failed to generate avatar thumbnail")
+			gmx.saveMediaCacheEntryWithThumbnail(ctx, entry, err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return true
+		} else {
+			gmx.saveMediaCacheEntryWithThumbnail(ctx, entry, nil)
+			cacheFile, err = os.Open(gmx.cacheEntryToPath(hash[:]))
+		}
+	}
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) && !force {
 			return false
@@ -91,7 +129,7 @@ func (gmx *Gomuks) downloadMediaFromCache(ctx context.Context, w http.ResponseWr
 	defer func() {
 		_ = cacheFile.Close()
 	}()
-	cacheEntryToHeaders(w, entry)
+	cacheEntryToHeaders(w, entry, useThumbnail)
 	w.WriteHeader(http.StatusOK)
 	_, err = io.Copy(w, cacheFile)
 	if err != nil {
@@ -105,13 +143,76 @@ func (gmx *Gomuks) cacheEntryToPath(hash []byte) string {
 	return filepath.Join(gmx.CacheDir, "media", hashPath[0:2], hashPath[2:4], hashPath[4:])
 }
 
-func cacheEntryToHeaders(w http.ResponseWriter, entry *database.Media) {
-	w.Header().Set("Content-Type", entry.MimeType)
-	w.Header().Set("Content-Length", strconv.FormatInt(entry.Size, 10))
-	w.Header().Set("Content-Disposition", mime.FormatMediaType(entry.ContentDisposition(), map[string]string{"filename": entry.FileName}))
+func cacheEntryToHeaders(w http.ResponseWriter, entry *database.Media, thumbnail bool) {
+	if thumbnail {
+		w.Header().Set("Content-Type", "image/webp")
+		w.Header().Set("Content-Length", strconv.FormatInt(entry.ThumbnailSize, 10))
+		w.Header().Set("Content-Disposition", "inline; filename=thumbnail.webp")
+	} else {
+		w.Header().Set("Content-Type", entry.MimeType)
+		w.Header().Set("Content-Length", strconv.FormatInt(entry.Size, 10))
+		w.Header().Set("Content-Disposition", mime.FormatMediaType(entry.ContentDisposition(), map[string]string{"filename": entry.FileName}))
+	}
 	w.Header().Set("Content-Security-Policy", "sandbox; default-src 'none'; script-src 'none'; media-src 'self';")
 	w.Header().Set("Cache-Control", "max-age=2592000, immutable")
-	w.Header().Set("ETag", entry.ETag())
+	w.Header().Set("ETag", entry.ETag(thumbnail))
+}
+
+func (gmx *Gomuks) saveMediaCacheEntryWithThumbnail(ctx context.Context, entry *database.Media, err error) {
+	if errors.Is(err, os.ErrNotExist) {
+		return
+	}
+	if err != nil {
+		entry.ThumbnailError = err.Error()
+	}
+	err = gmx.Client.DB.Media.Put(ctx, entry)
+	if err != nil {
+		zerolog.Ctx(ctx).Err(err).Msg("Failed to save cache entry after generating thumbnail")
+	}
+}
+
+func (gmx *Gomuks) generateAvatarThumbnail(entry *database.Media, size int) error {
+	cacheFile, err := os.Open(gmx.cacheEntryToPath(entry.Hash[:]))
+	if err != nil {
+		return fmt.Errorf("failed to open full file: %w", err)
+	}
+	img, _, err := image.Decode(cacheFile)
+	if err != nil {
+		return fmt.Errorf("failed to decode image: %w", err)
+	}
+
+	tempFile, err := os.CreateTemp(gmx.TempDir, "thumbnail-*")
+	if err != nil {
+		return fmt.Errorf("failed to create temporary file: %w", err)
+	}
+	defer func() {
+		_ = tempFile.Close()
+		_ = os.Remove(tempFile.Name())
+	}()
+	thumbnailImage := imaging.Thumbnail(img, size, size, imaging.Lanczos)
+	fileHasher := sha256.New()
+	wrappedWriter := io.MultiWriter(fileHasher, tempFile)
+	err = cwebp.Encode(wrappedWriter, thumbnailImage, &cwebp.Options{Quality: 80})
+	if err != nil {
+		return fmt.Errorf("failed to encode thumbnail: %w", err)
+	}
+	fileInfo, err := tempFile.Stat()
+	if err != nil {
+		return fmt.Errorf("failed to stat temporary file: %w", err)
+	}
+	entry.ThumbnailHash = (*[32]byte)(fileHasher.Sum(nil))
+	entry.ThumbnailError = ""
+	entry.ThumbnailSize = fileInfo.Size()
+	cachePath := gmx.cacheEntryToPath(entry.ThumbnailHash[:])
+	err = os.MkdirAll(filepath.Dir(cachePath), 0700)
+	if err != nil {
+		return fmt.Errorf("failed to create cache directory: %w", err)
+	}
+	err = os.Rename(tempFile.Name(), cachePath)
+	if err != nil {
+		return fmt.Errorf("failed to rename temporary file: %w", err)
+	}
+	return nil
 }
 
 type noErrorWriter struct {
@@ -191,6 +292,7 @@ func (gmx *Gomuks) DownloadMedia(w http.ResponseWriter, r *http.Request) {
 	}
 
 	encrypted, _ := strconv.ParseBool(query.Get("encrypted"))
+	useThumbnail := query.Get("thumbnail") == "avatar"
 
 	logVal := zerolog.Ctx(r.Context()).With().
 		Stringer("mxc_uri", mxc).
@@ -211,7 +313,7 @@ func (gmx *Gomuks) DownloadMedia(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if gmx.downloadMediaFromCache(ctx, w, r, cacheEntry, false) {
+	if gmx.downloadMediaFromCache(ctx, w, r, cacheEntry, false, useThumbnail) {
 		return
 	}
 
@@ -301,8 +403,8 @@ func (gmx *Gomuks) DownloadMedia(w http.ResponseWriter, r *http.Request) {
 	cacheEntry.Size = resp.ContentLength
 	fileHasher := sha256.New()
 	wrappedReader := io.TeeReader(reader, fileHasher)
-	if cacheEntry.Size > 0 && cacheEntry.EncFile == nil {
-		cacheEntryToHeaders(w, cacheEntry)
+	if cacheEntry.Size > 0 && cacheEntry.EncFile == nil && !useThumbnail {
+		cacheEntryToHeaders(w, cacheEntry, useThumbnail)
 		w.WriteHeader(http.StatusOK)
 		wrappedReader = io.TeeReader(wrappedReader, &noErrorWriter{w})
 		w = nil
@@ -342,7 +444,7 @@ func (gmx *Gomuks) DownloadMedia(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if w != nil {
-		gmx.downloadMediaFromCache(ctx, w, r, cacheEntry, true)
+		gmx.downloadMediaFromCache(ctx, w, r, cacheEntry, true, useThumbnail)
 	}
 }
 

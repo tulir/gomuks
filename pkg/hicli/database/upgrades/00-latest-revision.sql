@@ -1,4 +1,4 @@
--- v0 -> v12 (compatible with v10+): Latest revision
+-- v0 -> v13 (compatible with v10+): Latest revision
 CREATE TABLE account (
 	user_id        TEXT NOT NULL PRIMARY KEY,
 	device_id      TEXT NOT NULL,
@@ -18,7 +18,7 @@ CREATE TABLE room (
 	name_quality         INTEGER NOT NULL DEFAULT 0,
 	avatar               TEXT,
 	explicit_avatar      INTEGER NOT NULL DEFAULT 0,
-	dm_user_id   	     TEXT,
+	dm_user_id           TEXT,
 	topic                TEXT,
 	canonical_alias      TEXT,
 	lazy_load_summary    TEXT,
@@ -212,13 +212,17 @@ BEGIN
 END;
 
 CREATE TABLE media (
-	mxc       TEXT NOT NULL PRIMARY KEY,
-	enc_file  TEXT,
-	file_name TEXT,
-	mime_type TEXT,
-	size      INTEGER,
-	hash      BLOB,
-	error     TEXT
+	mxc             TEXT NOT NULL PRIMARY KEY,
+	enc_file        TEXT,
+	file_name       TEXT,
+	mime_type       TEXT,
+	size            INTEGER,
+	hash            BLOB,
+	error           TEXT,
+
+	thumbnail_size  INTEGER,
+	thumbnail_hash  BLOB,
+	thumbnail_error TEXT
 ) STRICT;
 
 CREATE TABLE media_reference (

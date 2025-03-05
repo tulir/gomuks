@@ -18,7 +18,7 @@ import { PuffLoader } from "react-spinners"
 import { getAvatarURL } from "@/api/media.ts"
 import { useRoomMember } from "@/api/statestore"
 import { MemberEventContent, UserID, UserProfile } from "@/api/types"
-import { getLocalpart } from "@/util/validation.ts"
+import { ensureString, getLocalpart } from "@/util/validation.ts"
 import ClientContext from "../ClientContext.ts"
 import { LightboxContext } from "../modal"
 import { RoomContext } from "../roomview/roomcontext.ts"
@@ -26,6 +26,7 @@ import UserExtendedProfile from "./UserExtendedProfile.tsx"
 import DeviceList from "./UserInfoDeviceList.tsx"
 import UserInfoError from "./UserInfoError.tsx"
 import MutualRooms from "./UserInfoMutualRooms.tsx"
+import UserModeration from "./UserModeration.tsx"
 
 interface UserInfoProps {
 	userID: UserID
@@ -50,8 +51,9 @@ const UserInfo = ({ userID }: UserInfoProps) => {
 		)
 	}, [userID, client])
 	useEffect(() => refreshProfile(true), [refreshProfile])
-
-	const displayname = member?.displayname || globalProfile?.displayname || getLocalpart(userID)
+	const displayname = ensureString(member?.displayname)
+		|| ensureString(globalProfile?.displayname)
+		|| getLocalpart(userID)
 	return <>
 		<div className="avatar-container">
 			{member === null && globalProfile === null && errors == null ? <PuffLoader
@@ -60,6 +62,7 @@ const UserInfo = ({ userID }: UserInfoProps) => {
 				className="avatar-loader"
 			/> : <img
 				className="avatar"
+				// this is a big avatar (236px by default), use full resolution
 				src={getAvatarURL(userID, member ?? globalProfile)}
 				onClick={openLightbox}
 				alt=""
@@ -67,20 +70,13 @@ const UserInfo = ({ userID }: UserInfoProps) => {
 		</div>
 		<div className="displayname" title={displayname}>{displayname}</div>
 		<div className="userid" title={userID}>{userID}</div>
-		{globalProfile && <UserExtendedProfile
-			profile={globalProfile} refreshProfile={refreshProfile} client={client} userID={userID}
-		/>}
-		<hr/>
+		<UserExtendedProfile profile={globalProfile} refreshProfile={refreshProfile} client={client} userID={userID}/>
+		<DeviceList client={client} room={roomCtx?.store} userID={userID}/>
 		{userID !== client.userID && <>
 			<MutualRooms client={client} userID={userID}/>
-			<hr/>
+			<UserModeration client={client} room={roomCtx?.store} member={memberEvt} userID={userID}/>
 		</>}
-		<DeviceList client={client} room={roomCtx?.store} userID={userID}/>
-		<hr/>
-		{errors?.length ? <>
-			<UserInfoError errors={errors}/>
-			<hr/>
-		</> : null}
+		<UserInfoError errors={errors}/>
 	</>
 }
 

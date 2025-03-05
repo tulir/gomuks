@@ -18,7 +18,7 @@ import { CustomEmojiPack, parseCustomEmojiPack } from "@/util/emoji"
 import { NonNullCachedEventDispatcher } from "@/util/eventdispatcher.ts"
 import toSearchableString from "@/util/searchablestring.ts"
 import Subscribable, { MultiSubscribable, NoDataSubscribable } from "@/util/subscribable.ts"
-import { getDisplayname } from "@/util/validation.ts"
+import { getDisplayname, getServerName } from "@/util/validation.ts"
 import {
 	ContentURI,
 	DBReceipt,
@@ -246,6 +246,35 @@ export class RoomStateStore {
 		return this.#membersCache ?? []
 	}
 
+	getViaServers(): string[] {
+		const ownServerName = getServerName(this.parent.userID)
+		const vias = [ownServerName]
+		const members = this.getMembers()
+		const memberCount = new Map<string, number>()
+		const powerLevels: PowerLevelEventContent = this.getStateEvent("m.room.power_levels", "")?.content ?? {}
+		const usersDefault = powerLevels.users_default ?? 0
+		let powerServer: string | undefined = undefined
+		for (const member of members) {
+			const serverName = getServerName(member.userID)
+			if (serverName !== ownServerName) {
+				if (!powerServer && (powerLevels?.users?.[member.userID] ?? usersDefault) > usersDefault) {
+					powerServer = serverName
+					vias.push(powerServer)
+				}
+				memberCount.set(serverName, (memberCount.get(serverName) ?? 0) + 1)
+			}
+		}
+		const servers = Array.from(memberCount.entries())
+		servers.sort(([, a], [, b]) => b - a)
+		for (const [serverName] of servers) {
+			if (serverName !== ownServerName && serverName !== powerServer) {
+				vias.push(serverName)
+				break
+			}
+		}
+		return vias
+	}
+
 	getPinnedEvents(): EventID[] {
 		const pinnedList = this.getStateEvent("m.room.pinned_events", "")?.content?.pinned
 		if (Array.isArray(pinnedList)) {
@@ -315,12 +344,34 @@ export class RoomStateStore {
 		return true
 	}
 
-	applyEvent(evt: RawDBEvent, pending: boolean = false) {
+	getOrApplyEvent(evt: RawDBEvent) {
+		const existing = this.eventsByRowID.get(evt.rowid)
+		if (existing) {
+			return existing
+		}
+		return this.applyEvent(evt)
+	}
+
+	setViewingRedacted(evt: MemDBEvent, view: boolean) {
+		const modified = {
+			...evt,
+			viewing_redacted: view,
+		}
+		this.eventsByRowID.set(evt.rowid, modified)
+		this.eventsByID.set(evt.event_id, modified)
+		this.eventSubs.notify(evt.event_id)
+		this.notifyTimelineSubscribers()
+	}
+
+	applyEvent(evt: RawDBEvent, pending: boolean = false, viewRedacted: boolean = false) {
 		const memEvt = evt as MemDBEvent
 		memEvt.mem = true
 		memEvt.pending = pending
 		if (pending) {
 			memEvt.timeline_rowid = UNSENT_TIMELINE_ROWID_BASE + memEvt.timestamp
+		}
+		if (viewRedacted) {
+			memEvt.viewing_redacted = true
 		}
 		if (evt.type === "m.room.encrypted" && evt.decrypted && evt.decrypted_type) {
 			memEvt.type = evt.decrypted_type
@@ -332,20 +383,24 @@ export class RoomStateStore {
 		if (memEvt.last_edit_rowid) {
 			memEvt.last_edit = this.eventsByRowID.get(memEvt.last_edit_rowid)
 			if (memEvt.last_edit) {
-				memEvt.orig_content = memEvt.content
-				memEvt.content = memEvt.last_edit.content["m.new_content"]
+				memEvt.orig_content = memEvt.orig_content ?? memEvt.content
+				memEvt.orig_local_content = memEvt.orig_local_content ?? memEvt.local_content
+				memEvt.content = memEvt.last_edit.content["m.new_content"] ?? memEvt.last_edit.content
 				memEvt.local_content = memEvt.last_edit.local_content
 			}
 		} else if (memEvt.relation_type === "m.replace" && memEvt.relates_to) {
 			const editTarget = this.eventsByID.get(memEvt.relates_to)
-			if (editTarget?.last_edit_rowid === memEvt.rowid && !editTarget.last_edit) {
-				this.eventsByRowID.set(editTarget.rowid, {
+			if (editTarget?.last_edit_rowid === memEvt.rowid) {
+				const modified: MemDBEvent = {
 					...editTarget,
 					last_edit: memEvt,
-					orig_content: editTarget.content,
-					content: memEvt.content["m.new_content"],
+					orig_local_content: editTarget.orig_local_content ?? editTarget.local_content,
+					orig_content: editTarget.orig_content ?? editTarget.content,
+					content: memEvt.content["m.new_content"] ?? memEvt.content,
 					local_content: memEvt.local_content,
-				})
+				}
+				this.eventsByRowID.set(editTarget.rowid, modified)
+				this.eventsByID.set(editTarget.event_id, modified)
 				this.eventSubs.notify(editTarget.event_id)
 			}
 		}
@@ -402,6 +457,8 @@ export class RoomStateStore {
 		for (const evt of sync.events ?? []) {
 			this.applyEvent(evt)
 		}
+		const hasWidgets = this.parent.widgetListeners.size > 0
+		const newState: MemDBEvent[] = []
 		for (const [evtType, changedEvts] of Object.entries(sync.state ?? {})) {
 			let stateMap = this.state.get(evtType)
 			if (!stateMap) {
@@ -411,6 +468,12 @@ export class RoomStateStore {
 			for (const [key, rowID] of Object.entries(changedEvts)) {
 				stateMap.set(key, rowID)
 				this.invalidateStateCaches(evtType, key)
+				if (hasWidgets) {
+					const evt = this.eventsByRowID.get(rowID)
+					if (evt) {
+						newState.push(evt)
+					}
+				}
 			}
 			this.stateSubs.notify(evtType)
 		}
@@ -429,6 +492,13 @@ export class RoomStateStore {
 		this.notifyTimelineSubscribers()
 		for (const [evtID, receipts] of Object.entries(sync.receipts ?? {})) {
 			this.applyReceipts(receipts, evtID, false)
+		}
+		if (hasWidgets && ((sync.timeline && sync.timeline.length > 0) || newState.length > 0)) {
+			const evts = sync.timeline?.map(evt => this.eventsByRowID.get(evt.event_rowid)).filter(evt => !!evt)
+			this.parent.widgetListeners.forEach(listener => {
+				evts?.forEach(listener.onTimelineEvent)
+				newState.forEach(listener.onStateEvent)
+			})
 		}
 	}
 

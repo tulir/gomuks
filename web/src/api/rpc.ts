@@ -19,11 +19,11 @@ import type {
 	ClientWellKnown,
 	DBPushRegistration,
 	EventID,
-	EventRowID,
 	EventType,
 	JSONValue,
 	LoginFlowsResponse,
 	LoginRequest,
+	MembershipAction,
 	Mentions,
 	MessageEventContent,
 	PaginationResponse,
@@ -33,9 +33,14 @@ import type {
 	RawDBEvent,
 	ReceiptType,
 	RelatesTo,
+	RelationType,
+	ReqCreateRoom,
 	ResolveAliasResponse,
+	RespCreateRoom,
+	RespMediaConfig,
 	RespOpenIDToken,
 	RespRoomJoin,
+	RespTurnServer,
 	RoomAlias,
 	RoomID,
 	RoomStateGUID,
@@ -145,8 +150,14 @@ export default abstract class RPCClient {
 		return this.request("send_message", params)
 	}
 
-	sendEvent(room_id: RoomID, type: EventType, content: unknown): Promise<RawDBEvent> {
-		return this.request("send_event", { room_id, type, content })
+	sendEvent(
+		room_id: RoomID,
+		type: EventType,
+		content: unknown,
+		disable_encryption: boolean = false,
+		synchronous: boolean = false,
+	): Promise<RawDBEvent> {
+		return this.request("send_event", { room_id, type, content, disable_encryption, synchronous })
 	}
 
 	resendEvent(transaction_id: string): Promise<RawDBEvent> {
@@ -165,6 +176,10 @@ export default abstract class RPCClient {
 		room_id: RoomID, type: EventType, state_key: string, content: Record<string, unknown>,
 	): Promise<EventID> {
 		return this.request("set_state", { room_id, type, state_key, content })
+	}
+
+	setMembership(room_id: RoomID, user_id: UserID, action: MembershipAction, reason?: string): Promise<void> {
+		return this.request("set_membership", { room_id, user_id, action, reason })
 	}
 
 	setAccountData(type: EventType, content: unknown, room_id?: RoomID): Promise<boolean> {
@@ -203,6 +218,14 @@ export default abstract class RPCClient {
 		return this.request("ensure_group_session_shared", { room_id })
 	}
 
+	sendToDevice(
+		event_type: EventType,
+		messages: { [userId: string]: { [deviceId: string]: object } },
+		encrypted: boolean = false,
+	): Promise<void> {
+		return this.request("send_to_device", { event_type, messages, encrypted })
+	}
+
 	getSpecificRoomState(keys: RoomStateGUID[]): Promise<RawDBEvent[]> {
 		return this.request("get_specific_room_state", { keys })
 	}
@@ -213,12 +236,12 @@ export default abstract class RPCClient {
 		return this.request("get_room_state", { room_id, include_members, fetch_members, refetch })
 	}
 
-	getEvent(room_id: RoomID, event_id: EventID): Promise<RawDBEvent> {
-		return this.request("get_event", { room_id, event_id })
+	getEvent(room_id: RoomID, event_id: EventID, unredact?: boolean): Promise<RawDBEvent> {
+		return this.request("get_event", { room_id, event_id, unredact })
 	}
 
-	getEventsByRowIDs(row_ids: EventRowID[]): Promise<RawDBEvent[]> {
-		return this.request("get_events_by_row_ids", { row_ids })
+	getRelatedEvents(room_id: RoomID, event_id: EventID, relation_type?: RelationType): Promise<RawDBEvent[]> {
+		return this.request("get_related_events", { room_id, event_id, relation_type })
 	}
 
 	paginate(room_id: RoomID, max_timeline_id: TimelineRowID, limit: number): Promise<PaginationResponse> {
@@ -239,6 +262,14 @@ export default abstract class RPCClient {
 
 	leaveRoom(room_id: RoomID, reason?: string): Promise<Record<string, never>> {
 		return this.request("leave_room", { room_id, reason })
+	}
+
+	createRoom(request: ReqCreateRoom): Promise<RespCreateRoom> {
+		return this.request("create_room", request)
+	}
+
+	muteRoom(room_id: RoomID, muted: boolean): Promise<boolean> {
+		return this.request("mute_room", { room_id, muted })
 	}
 
 	resolveAlias(alias: RoomAlias): Promise<ResolveAliasResponse> {
@@ -271,5 +302,17 @@ export default abstract class RPCClient {
 
 	registerPush(reg: DBPushRegistration): Promise<boolean> {
 		return this.request("register_push", reg)
+	}
+
+	getTurnServers(): Promise<RespTurnServer> {
+		return this.request("get_turn_servers", {})
+	}
+
+	getMediaConfig(): Promise<RespMediaConfig> {
+		return this.request("get_media_config", {})
+	}
+
+	setListenToDevice(listen: boolean): Promise<void> {
+		return this.request("listen_to_device", listen)
 	}
 }

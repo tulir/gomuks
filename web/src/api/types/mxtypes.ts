@@ -218,6 +218,10 @@ export interface ReactionEventContent {
 	"com.beeper.reaction.shortcode"?: string
 }
 
+export interface IgnoredUsersEventContent {
+	ignored_users: Record<string, unknown>
+}
+
 export interface EncryptedFile {
 	url: ContentURI
 	k: string
@@ -315,4 +319,42 @@ export interface RespOpenIDToken {
 	expires_in: number
 	matrix_server_name: string
 	token_type: "Bearer"
+}
+
+export type RoomVisibility = "public" | "private"
+export type RoomPreset = "private_chat" | "public_chat" | "trusted_private_chat"
+
+export interface ReqCreateRoom {
+	visibility?: RoomVisibility
+	room_alias_name?: string
+	name?: string
+	topic?: string
+	invite?: UserID[]
+	preset?: RoomPreset
+	is_direct?: boolean
+	initial_state?: {
+		type: EventType
+		state_key?: string
+		content: Record<string, unknown>
+	}[]
+	room_version?: string
+	creation_content?: Record<string, unknown>
+	power_level_content_override?: Record<string, unknown>
+	"fi.mau.room_id"?: RoomID
+}
+
+export interface RespCreateRoom {
+	room_id: RoomID
+}
+
+export interface RespTurnServer {
+	username: string
+	password: string
+	ttl: number
+	uris: string[]
+}
+
+export interface RespMediaConfig {
+	"m.upload.size": number
+	[key: string]: unknown
 }

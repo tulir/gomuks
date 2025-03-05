@@ -58,9 +58,11 @@ const onClickHTML = (evt: React.MouseEvent<HTMLDivElement>) => {
 	} else if (targetElem.closest?.("span.hicli-spoiler")?.classList.toggle("spoiler-revealed")) {
 		// When unspoilering, don't trigger links and other clickables inside the spoiler
 		evt.preventDefault()
+		evt.stopPropagation()
 	} else if (isAnchorElement(targetElem) && targetElem.href.startsWith("matrix:")) {
 		onClickMatrixURI(targetElem.href)
 		evt.preventDefault()
+		evt.stopPropagation()
 	}
 }
 

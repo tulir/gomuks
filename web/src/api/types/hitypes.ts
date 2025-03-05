@@ -156,7 +156,9 @@ export interface MemDBEvent extends BaseDBEvent {
 	pending: boolean
 	encrypted?: EncryptedEventContent
 	orig_content?: UnknownEventContent
+	orig_local_content?: LocalContent
 	last_edit?: MemDBEvent
+	viewing_redacted?: boolean
 }
 
 export interface DBAccountData {
@@ -292,3 +294,5 @@ export interface DBPushRegistration {
 	encryption: { key: string }
 	expiration?: number
 }
+
+export type MembershipAction = "invite" | "kick" | "ban" | "unban"

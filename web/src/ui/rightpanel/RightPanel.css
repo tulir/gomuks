@@ -51,6 +51,22 @@ div.right-panel-content.pinned-messages {
 	}
 }
 
+div.right-panel-content.widgets {
+	display: flex;
+	flex-direction: column;
+	gap: .5rem;
+	padding: .5rem;
+
+	> button {
+		padding: .5rem;
+		width: 100%;
+	}
+
+	> div.separator {
+		flex: 1;
+	}
+}
+
 div.right-panel-content.user {
 	display: flex;
 	flex-direction: column;
@@ -89,6 +105,12 @@ div.right-panel-content.user {
 		-webkit-line-clamp: 4;
 		-webkit-box-orient: vertical;
 		word-break: break-word;
+	}
+
+	div.userid, div.extended-profile, div.devices, div.user-moderation, div.mutual-rooms, div.errors {
+		border-bottom: 1px solid var(--border-color);
+		padding-bottom: .5rem;
+		margin-bottom: .5rem;
 	}
 
 	div.extended-profile {
@@ -188,6 +210,25 @@ div.right-panel-content.user {
 				&.trust-cross-signed-tofu {
 					color: var(--primary-color-dark);
 				}
+			}
+		}
+	}
+
+	div.user-moderation {
+		display: flex;
+		flex-direction: column;
+
+		button.moderation-action {
+			padding: .5rem;
+			width: 100%;
+			gap: .5rem;
+			justify-content: left;
+
+			&.dangerous {
+				color: var(--error-color);
+			}
+			&.positive {
+				color: var(--primary-color);
 			}
 		}
 	}
