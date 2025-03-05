@@ -36,8 +36,8 @@ import (
 	"maunium.net/go/gomuks/debug"
 
 	//find what to use
-	//"maunium.net/go/gomuks/tui/messages"
-	//"maunium.net/go/gomuks/tui/widget"
+	"maunium.net/go/gomuks/gt/messages"
+	"maunium.net/go/gomuks/gt/widget"
 	"maunium.net/go/gomuks/lib/notification"
 
 	"maunium.net/go/gomuks/matrix/rooms"
