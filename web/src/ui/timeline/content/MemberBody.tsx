@@ -99,6 +99,8 @@ function useChangeDescription(
 		if (sender === target) {
 			if (prevContent?.membership === "knock") {
 				return "cancelled their join request"
+			} else if (prevContent?.membership === "invite") {
+				return "rejected the invite"
 			}
 			return "left the room"
 		}
