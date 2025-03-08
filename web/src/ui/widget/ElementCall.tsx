@@ -33,7 +33,7 @@ const elementCallParams = new URLSearchParams({
 	appPrompt: "false",
 }).toString().replaceAll("%24", "$")
 
-const ElementCall = () => {
+const ElementCall = ({ onClose }: { onClose?: () => void }) => {
 	const room = use(RoomContext)?.store ?? null
 	const client = use(ClientContext)!
 	const baseURL = usePreference(client.store, room, "element_call_base_url")
@@ -51,7 +51,7 @@ const ElementCall = () => {
 	if (!room || !client) {
 		return null
 	}
-	return <LazyWidget info={widgetInfo} />
+	return <LazyWidget info={widgetInfo} onClose={onClose} />
 }
 
 export default ElementCall

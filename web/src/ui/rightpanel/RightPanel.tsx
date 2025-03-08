@@ -16,7 +16,7 @@
 import type { IWidget } from "matrix-widget-api"
 import { JSX, use } from "react"
 import type { UserID } from "@/api/types"
-import MainScreenContext from "../MainScreenContext.ts"
+import MainScreenContext, { MainScreenContextFields } from "../MainScreenContext.ts"
 import ErrorBoundary from "../util/ErrorBoundary.tsx"
 import ElementCall from "../widget/ElementCall.tsx"
 import LazyWidget from "../widget/LazyWidget.tsx"
@@ -63,7 +63,7 @@ function getTitle(props: RightPanelProps): string {
 	}
 }
 
-function renderRightPanelContent(props: RightPanelProps): JSX.Element | null {
+function renderRightPanelContent(props: RightPanelProps, mainScreen: MainScreenContextFields): JSX.Element | null {
 	switch (props.type) {
 	case "pinned-messages":
 		return <PinnedMessages />
@@ -72,9 +72,9 @@ function renderRightPanelContent(props: RightPanelProps): JSX.Element | null {
 	case "widgets":
 		return <WidgetList />
 	case "element-call":
-		return <ElementCall />
+		return <ElementCall onClose={mainScreen.closeRightPanel} />
 	case "widget":
-		return <LazyWidget info={props.info} />
+		return <LazyWidget info={props.info} onClose={mainScreen.closeRightPanel} />
 	case "user":
 		return <UserInfo userID={props.userID} />
 	}
@@ -104,7 +104,7 @@ const RightPanel = (props: RightPanelProps) => {
 		</div>
 		<div className={`right-panel-content ${props.type}`}>
 			<ErrorBoundary thing="right panel content">
-				{renderRightPanelContent(props)}
+				{renderRightPanelContent(props, mainScreen)}
 			</ErrorBoundary>
 		</div>
 	</div>

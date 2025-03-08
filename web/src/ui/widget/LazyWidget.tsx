@@ -28,9 +28,10 @@ const widgetLoader = <div className="widget-container widget-loading">
 
 export interface LazyWidgetProps {
 	info: IWidget
+	onClose?: () => void
 }
 
-const LazyWidget = ({ info }: LazyWidgetProps) => {
+const LazyWidget = ({ info, onClose }: LazyWidgetProps) => {
 	const room = use(RoomContext)?.store
 	const client = use(ClientContext)
 	if (!room || !client) {
@@ -38,7 +39,7 @@ const LazyWidget = ({ info }: LazyWidgetProps) => {
 	}
 	return (
 		<Suspense fallback={widgetLoader}>
-			<Widget info={info} room={room} client={client} />
+			<Widget info={info} room={room} client={client} onClose={onClose} />
 		</Suspense>
 	)
 }

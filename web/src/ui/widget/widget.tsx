@@ -27,6 +27,7 @@ export interface WidgetProps {
 	info: IWidget
 	room: RoomStateStore
 	client: Client
+	onClose?: () => void
 }
 
 // TODO remove this after widgets start using a parameter for it
@@ -68,7 +69,7 @@ class WidgetListenerImpl implements WidgetListener {
 	}
 }
 
-const ReactWidget = ({ room, info, client }: WidgetProps) => {
+const ReactWidget = ({ room, info, client, onClose }: WidgetProps) => {
 	const wrappedWidget = new WrappedWidget(info)
 	const driver = new GomuksWidgetDriver(client, room)
 	const widgetURL = addLegacyParams(wrappedWidget.getCompleteUrl({
@@ -92,13 +93,16 @@ const ReactWidget = ({ room, info, client }: WidgetProps) => {
 			evt.preventDefault()
 			clientAPI.transport.reply(evt.detail, {})
 		}
+		const closeWidget = (evt: CustomEvent) => {
+			noopReply(evt)
+			onClose?.()
+		}
 		clientAPI.on("action:io.element.join", noopReply)
 		clientAPI.on("action:im.vector.hangup", noopReply)
 		clientAPI.on("action:io.element.device_mute", noopReply)
 		clientAPI.on("action:io.element.tile_layout", noopReply)
 		clientAPI.on("action:io.element.spotlight_layout", noopReply)
-		// TODO handle this one?
-		clientAPI.on("action:io.element.close", noopReply)
+		clientAPI.on("action:io.element.close", closeWidget)
 		clientAPI.on("action:set_always_on_screen", noopReply)
 		const removeListener = client.addWidgetListener(new WidgetListenerImpl(clientAPI))
 
