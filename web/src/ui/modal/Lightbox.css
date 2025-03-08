@@ -30,7 +30,7 @@ div.overlay {
 		}
 
 		> div.modal-box-inner {
-			overflow: scroll;
+			overflow: auto;
 		}
 	}
 }
