@@ -29,7 +29,7 @@ const ModalWrapper = ({ children, ContextType, historyStateKey }: ModalWrapperPr
 		return newState
 	}, null)
 	const onClickWrapper = useCallback((evt?: React.MouseEvent) => {
-		if (evt && evt.target !== evt.currentTarget) {
+		if (evt && (evt.target !== evt.currentTarget || state?.noDismiss)) {
 			return
 		}
 		evt?.stopPropagation()
@@ -37,9 +37,9 @@ const ModalWrapper = ({ children, ContextType, historyStateKey }: ModalWrapperPr
 		if (history.state?.[historyStateKey]) {
 			history.back()
 		}
-	}, [historyStateKey])
+	}, [historyStateKey, state])
 	const onKeyWrapper = (evt: React.KeyboardEvent<HTMLDivElement>) => {
-		if (evt.key === "Escape") {
+		if (evt.key === "Escape" && !state?.noDismiss) {
 			setState(null)
 			if (history.state?.[historyStateKey]) {
 				history.back()
@@ -55,12 +55,17 @@ const ModalWrapper = ({ children, ContextType, historyStateKey }: ModalWrapperPr
 	}, [historyStateKey])
 	const wrapperRef = useRef<HTMLDivElement>(null)
 	useLayoutEffect(() => {
+		window.closeModal = onClickWrapper
+		if (historyStateKey === "nestable_modal") {
+			window.openNestableModal = openModal
+		} else {
+			window.openModal = openModal
+		}
 		if (wrapperRef.current && (!document.activeElement || !wrapperRef.current.contains(document.activeElement))) {
 			wrapperRef.current.focus()
 		}
-	}, [state])
+	}, [state, onClickWrapper, historyStateKey, openModal])
 	useEffect(() => {
-		window.closeModal = onClickWrapper
 		const listener = (evt: PopStateEvent) => {
 			if (!evt.state?.[historyStateKey]) {
 				setState(null)
@@ -68,7 +73,7 @@ const ModalWrapper = ({ children, ContextType, historyStateKey }: ModalWrapperPr
 		}
 		window.addEventListener("popstate", listener)
 		return () => window.removeEventListener("popstate", listener)
-	}, [historyStateKey, onClickWrapper])
+	}, [historyStateKey])
 	let modal: JSX.Element | null = null
 	if (state) {
 		let content = <ModalCloseContext value={onClickWrapper}>
@@ -96,9 +101,6 @@ const ModalWrapper = ({ children, ContextType, historyStateKey }: ModalWrapperPr
 		} else {
 			modal = content
 		}
-	}
-	if (historyStateKey === "nestable_modal") {
-		window.openNestableModal = openModal
 	}
 	return <ContextType value={openModal}>
 		{children}
