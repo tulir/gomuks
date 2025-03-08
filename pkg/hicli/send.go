@@ -516,6 +516,9 @@ func (h *HiClient) shouldShareKeysToInvitedUsers(ctx context.Context, roomID id.
 	if err != nil {
 		zerolog.Ctx(ctx).Err(err).Msg("Failed to get history visibility event")
 		return false
+	} else if historyVisibility == nil {
+		zerolog.Ctx(ctx).Warn().Msg("History visibility event not found")
+		return false
 	}
 	mautrixEvt := historyVisibility.AsRawMautrix()
 	err = mautrixEvt.Content.ParseRaw(mautrixEvt.Type)
