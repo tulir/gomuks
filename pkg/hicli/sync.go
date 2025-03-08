@@ -137,7 +137,7 @@ func (h *HiClient) maybeDiscardOutboundSession(ctx context.Context, newMembershi
 		prevMembership = event.Membership(gjson.GetBytes(cs.Content, "membership").Str)
 	}
 	if prevMembership == newMembership ||
-		(prevMembership == event.MembershipInvite && newMembership == event.MembershipJoin) ||
+		(prevMembership == event.MembershipInvite && newMembership == event.MembershipJoin && h.shouldShareKeysToInvitedUsers(ctx, evt.RoomID)) ||
 		(prevMembership == event.MembershipJoin && newMembership == event.MembershipInvite) ||
 		(prevMembership == event.MembershipBan && newMembership == event.MembershipLeave) ||
 		(prevMembership == event.MembershipLeave && newMembership == event.MembershipBan) {
