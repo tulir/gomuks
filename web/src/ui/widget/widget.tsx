@@ -19,6 +19,7 @@ import type Client from "@/api/client"
 import type { RoomStateStore, WidgetListener } from "@/api/statestore"
 import type { MemDBEvent, RoomID, SyncToDevice } from "@/api/types"
 import { getDisplayname } from "@/util/validation"
+import PermissionPrompt from "./PermissionPrompt"
 import { memDBEventToIRoomEvent } from "./util"
 import GomuksWidgetDriver from "./widgetDriver"
 import "./Widget.css"
@@ -69,9 +70,24 @@ class WidgetListenerImpl implements WidgetListener {
 	}
 }
 
+const openPermissionPrompt = (requested: Set<string>): Promise<Set<string>> => {
+	return new Promise(resolve => {
+		window.openModal({
+			content: <PermissionPrompt
+				capabilities={requested}
+				onConfirm={resolve}
+			/>,
+			dimmed: true,
+			boxed: true,
+			noDismiss: true,
+			innerBoxClass: "permission-prompt",
+		})
+	})
+}
+
 const ReactWidget = ({ room, info, client, onClose }: WidgetProps) => {
 	const wrappedWidget = new WrappedWidget(info)
-	const driver = new GomuksWidgetDriver(client, room)
+	const driver = new GomuksWidgetDriver(client, room, openPermissionPrompt)
 	const widgetURL = addLegacyParams(wrappedWidget.getCompleteUrl({
 		widgetRoomId: room.roomID,
 		currentUserId: client.userID,

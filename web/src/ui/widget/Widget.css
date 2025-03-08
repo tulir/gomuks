@@ -7,3 +7,18 @@ div.right-panel-content.widget, div.right-panel-content.element-call {
 		border: none;
 	}
 }
+
+div.permission-prompt {
+	> h2 {
+		margin: 0;
+	}
+
+	> div.permission-actions {
+		display: flex;
+		justify-content: space-between;
+
+		> button {
+			padding: .5rem 1rem;
+		}
+	}
+}

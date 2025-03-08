@@ -37,12 +37,16 @@ class GomuksWidgetDriver extends WidgetDriver {
 	private openIDToken: IOpenIDCredentials | null = null
 	private openIDExpiry: number | null = null
 
-	constructor(private client: Client, private room: RoomStateStore) {
+	constructor(
+		private client: Client,
+		private room: RoomStateStore,
+		private openPermissionPrompt: (requested: Set<string>) => Promise<Set<string>>,
+	) {
 		super()
 	}
 
 	async validateCapabilities(requested: Set<string>): Promise<Set<string>> {
-		return new Set(requested)
+		return this.openPermissionPrompt(requested)
 	}
 
 	async sendEvent(
