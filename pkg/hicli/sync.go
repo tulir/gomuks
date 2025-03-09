@@ -785,7 +785,7 @@ func (h *HiClient) processStateAndTimeline(
 				return fmt.Errorf("failed to get relation target of redaction target: %w", err)
 			}
 		}
-		if updatedRoom.PreviewEventRowID == dbEvt.RowID {
+		if updatedRoom.PreviewEventRowID == dbEvt.RowID || (updatedRoom.PreviewEventRowID == 0 && room.PreviewEventRowID == dbEvt.RowID) {
 			updatedRoom.PreviewEventRowID = 0
 			recalculatePreviewEvent = true
 		}

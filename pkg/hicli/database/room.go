@@ -80,7 +80,7 @@ const (
 			AND (type IN ('m.room.message', 'm.sticker')
 				OR (type = 'm.room.encrypted'
 					AND decrypted_type IN ('m.room.message', 'm.sticker')))
-			AND relation_type <> 'm.replace'
+			AND (relation_type IS NULL OR relation_type <> 'm.replace')
 			AND redacted_by IS NULL
 		ORDER BY timestamp DESC
 		LIMIT 1
@@ -215,7 +215,7 @@ func (r *Room) CheckChangesAndCopyInto(other *Room) (hasChanges bool) {
 		hasChanges = true
 		other.HasMemberList = true
 	}
-	if r.PreviewEventRowID > other.PreviewEventRowID {
+	if r.PreviewEventRowID != 0 {
 		other.PreviewEventRowID = r.PreviewEventRowID
 		hasChanges = true
 	}
