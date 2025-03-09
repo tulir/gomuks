@@ -78,11 +78,16 @@ function getFallbackCharacter(from: unknown, idx: number): string {
 	return Array.from(from.slice(0, (idx + 1) * 2))[idx]?.toUpperCase().toWellFormed() ?? ""
 }
 
-export const getAvatarURL = (userID: UserID, content?: UserProfile | null, thumbnail = false): string | undefined => {
+export const getAvatarURL = (
+	userID: UserID,
+	content?: UserProfile | null,
+	thumbnail = false,
+	forceFallback = false,
+): string | undefined => {
 	const fallbackCharacter = getFallbackCharacter(content?.displayname, 0) || getFallbackCharacter(userID, 1)
 	const backgroundColor = getUserColor(userID)
 	const [server, mediaID] = parseMXC(content?.avatar_file?.url ?? content?.avatar_url)
-	if (!mediaID) {
+	if (!mediaID || forceFallback) {
 		return makeFallbackAvatar(backgroundColor, fallbackCharacter)
 	}
 	const encrypted = !!content?.avatar_file
@@ -91,8 +96,12 @@ export const getAvatarURL = (userID: UserID, content?: UserProfile | null, thumb
 	return thumbnail ? `${url}&thumbnail=avatar` : url
 }
 
-export const getAvatarThumbnailURL = (userID: UserID, content?: UserProfile | null): string | undefined => {
-	return getAvatarURL(userID, content, true)
+export const getAvatarThumbnailURL = (
+	userID: UserID,
+	content?: UserProfile | null,
+	forceFallback = false,
+): string | undefined => {
+	return getAvatarURL(userID, content, true, forceFallback)
 }
 
 interface RoomForAvatarURL {
@@ -104,14 +113,21 @@ interface RoomForAvatarURL {
 }
 
 export const getRoomAvatarURL = (
-	room: RoomForAvatarURL, avatarOverride?: ContentURI, thumbnail = false,
+	room: RoomForAvatarURL,
+	avatarOverride?: ContentURI,
+	thumbnail = false,
+	forceFallback = false,
 ): string | undefined => {
 	return getAvatarURL(room.dm_user_id ?? room.room_id, {
 		displayname: room.name,
 		avatar_url: avatarOverride ?? room.avatar ?? room.avatar_url,
-	}, thumbnail)
+	}, thumbnail, forceFallback)
 }
 
-export const getRoomAvatarThumbnailURL = (room: RoomForAvatarURL, avatarOverride?: ContentURI): string | undefined => {
-	return getRoomAvatarURL(room, avatarOverride, true)
+export const getRoomAvatarThumbnailURL = (
+	room: RoomForAvatarURL,
+	avatarOverride?: ContentURI,
+	forceFallback = false,
+): string | undefined => {
+	return getRoomAvatarURL(room, avatarOverride, true, forceFallback)
 }

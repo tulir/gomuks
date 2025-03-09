@@ -45,6 +45,7 @@ export class InvitedRoomStore implements RoomListEntry, RoomSummary {
 	readonly invited_by?: UserID
 	readonly inviter_profile?: MemberEventContent
 	readonly is_direct: boolean
+	readonly is_invite = true
 
 	constructor(public readonly meta: DBInvitedRoom, parent: StateStore) {
 		this.room_id = meta.room_id

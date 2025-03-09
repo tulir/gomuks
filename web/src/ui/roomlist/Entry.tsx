@@ -29,6 +29,7 @@ export interface RoomListEntryProps {
 	room: RoomListEntry
 	isActive: boolean
 	hidden: boolean
+	hideAvatar?: boolean
 }
 
 function getPreviewText(evt?: MemDBEvent, senderMemberEvt?: MemDBEvent | null): [string, JSX.Element | null] {
@@ -57,7 +58,7 @@ function getPreviewText(evt?: MemDBEvent, senderMemberEvt?: MemDBEvent | null): 
 	return ["", null]
 }
 
-function renderEntry(room: RoomListEntry) {
+function renderEntry(room: RoomListEntry, hideAvatar: boolean | undefined) {
 	const [previewText, croppedPreviewText] = getPreviewText(room.preview_event, room.preview_sender)
 
 	return <>
@@ -65,7 +66,7 @@ function renderEntry(room: RoomListEntry) {
 			<img
 				loading="lazy"
 				className="avatar room-avatar"
-				src={getRoomAvatarThumbnailURL(room)}
+				src={getRoomAvatarThumbnailURL(room, undefined, hideAvatar)}
 				alt=""
 			/>
 		</div>
@@ -77,7 +78,7 @@ function renderEntry(room: RoomListEntry) {
 	</>
 }
 
-const Entry = ({ room, isActive, hidden }: RoomListEntryProps) => {
+const Entry = ({ room, isActive, hidden, hideAvatar }: RoomListEntryProps) => {
 	const [isVisible, divRef] = useContentVisibility<HTMLDivElement>()
 	const openModal = use(ModalContext)
 	const mainScreen = use(MainScreenContext)
@@ -105,7 +106,7 @@ const Entry = ({ room, isActive, hidden }: RoomListEntryProps) => {
 		onContextMenu={onContextMenu}
 		data-room-id={room.room_id}
 	>
-		{isVisible ? renderEntry(room) : null}
+		{isVisible ? renderEntry(room, hideAvatar) : null}
 	</div>
 }
 

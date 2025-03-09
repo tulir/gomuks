@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import React, { use, useCallback, useRef, useState } from "react"
-import { RoomListFilter, Space as SpaceStore, SpaceUnreadCounts } from "@/api/statestore"
+import { RoomListFilter, Space as SpaceStore, SpaceUnreadCounts, usePreference } from "@/api/statestore"
 import type { RoomID } from "@/api/types"
 import { useEventAsState } from "@/util/eventdispatcher.ts"
 import reverseMap from "@/util/reversemap.ts"
@@ -103,6 +103,7 @@ const RoomList = ({ activeRoomID, space }: RoomListProps) => {
 		}
 	}
 
+	const showInviteAvatars = usePreference(client.store, null, "show_invite_avatars")
 	const roomListFilter = client.store.roomListFilterFunc
 	return <div className="room-list-wrapper">
 		<div className="room-search-wrapper">
@@ -145,6 +146,7 @@ const RoomList = ({ activeRoomID, space }: RoomListProps) => {
 					isActive={room.room_id === activeRoomID}
 					hidden={roomListFilter ? !roomListFilter(room) : false}
 					room={room}
+					hideAvatar={room.is_invite && !showInviteAvatars}
 				/>,
 			)}
 		</div>

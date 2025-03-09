@@ -65,6 +65,12 @@ export const preferences = {
 		allowedContexts: anyContext,
 		defaultValue: true,
 	}),
+	show_invite_avatars: new Preference<boolean>({
+		displayName: "Show avatars in invites",
+		description: "If disabled, the avatar of the room or invitee will not be shown in the invite view.",
+		allowedContexts: anyGlobalContext,
+		defaultValue: true,
+	}),
 	code_block_line_wrap: new Preference<boolean>({
 		displayName: "Code block line wrap",
 		description: "Whether to wrap long lines in code blocks instead of scrolling horizontally.",

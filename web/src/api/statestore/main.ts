@@ -55,6 +55,7 @@ export interface RoomListEntry {
 	unread_notifications: number
 	unread_highlights: number
 	marked_unread: boolean
+	is_invite?: boolean
 }
 
 export interface GCSettings {

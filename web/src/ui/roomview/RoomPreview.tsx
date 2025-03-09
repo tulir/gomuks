@@ -16,6 +16,7 @@
 import { use, useEffect, useState } from "react"
 import { ScaleLoader } from "react-spinners"
 import { getAvatarThumbnailURL, getAvatarURL, getRoomAvatarURL } from "@/api/media.ts"
+import { usePreference } from "@/api/statestore/hooks.ts"
 import { InvitedRoomStore } from "@/api/statestore/invitedroom.ts"
 import { RoomID, RoomSummary } from "@/api/types"
 import { getDisplayname, getServerName } from "@/util/validation.ts"
@@ -84,13 +85,15 @@ const RoomPreview = ({ roomID, via, alias, invite }: RoomPreviewProps) => {
 	const name = summary?.name ?? summary?.canonical_alias ?? invite?.name ?? invite?.canonical_alias ?? alias ?? roomID
 	const memberCount = summary?.num_joined_members || null
 	const topic = summary?.topic ?? invite?.topic ?? ""
+	const showInviteAvatars = usePreference(client.store, null, "show_invite_avatars")
+	const noAvatarPreview = invite && !showInviteAvatars
 	return <div className="room-view preview">
 		<div className="preview-inner">
 			{invite?.invited_by && !invite.dm_user_id ? <div className="inviter-info">
 				<img
 					className="small avatar"
 					onClick={use(LightboxContext)}
-					src={getAvatarThumbnailURL(invite.invited_by, invite.inviter_profile)}
+					src={getAvatarThumbnailURL(invite.invited_by, invite.inviter_profile, noAvatarPreview)}
 					data-full-src={getAvatarURL(invite.invited_by, invite.inviter_profile)}
 					alt=""
 				/>
@@ -102,7 +105,8 @@ const RoomPreview = ({ roomID, via, alias, invite }: RoomPreviewProps) => {
 			<h2 className="room-name">{name}</h2>
 			<img
 				// this is a big avatar (120px), use full resolution
-				src={getRoomAvatarURL(invite ?? summary ?? { room_id: roomID })}
+				src={getRoomAvatarURL(invite ?? summary ?? { room_id: roomID }, undefined, false, noAvatarPreview)}
+				data-full-src={getRoomAvatarURL(invite ?? summary ?? { room_id: roomID })}
 				className="large avatar"
 				onClick={use(LightboxContext)}
 				alt=""
