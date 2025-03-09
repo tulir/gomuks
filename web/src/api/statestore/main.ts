@@ -256,8 +256,10 @@ export class StateStore {
 	}
 
 	applySync(sync: SyncCompleteData) {
+		let prevActiveRoom: RoomID | null = null
 		if (sync.clear_state && this.rooms.size > 0) {
 			console.info("Clearing state store as sync told to reset and there are rooms in the store")
+			prevActiveRoom = this.activeRoomID
 			this.clear()
 		}
 		const resyncRoomList = this.roomList.current.length === 0
@@ -387,6 +389,10 @@ export class StateStore {
 		if (sync.top_level_spaces) {
 			this.topLevelSpaces.emit(sync.top_level_spaces)
 			this.spaceOrphans.children = sync.top_level_spaces.map(child_id => ({ child_id }))
+		}
+		if (prevActiveRoom) {
+			// TODO this will fail if the room is not in the top 100 recent rooms
+			this.switchRoom?.(prevActiveRoom)
 		}
 	}
 
