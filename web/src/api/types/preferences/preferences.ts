@@ -55,7 +55,7 @@ export const preferences = {
 	}),
 	show_media_previews: new Preference<boolean>({
 		displayName: "Show image and video previews",
-		description: "If disabled, images and videos will only be visible after clicking and will not be downloaded automatically.",
+		description: "If disabled, images and videos will only be visible after clicking and will not be downloaded automatically. This will also disable images in URL previews.",
 		allowedContexts: anyContext,
 		defaultValue: true,
 	}),

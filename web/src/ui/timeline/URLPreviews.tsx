@@ -28,6 +28,8 @@ const URLPreviews = ({ event, room }: {
 }) => {
 	const client = use(ClientContext)!
 	const renderPreviews = usePreference(client.store, room, "render_url_previews")
+	// TODO support blurhashes and clicking to view image previews here?
+	const showPreviewImages = usePreference(client.store, room, "show_media_previews")
 	if (event.redacted_by || !renderPreviews) {
 		return null
 	}
@@ -72,7 +74,7 @@ const URLPreviews = ({ event, room }: {
 						<a href={url} title={title} target="_blank" rel="noreferrer noopener">{title}</a>
 					</div>
 					<div className="description" title={p["og:description"]}>{p["og:description"]}</div>
-					{mediaURL && (inline
+					{mediaURL && showPreviewImages && (inline
 						? <div className="inline-media-wrapper">{mediaContainer}</div>
 						: mediaContainer)}
 				</div>
