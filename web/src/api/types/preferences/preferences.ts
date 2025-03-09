@@ -59,6 +59,12 @@ export const preferences = {
 		allowedContexts: anyContext,
 		defaultValue: true,
 	}),
+	show_inline_images: new Preference<boolean>({
+		displayName: "Show inline images",
+		description: "If disabled, custom emojis and other inline images will not be rendered and the alt attribute will be shown instead.",
+		allowedContexts: anyContext,
+		defaultValue: true,
+	}),
 	code_block_line_wrap: new Preference<boolean>({
 		displayName: "Code block line wrap",
 		description: "Whether to wrap long lines in code blocks instead of scrolling horizontally.",

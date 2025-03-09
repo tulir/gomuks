@@ -117,6 +117,15 @@ const StylePreferences = ({ client, activeRoom }: StylePreferencesProps) => {
 			--timeline-status-size: 2rem;
 		}
 	`, [preferences.display_read_receipts])
+	useStyle(() => !preferences.show_inline_images && css`
+		a.hicli-inline-img-fallback {
+			display: inline !important;
+		}
+
+		img.hicli-inline-img {
+			display: none;
+		}
+	`, [preferences.show_inline_images])
 	useAsyncStyle(() => preferences.code_block_theme === "auto" ? `
 		@import url("_gomuks/codeblock/github.css") (prefers-color-scheme: light);
 		@import url("_gomuks/codeblock/github-dark.css") (prefers-color-scheme: dark);

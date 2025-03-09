@@ -414,24 +414,42 @@ var HTMLSanitizerImgSrcTemplate = "mxc://%s/%s"
 
 func writeImg(w *strings.Builder, attr []html.Attribute) id.ContentURI {
 	src, alt, title, isCustomEmoji, width, height := parseImgAttributes(attr)
+	mxc := id.ContentURIString(src).ParseOrIgnore()
+	if !mxc.IsValid() {
+		w.WriteString("<span")
+		writeAttribute(w, "class", "hicli-inline-img-fallback hicli-invalid-inline-img")
+		w.WriteString(">")
+		writeEscapedString(w, alt)
+		w.WriteString("</span>")
+		return id.ContentURI{}
+	}
+	url := fmt.Sprintf(HTMLSanitizerImgSrcTemplate, mxc.Homeserver, mxc.FileID)
+
+	w.WriteString("<a")
+	writeAttribute(w, "class", "hicli-inline-img-fallback hicli-mxc-url")
+	writeAttribute(w, "title", title)
+	writeAttribute(w, "style", "display: none;")
+	writeAttribute(w, "target", "_blank")
+	writeAttribute(w, "data-mxc", mxc.String())
+	writeAttribute(w, "href", url)
+	w.WriteString(">")
+	writeEscapedString(w, alt)
+	w.WriteString("</a>")
+
 	w.WriteString("<img")
 	writeAttribute(w, "alt", alt)
 	if title != "" {
 		writeAttribute(w, "title", title)
 	}
-	mxc := id.ContentURIString(src).ParseOrIgnore()
-	if !mxc.IsValid() {
-		return id.ContentURI{}
-	}
-	writeAttribute(w, "src", fmt.Sprintf(HTMLSanitizerImgSrcTemplate, mxc.Homeserver, mxc.FileID))
+	writeAttribute(w, "src", url)
 	writeAttribute(w, "loading", "lazy")
 	if isCustomEmoji {
-		writeAttribute(w, "class", "hicli-custom-emoji")
+		writeAttribute(w, "class", "hicli-inline-img hicli-custom-emoji")
 	} else if cWidth, cHeight, sizeOK := calculateMediaSize(width, height); sizeOK {
-		writeAttribute(w, "class", "hicli-sized-inline-img")
+		writeAttribute(w, "class", "hicli-inline-img hicli-sized-inline-img")
 		writeAttribute(w, "style", fmt.Sprintf("width: %.2fpx; height: %.2fpx;", cWidth, cHeight))
 	} else {
-		writeAttribute(w, "class", "hicli-sizeless-inline-img")
+		writeAttribute(w, "class", "hicli-inline-img hicli-sizeless-inline-img")
 	}
 	return mxc
 }
