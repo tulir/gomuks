@@ -67,7 +67,7 @@ export const preferences = {
 	}),
 	show_invite_avatars: new Preference<boolean>({
 		displayName: "Show avatars in invites",
-		description: "If disabled, the avatar of the room or invitee will not be shown in the invite view.",
+		description: "If disabled, the avatar of the room or inviter will not be shown in the invite view.",
 		allowedContexts: anyGlobalContext,
 		defaultValue: true,
 	}),
