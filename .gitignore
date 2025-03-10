@@ -12,3 +12,5 @@ deb/usr
 *.prof
 *.db*
 *.log
+.direnv
+result
