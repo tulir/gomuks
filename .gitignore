@@ -13,3 +13,4 @@ deb/usr
 *.db*
 *.log
 .direnv
+result
