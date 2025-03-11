@@ -250,6 +250,7 @@ div.small-event > div.sender-avatar, blockquote.reply-body > div.reply-sender > 
 	margin-top: 0;
 	display: flex;
 	align-items: center;
+	flex-shrink: 0;
 }
 
 div.date-separator {
