@@ -25,14 +25,21 @@ const PolicyRuleBody = ({ event, sender }: EventContentProps) => {
 	const mainScreen = use(MainScreenContext)
 
 	const entity = content.entity ?? prevContent?.entity
+	const hashedEntity = content["org.matrix.msc4205.hashes"]?.sha256
+		?? prevContent?.["org.matrix.msc4205.hashes"]?.sha256
 	const recommendation = content.recommendation ?? prevContent?.recommendation
-	if (!entity || !recommendation) {
+	if ((!entity && !hashedEntity) || !recommendation) {
 		return <div className="policy-body">
 			{getDisplayname(event.sender, sender?.content)} sent an invalid policy rule
 		</div>
 	}
+	const target = event.type.replace(/^m\.policy\.rule\./, "")
 	let entityElement = <>{entity}</>
-	if(event.type === "m.policy.rule.user" && !entity?.includes("*") && !entity?.includes("?")) {
+	let matchingWord = `${target}s matching`
+	if (!entity && hashedEntity) {
+		matchingWord = `the ${target} with hash`
+		entityElement = <>{hashedEntity}</>
+	} else if (event.type === "m.policy.rule.user" && entity && !entity.includes("*") && !entity.includes("?")) {
 		entityElement = (
 			<a
 				className="hicli-matrix-uri hicli-matrix-uri-user"
@@ -44,16 +51,18 @@ const PolicyRuleBody = ({ event, sender }: EventContentProps) => {
 				{entity}
 			</a>
 		)
+		matchingWord = "user"
 	}
 	let recommendationElement: JSX.Element | string = <code>{recommendation}</code>
 	if (recommendation === "m.ban") {
 		recommendationElement = "ban"
+	} else if (recommendation === "org.matrix.msc4204.takedown") {
+		recommendationElement = "takedown"
 	}
 	const action = prevContent ? ((content.entity && content.recommendation) ? "updated" : "removed") : "added"
-	const target = event.type.replace(/^m\.policy\.rule\./, "")
 	return <div className="policy-body">
 		{getDisplayname(event.sender, sender?.content)} {action} a {recommendationElement} rule
-		for {target}s matching <code>{entityElement}</code>
+		for {matchingWord} <code>{entityElement}</code>
 		{content.reason ? <> for <code>{content.reason}</code></> : null}
 	</div>
 }

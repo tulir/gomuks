@@ -116,6 +116,9 @@ export interface PolicyRuleContent {
 	entity: string
 	reason: string
 	recommendation: string
+	"org.matrix.msc4205.hashes"?: {
+		sha256: string
+	}
 }
 
 export interface PowerLevelEventContent {
