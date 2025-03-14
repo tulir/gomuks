@@ -296,12 +296,12 @@ func (h *HiClient) PaginateServer(ctx context.Context, roomID id.RoomID, limit i
 	if resp.End == "" {
 		resp.End = database.PrevBatchPaginationComplete
 	}
-	if resp.End == database.PrevBatchPaginationComplete || len(resp.Chunk) == 0 {
+	if len(resp.Chunk) == 0 {
 		err = h.DB.Room.SetPrevBatch(ctx, room.ID, resp.End)
 		if err != nil {
 			return nil, fmt.Errorf("failed to set prev_batch: %w", err)
 		}
-		return &PaginationResponse{Events: events, HasMore: resp.End != ""}, nil
+		return &PaginationResponse{Events: events, HasMore: resp.End != database.PrevBatchPaginationComplete}, nil
 	}
 	wakeupSessionRequests := false
 	err = h.DB.DoTxn(ctx, nil, func(ctx context.Context) error {
@@ -366,5 +366,5 @@ func (h *HiClient) PaginateServer(ctx context.Context, roomID id.RoomID, limit i
 	if err == nil && wakeupSessionRequests {
 		h.WakeupRequestQueue()
 	}
-	return &PaginationResponse{Events: events, HasMore: true}, err
+	return &PaginationResponse{Events: events, HasMore: resp.End != database.PrevBatchPaginationComplete}, err
 }
