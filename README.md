@@ -15,4 +15,4 @@ version will get a terminal frontend in the future. See also:
 For installation and usage instructions, see [docs.mau.fi](https://docs.mau.fi/gomuks/).
 
 ## Discussion
-Matrix room: [#gomuks:maunium.net](https://matrix.to/#/#gomuks:maunium.net)
+Matrix room: [#gomuks:gomuks.app](https://matrix.to/#/#gomuks:gomuks.app)
