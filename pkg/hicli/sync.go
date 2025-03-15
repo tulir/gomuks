@@ -969,10 +969,11 @@ func (h *HiClient) processStateAndTimeline(
 		updatedRoom.PreviewEventRowID, err = h.DB.Room.RecalculatePreview(ctx, room.ID)
 		if err != nil {
 			return fmt.Errorf("failed to recalculate preview event: %w", err)
-		}
-		_, err = addOldEvent(updatedRoom.PreviewEventRowID, "")
-		if err != nil {
-			return fmt.Errorf("failed to get preview event: %w", err)
+		} else if updatedRoom.PreviewEventRowID != 0 {
+			_, err = addOldEvent(updatedRoom.PreviewEventRowID, "")
+			if err != nil {
+				return fmt.Errorf("failed to get preview event: %w", err)
+			}
 		}
 	}
 	// Calculate name from participants if participants changed and current name was generated from participants, or if the room name was unset

@@ -132,6 +132,9 @@ func (rq *RoomQuery) UpdatePreviewIfLaterOnTimeline(ctx context.Context, roomID 
 
 func (rq *RoomQuery) RecalculatePreview(ctx context.Context, roomID id.RoomID) (rowID EventRowID, err error) {
 	err = rq.GetDB().QueryRow(ctx, recalculateRoomPreviewEventQuery, roomID).Scan(&rowID)
+	if errors.Is(err, sql.ErrNoRows) {
+		err = nil
+	}
 	return
 }
 
