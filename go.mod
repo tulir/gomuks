@@ -8,7 +8,7 @@ require (
 	github.com/alecthomas/chroma/v2 v2.15.0
 	github.com/buckket/go-blurhash v1.1.0
 	github.com/chzyer/readline v1.5.1
-	github.com/coder/websocket v1.8.12
+	github.com/coder/websocket v1.8.13
 	github.com/disintegration/imaging v1.6.2
 	github.com/gabriel-vasile/mimetype v1.4.8
 	github.com/lucasb-eyer/go-colorful v1.2.0
@@ -18,7 +18,7 @@ require (
 	github.com/tidwall/gjson v1.18.0
 	github.com/tidwall/sjson v1.2.5
 	github.com/yuin/goldmark v1.7.8
-	go.mau.fi/util v0.8.6-0.20250313222444-739a30158a62
+	go.mau.fi/util v0.8.6
 	go.mau.fi/webp v0.2.0
 	go.mau.fi/zeroconfig v0.1.3
 	golang.org/x/crypto v0.36.0
@@ -27,7 +27,7 @@ require (
 	golang.org/x/text v0.23.0
 	gopkg.in/yaml.v3 v3.0.1
 	maunium.net/go/mauflag v1.0.0
-	maunium.net/go/mautrix v0.23.2-0.20250313222542-df7e02616d85
+	maunium.net/go/mautrix v0.23.2
 	mvdan.cc/xurls/v2 v2.6.0
 )
 

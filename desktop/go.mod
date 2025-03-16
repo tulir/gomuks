@@ -8,7 +8,7 @@ require github.com/wailsapp/wails/v3 v3.0.0-alpha.9
 
 require (
 	go.mau.fi/gomuks v0.4.0
-	go.mau.fi/util v0.8.6-0.20250313222444-739a30158a62
+	go.mau.fi/util v0.8.6
 )
 
 require (
@@ -22,7 +22,7 @@ require (
 	github.com/buckket/go-blurhash v1.1.0 // indirect
 	github.com/chzyer/readline v1.5.1 // indirect
 	github.com/cloudflare/circl v1.3.8 // indirect
-	github.com/coder/websocket v1.8.12 // indirect
+	github.com/coder/websocket v1.8.13 // indirect
 	github.com/coreos/go-systemd/v22 v22.5.0 // indirect
 	github.com/cyphar/filepath-securejoin v0.2.5 // indirect
 	github.com/disintegration/imaging v1.6.2 // indirect
@@ -79,7 +79,7 @@ require (
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
-	maunium.net/go/mautrix v0.23.2-0.20250313222542-df7e02616d85 // indirect
+	maunium.net/go/mautrix v0.23.2 // indirect
 	mvdan.cc/xurls/v2 v2.6.0 // indirect
 )
 
