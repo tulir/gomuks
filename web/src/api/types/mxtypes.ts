@@ -102,6 +102,11 @@ export interface RoomNameEventContent {
 	name?: string
 }
 
+export interface RoomCanonicalAliasEventContent {
+	alias?: RoomAlias | null
+	alt_aliases?: RoomAlias[]
+}
+
 export interface RoomTopicEventContent {
 	topic?: string
 }

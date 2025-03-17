@@ -13,9 +13,19 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import React, { CSSProperties, use, useCallback, useEffect, useLayoutEffect, useReducer, useRef, useState } from "react"
+import React, {
+	CSSProperties,
+	JSX,
+	use,
+	useCallback,
+	useEffect,
+	useLayoutEffect,
+	useReducer,
+	useRef,
+	useState,
+} from "react"
 import { ScaleLoader } from "react-spinners"
-import { useRoomEvent } from "@/api/statestore"
+import { useRoomEvent, useRoomState } from "@/api/statestore"
 import type {
 	EventID,
 	MediaMessageEventContent,
@@ -576,6 +586,33 @@ const MessageComposer = () => {
 	const inlineButtons = state.text === "" || window.innerWidth > 720
 	const showSendButton = canSend || window.innerWidth > 720
 	const disableClearMedia = editing && state.media?.msgtype === "m.sticker"
+	const tombstoneEvent = useRoomState(room, "m.room.tombstone", "")
+	if (tombstoneEvent !== null) {
+		const content = tombstoneEvent.content
+		const hasReplacement = content.replacement_room?.startsWith("!") ?? false
+		let link: JSX.Element | null = null
+		if (hasReplacement) {
+			const handleNavigate = (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => {
+				e.preventDefault()
+				if (content.replacement_room) {
+					window.mainScreenContext.setActiveRoom(content.replacement_room)
+				}
+			}
+			const via = tombstoneEvent.sender.split(":", 1)[1]
+			const url = `matrix:roomid/${content.replacement_room.slice(1)}?action=join&via=${via}`
+			link = <a className="hicli-matrix-uri-room-alias" href={url} onClick={handleNavigate}>
+				Join the new one here.</a>
+		}
+		let body = content.body
+		if (!body) {
+			body = hasReplacement ? "This room has been replaced." : "This room has been shut down."
+		}
+		return <div className="message-composer tombstoned" ref={composerRef}>
+			<p>
+				{body} {link}
+			</p>
+		</div>
+	}
 	return <>
 		{Autocompleter && autocomplete && <div className="autocompletions-wrapper"><Autocompleter
 			params={autocomplete}
