@@ -13,22 +13,32 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
+import { JSX } from "react"
 import { TombstoneEventContent } from "@/api/types"
 import EventContentProps from "./props.ts"
 
 const RoomTombstoneBody = ({ event, sender }: EventContentProps) => {
 	const content = event.content as TombstoneEventContent
-	const end = content.body.length > 0 ? ` with the message: ${content.body}` : "."
-	const onClick = () => window.mainScreenContext.setActiveRoom(content.replacement_room)
-	const description = (
-		<span>
+	const end = content.body?.length > 0 ? ` with the message: ${content.body}` : "."
+	const onClick = (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => {
+		e.preventDefault()
+		window.mainScreenContext.setActiveRoom(content.replacement_room)
+	}
+	let description: JSX.Element
+	if (content.replacement_room?.length && content.replacement_room.startsWith("!")) {
+		description = (
+			<span>
 			replaced this room with&nbsp;
-			<a onClick={onClick} className="hicli-matrix-uri hicli-matrix-uri-room-alias">
-				<span className="room-id">{content.replacement_room}</span>
-			</a>{end}
-		</span>
-	)
-	return <div className="room-avatar-body">
+				<a onClick={onClick} href={"matrix:roomid/" + content.replacement_room.slice(1)}
+				   className="hicli-matrix-uri">
+					{content.replacement_room}
+				</a>{end}
+			</span>
+		)
+	} else {
+		description = <span>shut down this room{end}</span>
+	}
+	return <div className="room-tombstone-body">
 		{sender?.content.displayname ?? event.sender} {description}
 	</div>
 }
