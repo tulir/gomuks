@@ -74,8 +74,15 @@ function getFallbackCharacter(from: unknown, idx: number): string {
 	if (!from || typeof from !== "string" || from.length <= idx) {
 		return ""
 	}
+	
 	// Array.from appears to be the only way to handle Unicode correctly
-	return Array.from(from.slice(0, (idx + 1) * 2))[idx]?.toUpperCase().toWellFormed() ?? ""
+	const fallbackCharacter = Array.from(from.slice(0, (idx + 1) * 2))[idx]?.toUpperCase().toWellFormed() ?? "";
+	
+	// if it's a phone number, return "#"
+	// * - Any digit (`\d`) - phone numbers
+	// * - `(` - US Area Codes can start with parens
+	// * - `+` - international phone numbers
+	return fallbackCharacter.match(/[\d(+]/) ? "#" : fallbackCharacter
 }
 
 export const getAvatarURL = (
