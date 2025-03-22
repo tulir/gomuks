@@ -80,7 +80,7 @@ function getFallbackCharacter(from: unknown, idx: number): string {
 	}
 	
 	// Array.from appears to be the only way to handle Unicode correctly
-	return Array.from(from.slice(0, (idx + 1) * 2))[idx]?.toUpperCase().toWellFormed() ?? "";
+	return Array.from(from.slice(0, (idx + 1) * 2))[idx]?.toUpperCase().toWellFormed() ?? ""
 }
 
 export const getAvatarURL = (

@@ -17,7 +17,7 @@ import { ContentURI, EventID, RoomAlias, RoomID, UserID, UserProfile } from "@/a
 
 const simpleHomeserverRegex = /^[a-zA-Z0-9.:-]+$/
 const mediaRegex = /^mxc:\/\/([a-zA-Z0-9.:-]+)\/([a-zA-Z0-9_-]+)$/
-const phoneNumberRegex = /^(?:(?:\+\d{1,4}[-.\s]?)?(?:\(?\d{1,4}\)?[-.\s]?\d{1,4}[-.\s]?\d{1,4}|\d{5,10})|\d{4,6})$/;
+const phoneNumberRegex = /^(?:(?:\+\d{1,4}[-.\s]?)?(?:\(?\d{1,4}\)?[-.\s]?\d{1,4}[-.\s]?\d{1,4}|\d{5,10})|\d{4,6})$/
 
 function isIdentifier<T>(identifier: unknown, sigil: string, requiresServer: boolean): identifier is T {
 	if (typeof identifier !== "string" || !identifier.startsWith(sigil)) {
