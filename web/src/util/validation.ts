@@ -17,6 +17,7 @@ import { ContentURI, EventID, RoomAlias, RoomID, UserID, UserProfile } from "@/a
 
 const simpleHomeserverRegex = /^[a-zA-Z0-9.:-]+$/
 const mediaRegex = /^mxc:\/\/([a-zA-Z0-9.:-]+)\/([a-zA-Z0-9_-]+)$/
+const phoneNumberRegex = /^(?:(?:\+\d{1,4}[-.\s]?)?(?:\(?\d{1,4}\)?[-.\s]?\d{1,4}[-.\s]?\d{1,4}|\d{5,10})|\d{4,6})$/;
 
 function isIdentifier<T>(identifier: unknown, sigil: string, requiresServer: boolean): identifier is T {
 	if (typeof identifier !== "string" || !identifier.startsWith(sigil)) {
@@ -38,6 +39,7 @@ export const isUserID = (userID: unknown) => isIdentifier<UserID>(userID, "@", t
 export const isRoomID = (roomID: unknown) => isIdentifier<RoomID>(roomID, "!", true)
 export const isRoomAlias = (roomAlias: unknown) => isIdentifier<RoomAlias>(roomAlias, "#", true)
 export const isMXC = (mxc: unknown): mxc is ContentURI => typeof mxc === "string" && mediaRegex.test(mxc)
+export const isPhoneNumber = (phone: unknown): boolean => typeof phone === "string" && phoneNumberRegex.test(phone)
 
 export interface ParsedMatrixURI {
 	identifier: UserID | RoomID | RoomAlias
