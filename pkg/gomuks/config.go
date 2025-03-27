@@ -45,9 +45,8 @@ type MatrixConfig struct {
 }
 
 type VapidConfig struct {
-	Subscription string `yaml:"subscription"`
-	PublicKey    string `yaml:"public_key"`
-	PrivateKey   string `yaml:"private_key"`
+	PublicKey  string `yaml:"public_key"`
+	PrivateKey string `yaml:"private_key"`
 }
 
 type PushConfig struct {
