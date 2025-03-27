@@ -57,6 +57,9 @@ func (gmx *Gomuks) CreateAPIRouter() http.Handler {
 	api.HandleFunc("POST /keys/export/{room_id}", gmx.ExportKeys)
 	api.HandleFunc("POST /keys/import", gmx.ImportKeys)
 	api.HandleFunc("GET /codeblock/{style}", gmx.GetCodeblockCSS)
+	api.HandleFunc("GET /webpush/pubkey", gmx.GetPubKey)
+	api.HandleFunc("POST /webpush/subscribe", gmx.handleNewSubscription)
+	api.HandleFunc("POST /webpush/test", gmx.SendTestWebPushNotification)
 	return exhttp.ApplyMiddleware(
 		api,
 		hlog.NewHandler(*gmx.Log),
