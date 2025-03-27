@@ -22,6 +22,7 @@ import (
 	"os"
 	"path/filepath"
 
+	webpush "github.com/SherClockHolmes/webpush-go"
 	"github.com/chzyer/readline"
 	"github.com/rs/zerolog"
 	"go.mau.fi/util/ptr"
@@ -43,8 +44,16 @@ type MatrixConfig struct {
 	DisableHTTP2 bool `yaml:"disable_http2"`
 }
 
+type VapidConfig struct {
+	Subscription string `yaml:"subscription"`
+	PublicKey    string `yaml:"public_key"`
+	PrivateKey   string `yaml:"private_key"`
+}
+
 type PushConfig struct {
-	FCMGateway string `yaml:"fcm_gateway"`
+	FCMGateway           string                 `yaml:"fcm_gateway"`
+	Vapid                *VapidConfig           `yaml:"vapid"`
+	WebPushSubscriptions []webpush.Subscription `yaml:"webpush_subscriptions"`
 }
 
 type MediaConfig struct {
@@ -136,6 +145,17 @@ func (gmx *Gomuks) LoadConfig() error {
 	}
 	if gmx.Config.Push.FCMGateway == "" {
 		gmx.Config.Push.FCMGateway = "https://push.gomuks.app"
+		changed = true
+	}
+	if gmx.Config.Push.Vapid == nil {
+		pubKey, privKey, err := webpush.GenerateVAPIDKeys()
+		if err != nil {
+			return fmt.Errorf("failed to generate VAPID keys: %w", err)
+		}
+		gmx.Config.Push.Vapid = &VapidConfig{
+			PublicKey:  pubKey,
+			PrivateKey: privKey,
+		}
 		changed = true
 	}
 	if gmx.Config.Media.ThumbnailSize == 0 {
