@@ -126,15 +126,16 @@ func (h *HiClient) maybeDiscardOutboundSession(ctx context.Context, newMembershi
 		prevMembership = event.Membership(gjson.GetBytes(evt.Unsigned.PrevContent.VeryRaw, "membership").Str)
 	}
 	if prevMembership == "unknown" || prevMembership == "" {
-		cs, err := h.DB.CurrentState.Get(ctx, evt.RoomID, event.StateMember, h.Account.UserID.String())
+		cs, err := h.DB.CurrentState.Get(ctx, evt.RoomID, event.StateMember, evt.GetStateKey())
 		if err != nil {
 			zerolog.Ctx(ctx).Warn().Err(err).
 				Stringer("room_id", evt.RoomID).
 				Str("user_id", evt.GetStateKey()).
 				Msg("Failed to get previous membership")
 			return false
+		} else if cs != nil {
+			prevMembership = event.Membership(gjson.GetBytes(cs.Content, "membership").Str)
 		}
-		prevMembership = event.Membership(gjson.GetBytes(cs.Content, "membership").Str)
 	}
 	if prevMembership == newMembership ||
 		(prevMembership == event.MembershipInvite && newMembership == event.MembershipJoin && h.shouldShareKeysToInvitedUsers(ctx, evt.RoomID)) ||
