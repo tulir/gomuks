@@ -26,6 +26,7 @@ const BeeperLogin = ({ domain, client }: BeeperLoginProps) => {
 	const [email, setEmail] = useState("")
 	const [requestID, setRequestID] = useState("")
 	const [code, setCode] = useState("")
+	const [loading, setLoading] = useState(false)
 	const [error, setError] = useState("")
 
 	const onChangeEmail = (evt: React.ChangeEvent<HTMLInputElement>) => {
@@ -41,16 +42,18 @@ const BeeperLogin = ({ domain, client }: BeeperLoginProps) => {
 
 	const requestCode = (evt: React.FormEvent) => {
 		evt.preventDefault()
+		setLoading(true)
 		beeper.doStartLogin(domain).then(
 			request => beeper.doRequestCode(domain, request, email).then(
 				() => setRequestID(request),
 				err => setError(`Failed to request code: ${err}`),
 			),
 			err => setError(`Failed to start login: ${err}`),
-		)
+		).finally(() => setLoading(false))
 	}
 	const submitCode = (evt: React.FormEvent) => {
 		evt.preventDefault()
+		setLoading(true)
 		beeper.doSubmitCode(domain, requestID, code).then(
 			token => {
 				client.rpc.loginCustom(`https://matrix.${domain}`, {
@@ -59,7 +62,7 @@ const BeeperLogin = ({ domain, client }: BeeperLoginProps) => {
 				}).catch(err => setError(`Failed to login with token: ${err}`))
 			},
 			err => setError(`Failed to submit code: ${err}`),
-		)
+		).finally(() => setLoading(false))
 	}
 
 	return <form onSubmit={requestID ? submitCode : requestCode} className="beeper-login">
@@ -83,6 +86,7 @@ const BeeperLogin = ({ domain, client }: BeeperLoginProps) => {
 		<button
 			className="beeper-login-button primary-color-button"
 			type="submit"
+			disabled={loading}
 		>{requestID ? "Submit Code" : "Request Code"}</button>
 		{error && <div className="error">
 			{error}

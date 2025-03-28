@@ -31,9 +31,11 @@ export const LoginScreen = ({ client }: LoginScreenProps) => {
 	const [password, setPassword] = useState("")
 	const [homeserverURL, setHomeserverURL] = useState("")
 	const [loginFlows, setLoginFlows] = useState<string[] | null>(null)
+	const [loading, setLoading] = useState(false)
 	const [error, setError] = useState("")
 
 	const loginSSO = () => {
+		setLoading(true)
 		fetch("_gomuks/sso", {
 			method: "POST",
 			body: JSON.stringify({ homeserver_url: homeserverURL }),
@@ -51,7 +53,7 @@ export const LoginScreen = ({ client }: LoginScreenProps) => {
 				window.location.href = `${homeserverURL}/_matrix/client/v3/login/sso/redirect?redirectUrl=${redir}`
 			},
 			err => setError(`Failed to start SSO login: ${err}`),
-		)
+		).finally(() => setLoading(false))
 	}
 
 	const login = (evt: React.FormEvent) => {
@@ -61,10 +63,11 @@ export const LoginScreen = ({ client }: LoginScreenProps) => {
 		} else if (!loginFlows.includes("m.login.password")) {
 			loginSSO()
 		} else {
+			setLoading(true)
 			client.rpc.login(homeserverURL, username, password).then(
 				() => {},
 				err => setError(err.toString()),
-			)
+			).finally(() => setLoading(false))
 		}
 	}
 
@@ -143,11 +146,13 @@ export const LoginScreen = ({ client }: LoginScreenProps) => {
 				{supportsSSO && <button
 					className="mx-login-button primary-color-button"
 					type={supportsPassword ? "button" : "submit"}
+					disabled={loading}
 					onClick={supportsPassword ? loginSSO : undefined}
 				>Login with SSO</button>}
 				{supportsPassword && <button
 					className="mx-login-button primary-color-button"
 					type="submit"
+					disabled={loading}
 				>Login{supportsSSO || beeperDomain ? " with password" : ""}</button>}
 			</div>
 			{error && <div className="error">

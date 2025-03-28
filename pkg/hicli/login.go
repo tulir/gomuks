@@ -36,6 +36,12 @@ func (h *HiClient) LoginPassword(ctx context.Context, homeserverURL, username, p
 }
 
 func (h *HiClient) Login(ctx context.Context, req *mautrix.ReqLogin) error {
+	h.loginLock.Lock()
+	defer h.loginLock.Unlock()
+	if h.IsLoggedIn() {
+		return fmt.Errorf("already logged in")
+	}
+
 	err := h.CheckServerVersions(ctx)
 	if err != nil {
 		return err

@@ -60,6 +60,7 @@ type HiClient struct {
 	syncLock          sync.Mutex
 	stopSync          atomic.Pointer[context.CancelFunc]
 	encryptLock       sync.Mutex
+	loginLock         sync.Mutex
 
 	requestQueueWakeup chan struct{}
 

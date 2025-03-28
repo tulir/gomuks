@@ -101,6 +101,8 @@ func (h *HiClient) processGetRoomState(ctx context.Context, roomID id.RoomID, fe
 		room, err := h.DB.Room.Get(ctx, roomID)
 		if err != nil {
 			return fmt.Errorf("failed to get room from database: %w", err)
+		} else if room == nil {
+			return fmt.Errorf("room not found")
 		}
 		updatedRoom := &database.Room{
 			ID:            room.ID,
