@@ -590,7 +590,7 @@ const MessageComposer = () => {
 	const tombstoneEvent = useRoomState(room, "m.room.tombstone", "")
 	if (tombstoneEvent !== null) {
 		const content = tombstoneEvent.content
-		const hasReplacement = content.replacement_room?.startsWith("!") ?? false
+		const hasReplacement = content.replacement_room?.startsWith("!")
 		let link: JSX.Element | null = null
 		if (hasReplacement) {
 			const via = getServerName(tombstoneEvent.sender)
@@ -601,7 +601,7 @@ const MessageComposer = () => {
 				})
 			}
 			const url = `matrix:roomid/${content.replacement_room.slice(1)}?via=${via}`
-			link = <a className="hicli-matrix-uri-room-alias" href={url} onClick={handleNavigate}>
+			link = <a href={url} onClick={handleNavigate}>
 				Join the new one here
 			</a>
 		}
