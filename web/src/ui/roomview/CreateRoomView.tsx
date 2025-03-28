@@ -39,6 +39,7 @@ const CreateRoomView = () => {
 	const [preset, setPreset] = useState<RoomPreset>("private_chat")
 	const [name, setName] = useState("")
 	const [topic, setTopic] = useState("")
+	const [aliasLocalpart, setAliasLocalpart] = useState("")
 	const [invite, setInvite] = useState<UserID[]>([])
 	const [isDirect, setIsDirect] = useState(false)
 	const [isEncrypted, setIsEncrypted] = useState(true)
@@ -91,6 +92,7 @@ const CreateRoomView = () => {
 		client.rpc.createRoom({
 			name: name || undefined,
 			topic: topic || undefined,
+			room_alias_name: aliasLocalpart || undefined,
 			preset,
 			is_direct: isDirect,
 			invite: invite.filter(id => !!id),
@@ -135,6 +137,18 @@ const CreateRoomView = () => {
 				value={topic}
 				onChange={e => setTopic(e.target.value)}
 			/>
+			<label htmlFor="room-create-alias" title="The alias for the room">Alias</label>
+			<label className="room-alias-container">
+				#
+				<input
+					id="room-create-alias"
+					type="text"
+					placeholder="meow"
+					value={aliasLocalpart}
+					onChange={e => setAliasLocalpart(e.target.value)}
+				/>
+				:{serverName}
+			</label>
 			<label htmlFor="room-create-encrypted" title="Whether the room is encrypted">
 				Encrypted
 			</label>

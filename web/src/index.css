@@ -195,6 +195,7 @@ input, textarea {
 	color: inherit;
 	background-color: inherit;
 	font-size: 1em;
+	font-family: var(--font-stack);
 }
 
 button, a.button, span.button {

@@ -5,13 +5,12 @@ form.create-room-view {
 
 	width: 100%;
 
-	input, select, textarea {
+	input, select, textarea, .room-alias-container {
 		box-sizing: border-box;
 		width: 100%;
 		padding: .5rem;
 		border: 1px solid var(--border-color);
 		border-radius: .25rem;
-		font-family: var(--monospace-font-stack);
 		font-size: 1em;
 		background-color: var(--background-color);
 
@@ -29,6 +28,16 @@ form.create-room-view {
 		resize: vertical;
 	}
 
+	.room-alias-container {
+		display: flex;
+
+		> input {
+			padding: 0;
+			border: none;
+			border-radius: 0;
+		}
+	}
+
 	div.form-fields {
 		display: grid;
 		grid-template-columns: auto 1fr;
@@ -39,7 +48,7 @@ form.create-room-view {
 			grid-column: 1;
 		}
 
-		> input, > select, > textarea {
+		> input, > select, > textarea, > .room-alias-container {
 			grid-column: 2;
 
 			&#room-create-id {
@@ -88,6 +97,10 @@ form.create-room-view {
 			"type stateKey" auto
 			"content content" 1fr;
 		margin-bottom: .5rem;
+
+		> input {
+			font-family: var(--monospace-font-stack);
+		}
 
 		> input.state-event-type {
 			grid-area: type;
