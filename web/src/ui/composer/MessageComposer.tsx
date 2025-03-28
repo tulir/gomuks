@@ -38,6 +38,7 @@ import type {
 import { PartialEmoji, emojiToMarkdown } from "@/util/emoji"
 import { isMobileDevice } from "@/util/ismobile.ts"
 import { escapeMarkdown } from "@/util/markdown.ts"
+import { getServerName } from "@/util/validation.ts"
 import ClientContext from "../ClientContext.ts"
 import EmojiPicker from "../emojipicker/EmojiPicker.tsx"
 import GIFPicker from "../emojipicker/GIFPicker.tsx"
@@ -592,25 +593,27 @@ const MessageComposer = () => {
 		const hasReplacement = content.replacement_room?.startsWith("!") ?? false
 		let link: JSX.Element | null = null
 		if (hasReplacement) {
+			const via = getServerName(tombstoneEvent.sender)
 			const handleNavigate = (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => {
 				e.preventDefault()
-				if (content.replacement_room) {
-					window.mainScreenContext.setActiveRoom(content.replacement_room)
-				}
+				window.mainScreenContext.setActiveRoom(content.replacement_room, {
+					via: [via],
+				})
 			}
-			const via = tombstoneEvent.sender.split(":", 1)[1]
-			const url = `matrix:roomid/${content.replacement_room.slice(1)}?action=join&via=${via}`
+			const url = `matrix:roomid/${content.replacement_room.slice(1)}?via=${via}`
 			link = <a className="hicli-matrix-uri-room-alias" href={url} onClick={handleNavigate}>
-				Join the new one here.</a>
+				Join the new one here
+			</a>
 		}
 		let body = content.body
 		if (!body) {
 			body = hasReplacement ? "This room has been replaced." : "This room has been shut down."
 		}
+		if (!body.endsWith(".")) {
+			body += "."
+		}
 		return <div className="message-composer tombstoned" ref={composerRef}>
-			<p>
-				{body} {link}
-			</p>
+			{body} {link}
 		</div>
 	}
 	return <>

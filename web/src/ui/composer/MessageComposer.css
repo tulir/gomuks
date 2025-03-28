@@ -14,6 +14,11 @@ div.message-composer {
 		text-wrap: auto !important;
 	}
 
+	&.tombstoned {
+		min-height: unset;
+		padding: .5rem;
+	}
+
 	> div.input-area {
 		display: flex;
 		align-items: center;
