@@ -22,9 +22,12 @@ import toSearchableString from "@/util/searchablestring.ts"
 import ClientContext from "../ClientContext.ts"
 import MainScreenContext from "../MainScreenContext.ts"
 import { keyToString } from "../keybindings.ts"
+import { ModalContext } from "../modal"
+import CreateRoomView from "../roomview/CreateRoomView.tsx"
 import Entry from "./Entry.tsx"
 import FakeSpace from "./FakeSpace.tsx"
 import Space from "./Space.tsx"
+import AddCircleIcon from "@/icons/add-circle.svg?react"
 import CloseIcon from "@/icons/close.svg?react"
 import SearchIcon from "@/icons/search.svg?react"
 import "./RoomList.css"
@@ -36,6 +39,7 @@ interface RoomListProps {
 
 const RoomList = ({ activeRoomID, space }: RoomListProps) => {
 	const client = use(ClientContext)!
+	const openModal = use(ModalContext)
 	const mainScreen = use(MainScreenContext)
 	const roomList = useEventAsState(client.store.roomList)
 	const spaces = useEventAsState(client.store.topLevelSpaces)
@@ -45,6 +49,14 @@ const RoomList = ({ activeRoomID, space }: RoomListProps) => {
 	const setQuery = (evt: React.ChangeEvent<HTMLInputElement>) => {
 		client.store.currentRoomListQuery = toSearchableString(evt.target.value)
 		directSetQuery(evt.target.value)
+	}
+	const openCreateRoom = () => {
+		openModal({
+			dimmed: true,
+			boxed: true,
+			boxClass: "create-room-view-modal",
+			content: <CreateRoomView />,
+		})
 	}
 	const onClickSpace = useCallback((evt: React.MouseEvent<HTMLDivElement>) => {
 		const store = client.store.getSpaceStore(evt.currentTarget.getAttribute("data-target-space")!)
@@ -117,6 +129,9 @@ const RoomList = ({ activeRoomID, space }: RoomListProps) => {
 				ref={searchInputRef}
 				id="room-search"
 			/>
+			{query === "" && <button onClick={openCreateRoom} title="Create room">
+				<AddCircleIcon/>
+			</button>}
 			<button onClick={clearQuery} disabled={query === ""}>
 				{query !== "" ? <CloseIcon/> : <SearchIcon/>}
 			</button>

@@ -332,6 +332,12 @@ export interface RespOpenIDToken {
 export type RoomVisibility = "public" | "private"
 export type RoomPreset = "private_chat" | "public_chat" | "trusted_private_chat"
 
+export interface CreateRoomInitialState {
+	type: EventType
+	state_key?: string
+	content: Record<string, unknown>
+}
+
 export interface ReqCreateRoom {
 	visibility?: RoomVisibility
 	room_alias_name?: string
@@ -340,11 +346,7 @@ export interface ReqCreateRoom {
 	invite?: UserID[]
 	preset?: RoomPreset
 	is_direct?: boolean
-	initial_state?: {
-		type: EventType
-		state_key?: string
-		content: Record<string, unknown>
-	}[]
+	initial_state?: CreateRoomInitialState[]
 	room_version?: string
 	creation_content?: Record<string, unknown>
 	power_level_content_override?: Record<string, unknown>

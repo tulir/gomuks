@@ -88,9 +88,10 @@ div.room-search-wrapper {
 	}
 
 	> button {
-		height: 3rem;
-		width: 3rem;
+		height: 2.5rem;
+		width: 2.5rem;
 		border-radius: 0;
+		color: var(--text-color) !important;
 	}
 }
 
