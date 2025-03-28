@@ -396,6 +396,11 @@ const SettingsView = ({ room }: SettingsViewProps) => {
 			err => window.alert(`Failed to request OpenID token: ${err}`),
 		)
 	}
+	const previousRoomID = roomMeta.creation_content?.predecessor?.room_id
+	const openPredecessorRoom = () => {
+		window.mainScreenContext.setActiveRoom(previousRoomID!)
+		closeModal()
+	}
 	usePreferences(client.store, room)
 	const globalServer = client.store.serverPreferenceCache
 	const globalLocal = client.store.localPreferenceCache
@@ -419,6 +424,10 @@ const SettingsView = ({ room }: SettingsViewProps) => {
 				<div className="room-buttons">
 					<button className="leave-room" onClick={onClickLeave}>Leave room</button>
 					<button className="devtools" onClick={openDevtools}>Explore room state</button>
+					{previousRoomID &&
+						<button className="previous-room" onClick={openPredecessorRoom}>
+							Open Predecessor Room
+						</button>}
 				</div>
 			</div>
 		</div>
