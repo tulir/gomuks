@@ -12,6 +12,7 @@ import PowerLevelBody from "./PowerLevelBody.tsx"
 import RedactedBody from "./RedactedBody.tsx"
 import RoomAvatarBody from "./RoomAvatarBody.tsx"
 import RoomNameBody from "./RoomNameBody.tsx"
+import RoomTombstoneBody from "./RoomTombstoneBody.tsx"
 import TextMessageBody from "./TextMessageBody.tsx"
 import UnknownMessageBody from "./UnknownMessageBody.tsx"
 import EventContentProps from "./props.ts"
@@ -31,6 +32,7 @@ export { default as RedactedBody } from "./RedactedBody.tsx"
 export { default as RoomAvatarBody } from "./RoomAvatarBody.tsx"
 export { default as RoomNameBody } from "./RoomNameBody.tsx"
 export { default as TextMessageBody } from "./TextMessageBody.tsx"
+export { default as RoomTombstoneBody } from "./RoomTombstoneBody.tsx"
 export { default as UnknownMessageBody } from "./UnknownMessageBody.tsx"
 export type { default as EventContentProps } from "./props.ts"
 
@@ -51,6 +53,8 @@ export function getBodyType(evt: MemDBEvent, forReply = false): React.FunctionCo
 			return PinnedEventsBody
 		case "m.room.power_levels":
 			return PowerLevelBody
+		case "m.room.tombstone":
+			return RoomTombstoneBody
 		}
 	} else if (evt.state_key !== undefined) {
 		// State events which must have a non-empty state key
@@ -120,6 +124,7 @@ export function isSmallEvent(bodyType: React.FunctionComponent<EventContentProps
 	case PolicyRuleBody:
 	case PinnedEventsBody:
 	case PowerLevelBody:
+	case RoomTombstoneBody:
 		return true
 	default:
 		return false

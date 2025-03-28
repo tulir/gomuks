@@ -13,9 +13,19 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import React, { CSSProperties, use, useCallback, useEffect, useLayoutEffect, useReducer, useRef, useState } from "react"
+import React, {
+	CSSProperties,
+	JSX,
+	use,
+	useCallback,
+	useEffect,
+	useLayoutEffect,
+	useReducer,
+	useRef,
+	useState,
+} from "react"
 import { ScaleLoader } from "react-spinners"
-import { useRoomEvent } from "@/api/statestore"
+import { useRoomEvent, useRoomState } from "@/api/statestore"
 import type {
 	EventID,
 	MediaMessageEventContent,
@@ -28,6 +38,7 @@ import type {
 import { PartialEmoji, emojiToMarkdown } from "@/util/emoji"
 import { isMobileDevice } from "@/util/ismobile.ts"
 import { escapeMarkdown } from "@/util/markdown.ts"
+import { getServerName } from "@/util/validation.ts"
 import ClientContext from "../ClientContext.ts"
 import EmojiPicker from "../emojipicker/EmojiPicker.tsx"
 import GIFPicker from "../emojipicker/GIFPicker.tsx"
@@ -576,6 +587,35 @@ const MessageComposer = () => {
 	const inlineButtons = state.text === "" || window.innerWidth > 720
 	const showSendButton = canSend || window.innerWidth > 720
 	const disableClearMedia = editing && state.media?.msgtype === "m.sticker"
+	const tombstoneEvent = useRoomState(room, "m.room.tombstone", "")
+	if (tombstoneEvent !== null) {
+		const content = tombstoneEvent.content
+		const hasReplacement = content.replacement_room?.startsWith("!")
+		let link: JSX.Element | null = null
+		if (hasReplacement) {
+			const via = getServerName(tombstoneEvent.sender)
+			const handleNavigate = (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => {
+				e.preventDefault()
+				window.mainScreenContext.setActiveRoom(content.replacement_room, {
+					via: [via],
+				})
+			}
+			const url = `matrix:roomid/${content.replacement_room.slice(1)}?via=${via}`
+			link = <a href={url} onClick={handleNavigate}>
+				Join the new one here
+			</a>
+		}
+		let body = content.body
+		if (!body) {
+			body = hasReplacement ? "This room has been replaced." : "This room has been shut down."
+		}
+		if (!body.endsWith(".")) {
+			body += "."
+		}
+		return <div className="message-composer tombstoned" ref={composerRef}>
+			{body} {link}
+		</div>
+	}
 	return <>
 		{Autocompleter && autocomplete && <div className="autocompletions-wrapper"><Autocompleter
 			params={autocomplete}
