@@ -177,9 +177,12 @@ export class StateStore {
 
 	#shouldHideRoom(entry: SyncRoom): boolean {
 		const cc = entry.meta.creation_content
-		if ((cc?.type ?? "") !== "") {
+		switch (cc?.type ?? "") {
+		default:
 			// The room is not a normal room
 			return true
+		case "":
+		case "support.feline.policy.lists.msc.v1":
 		}
 		const replacementRoom = entry.meta.tombstone?.replacement_room
 		if (

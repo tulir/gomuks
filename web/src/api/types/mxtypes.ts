@@ -22,7 +22,7 @@ export type ContentURI = string
 export type RoomAlias = string
 export type ReceiptType = "m.read" | "m.read.private"
 export type RoomVersion = "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" | "10" | "11"
-export type RoomType = "" | "m.space"
+export type RoomType = "" | "m.space" | "support.feline.policy.lists.msc.v1"
 export type RelationType = "m.annotation" | "m.reference" | "m.replace" | "m.thread"
 
 export type JSONValue =
