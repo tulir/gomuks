@@ -201,6 +201,8 @@ export class StateStore {
 			entry.meta.unread_highlights !== oldEntry.meta.current.unread_highlights ||
 			entry.meta.marked_unread !== oldEntry.meta.current.marked_unread ||
 			entry.meta.preview_event_rowid !== oldEntry.meta.current.preview_event_rowid ||
+			entry.meta.name !== oldEntry.meta.current.name ||
+			entry.meta.avatar !== oldEntry.meta.current.avatar ||
 			(entry.events ?? []).findIndex(evt => evt.rowid === entry.meta.preview_event_rowid) !== -1
 	}
 
