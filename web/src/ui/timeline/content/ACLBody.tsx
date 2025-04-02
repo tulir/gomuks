@@ -13,9 +13,10 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import { Fragment, JSX } from "react"
+import { JSX } from "react"
 import { ACLEventContent } from "@/api/types"
 import { listDiff } from "@/util/diff.ts"
+import { humanJoin } from "@/util/join.ts"
 import { humanJoinReact, joinReact } from "@/util/reactjoin.tsx"
 import { ensureArray, ensureStringArray } from "@/util/validation.ts"
 import EventContentProps from "./props.ts"
@@ -28,7 +29,7 @@ function makeACLChangeString(
 	addedAllow: string[], removedAllow: string[],
 	addedDeny: string[], removedDeny: string[],
 	prevAllowIP: boolean, newAllowIP: boolean,
-) {
+): JSX.Element[] {
 	const parts = []
 	if (addedDeny.length > 0) {
 		parts.push(<>Servers matching {joinServers(addedDeny)} are now banned.</>)
@@ -50,6 +51,32 @@ function makeACLChangeString(
 	return joinReact(parts)
 }
 
+function makeACLChangeStringSummary(
+	addedAllow: string[], removedAllow: string[],
+	addedDeny: string[], removedDeny: string[],
+	prevAllowIP: boolean, newAllowIP: boolean,
+): string {
+	const parts = []
+	if (addedDeny.length > 0) {
+		parts.push(`${addedDeny.length} server${addedDeny.length > 1 ? "s were" : " was"} banned`)
+	}
+	if (removedDeny.length > 0) {
+		parts.push(
+			`${removedDeny.length} server${removedDeny.length > 1 ? "s were" : " was"} removed from the ban list`)
+	}
+	if (addedAllow.length > 0) {
+		parts.push(`${addedAllow.length} server${addedAllow.length > 1 ? "s are" : " is"} now allowed`)
+	}
+	if (removedAllow.length > 0) {
+		parts.push(`${removedAllow.length} server${removedAllow.length > 1 ? "s are" : " is"} now allowed`)
+	}
+	if (prevAllowIP !== newAllowIP) {
+		parts.push(
+			`participating from a server using an IP literal hostname is now ${newAllowIP ? "allowed" : "banned"}.`)
+	}
+	return humanJoin(parts)
+}
+
 const ACLBody = ({ event, sender }: EventContentProps) => {
 	const content = event.content as ACLEventContent
 	const prevContent = event.unsigned.prev_content as ACLEventContent | undefined
@@ -66,14 +93,22 @@ const ACLBody = ({ event, sender }: EventContentProps) => {
 			{sender?.content.displayname ?? event.sender} sent a server ACL event with no changes
 		</div>
 	}
-	let changeString = makeACLChangeString(addedAllow, removedAllow, addedDeny, removedDeny, prevAllowIP, newAllowIP)
 	if (ensureArray(content.allow).length === 0) {
-		changeString = [<Fragment key="yay">
+		return <div className="acl-body">
+			{sender?.content.displayname ?? event.sender} changed the server ACLs:
 			🎉 All servers are banned from participating! This room can no longer be used.
-		</Fragment>]
+		</div>
 	}
+	const changeString = makeACLChangeString(addedAllow, removedAllow, addedDeny, removedDeny, prevAllowIP, newAllowIP)
+	const changeStringSummary = makeACLChangeStringSummary(
+		addedAllow, removedAllow, addedDeny, removedDeny, prevAllowIP, newAllowIP)
 	return <div className="acl-body">
-		{sender?.content.displayname ?? event.sender} changed the server ACLs: {changeString}
+		<details>
+			<summary>
+				{sender?.content.displayname ?? event.sender} changed the server ACLs: {changeStringSummary}
+			</summary>
+			{changeString}
+		</details>
 	</div>
 }
 
