@@ -58,17 +58,16 @@ function makeACLChangeStringSummary(
 ): string {
 	const parts = []
 	if (addedDeny.length > 0) {
-		parts.push(`${addedDeny.length} server${addedDeny.length > 1 ? "s were" : " was"} banned`)
+		parts.push(`added ${addedDeny.length} ${addedDeny.length > 1 ? "entries" : "entry"} to the ban list`)
 	}
 	if (removedDeny.length > 0) {
-		parts.push(
-			`${removedDeny.length} server${removedDeny.length > 1 ? "s were" : " was"} removed from the ban list`)
+		parts.push(`removed ${addedDeny.length} ${addedDeny.length > 1 ? "entries" : "entry"} to the ban list`)
 	}
 	if (addedAllow.length > 0) {
-		parts.push(`${addedAllow.length} server${addedAllow.length > 1 ? "s are" : " is"} now allowed`)
+		parts.push(`added ${addedAllow.length} ${addedAllow.length > 1 ? "entries" : "entry"} to the allowlist`)
 	}
 	if (removedAllow.length > 0) {
-		parts.push(`${removedAllow.length} server${removedAllow.length > 1 ? "s are" : " is"} now allowed`)
+		parts.push(`removed ${removedAllow.length} ${removedAllow.length > 1 ? "entries" : "entry"} from the allowlist`)
 	}
 	if (prevAllowIP !== newAllowIP) {
 		parts.push(
@@ -93,7 +92,7 @@ const ACLBody = ({ event, sender }: EventContentProps) => {
 			{sender?.content.displayname ?? event.sender} sent a server ACL event with no changes
 		</div>
 	}
-	if (ensureArray(content.allow).length === 0) {
+	if (ensureArray(content.allow).length === 0 || ensureArray(content.deny).includes("*")) {
 		return <div className="acl-body">
 			{sender?.content.displayname ?? event.sender} changed the server ACLs:
 			🎉 All servers are banned from participating! This room can no longer be used.
