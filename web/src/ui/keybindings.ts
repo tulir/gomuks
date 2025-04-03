@@ -90,7 +90,7 @@ export default class Keybindings {
 		} else if (
 			evt.target === evt.currentTarget
 			&& this.keyUpMap[keyToString(evt)] === undefined
-			&& (!evt.ctrlKey || evt.key === "v" || evt.key === "a")
+			&& ((!evt.ctrlKey && !evt.metaKey) || evt.key === "v" || evt.key === "a")
 			&& !evt.altKey
 			&& key !== "PageUp" && key !== "PageDown"
 			&& key !== "Home" && key !== "End"

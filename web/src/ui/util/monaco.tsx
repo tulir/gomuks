@@ -55,7 +55,7 @@ const Monaco = ({ initData, onClose, onSave, contentRef }: MonacoProps) => {
 		newEditor.onKeyDown(evt => {
 			if (evt.keyCode === monaco.KeyCode.Escape) {
 				onClose()
-			} else if (evt.ctrlKey && evt.keyCode === monaco.KeyCode.KeyS) {
+			} else if ((evt.ctrlKey || evt.metaKey) && evt.keyCode === monaco.KeyCode.KeyS) {
 				onSave()
 				evt.preventDefault()
 			}
