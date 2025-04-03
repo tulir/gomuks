@@ -61,7 +61,7 @@ function makeACLChangeStringSummary(
 		parts.push(`added ${addedDeny.length} ${addedDeny.length > 1 ? "entries" : "entry"} to the ban list`)
 	}
 	if (removedDeny.length > 0) {
-		parts.push(`removed ${addedDeny.length} ${addedDeny.length > 1 ? "entries" : "entry"} to the ban list`)
+		parts.push(`removed ${removedDeny.length} ${removedDeny.length > 1 ? "entries" : "entry"} from the ban list`)
 	}
 	if (addedAllow.length > 0) {
 		parts.push(`added ${addedAllow.length} ${addedAllow.length > 1 ? "entries" : "entry"} to the allowlist`)
