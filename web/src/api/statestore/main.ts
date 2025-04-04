@@ -183,6 +183,7 @@ export class StateStore {
 			return true
 		case "":
 		case "support.feline.policy.lists.msc.v1":
+		case "org.matrix.msc3417.call":
 		}
 		const replacementRoom = entry.meta.tombstone?.replacement_room
 		if (
