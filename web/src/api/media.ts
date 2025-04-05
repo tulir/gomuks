@@ -13,7 +13,7 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import { parseMXC } from "@/util/validation.ts"
+import { isPhoneNumber, parseMXC } from "@/util/validation.ts"
 import { ContentURI, RoomID, UserID, UserProfile } from "./types"
 
 export const getMediaURL = (mxc?: string, encrypted: boolean = false): string | undefined => {
@@ -74,6 +74,11 @@ function getFallbackCharacter(from: unknown, idx: number): string {
 	if (!from || typeof from !== "string" || from.length <= idx) {
 		return ""
 	}
+
+	if (isPhoneNumber(from)) {
+		return "#"
+	}
+	
 	// Array.from appears to be the only way to handle Unicode correctly
 	return Array.from(from.slice(0, (idx + 1) * 2))[idx]?.toUpperCase().toWellFormed() ?? ""
 }
