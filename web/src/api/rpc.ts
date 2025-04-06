@@ -265,6 +265,10 @@ export default abstract class RPCClient {
 		return this.request("join_room", { room_id_or_alias, via, reason })
 	}
 
+	knockRoom(room_id_or_alias: RoomID | RoomAlias, via?: string[], reason?: string): Promise<RespRoomJoin> {
+		return this.request("knock_room", { room_id_or_alias, via, reason })
+	}
+
 	leaveRoom(room_id: RoomID, reason?: string): Promise<Record<string, never>> {
 		return this.request("leave_room", { room_id, reason })
 	}

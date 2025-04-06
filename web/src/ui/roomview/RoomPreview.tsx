@@ -42,19 +42,34 @@ const RoomPreview = ({ roomID, via, alias, invite }: RoomPreviewProps) => {
 	const [loading, setLoading] = useState(false)
 	const [buttonClicked, setButtonClicked] = useState(false)
 	const [error, setError] = useState<string | null>(null)
+	const [knockRequest, setKnockRequest] = useState<string | null>(null)
 	const doJoinRoom = () => {
 		let realVia = via
 		if (!via?.length && invite?.invited_by) {
 			realVia = [getServerName(invite.invited_by)]
 		}
 		setButtonClicked(true)
-		client.rpc.joinRoom(alias || roomID, alias ? undefined : realVia).then(
-			() => console.info("Successfully joined", roomID),
-			err => {
-				setError(`Failed to join room: ${err}`)
-				setButtonClicked(false)
-			},
-		)
+		if (requiresKnock) {
+			client.rpc.knockRoom(alias || roomID, alias ? undefined : realVia, knockRequest || undefined).then(
+				() => {
+					setButtonClicked(false)
+					mainScreen.clearActiveRoom()
+				},
+				err => {
+					setError(`Failed to knock: ${err}`)
+					setButtonClicked(false)
+				},
+			)
+			return
+		} else {
+			client.rpc.joinRoom(alias || roomID, alias ? undefined : realVia).then(
+				() => console.info("Successfully joined", roomID),
+				err => {
+					setError(`Failed to join room: ${err}`)
+					setButtonClicked(false)
+				},
+			)
+		}
 	}
 	const doRejectInvite = () => {
 		setButtonClicked(true)
@@ -87,6 +102,19 @@ const RoomPreview = ({ roomID, via, alias, invite }: RoomPreviewProps) => {
 	const topic = summary?.topic ?? invite?.topic ?? ""
 	const showInviteAvatars = usePreference(client.store, null, "show_invite_avatars")
 	const noAvatarPreview = invite && !showInviteAvatars
+	const joinRule = summary?.join_rule ?? invite?.join_rule ?? "invite"
+	let requiresKnock = ["knock", "knock_restricted"].includes(joinRule) && !invite
+	if (joinRule === "knock_restricted" && !invite) {
+		for (const roomID of summary?.allowed_room_ids ?? []) {
+			if (client.store.rooms.has(roomID)) {
+				console.log("RoomPreview: allowed room ID is already joined", roomID)
+				requiresKnock = false
+				break
+			}
+		}
+	}
+	const acceptAction = invite ? "Accept" : (requiresKnock ? "Ask to join" : "Join room")
+
 	return <div className="room-view preview">
 		<div className="preview-inner">
 			{invite?.invited_by && !invite.dm_user_id ? <div className="inviter-info">
@@ -152,6 +180,12 @@ const RoomPreview = ({ roomID, via, alias, invite }: RoomPreviewProps) => {
 				</table>
 			</details>}
 			{invite?.invited_by && <MutualRooms client={client} userID={invite.invited_by}/>}
+			{requiresKnock && <div className="knock-input">
+				<textarea
+					onChange={event => setKnockRequest(event.currentTarget.value)}
+					placeholder="Why do you want to join this room?">
+				</textarea>
+			</div>}
 			<div className="buttons">
 				{invite && <button
 					disabled={buttonClicked}
@@ -162,7 +196,7 @@ const RoomPreview = ({ roomID, via, alias, invite }: RoomPreviewProps) => {
 					disabled={buttonClicked}
 					className="primary-color-button"
 					onClick={doJoinRoom}
-				>{invite ? "Accept" : "Join room"}</button>
+				>{acceptAction}</button>
 			</div>
 			{error && <div className="error">
 				<ErrorIcon color="var(--error-color)"/>
