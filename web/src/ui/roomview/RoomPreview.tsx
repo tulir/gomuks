@@ -181,10 +181,11 @@ const RoomPreview = ({ roomID, via, alias, invite }: RoomPreviewProps) => {
 			</details>}
 			{invite?.invited_by && <MutualRooms client={client} userID={invite.invited_by}/>}
 			{requiresKnock && <div className="knock-input">
-				<textarea
+				<input
 					onChange={event => setKnockRequest(event.currentTarget.value)}
-					placeholder="Why do you want to join this room?">
-				</textarea>
+					placeholder="Why do you want to join this room?"
+					value={knockRequest ?? ""}
+				/>
 			</div>}
 			<div className="buttons">
 				{invite && <button

@@ -76,4 +76,16 @@ div.room-view.preview > div.preview-inner {
 			}
 		}
 	}
+	> .knock-input {
+		width: 100%;
+		display: flex;
+		flex: 1;
+		> input {
+			padding: 0.25rem;
+			margin: 0;
+			outline: none;
+			border-radius: .25rem;
+			border: 1px solid var(--border-color);
+		}
+	}
 }
