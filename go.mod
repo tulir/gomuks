@@ -27,7 +27,7 @@ require (
 	golang.org/x/text v0.23.0
 	gopkg.in/yaml.v3 v3.0.1
 	maunium.net/go/mauflag v1.0.0
-	maunium.net/go/mautrix v0.23.2
+	maunium.net/go/mautrix v0.23.3-0.20250405234116-e675a3c09c38
 	mvdan.cc/xurls/v2 v2.6.0
 )
 
@@ -42,6 +42,6 @@ require (
 	github.com/tidwall/match v1.1.1 // indirect
 	github.com/tidwall/pretty v1.2.1 // indirect
 	golang.org/x/exp v0.0.0-20250305212735-054e65f0b394 // indirect
-	golang.org/x/sys v0.31.0 // indirect
+	golang.org/x/sys v0.32.0 // indirect
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1 // indirect
 )

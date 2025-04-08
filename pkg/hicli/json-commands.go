@@ -173,6 +173,13 @@ func (h *HiClient) handleJSONCommand(ctx context.Context, req *JSONCommand) (any
 				Reason: params.Reason,
 			})
 		})
+	case "knock_room":
+		return unmarshalAndCall(req.Data, func(params *joinRoomParams) (*mautrix.RespKnockRoom, error) {
+			return h.Client.KnockRoom(ctx, params.RoomIDOrAlias, &mautrix.ReqKnockRoom{
+				Via:    params.Via,
+				Reason: params.Reason,
+			})
+		})
 	case "leave_room":
 		return unmarshalAndCall(req.Data, func(params *leaveRoomParams) (*mautrix.RespLeaveRoom, error) {
 			return h.Client.LeaveRoom(ctx, params.RoomID, &mautrix.ReqLeave{Reason: params.Reason})
