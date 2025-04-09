@@ -92,7 +92,7 @@ const UserModeration = ({ userID, client, member, room }: UserModerationProps) =
 		if (!room) {
 			throw new Error("redactRecentMessages called without room")
 		}
-		const callback = async (reason: string) => {
+		const callback = (reason: string) => {
 			const tasks = []
 			for (const evt of calculateRedactions()) {
 				// for(let i=0;i<3;i++) {
