@@ -630,6 +630,18 @@ func (h *HiClient) postDecryptProcess(ctx context.Context, llSummary *mautrix.La
 	return
 }
 
+func (h *HiClient) fillPrevContent(ctx context.Context, evt *event.Event) error {
+	if evt.StateKey != nil && evt.Unsigned.PrevContent == nil && evt.Unsigned.ReplacesState != "" {
+		replacesState, err := h.DB.Event.GetByID(ctx, evt.Unsigned.ReplacesState)
+		if err != nil {
+			return fmt.Errorf("failed to get prev content for %s from %s: %w", evt.ID, evt.Unsigned.ReplacesState, err)
+		} else if replacesState != nil {
+			evt.Unsigned.PrevContent = &event.Content{VeryRaw: replacesState.Content}
+		}
+	}
+	return nil
+}
+
 func (h *HiClient) processEvent(
 	ctx context.Context,
 	evt *event.Event,
@@ -645,13 +657,8 @@ func (h *HiClient) processEvent(
 			return dbEvt, nil
 		}
 	}
-	if evt.StateKey != nil && evt.Unsigned.PrevContent == nil && evt.Unsigned.ReplacesState != "" {
-		replacesState, err := h.DB.Event.GetByID(ctx, evt.Unsigned.ReplacesState)
-		if err != nil {
-			return nil, fmt.Errorf("failed to get prev content for %s from %s: %w", evt.ID, evt.Unsigned.ReplacesState, err)
-		} else if replacesState != nil {
-			evt.Unsigned.PrevContent = &event.Content{VeryRaw: replacesState.Content}
-		}
+	if err := h.fillPrevContent(ctx, evt); err != nil {
+		return nil, err
 	}
 	dbEvt := database.MautrixToEvent(evt)
 	contentWithoutFallback := removeReplyFallback(evt)

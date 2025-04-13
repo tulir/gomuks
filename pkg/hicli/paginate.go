@@ -78,6 +78,9 @@ func (h *HiClient) processGetRoomState(ctx context.Context, roomID id.RoomID, fe
 	mediaReferenceEntries := make([]*database.MediaReference, len(evts))
 	mediaCacheEntries := make([]*database.PlainMedia, 0, len(evts))
 	for i, evt := range evts {
+		if err := h.fillPrevContent(ctx, evt); err != nil {
+			return err
+		}
 		dbEvts[i] = database.MautrixToEvent(evt)
 		currentStateEntries[i] = &database.CurrentStateEntry{
 			EventType: evt.Type,
