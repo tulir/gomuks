@@ -33,7 +33,7 @@ func tagIsAllowed(tag atom.Atom) bool {
 		atom.A, atom.Ul, atom.Ol, atom.Sup, atom.Sub, atom.Li, atom.B, atom.I, atom.U, atom.Strong,
 		atom.Em, atom.S, atom.Code, atom.Hr, atom.Br, atom.Div, atom.Table, atom.Thead, atom.Tbody,
 		atom.Tr, atom.Th, atom.Td, atom.Caption, atom.Pre, atom.Span, atom.Font, atom.Img,
-		atom.Details, atom.Summary:
+		atom.Details, atom.Summary, atom.Input:
 		return true
 	default:
 		return false
@@ -42,7 +42,7 @@ func tagIsAllowed(tag atom.Atom) bool {
 
 func isSelfClosing(tag atom.Atom) bool {
 	switch tag {
-	case atom.Img, atom.Br, atom.Hr:
+	case atom.Img, atom.Br, atom.Hr, atom.Input:
 		return true
 	default:
 		return false
@@ -580,6 +580,17 @@ Loop:
 				}
 			case atom.Code:
 				built.WriteString(`<code class="hicli-inline-code"`)
+			case atom.Input:
+				inputType, ok := getAttribute(token.Attr, "type")
+				if !ok || inputType != "checkbox" {
+					continue
+				}
+				_, checked := getAttribute(token.Attr, "checked")
+				// TODO allow checking checkboxes on own events
+				built.WriteString(`<input type="checkbox" class="hicli-checkbox" disabled`)
+				if checked {
+					built.WriteString(" checked")
+				}
 			default:
 				built.WriteByte('<')
 				built.WriteString(token.Data)

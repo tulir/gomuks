@@ -16,6 +16,7 @@ import (
 
 	"github.com/rs/zerolog"
 	"github.com/yuin/goldmark"
+	"github.com/yuin/goldmark/extension"
 	"go.mau.fi/util/jsontime"
 	"go.mau.fi/util/ptr"
 	"maunium.net/go/mautrix"
@@ -30,8 +31,8 @@ import (
 )
 
 var (
-	rainbowWithHTML = goldmark.New(format.Extensions, goldmark.WithExtensions(mdext.Math, mdext.CustomEmoji), format.HTMLOptions, goldmark.WithExtensions(rainbow.Extension))
-	defaultNoHTML   = goldmark.New(format.Extensions, goldmark.WithExtensions(mdext.Math, mdext.CustomEmoji, mdext.EscapeHTML), format.HTMLOptions)
+	rainbowWithHTML = goldmark.New(format.Extensions, goldmark.WithExtensions(mdext.Math, mdext.CustomEmoji, extension.TaskList), format.HTMLOptions, goldmark.WithExtensions(rainbow.Extension))
+	defaultNoHTML   = goldmark.New(format.Extensions, goldmark.WithExtensions(mdext.Math, mdext.CustomEmoji, mdext.EscapeHTML, extension.TaskList), format.HTMLOptions)
 )
 
 var htmlToMarkdownForInput = ptr.Clone(format.MarkdownHTMLParser)
