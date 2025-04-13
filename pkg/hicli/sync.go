@@ -274,6 +274,10 @@ func (h *HiClient) processSyncInvitedRoom(ctx context.Context, roomID id.RoomID,
 		CreatedAt:   jsontime.UnixMilliNow(),
 		InviteState: room.State.Events,
 	}
+	if len(ir.InviteState) == 0 {
+		zerolog.Ctx(ctx).Warn().Stringer("room_id", roomID).Msg("Got invited room with no state, ignoring")
+		return nil
+	}
 	for _, evt := range room.State.Events {
 		if evt.Type == event.StateMember && evt.GetStateKey() == h.Account.UserID.String() && evt.Timestamp != 0 {
 			ir.CreatedAt = jsontime.UM(time.UnixMilli(evt.Timestamp))
