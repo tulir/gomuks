@@ -76,4 +76,16 @@ div.room-view.preview > div.preview-inner {
 			}
 		}
 	}
+	> input.knock-reason {
+		padding: .5rem;
+		border-radius: .25rem;
+		border: 1px solid var(--border-color);
+		box-sizing: border-box;
+		width: 100%;
+
+		&:focus {
+			outline: 1px solid var(--primary-color);
+			border-color: var(--primary-color);
+		}
+	}
 }

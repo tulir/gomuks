@@ -316,6 +316,7 @@ export interface RoomSummary {
 	room_type: RoomType
 	topic?: string
 	world_readable: boolean
+	allowed_room_ids?: RoomID[]
 }
 
 export interface RespRoomJoin {
