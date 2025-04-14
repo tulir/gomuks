@@ -129,6 +129,7 @@ func New(rawDB, cryptoDB *dbutil.Database, log zerolog.Logger, pickleKey []byte,
 	c.Crypto.SessionReceived = c.handleReceivedMegolmSession
 	c.Crypto.DisableRatchetTracking = true
 	c.Crypto.DisableDecryptKeyFetching = true
+	c.Crypto.IgnorePostDecryptionParseErrors = true
 	c.Client.Crypto = (*hiCryptoHelper)(c)
 	return c
 }
