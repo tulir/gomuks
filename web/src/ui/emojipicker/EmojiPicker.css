@@ -1,8 +1,8 @@
 div.emoji-picker, div.sticker-picker, div.gif-picker {
 	position: fixed;
 	background-color: var(--background-color);
-	width: 22rem;
-	height: 34rem;
+	width: var(--image-picker-width);
+	height: var(--image-picker-height);
 	border-radius: 1rem;
 	border: 1px solid var(--border-color);
 	display: flex;
