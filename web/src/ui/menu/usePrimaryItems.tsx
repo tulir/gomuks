@@ -50,7 +50,18 @@ export const usePrimaryItems = (
 		closeModal()
 	}
 	const onClickReact = (mevt: React.MouseEvent<HTMLButtonElement>) => {
-		const emojiPickerHeight = 34 * 16
+		const bodyStyle = getComputedStyle(document.body)
+		const rawHeight = bodyStyle.getPropertyValue("--image-picker-height")
+		let emojiPickerHeight: number
+		if (rawHeight.endsWith("px")) {
+			emojiPickerHeight = +rawHeight.slice(0, -2)
+		} else if (rawHeight.endsWith("rem")) {
+			const fontSize = +bodyStyle.getPropertyValue("font-size").replace("px", "")
+			emojiPickerHeight = +rawHeight.slice(0, -3) * fontSize
+		} else {
+			console.warn("Invalid --image-picker-height value", rawHeight)
+			emojiPickerHeight = 34 * 16
+		}
 		setForceOpen?.(true)
 		openModal({
 			content: <EmojiPicker

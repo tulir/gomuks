@@ -91,6 +91,7 @@
 	--timeline-status-size: 4rem;
 
 	--image-picker-width: 22rem;
+	/* Note: this must be a constant rem or px value (no references to other variables or anything else) */
 	--image-picker-height: 34rem;
 	--image-picker-category-rows: 3;
 
