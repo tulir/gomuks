@@ -92,6 +92,7 @@
 
 	--image-picker-width: 22rem;
 	--image-picker-height: 34rem;
+	--image-picker-category-rows: 3;
 
 	@media screen and (max-width: 45rem) {
 		--timeline-horizontal-padding: .5rem;

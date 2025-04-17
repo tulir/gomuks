@@ -80,6 +80,8 @@ div.emoji-picker, div.sticker-picker {
 		flex-wrap: wrap;
 		padding-top: .5rem;
 		border-bottom: 1px solid var(--border-color);
+		max-height: calc(.5rem + 2.5rem * var(--image-picker-category-rows));
+		overflow: auto;
 
 		> button {
 			padding-top: .25rem;
