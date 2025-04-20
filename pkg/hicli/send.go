@@ -141,6 +141,7 @@ func (h *HiClient) SendMessage(
 			base.Body = content.Body
 			base.Format = content.Format
 			base.FormattedBody = content.FormattedBody
+			base.Mentions = content.Mentions
 		}
 		content = *base
 	}
