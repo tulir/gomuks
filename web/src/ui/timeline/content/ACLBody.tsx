@@ -56,22 +56,23 @@ function makeACLChangeStringSummary(
 	addedDeny: string[], removedDeny: string[],
 	prevAllowIP: boolean, newAllowIP: boolean,
 ): string {
+	const pluralEntryCount = (list: string[]) => `${list.length} ${list.length > 1 ? "entries" : "entry"}`
 	const parts = []
 	if (addedDeny.length > 0) {
-		parts.push(`added ${addedDeny.length} ${addedDeny.length > 1 ? "entries" : "entry"} to the ban list`)
+		parts.push(`added ${pluralEntryCount(addedDeny)} to the ban list`)
 	}
 	if (removedDeny.length > 0) {
-		parts.push(`removed ${removedDeny.length} ${removedDeny.length > 1 ? "entries" : "entry"} from the ban list`)
+		parts.push(`removed ${pluralEntryCount(removedDeny)} from the ban list`)
 	}
 	if (addedAllow.length > 0) {
-		parts.push(`added ${addedAllow.length} ${addedAllow.length > 1 ? "entries" : "entry"} to the allowlist`)
+		parts.push(`added ${pluralEntryCount(addedAllow)} to the allow list`)
 	}
 	if (removedAllow.length > 0) {
-		parts.push(`removed ${removedAllow.length} ${removedAllow.length > 1 ? "entries" : "entry"} from the allowlist`)
+		parts.push(`removed ${pluralEntryCount(removedAllow)} from the allow list`)
 	}
 	if (prevAllowIP !== newAllowIP) {
 		parts.push(
-			`participating from a server using an IP literal hostname is now ${newAllowIP ? "allowed" : "banned"}.`)
+			`${newAllowIP ? "allowed" : "banned"} participating from a server using an IP literal hostname`)
 	}
 	return humanJoin(parts)
 }
@@ -104,7 +105,7 @@ const ACLBody = ({ event, sender }: EventContentProps) => {
 	return <div className="acl-body">
 		<details>
 			<summary>
-				{sender?.content.displayname ?? event.sender} changed the server ACLs: {changeStringSummary}
+				{sender?.content.displayname ?? event.sender} {changeStringSummary}
 			</summary>
 			{changeString}
 		</details>
