@@ -1,0 +1,65 @@
+div.media-upload-modal {
+	display: flex;
+	flex-direction: column;
+
+	> h3 {
+		margin: 0 0 .5rem;
+	}
+
+	> div.attachment-preview {
+		> img, > video {
+			max-width: 100%;
+		}
+	}
+
+	> div.attachment-meta {
+		display: grid;
+		grid-template-columns: auto 1fr;
+		gap: .25rem;
+
+		@media screen and (min-width: 50rem) {
+			grid-template-columns: auto 1fr auto 1fr;
+
+			> div.meta-value-long {
+				grid-column: span 3;
+			}
+		}
+
+		> div.meta-value {
+			display: flex;
+			align-items: center;
+			gap: .25rem;
+			overflow: hidden;
+
+			> input[type="text"] {
+				border: 1px solid transparent;
+				outline: none;
+				padding: 0;
+				flex-grow: 1;
+
+				&:focus {
+					border-color: var(--primary-color);
+				}
+			}
+
+			> input[type="range"] {
+				/* TODO is there a less hacky way to make ranges fit without pushing out the text? */
+				max-width: calc(100% - 70px);
+			}
+		}
+	}
+
+	> div.confirm-buttons {
+		display: flex;
+		justify-content: right;
+
+		> button {
+			padding: .5rem 1rem;
+
+			&.confirm-button:hover {
+				background-color: var(--primary-color);
+				color: var(--inverted-text-color);
+			}
+		}
+	}
+}

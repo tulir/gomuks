@@ -28,6 +28,7 @@ import { ScaleLoader } from "react-spinners"
 import { useRoomEvent, useRoomState } from "@/api/statestore"
 import type {
 	EventID,
+	MediaEncodingOptions,
 	MediaMessageEventContent,
 	MemDBEvent,
 	Mentions,
@@ -49,6 +50,7 @@ import { useRoomContext } from "../roomview/roomcontext.ts"
 import { ReplyBody } from "../timeline/ReplyBody.tsx"
 import type { AutocompleteQuery } from "./Autocompleter.tsx"
 import { ComposerLocation, ComposerLocationValue, ComposerMedia } from "./ComposerMedia.tsx"
+import MediaUploadDialog from "./MediaUploadDialog.tsx"
 import { charToAutocompleteType, emojiQueryRegex, getAutocompleter } from "./getAutocompleter.ts"
 import AttachIcon from "@/icons/attach.svg?react"
 import EmojiIcon from "@/icons/emoji-categories/smileys-emotion.svg?react"
@@ -375,13 +377,21 @@ const MessageComposer = () => {
 		}
 		onComposerCaretChange(evt, evt.target.value)
 	}
-	const doUploadFile = useCallback((file: File | null | undefined) => {
-		if (!file) {
-			return
-		}
+	const doUploadFile = useCallback((
+		file: BodyInit,
+		filename: string,
+		encodingOpts?: MediaEncodingOptions,
+	) => {
 		setLoadingMedia(true)
 		const encrypt = !!room.meta.current.encryption_event
-		fetch(`_gomuks/upload?encrypt=${encrypt}&filename=${encodeURIComponent(file.name)}`, {
+		const params = new URLSearchParams([
+			["encrypt", encrypt.toString()],
+			["filename", filename],
+			...Object.entries(encodingOpts ?? {})
+				.filter(([, value]) => !!value)
+				.map(([key, value]) => [key, value.toString()]),
+		])
+		fetch(`_gomuks/upload?${params.toString()}`, {
 			method: "POST",
 			body: file,
 		})
@@ -396,16 +406,29 @@ const MessageComposer = () => {
 			.catch(err => window.alert("Failed to upload file: " + err))
 			.finally(() => setLoadingMedia(false))
 	}, [room])
+	const openFileUploadModal = (file: File | null | undefined) => {
+		if (!file) {
+			return
+		}
+		const objectURL = URL.createObjectURL(file)
+		openModal({
+			dimmed: true,
+			boxed: true,
+			innerBoxClass: "media-upload-modal",
+			onClose: () => URL.revokeObjectURL(objectURL),
+			content: <MediaUploadDialog file={file} blobURL={objectURL} doUploadFile={doUploadFile}/>,
+		})
+	}
 	const onPaste = (evt: React.ClipboardEvent<HTMLTextAreaElement>) => {
 		const file = evt.clipboardData?.files?.[0]
 		const text = evt.clipboardData.getData("text/plain")
 		const input = evt.currentTarget
 		if (file) {
-			doUploadFile(file)
+			openFileUploadModal(file)
 		} else if (
 			input.selectionStart !== input.selectionEnd
 			&& (text.startsWith("http://") || text.startsWith("https://") || text.startsWith("matrix:"))
-			&& state.text.slice(input.selectionStart, input.selectionStart+8) !== text.slice(0, 8)
+			&& state.text.slice(input.selectionStart, input.selectionStart + 8) !== text.slice(0, 8)
 		) {
 			document.execCommand("insertText", false, `[${
 				escapeMarkdown(state.text.slice(input.selectionStart, input.selectionEnd))
@@ -675,7 +698,7 @@ const MessageComposer = () => {
 				><SendIcon/></button>}
 				<input
 					ref={fileInput}
-					onChange={evt => doUploadFile(evt.target.files?.[0])}
+					onChange={evt => openFileUploadModal(evt.target.files?.[0])}
 					type="file"
 					value=""
 				/>

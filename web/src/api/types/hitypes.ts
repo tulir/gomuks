@@ -295,4 +295,11 @@ export interface DBPushRegistration {
 	expiration?: number
 }
 
+export interface MediaEncodingOptions {
+	encode_to?: string
+	quality?: number
+	resize_width?: number
+	resize_height?: number
+}
+
 export type MembershipAction = "invite" | "kick" | "ban" | "unban"

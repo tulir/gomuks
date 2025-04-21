@@ -24,12 +24,13 @@ import (
 	"fmt"
 	"html"
 	"image"
-	_ "image/gif"
-	_ "image/jpeg"
-	_ "image/png"
+	"image/gif"
+	"image/jpeg"
+	"image/png"
 	"io"
 	"mime"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -453,6 +454,120 @@ func (gmx *Gomuks) DownloadMedia(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func (gmx *Gomuks) reencodeMedia(ctx context.Context, query url.Values, tempFile *os.File) ([]byte, error) {
+	defer func() {
+		_ = tempFile.Close()
+	}()
+	encTo := query.Get("encode_to")
+	if encTo == "" {
+		return nil, nil
+	}
+	resizeWidthVal := query.Get("resize_width")
+	resizeHeightVal := query.Get("resize_height")
+	var resizeWidth, resizeHeight int
+	if resizeWidthVal != "" && resizeHeightVal != "" {
+		var err error
+		resizeWidth, err = strconv.Atoi(resizeWidthVal)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse resize width: %w", err)
+		}
+		resizeHeight, err = strconv.Atoi(resizeHeightVal)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse resize height: %w", err)
+		}
+	}
+	switch encTo {
+	case "image/webp", "image/jpeg", "image/png", "image/gif":
+		_, err := tempFile.Seek(0, io.SeekStart)
+		if err != nil {
+			return nil, fmt.Errorf("failed to seek to start of temp file: %w", err)
+		}
+		qualityVal := query.Get("quality")
+		quality := 80
+		if qualityVal != "" {
+			quality, err = strconv.Atoi(qualityVal)
+			if err != nil {
+				return nil, fmt.Errorf("failed to parse quality: %w", err)
+			}
+		}
+		decoded, _, err := image.Decode(tempFile)
+		if err != nil {
+			return nil, fmt.Errorf("failed to decode image: %w", err)
+		}
+		if resizeWidth > 0 && resizeHeight > 0 {
+			decoded = imaging.Resize(decoded, resizeWidth, resizeHeight, imaging.Lanczos)
+		}
+		_, err = tempFile.Seek(0, io.SeekStart)
+		if err != nil {
+			return nil, fmt.Errorf("failed to seek to start of temp file: %w", err)
+		}
+		err = tempFile.Truncate(0)
+		if err != nil {
+			return nil, fmt.Errorf("failed to truncate temp file: %w", err)
+		}
+		switch encTo {
+		case "image/webp":
+			err = cwebp.Encode(tempFile, decoded, &cwebp.Options{
+				Quality:  float32(quality),
+				Lossless: quality >= 100,
+			})
+		case "image/jpeg":
+			err = jpeg.Encode(tempFile, decoded, &jpeg.Options{Quality: quality})
+		case "image/png":
+			err = png.Encode(tempFile, decoded)
+		case "image/gif":
+			err = gif.Encode(tempFile, decoded, nil)
+		default:
+			panic("unreachable")
+		}
+		if err != nil {
+			return nil, fmt.Errorf("failed to encode image: %w", err)
+		}
+		_, err = tempFile.Seek(0, io.SeekStart)
+		if err != nil {
+			return nil, fmt.Errorf("failed to seek to start of temp file: %w", err)
+		}
+	case "video/webm", "video/mp4":
+		_ = tempFile.Close()
+		var encToExtension string
+		var inputArgs, outputArgs []string
+		switch encTo {
+		case "video/webm":
+			encToExtension = ".webm"
+			outputArgs = []string{"-c:v", "libvpx-vp9", "-c:a", "libopus", "-pix_fmt", "yuva420p"}
+		case "video/mp4":
+			encToExtension = ".mp4"
+			outputArgs = []string{"-c:v", "libx264", "-c:a", "aac", "-pix_fmt", "yuv420p"}
+		default:
+			panic("unreachable")
+		}
+		if resizeWidth > 0 && resizeHeight > 0 {
+			outputArgs = append(outputArgs, "-vf", fmt.Sprintf("scale=%d:%d,setsar=1:1", resizeWidth, resizeHeight))
+		}
+		outputPath, err := ffmpeg.ConvertPath(ctx, tempFile.Name(), encToExtension, inputArgs, outputArgs, true)
+		if err != nil {
+			return nil, fmt.Errorf("failed to convert video: %w", err)
+		}
+		err = os.Rename(outputPath, tempFile.Name())
+		if err != nil {
+			return nil, fmt.Errorf("failed to rename converted video: %w", err)
+		}
+		tempFile, err = os.OpenFile(tempFile.Name(), os.O_RDONLY, 0)
+		if err != nil {
+			return nil, fmt.Errorf("failed to reopen converted video: %w", err)
+		}
+	default:
+		return nil, fmt.Errorf("unsupported encoding target %q", encTo)
+	}
+	hasher := sha256.New()
+	_, err := io.Copy(hasher, tempFile)
+	if err != nil {
+		return nil, fmt.Errorf("failed to hash re-encoded image: %w", err)
+	}
+	checksum := hasher.Sum(nil)
+	return checksum, nil
+}
+
 func (gmx *Gomuks) UploadMedia(w http.ResponseWriter, r *http.Request) {
 	log := hlog.FromRequest(r)
 	tempFile, err := os.CreateTemp(gmx.TempDir, "upload-*")
@@ -472,9 +587,15 @@ func (gmx *Gomuks) UploadMedia(w http.ResponseWriter, r *http.Request) {
 		mautrix.MUnknown.WithMessage(fmt.Sprintf("Failed to copy media to temp file: %v", err)).Write(w)
 		return
 	}
-	_ = tempFile.Close()
-
 	checksum := hasher.Sum(nil)
+	if newHash, err := gmx.reencodeMedia(r.Context(), r.URL.Query(), tempFile); err != nil {
+		log.Err(err).Msg("Failed to reencode media")
+		mautrix.MUnknown.WithMessage(fmt.Sprintf("Failed to reencode media: %v", err)).Write(w)
+		return
+	} else if newHash != nil {
+		checksum = newHash
+	}
+
 	cachePath := gmx.cacheEntryToPath(checksum)
 	if _, err = os.Stat(cachePath); err == nil {
 		log.Debug().Str("path", cachePath).Msg("Media already exists in cache, removing temp file")
