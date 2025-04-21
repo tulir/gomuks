@@ -111,6 +111,11 @@ func (h *HiClient) SendMessage(
 		_, err := h.SetState(ctx, roomID, event.Type{Type: parts[1], Class: event.StateEventType}, parts[2], content)
 		return nil, err
 	}
+	var rawInputBody bool
+	if strings.HasPrefix(text, "/rawinputbody ") {
+		text = strings.TrimPrefix(text, "/rawinputbody ")
+		rawInputBody = true
+	}
 	var content event.MessageEventContent
 	msgType := event.MsgText
 	origText := text
@@ -130,10 +135,12 @@ func (h *HiClient) SendMessage(
 		content = format.TextToContent(text)
 	} else if strings.HasPrefix(text, "/html ") {
 		text = strings.TrimPrefix(text, "/html ")
-		text = strings.Replace(text, "\n", "<br>", -1)
-		content = format.HTMLToContent(text)
+		content = format.HTMLToContent(strings.Replace(text, "\n", "<br>", -1))
 	} else if text != "" {
 		content = format.RenderMarkdownCustom(text, defaultNoHTML)
+	}
+	if rawInputBody {
+		content.Body = text
 	}
 	content.MsgType = msgType
 	if base != nil {
