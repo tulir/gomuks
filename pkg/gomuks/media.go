@@ -177,7 +177,7 @@ func (gmx *Gomuks) generateAvatarThumbnail(entry *database.Media, size int) erro
 	if err != nil {
 		return fmt.Errorf("failed to open full file: %w", err)
 	}
-	img, _, err := image.Decode(cacheFile)
+	img, err := imaging.Decode(cacheFile, imaging.AutoOrientation(true))
 	if err != nil {
 		return fmt.Errorf("failed to decode image: %w", err)
 	}
@@ -490,7 +490,7 @@ func (gmx *Gomuks) reencodeMedia(ctx context.Context, query url.Values, tempFile
 				return nil, fmt.Errorf("failed to parse quality: %w", err)
 			}
 		}
-		decoded, _, err := image.Decode(tempFile)
+		decoded, err := imaging.Decode(tempFile, imaging.AutoOrientation(true))
 		if err != nil {
 			return nil, fmt.Errorf("failed to decode image: %w", err)
 		}
