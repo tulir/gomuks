@@ -677,6 +677,7 @@ func (h *HiClient) processEvent(
 			if err != nil {
 				return dbEvt, fmt.Errorf("failed to set redacts field: %w", err)
 			}
+			dbEvt.Content = evt.Content.VeryRaw
 		} else if evt.Redacts == "" {
 			evt.Redacts = id.EventID(gjson.GetBytes(evt.Content.VeryRaw, "redacts").Str)
 		}
