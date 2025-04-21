@@ -122,6 +122,9 @@ func New(rawDB, cryptoDB *dbutil.Database, log zerolog.Logger, pickleKey []byte,
 		Store:      (*hiStore)(c),
 		StateStore: c.ClientStore,
 		Log:        log.With().Str("component", "mautrix client").Logger(),
+
+		DefaultHTTPBackoff: 1 * time.Second,
+		DefaultHTTPRetries: 6,
 	}
 	c.CryptoStore = crypto.NewSQLCryptoStore(cryptoDB, dbutil.ZeroLogger(log.With().Str("db_section", "crypto").Logger()), "", "", pickleKey)
 	cryptoLog := log.With().Str("component", "crypto").Logger()
