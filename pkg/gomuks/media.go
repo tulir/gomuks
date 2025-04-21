@@ -328,7 +328,12 @@ func (gmx *Gomuks) DownloadMedia(w http.ResponseWriter, r *http.Request) {
 		_ = os.Remove(tempFile.Name())
 	}()
 
-	resp, err := gmx.Client.Client.Download(ctx, mxc)
+	_, resp, err := gmx.Client.Client.MakeFullRequestWithResp(ctx, mautrix.FullRequest{
+		Method:           http.MethodGet,
+		URL:              gmx.Client.Client.BuildClientURL("v1", "media", "download", mxc.Homeserver, mxc.FileID),
+		DontReadResponse: true,
+		MaxAttempts:      1,
+	})
 	if err != nil {
 		if ctx.Err() != nil {
 			w.WriteHeader(499)
