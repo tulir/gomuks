@@ -7,8 +7,12 @@ div.media-upload-modal {
 	}
 
 	> div.attachment-preview {
+		overflow: hidden;
+		flex-shrink: 1;
+
 		> img, > video {
 			max-width: 100%;
+			max-height: 100%;
 		}
 	}
 
