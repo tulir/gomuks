@@ -66,7 +66,7 @@ var defaultFileWriter = zeroconfig.WriterConfig{
 	Format: "json",
 	FileConfig: zeroconfig.FileConfig{
 		Filename:   "",
-		MaxSize:    100 * 1024 * 1024,
+		MaxSize:    100,
 		MaxBackups: 10,
 	},
 }
