@@ -405,6 +405,7 @@ const MessageComposer = () => {
 		} else if (
 			input.selectionStart !== input.selectionEnd
 			&& (text.startsWith("http://") || text.startsWith("https://") || text.startsWith("matrix:"))
+			&& state.text.slice(input.selectionStart, input.selectionStart+8) !== text.slice(0, 8)
 		) {
 			document.execCommand("insertText", false, `[${
 				escapeMarkdown(state.text.slice(input.selectionStart, input.selectionEnd))
