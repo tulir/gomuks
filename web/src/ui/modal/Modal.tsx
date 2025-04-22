@@ -55,10 +55,11 @@ const ModalWrapper = ({ children, ContextType, historyStateKey }: ModalWrapperPr
 	}, [historyStateKey])
 	const wrapperRef = useRef<HTMLDivElement>(null)
 	useLayoutEffect(() => {
-		window.closeModal = onClickWrapper
 		if (historyStateKey === "nestable_modal") {
 			window.openNestableModal = openModal
+			window.closeNestableModal = onClickWrapper
 		} else {
+			window.closeModal = onClickWrapper
 			window.openModal = openModal
 		}
 		if (wrapperRef.current && (!document.activeElement || !wrapperRef.current.contains(document.activeElement))) {

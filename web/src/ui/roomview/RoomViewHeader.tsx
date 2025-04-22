@@ -38,9 +38,9 @@ interface RoomViewHeaderProps {
 const RoomViewHeader = ({ room }: RoomViewHeaderProps) => {
 	const roomMeta = useEventAsState(room.meta)
 	const mainScreen = use(MainScreenContext)
-	const openModal = use(NestableModalContext)
+	const openNestableModal = use(NestableModalContext)
 	const openSettings = () => {
-		openModal({
+		openNestableModal({
 			dimmed: true,
 			boxed: true,
 			innerBoxClass: "settings-view",
@@ -48,28 +48,36 @@ const RoomViewHeader = ({ room }: RoomViewHeaderProps) => {
 		})
 	}
 	const openRoomStateExplorer = () => {
-		openModal({
+		openNestableModal({
 			dimmed: true,
 			boxed: true,
 			innerBoxClass: "room-state-explorer-box",
 			content: <RoomStateExplorer room={room} />,
 		})
 	}
+	const buttonCount = 5
 	const makeButtons = (titles?: boolean)  => {
+		let rightPanelOpener = mainScreen.clickRightPanelOpener
+		if (titles) {
+			rightPanelOpener = (evt: React.MouseEvent) => {
+				window.closeNestableModal()
+				mainScreen.clickRightPanelOpener(evt)
+			}
+		}
 		return <>
 			<button
 				data-target-panel="pinned-messages"
-				onClick={mainScreen.clickRightPanelOpener}
+				onClick={rightPanelOpener}
 				title="Pinned Messages"
 			><PinIcon/>{titles && "Pinned Messages"}</button>
 			<button
 				data-target-panel="members"
-				onClick={mainScreen.clickRightPanelOpener}
+				onClick={rightPanelOpener}
 				title="Room Members"
 			><PeopleIcon/>{titles && "Room Members"}</button>
 			<button
 				data-target-panel="widgets"
-				onClick={mainScreen.clickRightPanelOpener}
+				onClick={rightPanelOpener}
 				title="Widgets in room"
 			><WidgetIcon/>{titles && "Widgets in room"}</button>
 			<button title="Explore room state" onClick={openRoomStateExplorer}>
@@ -81,8 +89,8 @@ const RoomViewHeader = ({ room }: RoomViewHeaderProps) => {
 		</>
 	}
 	const openButtonContextMenu = (evt: React.MouseEvent<HTMLButtonElement>) => {
-		openModal({
-			content: <div className="context-menu" style={getModalStyleFromButton(evt.currentTarget, 5 * 16)}>
+		openNestableModal({
+			content: <div className="context-menu" style={getModalStyleFromButton(evt.currentTarget, buttonCount * 16)}>
 				{makeButtons(true)}
 			</div>,
 		})
