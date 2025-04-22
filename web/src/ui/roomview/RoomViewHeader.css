@@ -6,6 +6,7 @@ div.room-header {
 	border-bottom: 1px solid var(--border-color);
 	overflow: hidden;
 	grid-area: header;
+	container-type: inline-size;
 
 	> div.room-name-and-topic {
 		flex: 1;
@@ -42,6 +43,19 @@ div.room-header {
 		> button {
 			width: 2.5rem;
 			height: 2.5rem;
+		}
+
+		&.small-screen {
+			display: none;
+		}
+
+		@container (width < 30rem) {
+			&.small-screen {
+				display: block;
+			}
+			&.big-screen {
+				display: none;
+			}
 		}
 	}
 }

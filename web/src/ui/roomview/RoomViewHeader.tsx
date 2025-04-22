@@ -13,9 +13,10 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import { use } from "react"
+import React, { use } from "react"
 import { getRoomAvatarThumbnailURL, getRoomAvatarURL } from "@/api/media.ts"
 import { RoomStateStore } from "@/api/statestore"
+import { getModalStyleFromButton } from "@/ui/menu/util.ts"
 import { useEventAsState } from "@/util/eventdispatcher.ts"
 import MainScreenContext from "../MainScreenContext.ts"
 import { LightboxContext, NestableModalContext } from "../modal"
@@ -24,6 +25,7 @@ import SettingsView from "../settings/SettingsView.tsx"
 import BackIcon from "@/icons/back.svg?react"
 import CodeIcon from "@/icons/code.svg?react"
 import PeopleIcon from "@/icons/group.svg?react"
+import MoreIcon from "@/icons/more.svg?react"
 import PinIcon from "@/icons/pin.svg?react"
 import SettingsIcon from "@/icons/settings.svg?react"
 import WidgetIcon from "@/icons/widgets.svg?react"
@@ -53,6 +55,38 @@ const RoomViewHeader = ({ room }: RoomViewHeaderProps) => {
 			content: <RoomStateExplorer room={room} />,
 		})
 	}
+	const makeButtons = (titles?: boolean)  => {
+		return <>
+			<button
+				data-target-panel="pinned-messages"
+				onClick={mainScreen.clickRightPanelOpener}
+				title="Pinned Messages"
+			><PinIcon/>{titles && "Pinned Messages"}</button>
+			<button
+				data-target-panel="members"
+				onClick={mainScreen.clickRightPanelOpener}
+				title="Room Members"
+			><PeopleIcon/>{titles && "Room Members"}</button>
+			<button
+				data-target-panel="widgets"
+				onClick={mainScreen.clickRightPanelOpener}
+				title="Widgets in room"
+			><WidgetIcon/>{titles && "Widgets in room"}</button>
+			<button title="Explore room state" onClick={openRoomStateExplorer}>
+				<CodeIcon/>{titles && "Explore room state"}
+			</button>
+			<button title="Room Settings" onClick={openSettings}>
+				<SettingsIcon/>{titles && "Room Settings"}
+			</button>
+		</>
+	}
+	const openButtonContextMenu = (evt: React.MouseEvent<HTMLButtonElement>) => {
+		openModal({
+			content: <div className="context-menu" style={getModalStyleFromButton(evt.currentTarget, 5 * 16)}>
+				{makeButtons(true)}
+			</div>,
+		})
+	}
 	return <div className="room-header">
 		<button className="back" onClick={mainScreen.clearActiveRoom}><BackIcon/></button>
 		<img
@@ -71,24 +105,9 @@ const RoomViewHeader = ({ room }: RoomViewHeaderProps) => {
 				{roomMeta.topic}
 			</div>}
 		</div>
-		<div className="right-buttons">
-			<button
-				data-target-panel="pinned-messages"
-				onClick={mainScreen.clickRightPanelOpener}
-				title="Pinned Messages"
-			><PinIcon/></button>
-			<button
-				data-target-panel="members"
-				onClick={mainScreen.clickRightPanelOpener}
-				title="Room Members"
-			><PeopleIcon/></button>
-			<button
-				data-target-panel="widgets"
-				onClick={mainScreen.clickRightPanelOpener}
-				title="Widgets in room"
-			><WidgetIcon/></button>
-			<button title="Explore room state" onClick={openRoomStateExplorer}><CodeIcon/></button>
-			<button title="Room Settings" onClick={openSettings}><SettingsIcon/></button>
+		<div className="right-buttons big-screen">{makeButtons()}</div>
+		<div className="right-buttons small-screen">
+			<button onClick={openButtonContextMenu}><MoreIcon/></button>
 		</div>
 	</div>
 }
