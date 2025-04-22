@@ -1,6 +1,7 @@
-div.media-upload-modal {
+form.media-upload-modal {
 	display: flex;
 	flex-direction: column;
+	max-height: 100%;
 
 	> h3 {
 		margin: 0 0 .5rem;
@@ -9,6 +10,7 @@ div.media-upload-modal {
 	> div.attachment-preview {
 		overflow: hidden;
 		flex-shrink: 1;
+		display: flex;
 
 		> img, > video {
 			max-width: 100%;

@@ -414,7 +414,7 @@ const MessageComposer = () => {
 		openModal({
 			dimmed: true,
 			boxed: true,
-			innerBoxClass: "media-upload-modal",
+			innerBoxClass: "media-upload-modal-wrapper",
 			onClose: () => URL.revokeObjectURL(objectURL),
 			content: <MediaUploadDialog file={file} blobURL={objectURL} doUploadFile={doUploadFile}/>,
 		})

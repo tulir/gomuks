@@ -13,9 +13,10 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import { JSX, use, useEffect, useRef, useState } from "react"
+import React, { JSX, use, useEffect, useRef, useState } from "react"
 import type { MediaEncodingOptions } from "@/api/types"
 import { ModalCloseContext } from "@/ui/modal"
+import { isMobileDevice } from "@/util/ismobile.ts"
 import "./MediaUploadDialog.css"
 
 export interface MediaUploadDialogProps {
@@ -32,7 +33,7 @@ function formatSize(bytes: number): string {
 		size /= 1024
 		unitIndex++
 	}
-	return `${size.toFixed(2)} ${units[unitIndex]}`
+	return `${unitIndex === 0 ? size : size.toFixed(2)} ${units[unitIndex]}`
 }
 
 const imageReencTargets = ["image/webp", "image/jpeg", "image/png", "image/gif"]
@@ -87,7 +88,8 @@ const MediaUploadDialog = ({ file, blobURL, doUploadFile }: MediaUploadDialogPro
 			<source src={blobURL} type={file.type} />
 		</audio>
 	}
-	const submit = () => {
+	const submit = (evt: React.FormEvent) => {
+		evt.preventDefault()
 		doUploadFile(file, name, {
 			encode_to: reencTarget || undefined,
 			quality: reencTarget === "image/jpeg" ? jpegQuality : undefined,
@@ -96,7 +98,7 @@ const MediaUploadDialog = ({ file, blobURL, doUploadFile }: MediaUploadDialogPro
 		})
 		closeModal()
 	}
-	return <>
+	return <form className="media-upload-modal" onSubmit={submit}>
 		<h3>Upload attachment</h3>
 		<div className="attachment-preview">{previewContent}</div>
 		<div className="attachment-meta">
@@ -109,6 +111,7 @@ const MediaUploadDialog = ({ file, blobURL, doUploadFile }: MediaUploadDialogPro
 			<div className="meta-key">File name</div>
 			<div className="meta-value">
 				<input
+					autoFocus={!isMobileDevice}
 					type="text"
 					value={name}
 					onChange={evt => setName(evt.target.value)}
@@ -167,10 +170,10 @@ const MediaUploadDialog = ({ file, blobURL, doUploadFile }: MediaUploadDialogPro
 			</>}
 		</div>
 		<div className="confirm-buttons">
-			<button className="cancel-button" onClick={closeModal}>Cancel</button>
-			<button className="confirm-button" onClick={submit}>Upload</button>
+			<button className="cancel-button" type="button" onClick={closeModal}>Cancel</button>
+			<button className="confirm-button" type="submit">Upload</button>
 		</div>
-	</>
+	</form>
 }
 
 export default MediaUploadDialog
