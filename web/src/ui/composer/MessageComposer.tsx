@@ -410,14 +410,18 @@ const MessageComposer = () => {
 		if (!file) {
 			return
 		}
-		const objectURL = URL.createObjectURL(file)
-		openModal({
-			dimmed: true,
-			boxed: true,
-			innerBoxClass: "media-upload-modal-wrapper",
-			onClose: () => URL.revokeObjectURL(objectURL),
-			content: <MediaUploadDialog file={file} blobURL={objectURL} doUploadFile={doUploadFile}/>,
-		})
+		if (room.preferences.upload_dialog) {
+			const objectURL = URL.createObjectURL(file)
+			openModal({
+				dimmed: true,
+				boxed: true,
+				innerBoxClass: "media-upload-modal-wrapper",
+				onClose: () => URL.revokeObjectURL(objectURL),
+				content: <MediaUploadDialog file={file} blobURL={objectURL} doUploadFile={doUploadFile}/>,
+			})
+		} else {
+			doUploadFile(file, file.name)
+		}
 	}
 	const onPaste = (evt: React.ClipboardEvent<HTMLTextAreaElement>) => {
 		const file = evt.clipboardData?.files?.[0]

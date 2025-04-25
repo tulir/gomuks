@@ -138,6 +138,12 @@ export const preferences = {
 		allowedContexts: anyContext,
 		defaultValue: true,
 	}),
+	upload_dialog: new Preference<boolean>({
+		displayName: "Show upload dialog",
+		description: "Whether to show the dialog that allows adjusting the media before upload (re-encoding, resizing, etc)",
+		allowedContexts: anyContext,
+		defaultValue: true,
+	}),
 	map_provider: new Preference<MapProvider>({
 		displayName: "Map provider",
 		description: "The map provider to use for location messages.",
