@@ -39,6 +39,7 @@ import (
 	"github.com/buckket/go-blurhash"
 	"github.com/disintegration/imaging"
 	"github.com/gabriel-vasile/mimetype"
+	_ "github.com/jdeng/goheif"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/hlog"
 	"go.mau.fi/util/exhttp"
@@ -465,7 +466,8 @@ func (gmx *Gomuks) reencodeMedia(ctx context.Context, query url.Values, tempFile
 	}
 	resizeWidthVal := query.Get("resize_width")
 	resizeHeightVal := query.Get("resize_height")
-	var resizeWidth, resizeHeight int
+	resizePercentVal := query.Get("resize_percent")
+	var resizeWidth, resizeHeight, resizePercent int
 	if resizeWidthVal != "" && resizeHeightVal != "" {
 		var err error
 		resizeWidth, err = strconv.Atoi(resizeWidthVal)
@@ -475,6 +477,14 @@ func (gmx *Gomuks) reencodeMedia(ctx context.Context, query url.Values, tempFile
 		resizeHeight, err = strconv.Atoi(resizeHeightVal)
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse resize height: %w", err)
+		}
+	} else if resizePercentVal != "" {
+		var err error
+		resizePercent, err = strconv.Atoi(resizePercentVal)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse resize percent: %w", err)
+		} else if resizePercent < 1 || resizePercent > 100 {
+			return nil, fmt.Errorf("resize percent must be between 1 and 100")
 		}
 	}
 	switch encTo {
@@ -491,11 +501,26 @@ func (gmx *Gomuks) reencodeMedia(ctx context.Context, query url.Values, tempFile
 				return nil, fmt.Errorf("failed to parse quality: %w", err)
 			}
 		}
-		decoded, err := imaging.Decode(tempFile, imaging.AutoOrientation(true))
+		decoded, decodedFrom, err := image.Decode(tempFile)
 		if err != nil {
 			return nil, fmt.Errorf("failed to decode image: %w", err)
 		}
+		var o orientation.Orientation
+		if decodedFrom == "jpeg" {
+			_, err = tempFile.Seek(0, io.SeekStart)
+			if err != nil {
+				return nil, fmt.Errorf("failed to seek to start of temp file: %w", err)
+			}
+			o = orientation.Read(tempFile)
+		} // TODO heic orientation?
+		if o != orientation.Unspecified {
+			decoded = o.Fix(decoded)
+		}
 		if resizeWidth > 0 && resizeHeight > 0 {
+			decoded = imaging.Resize(decoded, resizeWidth, resizeHeight, imaging.Lanczos)
+		} else if resizePercent != 0 {
+			resizeWidth = int(float64(decoded.Bounds().Dx()) * float64(resizePercent) / 100)
+			resizeHeight = int(float64(decoded.Bounds().Dy()) * float64(resizePercent) / 100)
 			decoded = imaging.Resize(decoded, resizeWidth, resizeHeight, imaging.Lanczos)
 		}
 		_, err = tempFile.Seek(0, io.SeekStart)

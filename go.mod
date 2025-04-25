@@ -11,6 +11,7 @@ require (
 	github.com/coder/websocket v1.8.13
 	github.com/disintegration/imaging v1.6.2
 	github.com/gabriel-vasile/mimetype v1.4.8
+	github.com/jdeng/goheif v0.0.0-20241115163857-e2bbb197c985
 	github.com/lucasb-eyer/go-colorful v1.2.0
 	github.com/mattn/go-sqlite3 v1.14.24
 	github.com/rivo/uniseg v0.4.7

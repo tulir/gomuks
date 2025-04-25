@@ -37,6 +37,7 @@ function formatSize(bytes: number): string {
 }
 
 const imageReencTargets = ["image/webp", "image/jpeg", "image/png", "image/gif"]
+const imageReencSources = [...imageReencTargets, "image/heif", "image/heic"]
 const videoReencTargets = ["video/webm", "video/mp4"]
 
 interface dimensions {
@@ -47,7 +48,7 @@ interface dimensions {
 const MediaUploadDialog = ({ file, blobURL, doUploadFile }: MediaUploadDialogProps) => {
 	const videoRef = useRef<HTMLVideoElement>(null)
 	const [name, setName] = useState(file.name)
-	const [reencTarget, setReencTarget] = useState("")
+	const [reencTarget, setReencTarget] = useState(file.type === "image/heif" ? "image/jpeg" : "")
 	const [jpegQuality, setJPEGQuality] = useState(80)
 	const [resizeSlider, setResizeSlider] = useState(100)
 	const [origDimensions, setOrigDimensions] = useState<dimensions | null>(null)
@@ -70,7 +71,7 @@ const MediaUploadDialog = ({ file, blobURL, doUploadFile }: MediaUploadDialogPro
 	}, [file, blobURL])
 	if (file.type.startsWith("image/")) {
 		previewContent = <img src={blobURL} alt={file.name} />
-		if (imageReencTargets.includes(file.type)) {
+		if (imageReencSources.includes(file.type)) {
 			reencTargets = imageReencTargets
 		}
 	} else if (file.type.startsWith("video/")) {
@@ -93,8 +94,9 @@ const MediaUploadDialog = ({ file, blobURL, doUploadFile }: MediaUploadDialogPro
 		doUploadFile(file, name, {
 			encode_to: reencTarget || undefined,
 			quality: reencTarget === "image/jpeg" ? jpegQuality : undefined,
-			resize_width: resizeSlider !== 0 ? resizedWidth : undefined,
-			resize_height: resizeSlider !== 0 ? resizedHeight : undefined,
+			resize_width: resizeSlider !== 100 ? resizedWidth : undefined,
+			resize_height: resizeSlider !== 100 ? resizedHeight : undefined,
+			resize_percent: resizeSlider,
 		})
 		closeModal()
 	}
@@ -134,9 +136,7 @@ const MediaUploadDialog = ({ file, blobURL, doUploadFile }: MediaUploadDialogPro
 						{reencTargets.map(target => <option key={target} value={target}>{target}</option>)}
 					</select>
 				</div>
-			</>}
 
-			{origDimensions && reencTargets ? <>
 				<div className="meta-key">Resize</div>
 				<div className="meta-value meta-value-long">
 					<input
@@ -147,13 +147,13 @@ const MediaUploadDialog = ({ file, blobURL, doUploadFile }: MediaUploadDialogPro
 						onChange={evt => {
 							setResizeSlider(parseInt(evt.target.value))
 							if (reencTarget === "") {
-								setReencTarget(file.type)
+								setReencTarget(reencTargets?.includes(file.type) ? file.type : "image/jpeg")
 							}
 						}}
 					/>
 					<span>{resizeSlider}%</span>
 				</div>
-			</> : null}
+			</>}
 
 			{(reencTarget === "image/jpeg" || reencTarget === "image/webp") && <>
 				<div className="meta-key">Quality</div>

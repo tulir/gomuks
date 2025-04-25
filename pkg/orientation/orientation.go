@@ -6,7 +6,10 @@ package orientation
 
 import (
 	"encoding/binary"
+	"image"
 	"io"
+
+	"github.com/disintegration/imaging"
 )
 
 // Orientation is an EXIF flag that specifies the transformation
@@ -34,6 +37,27 @@ func (o Orientation) ApplyToDimensions(w, h int) (int, int) {
 	default:
 		return w, h
 	}
+}
+
+func (o Orientation) Fix(img image.Image) image.Image {
+	switch o {
+	case Normal:
+	case FlipH:
+		img = imaging.FlipH(img)
+	case FlipV:
+		img = imaging.FlipV(img)
+	case Rotate90:
+		img = imaging.Rotate90(img)
+	case Rotate180:
+		img = imaging.Rotate180(img)
+	case Rotate270:
+		img = imaging.Rotate270(img)
+	case Transpose:
+		img = imaging.Transpose(img)
+	case Transverse:
+		img = imaging.Transverse(img)
+	}
+	return img
 }
 
 // Read tries to read the orientation EXIF flag from image data in r.
