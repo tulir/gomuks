@@ -13,7 +13,7 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import React, { CSSProperties, JSX, use } from "react"
+import React, { CSSProperties, JSX, use, useState } from "react"
 import { getEncryptedMediaURL, getMediaURL } from "@/api/media.ts"
 import type { EventType, MediaMessageEventContent } from "@/api/types"
 import { ImageContainerSize, calculateMediaSize, defaultVideoContainerSize } from "@/util/mediasize.ts"
@@ -29,16 +29,22 @@ export const useMediaContent = (
 	const mediaURL = content.file?.url ? getEncryptedMediaURL(content.file.url) : getMediaURL(content.url)
 	const thumbnailURL = content.info?.thumbnail_file?.url
 		? getEncryptedMediaURL(content.info.thumbnail_file.url) : getMediaURL(content.info?.thumbnail_url)
+	const [errored, setErrored] = useState(false)
 	if (content.msgtype === "m.image" || content.msgtype === "m.sticker" || evtType === "m.sticker") {
 		const style = calculateMediaSize(content.info?.w, content.info?.h, containerSize)
 		return [<img
 			onLoad={onLoad}
+			onError={() => {
+				setErrored(true)
+				onLoad?.()
+			}}
 			loading="lazy"
 			style={style.media}
 			src={mediaURL}
 			alt={content.filename ?? content.body}
 			title={content.filename ?? content.body}
 			onClick={use(LightboxContext)}
+			className={errored ? "errored" : undefined}
 		/>, "image-container", style.container]
 	} else if (content.msgtype === "m.video") {
 		const style = calculateMediaSize(content.info?.w, content.info?.h, containerSize ?? defaultVideoContainerSize)
