@@ -250,6 +250,7 @@ div.media-container {
 			height: 100%;
 			color: var(--error-color);
 			content: "Failed to load image";
+			background-color: var(--media-placeholder-default-background);
 		}
 	}
 }
