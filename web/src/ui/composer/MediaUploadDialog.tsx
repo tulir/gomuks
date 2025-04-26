@@ -37,7 +37,8 @@ function formatSize(bytes: number): string {
 }
 
 const imageReencTargets = ["image/webp", "image/jpeg", "image/png", "image/gif"]
-const imageReencSources = [...imageReencTargets, "image/heif", "image/heic"]
+const nonEncodableSources = ["image/bmp", "image/tiff", "image/heif", "image/heic"]
+const imageReencSources = [...imageReencTargets, ...nonEncodableSources]
 const videoReencTargets = ["video/webm", "video/mp4"]
 
 interface dimensions {
@@ -48,7 +49,7 @@ interface dimensions {
 const MediaUploadDialog = ({ file, blobURL, doUploadFile }: MediaUploadDialogProps) => {
 	const videoRef = useRef<HTMLVideoElement>(null)
 	const [name, setName] = useState(file.name)
-	const [reencTarget, setReencTarget] = useState(file.type === "image/heif" ? "image/jpeg" : "")
+	const [reencTarget, setReencTarget] = useState(nonEncodableSources.includes(file.type) ? "image/jpeg" : "")
 	const [jpegQuality, setJPEGQuality] = useState(80)
 	const [resizeSlider, setResizeSlider] = useState(100)
 	const [origDimensions, setOrigDimensions] = useState<dimensions | null>(null)

@@ -47,6 +47,8 @@ import (
 	"go.mau.fi/util/ptr"
 	"go.mau.fi/util/random"
 	cwebp "go.mau.fi/webp"
+	_ "golang.org/x/image/bmp"
+	_ "golang.org/x/image/tiff"
 	_ "golang.org/x/image/webp"
 	"maunium.net/go/mautrix"
 	"maunium.net/go/mautrix/crypto/attachment"
