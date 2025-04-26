@@ -39,7 +39,6 @@ import (
 	"github.com/buckket/go-blurhash"
 	"github.com/disintegration/imaging"
 	"github.com/gabriel-vasile/mimetype"
-	_ "github.com/jdeng/goheif"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/hlog"
 	"go.mau.fi/util/exhttp"
