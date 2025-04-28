@@ -50,7 +50,7 @@ const UserModeration = ({ userID, client, member, room }: UserModerationProps) =
 			return ownPL >= (pls.invite ?? 0)
 		}
 		const otherUserPL = pls.users?.[userID] ?? pls.users_default ?? 0
-		return ownPL >= (pls[action] ?? pls.state_default ?? 50) && ownPL > otherUserPL
+		return ownPL >= (pls[action] ?? pls.state_default ?? 50) && (action==="redact" ? true : ownPL > otherUserPL)
 	}
 
 	const runAction = (action: MembershipAction) => {
