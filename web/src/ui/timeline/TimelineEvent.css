@@ -240,6 +240,13 @@ div.event-content > div.event-reactions {
 		overflow: hidden;
 		max-width: 20rem;
 
+		user-select: none;
+		cursor: var(--clickable-cursor);
+
+		&:hover {
+			background-color: var(--light-hover-color);
+		}
+
 		> img.reaction-emoji {
 			height: 1.5rem;
 		}

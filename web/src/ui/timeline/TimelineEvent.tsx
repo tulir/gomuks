@@ -13,7 +13,7 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import React, { JSX, use, useState } from "react"
+import React, { JSX, use, useCallback, useState } from "react"
 import { createPortal } from "react-dom"
 import { getAvatarThumbnailURL, getMediaURL, getUserColorIndex } from "@/api/media.ts"
 import { useRoomMember } from "@/api/statestore"
@@ -49,14 +49,19 @@ const dateFormatter = new Intl.DateTimeFormat("en-GB", { dateStyle: "full" })
 const formatShortTime = (time: Date) =>
 	`${time.getHours().toString().padStart(2, "0")}:${time.getMinutes().toString().padStart(2, "0")}`
 
-const EventReactions = ({ reactions }: { reactions: Record<string, number> }) => {
+interface EventReactionsProps {
+	reactions: Record<string, number>
+	onRereact: (mouseEvt: React.MouseEvent) => void
+}
+
+const EventReactions = ({ reactions, onRereact }: EventReactionsProps) => {
 	const reactionEntries = Object.entries(reactions).filter(([, count]) => count > 0).sort((a, b) => b[1] - a[1])
 	if (reactionEntries.length === 0) {
 		return null
 	}
 	return <div className="event-reactions">
 		{reactionEntries.map(([reaction, count]) =>
-			<div key={reaction} className="reaction" title={reaction}>
+			<div key={reaction} className="reaction" title={reaction} onClick={onRereact}>
 				{reaction.startsWith("mxc://")
 					? <img className="reaction-emoji" src={getMediaURL(reaction)} alt=""/>
 					: <span className="reaction-emoji">{reaction}</span>}
@@ -106,6 +111,18 @@ const TimelineEvent = ({
 			/>,
 		})
 	}
+	const onRereact = useCallback((mouseEvt: React.MouseEvent) => {
+		client.sendEvent(evt.room_id, "m.reaction", {
+			"m.relates_to": {
+				rel_type: "m.annotation",
+				event_id: evt.event_id,
+				key: mouseEvt.currentTarget.getAttribute("title"),
+			},
+		}).catch(err => {
+			console.error("Failed to send reaction", err)
+			window.alert(`Failed to send reaction: ${err}`)
+		})
+	}, [client, evt])
 	const onClick = (mouseEvt: React.MouseEvent) => {
 		const targetElem = mouseEvt.target as HTMLElement
 		if (
@@ -300,7 +317,7 @@ const TimelineEvent = ({
 			>
 				(edited at {formatShortTime(editEventTS)})
 			</div> : null}
-			{evt.reactions ? <EventReactions reactions={evt.reactions}/> : null}
+			{evt.reactions ? <EventReactions reactions={evt.reactions} onRereact={onRereact} /> : null}
 		</div>
 		{!evt.event_id.startsWith("~") && roomCtx.store.preferences.display_read_receipts && !editHistoryView &&
 			<ReadReceipts room={roomCtx.store} eventID={evt.event_id} />}
