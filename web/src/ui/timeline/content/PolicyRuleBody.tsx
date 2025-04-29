@@ -15,7 +15,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import { JSX, use } from "react"
 import { PolicyRuleContent } from "@/api/types"
-import { getDisplayname } from "@/util/validation.ts"
+import { ensureString, getDisplayname } from "@/util/validation.ts"
 import MainScreenContext from "../../MainScreenContext.ts"
 import EventContentProps from "./props.ts"
 
@@ -24,10 +24,10 @@ const PolicyRuleBody = ({ event, sender }: EventContentProps) => {
 	const prevContent = event.unsigned.prev_content as PolicyRuleContent | undefined
 	const mainScreen = use(MainScreenContext)
 
-	const entity = content.entity ?? prevContent?.entity
-	const hashedEntity = content["org.matrix.msc4205.hashes"]?.sha256
-		?? prevContent?.["org.matrix.msc4205.hashes"]?.sha256
-	const recommendation = content.recommendation ?? prevContent?.recommendation
+	const entity = ensureString(content.entity ?? prevContent?.entity)
+	const hashedEntity = ensureString(content["org.matrix.msc4205.hashes"]?.sha256
+		?? prevContent?.["org.matrix.msc4205.hashes"]?.sha256)
+	const recommendation = ensureString(content.recommendation ?? prevContent?.recommendation)
 	if ((!entity && !hashedEntity) || !recommendation) {
 		return <div className="policy-body">
 			{getDisplayname(event.sender, sender?.content)} sent an invalid policy rule
@@ -63,7 +63,7 @@ const PolicyRuleBody = ({ event, sender }: EventContentProps) => {
 	return <div className="policy-body">
 		{getDisplayname(event.sender, sender?.content)} {action} a {recommendationElement} rule
 		for {matchingWord} <code>{entityElement}</code>
-		{content.reason ? <> for <code>{content.reason}</code></> : null}
+		{content.reason ? <> for <code>{ensureString(content.reason)}</code></> : null}
 	</div>
 }
 

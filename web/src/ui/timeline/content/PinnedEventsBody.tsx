@@ -16,10 +16,14 @@
 import { PinnedEventsContent } from "@/api/types"
 import { listDiff } from "@/util/diff.ts"
 import { humanJoin } from "@/util/join.ts"
+import { ensureTypedArray, getDisplayname, isEventID } from "@/util/validation.ts"
 import EventContentProps from "./props.ts"
 
 function renderPinChanges(content: PinnedEventsContent, prevContent?: PinnedEventsContent): string {
-	const [added, removed] = listDiff(content.pinned ?? [], prevContent?.pinned ?? [])
+	const [added, removed] = listDiff(
+		ensureTypedArray(content.pinned ?? [], isEventID),
+		ensureTypedArray(prevContent?.pinned ?? [], isEventID),
+	)
 	if (added.length) {
 		if (removed.length) {
 			return `pinned ${humanJoin(added)} and unpinned ${humanJoin(removed)}`
@@ -36,7 +40,7 @@ const PinnedEventsBody = ({ event, sender }: EventContentProps) => {
 	const content = event.content as PinnedEventsContent
 	const prevContent = event.unsigned.prev_content as PinnedEventsContent | undefined
 	return <div className="pinned-events-body">
-		{sender?.content.displayname ?? event.sender} {renderPinChanges(content, prevContent)}
+		{getDisplayname(event.sender, sender?.content)} {renderPinChanges(content, prevContent)}
 	</div>
 }
 

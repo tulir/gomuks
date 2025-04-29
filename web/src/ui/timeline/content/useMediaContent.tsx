@@ -17,6 +17,7 @@ import React, { CSSProperties, JSX, use, useState } from "react"
 import { getEncryptedMediaURL, getMediaURL } from "@/api/media.ts"
 import type { EventType, MediaMessageEventContent } from "@/api/types"
 import { ImageContainerSize, calculateMediaSize, defaultVideoContainerSize } from "@/util/mediasize.ts"
+import { ensureString } from "@/util/validation.ts"
 import { LightboxContext } from "../../modal"
 import DownloadIcon from "@/icons/download.svg?react"
 
@@ -41,8 +42,8 @@ export const useMediaContent = (
 			loading="lazy"
 			style={style.media}
 			src={mediaURL}
-			alt={content.filename ?? content.body}
-			title={content.filename ?? content.body}
+			alt={ensureString(content.filename ?? content.body)}
+			title={ensureString(content.filename ?? content.body)}
 			onClick={use(LightboxContext)}
 			className={errored ? "errored" : undefined}
 		/>, "image-container", style.container]
@@ -70,7 +71,7 @@ export const useMediaContent = (
 			onMouseOut={onMouseOut}
 			preload="none"
 		>
-			<source src={mediaURL} type={content.info?.mimetype}/>
+			<source src={mediaURL} type={ensureString(content.info?.mimetype)}/>
 		</video>, "video-container", style.container]
 	} else if (content.msgtype === "m.audio") {
 		return [<audio controls src={mediaURL} preload="none"/>, "audio-container", {}]
@@ -79,9 +80,9 @@ export const useMediaContent = (
 			href={mediaURL}
 			target="_blank"
 			rel="noopener noreferrer"
-			download={content.filename ?? content.body}
+			download={ensureString(content.filename ?? content.body)}
 		>
-			<DownloadIcon height={32} width={32}/> {content.filename ?? content.body}
+			<DownloadIcon height={32} width={32}/> {ensureString(content.filename ?? content.body)}
 		</a>, "file-container", {}]
 	}
 	return [null, "unknown-container", {}]
