@@ -62,6 +62,7 @@ div.context-menu {
 		border-radius: 0;
 		padding: .5rem .75rem;
 		justify-content: left;
+		text-align: left;
 		gap: .5rem;
 
 		> svg {
