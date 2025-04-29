@@ -247,6 +247,7 @@ div.media-container {
 			display: flex;
 			justify-content: center;
 			align-items: center;
+			text-align: center;
 			height: 100%;
 			color: var(--error-color);
 			content: "Failed to load image";
