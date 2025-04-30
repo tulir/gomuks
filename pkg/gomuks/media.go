@@ -17,6 +17,7 @@
 package gomuks
 
 import (
+	"bytes"
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
@@ -32,6 +33,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -727,6 +729,32 @@ func (gmx *Gomuks) uploadFile(ctx context.Context, checksum []byte, cacheFile *o
 	}
 }
 
+var magickPath string
+
+func init() {
+	magickPath, _ = exec.LookPath("magick")
+}
+
+func getDimensionsWithMagick(ctx context.Context, file *os.File) (w, h int) {
+	if stdout, err := exec.CommandContext(ctx, magickPath, "identify", "-format", "%w %h", file.Name()+"[0]").Output(); err != nil {
+		var stderr []byte
+		var e *exec.ExitError
+		if errors.As(err, &e) {
+			stderr = e.Stderr
+		}
+		zerolog.Ctx(ctx).Err(err).Bytes("stderr", stderr).Msg("Failed to get image dimensions with magick")
+	} else if spaceIdx := bytes.IndexByte(stdout, ' '); spaceIdx == -1 {
+		zerolog.Ctx(ctx).Error().Bytes("stdout", stdout).Msg("Failed to parse magick output")
+	} else if width, err := strconv.Atoi(string(stdout[:spaceIdx])); err != nil {
+		zerolog.Ctx(ctx).Err(err).Bytes("stdout", stdout).Msg("Failed to parse width in magick output")
+	} else if height, err := strconv.Atoi(string(stdout[spaceIdx+1:])); err != nil {
+		zerolog.Ctx(ctx).Err(err).Bytes("stdout", stdout).Msg("Failed to parse height in magick output")
+	} else {
+		return width, height
+	}
+	return 0, 0
+}
+
 func (gmx *Gomuks) generateFileInfo(ctx context.Context, file *os.File) (event.MessageType, *event.FileInfo, string, error) {
 	fileInfo, err := file.Stat()
 	if err != nil {
@@ -752,7 +780,12 @@ func (gmx *Gomuks) generateFileInfo(ctx context.Context, file *os.File) (event.M
 		defaultFileName = "image" + mimeType.Extension()
 		img, _, err := image.Decode(file)
 		if err != nil {
-			zerolog.Ctx(ctx).Warn().Err(err).Msg("Failed to decode image config")
+			if magickPath != "" {
+				zerolog.Ctx(ctx).Warn().Err(err).Msg("Failed to decode image config, trying with magick")
+				info.Width, info.Height = getDimensionsWithMagick(ctx, file)
+			} else {
+				zerolog.Ctx(ctx).Warn().Err(err).Msg("Failed to decode image config and magick not installed")
+			}
 		} else {
 			bounds := img.Bounds()
 			info.Width = bounds.Dx()
