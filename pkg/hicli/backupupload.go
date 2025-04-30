@@ -19,15 +19,15 @@ import (
 	"maunium.net/go/mautrix/id"
 )
 
-func (c *HiClient) uploadKeysToBackup(ctx context.Context) {
+func (h *HiClient) uploadKeysToBackup(ctx context.Context) {
 	log := zerolog.Ctx(ctx)
-	version := c.KeyBackupVersion
-	key := c.KeyBackupKey
+	version := h.KeyBackupVersion
+	key := h.KeyBackupKey
 	if version == "" || key == nil {
 		return
 	}
 
-	sessions, err := c.CryptoStore.GetGroupSessionsWithoutKeyBackupVersion(ctx, version).AsList()
+	sessions, err := h.CryptoStore.GetGroupSessionsWithoutKeyBackupVersion(ctx, version).AsList()
 	if err != nil {
 		log.Err(err).Msg("Failed to get megolm sessions that aren't backed up")
 		return
@@ -36,15 +36,15 @@ func (c *HiClient) uploadKeysToBackup(ctx context.Context) {
 	}
 	log.Debug().Int("session_count", len(sessions)).Msg("Backing up megolm sessions")
 	for chunk := range slices.Chunk(sessions, 100) {
-		err = c.uploadKeyBackupBatch(ctx, version, key, chunk)
+		err = h.uploadKeyBackupBatch(ctx, version, key, chunk)
 		if err != nil {
 			log.Err(err).Msg("Failed to upload key backup batch")
 			return
 		}
-		err = c.CryptoStore.DB.DoTxn(ctx, nil, func(ctx context.Context) error {
+		err = h.CryptoStore.DB.DoTxn(ctx, nil, func(ctx context.Context) error {
 			for _, sess := range chunk {
 				sess.KeyBackupVersion = version
-				err := c.CryptoStore.PutGroupSession(ctx, sess)
+				err := h.CryptoStore.PutGroupSession(ctx, sess)
 				if err != nil {
 					return err
 				}
@@ -59,7 +59,7 @@ func (c *HiClient) uploadKeysToBackup(ctx context.Context) {
 	log.Info().Int("session_count", len(sessions)).Msg("Successfully uploaded megolm sessions to key backup")
 }
 
-func (c *HiClient) uploadKeyBackupBatch(ctx context.Context, version id.KeyBackupVersion, megolmBackupKey *backup.MegolmBackupKey, sessions []*crypto.InboundGroupSession) error {
+func (h *HiClient) uploadKeyBackupBatch(ctx context.Context, version id.KeyBackupVersion, megolmBackupKey *backup.MegolmBackupKey, sessions []*crypto.InboundGroupSession) error {
 	if len(sessions) == 0 {
 		return nil
 	}
@@ -108,6 +108,6 @@ func (c *HiClient) uploadKeyBackupBatch(ctx context.Context, version id.KeyBacku
 		}
 	}
 
-	_, err := c.Client.PutKeysInBackup(ctx, version, &req)
+	_, err := h.Client.PutKeysInBackup(ctx, version, &req)
 	return err
 }
