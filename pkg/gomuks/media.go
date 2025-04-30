@@ -554,7 +554,7 @@ func (gmx *Gomuks) reencodeMedia(ctx context.Context, query url.Values, tempFile
 		if err != nil {
 			return nil, fmt.Errorf("failed to seek to start of temp file: %w", err)
 		}
-	case "video/webm", "video/mp4":
+	case "video/webm", "video/mp4", "image/webp+anim":
 		_ = tempFile.Close()
 		var encToExtension string
 		var inputArgs, outputArgs []string
@@ -565,6 +565,9 @@ func (gmx *Gomuks) reencodeMedia(ctx context.Context, query url.Values, tempFile
 		case "video/mp4":
 			encToExtension = ".mp4"
 			outputArgs = []string{"-c:v", "libx264", "-c:a", "aac", "-pix_fmt", "yuv420p"}
+		case "image/webp+anim":
+			encToExtension = ".webp"
+			outputArgs = []string{"-c:v", "libwebp_anim", "-pix_fmt", "yuva420p", "-loop", "0"}
 		default:
 			panic("unreachable")
 		}

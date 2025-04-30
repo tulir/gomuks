@@ -39,7 +39,7 @@ function formatSize(bytes: number): string {
 const imageReencTargets = ["image/webp", "image/jpeg", "image/png", "image/gif"]
 const nonEncodableSources = ["image/bmp", "image/tiff", "image/heif", "image/heic"]
 const imageReencSources = [...imageReencTargets, ...nonEncodableSources]
-const videoReencTargets = ["video/webm", "video/mp4"]
+const videoReencTargets = ["video/webm", "video/mp4", "image/webp+anim"]
 
 interface dimensions {
 	width: number
