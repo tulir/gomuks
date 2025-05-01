@@ -18,4 +18,15 @@
 
 package gomuks
 
-import _ "github.com/jdeng/goheif"
+import (
+	"runtime"
+
+	"github.com/jdeng/goheif"
+	"golang.org/x/sys/cpu"
+)
+
+func init() {
+	if runtime.GOARCH != "amd64" || cpu.X86.HasSSE41 {
+		goheif.Init()
+	}
+}

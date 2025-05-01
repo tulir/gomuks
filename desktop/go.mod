@@ -85,3 +85,5 @@ require (
 )
 
 replace go.mau.fi/gomuks => ../
+
+replace github.com/jdeng/goheif => github.com/tulir/goheif v0.0.0-20250501140641-64420fbcc40f
