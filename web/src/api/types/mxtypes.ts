@@ -252,6 +252,8 @@ export interface MediaInfo {
 
 	"fi.mau.hide_controls"?: boolean
 	"fi.mau.loop"?: boolean
+	"fi.mau.autoplay"?: boolean
+	"fi.mau.no_audio"?: boolean
 	"xyz.amorgan.blurhash"?: string
 }
 

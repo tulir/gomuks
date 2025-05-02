@@ -49,12 +49,14 @@ export const useMediaContent = (
 		/>, "image-container", style.container]
 	} else if (content.msgtype === "m.video") {
 		const style = calculateMediaSize(content.info?.w, content.info?.h, containerSize ?? defaultVideoContainerSize)
-		const autoplay = false
+		// TODO optionally allow autoplaying gifs
+		const autoplay = false // !!content.info?.["fi.mau.autoplay"]
 		const controls = !content.info?.["fi.mau.hide_controls"]
 		const loop = !!content.info?.["fi.mau.loop"]
+		const muted = !!content.info?.["fi.mau.no_audio"]
 		let onMouseOver: React.MouseEventHandler<HTMLVideoElement> | undefined
 		let onMouseOut: React.MouseEventHandler<HTMLVideoElement> | undefined
-		if (!autoplay && !controls) {
+		if (!autoplay && !controls && muted) {
 			onMouseOver = (event: React.MouseEvent<HTMLVideoElement>) => event.currentTarget.play()
 			onMouseOut = (event: React.MouseEvent<HTMLVideoElement>) => {
 				event.currentTarget.pause()
@@ -62,10 +64,11 @@ export const useMediaContent = (
 			}
 		}
 		return [<video
-			autoPlay={autoplay}
-			controls={controls}
+			autoPlay={autoplay && muted}
+			controls={controls || !muted}
 			style={style.media}
 			loop={loop}
+			muted={muted}
 			poster={thumbnailURL}
 			onMouseOver={onMouseOver}
 			onMouseOut={onMouseOut}
