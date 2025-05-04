@@ -13,6 +13,7 @@ import (
 
 	"github.com/rs/zerolog"
 	"github.com/tidwall/gjson"
+	"go.mau.fi/util/exstrings"
 	"maunium.net/go/mautrix/crypto"
 	"maunium.net/go/mautrix/event"
 	"maunium.net/go/mautrix/id"
@@ -63,13 +64,7 @@ func (h *HiClient) handleReceivedMegolmSession(ctx context.Context, roomID id.Ro
 			continue
 		}
 		result := gjson.GetBytes(evt.Content, "ciphertext")
-		var raw []byte
-		if result.Index > 0 {
-			raw = evt.Content[result.Index : result.Index+len(result.Raw)]
-		} else {
-			raw = []byte(result.Raw)
-		}
-		idx, err := crypto.ParseMegolmMessageIndex(raw)
+		idx, err := crypto.ParseMegolmMessageIndex(exstrings.UnsafeBytes(result.Str))
 		if err != nil {
 			log.Warn().Err(err).Stringer("event_id", evt.ID).Msg("Failed to parse megolm message index")
 		} else if uint32(idx) < firstKnownIndex {
