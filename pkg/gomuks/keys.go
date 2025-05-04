@@ -17,6 +17,7 @@
 package gomuks
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -24,12 +25,15 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/hlog"
 	"go.mau.fi/util/dbutil"
 	"go.mau.fi/util/exhttp"
 	"maunium.net/go/mautrix"
 	"maunium.net/go/mautrix/crypto"
 	"maunium.net/go/mautrix/id"
+
+	"go.mau.fi/gomuks/pkg/hicli"
 )
 
 func (gmx *Gomuks) ExportKeys(w http.ResponseWriter, r *http.Request) {
@@ -107,4 +111,32 @@ func (gmx *Gomuks) ImportKeys(w http.ResponseWriter, r *http.Request) {
 		"imported": importedCount,
 		"total":    totalCount,
 	})
+}
+
+func (gmx *Gomuks) RestoreKeyBackup(w http.ResponseWriter, r *http.Request) {
+	roomID := id.RoomID(r.PathValue("room_id"))
+	w.Header().Set("Content-Type", "text/event-stream")
+	w.Header().Set("Cache-Control", "no-cache")
+	w.Header().Set("Connection", "keep-alive")
+	w.WriteHeader(http.StatusOK)
+	sendProgress := func(progress hicli.KeyBackupRestoreProgress) {
+		progressJSON, err := json.Marshal(progress)
+		if err != nil {
+			zerolog.Ctx(r.Context()).Err(err).Msg("Failed to marshal progress notice")
+			return
+		}
+		_, err = fmt.Fprintf(w, "event: progress\ndata: %s\n\n", progressJSON)
+		if err != nil {
+			zerolog.Ctx(r.Context()).Err(err).Msg("Failed to write progress notice")
+		}
+		if f, ok := w.(http.Flusher); ok {
+			f.Flush()
+		}
+	}
+	err := gmx.Client.RestoreKeyBackup(r.Context(), roomID, sendProgress)
+	if err != nil {
+		_, _ = fmt.Fprintf(w, "event: done\ndata: %s\n\n", err.Error())
+	} else {
+		_, _ = fmt.Fprint(w, "event: done\ndata: ok\n\n")
+	}
 }

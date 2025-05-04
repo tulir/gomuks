@@ -8,7 +8,7 @@ require github.com/wailsapp/wails/v3 v3.0.0-alpha.9
 
 require (
 	go.mau.fi/gomuks v0.4.0
-	go.mau.fi/util v0.8.7-0.20250427215252-d2d18a7e463c
+	go.mau.fi/util v0.8.7-0.20250504163337-fc01e957f535
 )
 
 require (
@@ -80,7 +80,7 @@ require (
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
-	maunium.net/go/mautrix v0.23.4-0.20250428232703-db62b9a1d875 // indirect
+	maunium.net/go/mautrix v0.23.4-0.20250504110906-6eb4c7b17f97 // indirect
 	mvdan.cc/xurls/v2 v2.6.0 // indirect
 )
 

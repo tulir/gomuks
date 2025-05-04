@@ -304,3 +304,14 @@ export interface MediaEncodingOptions {
 }
 
 export type MembershipAction = "invite" | "kick" | "ban" | "unban"
+
+export interface KeyRestoreProgress  {
+	current_room_id: RoomID
+	stage: "fetching" | "decrypting" | "saving" | "postprocessing" | "done"
+	decrypted: number
+	decryption_failed: number
+	import_failed: number
+	saved: number
+	post_processed: number
+	total: number
+}

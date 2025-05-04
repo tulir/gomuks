@@ -12,6 +12,7 @@ import (
 	"sync"
 
 	"github.com/rs/zerolog"
+	"github.com/tidwall/gjson"
 	"maunium.net/go/mautrix/crypto"
 	"maunium.net/go/mautrix/event"
 	"maunium.net/go/mautrix/id"
@@ -22,15 +23,19 @@ import (
 func (h *HiClient) fetchFromKeyBackup(ctx context.Context, roomID id.RoomID, sessionID id.SessionID) (*crypto.InboundGroupSession, error) {
 	data, err := h.Client.GetKeyBackupForRoomAndSession(ctx, h.KeyBackupVersion, roomID, sessionID)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to fetch key from server: %w", err)
 	} else if data == nil {
 		return nil, nil
 	}
 	decrypted, err := data.SessionData.Decrypt(h.KeyBackupKey)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to decrypt key: %w", err)
 	}
-	return h.Crypto.ImportRoomKeyFromBackup(ctx, h.KeyBackupVersion, roomID, sessionID, decrypted)
+	sess, err := h.Crypto.ImportRoomKeyFromBackup(ctx, h.KeyBackupVersion, roomID, sessionID, decrypted)
+	if err != nil {
+		return nil, fmt.Errorf("failed to import decrypted key: %w", err)
+	}
+	return sess, nil
 }
 
 func (h *HiClient) handleReceivedMegolmSession(ctx context.Context, roomID id.RoomID, sessionID id.SessionID, firstKnownIndex uint32) {
@@ -55,6 +60,20 @@ func (h *HiClient) handleReceivedMegolmSession(ctx context.Context, roomID id.Ro
 	decrypted := events[:0]
 	for _, evt := range events {
 		if evt.Decrypted != nil {
+			continue
+		}
+		result := gjson.GetBytes(evt.Content, "ciphertext")
+		var raw []byte
+		if result.Index > 0 {
+			raw = evt.Content[result.Index : result.Index+len(result.Raw)]
+		} else {
+			raw = []byte(result.Raw)
+		}
+		idx, err := crypto.ParseMegolmMessageIndex(raw)
+		if err != nil {
+			log.Warn().Err(err).Stringer("event_id", evt.ID).Msg("Failed to parse megolm message index")
+		} else if uint32(idx) < firstKnownIndex {
+			log.Debug().Stringer("event_id", evt.ID).Msg("Skipping event with megolm message index lower than first known index")
 			continue
 		}
 
