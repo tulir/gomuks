@@ -17,6 +17,7 @@ import { useEffect, useMemo, useReducer, useState, useSyncExternalStore } from "
 import Client from "@/api/client.ts"
 import type { CustomEmojiPack } from "@/util/emoji"
 import type {
+	BeeperPerMessageProfile,
 	EventID,
 	EventType,
 	MemDBEvent,
@@ -65,6 +66,39 @@ export function useRoomMember(
 		client.requestMemberEvent(room, userID)
 	}
 	return evt
+}
+
+export function maybeRedactMemberEvent(memberEvt: MemDBEvent | null): MemberEventContent | undefined {
+	let memberEvtContent = memberEvt?.content as MemberEventContent | undefined
+	if (memberEvt?.redacted_by && !memberEvt?.viewing_redacted) {
+		memberEvtContent = {
+			membership: memberEvtContent!.membership,
+		}
+	} else if (
+		memberEvtContent?.displayname === undefined
+		&& memberEvtContent?.avatar_url === undefined
+		&& memberEvt?.content.membership === "leave"
+		&& memberEvt.unsigned.prev_content
+	) {
+		memberEvtContent = memberEvt.unsigned.prev_content as MemberEventContent | undefined
+	}
+	return memberEvtContent
+}
+
+export function applyPerMessageSender(
+	memberEvtContent: MemberEventContent | undefined,
+	perMessageSender: BeeperPerMessageProfile | undefined,
+): MemberEventContent | undefined {
+	let renderMemberEvtContent = memberEvtContent
+	if (perMessageSender) {
+		renderMemberEvtContent = {
+			membership: "join",
+			displayname: perMessageSender.displayname ?? memberEvtContent?.displayname,
+			avatar_url: perMessageSender.avatar_url ?? memberEvtContent?.avatar_url,
+			avatar_file: perMessageSender.avatar_file ?? memberEvtContent?.avatar_file,
+		}
+	}
+	return renderMemberEvtContent
 }
 
 export function useMultipleRoomMembers(
