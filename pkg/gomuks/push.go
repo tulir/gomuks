@@ -34,8 +34,8 @@ import (
 	"go.mau.fi/util/random"
 	"maunium.net/go/mautrix/id"
 
-	"go.mau.fi/gomuks/pkg/hicli"
 	"go.mau.fi/gomuks/pkg/hicli/database"
+	"go.mau.fi/gomuks/pkg/hicli/jsoncmd"
 )
 
 type PushNotification struct {
@@ -65,7 +65,7 @@ var pushClient = &http.Client{
 	Timeout: 60 * time.Second,
 }
 
-func (gmx *Gomuks) SendPushNotifications(sync *hicli.SyncComplete) {
+func (gmx *Gomuks) SendPushNotifications(sync *jsoncmd.SyncComplete) {
 	var ctx context.Context
 	var push PushNotification
 	for _, room := range sync.Rooms {

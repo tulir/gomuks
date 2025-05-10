@@ -14,38 +14,16 @@ import (
 	"sync/atomic"
 
 	"go.mau.fi/util/exerrors"
+
+	"go.mau.fi/gomuks/pkg/hicli/jsoncmd"
 )
 
-type JSONCommandCustom[T any] struct {
-	Command   string `json:"command"`
-	RequestID int64  `json:"request_id"`
-	Data      T      `json:"data"`
-}
-
-type JSONCommand = JSONCommandCustom[json.RawMessage]
+type JSONCommandCustom[T any] = jsoncmd.Container[T]
+type JSONCommand = jsoncmd.Container[json.RawMessage]
 
 type JSONEventHandler func(*JSONCommand)
 
 var outgoingEventCounter atomic.Int64
-
-func EventTypeName(evt any) string {
-	switch evt.(type) {
-	case *SyncComplete:
-		return "sync_complete"
-	case *SyncStatus:
-		return "sync_status"
-	case *EventsDecrypted:
-		return "events_decrypted"
-	case *Typing:
-		return "typing"
-	case *SendComplete:
-		return "send_complete"
-	case *ClientState:
-		return "client_state"
-	default:
-		panic(fmt.Errorf("unknown event type %T", evt))
-	}
-}
 
 func (jeh JSONEventHandler) HandleEvent(evt any) {
 	data, err := json.Marshal(evt)
@@ -53,14 +31,14 @@ func (jeh JSONEventHandler) HandleEvent(evt any) {
 		panic(fmt.Errorf("failed to marshal event %T: %w", evt, err))
 	}
 	jeh(&JSONCommand{
-		Command:   EventTypeName(evt),
+		Command:   jsoncmd.EventTypeName(evt),
 		RequestID: -outgoingEventCounter.Add(1),
 		Data:      data,
 	})
 }
 
-func (h *HiClient) State() *ClientState {
-	state := &ClientState{}
+func (h *HiClient) State() *jsoncmd.ClientState {
+	state := &jsoncmd.ClientState{}
 	if acc := h.Account; acc != nil {
 		state.IsLoggedIn = true
 		state.UserID = acc.UserID
@@ -76,7 +54,7 @@ func (h *HiClient) dispatchCurrentState() {
 }
 
 func (h *HiClient) SubmitJSONCommand(ctx context.Context, req *JSONCommand) *JSONCommand {
-	log := h.Log.With().Int64("request_id", req.RequestID).Str("command", req.Command).Logger()
+	log := h.Log.With().Int64("request_id", req.RequestID).Stringer("command", req.Command).Logger()
 	ctx, cancel := context.WithCancelCause(ctx)
 	defer func() {
 		cancel(nil)
@@ -97,7 +75,7 @@ func (h *HiClient) SubmitJSONCommand(ctx context.Context, req *JSONCommand) *JSO
 			}
 		}
 		return &JSONCommand{
-			Command:   "error",
+			Command:   jsoncmd.RespError,
 			RequestID: req.RequestID,
 			Data:      exerrors.Must(json.Marshal(err.Error())),
 		}
@@ -106,13 +84,13 @@ func (h *HiClient) SubmitJSONCommand(ctx context.Context, req *JSONCommand) *JSO
 	respData, err = json.Marshal(resp)
 	if err != nil {
 		return &JSONCommand{
-			Command:   "error",
+			Command:   jsoncmd.RespError,
 			RequestID: req.RequestID,
 			Data:      exerrors.Must(json.Marshal(fmt.Sprintf("failed to marshal response json: %v", err))),
 		}
 	}
 	return &JSONCommand{
-		Command:   "response",
+		Command:   jsoncmd.RespSuccess,
 		RequestID: req.RequestID,
 		Data:      respData,
 	}

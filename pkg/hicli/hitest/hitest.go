@@ -25,6 +25,7 @@ import (
 	"maunium.net/go/mautrix/id"
 
 	"go.mau.fi/gomuks/pkg/hicli"
+	"go.mau.fi/gomuks/pkg/hicli/jsoncmd"
 )
 
 var writerTypeReadline zeroconfig.WriterType = "hitest_readline"
@@ -53,7 +54,7 @@ func main() {
 	cli := hicli.New(rawDB, nil, *log, []byte("meow"), func(a any) {
 		_, _ = fmt.Fprintf(rl, "Received event of type %T\n", a)
 		switch evt := a.(type) {
-		case *hicli.SyncComplete:
+		case *jsoncmd.SyncComplete:
 			for _, room := range evt.Rooms {
 				name := "name unset"
 				if room.Meta.Name != nil {
@@ -63,14 +64,14 @@ func main() {
 				_, _ = fmt.Fprintf(rl, "  Preview: %d, sort: %v\n", room.Meta.PreviewEventRowID, room.Meta.SortingTimestamp)
 				_, _ = fmt.Fprintf(rl, "  Timeline: +%d %v, reset: %t\n", len(room.Timeline), room.Timeline, room.Reset)
 			}
-		case *hicli.EventsDecrypted:
+		case *jsoncmd.EventsDecrypted:
 			for _, decrypted := range evt.Events {
 				_, _ = fmt.Fprintf(rl, "Delayed decryption of %s completed: %s / %s\n", decrypted.ID, decrypted.DecryptedType, decrypted.Decrypted)
 			}
 			if evt.PreviewEventRowID != 0 {
 				_, _ = fmt.Fprintf(rl, "Room preview updated: %+v\n", evt.PreviewEventRowID)
 			}
-		case *hicli.Typing:
+		case *jsoncmd.Typing:
 			_, _ = fmt.Fprintf(rl, "Typing list in %s: %+v\n", evt.RoomID, evt.UserIDs)
 		}
 	})

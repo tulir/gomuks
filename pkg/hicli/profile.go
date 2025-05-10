@@ -16,6 +16,8 @@ import (
 	"maunium.net/go/mautrix"
 	"maunium.net/go/mautrix/crypto"
 	"maunium.net/go/mautrix/id"
+
+	"go.mau.fi/gomuks/pkg/hicli/jsoncmd"
 )
 
 const MutualRoomsBatchLimit = 5
@@ -39,26 +41,8 @@ func (h *HiClient) GetMutualRooms(ctx context.Context, userID id.UserID) (output
 	return
 }
 
-type ProfileDevice struct {
-	DeviceID    id.DeviceID   `json:"device_id"`
-	Name        string        `json:"name"`
-	IdentityKey id.Curve25519 `json:"identity_key"`
-	SigningKey  id.Ed25519    `json:"signing_key"`
-	Fingerprint string        `json:"fingerprint"`
-	Trust       id.TrustState `json:"trust_state"`
-}
-
-type ProfileEncryptionInfo struct {
-	DevicesTracked bool             `json:"devices_tracked"`
-	Devices        []*ProfileDevice `json:"devices"`
-	MasterKey      string           `json:"master_key"`
-	FirstMasterKey string           `json:"first_master_key"`
-	UserTrusted    bool             `json:"user_trusted"`
-	Errors         []string         `json:"errors"`
-}
-
-func (h *HiClient) GetProfileEncryptionInfo(ctx context.Context, userID id.UserID) (*ProfileEncryptionInfo, error) {
-	var resp ProfileEncryptionInfo
+func (h *HiClient) GetProfileEncryptionInfo(ctx context.Context, userID id.UserID) (*jsoncmd.ProfileEncryptionInfo, error) {
+	var resp jsoncmd.ProfileEncryptionInfo
 	log := zerolog.Ctx(ctx)
 	cachedDevices, err := h.Crypto.GetCachedDevices(ctx, userID)
 	if errors.Is(err, crypto.ErrUserNotTracked) {
@@ -78,9 +62,9 @@ func (h *HiClient) GetProfileEncryptionInfo(ctx context.Context, userID id.UserI
 		resp.Errors = append(resp.Errors, "Cross-signing keys not found")
 	}
 	resp.UserTrusted = cachedDevices.MasterKeySignedByUs
-	resp.Devices = make([]*ProfileDevice, len(cachedDevices.Devices))
+	resp.Devices = make([]*jsoncmd.ProfileDevice, len(cachedDevices.Devices))
 	for i, dev := range cachedDevices.Devices {
-		resp.Devices[i] = &ProfileDevice{
+		resp.Devices[i] = &jsoncmd.ProfileDevice{
 			DeviceID:    dev.DeviceID,
 			Name:        dev.Name,
 			IdentityKey: dev.IdentityKey,

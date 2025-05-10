@@ -27,6 +27,7 @@ import (
 	"maunium.net/go/mautrix/id"
 
 	"go.mau.fi/gomuks/pkg/hicli/database"
+	"go.mau.fi/gomuks/pkg/hicli/jsoncmd"
 	"go.mau.fi/gomuks/pkg/rainbow"
 )
 
@@ -374,7 +375,7 @@ func (h *HiClient) actuallySend(ctx context.Context, room *database.Room, dbEvt 
 			}
 		}
 		if !synchronous {
-			h.EventHandler(&SendComplete{
+			h.EventHandler(&jsoncmd.SendComplete{
 				Event: dbEvt,
 				Error: err,
 			})

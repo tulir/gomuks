@@ -30,6 +30,7 @@ import (
 
 	"go.mau.fi/gomuks/pkg/gomuks"
 	"go.mau.fi/gomuks/pkg/hicli"
+	"go.mau.fi/gomuks/pkg/hicli/jsoncmd"
 	"go.mau.fi/gomuks/version"
 	"go.mau.fi/gomuks/web"
 )
@@ -56,12 +57,12 @@ func (c *CommandHandler) HandleCommand(cmd *hicli.JSONCommand) *hicli.JSONComman
 
 func (c *CommandHandler) Init() {
 	c.Gomuks.Log.Info().Msg("Sending initial state to client")
-	c.App.EmitEvent("hicli_event", &hicli.JSONCommandCustom[*hicli.ClientState]{
-		Command: "client_state",
+	c.App.EmitEvent("hicli_event", &hicli.JSONCommandCustom[*jsoncmd.ClientState]{
+		Command: jsoncmd.EventClientState,
 		Data:    c.Gomuks.Client.State(),
 	})
-	c.App.EmitEvent("hicli_event", &hicli.JSONCommandCustom[*hicli.SyncStatus]{
-		Command: "sync_status",
+	c.App.EmitEvent("hicli_event", &hicli.JSONCommandCustom[*jsoncmd.SyncStatus]{
+		Command: jsoncmd.EventSyncStatus,
 		Data:    c.Gomuks.Client.SyncStatus.Load(),
 	})
 	if c.Gomuks.Client.IsLoggedIn() {
@@ -77,7 +78,7 @@ func (c *CommandHandler) Init() {
 					return
 				}
 				c.App.EmitEvent("hicli_event", &hicli.JSONCommand{
-					Command:   "sync_complete",
+					Command:   jsoncmd.EventSyncComplete,
 					RequestID: 0,
 					Data:      marshaledPayload,
 				})
@@ -86,7 +87,7 @@ func (c *CommandHandler) Init() {
 				return
 			}
 			c.App.EmitEvent("hicli_event", &hicli.JSONCommand{
-				Command:   "init_complete",
+				Command:   jsoncmd.EventInitComplete,
 				RequestID: 0,
 			})
 			log.Info().Int("room_count", roomCount).Msg("Sent initial rooms to client")

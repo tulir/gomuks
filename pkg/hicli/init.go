@@ -10,10 +10,11 @@ import (
 	"maunium.net/go/mautrix/id"
 
 	"go.mau.fi/gomuks/pkg/hicli/database"
+	"go.mau.fi/gomuks/pkg/hicli/jsoncmd"
 )
 
-func (h *HiClient) getInitialSyncRoom(ctx context.Context, room *database.Room) *SyncRoom {
-	syncRoom := &SyncRoom{
+func (h *HiClient) getInitialSyncRoom(ctx context.Context, room *database.Room) *jsoncmd.SyncRoom {
+	syncRoom := &jsoncmd.SyncRoom{
 		Meta:   room,
 		Events: make([]*database.Event, 0, 2),
 		State:  map[event.Type]map[string]database.EventRowID{},
@@ -63,8 +64,8 @@ func (h *HiClient) getInitialSyncRoom(ctx context.Context, room *database.Room) 
 	return syncRoom
 }
 
-func (h *HiClient) GetInitialSync(ctx context.Context, batchSize int) iter.Seq[*SyncComplete] {
-	return func(yield func(*SyncComplete) bool) {
+func (h *HiClient) GetInitialSync(ctx context.Context, batchSize int) iter.Seq[*jsoncmd.SyncComplete] {
+	return func(yield func(*jsoncmd.SyncComplete) bool) {
 		maxTS := time.Now().Add(1 * time.Hour)
 		{
 			spaces, err := h.DB.Room.GetAllSpaces(ctx)
@@ -74,8 +75,8 @@ func (h *HiClient) GetInitialSync(ctx context.Context, batchSize int) iter.Seq[*
 				}
 				return
 			}
-			payload := SyncComplete{
-				Rooms: make(map[id.RoomID]*SyncRoom, len(spaces)),
+			payload := jsoncmd.SyncComplete{
+				Rooms: make(map[id.RoomID]*jsoncmd.SyncRoom, len(spaces)),
 			}
 			for _, room := range spaces {
 				payload.Rooms[room.ID] = h.getInitialSyncRoom(ctx, room)
@@ -117,8 +118,8 @@ func (h *HiClient) GetInitialSync(ctx context.Context, batchSize int) iter.Seq[*
 				}
 				return
 			}
-			payload := SyncComplete{
-				Rooms: make(map[id.RoomID]*SyncRoom, len(rooms)),
+			payload := jsoncmd.SyncComplete{
+				Rooms: make(map[id.RoomID]*jsoncmd.SyncRoom, len(rooms)),
 			}
 			for roomIdx, room := range rooms {
 				if room.SortingTimestamp == rooms[len(rooms)-1].SortingTimestamp {
@@ -145,7 +146,7 @@ func (h *HiClient) GetInitialSync(ctx context.Context, batchSize int) iter.Seq[*
 			zerolog.Ctx(ctx).Err(err).Msg("Failed to get global account data")
 			return
 		}
-		payload := SyncComplete{
+		payload := jsoncmd.SyncComplete{
 			AccountData: make(map[event.Type]*database.AccountData, len(ad)),
 		}
 		for _, data := range ad {

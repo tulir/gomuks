@@ -28,6 +28,7 @@ import (
 	"maunium.net/go/mautrix/pushrules"
 
 	"go.mau.fi/gomuks/pkg/hicli/database"
+	"go.mau.fi/gomuks/pkg/hicli/jsoncmd"
 )
 
 type HiClient struct {
@@ -46,7 +47,7 @@ type HiClient struct {
 	KeyBackupKey     *backup.MegolmBackupKey
 
 	PushRules  atomic.Pointer[pushrules.PushRuleset]
-	SyncStatus atomic.Pointer[SyncStatus]
+	SyncStatus atomic.Pointer[jsoncmd.SyncStatus]
 	syncErrors int
 	lastSync   time.Time
 
