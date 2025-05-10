@@ -32,6 +32,11 @@ function parseGeoURI(uri: unknown): [lat: number, long: number, prec: number] {
 		const [lat, long/*, altitude*/] = coordinates.split(",").map(parseFloat)
 		// const decodedParams = new URLSearchParams(params)
 		const prec = 13 // (+(decodedParams.get("u") ?? 0)) || 13
+		// Don't allow insane values for long/lat
+		if (lat < -90 || lat > 90 || long < -180 || long > 180) {
+			console.warn("Extreme value in geo URI: lat:%s long:%s", lat, long)
+			return [0, 0, 0]
+		}
 		return [lat, long, prec]
 	} catch {
 		return [0, 0, 0]
