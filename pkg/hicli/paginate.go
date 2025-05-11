@@ -365,5 +365,9 @@ func (h *HiClient) PaginateServer(ctx context.Context, roomID id.RoomID, limit i
 	if err == nil && wakeupSessionRequests {
 		h.WakeupRequestQueue()
 	}
-	return &jsoncmd.PaginationResponse{Events: events, HasMore: resp.End != database.PrevBatchPaginationComplete}, err
+	return &jsoncmd.PaginationResponse{
+		Events:     events,
+		HasMore:    resp.End != database.PrevBatchPaginationComplete,
+		FromServer: true,
+	}, err
 }

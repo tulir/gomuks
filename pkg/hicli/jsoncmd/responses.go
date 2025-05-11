@@ -35,4 +35,5 @@ type PaginationResponse struct {
 	Receipts      map[id.EventID][]*database.Receipt `json:"receipts"`
 	RelatedEvents []*database.Event                  `json:"related_events"`
 	HasMore       bool                               `json:"has_more"`
+	FromServer    bool                               `json:"from_server"`
 }
