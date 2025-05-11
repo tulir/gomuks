@@ -603,7 +603,7 @@ func (gmx *Gomuks) reencodeMedia(ctx context.Context, query url.Values, tempFile
 func (gmx *Gomuks) UploadMedia(w http.ResponseWriter, r *http.Request) {
 	log := hlog.FromRequest(r)
 	encrypt, _ := strconv.ParseBool(r.URL.Query().Get("encrypt"))
-	content, err := gmx.cacheAndUploadMedia(r.Context(), r.Body, encrypt, r.URL.Query().Get("filename"))
+	content, err := gmx.cacheAndUploadMedia(r.Context(), r.Body, encrypt, r.URL.Query())
 	if err != nil {
 		log.Err(err).Msg("Failed to upload media")
 		writeMaybeRespError(err, w)
@@ -655,7 +655,7 @@ func (gmx *Gomuks) GetURLPreview(w http.ResponseWriter, r *http.Request) {
 			}
 			defer resp.Body.Close()
 
-			content, err = gmx.cacheAndUploadMedia(r.Context(), resp.Body, encrypt, "")
+			content, err = gmx.cacheAndUploadMedia(r.Context(), resp.Body, encrypt, nil)
 			if err != nil {
 				log.Err(err).Msg("Failed to upload URL preview image")
 				writeMaybeRespError(err, w)
@@ -676,7 +676,7 @@ func (gmx *Gomuks) GetURLPreview(w http.ResponseWriter, r *http.Request) {
 	exhttp.WriteJSONResponse(w, http.StatusOK, preview)
 }
 
-func (gmx *Gomuks) cacheAndUploadMedia(ctx context.Context, reader io.Reader, encrypt bool, fileName string) (*event.MessageEventContent, error) {
+func (gmx *Gomuks) cacheAndUploadMedia(ctx context.Context, reader io.Reader, encrypt bool, query url.Values) (*event.MessageEventContent, error) {
 	log := zerolog.Ctx(ctx)
 	tempFile, err := os.CreateTemp(gmx.TempDir, "upload-*")
 	if err != nil {
@@ -692,10 +692,8 @@ func (gmx *Gomuks) cacheAndUploadMedia(ctx context.Context, reader io.Reader, en
 		return nil, fmt.Errorf("failed to copy upload media to temp file: %w", err)
 	}
 	checksum := hasher.Sum(nil)
-	if newHash, err := gmx.reencodeMedia(r.Context(), r.URL.Query(), tempFile); err != nil {
-		log.Err(err).Msg("Failed to reencode media")
-		mautrix.MUnknown.WithMessage(fmt.Sprintf("Failed to reencode media: %v", err)).Write(w)
-		return
+	if newHash, err := gmx.reencodeMedia(ctx, query, tempFile); err != nil {
+		return nil, fmt.Errorf("failed to reencode media: %w", err)
 	} else if newHash != nil {
 		checksum = newHash
 	}
@@ -729,6 +727,7 @@ func (gmx *Gomuks) cacheAndUploadMedia(ctx context.Context, reader io.Reader, en
 			log.Warn().Err(err).Msg("Failed to generate video thumbnail")
 		}
 	}
+	fileName := query.Get("filename")
 	if fileName == "" {
 		fileName = defaultFileName
 	}
