@@ -1,8 +1,8 @@
 module go.mau.fi/gomuks/desktop
 
-go 1.23.0
+go 1.24.0
 
-toolchain go1.23.5
+toolchain go1.24.3
 
 require github.com/wailsapp/wails/v3 v3.0.0-alpha.9
 
