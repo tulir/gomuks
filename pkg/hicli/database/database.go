@@ -7,9 +7,7 @@
 package database
 
 import (
-	_ "github.com/mattn/go-sqlite3"
 	"go.mau.fi/util/dbutil"
-	_ "go.mau.fi/util/dbutil/litestream"
 
 	"go.mau.fi/gomuks/pkg/hicli/database/upgrades"
 )

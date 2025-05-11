@@ -20,6 +20,7 @@ import (
 
 	"github.com/rs/zerolog"
 	"go.mau.fi/util/dbutil"
+	_ "go.mau.fi/util/dbutil/litestream"
 	"go.mau.fi/util/exerrors"
 	"maunium.net/go/mautrix"
 	"maunium.net/go/mautrix/crypto"
@@ -71,6 +72,12 @@ type HiClient struct {
 	paginationInterrupterLock sync.Mutex
 	paginationInterrupter     map[id.RoomID]context.CancelCauseFunc
 }
+
+var (
+	_ mautrix.StateStore        = (*database.ClientStateStore)(nil)
+	_ mautrix.StateStoreUpdater = (*database.ClientStateStore)(nil)
+	_ crypto.StateStore         = (*database.ClientStateStore)(nil)
+)
 
 var ErrTimelineReset = errors.New("got limited timeline sync response")
 
