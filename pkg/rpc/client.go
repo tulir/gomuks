@@ -27,6 +27,7 @@ import (
 
 type GomuksRPC struct {
 	EventHandler func(ctx context.Context, evt any)
+	UserAgent    string
 
 	BaseURL *url.URL
 	http    *http.Client
@@ -59,6 +60,7 @@ func NewGomuksRPC(rawBaseURL string) (*GomuksRPC, error) {
 	return &GomuksRPC{
 		EventHandler:    func(_ context.Context, _ any) {},
 		BaseURL:         baseURL,
+		UserAgent:       "gomuks-rpc " + mautrix.DefaultUserAgent,
 		http:            cli,
 		pendingRequests: make(map[int64]chan<- *jsoncmd.Container[json.RawMessage]),
 	}, nil
@@ -85,17 +87,19 @@ func (gr *GomuksRPC) BuildURLWithQuery(path GomuksURLPath, query url.Values) str
 }
 
 func (gr *GomuksRPC) Authenticate(ctx context.Context, username, password string) error {
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, gr.BuildURL("auth"), nil)
+	addr := gr.BuildURLWithQuery(GomuksURLPath{"auth"}, url.Values{"insecure_cookie": {"true"}})
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, addr, nil)
 	if err != nil {
 		return fmt.Errorf("failed to prepare request: %w", err)
 	}
+	req.Header.Set("User-Agent", gr.UserAgent)
 	req.SetBasicAuth(username, password)
 	resp, err := gr.http.Do(req)
 	if err != nil {
 		return fmt.Errorf("failed to authenticate: %w", err)
 	}
 	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
+	if resp.StatusCode >= 300 {
 		return fmt.Errorf("failed to authenticate: HTTP %d", resp.StatusCode)
 	}
 	return nil

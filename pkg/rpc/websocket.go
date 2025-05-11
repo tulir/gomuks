@@ -11,6 +11,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/http"
 	"runtime/debug"
 	"strings"
 
@@ -33,7 +34,10 @@ func (gr *GomuksRPC) Connect(ctx context.Context) error {
 	}
 	wsURL := gr.BuildRawURL(GomuksURLPath{"websocket"})
 	wsURL.Scheme = strings.Replace(wsURL.Scheme, "http", "ws", 1)
-	ws, _, err := websocket.Dial(ctx, wsURL.String(), &websocket.DialOptions{HTTPClient: gr.http})
+	ws, _, err := websocket.Dial(ctx, wsURL.String(), &websocket.DialOptions{
+		HTTPClient: gr.http,
+		HTTPHeader: http.Header{"User-Agent": {gr.UserAgent}},
+	})
 	if err != nil {
 		cancel()
 		return fmt.Errorf("failed to connect to websocket: %w", err)
