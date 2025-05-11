@@ -11,6 +11,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"runtime/debug"
 	"strings"
@@ -42,6 +43,7 @@ func (gr *GomuksRPC) Connect(ctx context.Context) error {
 		cancel()
 		return fmt.Errorf("failed to connect to websocket: %w", err)
 	}
+	ws.SetReadLimit(50 * 1024 * 1024)
 	evtChan := make(chan any, 256)
 	go gr.eventLoop(ctx, evtChan)
 	go gr.readLoop(ctx, ws, cancel, evtChan)
@@ -111,6 +113,7 @@ func (gr *GomuksRPC) Request(ctx context.Context, cmd jsoncmd.Name, data any) (j
 		gr.pendingRequestsLock.Unlock()
 	}()
 
+	zerolog.Ctx(ctx).Trace().Int64("req_id", reqID).Stringer("command", cmd).Msg("Sending websocket request")
 	wr, err := conn.Writer(ctx, websocket.MessageText)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create websocket writer: %w", err)
@@ -122,6 +125,10 @@ func (gr *GomuksRPC) Request(ctx context.Context, cmd jsoncmd.Name, data any) (j
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to encode JSON command: %w", err)
+	}
+	err = wr.Close()
+	if err != nil {
+		return nil, fmt.Errorf("failed to close websocket writer: %w", err)
 	}
 	select {
 	case resp := <-ch:
@@ -222,6 +229,16 @@ func parseEvent(ctx context.Context, evt *jsoncmd.Container[json.RawMessage]) an
 func (gr *GomuksRPC) readLoopItem(ctx context.Context, log *zerolog.Logger, ws *websocket.Conn, evtHandler chan<- any) bool {
 	var cmd *jsoncmd.Container[json.RawMessage]
 	msgType, reader, err := ws.Reader(ctx)
+	defer func() {
+		if reader != nil {
+			data, _ := io.ReadAll(reader)
+			if len(data) != 0 {
+				log.Warn().
+					Bytes("data", data).
+					Msg("Unexpected data in websocket reader")
+			}
+		}
+	}()
 	if err != nil {
 		log.Err(err).Msg("Error reading from websocket")
 		return false

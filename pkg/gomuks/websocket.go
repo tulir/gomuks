@@ -20,6 +20,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"io"
 	"net/http"
 	"runtime/debug"
 	"strconv"
@@ -290,6 +291,12 @@ func (gmx *Gomuks) HandleWebsocket(w http.ResponseWriter, r *http.Request) {
 			log.Err(err).Msg("Failed to parse message")
 			_ = conn.Close(websocket.StatusUnsupportedData, "Invalid JSON")
 			return
+		}
+		data, _ := io.ReadAll(reader)
+		if len(data) > 0 {
+			log.Warn().
+				Bytes("data", data).
+				Msg("Unexpected data in websocket reader")
 		}
 		go submitCmd(&cmd)
 	}
