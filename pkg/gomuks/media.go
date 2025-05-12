@@ -646,8 +646,11 @@ func (gmx *Gomuks) GetURLPreview(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
-		if content == nil {
-			resp, err := gmx.Client.Client.Download(r.Context(), preview.ImageURL.ParseOrIgnore())
+		parsedImageURL, err := preview.ImageURL.Parse()
+		if content == nil && (err != nil || parsedImageURL.IsEmpty()) {
+			log.Warn().Err(err).Str("image_url", string(preview.ImageURL)).Msg("Failed to parse URL preview image mxc")
+		} else if content == nil && !parsedImageURL.IsEmpty() {
+			resp, err := gmx.Client.Client.Download(r.Context(), parsedImageURL)
 			if err != nil {
 				log.Err(err).Msg("Failed to download URL preview image")
 				writeMaybeRespError(err, w)
@@ -669,8 +672,10 @@ func (gmx *Gomuks) GetURLPreview(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
-		preview.ImageURL = content.URL
-		preview.ImageEncryption = content.File
+		if content != nil {
+			preview.ImageURL = content.URL
+			preview.ImageEncryption = content.File
+		}
 	}
 
 	exhttp.WriteJSONResponse(w, http.StatusOK, preview)
