@@ -49,7 +49,7 @@ export const preferences = {
 	}),
 	send_bundled_url_previews: new Preference<boolean>({
 		displayName: "Send bundled URL previews",
-		description: "Should bundled URL previews be sent to other users?",
+		description: "Should the composer offer fetching URL previews to bundle in outgoing messages?",
 		allowedContexts: anyContext,
 		defaultValue: true,
 	}),
