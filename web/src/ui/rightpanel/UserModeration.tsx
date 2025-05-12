@@ -86,23 +86,20 @@ const UserModeration = ({ userID, client, member, room }: UserModerationProps) =
 		if (!room) {
 			return []
 		}
-		return timeline.filter(evt => {
-			return evt !== null && evt.room_id == room.roomID && evt.sender === userID && !evt.redacted_by
-		}) as MemDBEvent[]  // there's no nulls in this one
+		return timeline.filter((evt): evt is MemDBEvent =>
+			evt !== null && evt.room_id == room.roomID && evt.sender === userID && !evt.redacted_by)
 	}
-	const redactRecentMessages = () => {
+	const makeRecentMessageRedactor = () => {
 		if (!room) {
-			throw new Error("redactRecentMessages called without room")
+			throw new Error("makeRecentMessageRedactor called without room")
 		}
 		const eligibleEvents = calculateRedactions()
+		const nonStateEvents = eligibleEvents.filter(evt => evt.state_key === undefined)
 		const callback = async (preserveState: boolean, reason: string) => {
-			const filteredEvents = eligibleEvents.filter(evt => {
-				return !preserveState || evt.state_key === undefined
-			})
-
-			let toRedact = filteredEvents.length
+			const targetEvents = preserveState ? nonStateEvents : eligibleEvents
+			let toRedact = targetEvents.length
 			setRedactRemaining(toRedact)
-			for (const evt of filteredEvents) {
+			for (const evt of targetEvents) {
 				try {
 					await client.rpc.redactEvent(evt.room_id, evt.event_id, reason)
 					toRedact--
@@ -115,23 +112,21 @@ const UserModeration = ({ userID, client, member, room }: UserModerationProps) =
 			}
 			return true
 		}
-		const evtCount = eligibleEvents.length
-		return () => {
-			openModal({
-				dimmed: true,
-				boxed: true,
-				innerBoxClass: "confirm-message-modal",
-				content: <BulkRedactModal
-					title={`Redact recent timeline events of ${userID}`}
-					description={
-						<>Are you sure you want to redact all currently loaded timeline events
-							of <code>{userID}</code>? This will remove approximately {evtCount} events.</>}
-					placeholder="Reason (optional)"
-					confirmButton={`Redact ~${evtCount} events`}
-					onConfirm={callback}
-				/>,
-			})
-		}
+		return [eligibleEvents.length, nonStateEvents.length, callback] as const
+	}
+	const openRedactRecentModal = () => {
+		const [eligibleEventsCount, nonStateEventsCount, callback] = makeRecentMessageRedactor()
+		openModal({
+			dimmed: true,
+			boxed: true,
+			innerBoxClass: "confirm-message-modal",
+			content: <BulkRedactModal
+				userID={userID}
+				evtCount={eligibleEventsCount}
+				nonStateEvtCount={nonStateEventsCount}
+				onConfirm={callback}
+			/>,
+		})
 	}
 	const membership = member?.content.membership || "leave"
 
@@ -171,8 +166,9 @@ const UserModeration = ({ userID, client, member, room }: UserModerationProps) =
 		{room && hasPL("redact") && (
 			<button
 				className="moderation-action dangerous"
-				onClick={redactRecentMessages()}
-				disabled={redactRemaining > 0}>
+				onClick={openRedactRecentModal}
+				disabled={redactRemaining > 0}
+			>
 				<DeleteIcon />
 				<span>{redactRemaining > 0 ? `${redactRemaining} remaining`: "Redact recent messages"}</span>
 			</button>
