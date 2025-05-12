@@ -20,6 +20,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"io"
 	"net/http"
 	"runtime/debug"
 	"strconv"
@@ -32,9 +33,10 @@ import (
 	"go.mau.fi/util/exerrors"
 
 	"go.mau.fi/gomuks/pkg/hicli"
+	"go.mau.fi/gomuks/pkg/hicli/jsoncmd"
 )
 
-func writeCmd[T any](ctx context.Context, conn *websocket.Conn, cmd *hicli.JSONCommandCustom[T]) error {
+func writeCmd[T any](ctx context.Context, conn *websocket.Conn, cmd *jsoncmd.Container[T]) error {
 	writer, err := conn.Writer(ctx, websocket.MessageText)
 	if err != nil {
 		return err
@@ -53,16 +55,7 @@ const (
 
 var emptyObject = json.RawMessage("{}")
 
-type PingRequestData struct {
-	LastReceivedID int64 `json:"last_received_id"`
-}
-
 var runID = time.Now().UnixNano()
-
-type RunData struct {
-	RunID string `json:"run_id"`
-	ETag  string `json:"etag"`
-}
 
 func (gmx *Gomuks) HandleWebsocket(w http.ResponseWriter, r *http.Request) {
 	var conn *websocket.Conn
@@ -147,7 +140,7 @@ func (gmx *Gomuks) HandleWebsocket(w http.ResponseWriter, r *http.Request) {
 	lastImageAuthTokenSent := time.Now()
 	sendImageAuthToken := func() {
 		err := writeCmd(ctx, conn, &hicli.JSONCommand{
-			Command: "image_auth_token",
+			Command: jsoncmd.EventImageAuthToken,
 			Data:    exerrors.Must(json.Marshal(gmx.generateImageToken(1 * time.Hour))),
 		})
 		if err != nil {
@@ -208,16 +201,16 @@ func (gmx *Gomuks) HandleWebsocket(w http.ResponseWriter, r *http.Request) {
 		}
 		log.Trace().
 			Int64("req_id", cmd.RequestID).
-			Str("command", cmd.Command).
+			Stringer("command", cmd.Command).
 			RawJSON("data", cmd.Data).
 			Msg("Received command")
 		var resp *hicli.JSONCommand
-		if cmd.Command == "ping" {
+		if cmd.Command == jsoncmd.ReqPing {
 			resp = &hicli.JSONCommand{
-				Command:   "pong",
+				Command:   jsoncmd.RespPong,
 				RequestID: cmd.RequestID,
 			}
-			var pingData PingRequestData
+			var pingData jsoncmd.PingParams
 			err := json.Unmarshal(cmd.Data, &pingData)
 			if err != nil {
 				log.Err(err).Msg("Failed to parse ping data")
@@ -238,9 +231,9 @@ func (gmx *Gomuks) HandleWebsocket(w http.ResponseWriter, r *http.Request) {
 			log.Trace().Int64("req_id", cmd.RequestID).Msg("Sent response to command")
 		}
 	}
-	initErr := writeCmd(ctx, conn, &hicli.JSONCommandCustom[*RunData]{
-		Command: "run_id",
-		Data: &RunData{
+	initErr := writeCmd(ctx, conn, &hicli.JSONCommandCustom[*jsoncmd.RunData]{
+		Command: jsoncmd.EventRunID,
+		Data: &jsoncmd.RunData{
 			RunID: strconv.FormatInt(runID, 10),
 			ETag:  gmx.frontendETag,
 		},
@@ -249,16 +242,16 @@ func (gmx *Gomuks) HandleWebsocket(w http.ResponseWriter, r *http.Request) {
 		log.Err(initErr).Msg("Failed to write init client state message")
 		return
 	}
-	initErr = writeCmd(ctx, conn, &hicli.JSONCommandCustom[*hicli.ClientState]{
-		Command: "client_state",
+	initErr = writeCmd(ctx, conn, &hicli.JSONCommandCustom[*jsoncmd.ClientState]{
+		Command: jsoncmd.EventClientState,
 		Data:    gmx.Client.State(),
 	})
 	if initErr != nil {
 		log.Err(initErr).Msg("Failed to write init client state message")
 		return
 	}
-	initErr = writeCmd(ctx, conn, &hicli.JSONCommandCustom[*hicli.SyncStatus]{
-		Command: "sync_status",
+	initErr = writeCmd(ctx, conn, &hicli.JSONCommandCustom[*jsoncmd.SyncStatus]{
+		Command: jsoncmd.EventSyncStatus,
 		Data:    gmx.Client.SyncStatus.Load(),
 	})
 	if initErr != nil {
@@ -299,6 +292,12 @@ func (gmx *Gomuks) HandleWebsocket(w http.ResponseWriter, r *http.Request) {
 			_ = conn.Close(websocket.StatusUnsupportedData, "Invalid JSON")
 			return
 		}
+		data, _ := io.ReadAll(reader)
+		if len(data) > 0 {
+			log.Warn().
+				Bytes("data", data).
+				Msg("Unexpected data in websocket reader")
+		}
 		go submitCmd(&cmd)
 	}
 }
@@ -314,7 +313,7 @@ func (gmx *Gomuks) sendInitialData(ctx context.Context, conn *websocket.Conn) {
 			return
 		}
 		err = writeCmd(ctx, conn, &hicli.JSONCommand{
-			Command:   "sync_complete",
+			Command:   jsoncmd.EventSyncComplete,
 			RequestID: 0,
 			Data:      marshaledPayload,
 		})
@@ -327,7 +326,7 @@ func (gmx *Gomuks) sendInitialData(ctx context.Context, conn *websocket.Conn) {
 		return
 	}
 	err := writeCmd(ctx, conn, &hicli.JSONCommand{
-		Command:   "init_complete",
+		Command:   jsoncmd.EventInitComplete,
 		RequestID: 0,
 	})
 	if err != nil {

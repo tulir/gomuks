@@ -19,6 +19,7 @@ import (
 	"maunium.net/go/mautrix/id"
 
 	"go.mau.fi/gomuks/pkg/hicli/database"
+	"go.mau.fi/gomuks/pkg/hicli/jsoncmd"
 )
 
 func (h *HiClient) fetchFromKeyBackup(ctx context.Context, roomID id.RoomID, sessionID id.SessionID) (*crypto.InboundGroupSession, error) {
@@ -104,7 +105,7 @@ func (h *HiClient) handleReceivedMegolmSession(ctx context.Context, roomID id.Ro
 		if err != nil {
 			log.Err(err).Msg("Failed to save decrypted events")
 		} else {
-			h.EventHandler(&EventsDecrypted{Events: decrypted, PreviewEventRowID: newPreview, RoomID: roomID})
+			h.EventHandler(&jsoncmd.EventsDecrypted{Events: decrypted, PreviewEventRowID: newPreview, RoomID: roomID})
 		}
 	}
 }

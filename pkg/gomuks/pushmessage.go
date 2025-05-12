@@ -29,8 +29,8 @@ import (
 	"maunium.net/go/mautrix/event"
 	"maunium.net/go/mautrix/id"
 
-	"go.mau.fi/gomuks/pkg/hicli"
 	"go.mau.fi/gomuks/pkg/hicli/database"
+	"go.mau.fi/gomuks/pkg/hicli/jsoncmd"
 )
 
 type PushNewMessage struct {
@@ -94,7 +94,7 @@ func (gmx *Gomuks) getNotificationUser(ctx context.Context, roomID id.RoomID, us
 	return
 }
 
-func (gmx *Gomuks) formatPushNotificationMessage(ctx context.Context, notif hicli.SyncNotification) *PushNewMessage {
+func (gmx *Gomuks) formatPushNotificationMessage(ctx context.Context, notif jsoncmd.SyncNotification) *PushNewMessage {
 	evtType := notif.Event.Type
 	rawContent := notif.Event.Content
 	if evtType == event.EventEncrypted.Type {

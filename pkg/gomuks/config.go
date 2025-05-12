@@ -113,6 +113,7 @@ func (gmx *Gomuks) LoadConfig() error {
 	}
 	if !gmx.DisableAuth && (gmx.Config.Web.Username == "" || gmx.Config.Web.PasswordHash == "") {
 		fmt.Println("Please create a username and password for authenticating the web app")
+		fmt.Println("This is only used for gomuks and is NOT your Matrix account")
 		gmx.Config.Web.Username, err = readline.Line("Username: ")
 		if err != nil {
 			return fmt.Errorf("failed to read username: %w", err)

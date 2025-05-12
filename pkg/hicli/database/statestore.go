@@ -14,8 +14,6 @@ import (
 	"slices"
 
 	"go.mau.fi/util/dbutil"
-	"maunium.net/go/mautrix"
-	"maunium.net/go/mautrix/crypto"
 	"maunium.net/go/mautrix/event"
 	"maunium.net/go/mautrix/id"
 )
@@ -56,10 +54,6 @@ const (
 type ClientStateStore struct {
 	*Database
 }
-
-var _ mautrix.StateStore = (*ClientStateStore)(nil)
-var _ mautrix.StateStoreUpdater = (*ClientStateStore)(nil)
-var _ crypto.StateStore = (*ClientStateStore)(nil)
 
 func (c *ClientStateStore) IsInRoom(ctx context.Context, roomID id.RoomID, userID id.UserID) bool {
 	return c.IsMembership(ctx, roomID, userID, event.MembershipJoin)

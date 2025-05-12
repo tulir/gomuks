@@ -40,6 +40,7 @@ import (
 	"maunium.net/go/mautrix/id"
 
 	"go.mau.fi/gomuks/pkg/hicli"
+	"go.mau.fi/gomuks/pkg/hicli/jsoncmd"
 )
 
 type Gomuks struct {
@@ -210,7 +211,7 @@ func (gmx *Gomuks) StartClient() {
 
 func (gmx *Gomuks) HandleEvent(evt any) {
 	gmx.EventBuffer.Push(evt)
-	syncComplete, ok := evt.(*hicli.SyncComplete)
+	syncComplete, ok := evt.(*jsoncmd.SyncComplete)
 	if ok && ptr.Val(syncComplete.Since) != "" {
 		go gmx.SendPushNotifications(syncComplete)
 	}
