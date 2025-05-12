@@ -13,15 +13,18 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import { use } from "react"
+import { use, useState } from "react"
 import Client from "@/api/client.ts"
-import { RoomStateStore } from "@/api/statestore"
+import { RoomStateStore, useRoomTimeline } from "@/api/statestore"
 import { MemDBEvent, MembershipAction } from "@/api/types"
+import BulkRedactModal from "@/ui/rightpanel/BulkRedactModal.tsx"
+import { useRoomContext } from "@/ui/roomview/roomcontext.ts"
 import ConfirmWithMessageModal from "../menu/ConfirmWithMessageModal.tsx"
 import { getPowerLevels } from "../menu/util.ts"
 import { ModalContext } from "../modal"
 import StartDMButton from "./StartDMButton.tsx"
 import UserIgnoreButton from "./UserIgnoreButton.tsx"
+import DeleteIcon from "@/icons/delete.svg?react"
 import BanIcon from "@/icons/gavel.svg?react"
 import InviteIcon from "@/icons/person-add.svg?react"
 import KickIcon from "@/icons/person-remove.svg?react"
@@ -35,7 +38,10 @@ interface UserModerationProps {
 
 const UserModeration = ({ userID, client, member, room }: UserModerationProps) => {
 	const openModal = use(ModalContext)
-	const hasPL = (action: "invite" | "kick" | "ban") => {
+	const roomCtx = useRoomContext()
+	const timeline = useRoomTimeline(roomCtx.store)
+	const [redactRemaining, setRedactRemaining] = useState<number>(0)
+	const hasPL = (action: "invite" | "kick" | "ban" | "redact") => {
 		if (!room) {
 			throw new Error("hasPL called without room")
 		}
@@ -44,7 +50,7 @@ const UserModeration = ({ userID, client, member, room }: UserModerationProps) =
 			return ownPL >= (pls.invite ?? 0)
 		}
 		const otherUserPL = pls.users?.[userID] ?? pls.users_default ?? 0
-		return ownPL >= (pls[action] ?? 50) && ownPL > otherUserPL
+		return ownPL >= (pls[action] ?? pls.state_default ?? 50) && (action==="redact" ? true : ownPL > otherUserPL)
 	}
 
 	const runAction = (action: MembershipAction) => {
@@ -75,6 +81,52 @@ const UserModeration = ({ userID, client, member, room }: UserModerationProps) =
 				/>,
 			})
 		}
+	}
+	const calculateRedactions = () => {
+		if (!room) {
+			return []
+		}
+		return timeline.filter((evt): evt is MemDBEvent =>
+			evt !== null && evt.room_id == room.roomID && evt.sender === userID && !evt.redacted_by)
+	}
+	const makeRecentMessageRedactor = () => {
+		if (!room) {
+			throw new Error("makeRecentMessageRedactor called without room")
+		}
+		const eligibleEvents = calculateRedactions()
+		const nonStateEvents = eligibleEvents.filter(evt => evt.state_key === undefined)
+		const callback = async (preserveState: boolean, reason: string) => {
+			const targetEvents = preserveState ? nonStateEvents : eligibleEvents
+			let toRedact = targetEvents.length
+			setRedactRemaining(toRedact)
+			for (const evt of targetEvents) {
+				try {
+					await client.rpc.redactEvent(evt.room_id, evt.event_id, reason)
+					toRedact--
+					setRedactRemaining(toRedact)
+					console.debug(`Redacted ${evt.event_id} (${toRedact} remaining)`)
+				} catch (e) {
+					console.error(`Failed to redact ${evt.event_id}:`, e)
+					throw e
+				}
+			}
+			return true
+		}
+		return [eligibleEvents.length, nonStateEvents.length, callback] as const
+	}
+	const openRedactRecentModal = () => {
+		const [eligibleEventsCount, nonStateEventsCount, callback] = makeRecentMessageRedactor()
+		openModal({
+			dimmed: true,
+			boxed: true,
+			innerBoxClass: "confirm-message-modal",
+			content: <BulkRedactModal
+				userID={userID}
+				evtCount={eligibleEventsCount}
+				nonStateEvtCount={nonStateEventsCount}
+				onConfirm={callback}
+			/>,
+		})
 	}
 	const membership = member?.content.membership || "leave"
 
@@ -109,6 +161,16 @@ const UserModeration = ({ userID, client, member, room }: UserModerationProps) =
 			<button className="moderation-action positive" onClick={runAction("unban")}>
 				<BanIcon />
 				<span>Unban</span>
+			</button>
+		)}
+		{room && hasPL("redact") && (
+			<button
+				className="moderation-action dangerous"
+				onClick={openRedactRecentModal}
+				disabled={redactRemaining > 0}
+			>
+				<DeleteIcon />
+				<span>{redactRemaining > 0 ? `${redactRemaining} remaining`: "Redact recent messages"}</span>
 			</button>
 		)}
 		<UserIgnoreButton userID={userID} client={client} />
