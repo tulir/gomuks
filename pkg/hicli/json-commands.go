@@ -44,7 +44,7 @@ func (h *HiClient) handleJSONCommand(ctx context.Context, req *JSONCommand) (any
 		})
 	case jsoncmd.ReqSendMessage:
 		return unmarshalAndCall(req.Data, func(params *jsoncmd.SendMessageParams) (*database.Event, error) {
-			return h.SendMessage(ctx, params.RoomID, params.BaseContent, params.Extra, params.Text, params.RelatesTo, params.Mentions)
+			return h.SendMessage(ctx, params.RoomID, params.BaseContent, params.Extra, params.Text, params.RelatesTo, params.Mentions, params.URLPreviews)
 		})
 	case jsoncmd.ReqSendEvent:
 		return unmarshalAndCall(req.Data, func(params *jsoncmd.SendEventParams) (*database.Event, error) {

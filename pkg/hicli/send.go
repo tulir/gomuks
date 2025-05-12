@@ -72,6 +72,7 @@ func (h *HiClient) SendMessage(
 	text string,
 	relatesTo *event.RelatesTo,
 	mentions *event.Mentions,
+	urlPreviews *[]*event.BeeperLinkPreview,
 ) (*database.Event, error) {
 	if text == "/discardsession" {
 		err := h.CryptoStore.RemoveOutboundGroupSession(ctx, roomID)
@@ -163,6 +164,9 @@ func (h *HiClient) SendMessage(
 				content.Mentions.Add(userID)
 			}
 		}
+	}
+	if urlPreviews != nil {
+		content.BeeperLinkPreviews = *urlPreviews
 	}
 	if relatesTo != nil {
 		if relatesTo.Type == event.RelReplace {

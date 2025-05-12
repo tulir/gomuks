@@ -47,6 +47,12 @@ export const preferences = {
 		allowedContexts: anyContext,
 		defaultValue: true,
 	}),
+	send_bundled_url_previews: new Preference<boolean>({
+		displayName: "Send bundled URL previews",
+		description: "Should the composer offer fetching URL previews to bundle in outgoing messages?",
+		allowedContexts: anyContext,
+		defaultValue: true,
+	}),
 	display_read_receipts: new Preference<boolean>({
 		displayName: "Display read receipts",
 		description: "Should read receipts be rendered in the timeline?",

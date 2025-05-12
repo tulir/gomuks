@@ -36,6 +36,8 @@ import (
 	"go.mau.fi/util/exzerolog"
 	"go.mau.fi/util/ptr"
 	"golang.org/x/net/http2"
+	"maunium.net/go/mautrix/event"
+	"maunium.net/go/mautrix/id"
 
 	"go.mau.fi/gomuks/pkg/hicli"
 	"go.mau.fi/gomuks/pkg/hicli/jsoncmd"
@@ -68,11 +70,19 @@ type Gomuks struct {
 	stopChan chan struct{}
 
 	EventBuffer *EventBuffer
+
+	// Maps from temporary MXC URIs from by the media repository for URL
+	// previews to permanent MXC URIs suitable for sending in an inline preview
+	temporaryMXCToPermanent         map[id.ContentURIString]id.ContentURIString
+	temporaryMXCToEncryptedFileInfo map[id.ContentURIString]*event.EncryptedFileInfo
 }
 
 func NewGomuks() *Gomuks {
 	return &Gomuks{
 		stopChan: make(chan struct{}),
+
+		temporaryMXCToPermanent:         map[id.ContentURIString]id.ContentURIString{},
+		temporaryMXCToEncryptedFileInfo: map[id.ContentURIString]*event.EncryptedFileInfo{},
 	}
 }
 
