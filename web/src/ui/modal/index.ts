@@ -1,3 +1,7 @@
 export * from "./contexts.ts"
 export { default as ModalWrapper } from "./Modal.tsx"
 export { default as LightboxWrapper } from "./Lightbox.tsx"
+export { default as ConfirmModal } from "./ConfirmModal.tsx"
+export { default as ConfirmWithMessageModal } from "./ConfirmWithMessageModal.tsx"
+export { default as ShareModal } from "./ShareModal.tsx"
+export { default as BulkRedactModal } from "./BulkRedactModal.tsx"

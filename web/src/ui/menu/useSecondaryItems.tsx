@@ -17,11 +17,9 @@ import { use } from "react"
 import Client from "@/api/client.ts"
 import { useRoomState } from "@/api/statestore"
 import { MemDBEvent } from "@/api/types"
-import { ModalCloseContext, ModalContext } from "../modal"
+import { ConfirmWithMessageModal, ModalCloseContext, ModalContext, ShareModal } from "../modal"
 import { RoomContext, RoomContextData } from "../roomview/roomcontext.ts"
 import JSONView from "../util/JSONView.tsx"
-import ConfirmWithMessageModal from "./ConfirmWithMessageModal.tsx"
-import ShareModal from "./ShareModal.tsx"
 import { getPending, getPowerLevels } from "./util.ts"
 import ViewSourceIcon from "@/icons/code.svg?react"
 import DeleteIcon from "@/icons/delete.svg?react"
@@ -134,8 +132,6 @@ export const useSecondaryItems = (
 			content: <RoomContext value={roomCtx}>
 				<ShareModal
 					evt={evt}
-					title="Share Message"
-					confirmButton="Copy to clipboard"
 					onConfirm={(useMatrixTo: boolean, includeEvent: boolean) => {
 						navigator.clipboard.writeText(generateLink(useMatrixTo, includeEvent)).catch(
 							err => window.alert(`Failed to copy link: ${err}`),

@@ -14,13 +14,15 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import React, { use, useState } from "react"
+import { useMemo, useState } from "react"
 import { UserID } from "@/api/types"
-import { ModalCloseContext } from "@/ui/modal"
-import Toggle from "@/ui/util/Toggle.tsx"
 import { isMobileDevice } from "@/util/ismobile.ts"
+import Toggle from "../util/Toggle.tsx"
+import ConfirmModal from "./ConfirmModal.tsx"
 
-interface BulkRedactProps {
+export type BulkRedactConfirmArgs = readonly [boolean, string]
+
+export interface BulkRedactProps {
 	userID: UserID
 	evtCount: number
 	nonStateEvtCount: number
@@ -35,20 +37,19 @@ const BulkRedactModal = ({
 }: BulkRedactProps) => {
 	const [preserveState, setPreserveState] = useState(true)
 	const [reason, setReason] = useState("")
-	const closeModal = use(ModalCloseContext)
-	const onConfirmWrapped = (evt: React.FormEvent) => {
-		evt.preventDefault()
-		closeModal()
-		onConfirm(preserveState, reason)
-	}
+	const confirmArgs = useMemo(() => [preserveState, reason] as const, [preserveState, reason])
 
 	const targetEvtCount = preserveState ? nonStateEvtCount : evtCount
-	return <form onSubmit={onConfirmWrapped}>
-		<h3>Redact recent messages</h3>
-		<div className="confirm-description">
+	return <ConfirmModal<BulkRedactConfirmArgs>
+		title="Redact recent messages"
+		description={<>
 			Are you sure you want to redact all currently loaded timeline events
 			of <code>{userID}</code>? This will remove {targetEvtCount} events.
-		</div>
+		</>}
+		confirmButton={`Redact ${targetEvtCount} events`}
+		onConfirm={onConfirm}
+		confirmArgs={confirmArgs}
+	>
 		<input
 			autoFocus={!isMobileDevice}
 			value={reason}
@@ -70,11 +71,7 @@ const BulkRedactModal = ({
 				</tr>
 			</tbody>
 		</table>
-		<div className="confirm-buttons">
-			<button type="button" onClick={closeModal}>Cancel</button>
-			<button type="submit">Redact {targetEvtCount} events</button>
-		</div>
-	</form>
+	</ConfirmModal>
 }
 
 export default BulkRedactModal

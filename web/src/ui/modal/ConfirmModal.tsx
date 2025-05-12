@@ -1,5 +1,5 @@
 // gomuks - A Matrix client written in Go.
-// Copyright (C) 2024 Tulir Asokan
+// Copyright (C) 2025 Tulir Asokan
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Affero General Public License as published by
@@ -13,46 +13,45 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import React, { JSX, use, useState } from "react"
+import React, { JSX, use } from "react"
 import { MemDBEvent } from "@/api/types"
-import { isMobileDevice } from "@/util/ismobile.ts"
-import { ModalCloseContext } from "../modal"
 import TimelineEvent from "../timeline/TimelineEvent.tsx"
+import { ModalCloseContext } from "./contexts.ts"
 
-interface ConfirmWithMessageProps {
+export interface ConfirmProps<T extends readonly unknown[] = []> {
 	evt?: MemDBEvent
 	title: string
-	description: string | JSX.Element
-	placeholder: string
+	description?: string | JSX.Element
 	confirmButton: string
-	onConfirm: (reason: string) => void
+	children?: JSX.Element | JSX.Element[]
+	onConfirm: (...args: T) => void
+	confirmArgs: T
 }
 
-const ConfirmWithMessageModal = ({
-	evt, title, description, placeholder, confirmButton, onConfirm,
-}: ConfirmWithMessageProps) => {
-	const [reason, setReason] = useState("")
+const ConfirmModal = <T extends readonly unknown[] = []>({
+	evt,
+	title,
+	description,
+	children,
+	confirmButton,
+	onConfirm,
+	confirmArgs,
+}: ConfirmProps<T>) => {
 	const closeModal = use(ModalCloseContext)
 	const onConfirmWrapped = (evt: React.FormEvent) => {
 		evt.preventDefault()
 		closeModal()
-		onConfirm(reason)
+		onConfirm(...confirmArgs)
 	}
 	return <form onSubmit={onConfirmWrapped}>
 		<h3>{title}</h3>
-		{evt && <div className="timeline-event-container">
+		{evt ? <div className="timeline-event-container">
 			<TimelineEvent evt={evt} prevEvt={null} disableMenu={true} />
-		</div>}
-		<div className="confirm-description">
+		</div> : null}
+		{description ? <div className="confirm-description">
 			{description}
-		</div>
-		<input
-			autoFocus={!isMobileDevice}
-			value={reason}
-			type="text"
-			placeholder={placeholder}
-			onChange={evt => setReason(evt.target.value)}
-		/>
+		</div> : null}
+		{children}
 		<div className="confirm-buttons">
 			<button type="button" onClick={closeModal}>Cancel</button>
 			<button type="submit">{confirmButton}</button>
@@ -60,4 +59,5 @@ const ConfirmWithMessageModal = ({
 	</form>
 }
 
-export default ConfirmWithMessageModal
+
+export default ConfirmModal
