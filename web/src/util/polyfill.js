@@ -15,30 +15,33 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 if (!window.Iterator?.prototype.map) {
-	const iterProto = (new Map([])).keys().__proto__
-	iterProto.map = function(callbackFn) {
-		const output = []
-		let i = 0
-		for (const item of this) {
-			output.push(callbackFn(item, i))
-			i++
-		}
-		return output
-	}
-	iterProto.filter = function(callbackFn) {
-		const output = []
-		let i = 0
-		for (const item of this) {
-			if (callbackFn(item, i)) {
-				output.push(item)
-			}
-			i++
-		}
-		return output
-	}
+	const mapIterProto = (new Map([])).keys().__proto__
+	const regexIterProto = "a".matchAll(/a/g).__proto__
 	const identity = x => x
-	iterProto.toArray = function() {
-		return this.map(identity)
+	for (const iterProto of [mapIterProto, regexIterProto]) {
+		iterProto.map = function(callbackFn) {
+			const output = []
+			let i = 0
+			for (const item of this) {
+				output.push(callbackFn(item, i))
+				i++
+			}
+			return output
+		}
+		iterProto.filter = function(callbackFn) {
+			const output = []
+			let i = 0
+			for (const item of this) {
+				if (callbackFn(item, i)) {
+					output.push(item)
+				}
+				i++
+			}
+			return output
+		}
+		iterProto.toArray = function() {
+			return this.map(identity)
+		}
 	}
 	Array.prototype.toArray = function() {
 		return this
