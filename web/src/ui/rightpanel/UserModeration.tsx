@@ -13,7 +13,7 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import { use, useState } from "react"
+import { JSX, use, useState } from "react"
 import Client from "@/api/client.ts"
 import { RoomStateStore, useRoomTimeline } from "@/api/statestore"
 import { MemDBEvent, MembershipAction } from "@/api/types"
@@ -64,19 +64,32 @@ const UserModeration = ({ userID, client, member, room }: UserModerationProps) =
 				},
 			)
 		}
-		const titleCasedAction = action.charAt(0).toUpperCase() + action.slice(1)
+		let content: JSX.Element
+		if (action == "ban") {
+			const [eligibleEventsCount, nonStateEventsCount, redactCallback] = makeRecentMessageRedactor(callback)
+			content = <BulkRedactModal
+				userID={userID}
+				evtCount={eligibleEventsCount}
+				nonStateEvtCount={nonStateEventsCount}
+				isBanModal={true}
+				onConfirm={redactCallback}
+			/>
+		} else {
+			const titleCasedAction = action.charAt(0).toUpperCase() + action.slice(1)
+			content = <ConfirmWithMessageModal
+				title={`${titleCasedAction} user`}
+				description={<>Are you sure you want to {action} <code>{userID}</code>?</>}
+				placeholder="Reason (optional)"
+				confirmButton={titleCasedAction}
+				onConfirm={callback}
+			/>
+		}
 		return () => {
 			openModal({
 				dimmed: true,
 				boxed: true,
 				innerBoxClass: "confirm-message-modal",
-				content: <ConfirmWithMessageModal
-					title={`${titleCasedAction} user`}
-					description={<>Are you sure you want to {action} <code>{userID}</code>?</>}
-					placeholder="Reason (optional)"
-					confirmButton={titleCasedAction}
-					onConfirm={callback}
-				/>,
+				content,
 			})
 		}
 	}
@@ -87,13 +100,17 @@ const UserModeration = ({ userID, client, member, room }: UserModerationProps) =
 		return timeline.filter((evt): evt is MemDBEvent =>
 			evt !== null && evt.room_id == room.roomID && evt.sender === userID && !evt.redacted_by)
 	}
-	const makeRecentMessageRedactor = () => {
+	const makeRecentMessageRedactor = (banCallback?: (reason: string) => void) => {
 		if (!room) {
 			throw new Error("makeRecentMessageRedactor called without room")
 		}
 		const eligibleEvents = calculateRedactions()
 		const nonStateEvents = eligibleEvents.filter(evt => evt.state_key === undefined)
-		const callback = async (preserveState: boolean, reason: string) => {
+		const callback = async (doRedact: boolean, preserveState: boolean, reason: string) => {
+			banCallback?.(reason)
+			if (!doRedact) {
+				return
+			}
 			const targetEvents = preserveState ? nonStateEvents : eligibleEvents
 			let toRedact = targetEvents.length
 			setRedactRemaining(toRedact)
@@ -122,6 +139,7 @@ const UserModeration = ({ userID, client, member, room }: UserModerationProps) =
 				userID={userID}
 				evtCount={eligibleEventsCount}
 				nonStateEvtCount={nonStateEventsCount}
+				isBanModal={false}
 				onConfirm={callback}
 			/>,
 		})

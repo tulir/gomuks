@@ -20,33 +20,43 @@ import { isMobileDevice } from "@/util/ismobile.ts"
 import Toggle from "../util/Toggle.tsx"
 import ConfirmModal from "./ConfirmModal.tsx"
 
-export type BulkRedactConfirmArgs = readonly [boolean, string]
+export type BulkRedactConfirmArgs = readonly [boolean, boolean, string]
 
 export interface BulkRedactProps {
 	userID: UserID
+	isBanModal: boolean
 	evtCount: number
 	nonStateEvtCount: number
-	onConfirm: (preserveState: boolean, reason: string) => void
+	onConfirm: (doRedact: boolean, preserveState: boolean, reason: string) => void
 }
 
 const BulkRedactModal = ({
 	userID,
 	onConfirm,
+	isBanModal,
 	evtCount,
 	nonStateEvtCount,
 }: BulkRedactProps) => {
+	const [doRedact, setDoRedact] = useState(!isBanModal)
 	const [preserveState, setPreserveState] = useState(true)
 	const [reason, setReason] = useState("")
-	const confirmArgs = useMemo(() => [preserveState, reason] as const, [preserveState, reason])
+	const confirmArgs = useMemo(() => [doRedact, preserveState, reason] as const, [doRedact, preserveState, reason])
 
 	const targetEvtCount = preserveState ? nonStateEvtCount : evtCount
+	const redactConfirmation = `Redact ${targetEvtCount} events`
 	return <ConfirmModal<BulkRedactConfirmArgs>
-		title="Redact recent messages"
-		description={<>
-			Are you sure you want to redact all currently loaded timeline events
-			of <code>{userID}</code>? This will remove {targetEvtCount} events.
-		</>}
-		confirmButton={`Redact ${targetEvtCount} events`}
+		title={isBanModal ? "Ban user" : "Redact recent messages"}
+		description={isBanModal
+			? <>Are you sure you want to ban <code>{userID}</code>?</>
+			: <>
+				Are you sure you want to redact all currently loaded timeline events
+				of <code>{userID}</code>? This will remove {targetEvtCount} events.
+			</>}
+		confirmButton={
+			isBanModal
+				? (doRedact ? `Ban and ${redactConfirmation.toLowerCase()}` : "Ban")
+				: redactConfirmation
+		}
 		onConfirm={onConfirm}
 		confirmArgs={confirmArgs}
 	>
@@ -59,7 +69,17 @@ const BulkRedactModal = ({
 		/>
 		<table>
 			<tbody>
-				<tr>
+				{isBanModal ? <tr>
+					<td><label htmlFor="redact-recent-messages">Redact recent messages</label></td>
+					<td>
+						<Toggle
+							id="redact-recent-messages"
+							checked={doRedact}
+							onChange={evt => setDoRedact(evt.target.checked)}
+						/>
+					</td>
+				</tr> : null}
+				{doRedact ? <tr>
 					<td><label htmlFor="preserve-system-messages">Preserve system messages</label></td>
 					<td>
 						<Toggle
@@ -68,7 +88,7 @@ const BulkRedactModal = ({
 							onChange={evt => setPreserveState(evt.target.checked)}
 						/>
 					</td>
-				</tr>
+				</tr> : null}
 			</tbody>
 		</table>
 	</ConfirmModal>
