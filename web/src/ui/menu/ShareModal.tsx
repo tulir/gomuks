@@ -31,20 +31,20 @@ const ShareModal = ({ evt, title, confirmButton, onConfirm, generateLink }: Conf
 		<table>
 			<tbody>
 				<tr>
-					<td>Use matrix.to link</td>
+					<td><label htmlFor="use-matrix-to">Use matrix.to link</label></td>
 					<td>
 						<Toggle
-							id="useMatrixTo"
+							id="use-matrix-to"
 							checked={useMatrixTo}
 							onChange={evt => setUseMatrixTo(evt.target.checked)}
 						/>
 					</td>
 				</tr>
 				<tr>
-					<td>Link to this specific event</td>
+					<td><label htmlFor="share-event">Link to this specific event</label></td>
 					<td>
 						<Toggle
-							id="shareEvent"
+							id="share-event"
 							checked={includeEvent}
 							onChange={evt => setIncludeEvent(evt.target.checked)}
 						/>

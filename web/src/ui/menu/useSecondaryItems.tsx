@@ -109,15 +109,15 @@ export const useSecondaryItems = (
 			const isRoomIDLink = true
 			let generatedURL = useMatrixTo ? "https://matrix.to/#/" : "matrix:roomid/"
 			if (useMatrixTo) {
-				generatedURL += evt.room_id
+				generatedURL += encodeURIComponent(evt.room_id)
 			} else {
-				generatedURL += `${evt.room_id.slice(1)}`
+				generatedURL += encodeURIComponent(`${evt.room_id.slice(1)}`)
 			}
 			if (includeEvent) {
 				if (useMatrixTo) {
-					generatedURL += `/${evt.event_id}`
+					generatedURL += `/${encodeURIComponent(evt.event_id)}`
 				} else {
-					generatedURL += `/e/${evt.event_id.slice(1)}`
+					generatedURL += `/e/${encodeURIComponent(evt.event_id.slice(1))}`
 				}
 			}
 			if (isRoomIDLink) {
