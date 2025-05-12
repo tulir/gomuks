@@ -33,14 +33,26 @@ div.url-preview {
 
 	div.actions {
 		grid-area: actions;
-		margin: 0.5rem 0.5rem 0 0;
+		width: 2rem;
+		height: 2rem;
+		display: flex;
+		justify-content: center;
+		align-self: center;
+
+		> button {
+			width: 2rem;
+			height: 2rem;
+			margin-right: .25rem;
+		}
 	}
 
 	div.load-preview-button {
 		grid-area: description;
-		margin: 0.5rem;
 
 		> button {
+			border-top-left-radius: 0;
+			border-top-right-radius: 0;
+
 			svg {
 				margin-right: 0.5rem;
 			}
@@ -52,7 +64,7 @@ div.url-preview {
 
 	div.loading-preview-indicator {
 		grid-area: description;
-		margin: 0.5rem auto;
+		margin: 0 auto;
 	}
 
 	div.description {
