@@ -88,7 +88,6 @@ const UserModeration = ({ userID, client, member, room }: UserModerationProps) =
 			openModal({
 				dimmed: true,
 				boxed: true,
-				innerBoxClass: "confirm-message-modal",
 				content,
 			})
 		}
@@ -134,7 +133,6 @@ const UserModeration = ({ userID, client, member, room }: UserModerationProps) =
 		openModal({
 			dimmed: true,
 			boxed: true,
-			innerBoxClass: "confirm-message-modal",
 			content: <BulkRedactModal
 				userID={userID}
 				evtCount={eligibleEventsCount}

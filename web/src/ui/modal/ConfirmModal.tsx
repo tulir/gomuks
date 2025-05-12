@@ -17,6 +17,7 @@ import React, { JSX, use } from "react"
 import { MemDBEvent } from "@/api/types"
 import TimelineEvent from "../timeline/TimelineEvent.tsx"
 import { ModalCloseContext } from "./contexts.ts"
+import "./ConfirmModal.css"
 
 export interface ConfirmProps<T extends readonly unknown[] = []> {
 	evt?: MemDBEvent
@@ -43,7 +44,7 @@ const ConfirmModal = <T extends readonly unknown[] = []>({
 		closeModal()
 		onConfirm(...confirmArgs)
 	}
-	return <form onSubmit={onConfirmWrapped}>
+	return <form className="confirm-message-modal" onSubmit={onConfirmWrapped}>
 		<h3>{title}</h3>
 		{evt ? <div className="timeline-event-container">
 			<TimelineEvent evt={evt} prevEvt={null} disableMenu={true} />

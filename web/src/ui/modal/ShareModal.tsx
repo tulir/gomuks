@@ -39,30 +39,20 @@ const ShareModal = ({ evt, onConfirm, generateLink }: ShareModalProps) => {
 		onConfirm={onConfirm}
 		confirmArgs={confirmArgs}
 	>
-		<table>
-			<tbody>
-				<tr>
-					<td><label htmlFor="use-matrix-to">Use matrix.to link</label></td>
-					<td>
-						<Toggle
-							id="use-matrix-to"
-							checked={useMatrixTo}
-							onChange={evt => setUseMatrixTo(evt.target.checked)}
-						/>
-					</td>
-				</tr>
-				<tr>
-					<td><label htmlFor="share-event">Link to this specific event</label></td>
-					<td>
-						<Toggle
-							id="share-event"
-							checked={includeEvent}
-							onChange={evt => setIncludeEvent(evt.target.checked)}
-						/>
-					</td>
-				</tr>
-			</tbody>
-		</table>
+		<div className="toggle-sheet">
+			<label htmlFor="use-matrix-to">Use matrix.to link</label>
+			<Toggle
+				id="use-matrix-to"
+				checked={useMatrixTo}
+				onChange={evt => setUseMatrixTo(evt.target.checked)}
+			/>
+			<label htmlFor="share-event">Link to this specific event</label>
+			<Toggle
+				id="share-event"
+				checked={includeEvent}
+				onChange={evt => setIncludeEvent(evt.target.checked)}
+			/>
+		</div>
 		<div className="output-preview">
 			<span className="no-select">Preview: </span><code>{link}</code>
 		</div>

@@ -67,30 +67,24 @@ const BulkRedactModal = ({
 			placeholder="Reason (optional)"
 			onChange={evt => setReason(evt.target.value)}
 		/>
-		<table>
-			<tbody>
-				{isBanModal ? <tr>
-					<td><label htmlFor="redact-recent-messages">Redact recent messages</label></td>
-					<td>
-						<Toggle
-							id="redact-recent-messages"
-							checked={doRedact}
-							onChange={evt => setDoRedact(evt.target.checked)}
-						/>
-					</td>
-				</tr> : null}
-				{doRedact ? <tr>
-					<td><label htmlFor="preserve-system-messages">Preserve system messages</label></td>
-					<td>
-						<Toggle
-							id="preserve-system-messages"
-							checked={preserveState}
-							onChange={evt => setPreserveState(evt.target.checked)}
-						/>
-					</td>
-				</tr> : null}
-			</tbody>
-		</table>
+		<div className="toggle-sheet">
+			{isBanModal ? <>
+				<label htmlFor="redact-recent-messages">Redact recent messages</label>
+				<Toggle
+					id="redact-recent-messages"
+					checked={doRedact}
+					onChange={evt => setDoRedact(evt.target.checked)}
+				/>
+			</> : null}
+			{doRedact ? <>
+				<label htmlFor="preserve-system-messages">Preserve system messages</label>
+				<Toggle
+					id="preserve-system-messages"
+					checked={preserveState}
+					onChange={evt => setPreserveState(evt.target.checked)}
+				/>
+			</> : null}
+		</div>
 	</ConfirmModal>
 }
 

@@ -48,7 +48,6 @@ export const useSecondaryItems = (
 		openModal({
 			dimmed: true,
 			boxed: true,
-			innerBoxClass: "confirm-message-modal",
 			content: <RoomContext value={roomCtx}>
 				<ConfirmWithMessageModal
 					evt={evt}
@@ -68,7 +67,6 @@ export const useSecondaryItems = (
 		openModal({
 			dimmed: true,
 			boxed: true,
-			innerBoxClass: "confirm-message-modal",
 			content: <RoomContext value={roomCtx}>
 				<ConfirmWithMessageModal
 					evt={evt}
@@ -128,7 +126,6 @@ export const useSecondaryItems = (
 		openModal({
 			dimmed: true,
 			boxed: true,
-			innerBoxClass: "confirm-message-modal",
 			content: <RoomContext value={roomCtx}>
 				<ShareModal
 					evt={evt}

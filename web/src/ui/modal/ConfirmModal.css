@@ -1,0 +1,57 @@
+form.confirm-message-modal {
+	width: min(40rem, 80vw);
+	max-height: min(40rem, 80vh);
+	display: flex;
+	flex-direction: column;
+	gap: .5rem;
+
+	> h3 {
+		margin: 0;
+	}
+
+	> div.timeline-event-container {
+		margin: .5rem 0;
+		padding-left: .5rem;
+		border-left: 2px solid var(--border-color);
+		overflow: auto;
+
+		> div.timeline-event {
+			margin: 0;
+			padding: 0;
+		}
+	}
+
+	> input {
+		padding: 1rem;
+		outline: none;
+		border-radius: .25rem;
+		border: 1px solid var(--border-color);
+	}
+
+	> div.confirm-buttons {
+		display: flex;
+		justify-content: right;
+		> button {
+			padding: .5rem 1rem;
+		}
+	}
+
+	> div.output-preview {
+		> span.no-select {
+			user-select: none;
+		}
+
+		> code {
+			word-break: break-word;
+		}
+	}
+
+	> div.toggle-sheet {
+		display: grid;
+		grid-template-columns: 1fr auto;
+
+		> label, > input {
+			align-self: center;
+		}
+	}
+}
