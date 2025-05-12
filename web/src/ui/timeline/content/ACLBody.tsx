@@ -18,7 +18,7 @@ import { ACLEventContent } from "@/api/types"
 import { listDiff } from "@/util/diff.ts"
 import { humanJoin } from "@/util/join.ts"
 import { humanJoinReact, joinReact } from "@/util/reactjoin.tsx"
-import { ensureArray, ensureStringArray } from "@/util/validation.ts"
+import { ensureArray, ensureStringArray, getDisplayname } from "@/util/validation.ts"
 import EventContentProps from "./props.ts"
 
 function joinServers(arr: string[]): JSX.Element[] {
@@ -90,12 +90,12 @@ const ACLBody = ({ event, sender }: EventContentProps) => {
 		&& !addedDeny.length && !removedDeny.length
 	) {
 		return <div className="acl-body">
-			{sender?.content.displayname ?? event.sender} sent a server ACL event with no changes
+			{getDisplayname(event.sender, sender?.content)} sent a server ACL event with no changes
 		</div>
 	}
 	if (ensureArray(content.allow).length === 0 || ensureArray(content.deny).includes("*")) {
 		return <div className="acl-body">
-			{sender?.content.displayname ?? event.sender} changed the server ACLs:
+			{getDisplayname(event.sender, sender?.content)} changed the server ACLs:
 			🎉 All servers are banned from participating! This room can no longer be used.
 		</div>
 	}
@@ -105,7 +105,7 @@ const ACLBody = ({ event, sender }: EventContentProps) => {
 	return <div className="acl-body">
 		<details>
 			<summary>
-				{sender?.content.displayname ?? event.sender} {changeStringSummary}
+				{getDisplayname(event.sender, sender?.content)} {changeStringSummary}
 			</summary>
 			{changeString}
 		</details>

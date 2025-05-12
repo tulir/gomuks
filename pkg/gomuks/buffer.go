@@ -26,6 +26,7 @@ import (
 	"github.com/coder/websocket"
 
 	"go.mau.fi/gomuks/pkg/hicli"
+	"go.mau.fi/gomuks/pkg/hicli/jsoncmd"
 )
 
 type WebsocketCloseFunc func(websocket.StatusCode, string)
@@ -60,17 +61,17 @@ func (eb *EventBuffer) Push(evt any) {
 		panic(fmt.Errorf("failed to marshal event %T: %w", evt, err))
 	}
 	allowCache := true
-	if syncComplete, ok := evt.(*hicli.SyncComplete); ok && syncComplete.Since != nil && *syncComplete.Since == "" {
+	if syncComplete, ok := evt.(*jsoncmd.SyncComplete); ok && syncComplete.Since != nil && *syncComplete.Since == "" {
 		// Don't cache initial sync responses
 		allowCache = false
-	} else if _, ok := evt.(*hicli.Typing); ok {
+	} else if _, ok := evt.(*jsoncmd.Typing); ok {
 		// Also don't cache typing events
 		allowCache = false
 	}
 	eb.lock.Lock()
 	defer eb.lock.Unlock()
 	jc := &hicli.JSONCommand{
-		Command: hicli.EventTypeName(evt),
+		Command: jsoncmd.EventTypeName(evt),
 		Data:    data,
 	}
 	if allowCache {

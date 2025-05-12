@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import { MessageEventContent } from "@/api/types"
-import { getDisplayname, parseMatrixURI } from "@/util/validation.ts"
+import { ensureString, getDisplayname, parseMatrixURI } from "@/util/validation.ts"
 import EventContentProps from "./props.ts"
 
 function isImageElement(elem: EventTarget): elem is HTMLImageElement {
@@ -108,7 +108,9 @@ const TextMessageBody = ({ event, sender }: EventContentProps) => {
 			dangerouslySetInnerHTML={{ __html: event.local_content.sanitized_html }}
 		/>
 	}
-	return <div className={classNames.join(" ")} data-event-sender={eventSenderName}>{content.body}</div>
+	return <div className={classNames.join(" ")} data-event-sender={eventSenderName}>
+		{ensureString(content.body)}
+	</div>
 }
 
 export default TextMessageBody

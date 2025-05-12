@@ -47,6 +47,12 @@ export const preferences = {
 		allowedContexts: anyContext,
 		defaultValue: true,
 	}),
+	send_bundled_url_previews: new Preference<boolean>({
+		displayName: "Send bundled URL previews",
+		description: "Should the composer offer fetching URL previews to bundle in outgoing messages?",
+		allowedContexts: anyContext,
+		defaultValue: true,
+	}),
 	display_read_receipts: new Preference<boolean>({
 		displayName: "Display read receipts",
 		description: "Should read receipts be rendered in the timeline?",
@@ -135,6 +141,12 @@ export const preferences = {
 	show_room_emoji_packs: new Preference<boolean>({
 		displayName: "Show room emoji packs",
 		description: "Whether to show custom emoji packs provided by the room. If disabled, only your personal packs are shown in all rooms.",
+		allowedContexts: anyContext,
+		defaultValue: true,
+	}),
+	upload_dialog: new Preference<boolean>({
+		displayName: "Show upload dialog",
+		description: "Whether to show the dialog that allows adjusting the media before upload (re-encoding, resizing, etc)",
 		allowedContexts: anyContext,
 		defaultValue: true,
 	}),

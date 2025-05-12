@@ -102,6 +102,13 @@ export function parseMXC(mxc: unknown): [string, string] | [] {
 	return [match[1], match[2]]
 }
 
+export function ensureNumber(value: unknown): number {
+	if (typeof value !== "number" || isNaN(value)) {
+		return 0
+	}
+	return value
+}
+
 export function ensureString(value: unknown): string {
 	if (typeof value !== "string") {
 		return ""
@@ -118,5 +125,18 @@ export function isString(val: unknown): val is string {
 }
 
 export function ensureStringArray(val: unknown): string[] {
-	return ensureArray(val).filter(isString)
+	return ensureTypedArray(val, isString)
+}
+
+export function ensureTypedArray<T>(val: unknown, isCorrectType: (val: unknown) => val is T): T[] {
+	if (!Array.isArray(val)) {
+		return []
+	}
+	// Check all items first, don't create a new array if the types are correct
+	for (const item of val) {
+		if (!isCorrectType(item)) {
+			return val.filter(isCorrectType)
+		}
+	}
+	return val
 }

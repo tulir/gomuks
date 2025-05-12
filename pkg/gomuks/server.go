@@ -56,7 +56,10 @@ func (gmx *Gomuks) CreateAPIRouter() http.Handler {
 	api.HandleFunc("POST /keys/export", gmx.ExportKeys)
 	api.HandleFunc("POST /keys/export/{room_id}", gmx.ExportKeys)
 	api.HandleFunc("POST /keys/import", gmx.ImportKeys)
+	api.HandleFunc("GET /keys/restorebackup", gmx.RestoreKeyBackup)
+	api.HandleFunc("GET /keys/restorebackup/{room_id}", gmx.RestoreKeyBackup)
 	api.HandleFunc("GET /codeblock/{style}", gmx.GetCodeblockCSS)
+	api.HandleFunc("GET /url_preview", gmx.GetURLPreview)
 	return exhttp.ApplyMiddleware(
 		api,
 		hlog.NewHandler(*gmx.Log),
@@ -209,7 +212,7 @@ func (gmx *Gomuks) signToken(td any) string {
 	return base64.RawURLEncoding.EncodeToString(data) + "." + base64.RawURLEncoding.EncodeToString(checksum)
 }
 
-func (gmx *Gomuks) writeTokenCookie(w http.ResponseWriter, created, jsonOutput bool) {
+func (gmx *Gomuks) writeTokenCookie(w http.ResponseWriter, created, jsonOutput, insecureCookie bool) {
 	token, expiry := gmx.generateToken()
 	if !jsonOutput {
 		http.SetCookie(w, &http.Cookie{
@@ -217,7 +220,7 @@ func (gmx *Gomuks) writeTokenCookie(w http.ResponseWriter, created, jsonOutput b
 			Value:    token,
 			Expires:  expiry,
 			HttpOnly: true,
-			Secure:   true,
+			Secure:   !insecureCookie,
 			SameSite: http.SameSiteLaxMode,
 		})
 	}
@@ -238,13 +241,14 @@ func (gmx *Gomuks) Authenticate(w http.ResponseWriter, r *http.Request) {
 	}
 	jsonOutput := r.URL.Query().Get("output") == "json"
 	allowPrompt := r.URL.Query().Get("no_prompt") != "true"
+	insecureCookie := r.URL.Query().Get("insecure_cookie") == "true"
 	authCookie, err := r.Cookie("gomuks_auth")
 	if err == nil && gmx.validateAuth(authCookie.Value, false) {
 		hlog.FromRequest(r).Debug().Msg("Authentication successful with existing cookie")
-		gmx.writeTokenCookie(w, false, jsonOutput)
+		gmx.writeTokenCookie(w, false, jsonOutput, insecureCookie)
 	} else if found, correct := gmx.doBasicAuth(r); found && correct {
 		hlog.FromRequest(r).Debug().Msg("Authentication successful with username and password")
-		gmx.writeTokenCookie(w, true, jsonOutput)
+		gmx.writeTokenCookie(w, true, jsonOutput, insecureCookie)
 	} else {
 		if !found {
 			hlog.FromRequest(r).Debug().Msg("Requesting credentials for auth request")

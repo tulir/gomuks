@@ -15,7 +15,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import { JSX } from "react"
 import { RoomNameEventContent } from "@/api/types"
-import { ensureString } from "@/util/validation.ts"
+import { ensureString, getDisplayname } from "@/util/validation.ts"
 import EventContentProps from "./props.ts"
 
 function bidiIsolate(str: string): JSX.Element {
@@ -38,7 +38,7 @@ const RoomNameBody = ({ event, sender }: EventContentProps) => {
 		changeDescription = "removed the room name"
 	}
 	return <div className="room-name-body">
-		{sender?.content.displayname ?? event.sender} {changeDescription}
+		{getDisplayname(event.sender, sender?.content)} {changeDescription}
 	</div>
 }
 

@@ -238,6 +238,21 @@ div.media-container {
 	> img, > video {
 		max-width: 100%;
 		max-height: 100%;
+
+		&.errored::before {
+			display: none;
+		}
+
+		&.errored::after {
+			display: flex;
+			justify-content: center;
+			align-items: center;
+			text-align: center;
+			height: 100%;
+			color: var(--error-color);
+			content: "Failed to load image";
+			background-color: var(--media-placeholder-default-background);
+		}
 	}
 }
 

@@ -14,6 +14,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import { CSSProperties } from "react"
+import { ensureNumber } from "@/util/validation.ts"
 
 export interface CalculatedMediaSize {
 	container: CSSProperties
@@ -50,6 +51,8 @@ export function calculateMediaSize(
 			media: {},
 		}
 	}
+	width = ensureNumber(width)
+	height = ensureNumber(height)
 	const imageContainerAspectRatio = imageContainerWidth / imageContainerHeight
 
 	const origWidth = width

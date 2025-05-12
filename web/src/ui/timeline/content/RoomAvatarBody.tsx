@@ -16,7 +16,7 @@
 import { JSX, use } from "react"
 import { getRoomAvatarThumbnailURL, getRoomAvatarURL } from "@/api/media.ts"
 import { ContentURI, RoomAvatarEventContent } from "@/api/types"
-import { ensureString } from "@/util/validation.ts"
+import { ensureString, getDisplayname } from "@/util/validation.ts"
 import { LightboxContext } from "../../modal"
 import EventContentProps from "./props.ts"
 
@@ -46,7 +46,7 @@ const RoomAvatarBody = ({ event, sender, room }: EventContentProps) => {
 		changeDescription = "removed the room avatar"
 	}
 	return <div className="room-avatar-body">
-		{sender?.content.displayname ?? event.sender} {changeDescription}
+		{getDisplayname(event.sender, sender?.content)} {changeDescription}
 	</div>
 }
 

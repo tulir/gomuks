@@ -14,11 +14,12 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import { MessageEventContent } from "@/api/types"
+import { ensureString } from "@/util/validation.ts"
 import EventContentProps from "./props.ts"
 
 const UnknownMessageBody = ({ event }: EventContentProps) => {
 	const content = event.content as MessageEventContent
-	return <code>{`{ "type": "${event.type}", "content": { "msgtype": "${content.msgtype}" } }`}</code>
+	return <code>{`{ "type": "${event.type}", "content": { "msgtype": "${ensureString(content.msgtype)}" } }`}</code>
 }
 
 export default UnknownMessageBody

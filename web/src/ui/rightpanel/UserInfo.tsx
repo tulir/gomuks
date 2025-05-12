@@ -16,8 +16,8 @@
 import { use, useCallback, useEffect, useState } from "react"
 import { PuffLoader } from "react-spinners"
 import { getAvatarURL } from "@/api/media.ts"
-import { useRoomMember } from "@/api/statestore"
-import { MemberEventContent, UserID, UserProfile } from "@/api/types"
+import { maybeRedactMemberEvent, useRoomMember } from "@/api/statestore"
+import { UserID, UserProfile } from "@/api/types"
 import { ensureString, getLocalpart } from "@/util/validation.ts"
 import ClientContext from "../ClientContext.ts"
 import { LightboxContext } from "../modal"
@@ -37,7 +37,7 @@ const UserInfo = ({ userID }: UserInfoProps) => {
 	const roomCtx = use(RoomContext)
 	const openLightbox = use(LightboxContext)!
 	const memberEvt = useRoomMember(client, roomCtx?.store, userID)
-	const member = (memberEvt?.content ?? null) as MemberEventContent | null
+	const member = maybeRedactMemberEvent(memberEvt)
 	const [globalProfile, setGlobalProfile] = useState<UserProfile | null>(null)
 	const [errors, setErrors] = useState<string[] | null>(null)
 	const refreshProfile = useCallback((clearState = false) => {

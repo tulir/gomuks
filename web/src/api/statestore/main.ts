@@ -20,6 +20,7 @@ import { NonNullCachedEventDispatcher } from "@/util/eventdispatcher.ts"
 import { focused } from "@/util/focus.ts"
 import toSearchableString from "@/util/searchablestring.ts"
 import Subscribable, { MultiSubscribable, NoDataSubscribable } from "@/util/subscribable.ts"
+import { getDisplayname } from "@/util/validation.ts"
 import {
 	ContentURI,
 	EventRowID,
@@ -507,7 +508,7 @@ export class StateStore {
 		const memberEvt = room.getStateEvent("m.room.member", evt.sender)
 		const icon = `${getAvatarThumbnailURL(evt.sender, memberEvt?.content)}&image_auth=${this.imageAuthToken}`
 		const roomName = room.meta.current.name ?? "Unnamed room"
-		const senderName = memberEvt?.content.displayname ?? evt.sender
+		const senderName = getDisplayname(evt.sender, memberEvt?.content)
 		const title = senderName === roomName ? senderName : `${senderName} (${roomName})`
 		if (sound) {
 			(document.getElementById("default-notification-sound") as HTMLAudioElement)?.play()

@@ -16,6 +16,7 @@
 import React, { use } from "react"
 import { getAvatarThumbnailURL, getAvatarURL } from "@/api/media.ts"
 import { MemberEventContent, UserID } from "@/api/types"
+import { ensureString, getDisplayname } from "@/util/validation.ts"
 import MainScreenContext from "../../MainScreenContext.ts"
 import { LightboxContext } from "../../modal"
 import EventContentProps from "./props.ts"
@@ -45,7 +46,7 @@ function useChangeDescription(
 				onClick={mainScreen.clickRightPanelOpener}
 				alt=""
 			/> <span className="name">
-				{content.displayname ?? target}
+				{getDisplayname(target, content)}
 			</span>
 		</>
 	}
@@ -58,12 +59,12 @@ function useChangeDescription(
 			} else if (!content.displayname) {
 				return <>removed their displayname</>
 			} else if (!prevContent.displayname) {
-				return <>set their displayname to <span className="name">{content.displayname}</span></>
+				return <>set their displayname to <span className="name">{ensureString(content.displayname)}</span></>
 			}
 			return <>
 				changed their displayname from <span className="name">
-					{prevContent.displayname}
-				</span> to <span className="name">{content.displayname}</span>
+					{ensureString(prevContent.displayname)}
+				</span> to <span className="name">{ensureString(content.displayname)}</span>
 			</>
 		} else if (content.avatar_url !== prevContent.avatar_url) {
 			if (!content.avatar_url) {
@@ -121,11 +122,11 @@ const MemberBody = ({ event, sender }: EventContentProps) => {
 	const prevContent = event.unsigned.prev_content as MemberEventContent | undefined
 	return <div className="member-body">
 		<span className="name sender-name">
-			{sender?.content.displayname ?? event.sender}
+			{getDisplayname(event.sender, sender?.content)}
 		</span> <span className="change-description">
 			{useChangeDescription(event.sender, event.state_key as UserID, content, prevContent)}
 		</span>
-		{content.reason ? <span className="reason"> for {content.reason}</span> : null}
+		{content.reason ? <span className="reason"> for {ensureString(content.reason)}</span> : null}
 	</div>
 }
 

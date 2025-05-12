@@ -13,33 +13,36 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import { JSX } from "react"
+import React, { JSX } from "react"
 import { TombstoneEventContent } from "@/api/types"
+import { ensureString, getDisplayname, isRoomID } from "@/util/validation.ts"
 import EventContentProps from "./props.ts"
 
 const RoomTombstoneBody = ({ event, sender }: EventContentProps) => {
 	const content = event.content as TombstoneEventContent
-	const end = content.body?.length > 0 ? ` with the message: ${content.body}` : "."
+	const body = ensureString(content.body)
+	const replacementRoom = ensureString(content.replacement_room)
+	const end = body ? ` with the message: ${body}` : "."
 	const onClick = (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => {
 		e.preventDefault()
-		window.mainScreenContext.setActiveRoom(content.replacement_room)
+		window.mainScreenContext.setActiveRoom(replacementRoom)
 	}
 	let description: JSX.Element
-	if (content.replacement_room?.length && content.replacement_room.startsWith("!")) {
-		description = (
-			<span>
-			replaced this room with&nbsp;
-				<a onClick={onClick} href={"matrix:roomid/" + content.replacement_room.slice(1)}
-				   className="hicli-matrix-uri">
-					{content.replacement_room}
-				</a>{end}
-			</span>
-		)
+	if (isRoomID(replacementRoom)) {
+		description = <span>
+			replaced this room with <a
+				onClick={onClick}
+				href={"matrix:roomid/" + replacementRoom.slice(1)}
+				className="hicli-matrix-uri"
+			>
+				{replacementRoom}
+			</a>{end}
+		</span>
 	} else {
 		description = <span>shut down this room{end}</span>
 	}
 	return <div className="room-tombstone-body">
-		{sender?.content.displayname ?? event.sender} {description}
+		{getDisplayname(event.sender, sender?.content)} {description}
 	</div>
 }
 

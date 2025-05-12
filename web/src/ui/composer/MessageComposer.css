@@ -85,4 +85,12 @@ div.message-composer {
 			}
 		}
 	}
+
+	> div.url-previews {
+		display: flex;
+		flex-direction: row;
+		gap: 1rem;
+		overflow-x: auto;
+		margin: 0 0.5rem;
+	}
 }

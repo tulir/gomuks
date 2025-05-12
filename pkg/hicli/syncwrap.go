@@ -18,6 +18,7 @@ import (
 	"maunium.net/go/mautrix/id"
 
 	"go.mau.fi/gomuks/pkg/hicli/database"
+	"go.mau.fi/gomuks/pkg/hicli/jsoncmd"
 )
 
 type hiSyncer HiClient
@@ -33,9 +34,9 @@ const (
 func (h *hiSyncer) ProcessResponse(ctx context.Context, resp *mautrix.RespSync, since string) error {
 	c := (*HiClient)(h)
 	c.lastSync = time.Now()
-	ctx = context.WithValue(ctx, syncContextKey, &syncContext{evt: &SyncComplete{
+	ctx = context.WithValue(ctx, syncContextKey, &syncContext{evt: &jsoncmd.SyncComplete{
 		Since:        &since,
-		Rooms:        make(map[id.RoomID]*SyncRoom, len(resp.Rooms.Join)),
+		Rooms:        make(map[id.RoomID]*jsoncmd.SyncRoom, len(resp.Rooms.Join)),
 		InvitedRooms: make([]*database.InvitedRoom, 0, len(resp.Rooms.Invite)),
 		LeftRooms:    make([]id.RoomID, 0, len(resp.Rooms.Leave)),
 	}})

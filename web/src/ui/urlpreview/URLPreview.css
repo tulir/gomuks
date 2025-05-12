@@ -1,0 +1,109 @@
+div.url-preview {
+	margin: 0.5rem 0;
+	border-radius: 0.5rem;
+	background-color: var(--url-preview-background-color);
+	border: 1px solid var(--url-preview-background-color);
+	display: grid;
+	flex-shrink: 0;
+
+	&.loading {
+		padding: 1.5rem;
+		height: fit-content;
+		display: inherit;
+	}
+
+	grid-template:
+		"title       actions"     auto
+		"description description" auto
+		"media       media"       auto
+		/ 1fr;
+
+	div.title {
+		grid-area: title;
+		margin: 0.5rem;
+		overflow: hidden;
+		white-space: nowrap;
+		text-overflow: ellipsis;
+		font-weight: bold;
+
+		&.with-description {
+			margin-bottom: 0;
+		}
+	}
+
+	div.actions {
+		grid-area: actions;
+		width: 2rem;
+		height: 2rem;
+		display: flex;
+		justify-content: center;
+		align-self: center;
+
+		> button {
+			width: 2rem;
+			height: 2rem;
+			margin-right: .25rem;
+		}
+	}
+
+	div.load-preview-button {
+		grid-area: description;
+
+		> button {
+			border-top-left-radius: 0;
+			border-top-right-radius: 0;
+
+			svg {
+				margin-right: 0.5rem;
+			}
+
+			width: 100%;
+			height: 2.5rem;
+		}
+	}
+
+	div.loading-preview-indicator {
+		grid-area: description;
+		margin: 0 auto;
+	}
+
+	div.description {
+		grid-area: description;
+		margin: 0 0.5rem 0.5rem;
+		display: -webkit-box;
+		overflow: hidden;
+		-webkit-line-clamp: 3;
+		-webkit-box-orient: vertical;
+		color: var(--semisecondary-text-color);
+	}
+
+	> div.media-container {
+		grid-area: media;
+		border-radius: 0 0 .5rem .5rem;
+		background-color: var(--background-color);
+	}
+
+	&.inline {
+		grid-template:
+			"media        title       actions"     auto
+			"media        description description" auto
+			/ min-content auto        2rem;
+		width: 100%;
+		max-width: 20rem;
+		max-height: 6rem;
+
+		> div.inline-media-wrapper {
+			grid-area: media;
+			display: flex;
+			justify-content: center;
+			align-items: center;
+			background-color: var(--background-color);
+			border-radius: .5rem 0 0 .5rem;
+			padding: .5rem;
+		}
+
+		> div.description {
+			-webkit-line-clamp: 2;
+		}
+	}
+}

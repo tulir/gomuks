@@ -27,6 +27,7 @@ import (
 	"maunium.net/go/mautrix/id"
 
 	"go.mau.fi/gomuks/pkg/hicli/database"
+	"go.mau.fi/gomuks/pkg/hicli/jsoncmd"
 	"go.mau.fi/gomuks/pkg/rainbow"
 )
 
@@ -71,6 +72,7 @@ func (h *HiClient) SendMessage(
 	text string,
 	relatesTo *event.RelatesTo,
 	mentions *event.Mentions,
+	urlPreviews *[]*event.BeeperLinkPreview,
 ) (*database.Event, error) {
 	if text == "/discardsession" {
 		err := h.CryptoStore.RemoveOutboundGroupSession(ctx, roomID)
@@ -162,6 +164,9 @@ func (h *HiClient) SendMessage(
 				content.Mentions.Add(userID)
 			}
 		}
+	}
+	if urlPreviews != nil {
+		content.BeeperLinkPreviews = *urlPreviews
 	}
 	if relatesTo != nil {
 		if relatesTo.Type == event.RelReplace {
@@ -374,7 +379,7 @@ func (h *HiClient) actuallySend(ctx context.Context, room *database.Room, dbEvt 
 			}
 		}
 		if !synchronous {
-			h.EventHandler(&SendComplete{
+			h.EventHandler(&jsoncmd.SendComplete{
 				Event: dbEvt,
 				Error: err,
 			})

@@ -4,10 +4,11 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-package hicli
+package jsoncmd
 
 import (
 	"encoding/json"
+	"fmt"
 
 	"go.mau.fi/util/jsontime"
 	"maunium.net/go/mautrix/event"
@@ -15,6 +16,25 @@ import (
 
 	"go.mau.fi/gomuks/pkg/hicli/database"
 )
+
+func EventTypeName(evt any) Name {
+	switch evt.(type) {
+	case *SyncComplete:
+		return EventSyncComplete
+	case *SyncStatus:
+		return EventSyncStatus
+	case *EventsDecrypted:
+		return EventEventsDecrypted
+	case *Typing:
+		return EventTyping
+	case *SendComplete:
+		return EventSendComplete
+	case *ClientState:
+		return EventClientState
+	default:
+		panic(fmt.Errorf("unknown event type %T", evt))
+	}
+}
 
 type SyncRoom struct {
 	Meta        *database.Room                                `json:"meta"`
@@ -109,4 +129,13 @@ type ClientState struct {
 	UserID        id.UserID   `json:"user_id,omitempty"`
 	DeviceID      id.DeviceID `json:"device_id,omitempty"`
 	HomeserverURL string      `json:"homeserver_url,omitempty"`
+}
+
+type ImageAuthToken string
+
+type InitComplete struct{}
+
+type RunData struct {
+	RunID string `json:"run_id"`
+	ETag  string `json:"etag"`
 }

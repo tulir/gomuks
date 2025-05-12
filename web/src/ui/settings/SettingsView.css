@@ -133,17 +133,19 @@ div.settings-view {
 			width: 100%;
 		}
 
+		hr {
+			width: 100%;
+			opacity: .2;
+			margin: 0;
+		}
+
 		input {
 			border: 1px solid var(--border-color);
 			padding: .5rem;
 			border-radius: .5rem;
-
-			&[type="file"] {
-				padding: .25rem;
-			}
 		}
 
-		> div.export-buttons, > form.import-buttons {
+		> div.export-buttons, > form.import-buttons, > div.key-backup-buttons {
 			display: flex;
 			gap: .5rem;
 
@@ -170,5 +172,30 @@ div.settings-view {
 	> hr {
 		width: 100%;
 		opacity: .2;
+	}
+}
+
+div.key-restore-modal-wrapper {
+	width: 100%;
+	max-width: min(30rem, 90vw) !important;
+}
+
+div.key-restore-modal {
+	display: flex;
+	flex-direction: column;
+	gap: .25rem;
+	width: 100%;
+
+	.status {
+		font-weight: bold;
+	}
+
+	.active-room-id {
+		white-space: nowrap;
+	}
+
+	progress {
+		width: 100%;
+		box-sizing: border-box;
 	}
 }

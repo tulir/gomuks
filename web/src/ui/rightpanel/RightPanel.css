@@ -89,20 +89,21 @@ div.right-panel-content.user {
 		font-size: 1.5rem;
 		font-weight: bold;
 		text-align: center;
-	}
 
-	div.userid {
-		text-align: center;
-		font-family: var(--monospace-font-stack);
-	}
-
-	div.userid, div.displayname {
 		/* Ensure names aren't too long */
 		display: -webkit-box;
 		-webkit-line-clamp: 4;
 		-webkit-box-orient: vertical;
 		word-break: break-word;
 		overflow: hidden;
+	}
+
+	div.userid {
+		text-align: center;
+		font-family: var(--monospace-font-stack);
+		overflow: auto;
+		word-break: break-word;
+		max-height: 4rem;
 	}
 
 	div.userid, div.extended-profile, div.devices, div.user-moderation, div.mutual-rooms, div.errors {

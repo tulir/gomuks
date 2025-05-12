@@ -17,6 +17,7 @@
 package gomuks
 
 import (
+	"bytes"
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
@@ -32,6 +33,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -47,6 +49,8 @@ import (
 	"go.mau.fi/util/ptr"
 	"go.mau.fi/util/random"
 	cwebp "go.mau.fi/webp"
+	_ "golang.org/x/image/bmp"
+	_ "golang.org/x/image/tiff"
 	_ "golang.org/x/image/webp"
 	"maunium.net/go/mautrix"
 	"maunium.net/go/mautrix/crypto/attachment"
@@ -54,6 +58,7 @@ import (
 	"maunium.net/go/mautrix/id"
 
 	"go.mau.fi/gomuks/pkg/hicli/database"
+	"go.mau.fi/gomuks/pkg/orientation"
 )
 
 var ErrBadGateway = mautrix.RespError{
@@ -464,7 +469,8 @@ func (gmx *Gomuks) reencodeMedia(ctx context.Context, query url.Values, tempFile
 	}
 	resizeWidthVal := query.Get("resize_width")
 	resizeHeightVal := query.Get("resize_height")
-	var resizeWidth, resizeHeight int
+	resizePercentVal := query.Get("resize_percent")
+	var resizeWidth, resizeHeight, resizePercent int
 	if resizeWidthVal != "" && resizeHeightVal != "" {
 		var err error
 		resizeWidth, err = strconv.Atoi(resizeWidthVal)
@@ -474,6 +480,14 @@ func (gmx *Gomuks) reencodeMedia(ctx context.Context, query url.Values, tempFile
 		resizeHeight, err = strconv.Atoi(resizeHeightVal)
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse resize height: %w", err)
+		}
+	} else if resizePercentVal != "" {
+		var err error
+		resizePercent, err = strconv.Atoi(resizePercentVal)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse resize percent: %w", err)
+		} else if resizePercent < 1 || resizePercent > 100 {
+			return nil, fmt.Errorf("resize percent must be between 1 and 100")
 		}
 	}
 	switch encTo {
@@ -490,11 +504,26 @@ func (gmx *Gomuks) reencodeMedia(ctx context.Context, query url.Values, tempFile
 				return nil, fmt.Errorf("failed to parse quality: %w", err)
 			}
 		}
-		decoded, err := imaging.Decode(tempFile, imaging.AutoOrientation(true))
+		decoded, decodedFrom, err := image.Decode(tempFile)
 		if err != nil {
 			return nil, fmt.Errorf("failed to decode image: %w", err)
 		}
+		var o orientation.Orientation
+		if decodedFrom == "jpeg" {
+			_, err = tempFile.Seek(0, io.SeekStart)
+			if err != nil {
+				return nil, fmt.Errorf("failed to seek to start of temp file: %w", err)
+			}
+			o = orientation.Read(tempFile)
+		} // TODO heic orientation?
+		if o != orientation.Unspecified {
+			decoded = o.Fix(decoded)
+		}
 		if resizeWidth > 0 && resizeHeight > 0 {
+			decoded = imaging.Resize(decoded, resizeWidth, resizeHeight, imaging.Lanczos)
+		} else if resizePercent != 0 {
+			resizeWidth = int(float64(decoded.Bounds().Dx()) * float64(resizePercent) / 100)
+			resizeHeight = int(float64(decoded.Bounds().Dy()) * float64(resizePercent) / 100)
 			decoded = imaging.Resize(decoded, resizeWidth, resizeHeight, imaging.Lanczos)
 		}
 		_, err = tempFile.Seek(0, io.SeekStart)
@@ -527,7 +556,7 @@ func (gmx *Gomuks) reencodeMedia(ctx context.Context, query url.Values, tempFile
 		if err != nil {
 			return nil, fmt.Errorf("failed to seek to start of temp file: %w", err)
 		}
-	case "video/webm", "video/mp4":
+	case "video/webm", "video/mp4", "image/webp+anim":
 		_ = tempFile.Close()
 		var encToExtension string
 		var inputArgs, outputArgs []string
@@ -538,6 +567,9 @@ func (gmx *Gomuks) reencodeMedia(ctx context.Context, query url.Values, tempFile
 		case "video/mp4":
 			encToExtension = ".mp4"
 			outputArgs = []string{"-c:v", "libx264", "-c:a", "aac", "-pix_fmt", "yuv420p"}
+		case "image/webp+anim":
+			encToExtension = ".webp"
+			outputArgs = []string{"-c:v", "libwebp_anim", "-pix_fmt", "yuva420p", "-loop", "0"}
 		default:
 			panic("unreachable")
 		}
@@ -570,28 +602,103 @@ func (gmx *Gomuks) reencodeMedia(ctx context.Context, query url.Values, tempFile
 
 func (gmx *Gomuks) UploadMedia(w http.ResponseWriter, r *http.Request) {
 	log := hlog.FromRequest(r)
+	encrypt, _ := strconv.ParseBool(r.URL.Query().Get("encrypt"))
+	content, err := gmx.cacheAndUploadMedia(r.Context(), r.Body, encrypt, r.URL.Query())
+	if err != nil {
+		log.Err(err).Msg("Failed to upload media")
+		writeMaybeRespError(err, w)
+		return
+	}
+	exhttp.WriteJSONResponse(w, http.StatusOK, content)
+}
+
+func (gmx *Gomuks) GetURLPreview(w http.ResponseWriter, r *http.Request) {
+	log := hlog.FromRequest(r)
+	url := r.URL.Query().Get("url")
+	if url == "" {
+		mautrix.MInvalidParam.WithMessage("URL must be provided to preview").Write(w)
+		return
+	}
+	linkPreview, err := gmx.Client.Client.GetURLPreview(r.Context(), url)
+	if err != nil {
+		log.Err(err).Msg("Failed to get URL preview")
+		writeMaybeRespError(err, w)
+		return
+	}
+
+	preview := event.BeeperLinkPreview{
+		LinkPreview: *linkPreview,
+		MatchedURL:  url,
+	}
+
+	if preview.ImageURL != "" {
+		encrypt, _ := strconv.ParseBool(r.URL.Query().Get("encrypt"))
+
+		var content *event.MessageEventContent
+
+		if encrypt {
+			if fileInfo, ok := gmx.temporaryMXCToEncryptedFileInfo[preview.ImageURL]; ok {
+				content = &event.MessageEventContent{File: fileInfo}
+			}
+		} else {
+			if mxc, ok := gmx.temporaryMXCToPermanent[preview.ImageURL]; ok {
+				content = &event.MessageEventContent{URL: mxc}
+			}
+		}
+
+		parsedImageURL, err := preview.ImageURL.Parse()
+		if content == nil && (err != nil || parsedImageURL.IsEmpty()) {
+			log.Warn().Err(err).Str("image_url", string(preview.ImageURL)).Msg("Failed to parse URL preview image mxc")
+		} else if content == nil && !parsedImageURL.IsEmpty() {
+			resp, err := gmx.Client.Client.Download(r.Context(), parsedImageURL)
+			if err != nil {
+				log.Err(err).Msg("Failed to download URL preview image")
+				writeMaybeRespError(err, w)
+				return
+			}
+			defer resp.Body.Close()
+
+			content, err = gmx.cacheAndUploadMedia(r.Context(), resp.Body, encrypt, nil)
+			if err != nil {
+				log.Err(err).Msg("Failed to upload URL preview image")
+				writeMaybeRespError(err, w)
+				return
+			}
+
+			if encrypt {
+				gmx.temporaryMXCToEncryptedFileInfo[preview.ImageURL] = content.File
+			} else {
+				gmx.temporaryMXCToPermanent[preview.ImageURL] = content.URL
+			}
+		}
+
+		if content != nil {
+			preview.ImageURL = content.URL
+			preview.ImageEncryption = content.File
+		}
+	}
+
+	exhttp.WriteJSONResponse(w, http.StatusOK, preview)
+}
+
+func (gmx *Gomuks) cacheAndUploadMedia(ctx context.Context, reader io.Reader, encrypt bool, query url.Values) (*event.MessageEventContent, error) {
+	log := zerolog.Ctx(ctx)
 	tempFile, err := os.CreateTemp(gmx.TempDir, "upload-*")
 	if err != nil {
-		log.Err(err).Msg("Failed to create temporary file")
-		mautrix.MUnknown.WithMessage(fmt.Sprintf("Failed to create temp file: %v", err)).Write(w)
-		return
+		return nil, fmt.Errorf("failed to create temp file %w", err)
 	}
 	defer func() {
 		_ = tempFile.Close()
 		_ = os.Remove(tempFile.Name())
 	}()
 	hasher := sha256.New()
-	_, err = io.Copy(tempFile, io.TeeReader(r.Body, hasher))
+	_, err = io.Copy(tempFile, io.TeeReader(reader, hasher))
 	if err != nil {
-		log.Err(err).Msg("Failed to copy upload media to temporary file")
-		mautrix.MUnknown.WithMessage(fmt.Sprintf("Failed to copy media to temp file: %v", err)).Write(w)
-		return
+		return nil, fmt.Errorf("failed to copy upload media to temp file: %w", err)
 	}
 	checksum := hasher.Sum(nil)
-	if newHash, err := gmx.reencodeMedia(r.Context(), r.URL.Query(), tempFile); err != nil {
-		log.Err(err).Msg("Failed to reencode media")
-		mautrix.MUnknown.WithMessage(fmt.Sprintf("Failed to reencode media: %v", err)).Write(w)
-		return
+	if newHash, err := gmx.reencodeMedia(ctx, query, tempFile); err != nil {
+		return nil, fmt.Errorf("failed to reencode media: %w", err)
 	} else if newHash != nil {
 		checksum = newHash
 	}
@@ -602,39 +709,30 @@ func (gmx *Gomuks) UploadMedia(w http.ResponseWriter, r *http.Request) {
 	} else {
 		err = os.MkdirAll(filepath.Dir(cachePath), 0700)
 		if err != nil {
-			log.Err(err).Msg("Failed to create cache directory")
-			mautrix.MUnknown.WithMessage(fmt.Sprintf("Failed to create cache directory: %v", err)).Write(w)
-			return
+			return nil, fmt.Errorf("failed to create cache directory: %w", err)
 		}
 		err = os.Rename(tempFile.Name(), cachePath)
 		if err != nil {
-			log.Err(err).Msg("Failed to rename temporary file")
-			mautrix.MUnknown.WithMessage(fmt.Sprintf("Failed to rename temp file: %v", err)).Write(w)
-			return
+			return nil, fmt.Errorf("failed to rename temp file: %w", err)
 		}
 	}
 
 	cacheFile, err := os.Open(cachePath)
 	if err != nil {
-		log.Err(err).Msg("Failed to open cache file")
-		mautrix.MUnknown.WithMessage(fmt.Sprintf("Failed to open cache file: %v", err)).Write(w)
-		return
+		return nil, fmt.Errorf("failed to open cache file: %w", err)
 	}
 
-	msgType, info, defaultFileName, err := gmx.generateFileInfo(r.Context(), cacheFile)
+	msgType, info, defaultFileName, err := gmx.generateFileInfo(ctx, cacheFile)
 	if err != nil {
-		log.Err(err).Msg("Failed to generate file info")
-		mautrix.MUnknown.WithMessage(fmt.Sprintf("Failed to generate file info: %v", err)).Write(w)
-		return
+		return nil, fmt.Errorf("failed to generate file info: %w", err)
 	}
-	encrypt, _ := strconv.ParseBool(r.URL.Query().Get("encrypt"))
 	if msgType == event.MsgVideo {
-		err = gmx.generateVideoThumbnail(r.Context(), cacheFile.Name(), encrypt, info)
+		err = gmx.generateVideoThumbnail(ctx, cacheFile.Name(), encrypt, info)
 		if err != nil {
 			log.Warn().Err(err).Msg("Failed to generate video thumbnail")
 		}
 	}
-	fileName := r.URL.Query().Get("filename")
+	fileName := query.Get("filename")
 	if fileName == "" {
 		fileName = defaultFileName
 	}
@@ -644,13 +742,11 @@ func (gmx *Gomuks) UploadMedia(w http.ResponseWriter, r *http.Request) {
 		Info:     info,
 		FileName: fileName,
 	}
-	content.File, content.URL, err = gmx.uploadFile(r.Context(), checksum, cacheFile, encrypt, int64(info.Size), info.MimeType, fileName)
+	content.File, content.URL, err = gmx.uploadFile(ctx, checksum, cacheFile, encrypt, int64(info.Size), info.MimeType, fileName)
 	if err != nil {
-		log.Err(err).Msg("Failed to upload media")
-		writeMaybeRespError(err, w)
-		return
+		return nil, fmt.Errorf("failed to upload media: %w", err)
 	}
-	exhttp.WriteJSONResponse(w, http.StatusOK, content)
+	return content, nil
 }
 
 func (gmx *Gomuks) uploadFile(ctx context.Context, checksum []byte, cacheFile *os.File, encrypt bool, fileSize int64, mimeType, fileName string) (*event.EncryptedFileInfo, id.ContentURIString, error) {
@@ -697,6 +793,32 @@ func (gmx *Gomuks) uploadFile(ctx context.Context, checksum []byte, cacheFile *o
 	}
 }
 
+var magickPath string
+
+func init() {
+	magickPath, _ = exec.LookPath("magick")
+}
+
+func getDimensionsWithMagick(ctx context.Context, file *os.File) (w, h int) {
+	if stdout, err := exec.CommandContext(ctx, magickPath, "identify", "-format", "%w %h", file.Name()+"[0]").Output(); err != nil {
+		var stderr []byte
+		var e *exec.ExitError
+		if errors.As(err, &e) {
+			stderr = e.Stderr
+		}
+		zerolog.Ctx(ctx).Err(err).Bytes("stderr", stderr).Msg("Failed to get image dimensions with magick")
+	} else if spaceIdx := bytes.IndexByte(stdout, ' '); spaceIdx == -1 {
+		zerolog.Ctx(ctx).Error().Bytes("stdout", stdout).Msg("Failed to parse magick output")
+	} else if width, err := strconv.Atoi(string(stdout[:spaceIdx])); err != nil {
+		zerolog.Ctx(ctx).Err(err).Bytes("stdout", stdout).Msg("Failed to parse width in magick output")
+	} else if height, err := strconv.Atoi(string(stdout[spaceIdx+1:])); err != nil {
+		zerolog.Ctx(ctx).Err(err).Bytes("stdout", stdout).Msg("Failed to parse height in magick output")
+	} else {
+		return width, height
+	}
+	return 0, 0
+}
+
 func (gmx *Gomuks) generateFileInfo(ctx context.Context, file *os.File) (event.MessageType, *event.FileInfo, string, error) {
 	fileInfo, err := file.Stat()
 	if err != nil {
@@ -722,7 +844,12 @@ func (gmx *Gomuks) generateFileInfo(ctx context.Context, file *os.File) (event.M
 		defaultFileName = "image" + mimeType.Extension()
 		img, _, err := image.Decode(file)
 		if err != nil {
-			zerolog.Ctx(ctx).Warn().Err(err).Msg("Failed to decode image config")
+			if magickPath != "" {
+				zerolog.Ctx(ctx).Warn().Err(err).Msg("Failed to decode image config, trying with magick")
+				info.Width, info.Height = getDimensionsWithMagick(ctx, file)
+			} else {
+				zerolog.Ctx(ctx).Warn().Err(err).Msg("Failed to decode image config and magick not installed")
+			}
 		} else {
 			bounds := img.Bounds()
 			info.Width = bounds.Dx()
@@ -732,6 +859,13 @@ func (gmx *Gomuks) generateFileInfo(ctx context.Context, file *os.File) (event.M
 				zerolog.Ctx(ctx).Warn().Err(err).Msg("Failed to generate image blurhash")
 			}
 			info.AnoaBlurhash = hash
+			if mimeType.String() == "image/jpeg" {
+				_, err = file.Seek(0, io.SeekStart)
+				if err != nil {
+					return "", nil, "", fmt.Errorf("failed to seek to start of file: %w", err)
+				}
+				info.Width, info.Height = orientation.Read(file).ApplyToDimensions(info.Width, info.Height)
+			}
 		}
 	case "video":
 		msgType = event.MsgVideo

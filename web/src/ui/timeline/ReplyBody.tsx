@@ -15,8 +15,14 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import { use } from "react"
 import { getAvatarThumbnailURL, getUserColorIndex } from "@/api/media.ts"
-import { RoomStateStore, useRoomEvent, useRoomMember } from "@/api/statestore"
-import type { EventID, MemDBEvent, MemberEventContent } from "@/api/types"
+import {
+	RoomStateStore,
+	applyPerMessageSender,
+	maybeRedactMemberEvent,
+	useRoomEvent,
+	useRoomMember,
+} from "@/api/statestore"
+import type { EventID, MemDBEvent } from "@/api/types"
 import { getDisplayname } from "@/util/validation.ts"
 import ClientContext from "../ClientContext.ts"
 import TooltipButton from "../util/TooltipButton.tsx"
@@ -92,7 +98,7 @@ export const ReplyBody = ({
 }: ReplyBodyProps) => {
 	const client = use(ClientContext)
 	const memberEvt = useRoomMember(client, room, event.sender)
-	const memberEvtContent = memberEvt?.content as MemberEventContent | undefined
+	const memberEvtContent = maybeRedactMemberEvent(memberEvt)
 	const BodyType = getBodyType(event, true)
 	const classNames = ["reply-body"]
 	if (onClose) {
@@ -108,15 +114,7 @@ export const ReplyBody = ({
 		classNames.push("small")
 	}
 	const perMessageSender = getPerMessageProfile(event)
-	let renderMemberEvtContent = memberEvtContent
-	if (perMessageSender) {
-		renderMemberEvtContent = {
-			membership: "join",
-			displayname: perMessageSender.displayname ?? memberEvtContent?.displayname,
-			avatar_url: perMessageSender.avatar_url ?? memberEvtContent?.avatar_url,
-			avatar_file: perMessageSender.avatar_file ?? memberEvtContent?.avatar_file,
-		}
-	}
+	const renderMemberEvtContent = applyPerMessageSender(memberEvtContent, perMessageSender)
 	const userColorIndex = getUserColorIndex(perMessageSender?.id ?? event.sender)
 	classNames.push(`sender-color-${userColorIndex}`)
 	return <blockquote data-reply-to={event.event_id} className={classNames.join(" ")} onClick={onClickReply}>

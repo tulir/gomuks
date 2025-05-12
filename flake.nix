@@ -18,6 +18,7 @@
           default = pkgs.mkShell {
             packages = with pkgs; [
               glib-networking
+              go
               go-task
               go-tools
               gotools
@@ -28,7 +29,7 @@
               gst_all_1.gst-plugins-ugly
               gst_all_1.gst-libav
               gst_all_1.gst-vaapi
-              libsoup
+              libsoup_2_4
               olm
               pkg-config
               pre-commit

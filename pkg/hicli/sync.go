@@ -31,31 +31,32 @@ import (
 	"maunium.net/go/mautrix/pushrules"
 
 	"go.mau.fi/gomuks/pkg/hicli/database"
+	"go.mau.fi/gomuks/pkg/hicli/jsoncmd"
 )
 
 type syncContext struct {
 	shouldWakeupRequestQueue bool
 
-	evt *SyncComplete
+	evt *jsoncmd.SyncComplete
 }
 
 func (h *HiClient) markSyncErrored(err error, permanent bool) {
-	stat := &SyncStatus{
-		Type:       SyncStatusErroring,
+	stat := &jsoncmd.SyncStatus{
+		Type:       jsoncmd.SyncStatusErroring,
 		Error:      err.Error(),
 		ErrorCount: h.syncErrors,
 		LastSync:   jsontime.UM(h.lastSync),
 	}
 	if permanent {
-		stat.Type = SyncStatusFailed
+		stat.Type = jsoncmd.SyncStatusFailed
 	}
 	h.SyncStatus.Store(stat)
 	h.EventHandler(stat)
 }
 
 var (
-	syncOK      = &SyncStatus{Type: SyncStatusOK}
-	syncWaiting = &SyncStatus{Type: SyncStatusWaiting}
+	syncOK      = &jsoncmd.SyncStatus{Type: jsoncmd.SyncStatusOK}
+	syncWaiting = &jsoncmd.SyncStatus{Type: jsoncmd.SyncStatusWaiting}
 )
 
 func (h *HiClient) markSyncOK() {
@@ -67,7 +68,7 @@ func (h *HiClient) markSyncOK() {
 func (h *HiClient) preProcessSyncResponse(ctx context.Context, resp *mautrix.RespSync, since string) error {
 	log := zerolog.Ctx(ctx)
 	listenToDevice := h.ToDeviceInSync.Load()
-	var syncTD []*SyncToDevice
+	var syncTD []*jsoncmd.SyncToDevice
 
 	postponedToDevices := resp.ToDevice.Events[:0]
 	for _, evt := range resp.ToDevice.Events {
@@ -85,7 +86,7 @@ func (h *HiClient) preProcessSyncResponse(ctx context.Context, resp *mautrix.Res
 		case *event.EncryptedEventContent:
 			unhandledDecrypted := h.Crypto.HandleEncryptedEvent(ctx, evt)
 			if unhandledDecrypted != nil && listenToDevice {
-				syncTD = append(syncTD, &SyncToDevice{
+				syncTD = append(syncTD, &jsoncmd.SyncToDevice{
 					Sender:    evt.Sender,
 					Type:      unhandledDecrypted.Type,
 					Content:   unhandledDecrypted.Content.VeryRaw,
@@ -103,7 +104,7 @@ func (h *HiClient) preProcessSyncResponse(ctx context.Context, resp *mautrix.Res
 			postponedToDevices = append(postponedToDevices, evt)
 		default:
 			if listenToDevice {
-				syncTD = append(syncTD, &SyncToDevice{
+				syncTD = append(syncTD, &jsoncmd.SyncToDevice{
 					Sender:  evt.Sender,
 					Type:    evt.Type,
 					Content: evt.Content.VeryRaw,
@@ -334,7 +335,7 @@ func (h *HiClient) processSyncJoinedRoom(ctx context.Context, roomID id.RoomID, 
 			receiptsList = append(receiptsList, list...)
 			newOwnReceipts = append(newOwnReceipts, ownList...)
 		case event.EphemeralEventTyping:
-			go h.EventHandler(&Typing{
+			go h.EventHandler(&jsoncmd.Typing{
 				RoomID:             roomID,
 				TypingEventContent: *evt.Content.AsTyping(),
 			})
@@ -760,7 +761,7 @@ func (h *HiClient) processStateAndTimeline(
 	decryptionQueue := make(map[id.SessionID]*database.SessionRequest)
 	allNewEvents := make([]*database.Event, 0, len(state.Events)+len(timeline.Events))
 	addedEvents := make(map[database.EventRowID]struct{})
-	newNotifications := make([]SyncNotification, 0)
+	newNotifications := make([]jsoncmd.SyncNotification, 0)
 	var recalculatePreviewEvent, unreadMessagesWereMaybeRedacted bool
 	var newUnreadCounts database.UnreadCounts
 	addOldEvent := func(rowID database.EventRowID, evtID id.EventID) (dbEvt *database.Event, err error) {
@@ -813,7 +814,7 @@ func (h *HiClient) processStateAndTimeline(
 		}
 		if isUnread {
 			if dbEvt.UnreadType.Is(database.UnreadTypeNotify) && h.firstSyncReceived {
-				newNotifications = append(newNotifications, SyncNotification{
+				newNotifications = append(newNotifications, jsoncmd.SyncNotification{
 					RowID:     dbEvt.RowID,
 					Sound:     dbEvt.UnreadType.Is(database.UnreadTypeSound),
 					Highlight: dbEvt.UnreadType.Is(database.UnreadTypeHighlight),
@@ -1041,7 +1042,7 @@ func (h *HiClient) processStateAndTimeline(
 		for _, receipt := range receipts {
 			receipt.RoomID = ""
 		}
-		ctx.Value(syncContextKey).(*syncContext).evt.Rooms[room.ID] = &SyncRoom{
+		ctx.Value(syncContextKey).(*syncContext).evt.Rooms[room.ID] = &jsoncmd.SyncRoom{
 			Meta:        room,
 			Timeline:    timelineRowTuples,
 			AccountData: accountData,

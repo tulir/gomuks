@@ -13,11 +13,17 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import React, { JSX, use, useState } from "react"
+import React, { JSX, use, useCallback, useState } from "react"
 import { createPortal } from "react-dom"
 import { getAvatarThumbnailURL, getMediaURL, getUserColorIndex } from "@/api/media.ts"
-import { useRoomMember } from "@/api/statestore"
-import { MemDBEvent, UnreadType, UserProfile } from "@/api/types"
+import {
+	RoomStateStore,
+	applyPerMessageSender,
+	maybeRedactMemberEvent,
+	usePreference,
+	useRoomMember,
+} from "@/api/statestore"
+import { MemDBEvent, URLPreview as URLPreviewType, UnreadType } from "@/api/types"
 import { isMobileDevice } from "@/util/ismobile.ts"
 import { getDisplayname, isEventID } from "@/util/validation.ts"
 import ClientContext from "../ClientContext.ts"
@@ -25,10 +31,10 @@ import MainScreenContext from "../MainScreenContext.ts"
 import { EventFixedMenu, EventFullMenu, EventHoverMenu, getModalStyleFromMouse } from "../menu"
 import { ModalContext, NestableModalContext } from "../modal"
 import { useRoomContext } from "../roomview/roomcontext.ts"
+import URLPreview from "../urlpreview/URLPreview.tsx"
 import EventEditHistory from "./EventEditHistory.tsx"
 import ReadReceipts from "./ReadReceipts.tsx"
 import { ReplyIDBody } from "./ReplyBody.tsx"
-import URLPreviews from "./URLPreviews.tsx"
 import { ContentErrorBoundary, HiddenEvent, getBodyType, getPerMessageProfile, isSmallEvent } from "./content"
 import ErrorIcon from "@/icons/error.svg?react"
 import PendingIcon from "@/icons/pending.svg?react"
@@ -49,14 +55,19 @@ const dateFormatter = new Intl.DateTimeFormat("en-GB", { dateStyle: "full" })
 const formatShortTime = (time: Date) =>
 	`${time.getHours().toString().padStart(2, "0")}:${time.getMinutes().toString().padStart(2, "0")}`
 
-const EventReactions = ({ reactions }: { reactions: Record<string, number> }) => {
+interface EventReactionsProps {
+	reactions: Record<string, number>
+	onRereact: (mouseEvt: React.MouseEvent) => void
+}
+
+const EventReactions = ({ reactions, onRereact }: EventReactionsProps) => {
 	const reactionEntries = Object.entries(reactions).filter(([, count]) => count > 0).sort((a, b) => b[1] - a[1])
 	if (reactionEntries.length === 0) {
 		return null
 	}
 	return <div className="event-reactions">
 		{reactionEntries.map(([reaction, count]) =>
-			<div key={reaction} className="reaction" title={reaction}>
+			<div key={reaction} className="reaction" title={reaction} onClick={onRereact}>
 				{reaction.startsWith("mxc://")
 					? <img className="reaction-emoji" src={getMediaURL(reaction)} alt=""/>
 					: <span className="reaction-emoji">{reaction}</span>}
@@ -75,6 +86,25 @@ const EventSendStatus = ({ evt }: { evt: MemDBEvent }) => {
 	} else {
 		return <div title="Event sent and remote echo received" className="event-send-status sent"><SentIcon/></div>
 	}
+}
+
+const EventURLPreviews = ({ event, room }: {
+	room: RoomStateStore
+	event: MemDBEvent
+}) => {
+	const client = use(ClientContext)!
+	const renderPreviews = usePreference(client.store, room, "render_url_previews")
+	if (event.redacted_by || !renderPreviews) {
+		return null
+	}
+
+	const previews = (event.content["com.beeper.linkpreviews"] ?? event.content["m.url_previews"]) as URLPreviewType[]
+	if (!previews) {
+		return null
+	}
+	return <div className="url-previews">
+		{previews.map((p, i) => <URLPreview key={i} url={p.matched_url} preview={p}/>)}
+	</div>
 }
 
 const TimelineEvent = ({
@@ -106,6 +136,18 @@ const TimelineEvent = ({
 			/>,
 		})
 	}
+	const onRereact = useCallback((mouseEvt: React.MouseEvent) => {
+		client.sendEvent(evt.room_id, "m.reaction", {
+			"m.relates_to": {
+				rel_type: "m.annotation",
+				event_id: evt.event_id,
+				key: mouseEvt.currentTarget.getAttribute("title"),
+			},
+		}).catch(err => {
+			console.error("Failed to send reaction", err)
+			window.alert(`Failed to send reaction: ${err}`)
+		})
+	}, [client, evt])
 	const onClick = (mouseEvt: React.MouseEvent) => {
 		const targetElem = mouseEvt.target as HTMLElement
 		if (
@@ -189,25 +231,8 @@ const TimelineEvent = ({
 	const perMessageSender = getPerMessageProfile(evt)
 	const prevPerMessageSender = getPerMessageProfile(prevEvt)
 	const memberEvt = useRoomMember(client, roomCtx.store, evt.sender)
-	let memberEvtContent = memberEvt?.content as UserProfile | undefined
-	if (memberEvt?.redacted_by && !memberEvt?.viewing_redacted) {
-		memberEvtContent = {}
-	} else if (
-		memberEvtContent?.displayname === undefined
-		&& memberEvtContent?.avatar_url === undefined
-		&& memberEvt?.content.membership === "leave"
-		&& memberEvt.unsigned.prev_content
-	) {
-		memberEvtContent = memberEvt.unsigned.prev_content as UserProfile | undefined
-	}
-	let renderMemberEvtContent = memberEvtContent
-	if (perMessageSender) {
-		renderMemberEvtContent = {
-			displayname: perMessageSender.displayname ?? memberEvtContent?.displayname,
-			avatar_url: perMessageSender.avatar_url ?? memberEvtContent?.avatar_url,
-			avatar_file: perMessageSender.avatar_file ?? memberEvtContent?.avatar_file,
-		}
-	}
+	const memberEvtContent = maybeRedactMemberEvent(memberEvt)
+	const renderMemberEvtContent = applyPerMessageSender(memberEvtContent, perMessageSender)
 
 	let smallAvatar = false
 	let renderAvatar = true
@@ -291,7 +316,7 @@ const TimelineEvent = ({
 			{replyInMessage}
 			<ContentErrorBoundary>
 				<BodyType room={roomCtx.store} sender={memberEvt} event={evt}/>
-				{!isSmallBodyType && <URLPreviews room={roomCtx.store} event={evt}/>}
+				{!isSmallBodyType && <EventURLPreviews room={roomCtx.store} event={evt}/>}
 			</ContentErrorBoundary>
 			{(!editHistoryView && editEventTS) ? <div
 				className="event-edited"
@@ -300,7 +325,7 @@ const TimelineEvent = ({
 			>
 				(edited at {formatShortTime(editEventTS)})
 			</div> : null}
-			{evt.reactions ? <EventReactions reactions={evt.reactions}/> : null}
+			{evt.reactions ? <EventReactions reactions={evt.reactions} onRereact={onRereact} /> : null}
 		</div>
 		{!evt.event_id.startsWith("~") && roomCtx.store.preferences.display_read_receipts && !editHistoryView &&
 			<ReadReceipts room={roomCtx.store} eventID={evt.event_id} />}

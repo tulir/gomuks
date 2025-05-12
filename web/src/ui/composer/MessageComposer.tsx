@@ -35,6 +35,7 @@ import type {
 	MessageEventContent,
 	RelatesTo,
 	RoomID,
+	URLPreview as URLPreviewType,
 } from "@/api/types"
 import { PartialEmoji, emojiToMarkdown } from "@/util/emoji"
 import { isMobileDevice } from "@/util/ismobile.ts"
@@ -48,6 +49,7 @@ import { keyToString } from "../keybindings.ts"
 import { ModalContext } from "../modal"
 import { useRoomContext } from "../roomview/roomcontext.ts"
 import { ReplyBody } from "../timeline/ReplyBody.tsx"
+import URLPreview from "../urlpreview/URLPreview.tsx"
 import type { AutocompleteQuery } from "./Autocompleter.tsx"
 import { ComposerLocation, ComposerLocationValue, ComposerMedia } from "./ComposerMedia.tsx"
 import MediaUploadDialog from "./MediaUploadDialog.tsx"
@@ -65,6 +67,9 @@ export interface ComposerState {
 	text: string
 	media: MediaMessageEventContent | null
 	location: ComposerLocationValue | null
+	previews: URLPreviewType[]
+	loadingPreviews: string[]
+	possiblePreviews: string[]
 	replyTo: EventID | null
 	silentReply: boolean
 	explicitReplyInThread: boolean
@@ -77,8 +82,11 @@ const MAX_TEXTAREA_ROWS = 10
 const emptyComposer: ComposerState = {
 	text: "",
 	media: null,
-	replyTo: null,
 	location: null,
+	previews: [],
+	loadingPreviews: [],
+	possiblePreviews: [],
+	replyTo: null,
 	silentReply: false,
 	explicitReplyInThread: false,
 	startNewThread: false,
@@ -184,13 +192,17 @@ const MessageComposer = () => {
 			silentReply: false,
 			explicitReplyInThread: false,
 			startNewThread: false,
+			previews:
+				evt.content["m.url_previews"] ??
+				evt.content["com.beeper.linkpreviews"] ??
+				[],
 		})
 		textInput.current?.focus()
 	}, [room.roomID])
 	const canSend = Boolean(state.text || state.media || state.location)
 	const onClickSend = (evt: React.FormEvent) => {
 		evt.preventDefault()
-		if (!canSend || loadingMedia) {
+		if (!canSend || loadingMedia || state.loadingPreviews.length) {
 			return
 		}
 		doSendMessage(state)
@@ -261,6 +273,7 @@ const MessageComposer = () => {
 			text: state.text,
 			relates_to,
 			mentions,
+			url_previews: state.previews,
 		}).catch(err => window.alert("Failed to send message: " + err))
 	}
 	const onComposerCaretChange = (evt: CaretEvent<HTMLTextAreaElement>, newText?: string) => {
@@ -410,14 +423,18 @@ const MessageComposer = () => {
 		if (!file) {
 			return
 		}
-		const objectURL = URL.createObjectURL(file)
-		openModal({
-			dimmed: true,
-			boxed: true,
-			innerBoxClass: "media-upload-modal-wrapper",
-			onClose: () => URL.revokeObjectURL(objectURL),
-			content: <MediaUploadDialog file={file} blobURL={objectURL} doUploadFile={doUploadFile}/>,
-		})
+		if (room.preferences.upload_dialog) {
+			const objectURL = URL.createObjectURL(file)
+			openModal({
+				dimmed: true,
+				boxed: true,
+				innerBoxClass: "media-upload-modal-wrapper",
+				onClose: () => URL.revokeObjectURL(objectURL),
+				content: <MediaUploadDialog file={file} blobURL={objectURL} doUploadFile={doUploadFile}/>,
+			})
+		} else {
+			doUploadFile(file, file.name)
+		}
 	}
 	const onPaste = (evt: React.ClipboardEvent<HTMLTextAreaElement>) => {
 		const file = evt.clipboardData?.files?.[0]
@@ -438,6 +455,31 @@ const MessageComposer = () => {
 		}
 		evt.preventDefault()
 	}
+	const resolvePreview = useCallback((url: string) => {
+		console.log("RESOLVE PREVIEW", url)
+		const encrypt = !!room.meta.current.encryption_event
+		setState(s => ({ loadingPreviews: [...s.loadingPreviews, url]}))
+		fetch(`_gomuks/url_preview?encrypt=${encrypt}&url=${encodeURIComponent(url)}`, {
+			method: "GET",
+		})
+			.then(async res => {
+				const json = await res.json()
+				if (!res.ok) {
+					throw new Error(json.error)
+				} else {
+					setState(s => ({
+						previews: [...s.previews, json],
+						loadingPreviews: s.loadingPreviews.filter(u => u !== url),
+					}))
+				}
+			})
+			.catch(err => {
+				console.error("Error fetching preview for URL", url, err)
+				setState(s => ({
+					loadingPreviews: s.loadingPreviews.filter(u => u !== url),
+				}))
+			})
+	}, [room.meta])
 	// To ensure the cursor jumps to the end, do this in an effect rather than as the initial value of useState
 	// To try to avoid the input bar flashing, use useLayoutEffect instead of useEffect
 	useLayoutEffect(() => {
@@ -487,6 +529,21 @@ const MessageComposer = () => {
 			draftStore.set(room.roomID, state)
 		}
 	}, [roomCtx, room, state, editing])
+	useEffect(() => {
+		if (!room.preferences.send_bundled_url_previews) {
+			setState({ previews: [], loadingPreviews: [], possiblePreviews: []})
+			return
+		}
+		const urls = state.text.matchAll(/\bhttps?:\/\/[^\s/_*]+(?:\/\S*)?\b/gi)
+			.map(m => m[0])
+			.filter(u => !u.startsWith("https://matrix.to"))
+			.toArray()
+		setState(s => ({
+			previews: s.previews.filter(p => urls.includes(p.matched_url)),
+			loadingPreviews: s.loadingPreviews.filter(u => urls.includes(u)),
+			possiblePreviews: urls,
+		}))
+	}, [room.preferences, state.text])
 	const clearMedia = useCallback(() => setState({ media: null, location: null }), [])
 	const onChangeLocation = useCallback((location: ComposerLocationValue) => setState({ location }), [])
 	const closeReply = useCallback((evt: React.MouseEvent) => {
@@ -640,6 +697,8 @@ const MessageComposer = () => {
 			{body} {link}
 		</div>
 	}
+	const possiblePreviewsNotLoadingOrPreviewed = state.possiblePreviews.filter(
+		url => !state.loadingPreviews.includes(url) && !state.previews.some(p => p.matched_url === url))
 	return <>
 		{Autocompleter && autocomplete && <div className="autocompletions-wrapper"><Autocompleter
 			params={autocomplete}
@@ -675,6 +734,25 @@ const MessageComposer = () => {
 				room={room} client={client}
 				location={state.location} onChange={onChangeLocation} clearLocation={clearMedia}
 			/>}
+			{state.previews.length || state.loadingPreviews || possiblePreviewsNotLoadingOrPreviewed
+				? <div className="url-previews">
+					{state.previews.map((preview, i) => <URLPreview
+						key={i}
+						url={preview.matched_url}
+						preview={preview}
+						clearPreview={() => setState(s => ({ previews: s.previews.filter((_, j) => j !== i) }))}
+					/>)}
+					{state.loadingPreviews.map((previewURL, i) =>
+						<URLPreview	key={i} url={previewURL} preview="loading"/>)}
+					{possiblePreviewsNotLoadingOrPreviewed.map((url, i) =>
+						<URLPreview
+							key={i}
+							url={url}
+							preview="awaiting_user"
+							startLoadingPreview={() => resolvePreview(url)}
+						/>)}
+				</div>
+				: null}
 			<div className="input-area">
 				{!inlineButtons && <button className="show-more" onClick={openButtonsModal}><MoreIcon/></button>}
 				<textarea
@@ -693,7 +771,7 @@ const MessageComposer = () => {
 				{inlineButtons && makeAttachmentButtons()}
 				{showSendButton && <button
 					onClick={onClickSend}
-					disabled={!canSend || loadingMedia}
+					disabled={!canSend || loadingMedia || !!state.loadingPreviews.length}
 					title="Send message"
 				><SendIcon/></button>}
 				<input
