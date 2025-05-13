@@ -27,7 +27,7 @@ const (
 		       unread_highlights, unread_notifications, unread_messages, marked_unread, prev_batch
 		FROM room
 	`
-	getRoomsBySortingTimestampQuery = getRoomBaseQuery + `WHERE sorting_timestamp < $1 AND sorting_timestamp > 0 ORDER BY sorting_timestamp DESC LIMIT $2`
+	getRoomsBySortingTimestampQuery = getRoomBaseQuery + `WHERE sorting_timestamp < $1 AND sorting_timestamp > 0 AND room_type<>'m.space' ORDER BY sorting_timestamp DESC LIMIT $2`
 	getRoomsByTypeQuery             = getRoomBaseQuery + `WHERE room_type = $1`
 	getRoomByIDQuery                = getRoomBaseQuery + `WHERE room_id = $1`
 	ensureRoomExistsQuery           = `
