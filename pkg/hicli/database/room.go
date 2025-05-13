@@ -36,7 +36,7 @@ const (
 	`
 	upsertRoomFromSyncQuery = `
 		UPDATE room
-		SET room_type = COALESCE(room.room_type, json($2)->>'$.type'),
+		SET room_type = COALESCE(room.room_type, json($2)->>'$.type', ''),
 		    creation_content = COALESCE(room.creation_content, $2),
 		    tombstone_content = COALESCE(room.tombstone_content, $3),
 			name = COALESCE($4, room.name),

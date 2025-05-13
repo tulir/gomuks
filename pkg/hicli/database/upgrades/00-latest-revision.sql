@@ -1,4 +1,4 @@
--- v0 -> v13 (compatible with v10+): Latest revision
+-- v0 -> v14 (compatible with v10+): Latest revision
 CREATE TABLE account (
 	user_id        TEXT NOT NULL PRIMARY KEY,
 	device_id      TEXT NOT NULL,
