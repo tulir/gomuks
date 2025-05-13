@@ -11,7 +11,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"sync/atomic"
 
 	"go.mau.fi/util/exerrors"
 
@@ -20,22 +19,6 @@ import (
 
 type JSONCommandCustom[T any] = jsoncmd.Container[T]
 type JSONCommand = jsoncmd.Container[json.RawMessage]
-
-type JSONEventHandler func(*JSONCommand)
-
-var outgoingEventCounter atomic.Int64
-
-func (jeh JSONEventHandler) HandleEvent(evt any) {
-	data, err := json.Marshal(evt)
-	if err != nil {
-		panic(fmt.Errorf("failed to marshal event %T: %w", evt, err))
-	}
-	jeh(&JSONCommand{
-		Command:   jsoncmd.EventTypeName(evt),
-		RequestID: -outgoingEventCounter.Add(1),
-		Data:      data,
-	})
-}
 
 func (h *HiClient) State() *jsoncmd.ClientState {
 	state := &jsoncmd.ClientState{}
