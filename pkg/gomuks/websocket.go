@@ -305,6 +305,7 @@ func (gmx *Gomuks) HandleWebsocket(w http.ResponseWriter, r *http.Request) {
 func (gmx *Gomuks) sendInitialData(ctx context.Context, conn *websocket.Conn) {
 	log := zerolog.Ctx(ctx)
 	var roomCount int
+	var totalSize int
 	for payload := range gmx.Client.GetInitialSync(ctx, 100) {
 		roomCount += len(payload.Rooms)
 		marshaledPayload, err := json.Marshal(&payload)
@@ -312,6 +313,7 @@ func (gmx *Gomuks) sendInitialData(ctx context.Context, conn *websocket.Conn) {
 			log.Err(err).Msg("Failed to marshal initial rooms to send to client")
 			return
 		}
+		totalSize += len(marshaledPayload)
 		err = writeCmd(ctx, conn, &hicli.JSONCommand{
 			Command:   jsoncmd.EventSyncComplete,
 			RequestID: 0,
@@ -333,5 +335,8 @@ func (gmx *Gomuks) sendInitialData(ctx context.Context, conn *websocket.Conn) {
 		log.Err(err).Msg("Failed to send initial rooms done event to client")
 		return
 	}
-	log.Info().Int("room_count", roomCount).Msg("Sent initial rooms to client")
+	log.Info().
+		Int("room_count", roomCount).
+		Int("total_payload_size", totalSize).
+		Msg("Sent initial rooms to client")
 }
