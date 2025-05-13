@@ -30,11 +30,22 @@ import (
 
 	"github.com/coder/websocket"
 	"github.com/rs/zerolog"
-	"go.mau.fi/util/exerrors"
 
 	"go.mau.fi/gomuks/pkg/hicli"
 	"go.mau.fi/gomuks/pkg/hicli/jsoncmd"
 )
+
+func writeRaw(ctx context.Context, conn *websocket.Conn, data []byte) error {
+	writer, err := conn.Writer(ctx, websocket.MessageText)
+	if err != nil {
+		return err
+	}
+	_, err = writer.Write(data)
+	if err != nil {
+		return err
+	}
+	return writer.Close()
+}
 
 func writeCmd[T any](ctx context.Context, conn *websocket.Conn, cmd *jsoncmd.Container[T]) error {
 	writer, err := conn.Writer(ctx, websocket.MessageText)
@@ -96,7 +107,7 @@ func (gmx *Gomuks) HandleWebsocket(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithCancel(context.Background())
 	ctx = log.WithContext(ctx)
 	var listenerID uint64
-	evts := make(chan *hicli.JSONCommand, 32)
+	evts := make(chan *BufferedEvent, 512)
 	forceClose := func() {
 		cancel()
 		if listenerID != 0 {
@@ -115,8 +126,8 @@ func (gmx *Gomuks) HandleWebsocket(w http.ResponseWriter, r *http.Request) {
 	if resumeRunID != runID {
 		resumeFrom = 0
 	}
-	var resumeData []*hicli.JSONCommand
-	listenerID, resumeData = gmx.EventBuffer.Subscribe(resumeFrom, closeManually, func(evt *hicli.JSONCommand) {
+	var resumeData []*BufferedEvent
+	listenerID, resumeData = gmx.EventBuffer.Subscribe(resumeFrom, closeManually, func(evt *BufferedEvent) {
 		if ctx.Err() != nil {
 			return
 		}
@@ -139,9 +150,9 @@ func (gmx *Gomuks) HandleWebsocket(w http.ResponseWriter, r *http.Request) {
 	const RecvTimeout = 60 * time.Second
 	lastImageAuthTokenSent := time.Now()
 	sendImageAuthToken := func() {
-		err := writeCmd(ctx, conn, &hicli.JSONCommand{
+		err := writeCmd(ctx, conn, &BufferedEvent{
 			Command: jsoncmd.EventImageAuthToken,
-			Data:    exerrors.Must(json.Marshal(gmx.generateImageToken(1 * time.Hour))),
+			Data:    gmx.generateImageToken(1 * time.Hour),
 		})
 		if err != nil {
 			log.Err(err).Msg("Failed to write image auth token message")
@@ -231,7 +242,7 @@ func (gmx *Gomuks) HandleWebsocket(w http.ResponseWriter, r *http.Request) {
 			log.Trace().Int64("req_id", cmd.RequestID).Msg("Sent response to command")
 		}
 	}
-	initErr := writeCmd(ctx, conn, &hicli.JSONCommandCustom[*jsoncmd.RunData]{
+	initErr := writeCmd(ctx, conn, &jsoncmd.Container[*jsoncmd.RunData]{
 		Command: jsoncmd.EventRunID,
 		Data: &jsoncmd.RunData{
 			RunID: strconv.FormatInt(runID, 10),
@@ -242,7 +253,7 @@ func (gmx *Gomuks) HandleWebsocket(w http.ResponseWriter, r *http.Request) {
 		log.Err(initErr).Msg("Failed to write init client state message")
 		return
 	}
-	initErr = writeCmd(ctx, conn, &hicli.JSONCommandCustom[*jsoncmd.ClientState]{
+	initErr = writeCmd(ctx, conn, &jsoncmd.Container[*jsoncmd.ClientState]{
 		Command: jsoncmd.EventClientState,
 		Data:    gmx.Client.State(),
 	})
@@ -250,7 +261,7 @@ func (gmx *Gomuks) HandleWebsocket(w http.ResponseWriter, r *http.Request) {
 		log.Err(initErr).Msg("Failed to write init client state message")
 		return
 	}
-	initErr = writeCmd(ctx, conn, &hicli.JSONCommandCustom[*jsoncmd.SyncStatus]{
+	initErr = writeCmd(ctx, conn, &jsoncmd.Container[*jsoncmd.SyncStatus]{
 		Command: jsoncmd.EventSyncStatus,
 		Data:    gmx.Client.SyncStatus.Load(),
 	})
@@ -308,17 +319,17 @@ func (gmx *Gomuks) sendInitialData(ctx context.Context, conn *websocket.Conn) {
 	var totalSize int
 	for payload := range gmx.Client.GetInitialSync(ctx, 100) {
 		roomCount += len(payload.Rooms)
-		marshaledPayload, err := json.Marshal(&payload)
+		marshaledPayload, err := json.Marshal(&jsoncmd.Container[*jsoncmd.SyncComplete]{
+			Command:   jsoncmd.EventSyncComplete,
+			RequestID: 0,
+			Data:      payload,
+		})
 		if err != nil {
 			log.Err(err).Msg("Failed to marshal initial rooms to send to client")
 			return
 		}
 		totalSize += len(marshaledPayload)
-		err = writeCmd(ctx, conn, &hicli.JSONCommand{
-			Command:   jsoncmd.EventSyncComplete,
-			RequestID: 0,
-			Data:      marshaledPayload,
-		})
+		err = writeRaw(ctx, conn, marshaledPayload)
 		if err != nil {
 			log.Err(err).Msg("Failed to send initial rooms to client")
 			return

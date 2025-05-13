@@ -17,7 +17,6 @@ import (
 	"go.mau.fi/gomuks/pkg/hicli/jsoncmd"
 )
 
-type JSONCommandCustom[T any] = jsoncmd.Container[T]
 type JSONCommand = jsoncmd.Container[json.RawMessage]
 
 func (h *HiClient) State() *jsoncmd.ClientState {

@@ -19,7 +19,6 @@ package main
 import (
 	"context"
 	_ "embed"
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"os"
@@ -57,11 +56,11 @@ func (c *CommandHandler) HandleCommand(cmd *hicli.JSONCommand) *hicli.JSONComman
 
 func (c *CommandHandler) Init() {
 	c.Gomuks.Log.Info().Msg("Sending initial state to client")
-	c.App.EmitEvent("hicli_event", &hicli.JSONCommandCustom[*jsoncmd.ClientState]{
+	c.App.EmitEvent("hicli_event", &jsoncmd.Container[*jsoncmd.ClientState]{
 		Command: jsoncmd.EventClientState,
 		Data:    c.Gomuks.Client.State(),
 	})
-	c.App.EmitEvent("hicli_event", &hicli.JSONCommandCustom[*jsoncmd.SyncStatus]{
+	c.App.EmitEvent("hicli_event", &jsoncmd.Container[*jsoncmd.SyncStatus]{
 		Command: jsoncmd.EventSyncStatus,
 		Data:    c.Gomuks.Client.SyncStatus.Load(),
 	})
@@ -72,21 +71,16 @@ func (c *CommandHandler) Init() {
 			var roomCount int
 			for payload := range c.Gomuks.Client.GetInitialSync(ctx, 100) {
 				roomCount += len(payload.Rooms)
-				marshaledPayload, err := json.Marshal(&payload)
-				if err != nil {
-					log.Err(err).Msg("Failed to marshal initial rooms to send to client")
-					return
-				}
-				c.App.EmitEvent("hicli_event", &hicli.JSONCommand{
+				c.App.EmitEvent("hicli_event", &jsoncmd.Container[*jsoncmd.SyncComplete]{
 					Command:   jsoncmd.EventSyncComplete,
 					RequestID: 0,
-					Data:      marshaledPayload,
+					Data:      payload,
 				})
 			}
 			if ctx.Err() != nil {
 				return
 			}
-			c.App.EmitEvent("hicli_event", &hicli.JSONCommand{
+			c.App.EmitEvent("hicli_event", &jsoncmd.Container[any]{
 				Command:   jsoncmd.EventInitComplete,
 				RequestID: 0,
 			})
@@ -158,7 +152,7 @@ func main() {
 		URL:              "/",
 	})
 
-	gmx.EventBuffer.Subscribe(0, nil, func(command *hicli.JSONCommand) {
+	gmx.EventBuffer.Subscribe(0, nil, func(command *gomuks.BufferedEvent) {
 		app.EmitEvent("hicli_event", command)
 	})
 

@@ -17,30 +17,29 @@
 package gomuks
 
 import (
-	"encoding/json"
-	"fmt"
 	"maps"
 	"slices"
 	"sync"
 
 	"github.com/coder/websocket"
 
-	"go.mau.fi/gomuks/pkg/hicli"
 	"go.mau.fi/gomuks/pkg/hicli/jsoncmd"
 )
 
 type WebsocketCloseFunc func(websocket.StatusCode, string)
 
+type BufferedEvent = jsoncmd.Container[any]
+
 type EventBuffer struct {
 	lock    sync.RWMutex
-	buf     []*hicli.JSONCommand
+	buf     []*BufferedEvent
 	minID   int64
 	maxID   int64
 	MaxSize int
 
 	websocketClosers map[uint64]WebsocketCloseFunc
 	lastAckedID      map[uint64]int64
-	eventListeners   map[uint64]func(*hicli.JSONCommand)
+	eventListeners   map[uint64]func(*BufferedEvent)
 	nextListenerID   uint64
 }
 
@@ -48,18 +47,14 @@ func NewEventBuffer(maxSize int) *EventBuffer {
 	return &EventBuffer{
 		websocketClosers: make(map[uint64]WebsocketCloseFunc),
 		lastAckedID:      make(map[uint64]int64),
-		eventListeners:   make(map[uint64]func(*hicli.JSONCommand)),
-		buf:              make([]*hicli.JSONCommand, 0, 32),
+		eventListeners:   make(map[uint64]func(*BufferedEvent)),
+		buf:              make([]*BufferedEvent, 0, 32),
 		MaxSize:          maxSize,
 		minID:            -1,
 	}
 }
 
 func (eb *EventBuffer) Push(evt any) {
-	data, err := json.Marshal(evt)
-	if err != nil {
-		panic(fmt.Errorf("failed to marshal event %T: %w", evt, err))
-	}
 	allowCache := true
 	if syncComplete, ok := evt.(*jsoncmd.SyncComplete); ok && syncComplete.Since != nil && *syncComplete.Since == "" {
 		// Don't cache initial sync responses
@@ -70,9 +65,9 @@ func (eb *EventBuffer) Push(evt any) {
 	}
 	eb.lock.Lock()
 	defer eb.lock.Unlock()
-	jc := &hicli.JSONCommand{
+	jc := &BufferedEvent{
 		Command: jsoncmd.EventTypeName(evt),
-		Data:    data,
+		Data:    evt,
 	}
 	if allowCache {
 		eb.addToBuffer(jc)
@@ -95,7 +90,7 @@ func (eb *EventBuffer) Unsubscribe(listenerID uint64) {
 	delete(eb.websocketClosers, listenerID)
 }
 
-func (eb *EventBuffer) addToBuffer(evt *hicli.JSONCommand) {
+func (eb *EventBuffer) addToBuffer(evt *BufferedEvent) {
 	eb.maxID--
 	evt.RequestID = eb.maxID
 	if len(eb.lastAckedID) > 0 {
@@ -138,7 +133,7 @@ func (eb *EventBuffer) gc() {
 	}
 }
 
-func (eb *EventBuffer) Subscribe(resumeFrom int64, closeForRestart WebsocketCloseFunc, cb func(*hicli.JSONCommand)) (uint64, []*hicli.JSONCommand) {
+func (eb *EventBuffer) Subscribe(resumeFrom int64, closeForRestart WebsocketCloseFunc, cb func(*BufferedEvent)) (uint64, []*BufferedEvent) {
 	eb.lock.Lock()
 	defer eb.lock.Unlock()
 	eb.nextListenerID++
@@ -147,7 +142,7 @@ func (eb *EventBuffer) Subscribe(resumeFrom int64, closeForRestart WebsocketClos
 	if closeForRestart != nil {
 		eb.websocketClosers[id] = closeForRestart
 	}
-	var resumeData []*hicli.JSONCommand
+	var resumeData []*BufferedEvent
 	if resumeFrom < eb.minID {
 		resumeData = eb.buf[eb.minID-resumeFrom+1:]
 		eb.lastAckedID[id] = resumeFrom
