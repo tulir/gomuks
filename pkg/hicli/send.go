@@ -72,7 +72,7 @@ func (h *HiClient) SendMessage(
 	text string,
 	relatesTo *event.RelatesTo,
 	mentions *event.Mentions,
-	urlPreviews *[]*event.BeeperLinkPreview,
+	urlPreviews []*event.BeeperLinkPreview,
 ) (*database.Event, error) {
 	if text == "/discardsession" {
 		err := h.CryptoStore.RemoveOutboundGroupSession(ctx, roomID)
@@ -165,8 +165,14 @@ func (h *HiClient) SendMessage(
 			}
 		}
 	}
-	if urlPreviews != nil {
-		content.BeeperLinkPreviews = *urlPreviews
+	if len(urlPreviews) > 0 {
+		content.BeeperLinkPreviews = urlPreviews
+	} else if urlPreviews != nil {
+		if extra == nil {
+			extra = map[string]any{}
+		}
+		// Hack to force an empty link previews array
+		extra["com.beeper.linkpreviews"] = []any{}
 	}
 	if relatesTo != nil {
 		if relatesTo.Type == event.RelReplace {
