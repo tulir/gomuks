@@ -17,7 +17,7 @@ import { JSX, RefObject, use, useEffect } from "react"
 import { getAvatarThumbnailURL, getMediaURL } from "@/api/media.ts"
 import { AutocompleteMemberEntry, RoomStateStore, useCustomEmojis } from "@/api/statestore"
 import { Emoji, emojiToMarkdown, useSortedAndFilteredEmojis } from "@/util/emoji"
-import { escapeMarkdown } from "@/util/markdown.ts"
+import { makeMentionMarkdown } from "@/util/markdown.ts"
 import useEvent from "@/util/useEvent.ts"
 import ClientContext from "../ClientContext.ts"
 import type { ComposerState } from "./MessageComposer.tsx"
@@ -128,11 +128,8 @@ export const EmojiAutocompleter = ({ params, room, ...rest }: AutocompleterProps
 	return useAutocompleter({ params, room, ...rest, items, ...emojiFuncs })
 }
 
-const escapeDisplayname = (input: string) => escapeMarkdown(input).replace("\n", " ")
-
 const userFuncs = {
-	getText: (user: AutocompleteMemberEntry) =>
-		`[${escapeDisplayname(user.displayName)}](https://matrix.to/#/${encodeURIComponent(user.userID)}) `,
+	getText: (user: AutocompleteMemberEntry) => makeMentionMarkdown(user.displayName, user.userID),
 	getKey: (user: AutocompleteMemberEntry) => user.userID,
 	render: (user: AutocompleteMemberEntry) => <>
 		<img

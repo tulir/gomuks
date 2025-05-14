@@ -17,7 +17,7 @@ import { RefObject, createContext, createRef, use } from "react"
 import { RoomStateStore } from "@/api/statestore"
 import { EventID, EventRowID, MemDBEvent } from "@/api/types"
 import { NonNullCachedEventDispatcher } from "@/util/eventdispatcher.ts"
-import { escapeMarkdown } from "@/util/markdown.ts"
+import { makeMentionMarkdown } from "@/util/markdown.ts"
 
 const noop = (name: string) => () => {
 	console.warn(`${name} called before initialization`)
@@ -52,7 +52,7 @@ export class RoomContextData {
 			return
 		}
 		const targetUserName = evt.currentTarget.innerText
-		this.insertText(`[${escapeMarkdown(targetUserName)}](https://matrix.to/#/${encodeURIComponent(targetUser)}) `)
+		this.insertText(makeMentionMarkdown(targetUserName, targetUser))
 	}
 }
 

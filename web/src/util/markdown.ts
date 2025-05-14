@@ -13,9 +13,16 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-
+import { UserID } from "@/api/types"
 
 export const escapeMarkdown = (input: string) => input
-	.replace(/([\\`*_[\]])/g, "\\$1")
+	.replace(/([\\`*_[\]()])/g, "\\$1")
 	.replace("<", "&lt;")
 	.replace(">", "&gt;")
+
+export const escapeMarkdownAndURI = (input: string) => {
+	return escapeMarkdown(encodeURIComponent(input))
+}
+
+export const makeMentionMarkdown = (displayname: string, userID: UserID) =>
+	`[${escapeMarkdown(displayname).replace("\n", " ")}](https://matrix.to/#/${escapeMarkdownAndURI(userID)}) `
