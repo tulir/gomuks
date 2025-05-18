@@ -14,6 +14,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import React, { use, useCallback, useRef, useState } from "react"
+import { BarLoader } from "react-spinners"
 import { RoomListFilter, Space as SpaceStore, SpaceUnreadCounts, usePreference } from "@/api/statestore"
 import type { RoomID } from "@/api/types"
 import { useEventAsState } from "@/util/eventdispatcher.ts"
@@ -43,6 +44,7 @@ const RoomList = ({ activeRoomID, space }: RoomListProps) => {
 	const mainScreen = use(MainScreenContext)
 	const roomList = useEventAsState(client.store.roomList)
 	const spaces = useEventAsState(client.store.topLevelSpaces)
+	const initComplete = useEventAsState(client.initComplete)
 	const searchInputRef = useRef<HTMLInputElement>(null)
 	const [query, directSetQuery] = useState("")
 
@@ -155,6 +157,8 @@ const RoomList = ({ activeRoomID, space }: RoomListProps) => {
 			/>)}
 		</div>
 		<div className="room-list">
+			{initComplete ? null
+				: <BarLoader cssOverride={{ backgroundColor: "unset" }} width="100%" color="var(--primary-color)" />}
 			{reverseMap(roomList, room =>
 				<Entry
 					key={room.room_id}

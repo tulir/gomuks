@@ -45,6 +45,7 @@ export default class Client {
 
 	constructor(readonly rpc: RPCClient) {
 		this.rpc.event.listen(this.#handleEvent)
+		this.rpc.connect.listen(() => this.initComplete.emit(false))
 		this.store.accountDataSubs.getSubscriber("im.ponies.emote_rooms")(() =>
 			queueMicrotask(() => this.#handleEmoteRoomsChange()))
 	}
