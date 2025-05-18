@@ -171,6 +171,16 @@ func (gmx *Gomuks) HandleWebsocket(w http.ResponseWriter, r *http.Request) {
 				log.Trace().Int64("req_id", cmd.RequestID).Msg("Sent outgoing event from resume data")
 			}
 		}
+		if resumeData != nil {
+			err := writeCmd(ctx, conn, &hicli.JSONCommand{
+				Command:   jsoncmd.EventInitComplete,
+				RequestID: 0,
+			})
+			if err != nil {
+				log.Err(err).Msg("Failed to send init done event to client")
+				return
+			}
+		}
 		resumeData = nil
 		ticker := time.NewTicker(60 * time.Second)
 		defer ticker.Stop()
