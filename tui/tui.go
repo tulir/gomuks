@@ -19,6 +19,8 @@ package tui
 import (
 	"os"
 
+	"go.mau.fi/gomuks/tui/ui"
+
 	"github.com/gdamore/tcell/v2"
 	"go.mau.fi/mauview"
 
@@ -48,7 +50,7 @@ func init() {
 
 func (gt *GomuksTUI) Run() {
 	gt.App = mauview.NewApplication()
-	view := mauview.NewBox(mauview.NewTextView().SetText("Mui.")).SetBorder(true)
+	view := mauview.NewBox(ui.NewLoginForm(gt.Gomuks, gt.App)).SetBorder(true)
 	view.SetKeyCaptureFunc(func(event mauview.KeyEvent) mauview.KeyEvent {
 		if event.Key() == tcell.KeyEsc || event.Rune() == 'q' {
 			gt.App.ForceStop()
