@@ -1,2 +1,3 @@
-// Package tui contains the main gomuks TUI.
+// Package tui contains the gomuks TUI.
 package tui
+

@@ -125,7 +125,7 @@ func (view *LoginView) actuallyLogin(ctx context.Context, hs, mxid, password str
 	view.loginButton.SetText("Logging in...")
 	err := view.parent.Client.LoginPassword(ctx, hs, mxid, password)
 	if err == nil {
-		view.loginButton.SetText("it woked")
+		view.loginButton.SetText("Logged in")
 	} else {
 		view.Error(err.Error())
 	}
