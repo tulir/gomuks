@@ -110,7 +110,7 @@ func (h *HiClient) handleJSONCommand(ctx context.Context, req *JSONCommand) (any
 		})
 	case jsoncmd.ReqGetProfile:
 		return unmarshalAndCall(req.Data, func(params *jsoncmd.GetProfileParams) (*mautrix.RespUserProfile, error) {
-			return h.Client.GetProfile(ctx, params.UserID)
+			return h.Client.GetProfile(mautrix.WithMaxRetries(ctx, 0), params.UserID)
 		})
 	case jsoncmd.ReqSetProfileField:
 		return unmarshalAndCall(req.Data, func(params *jsoncmd.SetProfileFieldParams) (bool, error) {
@@ -118,7 +118,7 @@ func (h *HiClient) handleJSONCommand(ctx context.Context, req *JSONCommand) (any
 		})
 	case jsoncmd.ReqGetMutualRooms:
 		return unmarshalAndCall(req.Data, func(params *jsoncmd.GetProfileParams) ([]id.RoomID, error) {
-			return h.GetMutualRooms(ctx, params.UserID)
+			return h.GetMutualRooms(mautrix.WithMaxRetries(ctx, 0), params.UserID)
 		})
 	case jsoncmd.ReqTrackUserDevices:
 		return unmarshalAndCall(req.Data, func(params *jsoncmd.GetProfileParams) (*jsoncmd.ProfileEncryptionInfo, error) {
@@ -135,9 +135,9 @@ func (h *HiClient) handleJSONCommand(ctx context.Context, req *JSONCommand) (any
 	case jsoncmd.ReqGetEvent:
 		return unmarshalAndCall(req.Data, func(params *jsoncmd.GetEventParams) (*database.Event, error) {
 			if params.Unredact {
-				return h.GetUnredactedEvent(ctx, params.RoomID, params.EventID)
+				return h.GetUnredactedEvent(mautrix.WithMaxRetries(ctx, 2), params.RoomID, params.EventID)
 			}
-			return h.GetEvent(ctx, params.RoomID, params.EventID)
+			return h.GetEvent(mautrix.WithMaxRetries(ctx, 2), params.RoomID, params.EventID)
 		})
 	case jsoncmd.ReqGetRelatedEvents:
 		return unmarshalAndCall(req.Data, func(params *jsoncmd.GetRelatedEventsParams) ([]*database.Event, error) {
@@ -165,29 +165,29 @@ func (h *HiClient) handleJSONCommand(ctx context.Context, req *JSONCommand) (any
 		})
 	case jsoncmd.ReqGetRoomSummary:
 		return unmarshalAndCall(req.Data, func(params *jsoncmd.JoinRoomParams) (*mautrix.RespRoomSummary, error) {
-			return h.Client.GetRoomSummary(ctx, params.RoomIDOrAlias, params.Via...)
+			return h.Client.GetRoomSummary(mautrix.WithMaxRetries(ctx, 2), params.RoomIDOrAlias, params.Via...)
 		})
 	case jsoncmd.ReqJoinRoom:
 		return unmarshalAndCall(req.Data, func(params *jsoncmd.JoinRoomParams) (*mautrix.RespJoinRoom, error) {
-			return h.Client.JoinRoom(ctx, params.RoomIDOrAlias, &mautrix.ReqJoinRoom{
+			return h.Client.JoinRoom(mautrix.WithMaxRetries(ctx, 2), params.RoomIDOrAlias, &mautrix.ReqJoinRoom{
 				Via:    params.Via,
 				Reason: params.Reason,
 			})
 		})
 	case jsoncmd.ReqKnockRoom:
 		return unmarshalAndCall(req.Data, func(params *jsoncmd.JoinRoomParams) (*mautrix.RespKnockRoom, error) {
-			return h.Client.KnockRoom(ctx, params.RoomIDOrAlias, &mautrix.ReqKnockRoom{
+			return h.Client.KnockRoom(mautrix.WithMaxRetries(ctx, 2), params.RoomIDOrAlias, &mautrix.ReqKnockRoom{
 				Via:    params.Via,
 				Reason: params.Reason,
 			})
 		})
 	case jsoncmd.ReqLeaveRoom:
 		return unmarshalAndCall(req.Data, func(params *jsoncmd.LeaveRoomParams) (*mautrix.RespLeaveRoom, error) {
-			return h.Client.LeaveRoom(ctx, params.RoomID, &mautrix.ReqLeave{Reason: params.Reason})
+			return h.Client.LeaveRoom(mautrix.WithMaxRetries(ctx, 2), params.RoomID, &mautrix.ReqLeave{Reason: params.Reason})
 		})
 	case jsoncmd.ReqCreateRoom:
 		return unmarshalAndCall(req.Data, func(params *mautrix.ReqCreateRoom) (*mautrix.RespCreateRoom, error) {
-			return h.Client.CreateRoom(ctx, params)
+			return h.Client.CreateRoom(mautrix.WithMaxRetries(ctx, 0), params)
 		})
 	case jsoncmd.ReqMuteRoom:
 		return unmarshalAndCall(req.Data, func(params *jsoncmd.MuteRoomParams) (bool, error) {
@@ -210,7 +210,7 @@ func (h *HiClient) handleJSONCommand(ctx context.Context, req *JSONCommand) (any
 		})
 	case jsoncmd.ReqResolveAlias:
 		return unmarshalAndCall(req.Data, func(params *jsoncmd.ResolveAliasParams) (*mautrix.RespAliasResolve, error) {
-			return h.Client.ResolveAlias(ctx, params.Alias)
+			return h.Client.ResolveAlias(mautrix.WithMaxRetries(ctx, 0), params.Alias)
 		})
 	case jsoncmd.ReqRequestOpenIDToken:
 		return h.Client.RequestOpenIDToken(ctx)
