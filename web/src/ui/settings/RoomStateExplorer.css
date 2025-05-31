@@ -12,6 +12,16 @@ div.state-explorer {
 		margin: 0 0 1rem 0;
 	}
 
+	input.search-field {
+		border: 1px solid var(--border-color);
+		padding: .5rem;
+		border-radius: .25rem;
+		box-sizing: border-box;
+		width: 100%;
+		outline: none;
+		margin-bottom: 1rem;
+	}
+
 	div.state-button-list {
 		display: flex;
 		flex-wrap: wrap;

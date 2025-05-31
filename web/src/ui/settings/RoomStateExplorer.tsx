@@ -187,18 +187,27 @@ const NewMessageEventView = ({ room, onBack }: NewMessageEventViewProps) => {
 }
 
 const StateKeyList = ({ room, type, onSelectStateKey, onBack }: StateKeyListProps) => {
+	const [filter, setFilter] = useState("")
 	const stateMap = room.state.get(type)
 	return (
 		<div className="state-explorer state-key-list">
 			<div className="state-header">
 				<h3>State keys under <code>{type}</code></h3>
+				<input
+					type="search"
+					className="search-field"
+					placeholder="Filter state keys"
+					value={filter}
+					onChange={evt => setFilter(evt.target.value)}
+				/>
+				{type === "m.room.member" && !room.fullMembersLoaded ? "Warning: member list hasn't been loaded" : null}
 			</div>
 			<div className="state-button-list">
-				{Array.from(stateMap?.keys().map(stateKey => (
+				{Array.from(stateMap?.keys().map(stateKey => stateKey.includes(filter) && (
 					<button key={stateKey} onClick={() => onSelectStateKey(stateKey)}>
 						{stateKey ? <code>{stateKey}</code> : "<empty>"}
 					</button>
-				)) ?? [])}
+				)).filter(x => !!x) ?? [])}
 			</div>
 			<div className="nav-buttons">
 				<button onClick={onBack}>Back</button>
