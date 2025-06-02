@@ -35,8 +35,8 @@ import (
 	"go.mau.fi/util/dbutil"
 	"go.mau.fi/util/exerrors"
 	"go.mau.fi/util/exzerolog"
-	"go.mau.fi/zeroconfig"
 	"go.mau.fi/util/ptr"
+	"go.mau.fi/zeroconfig"
 	"golang.org/x/net/http2"
 	"maunium.net/go/mautrix/event"
 	"maunium.net/go/mautrix/id"
@@ -77,7 +77,7 @@ type Gomuks struct {
 	// previews to permanent MXC URIs suitable for sending in an inline preview
 	temporaryMXCToPermanent         map[id.ContentURIString]id.ContentURIString
 	temporaryMXCToEncryptedFileInfo map[id.ContentURIString]*event.EncryptedFileInfo
-	TUI         tui
+	TUI                             tui
 }
 
 type tui interface {
