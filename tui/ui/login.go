@@ -1,7 +1,14 @@
 package ui
 
 import (
+	"context"
+
+	"github.com/gdamore/tcell/v2"
+	"github.com/rs/zerolog"
 	"go.mau.fi/mauview"
+	"go.mau.fi/mauview/mauview-test/debug"
+	"maunium.net/go/mautrix"
+	"maunium.net/go/mautrix/id"
 
 	"go.mau.fi/gomuks/pkg/gomuks"
 )
@@ -30,7 +37,46 @@ type LoginFormView struct {
 	parent *mauview.Application
 }
 
-func NewLoginForm(gmx *gomuks.Gomuks, app *mauview.Application) *LoginFormView {
+func (lfv *LoginFormView) resolveWellKnown(ctx context.Context) {
+	logger := zerolog.Ctx(ctx)
+	hsUrl := ""
+	defer func(x *string) {
+		lfv.homeserverField.SetPlaceholder("(will autofill)")
+		lfv.homeserverField.SetText(hsUrl)
+	}(&hsUrl)
+	userID := id.UserID(lfv.userIDField.GetText())
+	if userID == "" {
+		lfv.err.SetText("Invalid user ID")
+		return
+	}
+	_, hs, err := userID.ParseAndValidate()
+	if err != nil {
+		lfv.err.SetText("Invalid user ID: " + err.Error())
+		return
+	}
+	logger.Debug().Stringer("user_id", userID).Msg("resolving homeserver from user ID")
+	lfv.homeserverField.SetPlaceholder("Resolving " + hs + "...")
+	lfv.homeserverField.SetText("")
+	lfv.hsInputEnabled = false
+	resp, err := mautrix.DiscoverClientAPI(ctx, hs)
+	if err != nil {
+		logger.Warn().Err(err).Stringer("user_id", userID).Msg("Failed to resolve homeserver from user ID")
+		lfv.err.SetText("Failed to resolve homeserver: " + err.Error())
+		return
+	}
+	if resp == nil {
+		logger.Warn().Stringer("user_id", userID).Msg("No usable response from homeserver discovery")
+		hsUrl = "https://" + hs
+	} else if resp.Homeserver.BaseURL != "" {
+		logger.Debug().
+			Stringer("user_id", userID).
+			Str("homeserver", resp.Homeserver.BaseURL).
+			Msg("Resolved homeserver from user ID")
+		hsUrl = resp.Homeserver.BaseURL
+	}
+}
+
+func NewLoginForm(ctx context.Context, gmx *gomuks.Gomuks, app *mauview.Application) *LoginFormView {
 	lf := &LoginFormView{
 		Form:            mauview.NewForm(),
 		userIDLabel:     mauview.NewTextField().SetText("User ID"),
@@ -43,8 +89,7 @@ func NewLoginForm(gmx *gomuks.Gomuks, app *mauview.Application) *LoginFormView {
 			SetMaskCharacter('*'),
 		homeserverField: mauview.NewInputField().SetPlaceholder("(will autofill)"),
 
-		err:            mauview.NewTextView().SetText(""),
-		hsInputEnabled: false,
+		err: mauview.NewTextView().SetText("").SetTextColor(tcell.ColorRed),
 
 		loginBtn:  mauview.NewButton("Login"),
 		cancelBtn: mauview.NewButton("Cancel"),
@@ -53,11 +98,11 @@ func NewLoginForm(gmx *gomuks.Gomuks, app *mauview.Application) *LoginFormView {
 		parent: app,
 	}
 	lf.loginBtn.SetOnClick(func() {
-		println("login button clicked")
+		debug.Print("login button clicked")
 		gmx.Stop()
 	})
 	lf.cancelBtn.SetOnClick(func() {
-		println("cancel button clicked")
+		debug.Print("cancel button clicked")
 		gmx.Stop()
 	})
 	lf.SetColumns([]int{1, 10, 1, 30, 1}).
@@ -70,9 +115,14 @@ func NewLoginForm(gmx *gomuks.Gomuks, app *mauview.Application) *LoginFormView {
 		AddFormItem(lf.cancelBtn, 1, 9, 3, 1).
 		AddComponent(lf.userIDLabel, 1, 1, 1, 1).
 		AddComponent(lf.passwordLabel, 1, 3, 1, 1).
-		AddComponent(lf.homeserverLabel, 1, 5, 1, 1)
+		AddComponent(lf.homeserverLabel, 1, 5, 1, 1).
+		AddComponent(lf.err, 1, 11, 5, 1)
 
 	lf.center = mauview.Center(mauview.NewBox(lf).SetTitle("Log in to Matrix"), 45, 13)
-
+	lf.SetOnFocusChanged(func(from, to mauview.Component) {
+		if from == lf.userIDField {
+			go lf.resolveWellKnown(ctx)
+		}
+	})
 	return lf
 }
