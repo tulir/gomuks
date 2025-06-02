@@ -80,7 +80,7 @@ require (
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
-	maunium.net/go/mautrix v0.24.1-0.20250527063413-140b20cab90a // indirect
+	maunium.net/go/mautrix v0.24.1-0.20250602170652-8fb04d180697 // indirect
 	mvdan.cc/xurls/v2 v2.6.0 // indirect
 )
 
