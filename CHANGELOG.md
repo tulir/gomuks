@@ -48,11 +48,11 @@
 [@3nprob]: https://github.com/3nprob
 [@tleb]: https://github.com/tleb
 [@n-peugnet]: https://github.com/n-peugnet
-[#328]: https://github.com/tulir/gomuks/pull/328
-[#354]: https://github.com/tulir/gomuks/pull/354
-[#361]: https://github.com/tulir/gomuks/pull/361
-[#362]: https://github.com/tulir/gomuks/pull/362
-[#401]: https://github.com/tulir/gomuks/pull/401
+[#328]: https://github.com/gomuks/gomuks/pull/328
+[#354]: https://github.com/gomuks/gomuks/pull/354
+[#361]: https://github.com/gomuks/gomuks/pull/361
+[#362]: https://github.com/gomuks/gomuks/pull/362
+[#401]: https://github.com/gomuks/gomuks/pull/401
 
 # v0.2.4 (2021-09-21)
 
@@ -81,13 +81,13 @@
 [@negatethis]: https://github.com/negatethis
 [@begss]: https://github.com/begss
 [@Evidlo]: https://github.com/Evidlo
-[#261]: https://github.com/tulir/gomuks/pull/261
-[#268]: https://github.com/tulir/gomuks/pull/268
-[#270]: https://github.com/tulir/gomuks/pull/270
-[#280]: https://github.com/tulir/gomuks/pull/280
-[#298]: https://github.com/tulir/gomuks/pull/298
-[#304]: https://github.com/tulir/gomuks/pull/304
-[#312]: https://github.com/tulir/gomuks/pull/312
+[#261]: https://github.com/gomuks/gomuks/pull/261
+[#268]: https://github.com/gomuks/gomuks/pull/268
+[#270]: https://github.com/gomuks/gomuks/pull/270
+[#280]: https://github.com/gomuks/gomuks/pull/280
+[#298]: https://github.com/gomuks/gomuks/pull/298
+[#304]: https://github.com/gomuks/gomuks/pull/304
+[#312]: https://github.com/gomuks/gomuks/pull/312
 
 # v0.2.3 (2021-02-19)
 
@@ -105,7 +105,7 @@
 * Fixed zombie processes left from opening files (thanks to [@Midek] in [#234]).
 
 [@Midek]: https://github.com/Midek
-[#234]: https://github.com/tulir/gomuks/pull/234
+[#234]: https://github.com/gomuks/gomuks/pull/234
 
 # v0.2.1 (2020-10-23)
 
@@ -117,9 +117,9 @@
 * Fixed command autocompletion (thanks to [@wvffle] in [#222]).
 
 [@dec05eba]: https://github.com/dec05eba
-[#222]: https://github.com/tulir/gomuks/pull/222
-[#223]: https://github.com/tulir/gomuks/pull/223
-[#226]: https://github.com/tulir/gomuks/pull/226
+[#222]: https://github.com/gomuks/gomuks/pull/222
+[#223]: https://github.com/gomuks/gomuks/pull/223
+[#226]: https://github.com/gomuks/gomuks/pull/226
 
 # v0.2.0 (2020-09-04)
 
@@ -136,9 +136,9 @@
 
 [@wvffle]: https://github.com/wvffle
 [@r3k2]: https://github.com/r3k2
-[#189]: https://github.com/tulir/gomuks/pull/189
-[#206]: https://github.com/tulir/gomuks/pull/206
-[#214]: https://github.com/tulir/gomuks/pull/214
+[#189]: https://github.com/gomuks/gomuks/pull/189
+[#206]: https://github.com/gomuks/gomuks/pull/206
+[#214]: https://github.com/gomuks/gomuks/pull/214
 
 # v0.1.2 (2020-06-24)
 

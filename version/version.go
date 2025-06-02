@@ -26,7 +26,7 @@ import (
 )
 
 const StaticVersion = "0.4.0"
-const URL = "https://github.com/tulir/gomuks"
+const URL = "https://github.com/gomuks/gomuks"
 
 var (
 	Tag       = "unknown"
