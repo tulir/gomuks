@@ -59,7 +59,8 @@ func (gt *GomuksTUI) Run() {
 	gmxlog := logger.With().Str("component", "gomuks").Logger()
 	gt.Gomuks.Log = &gmxlog
 	gt.App = mauview.NewApplication()
-	view := mauview.NewBox(ui.NewLoginForm(ctx, gt.Gomuks, gt.App)).SetBorder(true)
+	form := ui.NewLoginForm(ctx, gt.Gomuks, gt.App)
+	view := mauview.NewBox(form.Container).SetBorder(false)
 	view.SetKeyCaptureFunc(func(event mauview.KeyEvent) mauview.KeyEvent {
 		if event.Key() == tcell.KeyEsc || event.Rune() == 'q' {
 			logger.Debug().Msg("gomuks TUI exiting, escape key pressed")
@@ -67,6 +68,7 @@ func (gt *GomuksTUI) Run() {
 		}
 		return event
 	})
+	form.Container.SetAlwaysFocusChild(true)
 	gt.App.SetRoot(view)
 	go func() {
 		logger.Debug().Msg("waiting for interrupt")
