@@ -101,13 +101,14 @@ export const useSecondaryItems = (
 	}
 
 	const onClickShareEvent = () => {
+		const lessNoisyEncodeURIComponent = (str: string) => encodeURIComponent(str).replace("%3A", ":")
 		const generateLink = (useMatrixTo: boolean, includeEvent: boolean) => {
 			const isRoomIDLink = true
 			let generatedURL = useMatrixTo ? "https://matrix.to/#/" : "matrix:roomid/"
 			if (useMatrixTo) {
-				generatedURL += encodeURIComponent(evt.room_id)
+				generatedURL += lessNoisyEncodeURIComponent(evt.room_id)
 			} else {
-				generatedURL += encodeURIComponent(`${evt.room_id.slice(1)}`)
+				generatedURL += lessNoisyEncodeURIComponent(`${evt.room_id.slice(1)}`)
 			}
 			if (includeEvent) {
 				if (useMatrixTo) {
