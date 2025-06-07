@@ -56,17 +56,43 @@ func (h *HiClient) GetUnredactedEvent(ctx context.Context, roomID id.RoomID, eve
 	}
 }
 
+func (h *HiClient) processStateReset(ctx context.Context, roomID id.RoomID, err error) {
+	if !errors.Is(err, mautrix.MForbidden) {
+		return
+	}
+	log := zerolog.Ctx(ctx)
+	joinedRooms, err := h.Client.JoinedRooms(ctx)
+	if err != nil {
+		log.Err(err).Msg("Failed to fetch joined rooms to check if join event was reset")
+		return
+	}
+	if slices.Contains(joinedRooms.JoinedRooms, roomID) {
+		log.Debug().Msg("Fetching state failed, but room is still in joined rooms")
+		return
+	}
+	log.Info().Msg("Fetching room state and room is not in joined rooms, deleting from database")
+	err = h.DB.Room.Delete(ctx, roomID)
+	if err != nil {
+		log.Err(err).Msg("Failed to delete room from database after state reset")
+	}
+	h.EventHandler(&jsoncmd.SyncComplete{
+		LeftRooms: []id.RoomID{roomID},
+	})
+}
+
 func (h *HiClient) processGetRoomState(ctx context.Context, roomID id.RoomID, fetchMembers, refetch, dispatchEvt bool) error {
 	var evts []*event.Event
 	if refetch {
 		resp, err := h.Client.StateAsArray(ctx, roomID)
 		if err != nil {
+			go h.processStateReset(ctx, roomID, err)
 			return fmt.Errorf("failed to refetch state: %w", err)
 		}
 		evts = resp
 	} else if fetchMembers {
 		resp, err := h.Client.Members(ctx, roomID)
 		if err != nil {
+			go h.processStateReset(ctx, roomID, err)
 			return fmt.Errorf("failed to fetch members: %w", err)
 		}
 		evts = resp.Chunk
