@@ -70,7 +70,7 @@ func (h *HiClient) processStateReset(ctx context.Context, roomID id.RoomID, err 
 		log.Debug().Msg("Fetching state failed, but room is still in joined rooms")
 		return
 	}
-	log.Info().Msg("Fetching room state and room is not in joined rooms, deleting from database")
+	log.Info().Msg("Fetching room state failed and room is not in joined rooms, deleting from database")
 	err = h.DB.Room.Delete(ctx, roomID)
 	if err != nil {
 		log.Err(err).Msg("Failed to delete room from database after state reset")
@@ -85,14 +85,14 @@ func (h *HiClient) processGetRoomState(ctx context.Context, roomID id.RoomID, fe
 	if refetch {
 		resp, err := h.Client.StateAsArray(ctx, roomID)
 		if err != nil {
-			go h.processStateReset(ctx, roomID, err)
+			go h.processStateReset(context.WithoutCancel(ctx), roomID, err)
 			return fmt.Errorf("failed to refetch state: %w", err)
 		}
 		evts = resp
 	} else if fetchMembers {
 		resp, err := h.Client.Members(ctx, roomID)
 		if err != nil {
-			go h.processStateReset(ctx, roomID, err)
+			go h.processStateReset(context.WithoutCancel(ctx), roomID, err)
 			return fmt.Errorf("failed to fetch members: %w", err)
 		}
 		evts = resp.Chunk
