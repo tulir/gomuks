@@ -36,7 +36,11 @@ export { default as RoomTombstoneBody } from "./RoomTombstoneBody.tsx"
 export { default as UnknownMessageBody } from "./UnknownMessageBody.tsx"
 export type { default as EventContentProps } from "./props.ts"
 
-export function getBodyType(evt: MemDBEvent, forReply = false): React.FunctionComponent<EventContentProps> {
+export function getBodyType(
+	evt: MemDBEvent,
+	isRedacted: boolean,
+	forReply = false,
+): React.FunctionComponent<EventContentProps> {
 	if (evt.relation_type === "m.replace") {
 		return HiddenEvent
 	}
@@ -69,7 +73,6 @@ export function getBodyType(evt: MemDBEvent, forReply = false): React.FunctionCo
 			return PolicyRuleBody
 		}
 	} else {
-		const isRedacted = evt.redacted_by && !evt.viewing_redacted
 		// Non-state events
 		switch (evt.type) {
 		case "m.room.message":

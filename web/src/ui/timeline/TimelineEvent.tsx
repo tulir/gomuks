@@ -22,7 +22,7 @@ import {
 	maybeRedactMemberEvent,
 	useRoomMember,
 } from "@/api/statestore"
-import { MemDBEvent, URLPreview as URLPreviewType, UnreadType } from "@/api/types"
+import { MemDBEvent, URLPreview as URLPreviewType, UnreadType, displayAsRedacted } from "@/api/types"
 import { isMobileDevice } from "@/util/ismobile.ts"
 import { getDisplayname, isEventID } from "@/util/validation.ts"
 import ClientContext from "../ClientContext.ts"
@@ -164,16 +164,22 @@ const TimelineEvent = ({
 			innerBoxClass: "event-edit-history-modal",
 		})
 	}
-	const BodyType = getBodyType(evt)
+	const perMessageSender = getPerMessageProfile(evt)
+	const prevPerMessageSender = getPerMessageProfile(prevEvt)
+	const memberEvt = useRoomMember(client, roomCtx.store, evt.sender)
+	const memberEvtContent = maybeRedactMemberEvent(memberEvt)
+	const renderMemberEvtContent = applyPerMessageSender(memberEvtContent, perMessageSender)
+
 	const eventTS = new Date(evt.timestamp)
 	const editEventTS = evt.last_edit ? new Date(evt.last_edit.timestamp) : null
 	const wrapperClassNames = ["timeline-event"]
-	if (evt.unread_type & UnreadType.Highlight) {
-		wrapperClassNames.push("highlight")
-	}
-	const isRedacted = evt.redacted_by && !evt.viewing_redacted
+	const isRedacted = displayAsRedacted(evt, memberEvtContent)
 	if (isRedacted) {
 		wrapperClassNames.push("redacted-event")
+	}
+	const BodyType = getBodyType(evt, isRedacted)
+	if (evt.unread_type & UnreadType.Highlight) {
+		wrapperClassNames.push("highlight")
 	}
 	if (evt.type === "m.room.member") {
 		wrapperClassNames.push("membership-event")
@@ -224,11 +230,6 @@ const TimelineEvent = ({
 			replyInMessage = replyElem
 		}
 	}
-	const perMessageSender = getPerMessageProfile(evt)
-	const prevPerMessageSender = getPerMessageProfile(prevEvt)
-	const memberEvt = useRoomMember(client, roomCtx.store, evt.sender)
-	const memberEvtContent = maybeRedactMemberEvent(memberEvt)
-	const renderMemberEvtContent = applyPerMessageSender(memberEvtContent, perMessageSender)
 
 	let smallAvatar = false
 	let renderAvatar = true
@@ -242,7 +243,7 @@ const TimelineEvent = ({
 		&& prevEvt.timestamp + 15 * 60 * 1000 > evt.timestamp
 		&& dateSeparator === null
 		&& !replyAboveMessage
-		&& !isSmallEvent(getBodyType(prevEvt))
+		&& !isSmallEvent(getBodyType(prevEvt, displayAsRedacted(prevEvt, memberEvtContent)))
 		&& prevPerMessageSender?.id === perMessageSender?.id
 	) {
 		wrapperClassNames.push("same-sender")

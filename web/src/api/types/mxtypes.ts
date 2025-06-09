@@ -92,6 +92,7 @@ export type Membership = "join" | "leave" | "ban" | "invite" | "knock"
 export interface MemberEventContent extends UserProfile {
 	membership: Membership
 	reason?: string
+	"org.matrix.msc4293.redact_events"?: boolean
 }
 
 export interface RoomAvatarEventContent {
