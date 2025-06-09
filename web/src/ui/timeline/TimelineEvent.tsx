@@ -20,7 +20,6 @@ import {
 	RoomStateStore,
 	applyPerMessageSender,
 	maybeRedactMemberEvent,
-	usePreference,
 	useRoomMember,
 } from "@/api/statestore"
 import { MemDBEvent, URLPreview as URLPreviewType, UnreadType } from "@/api/types"
@@ -92,18 +91,12 @@ const EventURLPreviews = ({ event, room }: {
 	room: RoomStateStore
 	event: MemDBEvent
 }) => {
-	const client = use(ClientContext)!
-	const renderPreviews = usePreference(client.store, room, "render_url_previews")
-	if (event.redacted_by || !renderPreviews) {
-		return null
-	}
-
 	const previews = (event.content["com.beeper.linkpreviews"] ?? event.content["m.url_previews"]) as URLPreviewType[]
 	if (!previews) {
 		return null
 	}
 	return <div className="url-previews">
-		{previews.map((p, i) => <URLPreview key={i} url={p.matched_url} preview={p}/>)}
+		{previews.map((p, i) => <URLPreview key={i} room={room} preview={p}/>)}
 	</div>
 }
 
@@ -319,7 +312,7 @@ const TimelineEvent = ({
 			{replyInMessage}
 			<ContentErrorBoundary>
 				<BodyType room={roomCtx.store} sender={memberEvt} event={evt}/>
-				{!isSmallBodyType && <EventURLPreviews room={roomCtx.store} event={evt}/>}
+				{!isSmallBodyType && !isRedacted && <EventURLPreviews room={roomCtx.store} event={evt}/>}
 			</ContentErrorBoundary>
 			{(!editHistoryView && editEventTS) ? <div
 				className="event-edited"

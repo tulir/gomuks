@@ -16,21 +16,32 @@
 import React, { use } from "react"
 import { ScaleLoader } from "react-spinners"
 import { getEncryptedMediaURL, getMediaURL } from "@/api/media"
+import { RoomStateStore, usePreference } from "@/api/statestore"
 import { URLPreview as URLPreviewType } from "@/api/types"
 import { ImageContainerSize, calculateMediaSize } from "@/util/mediasize"
+import ClientContext from "../ClientContext.ts"
 import { LightboxContext } from "../modal"
 import DeleteIcon from "@/icons/delete.svg?react"
 import RefreshIcon from "@/icons/refresh.svg?react"
 import "./URLPreview.css"
 
-const URLPreview = ({ url, preview, startLoadingPreview, clearPreview }: {
-	url: string,
+const URLPreview = ({ url, preview, startLoadingPreview, clearPreview, room }: {
+	url?: string,
 	preview: URLPreviewType | "awaiting_user" | "loading",
 	startLoadingPreview?: () => void,
 	clearPreview?: () => void,
+	room?: RoomStateStore | null,
 }) => {
+	const client = use(ClientContext)!
+	const renderPreviews = usePreference(client.store, room ?? null, "render_url_previews")
+	// TODO support blurhashes and clicking to view image previews here?
+	const showPreviewImages = usePreference(client.store, room ?? null, "show_media_previews") || Boolean(url)
+	if (!renderPreviews) {
+		return null
+	}
+
 	if (preview === "awaiting_user" || preview === "loading") {
-		return <div key={url} className="url-preview inline"
+		return <div className="url-preview inline"
 			title={preview ==="awaiting_user"
 				? `Load preview for ${url}?`
 				: `Loading preview for ${url}`}
@@ -64,8 +75,8 @@ const URLPreview = ({ url, preview, startLoadingPreview, clearPreview }: {
 	}
 	const style = calculateMediaSize(preview["og:image:width"], preview["og:image:height"], containerSize)
 
-	const previewingUrl = preview["og:url"] ?? preview.matched_url ?? url
-	const title = preview["og:title"] ?? preview["og:url"] ?? previewingUrl
+	const previewingURL = preview["og:url"] ?? preview.matched_url ?? url
+	const title = preview["og:title"] ?? preview["og:url"] ?? previewingURL
 	const mediaContainer = <div className="media-container" style={style.container}>
 		<img
 			loading="lazy"
@@ -76,18 +87,17 @@ const URLPreview = ({ url, preview, startLoadingPreview, clearPreview }: {
 		/>
 	</div>
 	return <div
-		key={url}
 		className={inline ? "url-preview inline" : "url-preview"}
 		style={inline ? {} : { width: style.container.width }}
 	>
 		<div className="title">
-			<a href={previewingUrl} title={title} target="_blank" rel="noreferrer noopener">{title}</a>
+			<a href={previewingURL} title={title} target="_blank" rel="noreferrer noopener">{title}</a>
 		</div>
 		{clearPreview && <div className="actions">
 			<button onClick={clearPreview}><DeleteIcon/></button>
 		</div>}
 		<div className="description">{preview["og:description"]}</div>
-		{mediaURL && (inline
+		{mediaURL && showPreviewImages && (inline
 			? <div className="inline-media-wrapper">{mediaContainer}</div>
 			: mediaContainer)}
 	</div>
