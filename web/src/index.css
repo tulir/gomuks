@@ -36,6 +36,7 @@
 	--timeline-highlight-hover-bg-color: #eec;
 	--timeline-jump-bg-color: rgba(0, 255, 0, .2);
 	--timeline-jump-hover-bg-color: #cec;
+	--timeline-soft-failed-bg-color: rgba(255, 0, 0, .2);
 
 	--room-list-background: linear-gradient(in hsl longer hue, red 0 0, magenta);
 	--room-list-background-overlay: hsla(0, 0%, 96%, .9);

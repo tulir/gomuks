@@ -197,6 +197,9 @@ const TimelineEvent = ({
 	if (isFocused) {
 		wrapperClassNames.push("focused-event")
 	}
+	if (evt.unsigned["fi.mau.soft_failed"]) {
+		wrapperClassNames.push("soft-failed")
+	}
 	let dateSeparator = null
 	const prevEvtDate = prevEvt ? new Date(prevEvt.timestamp) : null
 	if (prevEvtDate && (

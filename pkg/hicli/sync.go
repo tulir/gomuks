@@ -831,7 +831,7 @@ func (h *HiClient) processStateAndTimeline(
 			}
 			updatedRoom.BumpSortingTimestamp(dbEvt)
 		}
-		if evt.StateKey != nil {
+		if evt.StateKey != nil && !evt.Unsigned.MauSoftFailed {
 			var membership event.Membership
 			if evt.Type == event.StateMember {
 				membership = event.Membership(gjson.GetBytes(evt.Content.VeryRaw, "membership").Str)

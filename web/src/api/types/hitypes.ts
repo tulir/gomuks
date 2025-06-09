@@ -208,6 +208,9 @@ export interface LoginFlowsResponse {
 export interface EventUnsigned {
 	prev_content?: unknown
 	prev_sender?: UserID
+
+	"fi.mau.soft_failed"?: boolean
+	"fi.mau.rejection_reason"?: string | null
 }
 
 export interface ClientWellKnown {
