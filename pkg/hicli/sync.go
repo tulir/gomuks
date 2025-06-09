@@ -624,7 +624,7 @@ func (h *HiClient) postDecryptProcess(ctx context.Context, llSummary *mautrix.La
 	if dbEvt.RowID != 0 {
 		h.cacheMedia(ctx, evt, dbEvt.RowID)
 	}
-	if evt.Sender != h.Account.UserID {
+	if evt.Sender != h.Account.UserID && !evt.Unsigned.MauSoftFailed {
 		dbEvt.UnreadType = h.evaluatePushRules(ctx, llSummary, dbEvt.GetNonPushUnreadType(), evt)
 	}
 	dbEvt.LocalContent, inlineImages = h.calculateLocalContent(ctx, dbEvt, evt)
