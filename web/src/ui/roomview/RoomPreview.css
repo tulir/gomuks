@@ -18,6 +18,8 @@ div.room-view.preview > div.preview-inner {
 
 	> h2.room-name {
 		margin: 0;
+		max-height: 6rem;
+		overflow-y: scroll;
 	}
 
 	> div.mutual-rooms {
