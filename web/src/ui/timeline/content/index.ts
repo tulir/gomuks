@@ -48,13 +48,13 @@ export function getBodyType(
 		// State events which must have an empty state key
 		switch (evt.type) {
 		case "m.room.name":
-			return RoomNameBody
+			return isRedacted ? HiddenEvent : RoomNameBody
 		case "m.room.avatar":
-			return RoomAvatarBody
+			return isRedacted ? HiddenEvent : RoomAvatarBody
 		case "m.room.server_acl":
 			return ACLBody
 		case "m.room.pinned_events":
-			return PinnedEventsBody
+			return isRedacted ? HiddenEvent : PinnedEventsBody
 		case "m.room.power_levels":
 			return PowerLevelBody
 		case "m.room.tombstone":
