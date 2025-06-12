@@ -26,6 +26,7 @@ type MainView struct {
 	Views *Views
 
 	syncCounter      int
+	lastSync         *string
 	rpcAuthenticated bool
 	initDone         bool
 	imageAuthToken   string
@@ -36,6 +37,8 @@ func (mv *MainView) OnEvent(ctx context.Context, evt any) {
 	switch e := evt.(type) {
 	case *jsoncmd.SyncComplete:
 		mv.syncCounter++
+		data := evt.(*jsoncmd.SyncComplete)
+		mv.lastSync = data.Since
 		mv.Views.RoomList.HandleSync(ctx, evt.(*jsoncmd.SyncComplete))
 	case *jsoncmd.InitComplete:
 		mv.initDone = true

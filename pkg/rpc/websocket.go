@@ -264,6 +264,7 @@ func (gr *GomuksRPC) readLoopItem(ctx context.Context, log *zerolog.Logger, ws *
 				Msg("Received response")
 			pendingRequest <- cmd
 			close(pendingRequest)
+			gr.LastReqID = cmd.RequestID
 		}
 	} else {
 		parsedCmd := parseEvent(ctx, cmd)
@@ -280,6 +281,7 @@ func (gr *GomuksRPC) readLoopItem(ctx context.Context, log *zerolog.Logger, ws *
 					Int64("req_id", cmd.RequestID).
 					Stringer("command", cmd.Command).
 					Msg("Event channel accepted event")
+				gr.LastReqID = cmd.RequestID
 			case <-ctx.Done():
 				return false
 			}

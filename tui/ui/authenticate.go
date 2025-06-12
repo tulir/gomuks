@@ -2,9 +2,12 @@ package ui
 
 import (
 	"context"
+	"time"
 
 	"github.com/gdamore/tcell/v2"
 	"go.mau.fi/mauview"
+
+	"go.mau.fi/gomuks/pkg/hicli/jsoncmd"
 )
 
 type AuthenticateView struct {
@@ -14,7 +17,26 @@ type AuthenticateView struct {
 	errorField    *mauview.TextField
 	submitButton  *mauview.Button
 
-	app *MainView
+	app        *MainView
+	pingTicker *time.Ticker
+}
+
+func (av *AuthenticateView) pingLoop(ctx context.Context) {
+	for {
+		select {
+		case <-av.pingTicker.C:
+			if !av.app.rpcAuthenticated {
+				av.app.gmx.Log.Debug().Msg("skipping ping, not authenticated")
+				break
+			}
+			if _, err := av.app.rpc.Ping(ctx, &jsoncmd.PingParams{LastReceivedID: av.app.rpc.LastReqID}); err != nil {
+				av.app.gmx.Log.Error().Msg("failed to ping gomuks RPC: " + err.Error())
+				// This is bad, do something here.
+			}
+		case <-ctx.Done():
+			return
+		}
+	}
 }
 
 func (av *AuthenticateView) TryAuthenticate(ctx context.Context) {
@@ -37,6 +59,7 @@ func (av *AuthenticateView) TryAuthenticate(ctx context.Context) {
 		return
 	}
 	av.app.rpcAuthenticated = true
+	av.pingTicker.Reset(30 * time.Second) // re-start the ticker if it was stopped
 }
 
 func NewAuthenticateView(ctx context.Context, app *MainView) *AuthenticateView {
@@ -45,6 +68,7 @@ func NewAuthenticateView(ctx context.Context, app *MainView) *AuthenticateView {
 		passwordField: mauview.NewInputField().SetPlaceholder("Password").SetMaskCharacter('*'),
 		errorField:    mauview.NewTextField().SetText("").SetTextColor(tcell.ColorRed),
 		app:           app,
+		pingTicker:    time.NewTicker(30 * time.Second),
 	}
 	v.SetRows([]int{1, 1, 1, 1, 1, 1, 1, 1})
 	v.SetColumns([]int{1, 2})
@@ -61,5 +85,6 @@ func NewAuthenticateView(ctx context.Context, app *MainView) *AuthenticateView {
 	v.AddComponent(v.errorField, 1, 4, 24, 4)
 	v.Container = mauview.NewBox(v).SetTitle("Sign in to Gomuks")
 	v.Container.SetKeyCaptureFunc(app.QuitOnKey())
+	go v.pingLoop(ctx)
 	return v
 }

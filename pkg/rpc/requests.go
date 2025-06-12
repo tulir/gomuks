@@ -205,3 +205,7 @@ func (gr *GomuksRPC) GetTurnServers(ctx context.Context) (*mautrix.RespTurnServe
 func (gr *GomuksRPC) GetMediaConfig(ctx context.Context) (*mautrix.RespMediaConfig, error) {
 	return ParseResponse[*mautrix.RespMediaConfig](gr.Request(ctx, jsoncmd.ReqGetMediaConfig, nil))
 }
+
+func (gr *GomuksRPC) Ping(ctx context.Context, params *jsoncmd.PingParams) (struct{}, error) {
+	return ParseResponse[struct{}](gr.Request(ctx, jsoncmd.ReqPing, params))
+}
