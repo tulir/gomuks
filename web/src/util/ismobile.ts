@@ -14,3 +14,6 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 export const isMobileDevice = window.ontouchstart !== undefined && window.innerWidth < 800
+export const hackyIsSafari = navigator.userAgent.includes("WebKit")
+	&& !navigator.userAgent.includes("Chrome")
+	&& !Object.hasOwn(window, "chrome")

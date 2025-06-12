@@ -57,27 +57,23 @@ const RoomViewHeader = ({ room }: RoomViewHeaderProps) => {
 	}
 	const buttonCount = 5
 	const makeButtons = (titles?: boolean)  => {
-		let rightPanelOpener = mainScreen.clickRightPanelOpener
-		if (titles) {
-			rightPanelOpener = (evt: React.MouseEvent) => {
-				window.closeNestableModal()
-				mainScreen.clickRightPanelOpener(evt)
-			}
-		}
 		return <>
 			<button
 				data-target-panel="pinned-messages"
-				onClick={rightPanelOpener}
+				data-close-nestable-modal={titles}
+				onClick={mainScreen.clickRightPanelOpener}
 				title="Pinned Messages"
 			><PinIcon/>{titles && "Pinned Messages"}</button>
 			<button
 				data-target-panel="members"
-				onClick={rightPanelOpener}
+				data-close-nestable-modal={titles}
+				onClick={mainScreen.clickRightPanelOpener}
 				title="Room Members"
 			><PeopleIcon/>{titles && "Room Members"}</button>
 			<button
 				data-target-panel="widgets"
-				onClick={rightPanelOpener}
+				data-close-nestable-modal={titles}
+				onClick={mainScreen.clickRightPanelOpener}
 				title="Widgets in room"
 			><WidgetIcon/>{titles && "Widgets in room"}</button>
 			<button title="Explore room state" onClick={openRoomStateExplorer}>

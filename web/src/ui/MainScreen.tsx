@@ -20,6 +20,7 @@ import Client from "@/api/client.ts"
 import { RoomListFilter, RoomStateStore } from "@/api/statestore"
 import type { RoomID } from "@/api/types"
 import { useEventAsState } from "@/util/eventdispatcher.ts"
+import { hackyIsSafari } from "@/util/ismobile.ts"
 import { ensureString, ensureStringArray, parseMatrixURI } from "@/util/validation.ts"
 import ClientContext from "./ClientContext.ts"
 import MainScreenContext, { MainScreenContextFields } from "./MainScreenContext.ts"
@@ -207,10 +208,21 @@ class ContextFields implements MainScreenContextFields {
 	clickRightPanelOpener = (evt: React.MouseEvent) => {
 		evt.preventDefault()
 		const type = evt.currentTarget.getAttribute("data-target-panel")
+		const targetUser = evt.currentTarget.getAttribute("data-target-user")
+		const closeModal = evt.currentTarget.getAttribute("data-close-nestable-modal") === "true"
+		let doSetRightPanel = this.setRightPanel
+		if (closeModal) {
+			window.closeNestableModal()
+			if (hackyIsSafari) {
+				doSetRightPanel = (...args) => {
+					setTimeout(() => this.setRightPanel(...args), 0)
+				}
+			}
+		}
 		if (type === "pinned-messages" || type === "members" || type === "widgets") {
-			this.setRightPanel({ type })
+			doSetRightPanel({ type })
 		} else if (type === "user") {
-			this.setRightPanel({ type, userID: evt.currentTarget.getAttribute("data-target-user")! })
+			doSetRightPanel({ type, userID: targetUser! })
 		} else {
 			throw new Error(`Invalid right panel type ${type}`)
 		}
