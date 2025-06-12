@@ -1,0 +1,65 @@
+package ui
+
+import (
+	"context"
+
+	"github.com/gdamore/tcell/v2"
+	"go.mau.fi/mauview"
+)
+
+type AuthenticateView struct {
+	*mauview.Form
+	Container     *mauview.Box
+	passwordField *mauview.InputField
+	errorField    *mauview.TextField
+	submitButton  *mauview.Button
+
+	app *MainView
+}
+
+func (av *AuthenticateView) TryAuthenticate(ctx context.Context) {
+	username := av.app.gmx.Config.Web.Username
+	password := av.passwordField.GetText()
+	if len(password) == 0 {
+		av.errorField.SetText("password cannot be empty")
+		return
+	}
+
+	av.app.gmx.Log.Debug().Str("username", username).Str("password", password).Msg("authenticating with gomuks RPC")
+	if err := av.app.rpc.Authenticate(ctx, username, password); err != nil {
+		av.errorField.SetText("failed to authenticate: " + err.Error())
+		av.app.gmx.Log.Err(err).Msg("failed to authenticate with gomuks RPC")
+		return
+	}
+	if err := av.app.rpc.Connect(ctx); err != nil {
+		av.errorField.SetText("failed to connect: " + err.Error())
+		av.app.gmx.Log.Err(err).Msg("failed to connect to gomuks RPC")
+		return
+	}
+	av.app.rpcAuthenticated = true
+}
+
+func NewAuthenticateView(ctx context.Context, app *MainView) *AuthenticateView {
+	v := &AuthenticateView{
+		Form:          mauview.NewForm(),
+		passwordField: mauview.NewInputField().SetPlaceholder("Password").SetMaskCharacter('*'),
+		errorField:    mauview.NewTextField().SetText("").SetTextColor(tcell.ColorRed),
+		app:           app,
+	}
+	v.SetRows([]int{1, 1, 1, 1, 1, 1, 1, 1})
+	v.SetColumns([]int{1, 2})
+	v.AddComponent(mauview.NewTextField().SetText("Password"), 1, 1, 8, 1)
+	v.AddFormItem(v.passwordField, 9, 1, 24, 1)
+
+	btn := mauview.NewButton("Submit")
+	btn.SetOnClick(func() {
+		v.errorField.SetText("authenticating...")
+		v.TryAuthenticate(ctx)
+	})
+	v.AddComponent(btn, 1, 3, 11, 1)
+	v.submitButton = mauview.NewButton("Submit")
+	v.AddComponent(v.errorField, 1, 4, 24, 4)
+	v.Container = mauview.NewBox(v).SetTitle("Sign in to Gomuks")
+	v.Container.SetKeyCaptureFunc(app.QuitOnKey())
+	return v
+}

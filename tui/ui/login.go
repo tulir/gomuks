@@ -7,17 +7,16 @@ import (
 	"github.com/gdamore/tcell/v2"
 	"github.com/rs/zerolog"
 	"go.mau.fi/mauview"
-	"go.mau.fi/mauview/mauview-test/debug"
 	"maunium.net/go/mautrix"
 	"maunium.net/go/mautrix/id"
 
-	"go.mau.fi/gomuks/pkg/gomuks"
+	"go.mau.fi/gomuks/pkg/hicli/jsoncmd"
 )
 
 type LoginFormView struct {
 	*mauview.Form
 
-	Container *mauview.Centerer
+	Container *mauview.Box
 
 	userIDLabel      *mauview.TextField
 	passwordLabel    *mauview.TextField
@@ -35,11 +34,11 @@ type LoginFormView struct {
 	loginBtn  *mauview.Button
 	cancelBtn *mauview.Button
 
-	gmx    *gomuks.Gomuks
-	parent *mauview.Application
+	app        *MainView
+	loginFlows *mautrix.RespLoginFlows
 }
 
-func NewLoginForm(ctx context.Context, gmx *gomuks.Gomuks, app *mauview.Application) *LoginFormView {
+func NewLoginForm(ctx context.Context, app *MainView) *LoginFormView {
 	lf := &LoginFormView{
 		Form:             mauview.NewForm(),
 		userIDLabel:      mauview.NewTextField().SetText("User ID"),
@@ -59,15 +58,13 @@ func NewLoginForm(ctx context.Context, gmx *gomuks.Gomuks, app *mauview.Applicat
 		loginBtn:  mauview.NewButton("Login"),
 		cancelBtn: mauview.NewButton("Cancel"),
 
-		gmx:    gmx,
-		parent: app,
+		app: app,
 	}
 	lf.loginBtn.SetOnClick(func() {
 		lf.Login(ctx)
 	})
 	lf.cancelBtn.SetOnClick(func() {
-		debug.Print("cancel button clicked")
-		gmx.DirectStop()
+		app.gmx.DirectStop()
 	})
 	lf.SetColumns([]int{1, 13, 1, 73, 1}).
 		SetRows([]int{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1})
@@ -84,7 +81,8 @@ func NewLoginForm(ctx context.Context, gmx *gomuks.Gomuks, app *mauview.Applicat
 		AddComponent(lf.recoveryKeyLabel, 1, 7, 1, 2).
 		AddComponent(lf.err, 1, 13, 5, 1)
 
-	lf.Container = mauview.Center(mauview.NewBox(lf).SetTitle("Log in to Matrix"), 76, 16)
+	lf.Container = mauview.NewBox(lf).SetTitle("Log in to Matrix")
+	lf.Container.SetKeyCaptureFunc(app.QuitOnKey())
 	lf.SetOnFocusChanged(func(from, to mauview.Component) {
 		if from == lf.userIDField {
 			go lf.resolveWellKnown(ctx)
@@ -113,7 +111,7 @@ func (lfv *LoginFormView) resolveWellKnown(ctx context.Context) {
 	logger.Debug().Stringer("user_id", userID).Msg("resolving homeserver from user ID")
 	lfv.homeserverField.SetPlaceholder("Resolving " + hs + "...")
 	lfv.homeserverField.SetText("")
-	resp, err := mautrix.DiscoverClientAPI(ctx, hs)
+	resp, err := lfv.app.rpc.DiscoverHomeserver(ctx, &jsoncmd.DiscoverHomeserverParams{UserID: userID})
 	if err != nil {
 		logger.Warn().Err(err).Stringer("user_id", userID).Msg("Failed to resolve homeserver from user ID")
 		lfv.err.SetText("Failed to resolve homeserver: " + err.Error())
@@ -129,6 +127,25 @@ func (lfv *LoginFormView) resolveWellKnown(ctx context.Context) {
 			Msg("Resolved homeserver from user ID")
 		hsUrl = resp.Homeserver.BaseURL
 	}
+
+	loginFlows, err := lfv.app.rpc.GetLoginFlows(ctx, &jsoncmd.GetLoginFlowsParams{HomeserverURL: hsUrl})
+	if err != nil {
+		logger.Warn().Err(err).Stringer("user_id", userID).Msg("Failed to get login flows")
+		lfv.err.SetText("Failed to get login flows: " + err.Error())
+		return
+	}
+	if loginFlows == nil || len(loginFlows.Flows) == 0 {
+		logger.Warn().Stringer("user_id", userID).Msg("No login flows available for the homeserver")
+		lfv.err.SetText("No login flows available for the homeserver")
+		return
+	}
+	lfv.loginFlows = loginFlows
+	if !loginFlows.HasFlow(mautrix.AuthTypePassword) {
+		logger.Warn().Stringer("user_id", userID).Msg("No password login flow available for the homeserver")
+		lfv.err.SetText("No password login flow available for the homeserver")
+		return
+	}
+	lfv.homeserverField.SetText(hsUrl)
 }
 
 func (lfv *LoginFormView) Login(ctx context.Context) {
@@ -152,15 +169,21 @@ func (lfv *LoginFormView) Login(ctx context.Context) {
 		lfv.err.SetText("Security key is required")
 		return
 	}
-	err = lfv.gmx.Client.LoginAndVerify(ctx, parsedUrl.String(), userID.Localpart(), password, recoveryKey)
+	ok, err := lfv.app.rpc.Login(ctx, &jsoncmd.LoginParams{
+		HomeserverURL: parsedUrl.String(),
+		Username:      userID.Localpart(),
+		Password:      password,
+	})
 	if err != nil {
 		lfv.err.SetText("Login failed: " + err.Error())
 		zerolog.Ctx(ctx).Error().Err(err).Msg("Login failed")
 		return
-	} else {
+	} else if ok {
 		lfv.err.SetText("Login successful!")
 		zerolog.Ctx(ctx).Info().Msg("Login successful")
-		lfv.parent.ForceStop()
-		debug.Print("Login successful, switching to main view")
+	} else {
+		lfv.err.SetText("Login failed: unknown error")
+		zerolog.Ctx(ctx).Error().Msg("Login failed: unknown error")
+		return
 	}
 }

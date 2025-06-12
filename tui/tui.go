@@ -20,7 +20,7 @@ import (
 	"context"
 	"os"
 
-	"github.com/rs/zerolog"
+	"go.mau.fi/gomuks/pkg/rpc"
 
 	"go.mau.fi/gomuks/tui/ui"
 
@@ -52,32 +52,25 @@ func init() {
 }
 
 func (gt *GomuksTUI) Run() {
-	ctx, cancel := context.WithCancel(InitLogger(context.Background()))
-	defer cancel()
-	logger := zerolog.Ctx(ctx)
-	logger.Debug().Msg("gomuks TUI starting up")
-	gmxlog := logger.With().Str("component", "gomuks").Logger()
-	gt.Gomuks.Log = &gmxlog
+	logger := gt.Gomuks.Log
 	gt.App = mauview.NewApplication()
-	form := ui.NewLoginForm(ctx, gt.Gomuks, gt.App)
-	view := mauview.NewBox(form.Container).SetBorder(false)
-	view.SetKeyCaptureFunc(func(event mauview.KeyEvent) mauview.KeyEvent {
-		if event.Key() == tcell.KeyEsc || event.Rune() == 'q' {
-			logger.Debug().Msg("gomuks TUI exiting, escape key pressed")
-			gt.App.ForceStop()
-		}
-		return event
-	})
-	form.Container.SetAlwaysFocusChild(true)
-	gt.App.SetRoot(view)
+
+	rpcClient, err := rpc.NewGomuksRPC("http://" + gt.Gomuks.Config.Web.ListenAddress)
+	if err != nil {
+		logger.Fatal().Err(err).Msg("failed to create gomuks RPC client")
+		return
+	}
+	ctx := context.Background()
+	mainView := ui.NewMainView(ctx, gt.Gomuks, gt.App, rpcClient)
+	gt.App.SetRoot(mainView.Views.Authenticate)
 	go func() {
-		logger.Debug().Msg("waiting for interrupt")
+		logger.Trace().Msg("waiting for interrupt")
 		gt.Gomuks.WaitForInterrupt()
-		logger.Debug().Msg("gomuks TUI interrupt received, stopping app")
+		logger.Warn().Msg("gomuks TUI interrupt received, stopping app")
 		gt.App.ForceStop()
 	}()
 	logger.Trace().Msg("starting app")
-	err := gt.App.Start()
+	err = gt.App.Start()
 	logger.Trace().Err(err).Msg("finished app")
 	if err != nil {
 		panic(err)
