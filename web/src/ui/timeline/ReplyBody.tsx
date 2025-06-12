@@ -22,7 +22,7 @@ import {
 	useRoomEvent,
 	useRoomMember,
 } from "@/api/statestore"
-import type { EventID, MemDBEvent } from "@/api/types"
+import { EventID, MemDBEvent, displayAsRedacted } from "@/api/types"
 import { getDisplayname } from "@/util/validation.ts"
 import ClientContext from "../ClientContext.ts"
 import TooltipButton from "../util/TooltipButton.tsx"
@@ -99,7 +99,9 @@ export const ReplyBody = ({
 	const client = use(ClientContext)
 	const memberEvt = useRoomMember(client, room, event.sender)
 	const memberEvtContent = maybeRedactMemberEvent(memberEvt)
-	const BodyType = getBodyType(event, true)
+	const BodyType = getBodyType(
+		event, displayAsRedacted(event, memberEvtContent), true,
+	)
 	const classNames = ["reply-body"]
 	if (onClose) {
 		classNames.push("composer")
