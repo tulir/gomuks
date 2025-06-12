@@ -186,4 +186,17 @@ func (lfv *LoginFormView) Login(ctx context.Context) {
 		zerolog.Ctx(ctx).Error().Msg("Login failed: unknown error")
 		return
 	}
+	verified, err := lfv.app.rpc.Verify(ctx, &jsoncmd.VerifyParams{RecoveryKey: recoveryKey})
+	if err != nil {
+		lfv.err.SetText("Verification failed: " + err.Error())
+		zerolog.Ctx(ctx).Error().Err(err).Msg("Verification failed, logging out")
+		_, _ = lfv.app.rpc.Logout(ctx)
+		return
+	}
+	if !verified {
+		lfv.err.SetText("Verification failed: invalid recovery key")
+		zerolog.Ctx(ctx).Error().Msg("Verification failed: invalid recovery key")
+		_, _ = lfv.app.rpc.Logout(ctx)
+		return
+	}
 }
