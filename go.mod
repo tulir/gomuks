@@ -2,7 +2,7 @@ module go.mau.fi/gomuks
 
 go 1.24.0
 
-toolchain go1.24.3
+toolchain go1.24.4
 
 require (
 	github.com/alecthomas/chroma/v2 v2.17.0
@@ -18,18 +18,18 @@ require (
 	github.com/rs/zerolog v1.34.0
 	github.com/tidwall/gjson v1.18.0
 	github.com/tidwall/sjson v1.2.5
-	github.com/yuin/goldmark v1.7.11
-	go.mau.fi/util v0.8.7
+	github.com/yuin/goldmark v1.7.12
+	go.mau.fi/util v0.8.8-0.20250612103042-2aa072eb60f0
 	go.mau.fi/webp v0.2.0
 	go.mau.fi/zeroconfig v0.1.3
-	golang.org/x/crypto v0.38.0
+	golang.org/x/crypto v0.39.0
 	golang.org/x/image v0.26.0
-	golang.org/x/net v0.40.0
+	golang.org/x/net v0.41.0
 	golang.org/x/sys v0.33.0
-	golang.org/x/text v0.25.0
+	golang.org/x/text v0.26.0
 	gopkg.in/yaml.v3 v3.0.1
 	maunium.net/go/mauflag v1.0.0
-	maunium.net/go/mautrix v0.24.1-0.20250609110013-05f371a48092
+	maunium.net/go/mautrix v0.24.1-0.20250614151942-1143cfaa85bc
 	mvdan.cc/xurls/v2 v2.6.0
 )
 
@@ -43,7 +43,7 @@ require (
 	github.com/rs/xid v1.6.0 // indirect
 	github.com/tidwall/match v1.1.1 // indirect
 	github.com/tidwall/pretty v1.2.1 // indirect
-	golang.org/x/exp v0.0.0-20250506013437-ce4c2cf36ca6 // indirect
+	golang.org/x/exp v0.0.0-20250606033433-dcc06ee1d476 // indirect
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1 // indirect
 )
 

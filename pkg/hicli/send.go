@@ -174,6 +174,7 @@ func (h *HiClient) SendMessage(
 		// Hack to force an empty link previews array
 		extra["com.beeper.linkpreviews"] = []any{}
 	}
+	content.AddPerMessageProfileFallback()
 	if relatesTo != nil {
 		if relatesTo.Type == event.RelReplace {
 			contentCopy := content
