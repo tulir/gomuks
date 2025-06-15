@@ -241,7 +241,7 @@ button, a.button, span.button {
 
 div.connection-error-wrapper {
 	position: fixed;
-	inset: 0;
+	inset: var(--window-top-margin) 0 0;
 	z-index: 100;
 	display: flex;
 	align-items: center;
@@ -267,7 +267,7 @@ div.connection-error-wrapper {
 
 div.pre-main {
 	position: fixed;
-	inset: 0;
+	inset: var(--window-top-margin) 0 0;
 	background-color: var(--login-background-color);
 
 	&.waiting-to-connect {

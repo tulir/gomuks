@@ -5,7 +5,7 @@ main.matrix-login {
 	box-sizing: border-box;
 
 	box-shadow: 0 0 1rem var(--modal-box-shadow-color);
-	margin: 2rem auto;
+	margin: calc(2rem + var(--window-top-margin)) auto;
 
 	@media (width < 800px) {
 		max-width: 38rem;
