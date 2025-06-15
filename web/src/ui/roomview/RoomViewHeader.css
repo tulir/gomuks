@@ -7,6 +7,7 @@ div.room-header {
 	overflow: hidden;
 	grid-area: header;
 	container-type: inline-size;
+	padding-top: var(--window-top-margin);
 
 	> div.room-name-and-topic {
 		flex: 1;

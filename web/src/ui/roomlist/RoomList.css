@@ -7,7 +7,8 @@ div.room-list-wrapper {
 	scrollbar-color: var(--room-list-scrollbar-color);
 	display: grid;
 	grid-template:
-		"spacebar search" 3.5rem
+		"spacebar search"   var(--window-top-margin)
+		"spacebar search"   3.5rem
 		"spacebar roomlist" 1fr
 		/ 3rem    1fr;
 }
@@ -23,6 +24,7 @@ div.space-bar {
 	grid-area: spacebar;
 	overflow: auto;
 	scrollbar-width: none;
+	padding-top: var(--window-top-margin);
 
 	> div.space-entry {
 		width: 2rem;
@@ -76,6 +78,7 @@ div.room-search-wrapper {
 	height: 3.5rem;
 	background-color: var(--room-list-search-background-overlay);
 	grid-area: search;
+	padding-top: var(--window-top-margin);
 
 	> input {
 		padding: 0 0 0 1rem;

@@ -3,6 +3,7 @@
 	--font-stack: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
 	--monospace-font-stack: "Fira Code", monospace;
 
+	--window-top-margin: env(safe-area-inset-top, 0px);
 	--background-color: #fff;
 	--login-background-color: #eee;
 	--text-color: #000;

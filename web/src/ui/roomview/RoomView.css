@@ -5,6 +5,7 @@ div.room-view {
 	display: grid;
 	outline: none;
 	grid-template:
+		"header" var(--window-top-margin)
 		"header" 3.5rem
 		"messageview" 1fr
 		"autocomplete" 0
@@ -31,6 +32,7 @@ div#mobile-event-menu-container {
 	grid-area: header;
 	overflow: hidden;
 	border-bottom: 1px solid var(--border-color);
+	padding-top: var(--window-top-margin);
 
 	&:empty {
 		display: none;

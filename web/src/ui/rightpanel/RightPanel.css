@@ -3,6 +3,7 @@ div.right-panel {
 	display: flex;
 	flex-direction: column;
 	overflow: hidden;
+	padding-top: var(--window-top-margin);
 
 	> div.right-panel-header {
 		height: 3.5rem;
