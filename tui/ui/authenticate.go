@@ -17,7 +17,7 @@ type AuthenticateView struct {
 	errorField    *mauview.TextField
 	submitButton  *mauview.Button
 
-	app        *MainView
+	app        *App
 	pingTicker *time.Ticker
 }
 
@@ -62,7 +62,7 @@ func (av *AuthenticateView) TryAuthenticate(ctx context.Context) {
 	av.pingTicker.Reset(30 * time.Second) // re-start the ticker if it was stopped
 }
 
-func NewAuthenticateView(ctx context.Context, app *MainView) *AuthenticateView {
+func NewAuthenticateView(ctx context.Context, app *App) *AuthenticateView {
 	v := &AuthenticateView{
 		Form:          mauview.NewForm(),
 		passwordField: mauview.NewInputField().SetPlaceholder("Password").SetMaskCharacter('*'),

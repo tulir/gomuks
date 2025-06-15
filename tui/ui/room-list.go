@@ -19,7 +19,7 @@ type RoomList struct {
 	joined  map[id.RoomID]*jsoncmd.SyncRoom
 	left    map[id.RoomID]struct{}
 
-	app *MainView
+	app *App
 }
 
 func (rl *RoomList) onInviteClick(ctx context.Context, roomID id.RoomID) func() {
@@ -41,6 +41,24 @@ func (rl *RoomList) onInviteClick(ctx context.Context, roomID id.RoomID) func() 
 	}
 }
 
+func (rl *RoomList) OnClick(ctx context.Context, roomID id.RoomID) func() {
+	return func() {
+		if rl.selected != roomID {
+			rl.selected = roomID
+		}
+		if _, exists := rl.invited[roomID]; exists {
+			rl.onInviteClick(ctx, roomID)
+		} else {
+			timeline, exists := rl.app.Views.Timeline[roomID]
+			if !exists {
+				timeline = NewTimelineView(rl.app, roomID)
+				rl.app.Views.Timeline[roomID] = timeline
+			}
+			rl.app.Views.CurrentTimelineView = timeline
+		}
+	}
+}
+
 func (rl *RoomList) refresh(ctx context.Context) {
 	for _, entry := range rl.entries {
 		rl.RemoveComponent(entry)
@@ -55,7 +73,11 @@ func (rl *RoomList) refresh(ctx context.Context) {
 		y++
 	}
 	for roomID := range rl.joined {
-		label := mauview.NewButton("(joined) " + roomID.String())
+		name := roomID.String()
+		if rl.joined[roomID].Meta.Name != nil {
+			name = *rl.joined[roomID].Meta.Name
+		}
+		label := mauview.NewButton("(joined) " + name)
 		rl.AddComponent(label, 1, y, 1, 1)
 		rl.entries[roomID] = label
 		y++
@@ -89,7 +111,7 @@ func (rl *RoomList) HandleSync(ctx context.Context, sync *jsoncmd.SyncComplete) 
 	rl.refresh(ctx)
 }
 
-func NewRoomList(app *MainView) *RoomList {
+func NewRoomList(app *App) *RoomList {
 	rl := &RoomList{
 		app:     app,
 		Grid:    mauview.NewGrid(),

@@ -3,6 +3,8 @@ package ui
 import (
 	"context"
 
+	"maunium.net/go/mautrix/id"
+
 	"github.com/gdamore/tcell/v2"
 	"go.mau.fi/mauview"
 
@@ -12,13 +14,34 @@ import (
 )
 
 type Views struct {
-	LoginForm    *LoginFormView
-	Syncing      *SyncingView
-	RoomList     *RoomList
 	Authenticate *AuthenticateView
+	LoginForm    *LoginFormView
+	RoomList     *RoomList
+	Syncing      *SyncingView
+	Timeline     map[id.RoomID]*TimelineView
+	Main         *MainView
+	app          *App
+
+	CurrentTimelineView *TimelineView
 }
 
-type MainView struct {
+func (v *Views) HandleSync(ctx context.Context, sync *jsoncmd.SyncComplete) {
+	for roomID, room := range sync.Rooms {
+		timeline, exists := v.Timeline[roomID]
+		if !exists {
+			timeline = NewTimelineView(v.app, roomID)
+			v.Timeline[roomID] = timeline
+		}
+		for _, evt := range room.Events {
+			raw := evt.AsRawMautrix()
+			_ = raw.Content.ParseRaw(raw.Type)
+			timeline.AddEvent(evt.AsRawMautrix())
+		}
+	}
+	v.RoomList.HandleSync(ctx, sync)
+}
+
+type App struct {
 	gmx *gomuks.Gomuks
 	app *mauview.Application
 	rpc *rpc.GomuksRPC
@@ -32,14 +55,14 @@ type MainView struct {
 	imageAuthToken   string
 }
 
-func (mv *MainView) OnEvent(ctx context.Context, evt any) {
+func (mv *App) OnEvent(ctx context.Context, evt any) {
 	logger := mv.gmx.Log
 	switch e := evt.(type) {
 	case *jsoncmd.SyncComplete:
 		mv.syncCounter++
 		data := evt.(*jsoncmd.SyncComplete)
 		mv.lastSync = data.Since
-		mv.Views.RoomList.HandleSync(ctx, evt.(*jsoncmd.SyncComplete))
+		mv.Views.HandleSync(ctx, evt.(*jsoncmd.SyncComplete))
 	case *jsoncmd.InitComplete:
 		mv.initDone = true
 	case *jsoncmd.ImageAuthToken:
@@ -56,11 +79,11 @@ func (mv *MainView) OnEvent(ctx context.Context, evt any) {
 	} else if !mv.initDone && mv.syncCounter > 0 {
 		mv.app.SetRoot(mv.Views.Syncing.Box)
 	} else {
-		mv.app.SetRoot(mv.Views.RoomList.Grid)
+		mv.app.SetRoot(mv.Views.Main)
 	}
 }
 
-func (mv *MainView) QuitOnKey() func(event mauview.KeyEvent) mauview.KeyEvent {
+func (mv *App) QuitOnKey() func(event mauview.KeyEvent) mauview.KeyEvent {
 	return func(event mauview.KeyEvent) mauview.KeyEvent {
 		if event.Key() == tcell.KeyEsc || event.Key() == tcell.KeyCtrlC {
 			mv.app.ForceStop()
@@ -69,8 +92,8 @@ func (mv *MainView) QuitOnKey() func(event mauview.KeyEvent) mauview.KeyEvent {
 	}
 }
 
-func NewMainView(ctx context.Context, gmx *gomuks.Gomuks, app *mauview.Application, rpc *rpc.GomuksRPC) *MainView {
-	main := &MainView{
+func NewApp(ctx context.Context, gmx *gomuks.Gomuks, app *mauview.Application, rpc *rpc.GomuksRPC) *App {
+	main := &App{
 		gmx: gmx,
 		rpc: rpc,
 		app: app,
@@ -80,12 +103,15 @@ func NewMainView(ctx context.Context, gmx *gomuks.Gomuks, app *mauview.Applicati
 	syncingView := NewSyncingView(main)
 	authView := NewAuthenticateView(ctx, main)
 	views := &Views{
-		LoginForm:    loginView,
-		Syncing:      syncingView,
-		RoomList:     roomView,
-		Authenticate: authView,
+		Authenticate:        authView,
+		LoginForm:           loginView,
+		RoomList:            roomView,
+		Syncing:             syncingView,
+		Timeline:            make(map[id.RoomID]*TimelineView),
+		CurrentTimelineView: NewTimelineView(main, ""),
 	}
 	main.Views = views
+	views.Main = NewMainView(main)
 	rpc.EventHandler = main.OnEvent
 	return main
 }

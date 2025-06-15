@@ -34,11 +34,11 @@ type LoginFormView struct {
 	loginBtn  *mauview.Button
 	cancelBtn *mauview.Button
 
-	app        *MainView
+	app        *App
 	loginFlows *mautrix.RespLoginFlows
 }
 
-func NewLoginForm(ctx context.Context, app *MainView) *LoginFormView {
+func NewLoginForm(ctx context.Context, app *App) *LoginFormView {
 	lf := &LoginFormView{
 		Form:             mauview.NewForm(),
 		userIDLabel:      mauview.NewTextField().SetText("User ID"),

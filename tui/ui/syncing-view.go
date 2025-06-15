@@ -6,10 +6,10 @@ import (
 
 type SyncingView struct {
 	*mauview.Box
-	app *MainView
+	app *App
 }
 
-func NewSyncingView(app *MainView) *SyncingView {
+func NewSyncingView(app *App) *SyncingView {
 	return &SyncingView{
 		Box: mauview.NewBox(mauview.NewTextField().SetText("Syncing...")),
 		app: app,

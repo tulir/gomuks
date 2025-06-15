@@ -61,7 +61,7 @@ func (gt *GomuksTUI) Run() {
 		return
 	}
 	ctx := context.Background()
-	mainView := ui.NewMainView(ctx, gt.Gomuks, gt.App, rpcClient)
+	mainView := ui.NewApp(ctx, gt.Gomuks, gt.App, rpcClient)
 	gt.App.SetRoot(mainView.Views.Authenticate)
 	go func() {
 		logger.Trace().Msg("waiting for interrupt")
