@@ -222,6 +222,7 @@ func encryptPush(payload, key []byte) ([]byte, error) {
 
 type PushRequest struct {
 	Token        string `json:"token"`
+	Owner        string `json:"owner"`
 	Payload      []byte `json:"payload"`
 	HighPriority bool   `json:"high_priority"`
 }
@@ -231,6 +232,8 @@ func (gmx *Gomuks) SendFCMPush(ctx context.Context, token string, payload []byte
 		Token:        token,
 		Payload:      payload,
 		HighPriority: highPriority,
+		// User ID is sent for debugging purposes and logged in the push gateway, but not sent to Google
+		Owner: gmx.Client.Account.UserID.String(),
 	})
 	url := fmt.Sprintf("%s/_gomuks/push/fcm", gmx.Config.Push.FCMGateway)
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(wrappedPayload))
