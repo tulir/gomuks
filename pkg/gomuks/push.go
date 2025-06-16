@@ -197,7 +197,15 @@ func (gmx *Gomuks) SendPushNotification(ctx context.Context, pushRegs []*databas
 				log.Err(err).Str("device_id", reg.DeviceID).Msg("Failed to unmarshal FCM token")
 				continue
 			}
-			gmx.SendFCMPush(ctx, token, devicePayload, notif.HasImportant)
+			shouldDelete := gmx.SendFCMPush(ctx, token, devicePayload, notif.HasImportant)
+			if shouldDelete {
+				log.Debug().Str("device_id", reg.DeviceID).Msg("Expiring push registration as gateway returned 404")
+				reg.Expiration = jsontime.UnixNow()
+				err = gmx.Client.DB.PushRegistration.Put(ctx, reg)
+				if err != nil {
+					log.Err(err).Msg("Failed to mark push registration as expired")
+				}
+			}
 		}
 	}
 }
@@ -227,7 +235,7 @@ type PushRequest struct {
 	HighPriority bool   `json:"high_priority"`
 }
 
-func (gmx *Gomuks) SendFCMPush(ctx context.Context, token string, payload []byte, highPriority bool) {
+func (gmx *Gomuks) SendFCMPush(ctx context.Context, token string, payload []byte, highPriority bool) (shouldDelete bool) {
 	wrappedPayload, _ := json.Marshal(&PushRequest{
 		Token:        token,
 		Payload:      payload,
@@ -249,6 +257,7 @@ func (gmx *Gomuks) SendFCMPush(ctx context.Context, token string, payload []byte
 			Int("status", resp.StatusCode).
 			Str("push_token", token).
 			Msg("Non-200 status while sending push request")
+		shouldDelete = resp.StatusCode == http.StatusNotFound
 	} else {
 		zerolog.Ctx(ctx).Trace().
 			Int("status", resp.StatusCode).
@@ -258,4 +267,5 @@ func (gmx *Gomuks) SendFCMPush(ctx context.Context, token string, payload []byte
 	if resp != nil {
 		_ = resp.Body.Close()
 	}
+	return
 }
