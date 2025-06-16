@@ -64,7 +64,7 @@ func (gmx *Gomuks) CreateAPIRouter() http.Handler {
 		api,
 		hlog.NewHandler(*gmx.Log),
 		hlog.RequestIDHandler("request_id", "Request-ID"),
-		requestlog.AccessLogger(false),
+		requestlog.AccessLogger(requestlog.Options{}),
 	)
 }
 
