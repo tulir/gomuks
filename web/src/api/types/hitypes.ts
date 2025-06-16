@@ -22,7 +22,6 @@ import {
 	EventID,
 	EventType,
 	LazyLoadSummary,
-	MemberEventContent,
 	ReceiptType,
 	RelationType,
 	RoomAlias,
@@ -160,10 +159,6 @@ export interface MemDBEvent extends BaseDBEvent {
 	orig_local_content?: LocalContent
 	last_edit?: MemDBEvent
 	viewing_redacted?: boolean
-}
-
-export function displayAsRedacted(evt: MemDBEvent, profile?: MemberEventContent): boolean {
-	return Boolean(!evt.viewing_redacted && (evt.redacted_by || profile?.["org.matrix.msc4293.redact_events"]))
 }
 
 export interface DBAccountData {

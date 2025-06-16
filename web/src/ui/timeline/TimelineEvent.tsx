@@ -22,7 +22,8 @@ import {
 	maybeRedactMemberEvent,
 	useRoomMember,
 } from "@/api/statestore"
-import { MemDBEvent, URLPreview as URLPreviewType, UnreadType, displayAsRedacted } from "@/api/types"
+import { MemDBEvent, URLPreview as URLPreviewType, UnreadType } from "@/api/types"
+import { displayAsRedacted } from "@/util/displayAsRedacted.ts"
 import { isMobileDevice } from "@/util/ismobile.ts"
 import { getDisplayname, isEventID } from "@/util/validation.ts"
 import ClientContext from "../ClientContext.ts"
@@ -173,7 +174,7 @@ const TimelineEvent = ({
 	const eventTS = new Date(evt.timestamp)
 	const editEventTS = evt.last_edit ? new Date(evt.last_edit.timestamp) : null
 	const wrapperClassNames = ["timeline-event"]
-	const isRedacted = displayAsRedacted(evt, memberEvtContent)
+	const isRedacted = displayAsRedacted(evt, memberEvtContent, memberEvt, roomCtx.store)
 	if (isRedacted) {
 		wrapperClassNames.push("redacted-event")
 	}
@@ -243,7 +244,7 @@ const TimelineEvent = ({
 		&& prevEvt.timestamp + 15 * 60 * 1000 > evt.timestamp
 		&& dateSeparator === null
 		&& !replyAboveMessage
-		&& !isSmallEvent(getBodyType(prevEvt, displayAsRedacted(prevEvt, memberEvtContent)))
+		&& !isSmallEvent(getBodyType(prevEvt, displayAsRedacted(prevEvt, memberEvtContent, memberEvt, roomCtx.store)))
 		&& prevPerMessageSender?.id === perMessageSender?.id
 	) {
 		wrapperClassNames.push("same-sender")
