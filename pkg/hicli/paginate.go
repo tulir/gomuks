@@ -310,6 +310,8 @@ func (h *HiClient) PaginateServer(ctx context.Context, roomID id.RoomID, limit i
 	room, err := h.DB.Room.Get(ctx, roomID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get room from database: %w", err)
+	} else if room == nil {
+		return nil, fmt.Errorf("not in room %s", roomID)
 	} else if room.PrevBatch == database.PrevBatchPaginationComplete {
 		return &jsoncmd.PaginationResponse{Events: []*database.Event{}, HasMore: false}, nil
 	}
