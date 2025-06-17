@@ -13,11 +13,11 @@ func NewMainView(app *App) *MainView {
 		app:  app,
 	}
 
-	mv.SetRows([]int{50, 50})
+	mv.SetRows([]int{1})
 	mv.SetColumns([]int{20, 120})
 
 	mv.AddComponent(app.Views.RoomList, 0, 0, 20, 1)
-	mv.AddComponent(app.Views.CurrentTimelineView, 1, 0, 50, 1)
+	mv.AddComponent(app.Views.CurrentTimelineView, 20, 0, 100, 1)
 
 	return mv
 }

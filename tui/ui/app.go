@@ -85,6 +85,7 @@ func (mv *App) OnEvent(ctx context.Context, evt any) {
 
 func (mv *App) QuitOnKey() func(event mauview.KeyEvent) mauview.KeyEvent {
 	return func(event mauview.KeyEvent) mauview.KeyEvent {
+		mv.gmx.Log.Debug().Any("key", event.Rune()).Msg("Key pressed")
 		if event.Key() == tcell.KeyEsc || event.Key() == tcell.KeyCtrlC {
 			mv.app.ForceStop()
 		}
@@ -108,7 +109,7 @@ func NewApp(ctx context.Context, gmx *gomuks.Gomuks, app *mauview.Application, r
 		RoomList:            roomView,
 		Syncing:             syncingView,
 		Timeline:            make(map[id.RoomID]*TimelineView),
-		CurrentTimelineView: NewTimelineView(main, ""),
+		CurrentTimelineView: NewTimelineView(main, "!offtopic-9:timedout.uk"),
 	}
 	main.Views = views
 	views.Main = NewMainView(main)

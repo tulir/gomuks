@@ -24,7 +24,6 @@ type RoomList struct {
 
 func (rl *RoomList) onInviteClick(ctx context.Context, roomID id.RoomID) func() {
 	return func() {
-		//inviteRoom := rl.invited[roomID]
 		if rl.selected != roomID {
 			rl.selected = roomID
 		} else {

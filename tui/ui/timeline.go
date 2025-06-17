@@ -31,7 +31,11 @@ func NewTimelineView(app *App, roomID id.RoomID) *TimelineView {
 
 	tl.SetDirection(mauview.FlexRow)
 	tl.AddProportionalComponent(mauview.NewTextField().SetText("Room ID: "+roomID.String()), 1)
-
+	tl.AddProportionalComponent(mauview.NewTextField().SetText("Room ID a: "+roomID.String()), 1)
+	tl.AddProportionalComponent(mauview.NewTextField().SetText("Room ID b: "+roomID.String()), 1)
+	tl.AddProportionalComponent(mauview.NewTextField().SetText("Room ID c: "+roomID.String()), 1)
+	tl.AddProportionalComponent(mauview.NewTextField().SetText("Room ID d: "+roomID.String()), 1)
+	tl.AddProportionalComponent(mauview.NewTextField().SetText("Room ID e: "+roomID.String()), 1)
 	return tl
 }
 

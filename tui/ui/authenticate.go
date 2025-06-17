@@ -12,7 +12,7 @@ import (
 
 type AuthenticateView struct {
 	*mauview.Form
-	Container     *mauview.Box
+	Container     *mauview.Centerer
 	passwordField *mauview.InputField
 	errorField    *mauview.TextField
 	submitButton  *mauview.Button
@@ -83,8 +83,7 @@ func NewAuthenticateView(ctx context.Context, app *App) *AuthenticateView {
 	v.AddComponent(btn, 1, 3, 11, 1)
 	v.submitButton = mauview.NewButton("Submit")
 	v.AddComponent(v.errorField, 1, 4, 24, 4)
-	v.Container = mauview.NewBox(v).SetTitle("Sign in to Gomuks")
-	v.Container.SetKeyCaptureFunc(app.QuitOnKey())
+	v.Container = mauview.Center(mauview.NewBox(v).SetTitle("Sign in to Gomuks").SetBorder(true), 34, 10)
 	go v.pingLoop(ctx)
 	return v
 }
