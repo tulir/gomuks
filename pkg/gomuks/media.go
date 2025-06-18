@@ -214,6 +214,7 @@ func (gmx *Gomuks) generateAvatarThumbnail(entry *database.Media, size int) erro
 	if err != nil {
 		return fmt.Errorf("failed to create cache directory: %w", err)
 	}
+	tempFile.Close()
 	err = os.Rename(tempFile.Name(), cachePath)
 	if err != nil {
 		return fmt.Errorf("failed to rename temporary file: %w", err)
