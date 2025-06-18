@@ -21,6 +21,7 @@ func (gt *GomuksTUI) OnEvent(ctx context.Context, evt any) {
 			gt.SwitchRoot(gt.loginView.Container)
 		} else if !e.IsVerified {
 			gt.SwitchRoot(gt.syncView.Container) // TODO
+			gt.syncView.Run(ctx)                 // TODO also: this doesnt allow us to reset the refresh ticker
 		} else {
 			// is an update even needed here?
 		}
