@@ -2,201 +2,179 @@ package ui
 
 import (
 	"context"
-	"net/url"
 
 	"github.com/gdamore/tcell/v2"
-	"github.com/rs/zerolog"
 	"go.mau.fi/mauview"
 	"maunium.net/go/mautrix"
 	"maunium.net/go/mautrix/id"
 
 	"go.mau.fi/gomuks/pkg/hicli/jsoncmd"
+	"go.mau.fi/gomuks/tui/abstract"
 )
 
-type LoginFormView struct {
-	*mauview.Form
-
-	Container *mauview.Box
-
-	userIDLabel      *mauview.TextField
-	passwordLabel    *mauview.TextField
-	homeserverLabel  *mauview.TextField
-	recoveryKeyLabel *mauview.TextField
-	// Homeserver should autofill but also be allowed to be overridden, like in the web UI.
-
-	userIDField      *mauview.InputField
-	passwordField    *mauview.InputField
-	homeserverField  *mauview.InputField
-	recoveryKeyField *mauview.InputField
-
-	err *mauview.TextView
-
-	loginBtn  *mauview.Button
-	cancelBtn *mauview.Button
-
-	app        *App
-	loginFlows *mautrix.RespLoginFlows
+type LoginButtons struct {
+	*mauview.Flex
+	parent            *LoginView
+	LoginWithPassword *mauview.Button
+	LoginWithSSO      *mauview.Button
+	Cancel            *mauview.Button
 }
 
-func NewLoginForm(ctx context.Context, app *App) *LoginFormView {
-	lf := &LoginFormView{
-		Form:             mauview.NewForm(),
-		userIDLabel:      mauview.NewTextField().SetText("User ID"),
-		passwordLabel:    mauview.NewTextField().SetText("Password"),
-		homeserverLabel:  mauview.NewTextField().SetText("Homeserver"),
-		recoveryKeyLabel: mauview.NewTextField().SetText("Recovery key"),
-
-		userIDField: mauview.NewInputField().SetPlaceholder("@username:example.com"),
-		passwordField: mauview.NewInputField().
-			SetPlaceholder("password1234").
-			SetMaskCharacter('*'),
-		homeserverField:  mauview.NewInputField().SetPlaceholder("(will autofill)"),
-		recoveryKeyField: mauview.NewInputField().SetPlaceholder("ABCD EFGH IJKL MNOP QRST UVWX YZ01 2345 6789 0ABC DEFG HIJK"),
-
-		err: mauview.NewTextView().SetText("").SetTextColor(tcell.ColorRed),
-
-		loginBtn:  mauview.NewButton("Login"),
-		cancelBtn: mauview.NewButton("Cancel"),
-
-		app: app,
+func NewLoginButtons(parent *LoginView) *LoginButtons {
+	buttons := &LoginButtons{
+		Flex:   mauview.NewFlex().SetDirection(mauview.FlexColumn),
+		parent: parent,
+		Cancel: mauview.NewButton("Cancel"),
 	}
-	lf.loginBtn.SetOnClick(func() {
-		lf.Login(ctx)
-	})
-	lf.cancelBtn.SetOnClick(func() {
-		app.gmx.DirectStop()
-	})
-	lf.SetColumns([]int{1, 13, 1, 73, 1}).
-		SetRows([]int{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1})
-	lf.
-		AddFormItem(lf.userIDField, 3, 1, 1, 1).
-		AddFormItem(lf.passwordField, 3, 3, 1, 1).
-		AddFormItem(lf.homeserverField, 3, 5, 1, 1).
-		AddFormItem(lf.recoveryKeyField, 3, 7, 1, 2).
-		AddFormItem(lf.loginBtn, 1, 9, 3, 1).
-		AddFormItem(lf.cancelBtn, 1, 11, 3, 1).
-		AddComponent(lf.userIDLabel, 1, 1, 1, 1).
-		AddComponent(lf.passwordLabel, 1, 3, 1, 1).
-		AddComponent(lf.homeserverLabel, 1, 5, 1, 1).
-		AddComponent(lf.recoveryKeyLabel, 1, 7, 1, 2).
-		AddComponent(lf.err, 1, 13, 5, 1)
-
-	lf.Container = mauview.NewBox(lf).SetTitle("Log in to Matrix")
-	lf.Container.SetKeyCaptureFunc(app.QuitOnKey())
-	lf.SetOnFocusChanged(func(from, to mauview.Component) {
-		if from == lf.userIDField {
-			go lf.resolveWellKnown(ctx)
+	if parent.supportedAuthFlows != nil {
+		if parent.supportedAuthFlows.HasFlow(mautrix.AuthTypePassword) {
+			buttons.LoginWithPassword = mauview.NewButton("Log in with password")
+			buttons.AddProportionalComponent(buttons.LoginWithPassword, 1)
 		}
+		if parent.supportedAuthFlows.HasFlow(mautrix.AuthTypeSSO) {
+			buttons.LoginWithSSO = mauview.NewButton("Log in with SSO")
+			buttons.LoginWithSSO.SetStyle(tcell.StyleDefault)
+			// TODO: /_gomuks/sso stuff
+			buttons.AddProportionalComponent(buttons.LoginWithSSO, 1)
+		}
+	}
+	buttons.AddProportionalComponent(buttons.Cancel, 1)
+	return buttons
+}
+
+type LoginView struct {
+	*mauview.Form
+	app       abstract.App
+	Container *mauview.Centerer
+
+	userIDField        *mauview.InputField
+	homeserverURLField *mauview.InputField
+	passwordInputField *mauview.InputField
+
+	homeserver         string
+	supportedAuthFlows *mautrix.RespLoginFlows
+	loginButtons       *LoginButtons
+}
+
+func (l *LoginView) refreshBtns(ctx context.Context) {
+	if l.loginButtons != nil {
+		l.RemoveComponent(l.loginButtons)
+	}
+	if l.passwordInputField != nil {
+		l.RemoveFormItem(l.passwordInputField)
+	}
+	l.loginButtons = NewLoginButtons(l)
+	l.loginButtons.Cancel.SetOnClick(func() {
+		l.app.Gmx().Log.Debug().Msg("Login cancelled")
+		l.app.Gmx().Stop()
 	})
-	return lf
+	l.AddComponent(l.loginButtons, 0, 3, 3, 1)
+	if l.loginButtons.LoginWithPassword != nil {
+		l.passwordInputField = mauview.NewInputField().
+			SetPlaceholder("********").
+			SetMaskCharacter('*')
+		l.loginButtons.LoginWithPassword.SetOnClick(func() {
+			l.app.Gmx().Log.Debug().Msg("Logging in with password")
+			l.passwordLogin(ctx)
+		})
+		l.AddFormItem(l.passwordInputField, 2, 2, 1, 1).
+			AddComponent(mauview.NewTextField().SetText("Password"), 0, 2, 1, 1)
+	} else {
+		l.passwordInputField = nil
+	}
+	l.app.App().Redraw()
 }
 
-func (lfv *LoginFormView) resolveWellKnown(ctx context.Context) {
-	logger := zerolog.Ctx(ctx)
-	hsUrl := ""
-	defer func(x *string) {
-		lfv.homeserverField.SetPlaceholder("(will autofill)")
-		lfv.homeserverField.SetText(hsUrl)
-	}(&hsUrl)
-	userID := id.UserID(lfv.userIDField.GetText())
-	if userID == "" {
-		lfv.err.SetText("Invalid user ID")
+func (l *LoginView) passwordLogin(ctx context.Context) {
+	userID := id.UserID(l.userIDField.GetText())
+	password := l.passwordInputField.GetText()
+	homeserverUrl := l.homeserver
+	if homeserverUrl == "" || userID == "" || password == "" {
 		return
 	}
-	_, hs, err := userID.Parse()
-	if err != nil {
-		lfv.err.SetText("Invalid user ID: " + err.Error())
-		return
-	}
-	logger.Debug().Stringer("user_id", userID).Msg("resolving homeserver from user ID")
-	lfv.homeserverField.SetPlaceholder("Resolving " + hs + "...")
-	lfv.homeserverField.SetText("")
-	resp, err := lfv.app.rpc.DiscoverHomeserver(ctx, &jsoncmd.DiscoverHomeserverParams{UserID: userID})
-	if err != nil {
-		logger.Warn().Err(err).Stringer("user_id", userID).Msg("Failed to resolve homeserver from user ID")
-		lfv.err.SetText("Failed to resolve homeserver: " + err.Error())
-		return
-	}
-	if resp == nil {
-		logger.Warn().Stringer("user_id", userID).Msg("No usable response from homeserver discovery")
-		hsUrl = "https://" + hs
-	} else if resp.Homeserver.BaseURL != "" {
-		logger.Debug().
-			Stringer("user_id", userID).
-			Str("homeserver", resp.Homeserver.BaseURL).
-			Msg("Resolved homeserver from user ID")
-		hsUrl = resp.Homeserver.BaseURL
-	}
-
-	loginFlows, err := lfv.app.rpc.GetLoginFlows(ctx, &jsoncmd.GetLoginFlowsParams{HomeserverURL: hsUrl})
-	if err != nil {
-		logger.Warn().Err(err).Stringer("user_id", userID).Msg("Failed to get login flows")
-		lfv.err.SetText("Failed to get login flows: " + err.Error())
-		return
-	}
-	if loginFlows == nil || len(loginFlows.Flows) == 0 {
-		logger.Warn().Stringer("user_id", userID).Msg("No login flows available for the homeserver")
-		lfv.err.SetText("No login flows available for the homeserver")
-		return
-	}
-	lfv.loginFlows = loginFlows
-	if !loginFlows.HasFlow(mautrix.AuthTypePassword) {
-		logger.Warn().Stringer("user_id", userID).Msg("No password login flow available for the homeserver")
-		lfv.err.SetText("No password login flow available for the homeserver")
-		return
-	}
-	lfv.homeserverField.SetText(hsUrl)
-}
-
-func (lfv *LoginFormView) Login(ctx context.Context) {
-	parsedUrl, err := url.Parse(lfv.homeserverField.GetText())
-	if err != nil {
-		lfv.err.SetText("Invalid homeserver URL: " + err.Error())
-		return
-	}
-	userID := id.UserID(lfv.userIDField.GetText())
-	if _, _, err = userID.Parse(); err != nil {
-		lfv.err.SetText("Invalid user ID: " + err.Error())
-		return
-	}
-	password := lfv.passwordField.GetText()
-	if password == "" {
-		lfv.err.SetText("Password is required")
-		return
-	}
-	recoveryKey := lfv.recoveryKeyField.GetText()
-	if recoveryKey == "" {
-		lfv.err.SetText("Security key is required")
-		return
-	}
-	ok, err := lfv.app.rpc.Login(ctx, &jsoncmd.LoginParams{
-		HomeserverURL: parsedUrl.String(),
+	ok, err := l.app.Rpc().Login(ctx, &jsoncmd.LoginParams{
+		HomeserverURL: homeserverUrl,
 		Username:      userID.Localpart(),
 		Password:      password,
 	})
 	if err != nil {
-		lfv.err.SetText("Login failed: " + err.Error())
-		zerolog.Ctx(ctx).Error().Err(err).Msg("Login failed")
-		return
-	} else if ok {
-		lfv.err.SetText("Login successful!")
-		zerolog.Ctx(ctx).Info().Msg("Login successful")
-	} else {
-		lfv.err.SetText("Login failed: unknown error")
-		zerolog.Ctx(ctx).Error().Msg("Login failed: unknown error")
+		l.app.Gmx().Log.Err(err).Msg("Failed to log in with password")
 		return
 	}
-	verified, err := lfv.app.rpc.Verify(ctx, &jsoncmd.VerifyParams{RecoveryKey: recoveryKey})
+	if !ok {
+		l.app.Gmx().Log.Error().Msg("Login with password failed for some reason")
+		return
+	}
+	l.app.Gmx().Log.Info().Msg("Logged in successfully with password")
+	// Hopefully control.go whisks us away now
+}
+
+func (l *LoginView) resolve(ctx context.Context) {
+	l.homeserverURLField.SetPlaceholder("https://example.com")
+	userID := id.UserID(l.userIDField.GetText())
+	if l.homeserverURLField.GetText() != "" {
+		return
+	}
+	l.homeserverURLField.SetPlaceholder("resolving...")
+	wk, err := l.app.Rpc().DiscoverHomeserver(ctx, &jsoncmd.DiscoverHomeserverParams{UserID: userID})
 	if err != nil {
-		lfv.err.SetText("Verification failed: " + err.Error())
-		zerolog.Ctx(ctx).Error().Err(err).Msg("Verification failed, logging out")
-		_, _ = lfv.app.rpc.Logout(ctx)
+		l.app.Gmx().Log.Error().Err(err).Msg("Failed to resolve homeserver URL")
+		l.homeserverURLField.SetPlaceholder("err")
 		return
 	}
-	if !verified {
-		lfv.err.SetText("Verification failed: invalid recovery key")
-		zerolog.Ctx(ctx).Error().Msg("Verification failed: invalid recovery key")
-		_, _ = lfv.app.rpc.Logout(ctx)
+	url := "https://" + userID.Homeserver()
+	if wk != nil && wk.Homeserver.BaseURL != "" {
+		url = wk.Homeserver.BaseURL
+	}
+	loginFlows, err := l.app.Rpc().GetLoginFlows(ctx, &jsoncmd.GetLoginFlowsParams{HomeserverURL: url})
+	if err != nil {
+		l.app.Gmx().Log.Error().Err(err).Msg("Failed to get login flows")
+		l.homeserverURLField.SetPlaceholder("err")
 		return
 	}
+	if loginFlows == nil || len(loginFlows.Flows) == 0 {
+		l.app.Gmx().Log.Error().Msg("No login flows available for the given homeserver")
+		l.homeserverURLField.SetPlaceholder("bad server")
+		return
+	}
+	if !loginFlows.HasFlow(mautrix.AuthTypePassword) && !loginFlows.HasFlow(mautrix.AuthTypeSSO) {
+		l.app.Gmx().Log.Error().Msg("No supported login flows available for the given homeserver")
+		l.homeserverURLField.SetPlaceholder("idk how to log in")
+		return
+	}
+	l.supportedAuthFlows = loginFlows
+	l.homeserver = url
+	l.homeserverURLField.SetPlaceholder(url)
+	l.refreshBtns(ctx)
+	l.app.App().Redraw()
+}
+
+func (l *LoginView) OnFocusChange(ctx context.Context) func(from, to mauview.Component) {
+	return func(from, to mauview.Component) {
+		if from == l.userIDField {
+			go l.resolve(ctx)
+		}
+	}
+}
+
+func NewLoginView(ctx context.Context, app abstract.App) *LoginView {
+	v := &LoginView{
+		app:                app,
+		Form:               mauview.NewForm(),
+		userIDField:        mauview.NewInputField().SetPlaceholder("@user:example.com"),
+		homeserverURLField: mauview.NewInputField().SetPlaceholder("https://example.com"),
+	}
+	v.refreshBtns(ctx)
+	v.SetRows([]int{1, 1, 1, 1}).SetColumns([]int{10, 2, 50})
+	// User ID: ...
+	// Homeserver URL: ...
+	// Password: ... (may be nil field)
+	// Log in with password | log in with sso | cancel
+	v.AddFormItem(v.userIDField, 2, 0, 1, 1).
+		AddFormItem(v.homeserverURLField, 2, 1, 1, 1).
+		AddComponent(mauview.NewTextField().SetText("User ID"), 0, 0, 1, 1).
+		AddComponent(mauview.NewTextField().SetText("Homeserver URL"), 0, 1, 1, 1)
+	v.SetOnFocusChanged(v.OnFocusChange(ctx))
+	v.Container = mauview.Center(mauview.NewBox(v).SetBorder(true).SetTitle("Log in to Matrix"), 64, 10).SetAlwaysFocusChild(true)
+	return v
 }

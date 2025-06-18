@@ -2,88 +2,75 @@ package ui
 
 import (
 	"context"
-	"time"
 
 	"github.com/gdamore/tcell/v2"
 	"go.mau.fi/mauview"
 
-	"go.mau.fi/gomuks/pkg/hicli/jsoncmd"
+	"go.mau.fi/gomuks/tui/abstract"
 )
 
+// AuthenticateView is used to authenticate the Gomuks RPC
 type AuthenticateView struct {
 	*mauview.Form
-	Container     *mauview.Centerer
+	Container *mauview.Centerer
+	ctx       context.Context
+	app       abstract.App
+
 	passwordField *mauview.InputField
-	errorField    *mauview.TextField
-	submitButton  *mauview.Button
-
-	app        *App
-	pingTicker *time.Ticker
+	errorBody     *mauview.TextField
 }
 
-func (av *AuthenticateView) pingLoop(ctx context.Context) {
-	for {
-		select {
-		case <-av.pingTicker.C:
-			if !av.app.rpcAuthenticated {
-				av.app.gmx.Log.Debug().Msg("skipping ping, not authenticated")
-				break
-			}
-			if _, err := av.app.rpc.Ping(ctx, &jsoncmd.PingParams{LastReceivedID: av.app.rpc.LastReqID}); err != nil {
-				av.app.gmx.Log.Error().Msg("failed to ping gomuks RPC: " + err.Error())
-				// This is bad, do something here.
-			}
-		case <-ctx.Done():
-			return
-		}
+func NewAuthenticateView(ctx context.Context, app abstract.App) *AuthenticateView {
+	a := &AuthenticateView{
+		Form: mauview.NewForm(),
+		ctx:  ctx,
+		app:  app,
 	}
-}
+	a.SetRows([]int{1, 1, 1, 1})
+	a.SetColumns([]int{8, 2, 24})
+	a.Container = mauview.Center(mauview.NewBox(a).SetTitle("Sign in to Gomuks").SetBorder(true), 36, 6).SetAlwaysFocusChild(true)
 
-func (av *AuthenticateView) TryAuthenticate(ctx context.Context) {
-	username := av.app.gmx.Config.Web.Username
-	password := av.passwordField.GetText()
-	if len(password) == 0 {
-		av.errorField.SetText("password cannot be empty")
-		return
-	}
+	a.passwordField = mauview.NewInputField()
+	a.errorBody = mauview.NewTextField().SetText("...")
 
-	av.app.gmx.Log.Debug().Str("username", username).Str("password", password).Msg("authenticating with gomuks RPC")
-	if err := av.app.rpc.Authenticate(ctx, username, password); err != nil {
-		av.errorField.SetText("failed to authenticate: " + err.Error())
-		av.app.gmx.Log.Err(err).Msg("failed to authenticate with gomuks RPC")
-		return
-	}
-	if err := av.app.rpc.Connect(ctx); err != nil {
-		av.errorField.SetText("failed to connect: " + err.Error())
-		av.app.gmx.Log.Err(err).Msg("failed to connect to gomuks RPC")
-		return
-	}
-	av.app.rpcAuthenticated = true
-	av.pingTicker.Reset(30 * time.Second) // re-start the ticker if it was stopped
-}
-
-func NewAuthenticateView(ctx context.Context, app *App) *AuthenticateView {
-	v := &AuthenticateView{
-		Form:          mauview.NewForm(),
-		passwordField: mauview.NewInputField().SetPlaceholder("Password").SetMaskCharacter('*'),
-		errorField:    mauview.NewTextField().SetText("").SetTextColor(tcell.ColorRed),
-		app:           app,
-		pingTicker:    time.NewTicker(30 * time.Second),
-	}
-	v.SetRows([]int{1, 1, 1, 1, 1, 1, 1, 1})
-	v.SetColumns([]int{1, 2})
-	v.AddComponent(mauview.NewTextField().SetText("Password"), 1, 1, 8, 1)
-	v.AddFormItem(v.passwordField, 9, 1, 24, 1)
-
-	btn := mauview.NewButton("Submit")
-	btn.SetOnClick(func() {
-		v.errorField.SetText("authenticating...")
-		v.TryAuthenticate(ctx)
+	submitButton := mauview.NewButton("Submit")
+	submitButton.SetOnClick(func() {
+		a.app.Gmx().Log.Debug().Msg("Authenticating...")
+		a.Authenticate(ctx)
 	})
-	v.AddComponent(btn, 1, 3, 11, 1)
-	v.submitButton = mauview.NewButton("Submit")
-	v.AddComponent(v.errorField, 1, 4, 24, 4)
-	v.Container = mauview.Center(mauview.NewBox(v).SetTitle("Sign in to Gomuks").SetBorder(true), 34, 10)
-	go v.pingLoop(ctx)
-	return v
+	cancelButton := mauview.NewButton("Cancel")
+	cancelButton.SetOnClick(func() {
+		a.app.Gmx().Log.Debug().Msg("Authentication cancelled")
+		a.app.Gmx().Stop()
+	})
+
+	a.AddFormItem(a.passwordField, 2, 0, 1, 1).
+		AddComponent(mauview.NewTextField().SetText("Password"), 0, 0, 1, 1).
+		AddComponent(a.errorBody, 0, 1, 3, 1).
+		AddComponent(submitButton, 0, 2, 3, 1).
+		AddComponent(cancelButton, 0, 3, 3, 1)
+	a.FocusNextItem()
+
+	return a
+}
+
+func (a *AuthenticateView) Authenticate(ctx context.Context) {
+	a.errorBody.SetText("Connecting...").SetTextColor(tcell.ColorDimGrey)
+	username := a.app.Gmx().Config.Web.Username
+	password := a.passwordField.GetText()
+
+	a.app.Gmx().Log.Debug().Str("username", username).Str("password", password).Msg("Authenticating...")
+	err := a.app.Rpc().Authenticate(ctx, username, password)
+	if err != nil {
+		a.app.Gmx().Log.Err(err).Msg("Failed to authenticate")
+		a.errorBody.SetText(err.Error()).SetTextColor(tcell.ColorRed)
+		return
+	}
+	a.app.Gmx().Log.Debug().Msg("Authentication successful")
+	if err = a.app.Rpc().Connect(ctx); err != nil {
+		a.app.Gmx().Log.Err(err).Msg("Failed to connect to Gomuks RPC")
+		a.errorBody.SetText(err.Error()).SetTextColor(tcell.ColorRed)
+		return
+	}
+	a.errorBody.SetText("Waiting...").SetTextColor(tcell.ColorDefault)
 }

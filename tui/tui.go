@@ -18,25 +18,45 @@ package tui
 
 import (
 	"context"
+	"errors"
 	"os"
+	"time"
 
-	"go.mau.fi/gomuks/pkg/rpc"
+	"maunium.net/go/mautrix/id"
 
+	"go.mau.fi/gomuks/pkg/hicli/jsoncmd"
 	"go.mau.fi/gomuks/tui/ui"
+
+	"go.mau.fi/gomuks/pkg/gomuks"
+	"go.mau.fi/gomuks/pkg/rpc"
 
 	"github.com/gdamore/tcell/v2"
 	"go.mau.fi/mauview"
-
-	"go.mau.fi/gomuks/pkg/gomuks"
 )
 
 type GomuksTUI struct {
 	*gomuks.Gomuks
-	App *mauview.Application
+	rpc        *rpc.GomuksRPC
+	app        *mauview.Application
+	pingTicker *time.Ticker
+
+	initSyncDone   bool
+	clientState    *jsoncmd.ClientState
+	imageAuthToken string
+
+	authView  *ui.AuthenticateView
+	syncView  *ui.SyncingView
+	loginView *ui.LoginView
+
+	rooms map[id.RoomID]*jsoncmd.SyncRoom
 }
 
 func New(gmx *gomuks.Gomuks) *GomuksTUI {
-	return &GomuksTUI{Gomuks: gmx}
+	return &GomuksTUI{
+		Gomuks:      gmx,
+		rooms:       make(map[id.RoomID]*jsoncmd.SyncRoom),
+		clientState: &jsoncmd.ClientState{},
+	}
 }
 
 func init() {
@@ -51,26 +71,77 @@ func init() {
 	}
 }
 
+func (gt *GomuksTUI) Gmx() *gomuks.Gomuks {
+	return gt.Gomuks
+}
+
+func (gt *GomuksTUI) Rpc() *rpc.GomuksRPC {
+	return gt.rpc
+}
+
+func (gt *GomuksTUI) App() *mauview.Application {
+	return gt.app
+}
+
+func (gt *GomuksTUI) PingTicker(ctx context.Context) {
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-gt.pingTicker.C:
+			if gt.rpc != nil {
+				_, err := gt.rpc.Ping(ctx, &jsoncmd.PingParams{LastReceivedID: gt.rpc.LastReqID})
+				if err != nil && !errors.Is(err, rpc.ErrNotConnectedToWebsocket) {
+					gt.Gomuks.Log.Err(err).Msg("failed to ping gomuks over RPC")
+				}
+			}
+		}
+	}
+}
+
+func (gt *GomuksTUI) InitViews(ctx context.Context) {
+	gt.authView = ui.NewAuthenticateView(ctx, gt)
+	gt.syncView = ui.NewSyncingView(gt)
+	gt.loginView = ui.NewLoginView(ctx, gt)
+
+	// Set the initial view to the authentication view
+	gt.app.SetRoot(gt.authView.Container)
+}
+
 func (gt *GomuksTUI) Run() {
 	logger := gt.Gomuks.Log
-	gt.App = mauview.NewApplication()
-
+	gt.app = mauview.NewApplication()
 	rpcClient, err := rpc.NewGomuksRPC("http://" + gt.Gomuks.Config.Web.ListenAddress)
 	if err != nil {
 		logger.Fatal().Err(err).Msg("failed to create gomuks RPC client")
 		return
 	}
-	ctx := context.Background()
-	mainView := ui.NewApp(ctx, gt.Gomuks, gt.App, rpcClient)
-	gt.App.SetRoot(mainView.Views.Authenticate)
+	gt.rpc = rpcClient
+	gt.rpc.EventHandler = gt.OnEvent
+	gt.pingTicker = time.NewTicker(30 * time.Second)
+	defer gt.pingTicker.Stop()
+	ctx, cancelCtx := context.WithCancel(context.Background())
+	defer cancelCtx()
+	go gt.PingTicker(ctx)
+	gt.InitViews(ctx)
+
 	go func() {
-		logger.Trace().Msg("waiting for interrupt")
+		defer func() {
+			if r := recover(); r != nil {
+				logger.Error().Any("error", r).Msgf("gomuks TUI panicked")
+				cancelCtx()
+				gt.app.ForceStop()
+			}
+		}()
+		logger.Debug().Msg("waiting for interrupt")
 		gt.Gomuks.WaitForInterrupt()
 		logger.Warn().Msg("gomuks TUI interrupt received, stopping app")
-		gt.App.ForceStop()
+		cancelCtx()
+		gt.app.ForceStop()
+		logger.Debug().Msg("app stopped")
 	}()
 	logger.Trace().Msg("starting app")
-	err = gt.App.Start()
+	err = gt.app.Start()
 	logger.Trace().Err(err).Msg("finished app")
 	if err != nil {
 		panic(err)
