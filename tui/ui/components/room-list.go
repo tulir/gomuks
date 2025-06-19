@@ -49,6 +49,13 @@ func (rl *RoomList) focusRoom(roomID id.RoomID) {
 		button.Focus()
 	}
 	rl.focused = roomID
+	for otherRoomID := range rl.elements {
+		if otherRoomID != roomID {
+			if button, exists := rl.elements[otherRoomID]; exists {
+				button.Blur()
+			}
+		}
+	}
 	rl.app.Gmx().Log.Debug().Msgf("focused room: %s", string(roomID))
 }
 
@@ -70,10 +77,30 @@ func (rl *RoomList) OnKeyEvent(event mauview.KeyEvent) bool {
 	switch event.Key() {
 	case tcell.KeyUp:
 		// go to room above
-		break
+		var prevRoomID id.RoomID
+		for roomID := range rl.elements {
+			if roomID == rl.focused {
+				rl.focusRoom(prevRoomID)
+				return true
+			}
+			prevRoomID = roomID
+		}
 	case tcell.KeyDown:
 		// go to room below
-		break
+		roomIDs := make([]id.RoomID, 0, len(rl.elements))
+		for roomID := range rl.elements {
+			roomIDs = append(roomIDs, roomID)
+		}
+		for i, roomID := range roomIDs {
+			if roomID == rl.focused {
+				if i+1 < len(roomIDs) {
+					rl.focusRoom(roomIDs[i+1])
+				} else {
+					rl.focusRoom(roomIDs[0]) // wrap around
+				}
+				return true
+			}
+		}
 	case tcell.KeyEsc:
 		rl.app.Gmx().Stop()
 		return true
