@@ -78,6 +78,7 @@ type Gomuks struct {
 	temporaryMXCToPermanent         map[id.ContentURIString]id.ContentURIString
 	temporaryMXCToEncryptedFileInfo map[id.ContentURIString]*event.EncryptedFileInfo
 	TUI                             tui
+	tuiSSOsessions                  map[string]SSOCookieData
 }
 
 type tui interface {
@@ -90,6 +91,7 @@ func NewGomuks() *Gomuks {
 
 		temporaryMXCToPermanent:         map[id.ContentURIString]id.ContentURIString{},
 		temporaryMXCToEncryptedFileInfo: map[id.ContentURIString]*event.EncryptedFileInfo{},
+		tuiSSOsessions:                  make(map[string]SSOCookieData),
 	}
 }
 

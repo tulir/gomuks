@@ -44,9 +44,11 @@ type GomuksTUI struct {
 	clientState    *jsoncmd.ClientState
 	imageAuthToken string
 
-	authView  *ui.AuthenticateView
-	syncView  *ui.SyncingView
-	loginView *ui.LoginView
+	authView   *ui.AuthenticateView
+	syncView   *ui.SyncingView
+	loginView  *ui.LoginView
+	verifyView *ui.VerifySessionView
+	mainView   *ui.MainView
 
 	rooms map[id.RoomID]*jsoncmd.SyncRoom
 }
@@ -103,6 +105,8 @@ func (gt *GomuksTUI) InitViews(ctx context.Context) {
 	gt.authView = ui.NewAuthenticateView(ctx, gt)
 	gt.syncView = ui.NewSyncingView(gt)
 	gt.loginView = ui.NewLoginView(ctx, gt)
+	gt.verifyView = ui.NewVerifySessionView(ctx, gt)
+	gt.mainView = ui.NewMainView(ctx, gt)
 
 	// Set the initial view to the authentication view
 	gt.app.SetRoot(gt.authView.Container)
