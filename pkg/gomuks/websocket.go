@@ -17,9 +17,12 @@
 package gomuks
 
 import (
+	"bytes"
+	"compress/flate"
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"runtime/debug"
@@ -35,28 +38,82 @@ import (
 	"go.mau.fi/gomuks/pkg/hicli/jsoncmd"
 )
 
-func writeRaw(ctx context.Context, conn *websocket.Conn, data []byte) error {
-	writer, err := conn.Writer(ctx, websocket.MessageText)
-	if err != nil {
-		return err
-	}
-	_, err = writer.Write(data)
-	if err != nil {
-		return err
-	}
-	return writer.Close()
+type flateProxy struct {
+	lock   sync.Mutex
+	target io.Writer
+	fw     *flate.Writer
 }
 
-func writeCmd[T any](ctx context.Context, conn *websocket.Conn, cmd *jsoncmd.Container[T]) error {
-	writer, err := conn.Writer(ctx, websocket.MessageText)
+func (fp *flateProxy) Write(p []byte) (n int, err error) {
+	if fp.target == nil {
+		panic(errors.New("flateProxy: target not set"))
+	}
+	return fp.target.Write(p)
+}
+
+func writeRaw(ctx context.Context, conn *websocket.Conn, fp *flateProxy, data []byte) (int, error) {
+	var n int
+	msgType := websocket.MessageText
+	if fp != nil {
+		msgType = websocket.MessageBinary
+	}
+	writer, err := conn.Writer(ctx, msgType)
+	if err != nil {
+		return n, err
+	}
+	if fp != nil {
+		var buf bytes.Buffer
+		fp.lock.Lock()
+		fp.target = &buf
+		_, err = fp.fw.Write(data)
+		fp.target = nil
+		fp.lock.Unlock()
+		if err != nil {
+			return n, fmt.Errorf("failed to write data to flate writer: %w", err)
+		}
+		data = buf.Bytes()
+	}
+	n, err = writer.Write(data)
+	if err != nil {
+		return n, err
+	}
+	return n, writer.Close()
+}
+
+func writeCmd[T any](ctx context.Context, conn *websocket.Conn, fp *flateProxy, cmd *jsoncmd.Container[T]) error {
+	msgType := websocket.MessageText
+	if fp != nil {
+		msgType = websocket.MessageBinary
+	}
+	writer, err := conn.Writer(ctx, msgType)
 	if err != nil {
 		return err
 	}
-	err = json.NewEncoder(writer).Encode(&cmd)
-	if err != nil {
-		return err
+	jsonWriter := writer
+	if fp != nil {
+		fp.lock.Lock()
+		fp.target = writer
+		jsonWriter = fp.fw
+		defer func() {
+			fp.target = nil
+			fp.lock.Unlock()
+		}()
 	}
-	return writer.Close()
+	err = json.NewEncoder(jsonWriter).Encode(&cmd)
+	if err != nil {
+		return fmt.Errorf("failed to encode command to websocket: %w", err)
+	}
+	if fp != nil {
+		err = fp.fw.Flush()
+		if err != nil {
+			return fmt.Errorf("failed to flush flate writer: %w", err)
+		}
+	}
+	err = writer.Close()
+	if err != nil {
+		return fmt.Errorf("failed to close websocket writer: %w", err)
+	}
+	return nil
 }
 
 const (
@@ -98,11 +155,25 @@ func (gmx *Gomuks) HandleWebsocket(w http.ResponseWriter, r *http.Request) {
 	}
 	resumeFrom, _ := strconv.ParseInt(r.URL.Query().Get("last_received_event"), 10, 64)
 	resumeRunID, _ := strconv.ParseInt(r.URL.Query().Get("run_id"), 10, 64)
+	compress, _ := strconv.ParseInt(r.URL.Query().Get("compress"), 10, 64)
 	log.Info().
 		Int64("resume_from", resumeFrom).
 		Int64("resume_run_id", resumeRunID).
 		Int64("current_run_id", runID).
+		Int64("compress", compress).
 		Msg("Accepted new websocket connection")
+	var fp *flateProxy
+	if compress == 1 {
+		fp = &flateProxy{}
+		var err error
+		fp.fw, err = flate.NewWriter(fp, flate.DefaultCompression)
+		if err != nil {
+			log.Err(err).Msg("Failed to create flate writer for websocket messages")
+			_ = conn.Close(websocket.StatusInternalError, "Failed to create flate writer")
+			return
+		}
+		log.Debug().Msg("Enabled flate compression for websocket messages")
+	}
 	conn.SetReadLimit(128 * 1024)
 	ctx, cancel := context.WithCancel(context.Background())
 	ctx = log.WithContext(ctx)
@@ -150,7 +221,7 @@ func (gmx *Gomuks) HandleWebsocket(w http.ResponseWriter, r *http.Request) {
 	const RecvTimeout = 60 * time.Second
 	lastImageAuthTokenSent := time.Now()
 	sendImageAuthToken := func() {
-		err := writeCmd(ctx, conn, &BufferedEvent{
+		err := writeCmd(ctx, conn, fp, &BufferedEvent{
 			Command: jsoncmd.EventImageAuthToken,
 			Data:    gmx.generateImageToken(1 * time.Hour),
 		})
@@ -163,7 +234,7 @@ func (gmx *Gomuks) HandleWebsocket(w http.ResponseWriter, r *http.Request) {
 		defer recoverPanic("event loop")
 		defer closeOnce.Do(forceClose)
 		for _, cmd := range resumeData {
-			err := writeCmd(ctx, conn, cmd)
+			err := writeCmd(ctx, conn, fp, cmd)
 			if err != nil {
 				log.Err(err).Int64("req_id", cmd.RequestID).Msg("Failed to write outgoing event from resume data")
 				return
@@ -172,7 +243,7 @@ func (gmx *Gomuks) HandleWebsocket(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 		if resumeData != nil {
-			err := writeCmd(ctx, conn, &hicli.JSONCommand{
+			err := writeCmd(ctx, conn, fp, &hicli.JSONCommand{
 				Command:   jsoncmd.EventInitComplete,
 				RequestID: 0,
 			})
@@ -188,7 +259,7 @@ func (gmx *Gomuks) HandleWebsocket(w http.ResponseWriter, r *http.Request) {
 		for {
 			select {
 			case cmd := <-evts:
-				err := writeCmd(ctx, conn, cmd)
+				err := writeCmd(ctx, conn, fp, cmd)
 				if err != nil {
 					log.Err(err).Int64("req_id", cmd.RequestID).Msg("Failed to write outgoing event")
 					return
@@ -244,7 +315,7 @@ func (gmx *Gomuks) HandleWebsocket(w http.ResponseWriter, r *http.Request) {
 		if ctx.Err() != nil {
 			return
 		}
-		err := writeCmd(ctx, conn, resp)
+		err := writeCmd(ctx, conn, fp, resp)
 		if err != nil && ctx.Err() == nil {
 			log.Err(err).Int64("req_id", cmd.RequestID).Msg("Failed to write response")
 			closeOnce.Do(forceClose)
@@ -252,7 +323,7 @@ func (gmx *Gomuks) HandleWebsocket(w http.ResponseWriter, r *http.Request) {
 			log.Trace().Int64("req_id", cmd.RequestID).Msg("Sent response to command")
 		}
 	}
-	initErr := writeCmd(ctx, conn, &jsoncmd.Container[*jsoncmd.RunData]{
+	initErr := writeCmd(ctx, conn, fp, &jsoncmd.Container[*jsoncmd.RunData]{
 		Command: jsoncmd.EventRunID,
 		Data: &jsoncmd.RunData{
 			RunID: strconv.FormatInt(runID, 10),
@@ -263,7 +334,7 @@ func (gmx *Gomuks) HandleWebsocket(w http.ResponseWriter, r *http.Request) {
 		log.Err(initErr).Msg("Failed to write init client state message")
 		return
 	}
-	initErr = writeCmd(ctx, conn, &jsoncmd.Container[*jsoncmd.ClientState]{
+	initErr = writeCmd(ctx, conn, fp, &jsoncmd.Container[*jsoncmd.ClientState]{
 		Command: jsoncmd.EventClientState,
 		Data:    gmx.Client.State(),
 	})
@@ -271,7 +342,7 @@ func (gmx *Gomuks) HandleWebsocket(w http.ResponseWriter, r *http.Request) {
 		log.Err(initErr).Msg("Failed to write init client state message")
 		return
 	}
-	initErr = writeCmd(ctx, conn, &jsoncmd.Container[*jsoncmd.SyncStatus]{
+	initErr = writeCmd(ctx, conn, fp, &jsoncmd.Container[*jsoncmd.SyncStatus]{
 		Command: jsoncmd.EventSyncStatus,
 		Data:    gmx.Client.SyncStatus.Load(),
 	})
@@ -281,7 +352,7 @@ func (gmx *Gomuks) HandleWebsocket(w http.ResponseWriter, r *http.Request) {
 	}
 	go sendImageAuthToken()
 	if gmx.Client.IsLoggedIn() && !didResume {
-		go gmx.sendInitialData(ctx, conn)
+		go gmx.sendInitialData(ctx, fp, conn)
 	}
 	log.Debug().Bool("did_resume", didResume).Msg("Connection initialization complete")
 	var closeErr websocket.CloseError
@@ -323,7 +394,7 @@ func (gmx *Gomuks) HandleWebsocket(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (gmx *Gomuks) sendInitialData(ctx context.Context, conn *websocket.Conn) {
+func (gmx *Gomuks) sendInitialData(ctx context.Context, fp *flateProxy, conn *websocket.Conn) {
 	log := zerolog.Ctx(ctx)
 	var roomCount int
 	var totalSize int
@@ -338,17 +409,18 @@ func (gmx *Gomuks) sendInitialData(ctx context.Context, conn *websocket.Conn) {
 			log.Err(err).Msg("Failed to marshal initial rooms to send to client")
 			return
 		}
-		totalSize += len(marshaledPayload)
-		err = writeRaw(ctx, conn, marshaledPayload)
+		var n int
+		n, err = writeRaw(ctx, conn, fp, marshaledPayload)
 		if err != nil {
 			log.Err(err).Msg("Failed to send initial rooms to client")
 			return
 		}
+		totalSize += n
 	}
 	if ctx.Err() != nil {
 		return
 	}
-	err := writeCmd(ctx, conn, &hicli.JSONCommand{
+	err := writeCmd(ctx, conn, fp, &hicli.JSONCommand{
 		Command:   jsoncmd.EventInitComplete,
 		RequestID: 0,
 	})

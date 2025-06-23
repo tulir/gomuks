@@ -17,6 +17,7 @@ import { useEffect, useMemo } from "react"
 import { ScaleLoader } from "react-spinners"
 import Client from "./api/client.ts"
 import RPCClient from "./api/rpc.ts"
+import { getLocalStoragePreferences } from "./api/types/preferences"
 import WailsClient from "./api/wailsclient.ts"
 import WSClient from "./api/wsclient.ts"
 import ClientContext from "./ui/ClientContext.ts"
@@ -29,7 +30,8 @@ function makeRPCClient(): RPCClient {
 	if (window.wails || window._wails || navigator.userAgent.includes("wails.io")) {
 		return new WailsClient()
 	}
-	return new WSClient("_gomuks/websocket")
+	const lb = getLocalStoragePreferences("global_prefs", () => {}).low_bandwidth
+	return new WSClient("_gomuks/websocket", lb ?? false)
 }
 
 function App() {

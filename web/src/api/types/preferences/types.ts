@@ -55,6 +55,11 @@ export const deviceSpecific = [
 	PreferenceContext.Device,
 ] as const
 
+export const globalDeviceSpecific = [
+	PreferenceContext.Device,
+	PreferenceContext.Config,
+] as const
+
 export type PreferenceValueType =
 	| boolean
 	| number
