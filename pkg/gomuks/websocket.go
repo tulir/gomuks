@@ -80,7 +80,22 @@ func writeRaw(ctx context.Context, conn *websocket.Conn, fp *flateProxy, data []
 	return n, writer.Close()
 }
 
-func writeCmd[T any](ctx context.Context, conn *websocket.Conn, fp *flateProxy, cmd *jsoncmd.Container[T]) error {
+func writeCmd[T any](
+	ctx context.Context,
+	conn *websocket.Conn,
+	fp *flateProxy,
+	cmd *jsoncmd.Container[T],
+) error {
+	return writeCmdWithExtra(ctx, conn, fp, cmd, nil)
+}
+
+func writeCmdWithExtra[T any](
+	ctx context.Context,
+	conn *websocket.Conn,
+	fp *flateProxy,
+	cmd *jsoncmd.Container[T],
+	extra <-chan *jsoncmd.Container[T],
+) error {
 	msgType := websocket.MessageText
 	if fp != nil {
 		msgType = websocket.MessageBinary
@@ -99,9 +114,24 @@ func writeCmd[T any](ctx context.Context, conn *websocket.Conn, fp *flateProxy, 
 			fp.lock.Unlock()
 		}()
 	}
-	err = json.NewEncoder(jsonWriter).Encode(&cmd)
+	jsonEnc := json.NewEncoder(jsonWriter)
+	err = jsonEnc.Encode(&cmd)
 	if err != nil {
 		return fmt.Errorf("failed to encode command to websocket: %w", err)
+	}
+	if extra != nil && msgType == websocket.MessageBinary {
+	ExtraLoop:
+		for {
+			select {
+			case extraCmd := <-extra:
+				err = jsonEnc.Encode(&extraCmd)
+				if err != nil {
+					return fmt.Errorf("failed to encode command to websocket: %w", err)
+				}
+			default:
+				break ExtraLoop
+			}
+		}
 	}
 	if fp != nil {
 		err = fp.fw.Flush()
@@ -259,7 +289,7 @@ func (gmx *Gomuks) HandleWebsocket(w http.ResponseWriter, r *http.Request) {
 		for {
 			select {
 			case cmd := <-evts:
-				err := writeCmd(ctx, conn, fp, cmd)
+				err := writeCmdWithExtra(ctx, conn, fp, cmd, evts)
 				if err != nil {
 					log.Err(err).Int64("req_id", cmd.RequestID).Msg("Failed to write outgoing event")
 					return
