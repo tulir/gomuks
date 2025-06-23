@@ -18,10 +18,10 @@ import { MemDBEvent, MemberEventContent, PowerLevelEventContent } from "@/api/ty
 
 export function displayAsRedacted(
 	evt: MemDBEvent,
-	profile?: MemberEventContent,
 	memberEvt?: MemDBEvent | null,
 	room?: RoomStateStore,
 ): boolean {
+	const profile = memberEvt?.content as MemberEventContent | undefined
 	if (evt.viewing_redacted) {
 		return false
 	} else if (evt.redacted_by) {
@@ -34,7 +34,7 @@ export function displayAsRedacted(
 			const redactPL = pl?.redact ?? 50
 			const senderPL = pl?.users?.[memberEvt.sender] ?? pl?.users_default ?? 0
 			if (redactPL <= senderPL) {
-				return false
+				return true
 			}
 		} else {
 			return true

@@ -174,7 +174,7 @@ const TimelineEvent = ({
 	const eventTS = new Date(evt.timestamp)
 	const editEventTS = evt.last_edit ? new Date(evt.last_edit.timestamp) : null
 	const wrapperClassNames = ["timeline-event"]
-	const isRedacted = displayAsRedacted(evt, memberEvtContent, memberEvt, roomCtx.store)
+	const isRedacted = displayAsRedacted(evt, memberEvt, roomCtx.store)
 	if (isRedacted) {
 		wrapperClassNames.push("redacted-event")
 	}
@@ -244,7 +244,7 @@ const TimelineEvent = ({
 		&& prevEvt.timestamp + 15 * 60 * 1000 > evt.timestamp
 		&& dateSeparator === null
 		&& !replyAboveMessage
-		&& !isSmallEvent(getBodyType(prevEvt, displayAsRedacted(prevEvt, memberEvtContent, memberEvt, roomCtx.store)))
+		&& !isSmallEvent(getBodyType(prevEvt, displayAsRedacted(prevEvt, memberEvt, roomCtx.store)))
 		&& prevPerMessageSender?.id === perMessageSender?.id
 	) {
 		wrapperClassNames.push("same-sender")

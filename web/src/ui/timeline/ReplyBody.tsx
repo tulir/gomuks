@@ -101,7 +101,7 @@ export const ReplyBody = ({
 	const memberEvt = useRoomMember(client, room, event.sender)
 	const memberEvtContent = maybeRedactMemberEvent(memberEvt)
 	const BodyType = getBodyType(
-		event, displayAsRedacted(event, memberEvtContent, memberEvt, room), true,
+		event, displayAsRedacted(event, memberEvt, room), true,
 	)
 	const classNames = ["reply-body"]
 	if (onClose) {
