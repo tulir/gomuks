@@ -1,5 +1,5 @@
 // gomuks - A Matrix client written in Go.
-// Copyright (C) 2024 Tulir Asokan
+// Copyright (C) 2025 Tulir Asokan
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Affero General Public License as published by
@@ -21,9 +21,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io"
-	"iter"
 	"net/http"
 	"runtime/debug"
 	"strconv"
@@ -38,127 +36,12 @@ import (
 	"go.mau.fi/gomuks/pkg/hicli/jsoncmd"
 )
 
-type flateProxy struct {
-	lock   sync.Mutex
-	target io.Writer
-	fw     *flate.Writer
-}
-
-func (fp *flateProxy) Write(p []byte) (n int, err error) {
-	if fp.target == nil {
-		panic(errors.New("flateProxy: target not set"))
-	}
-	return fp.target.Write(p)
-}
-
-func writeCmd[T any](
-	ctx context.Context,
-	conn *websocket.Conn,
-	fp *flateProxy,
-	cmd *jsoncmd.Container[T],
-) error {
-	_, err := writeCmdWithExtra(ctx, conn, fp, cmd, nil)
-	return err
-}
-
-type sizeWriter struct {
-	n int
-	w io.Writer
-}
-
-func (sm *sizeWriter) Write(p []byte) (n int, err error) {
-	n, err = sm.w.Write(p)
-	sm.n += n
-	return
-}
-
-func writeCmdWithExtra[T any](
-	ctx context.Context,
-	conn *websocket.Conn,
-	fp *flateProxy,
-	cmd *jsoncmd.Container[T],
-	extra iter.Seq[*jsoncmd.Container[T]],
-) (int, error) {
-	msgType := websocket.MessageText
-	if fp != nil {
-		msgType = websocket.MessageBinary
-	}
-	wsWriter, err := conn.Writer(ctx, msgType)
-	if err != nil {
-		return 0, err
-	}
-	writer := &sizeWriter{w: wsWriter}
-	var jsonWriter io.Writer = writer
-	if fp != nil {
-		fp.lock.Lock()
-		fp.target = writer
-		jsonWriter = fp.fw
-		defer func() {
-			fp.target = nil
-			fp.lock.Unlock()
-		}()
-	}
-	jsonEnc := json.NewEncoder(jsonWriter)
-	err = jsonEnc.Encode(&cmd)
-	if err != nil {
-		return writer.n, fmt.Errorf("failed to encode command to websocket: %w", err)
-	}
-	if extra != nil && msgType == websocket.MessageBinary {
-		const preferredMaxFrameSize = 256 * 1024
-		for extraCmd := range extra {
-			err = jsonEnc.Encode(&extraCmd)
-			if err != nil {
-				return writer.n, fmt.Errorf("failed to encode command to websocket: %w", err)
-			}
-			if writer.n > preferredMaxFrameSize {
-				break
-			}
-		}
-	}
-	if fp != nil {
-		err = fp.fw.Flush()
-		if err != nil {
-			return writer.n, fmt.Errorf("failed to flush flate writer: %w", err)
-		}
-	}
-	err = wsWriter.Close()
-	if err != nil {
-		return writer.n, fmt.Errorf("failed to close websocket writer: %w", err)
-	}
-	return writer.n, nil
-}
-
-func sliceToChan[T any](s []T) <-chan T {
-	ch := make(chan T, len(s))
-	for _, val := range s {
-		ch <- val
-	}
-	close(ch)
-	return ch
-}
-
-func chanToSeq[T any](ch <-chan T) iter.Seq[T] {
-	return func(yield func(event T) bool) {
-		for {
-			select {
-			case val, ok := <-ch:
-				if !ok || !yield(val) {
-					return
-				}
-			default:
-				return
-			}
-		}
-	}
-}
-
 const (
 	StatusEventsStuck = 4001
 	StatusPingTimeout = 4002
 )
 
 var emptyObject = json.RawMessage("{}")
-
 var runID = time.Now().UnixNano()
 
 func (gmx *Gomuks) HandleWebsocket(w http.ResponseWriter, r *http.Request) {
