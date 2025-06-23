@@ -17,13 +17,13 @@
 package gomuks
 
 import (
-	"bytes"
 	"compress/flate"
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
+	"iter"
 	"net/http"
 	"runtime/debug"
 	"strconv"
@@ -51,42 +51,25 @@ func (fp *flateProxy) Write(p []byte) (n int, err error) {
 	return fp.target.Write(p)
 }
 
-func writeRaw(ctx context.Context, conn *websocket.Conn, fp *flateProxy, data []byte) (int, error) {
-	var n int
-	msgType := websocket.MessageText
-	if fp != nil {
-		msgType = websocket.MessageBinary
-	}
-	writer, err := conn.Writer(ctx, msgType)
-	if err != nil {
-		return n, err
-	}
-	if fp != nil {
-		var buf bytes.Buffer
-		fp.lock.Lock()
-		fp.target = &buf
-		_, err = fp.fw.Write(data)
-		fp.target = nil
-		fp.lock.Unlock()
-		if err != nil {
-			return n, fmt.Errorf("failed to write data to flate writer: %w", err)
-		}
-		data = buf.Bytes()
-	}
-	n, err = writer.Write(data)
-	if err != nil {
-		return n, err
-	}
-	return n, writer.Close()
-}
-
 func writeCmd[T any](
 	ctx context.Context,
 	conn *websocket.Conn,
 	fp *flateProxy,
 	cmd *jsoncmd.Container[T],
 ) error {
-	return writeCmdWithExtra(ctx, conn, fp, cmd, nil)
+	_, err := writeCmdWithExtra(ctx, conn, fp, cmd, nil)
+	return err
+}
+
+type sizeWriter struct {
+	n int
+	w io.Writer
+}
+
+func (sm *sizeWriter) Write(p []byte) (n int, err error) {
+	n, err = sm.w.Write(p)
+	sm.n += n
+	return
 }
 
 func writeCmdWithExtra[T any](
@@ -94,17 +77,18 @@ func writeCmdWithExtra[T any](
 	conn *websocket.Conn,
 	fp *flateProxy,
 	cmd *jsoncmd.Container[T],
-	extra <-chan *jsoncmd.Container[T],
-) error {
+	extra iter.Seq[*jsoncmd.Container[T]],
+) (int, error) {
 	msgType := websocket.MessageText
 	if fp != nil {
 		msgType = websocket.MessageBinary
 	}
-	writer, err := conn.Writer(ctx, msgType)
+	wsWriter, err := conn.Writer(ctx, msgType)
 	if err != nil {
-		return err
+		return 0, err
 	}
-	jsonWriter := writer
+	writer := &sizeWriter{w: wsWriter}
+	var jsonWriter io.Writer = writer
 	if fp != nil {
 		fp.lock.Lock()
 		fp.target = writer
@@ -117,33 +101,55 @@ func writeCmdWithExtra[T any](
 	jsonEnc := json.NewEncoder(jsonWriter)
 	err = jsonEnc.Encode(&cmd)
 	if err != nil {
-		return fmt.Errorf("failed to encode command to websocket: %w", err)
+		return writer.n, fmt.Errorf("failed to encode command to websocket: %w", err)
 	}
 	if extra != nil && msgType == websocket.MessageBinary {
-	ExtraLoop:
-		for {
-			select {
-			case extraCmd := <-extra:
-				err = jsonEnc.Encode(&extraCmd)
-				if err != nil {
-					return fmt.Errorf("failed to encode command to websocket: %w", err)
-				}
-			default:
-				break ExtraLoop
+		const preferredMaxFrameSize = 256 * 1024
+		for extraCmd := range extra {
+			err = jsonEnc.Encode(&extraCmd)
+			if err != nil {
+				return writer.n, fmt.Errorf("failed to encode command to websocket: %w", err)
+			}
+			if writer.n > preferredMaxFrameSize {
+				break
 			}
 		}
 	}
 	if fp != nil {
 		err = fp.fw.Flush()
 		if err != nil {
-			return fmt.Errorf("failed to flush flate writer: %w", err)
+			return writer.n, fmt.Errorf("failed to flush flate writer: %w", err)
 		}
 	}
-	err = writer.Close()
+	err = wsWriter.Close()
 	if err != nil {
-		return fmt.Errorf("failed to close websocket writer: %w", err)
+		return writer.n, fmt.Errorf("failed to close websocket writer: %w", err)
 	}
-	return nil
+	return writer.n, nil
+}
+
+func sliceToChan[T any](s []T) <-chan T {
+	ch := make(chan T, len(s))
+	for _, val := range s {
+		ch <- val
+	}
+	close(ch)
+	return ch
+}
+
+func chanToSeq[T any](ch <-chan T) iter.Seq[T] {
+	return func(yield func(event T) bool) {
+		for {
+			select {
+			case val, ok := <-ch:
+				if !ok || !yield(val) {
+					return
+				}
+			default:
+				return
+			}
+		}
+	}
 }
 
 const (
@@ -264,14 +270,21 @@ func (gmx *Gomuks) HandleWebsocket(w http.ResponseWriter, r *http.Request) {
 	go func() {
 		defer recoverPanic("event loop")
 		defer closeOnce.Do(forceClose)
-		for _, cmd := range resumeData {
-			err := writeCmd(ctx, conn, fp, cmd)
+		resumeDataChan := sliceToChan(resumeData)
+		var totalResumeSize int
+		for cmd := range resumeDataChan {
+			n, err := writeCmdWithExtra(ctx, conn, fp, cmd, chanToSeq(resumeDataChan))
 			if err != nil {
 				log.Err(err).Int64("req_id", cmd.RequestID).Msg("Failed to write outgoing event from resume data")
 				return
-			} else {
-				log.Trace().Int64("req_id", cmd.RequestID).Msg("Sent outgoing event from resume data")
 			}
+			log.Trace().Int64("req_id", cmd.RequestID).Msg("Sent outgoing event from resume data")
+			totalResumeSize += n
+		}
+		if totalResumeSize > 0 {
+			log.Debug().
+				Int("total_payload_size", totalResumeSize).
+				Msg("Sent resume data to client")
 		}
 		if resumeData != nil {
 			err := writeCmd(ctx, conn, fp, &hicli.JSONCommand{
@@ -290,7 +303,7 @@ func (gmx *Gomuks) HandleWebsocket(w http.ResponseWriter, r *http.Request) {
 		for {
 			select {
 			case cmd := <-evts:
-				err := writeCmdWithExtra(ctx, conn, fp, cmd, evts)
+				_, err := writeCmdWithExtra(ctx, conn, fp, cmd, chanToSeq(evts))
 				if err != nil {
 					log.Err(err).Int64("req_id", cmd.RequestID).Msg("Failed to write outgoing event")
 					return
@@ -431,17 +444,11 @@ func (gmx *Gomuks) sendInitialData(ctx context.Context, fp *flateProxy, conn *we
 	var totalSize int
 	for payload := range gmx.Client.GetInitialSync(ctx, 100) {
 		roomCount += len(payload.Rooms)
-		marshaledPayload, err := json.Marshal(&jsoncmd.Container[*jsoncmd.SyncComplete]{
+		n, err := writeCmdWithExtra(ctx, conn, fp, &jsoncmd.Container[*jsoncmd.SyncComplete]{
 			Command:   jsoncmd.EventSyncComplete,
 			RequestID: 0,
 			Data:      payload,
-		})
-		if err != nil {
-			log.Err(err).Msg("Failed to marshal initial rooms to send to client")
-			return
-		}
-		var n int
-		n, err = writeRaw(ctx, conn, fp, marshaledPayload)
+		}, nil)
 		if err != nil {
 			log.Err(err).Msg("Failed to send initial rooms to client")
 			return
