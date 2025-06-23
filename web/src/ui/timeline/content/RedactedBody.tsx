@@ -13,10 +13,29 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
+import { MemberEventContent } from "@/api/types"
+import { getDisplayname } from "@/util/validation.ts"
+import EventContentProps from "./props.ts"
 import DeleteIcon from "../../../icons/delete.svg?react"
 
-const RedactedBody = () => {
-	return <div className="redacted-body"><DeleteIcon/> Message deleted</div>
+const RedactedBody = ({ event, sender, room }: EventContentProps) => {
+	let suffix = ""
+	if (event.redacted_by) {
+		// TODO store redaction sender in database instead of fetching the entire redaction event
+		const redactedByEvent = room.eventsByID.get(event.redacted_by)
+		if (redactedByEvent && redactedByEvent.sender !== event.sender) {
+			const redacterProfile = room.getStateEvent("m.room.member", redactedByEvent.sender)
+			suffix = `by ${getDisplayname(redactedByEvent.sender, redacterProfile?.content)}`
+		}
+	} else {
+		const senderContent = sender?.content as MemberEventContent | undefined
+		if (senderContent?.["org.matrix.msc4293.redact_events"]) {
+			suffix = "via ban event"
+		}
+	}
+	return <div className="redacted-body">
+		<DeleteIcon/> Message deleted {suffix}
+	</div>
 }
 
 export default RedactedBody
