@@ -26,48 +26,55 @@ func lazyRoomName(obj *jsoncmd.SyncRoom, roomID id.RoomID) string {
 
 type RoomList struct {
 	*mauview.Flex
-	app      abstract.App
-	ctx      context.Context
-	elements map[id.RoomID]*mauview.Button
-	focused  id.RoomID
+	app           abstract.App
+	ctx           context.Context
+	Elements      map[id.RoomID]*mauview.Button
+	focused       id.RoomID
+	onFocusChange func(old, new id.RoomID)
 }
 
-func NewRoomList(ctx context.Context, app abstract.App) *RoomList {
-	return &RoomList{
-		app:      app,
-		ctx:      ctx,
-		Flex:     mauview.NewFlex().SetDirection(mauview.FlexRow),
-		elements: make(map[id.RoomID]*mauview.Button),
+func NewRoomList(ctx context.Context, app abstract.App, onFocusChange func(old, new id.RoomID)) *RoomList {
+	rl := &RoomList{
+		app:           app,
+		ctx:           ctx,
+		Flex:          mauview.NewFlex().SetDirection(mauview.FlexRow),
+		Elements:      make(map[id.RoomID]*mauview.Button),
+		onFocusChange: onFocusChange,
 	}
+	rl.AddFixedComponent(mauview.NewTextField().SetText("Room List"), 1)
+	return rl
 }
 
 func (rl *RoomList) focusRoom(roomID id.RoomID) {
+	old := rl.focused
 	if roomID == rl.focused {
 		return
 	}
-	if button, exists := rl.elements[roomID]; exists {
+	if button, exists := rl.Elements[roomID]; exists {
 		button.Focus()
 	}
 	rl.focused = roomID
-	for otherRoomID := range rl.elements {
+	for otherRoomID := range rl.Elements {
 		if otherRoomID != roomID {
-			if button, exists := rl.elements[otherRoomID]; exists {
+			if button, exists := rl.Elements[otherRoomID]; exists {
 				button.Blur()
 			}
 		}
 	}
 	rl.app.Gmx().Log.Debug().Msgf("focused room: %s", string(roomID))
+	rl.onFocusChange(old, roomID)
 }
 
 func (rl *RoomList) AddRoom(roomID id.RoomID, room *jsoncmd.SyncRoom) *RoomList {
-	if _, exists := rl.elements[roomID]; exists {
+	// todo: re-rendering should be its own func
+	if _, exists := rl.Elements[roomID]; exists {
 		return rl
 	}
 	button := mauview.NewButton(lazyRoomName(room, roomID))
 	button.SetOnClick(func() {
 		rl.focusRoom(roomID)
 	})
-	rl.elements[roomID] = button
+	rl.Elements[roomID] = button
 	rl.Flex.AddFixedComponent(button, 1)
 	rl.app.App().Redraw()
 	return rl
@@ -78,7 +85,7 @@ func (rl *RoomList) OnKeyEvent(event mauview.KeyEvent) bool {
 	case tcell.KeyUp:
 		// go to room above
 		var prevRoomID id.RoomID
-		for roomID := range rl.elements {
+		for roomID := range rl.Elements {
 			if roomID == rl.focused {
 				rl.focusRoom(prevRoomID)
 				return true
@@ -87,8 +94,8 @@ func (rl *RoomList) OnKeyEvent(event mauview.KeyEvent) bool {
 		}
 	case tcell.KeyDown:
 		// go to room below
-		roomIDs := make([]id.RoomID, 0, len(rl.elements))
-		for roomID := range rl.elements {
+		roomIDs := make([]id.RoomID, 0, len(rl.Elements))
+		for roomID := range rl.Elements {
 			roomIDs = append(roomIDs, roomID)
 		}
 		for i, roomID := range roomIDs {

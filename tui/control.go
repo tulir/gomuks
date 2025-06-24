@@ -24,10 +24,7 @@ func (gt *GomuksTUI) OnEvent(ctx context.Context, evt any) {
 	case *jsoncmd.InitComplete:
 		gt.initSyncDone = true
 	case *jsoncmd.SyncComplete:
-		for roomID, room := range e.Rooms {
-			gt.rooms[roomID] = room
-			gt.mainView.RoomList.AddRoom(roomID, room)
-		}
+		gt.mainView.OnSync(e)
 	}
 	if !gt.clientState.IsLoggedIn {
 		gt.SwitchRoot(gt.loginView.Container)
