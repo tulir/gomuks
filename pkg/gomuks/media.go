@@ -428,6 +428,19 @@ func (gmx *Gomuks) DownloadMedia(w http.ResponseWriter, r *http.Request) {
 		mautrix.MUnknown.WithMessage(fmt.Sprintf("Failed to finish reading media: %v", err)).Write(w)
 		return
 	}
+	// This is a hack for Beeper as some buckets (wasabi?) apparently don't respect the content-type header in uploads
+	if (cacheEntry.MimeType == "application/octet-stream" || cacheEntry.MimeType == "binary/octet-stream") && fallback != "" {
+		if _, err = tempFile.Seek(0, io.SeekStart); err != nil {
+			log.Err(err).Msg("Failed to seek to start of temp file to find mime type")
+		} else if overrideMime, err := mimetype.DetectReader(tempFile); err != nil {
+			log.Err(err).Msg("Failed to detect mime type of avatar media with octet-stream type")
+		} else {
+			log.Debug().
+				Stringer("new_mime_type", overrideMime).
+				Msg("Overriding mime mime type of avatar media")
+			cacheEntry.MimeType = overrideMime.String()
+		}
+	}
 	_ = tempFile.Close()
 	cacheEntry.Hash = (*[32]byte)(fileHasher.Sum(nil))
 	cacheEntry.Error = nil
