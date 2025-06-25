@@ -93,7 +93,22 @@ const RoomList = ({ activeRoomID, space }: RoomListProps) => {
 			if (entry[wantedField] > 0 && space.include(entry)) {
 				mainScreen.setActiveRoom(entry.room_id, undefined, space)
 				evt.stopPropagation()
-				break
+				return
+			}
+		}
+		console.warn(
+			"No room found with unreads in space", space.id, "with field", wantedField,
+			"- looking for hidden rooms",
+		)
+		for (const item of client.store.rooms.values()) {
+			if (item.meta.current[wantedField] > 0 && space.include({
+				...item.meta.current,
+				search_name: item.meta.current.name || "",
+				name: item.meta.current.name || "",
+			})) {
+				mainScreen.setActiveRoom(item.roomID, undefined, space)
+				evt.stopPropagation()
+				return
 			}
 		}
 	}, [mainScreen, client])
