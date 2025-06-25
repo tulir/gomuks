@@ -21,12 +21,13 @@ type MainView struct {
 	app abstract.App
 	ctx context.Context
 
-	RoomList *components.RoomList
-	// TODO: timeline
+	RoomList    *components.RoomList
+	Timelines   map[id.RoomID]*components.TimelineComponent
 	MemberLists map[id.RoomID]*components.MemberList
 	syncLock    sync.Mutex
 
 	memberListElement *components.MemberList
+	timelineElement   *components.TimelineComponent
 }
 
 func (m *MainView) OnSync(resp *jsoncmd.SyncComplete) {
@@ -55,6 +56,18 @@ func (m *MainView) OnSync(resp *jsoncmd.SyncComplete) {
 			// Add new room
 			m.RoomList.AddRoom(roomID, room)
 		}
+
+		timeline, exists := m.Timelines[roomID]
+		if !exists {
+			timeline = components.NewTimeline(m.ctx, m.app)
+			m.Timelines[roomID] = timeline
+			m.AddProportionalComponent(timeline, 4)
+		}
+		if room.Events != nil {
+			for _, evt := range room.Events {
+				timeline.AddEvent(evt)
+			}
+		}
 	}
 }
 
@@ -65,6 +78,7 @@ func (m *MainView) OnRoomSelected(old, new id.RoomID) {
 	}
 	memberlist, ok := m.MemberLists[new]
 	if !ok {
+		m.app.Gmx().Log.Debug().Msgf("creating new member list for room %s", new)
 		memberlist = components.NewMemberList(m.ctx, m.app, []id.UserID{}, nil)
 		m.MemberLists[new] = memberlist
 	}
@@ -79,12 +93,28 @@ func (m *MainView) OnRoomSelected(old, new id.RoomID) {
 				}
 				if content.Membership == "join" {
 					memberlist.Members = append(memberlist.Members, id.UserID(*evt.StateKey))
+					m.app.Gmx().Log.Debug().Msgf("joined member %s", *evt.StateKey)
 				}
 			}
 		}
 	}
+	m.RemoveComponent(m.memberListElement)
 	m.memberListElement = memberlist
 	m.memberListElement.Render()
+
+	timeline := m.Timelines[new]
+	if timeline == nil {
+		m.app.Gmx().Log.Debug().Msgf("creating new timeline for room %s", new)
+		timeline = components.NewTimeline(m.ctx, m.app)
+		m.Timelines[new] = timeline
+		m.AddProportionalComponent(timeline, 4)
+	}
+	m.app.Gmx().Log.Debug().Msgf("Removing timeline for room %s", old)
+	m.RemoveComponent(m.timelineElement)
+	m.timelineElement = timeline
+	m.app.Gmx().Log.Debug().Msgf("Timeline for %s from %s", old, new)
+	m.AddProportionalComponent(m.timelineElement, 4)
+	m.app.App().Redraw()
 }
 
 func NewMainView(ctx context.Context, app abstract.App) *MainView {
@@ -94,6 +124,7 @@ func NewMainView(ctx context.Context, app abstract.App) *MainView {
 		ctx:               ctx,
 		MemberLists:       make(map[id.RoomID]*components.MemberList),
 		memberListElement: components.NewMemberList(ctx, app, []id.UserID{}, nil),
+		Timelines:         make(map[id.RoomID]*components.TimelineComponent),
 	}
 	m.MemberLists[""] = m.memberListElement
 
@@ -104,6 +135,6 @@ func NewMainView(ctx context.Context, app abstract.App) *MainView {
 	// rooms: x1
 	// timeline: x4
 	// members: x1
-	// ?#
+	// ?
 	return m
 }
