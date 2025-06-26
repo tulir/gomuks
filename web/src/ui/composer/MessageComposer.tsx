@@ -399,6 +399,7 @@ const MessageComposer = () => {
 		const encrypt = !!room.meta.current.encryption_event
 		const params = new URLSearchParams([
 			["encrypt", encrypt.toString()],
+			["progress", "true"],
 			["filename", filename],
 			...Object.entries(encodingOpts ?? {})
 				.filter(([, value]) => !!value)
@@ -408,13 +409,24 @@ const MessageComposer = () => {
 		xhr.upload.addEventListener("progress", evt => {
 			setLoadingMedia(evt.lengthComputable ? evt.loaded / evt.total : 0)
 		})
+		let readUpTo = 0
+		xhr.addEventListener("progress", () => {
+			let newText = xhr.responseText.slice(readUpTo).trimEnd()
+			readUpTo = xhr.responseText.length
+			if (newText.includes("\n")) {
+				newText = newText.slice(newText.lastIndexOf("\n")+1)
+			}
+			if (newText.startsWith("0.") || newText === "1") {
+				setLoadingMedia(1+parseFloat(newText))
+			}
+		})
 		xhr.addEventListener("load", () => {
 			// eslint-disable-next-line @typescript-eslint/no-explicit-any
 			let media: any = null
 			try {
-				media = JSON.parse(xhr.responseText)
+				media = JSON.parse(xhr.responseText.slice(xhr.responseText.indexOf("{")))
 			} catch {}
-			if (xhr.status >= 200 && xhr.status < 300) {
+			if (xhr.status >= 200 && xhr.status < 300 && !media?.error) {
 				setState({ media, location: null })
 			} else {
 				window.alert(`Failed to upload file: ${media?.error || xhr.statusText}`)
@@ -749,7 +761,7 @@ const MessageComposer = () => {
 			{loadingMedia !== null && <div className="composer-media">
 				<label>
 					<div>Uploading media...</div>
-					<progress value={loadingMedia === 0 ? undefined : loadingMedia} />
+					<progress max={2} value={loadingMedia === 0 ? undefined : loadingMedia} />
 				</label>
 				{<button onClick={cancelMediaUpload.current}><CloseIcon/></button>}
 			</div>}

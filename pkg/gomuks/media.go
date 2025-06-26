@@ -21,6 +21,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"html"
@@ -37,6 +38,8 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"sync"
+	"time"
 
 	"github.com/buckket/go-blurhash"
 	"github.com/disintegration/imaging"
@@ -612,13 +615,48 @@ func (gmx *Gomuks) reencodeMedia(ctx context.Context, query url.Values, tempFile
 func (gmx *Gomuks) UploadMedia(w http.ResponseWriter, r *http.Request) {
 	log := hlog.FromRequest(r)
 	encrypt, _ := strconv.ParseBool(r.URL.Query().Get("encrypt"))
-	content, err := gmx.cacheAndUploadMedia(r.Context(), r.Body, encrypt, r.URL.Query())
+	progress, _ := strconv.ParseBool(r.URL.Query().Get("progress"))
+	var respEnc *json.Encoder
+	var progressCallback func(progress float64)
+	if progress {
+		w.Header().Set("Content-Type", "application/x-mau-progress-stream+json")
+		w.WriteHeader(http.StatusOK)
+		respEnc = json.NewEncoder(w)
+		lastFlush := time.Now()
+		var progressLock sync.Mutex
+		updateInterval := 250 * time.Millisecond
+		realProgressCallback := func(progress float64) {
+			defer progressLock.Unlock()
+			start := time.Now()
+			_ = respEnc.Encode(progress)
+			w.(http.Flusher).Flush()
+			if time.Since(start) > 50*time.Millisecond {
+				updateInterval = 500 * time.Millisecond
+			}
+			lastFlush = time.Now()
+		}
+		progressCallback = func(progress float64) {
+			if time.Since(lastFlush) > updateInterval && progressLock.TryLock() {
+				lastFlush = time.Now()
+				go realProgressCallback(progress)
+			}
+		}
+	}
+	content, err := gmx.cacheAndUploadMedia(r.Context(), r.Body, encrypt, r.URL.Query(), progressCallback)
 	if err != nil {
 		log.Err(err).Msg("Failed to upload media")
-		writeMaybeRespError(err, w)
+		if respEnc != nil {
+			_ = respEnc.Encode(ptr.Ptr(toRespError(err)))
+		} else {
+			writeMaybeRespError(err, w)
+		}
 		return
 	}
-	exhttp.WriteJSONResponse(w, http.StatusOK, content)
+	if respEnc != nil {
+		_ = respEnc.Encode(content)
+	} else {
+		exhttp.WriteJSONResponse(w, http.StatusOK, content)
+	}
 }
 
 func (gmx *Gomuks) GetURLPreview(w http.ResponseWriter, r *http.Request) {
@@ -667,7 +705,7 @@ func (gmx *Gomuks) GetURLPreview(w http.ResponseWriter, r *http.Request) {
 			}
 			defer resp.Body.Close()
 
-			content, err = gmx.cacheAndUploadMedia(r.Context(), resp.Body, encrypt, nil)
+			content, err = gmx.cacheAndUploadMedia(r.Context(), resp.Body, encrypt, nil, nil)
 			if err != nil {
 				log.Err(err).Msg("Failed to upload URL preview image")
 				writeMaybeRespError(err, w)
@@ -690,7 +728,16 @@ func (gmx *Gomuks) GetURLPreview(w http.ResponseWriter, r *http.Request) {
 	exhttp.WriteJSONResponse(w, http.StatusOK, preview)
 }
 
-func (gmx *Gomuks) cacheAndUploadMedia(ctx context.Context, reader io.Reader, encrypt bool, query url.Values) (*event.MessageEventContent, error) {
+func (gmx *Gomuks) cacheAndUploadMedia(
+	ctx context.Context,
+	reader io.Reader,
+	encrypt bool,
+	query url.Values,
+	progressCallback func(float64),
+) (*event.MessageEventContent, error) {
+	if progressCallback == nil {
+		progressCallback = func(_ float64) {}
+	}
 	log := zerolog.Ctx(ctx)
 	tempFile, err := os.CreateTemp(gmx.TempDir, "upload-*")
 	if err != nil {
@@ -751,14 +798,56 @@ func (gmx *Gomuks) cacheAndUploadMedia(ctx context.Context, reader io.Reader, en
 		Info:     info,
 		FileName: fileName,
 	}
-	content.File, content.URL, err = gmx.uploadFile(ctx, checksum, cacheFile, encrypt, int64(info.Size), info.MimeType, fileName)
+	content.File, content.URL, err = gmx.uploadFile(ctx, checksum, cacheFile, encrypt, int64(info.Size), info.MimeType, fileName, progressCallback)
 	if err != nil {
 		return nil, fmt.Errorf("failed to upload media: %w", err)
 	}
 	return content, nil
 }
 
-func (gmx *Gomuks) uploadFile(ctx context.Context, checksum []byte, cacheFile *os.File, encrypt bool, fileSize int64, mimeType, fileName string) (*event.EncryptedFileInfo, id.ContentURIString, error) {
+type progressReader struct {
+	cb    func(float64)
+	read  int64
+	total int64
+	r     io.ReadSeekCloser
+}
+
+var _ io.ReadSeekCloser = (*progressReader)(nil)
+
+func (pr *progressReader) Read(p []byte) (n int, err error) {
+	n, err = pr.r.Read(p)
+	pr.read += int64(n)
+	pr.cb(float64(pr.read) / float64(pr.total))
+	return n, err
+}
+
+func (pr *progressReader) Seek(offset int64, whence int) (int64, error) {
+	switch whence {
+	case io.SeekStart:
+		pr.read = offset
+	case io.SeekCurrent:
+		pr.read += offset
+	case io.SeekEnd:
+		pr.read = pr.total + offset
+	}
+	pr.cb(float64(pr.read) / float64(pr.total))
+	return pr.r.Seek(offset, whence)
+}
+
+func (pr *progressReader) Close() error {
+	return pr.r.Close()
+}
+
+func (gmx *Gomuks) uploadFile(
+	ctx context.Context,
+	checksum []byte,
+	cacheFile *os.File,
+	encrypt bool,
+	fileSize int64,
+	mimeType,
+	fileName string,
+	progressCallback func(float64),
+) (*event.EncryptedFileInfo, id.ContentURIString, error) {
 	cm := &database.Media{
 		FileName: fileName,
 		MimeType: mimeType,
@@ -773,7 +862,11 @@ func (gmx *Gomuks) uploadFile(ctx context.Context, checksum []byte, cacheFile *o
 		fileName = ""
 	}
 	resp, err := gmx.Client.Client.UploadMedia(ctx, mautrix.ReqUploadMedia{
-		Content:       cacheReader,
+		Content: &progressReader{
+			cb:    progressCallback,
+			total: fileSize,
+			r:     cacheReader,
+		},
 		ContentLength: fileSize,
 		ContentType:   mimeType,
 		FileName:      fileName,
@@ -973,7 +1066,9 @@ func (gmx *Gomuks) generateVideoThumbnail(ctx context.Context, filePath string, 
 	if err != nil {
 		return fmt.Errorf("failed to open renamed file: %w", err)
 	}
-	saveInto.ThumbnailFile, saveInto.ThumbnailURL, err = gmx.uploadFile(ctx, checksum, tempFile, encrypt, fileInfo.Size(), "image/jpeg", "thumbnail.jpeg")
+	saveInto.ThumbnailFile, saveInto.ThumbnailURL, err = gmx.uploadFile(
+		ctx, checksum, tempFile, encrypt, fileInfo.Size(), "image/jpeg", "thumbnail.jpeg", nil,
+	)
 	if err != nil {
 		return fmt.Errorf("failed to upload: %w", err)
 	}
@@ -981,17 +1076,21 @@ func (gmx *Gomuks) generateVideoThumbnail(ctx context.Context, filePath string, 
 	return nil
 }
 
-func writeMaybeRespError(err error, w http.ResponseWriter) {
+func toRespError(err error) mautrix.RespError {
 	var httpErr mautrix.HTTPError
 	if errors.As(err, &httpErr) {
 		if httpErr.WrappedError != nil {
-			ErrBadGateway.WithMessage(httpErr.WrappedError.Error()).Write(w)
+			return ErrBadGateway.WithMessage(httpErr.WrappedError.Error())
 		} else if httpErr.RespError != nil {
-			httpErr.RespError.Write(w)
+			return *httpErr.RespError
 		} else {
-			mautrix.MUnknown.WithMessage("Server returned non-JSON error").Write(w)
+			return mautrix.MUnknown.WithMessage("Server returned non-JSON error")
 		}
 	} else {
-		mautrix.MUnknown.WithMessage(err.Error()).Write(w)
+		return mautrix.MUnknown.WithMessage(err.Error())
 	}
+}
+
+func writeMaybeRespError(err error, w http.ResponseWriter) {
+	toRespError(err).Write(w)
 }
