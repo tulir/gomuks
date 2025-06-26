@@ -61,7 +61,6 @@ func (m *MainView) OnSync(resp *jsoncmd.SyncComplete) {
 		if !exists {
 			timeline = components.NewTimeline(m.ctx, m.app)
 			m.Timelines[roomID] = timeline
-			m.AddProportionalComponent(timeline, 4)
 		}
 		if room.Events != nil {
 			for _, evt := range room.Events {
@@ -125,12 +124,14 @@ func NewMainView(ctx context.Context, app abstract.App) *MainView {
 		MemberLists:       make(map[id.RoomID]*components.MemberList),
 		memberListElement: components.NewMemberList(ctx, app, []id.UserID{}, nil),
 		Timelines:         make(map[id.RoomID]*components.TimelineComponent),
+		timelineElement:   components.NewTimeline(ctx, app),
 	}
+	m.timelineElement.AddFixedComponent(mauview.NewTextField().SetText("messages here"), 1)
 	m.MemberLists[""] = m.memberListElement
 
 	m.RoomList = components.NewRoomList(ctx, app, m.OnRoomSelected)
 	m.AddProportionalComponent(m.RoomList, 1)
-	m.AddProportionalComponent(mauview.NewFlex(), 4)
+	m.AddProportionalComponent(m.timelineElement, 4)
 	m.AddProportionalComponent(m.memberListElement, 1)
 	// rooms: x1
 	// timeline: x4
