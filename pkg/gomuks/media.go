@@ -798,7 +798,9 @@ func (gmx *Gomuks) cacheAndUploadMedia(
 		Info:     info,
 		FileName: fileName,
 	}
-	content.File, content.URL, err = gmx.uploadFile(ctx, checksum, cacheFile, encrypt, int64(info.Size), info.MimeType, fileName, progressCallback)
+	content.File, content.URL, err = gmx.uploadFile(
+		ctx, checksum, cacheFile, encrypt, int64(info.Size), info.MimeType, fileName, progressCallback,
+	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to upload media: %w", err)
 	}
@@ -1067,7 +1069,7 @@ func (gmx *Gomuks) generateVideoThumbnail(ctx context.Context, filePath string, 
 		return fmt.Errorf("failed to open renamed file: %w", err)
 	}
 	saveInto.ThumbnailFile, saveInto.ThumbnailURL, err = gmx.uploadFile(
-		ctx, checksum, tempFile, encrypt, fileInfo.Size(), "image/jpeg", "thumbnail.jpeg", nil,
+		ctx, checksum, tempFile, encrypt, fileInfo.Size(), "image/jpeg", "thumbnail.jpeg", func(_ float64) {},
 	)
 	if err != nil {
 		return fmt.Errorf("failed to upload: %w", err)
