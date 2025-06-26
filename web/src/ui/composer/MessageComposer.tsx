@@ -24,7 +24,6 @@ import React, {
 	useRef,
 	useState,
 } from "react"
-import { ScaleLoader } from "react-spinners"
 import { useRoomEvent, useRoomState } from "@/api/statestore"
 import type {
 	EventID,
@@ -55,6 +54,7 @@ import { ComposerLocation, ComposerLocationValue, ComposerMedia } from "./Compos
 import MediaUploadDialog from "./MediaUploadDialog.tsx"
 import { charToAutocompleteType, emojiQueryRegex, getAutocompleter } from "./getAutocompleter.ts"
 import AttachIcon from "@/icons/attach.svg?react"
+import CloseIcon from "@/icons/close.svg?react"
 import EmojiIcon from "@/icons/emoji-categories/smileys-emotion.svg?react"
 import GIFIcon from "@/icons/gif.svg?react"
 import LocationIcon from "@/icons/location.svg?react"
@@ -127,7 +127,8 @@ const MessageComposer = () => {
 	const [autocomplete, setAutocomplete] = useState<AutocompleteQuery | null>(null)
 	const [state, setState] = useReducer(composerReducer, uninitedComposer)
 	const [editing, rawSetEditing] = useState<MemDBEvent | null>(null)
-	const [loadingMedia, setLoadingMedia] = useState(false)
+	const [loadingMedia, setLoadingMedia] = useState<number | null>(null)
+	const cancelMediaUpload = useRef(() => {})
 	const fileInput = useRef<HTMLInputElement>(null)
 	const textInput = useRef<HTMLTextAreaElement>(null)
 	const composerRef = useRef<HTMLDivElement>(null)
@@ -202,7 +203,7 @@ const MessageComposer = () => {
 	const canSend = Boolean(state.text || state.media || state.location)
 	const onClickSend = (evt: React.FormEvent) => {
 		evt.preventDefault()
-		if (!canSend || loadingMedia || state.loadingPreviews.length) {
+		if (!canSend || loadingMedia !== null || state.loadingPreviews.length) {
 			return
 		}
 		doSendMessage(state)
@@ -391,11 +392,10 @@ const MessageComposer = () => {
 		onComposerCaretChange(evt, evt.target.value)
 	}
 	const doUploadFile = useCallback((
-		file: BodyInit,
+		file: Blob,
 		filename: string,
 		encodingOpts?: MediaEncodingOptions,
 	) => {
-		setLoadingMedia(true)
 		const encrypt = !!room.meta.current.encryption_event
 		const params = new URLSearchParams([
 			["encrypt", encrypt.toString()],
@@ -404,20 +404,38 @@ const MessageComposer = () => {
 				.filter(([, value]) => !!value)
 				.map(([key, value]) => [key, value.toString()]),
 		])
-		fetch(`_gomuks/upload?${params.toString()}`, {
-			method: "POST",
-			body: file,
+		const xhr = new XMLHttpRequest()
+		xhr.upload.addEventListener("progress", evt => {
+			setLoadingMedia(evt.lengthComputable ? evt.loaded / evt.total : 0)
 		})
-			.then(async res => {
-				const json = await res.json()
-				if (!res.ok) {
-					throw new Error(json.error)
-				} else {
-					setState({ media: json, location: null })
-				}
-			})
-			.catch(err => window.alert("Failed to upload file: " + err))
-			.finally(() => setLoadingMedia(false))
+		xhr.addEventListener("load", () => {
+			// eslint-disable-next-line @typescript-eslint/no-explicit-any
+			let media: any = null
+			try {
+				media = JSON.parse(xhr.responseText)
+			} catch {}
+			if (xhr.status >= 200 && xhr.status < 300) {
+				setState({ media, location: null })
+			} else {
+				window.alert(`Failed to upload file: ${media?.error || xhr.statusText}`)
+			}
+		})
+		xhr.addEventListener("error", () => {
+			window.alert(`Failed to upload file: request failed`)
+		})
+		xhr.addEventListener("abort", () => {
+			window.alert(`Failed to upload file: request aborted`)
+		})
+		xhr.addEventListener("loadend", () => {
+			cancelMediaUpload.current = () => {}
+			setLoadingMedia(null)
+		})
+
+		cancelMediaUpload.current = () => xhr.abort()
+		setLoadingMedia(0)
+		xhr.open("POST", `_gomuks/upload?${params.toString()}`)
+		xhr.setRequestHeader("Content-Type", file.type)
+		xhr.send(file)
 	}, [room])
 	const openFileUploadModal = (file: File | null | undefined) => {
 		if (!file) {
@@ -564,7 +582,7 @@ const MessageComposer = () => {
 	} else if (state.location) {
 		mediaDisabledTitle = "You can't attach a file to a message with a location"
 		locationDisabledTitle = "You can only attach one location at a time"
-	} else if (loadingMedia) {
+	} else if (loadingMedia !== null) {
 		mediaDisabledTitle = "Uploading file..."
 		locationDisabledTitle = "You can't attach a location to a message with a file"
 	}
@@ -728,7 +746,13 @@ const MessageComposer = () => {
 				isThread={false}
 				onClose={stopEditing}
 			/>}
-			{loadingMedia && <div className="composer-media"><ScaleLoader color="var(--primary-color)"/></div>}
+			{loadingMedia !== null && <div className="composer-media">
+				<label>
+					<div>Uploading media...</div>
+					<progress value={loadingMedia === 0 ? undefined : loadingMedia} />
+				</label>
+				{<button onClick={cancelMediaUpload.current}><CloseIcon/></button>}
+			</div>}
 			{state.media && <ComposerMedia content={state.media} clearMedia={!disableClearMedia && clearMedia}/>}
 			{state.location && <ComposerLocation
 				room={room} client={client}
@@ -771,7 +795,7 @@ const MessageComposer = () => {
 				{inlineButtons && makeAttachmentButtons()}
 				{showSendButton && <button
 					onClick={onClickSend}
-					disabled={!canSend || loadingMedia || !!state.loadingPreviews.length}
+					disabled={!canSend || loadingMedia !== null || !!state.loadingPreviews.length}
 					title="Send message"
 				><SendIcon/></button>}
 				<input

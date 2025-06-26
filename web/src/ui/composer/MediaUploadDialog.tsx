@@ -22,7 +22,7 @@ import "./MediaUploadDialog.css"
 export interface MediaUploadDialogProps {
 	file: File
 	blobURL: string
-	doUploadFile: (file: BodyInit, filename: string, encodingOpts?: MediaEncodingOptions) => void
+	doUploadFile: (file: Blob, filename: string, encodingOpts?: MediaEncodingOptions) => void
 }
 
 function formatSize(bytes: number): string {
