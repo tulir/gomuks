@@ -180,14 +180,33 @@ func (gmx *Gomuks) saveMediaCacheEntryWithThumbnail(ctx context.Context, entry *
 	}
 }
 
+func decodeImageWithOrientationFix(file *os.File) (image.Image, error) {
+	decoded, decodedFrom, err := image.Decode(file)
+	if err != nil {
+		return nil, fmt.Errorf("failed to decode image: %w", err)
+	}
+	var o orientation.Orientation
+	if decodedFrom == "jpeg" {
+		_, err = file.Seek(0, io.SeekStart)
+		if err != nil {
+			return nil, fmt.Errorf("failed to seek to start of temp file: %w", err)
+		}
+		o = orientation.Read(file)
+	} // TODO heic orientation?
+	if o != orientation.Unspecified {
+		decoded = o.Fix(decoded)
+	}
+	return decoded, nil
+}
+
 func (gmx *Gomuks) generateAvatarThumbnail(entry *database.Media, size int) error {
 	cacheFile, err := os.Open(gmx.cacheEntryToPath(entry.Hash[:]))
 	if err != nil {
 		return fmt.Errorf("failed to open full file: %w", err)
 	}
-	img, err := imaging.Decode(cacheFile, imaging.AutoOrientation(true))
+	img, err := decodeImageWithOrientationFix(cacheFile)
 	if err != nil {
-		return fmt.Errorf("failed to decode image: %w", err)
+		return err
 	}
 
 	tempFile, err := os.CreateTemp(gmx.TempDir, "thumbnail-*")
@@ -516,20 +535,9 @@ func (gmx *Gomuks) reencodeMedia(ctx context.Context, query url.Values, tempFile
 				return nil, fmt.Errorf("failed to parse quality: %w", err)
 			}
 		}
-		decoded, decodedFrom, err := image.Decode(tempFile)
+		decoded, err := decodeImageWithOrientationFix(tempFile)
 		if err != nil {
-			return nil, fmt.Errorf("failed to decode image: %w", err)
-		}
-		var o orientation.Orientation
-		if decodedFrom == "jpeg" {
-			_, err = tempFile.Seek(0, io.SeekStart)
-			if err != nil {
-				return nil, fmt.Errorf("failed to seek to start of temp file: %w", err)
-			}
-			o = orientation.Read(tempFile)
-		} // TODO heic orientation?
-		if o != orientation.Unspecified {
-			decoded = o.Fix(decoded)
+			return nil, err
 		}
 		if resizeWidth > 0 && resizeHeight > 0 {
 			decoded = imaging.Resize(decoded, resizeWidth, resizeHeight, imaging.Lanczos)
