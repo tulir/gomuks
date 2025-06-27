@@ -958,7 +958,15 @@ func (gmx *Gomuks) generateFileInfo(ctx context.Context, file *os.File) (event.M
 			bounds := img.Bounds()
 			info.Width = bounds.Dx()
 			info.Height = bounds.Dy()
-			hash, err := blurhash.Encode(4, 3, img)
+			blurhashSrc := img
+			if info.Width > 256 || info.Height > 256 {
+				if info.Width > info.Height {
+					blurhashSrc = imaging.Resize(img, 128, 0, imaging.Linear)
+				} else {
+					blurhashSrc = imaging.Resize(img, 0, 128, imaging.Linear)
+				}
+			}
+			hash, err := blurhash.Encode(4, 3, blurhashSrc)
 			if err != nil {
 				zerolog.Ctx(ctx).Warn().Err(err).Msg("Failed to generate image blurhash")
 			}
