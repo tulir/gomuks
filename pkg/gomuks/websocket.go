@@ -91,7 +91,11 @@ func (gmx *Gomuks) HandleWebsocket(w http.ResponseWriter, r *http.Request) {
 			_ = conn.Close(websocket.StatusInternalError, "Failed to create flate writer")
 			return
 		}
-		defer fp.fw.Close()
+		defer func() {
+			fp.lock.Lock()
+			fp.fw.Close()
+			fp.lock.Unlock()
+		}()
 		log.Debug().Msg("Enabled flate compression for websocket messages")
 	}
 	conn.SetReadLimit(128 * 1024)
