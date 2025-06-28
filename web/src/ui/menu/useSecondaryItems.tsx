@@ -15,8 +15,9 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import { use } from "react"
 import Client from "@/api/client.ts"
-import { useRoomState } from "@/api/statestore"
+import { useRoomMember, useRoomState } from "@/api/statestore"
 import { MemDBEvent } from "@/api/types"
+import { displayAsRedacted } from "@/util/displayAsRedacted.ts"
 import { ConfirmWithMessageModal, ModalCloseContext, ModalContext, ShareModal } from "../modal"
 import { RoomContext, RoomContextData } from "../roomview/roomcontext.ts"
 import JSONView from "../util/JSONView.tsx"
@@ -145,16 +146,18 @@ export const useSecondaryItems = (
 	useRoomState(roomCtx.store, "m.room.power_levels", "")
 	// We get pins from getPinnedEvents, but use the hook anyway to subscribe to changes
 	useRoomState(roomCtx.store, "m.room.pinned_events", "")
+	const memberEvt = useRoomMember(client, roomCtx.store, evt.sender)
 	const [pls, ownPL] = getPowerLevels(roomCtx.store, client)
 	const pins = roomCtx.store.getPinnedEvents()
 	const pinPL = pls.events?.["m.room.pinned_events"] ?? pls.state_default ?? 50
 	const redactEvtPL = pls.events?.["m.room.redaction"] ?? pls.events_default ?? 0
 	const redactOtherPL = pls.redact ?? 50
+	// Note: Both canRedact and canUnredact can be true at the same time if the event was "redacted" by a ban event.
 	const canRedact = !evt.redacted_by
 		&& ownPL >= redactEvtPL
 		&& (evt.sender === client.userID || ownPL >= redactOtherPL)
 	// TODO check server admin status and room PLs
-	const canUnredact = Boolean(evt.redacted_by)
+	const canUnredact = displayAsRedacted(evt, memberEvt, roomCtx.store)
 
 	return <>
 		<button onClick={onClickViewSource}><ViewSourceIcon/>{names && "View source"}</button>

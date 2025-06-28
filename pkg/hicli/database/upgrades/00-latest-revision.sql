@@ -118,6 +118,7 @@ CREATE TRIGGER event_update_redacted_by
 	AFTER INSERT
 	ON event
 	WHEN NEW.type = 'm.room.redaction'
+	-- TODO check that event isn't soft failed
 BEGIN
 	UPDATE event SET redacted_by = NEW.event_id WHERE room_id = NEW.room_id AND event_id = NEW.content ->> 'redacts';
 END;

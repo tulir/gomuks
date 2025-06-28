@@ -398,7 +398,8 @@ func MautrixToEvent(evt *event.Event) *Event {
 	}
 	dbEvt.RelatesTo, dbEvt.RelationType = getRelatesToFromEvent(evt)
 	dbEvt.Unsigned, _ = json.Marshal(&evt.Unsigned)
-	if evt.Unsigned.RedactedBecause != nil {
+	// We support MSC4293 redact on ban in the frontend, so don't save member events in redacted_because
+	if evt.Unsigned.RedactedBecause != nil && evt.Unsigned.RedactedBecause.Type != event.StateMember {
 		dbEvt.RedactedBy = evt.Unsigned.RedactedBecause.ID
 	}
 	return dbEvt
