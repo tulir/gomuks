@@ -214,10 +214,19 @@ func (h *HiClient) GetRoomState(ctx context.Context, roomID id.RoomID, includeMe
 	return h.DB.CurrentState.GetAll(ctx, roomID)
 }
 
-func (h *HiClient) Paginate(ctx context.Context, roomID id.RoomID, maxTimelineID database.TimelineRowID, limit int) (*jsoncmd.PaginationResponse, error) {
-	evts, err := h.DB.Timeline.Get(ctx, roomID, limit, maxTimelineID)
-	if err != nil {
-		return nil, err
+func (h *HiClient) Paginate(ctx context.Context, roomID id.RoomID, maxTimelineID database.TimelineRowID, limit int, reset bool) (*jsoncmd.PaginationResponse, error) {
+	var evts []*database.Event
+	var err error
+	if reset {
+		err = h.DB.Timeline.Clear(ctx, roomID)
+		if err != nil {
+			return nil, fmt.Errorf("failed to clear timeline: %w", err)
+		}
+	} else {
+		evts, err = h.DB.Timeline.Get(ctx, roomID, limit, maxTimelineID)
+		if err != nil {
+			return nil, err
+		}
 	}
 	var resp *jsoncmd.PaginationResponse
 	if len(evts) > 0 {
@@ -226,7 +235,7 @@ func (h *HiClient) Paginate(ctx context.Context, roomID id.RoomID, maxTimelineID
 		}
 		resp = &jsoncmd.PaginationResponse{Events: evts, HasMore: true}
 	} else {
-		resp, err = h.PaginateServer(ctx, roomID, limit)
+		resp, err = h.PaginateServer(ctx, roomID, limit, reset)
 		if err != nil {
 			return nil, err
 		}
@@ -291,7 +300,7 @@ func (h *HiClient) GetReceipts(ctx context.Context, roomID id.RoomID, eventIDs [
 	return receipts, nil
 }
 
-func (h *HiClient) PaginateServer(ctx context.Context, roomID id.RoomID, limit int) (*jsoncmd.PaginationResponse, error) {
+func (h *HiClient) PaginateServer(ctx context.Context, roomID id.RoomID, limit int, reset bool) (*jsoncmd.PaginationResponse, error) {
 	ctx, cancel := context.WithCancelCause(ctx)
 	defer cancel(context.Canceled)
 	h.paginationInterrupterLock.Lock()
@@ -312,7 +321,11 @@ func (h *HiClient) PaginateServer(ctx context.Context, roomID id.RoomID, limit i
 		return nil, fmt.Errorf("failed to get room from database: %w", err)
 	} else if room == nil {
 		return nil, fmt.Errorf("not in room %s", roomID)
-	} else if room.PrevBatch == database.PrevBatchPaginationComplete {
+	}
+	if reset {
+		room.PrevBatch = ""
+	}
+	if room.PrevBatch == database.PrevBatchPaginationComplete {
 		return &jsoncmd.PaginationResponse{Events: []*database.Event{}, HasMore: false}, nil
 	}
 	resp, err := h.Client.Messages(ctx, roomID, room.PrevBatch, "", mautrix.DirectionBackward, nil, limit)
@@ -328,7 +341,11 @@ func (h *HiClient) PaginateServer(ctx context.Context, roomID id.RoomID, limit i
 		if err != nil {
 			return nil, fmt.Errorf("failed to set prev_batch: %w", err)
 		}
-		return &jsoncmd.PaginationResponse{Events: events, HasMore: resp.End != database.PrevBatchPaginationComplete}, nil
+		return &jsoncmd.PaginationResponse{
+			Events:     events,
+			FromServer: true,
+			HasMore:    resp.End != database.PrevBatchPaginationComplete,
+		}, nil
 	}
 	wakeupSessionRequests := false
 	err = h.DB.DoTxn(ctx, nil, func(ctx context.Context) error {

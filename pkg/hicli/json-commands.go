@@ -157,11 +157,7 @@ func (h *HiClient) handleJSONCommand(ctx context.Context, req *JSONCommand) (any
 		})
 	case jsoncmd.ReqPaginate:
 		return unmarshalAndCall(req.Data, func(params *jsoncmd.PaginateParams) (*jsoncmd.PaginationResponse, error) {
-			return h.Paginate(ctx, params.RoomID, params.MaxTimelineID, params.Limit)
-		})
-	case jsoncmd.ReqPaginateServer:
-		return unmarshalAndCall(req.Data, func(params *jsoncmd.PaginateParams) (*jsoncmd.PaginationResponse, error) {
-			return h.PaginateServer(ctx, params.RoomID, params.Limit)
+			return h.Paginate(ctx, params.RoomID, params.MaxTimelineID, params.Limit, params.Reset)
 		})
 	case jsoncmd.ReqGetRoomSummary:
 		return unmarshalAndCall(req.Data, func(params *jsoncmd.JoinRoomParams) (*mautrix.RespRoomSummary, error) {

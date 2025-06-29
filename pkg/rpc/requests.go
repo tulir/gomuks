@@ -122,10 +122,6 @@ func (gr *GomuksRPC) Paginate(ctx context.Context, params *jsoncmd.PaginateParam
 	return ParseResponse[*jsoncmd.PaginationResponse](gr.Request(ctx, jsoncmd.ReqPaginate, params))
 }
 
-func (gr *GomuksRPC) PaginateServer(ctx context.Context, params *jsoncmd.PaginateParams) (*jsoncmd.PaginationResponse, error) {
-	return ParseResponse[*jsoncmd.PaginationResponse](gr.Request(ctx, jsoncmd.ReqPaginateServer, params))
-}
-
 func (gr *GomuksRPC) GetRoomSummary(ctx context.Context, params *jsoncmd.JoinRoomParams) (*mautrix.RespRoomSummary, error) {
 	return ParseResponse[*mautrix.RespRoomSummary](gr.Request(ctx, jsoncmd.ReqGetRoomSummary, params))
 }

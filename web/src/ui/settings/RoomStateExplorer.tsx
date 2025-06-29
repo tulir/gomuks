@@ -221,6 +221,7 @@ export const StateExplorer = ({ room }: StateExplorerProps) => {
 	const [selectedType, setSelectedType] = useState<string | null>(null)
 	const [selectedStateKey, setSelectedStateKey] = useState<string | null>(null)
 	const [loadingState, setLoadingState] = useState(false)
+	const [resettingTimeline, setResettingTimeline] = useState(false)
 	const client = use(ClientContext)!
 
 	const handleTypeSelect = (type: string) => {
@@ -303,6 +304,11 @@ export const StateExplorer = ({ room }: StateExplorerProps) => {
 				},
 			).finally(() => setLoadingState(false))
 		}
+		const resetTimeline = () => {
+			setResettingTimeline(true)
+			client.resetTimeline(room.roomID)
+				.finally(() => setResettingTimeline(false))
+		}
 		return <div className="state-explorer">
 			<h3>Room State Explorer</h3>
 			<div className="state-button-list">
@@ -319,6 +325,9 @@ export const StateExplorer = ({ room }: StateExplorerProps) => {
 							? "Resync full room state"
 							: "Load room members"
 						: "Load room state and members"}
+				</button>
+				<button onClick={resetTimeline} disabled={resettingTimeline}>
+					Reset timeline
 				</button>
 				<div className="spacer"/>
 				<button onClick={() => setCreatingNew("message")}>Send new message event</button>

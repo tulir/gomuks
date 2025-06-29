@@ -421,6 +421,30 @@ export default class Client {
 		}
 	}
 
+	async resetTimeline(roomID: RoomID): Promise<void> {
+		const room = this.store.rooms.get(roomID)
+		if (!room) {
+			throw new Error("Room not found")
+		} else if (room.paginating) {
+			throw new Error("Already paginating")
+		}
+		room.paginating = true
+		try {
+			// This part isn't actually required, but it makes it look like something is happening.
+			// If the reset is done without the flash, the user might think nothing happened.
+			room.timeline = []
+			room.hasMoreHistory = false
+			room.notifyTimelineSubscribers()
+
+			console.log("Requesting 50 messages of history and a timeline reset in", roomID)
+			const resp = await this.rpc.paginate(roomID, 0, 50, true)
+			room.hasMoreHistory = resp.has_more
+			room.applyPagination(resp.events, resp.related_events, resp.receipts)
+		} finally {
+			room.paginating = false
+		}
+	}
+
 	async loadMoreHistory(roomID: RoomID): Promise<void> {
 		const room = this.store.rooms.get(roomID)
 		if (!room) {

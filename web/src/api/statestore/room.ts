@@ -283,7 +283,12 @@ export class RoomStateStore {
 		return []
 	}
 
-	applyPagination(history: RawDBEvent[], related: RawDBEvent[], allReceipts: Record<EventID, DBReceipt[]>) {
+	applyPagination(
+		history: RawDBEvent[],
+		related: RawDBEvent[],
+		allReceipts: Record<EventID, DBReceipt[]>,
+		reset: boolean = false,
+	) {
 		// Pagination comes in newest to oldest, timeline is in the opposite order
 		history.reverse()
 		const newTimeline = history.map(evt => {
@@ -295,7 +300,11 @@ export class RoomStateStore {
 				this.applyEvent(evt)
 			}
 		}
-		this.timeline.splice(0, 0, ...newTimeline)
+		if (reset) {
+			this.timeline = newTimeline
+		} else {
+			this.timeline.splice(0, 0, ...newTimeline)
+		}
 		this.notifyTimelineSubscribers()
 		for (const [evtID, receipts] of Object.entries(allReceipts)) {
 			this.applyReceipts(receipts, evtID, true)

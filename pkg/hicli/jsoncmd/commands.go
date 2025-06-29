@@ -43,7 +43,6 @@ const (
 	ReqGetSpecificRoomState     Name = "get_specific_room_state"
 	ReqGetReceipts              Name = "get_receipts"
 	ReqPaginate                 Name = "paginate"
-	ReqPaginateServer           Name = "paginate_server"
 	ReqGetRoomSummary           Name = "get_room_summary"
 	ReqJoinRoom                 Name = "join_room"
 	ReqKnockRoom                Name = "knock_room"

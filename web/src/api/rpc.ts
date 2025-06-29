@@ -251,12 +251,13 @@ export default abstract class RPCClient {
 		return this.request("get_related_events", { room_id, event_id, relation_type })
 	}
 
-	paginate(room_id: RoomID, max_timeline_id: TimelineRowID, limit: number): Promise<PaginationResponse> {
-		return this.request("paginate", { room_id, max_timeline_id, limit })
-	}
-
-	paginateServer(room_id: RoomID, limit: number): Promise<PaginationResponse> {
-		return this.request("paginate_server", { room_id, limit })
+	paginate(
+		room_id: RoomID,
+		max_timeline_id: TimelineRowID,
+		limit: number,
+		reset: boolean = false,
+	): Promise<PaginationResponse> {
+		return this.request("paginate", { room_id, max_timeline_id, limit, reset })
 	}
 
 	getRoomSummary(room_id_or_alias: RoomID | RoomAlias, via?: string[]): Promise<RoomSummary> {

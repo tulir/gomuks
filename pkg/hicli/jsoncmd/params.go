@@ -168,6 +168,7 @@ type PaginateParams struct {
 	RoomID        id.RoomID              `json:"room_id"`
 	MaxTimelineID database.TimelineRowID `json:"max_timeline_id"`
 	Limit         int                    `json:"limit"`
+	Reset         bool                   `json:"reset"`
 }
 
 type JoinRoomParams struct {
