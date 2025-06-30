@@ -31,9 +31,18 @@ import (
 	"go.mau.fi/gomuks/pkg/rainbow"
 )
 
+var baseExtensions = goldmark.WithExtensions(
+	mdext.LongStrike,
+	extension.Table,
+	mdext.Spoiler,
+	mdext.Math,
+	mdext.CustomEmoji,
+	extension.TaskList,
+)
+
 var (
-	rainbowWithHTML = goldmark.New(format.Extensions, goldmark.WithExtensions(mdext.Math, mdext.CustomEmoji, extension.TaskList), format.HTMLOptions, goldmark.WithExtensions(rainbow.Extension))
-	defaultNoHTML   = goldmark.New(format.Extensions, goldmark.WithExtensions(mdext.Math, mdext.CustomEmoji, mdext.EscapeHTML, extension.TaskList), format.HTMLOptions)
+	rainbowWithHTML = goldmark.New(baseExtensions, format.HTMLOptions, goldmark.WithExtensions(rainbow.Extension))
+	defaultNoHTML   = goldmark.New(baseExtensions, format.HTMLOptions, goldmark.WithExtensions(mdext.EscapeHTML))
 )
 
 var htmlToMarkdownForInput = ptr.Clone(format.MarkdownHTMLParser)
