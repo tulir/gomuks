@@ -39,10 +39,22 @@ export const useSecondaryItems = (
 	const closeModal = use(ModalCloseContext)
 	const openModal = use(ModalContext)
 	const onClickViewSource = () => {
+		const copyRawCommand = () => {
+			const contentJSON = JSON.stringify(evt.content, null, "  ")
+			if (evt.state_key !== undefined) {
+				navigator.clipboard.writeText(`/rawstate ${evt.type} ${evt.state_key} ${contentJSON}`)
+			} else {
+				navigator.clipboard.writeText(`/raw ${evt.type} ${contentJSON}`)
+			}
+		}
 		openModal({
 			dimmed: true,
 			boxed: true,
-			content: <JSONView data={evt}/>,
+			content: <div>
+				<JSONView data={evt}/>
+				<hr/>
+				<button style={{ padding: ".5rem" }} onClick={copyRawCommand}>Copy /raw command</button>
+			</div>,
 		})
 	}
 	const onClickReport = () => {
