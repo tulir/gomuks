@@ -46,6 +46,7 @@ export const useSecondaryItems = (
 			} else {
 				navigator.clipboard.writeText(`/raw ${evt.type} ${contentJSON}`)
 			}
+			closeModal()
 		}
 		openModal({
 			dimmed: true,
