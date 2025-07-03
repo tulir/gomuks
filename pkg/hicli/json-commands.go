@@ -14,6 +14,7 @@ import (
 	"net/url"
 	"time"
 
+	"github.com/rs/zerolog"
 	"maunium.net/go/mautrix"
 	"maunium.net/go/mautrix/event"
 	"maunium.net/go/mautrix/id"
@@ -179,7 +180,20 @@ func (h *HiClient) handleJSONCommand(ctx context.Context, req *JSONCommand) (any
 		})
 	case jsoncmd.ReqLeaveRoom:
 		return unmarshalAndCall(req.Data, func(params *jsoncmd.LeaveRoomParams) (*mautrix.RespLeaveRoom, error) {
-			return h.Client.LeaveRoom(mautrix.WithMaxRetries(ctx, 2), params.RoomID, &mautrix.ReqLeave{Reason: params.Reason})
+			resp, err := h.Client.LeaveRoom(mautrix.WithMaxRetries(ctx, 2), params.RoomID, &mautrix.ReqLeave{Reason: params.Reason})
+			if err == nil || errors.Is(err, mautrix.MNotFound) || errors.Is(err, mautrix.MForbidden) {
+				deleteInviteErr := h.DB.InvitedRoom.Delete(ctx, params.RoomID)
+				if deleteInviteErr != nil {
+					zerolog.Ctx(ctx).Err(deleteInviteErr).
+						Stringer("room_id", params.RoomID).
+						Msg("Failed to delete invite from database after leaving room")
+				} else {
+					zerolog.Ctx(ctx).Debug().
+						Stringer("room_id", params.RoomID).
+						Msg("Deleted invite from database after leaving room")
+				}
+			}
+			return resp, err
 		})
 	case jsoncmd.ReqCreateRoom:
 		return unmarshalAndCall(req.Data, func(params *mautrix.ReqCreateRoom) (*mautrix.RespCreateRoom, error) {
