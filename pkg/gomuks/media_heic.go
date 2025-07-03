@@ -28,5 +28,7 @@ import (
 func init() {
 	if runtime.GOARCH != "amd64" || cpu.X86.HasSSE41 {
 		goheif.Init()
+		// why is there an unsafe mode??
+		goheif.SafeEncoding = true
 	}
 }
